@@ -266,9 +266,27 @@ export async function getCampaign(
   if (stepsError) throw new Error(stepsError.message);
   if (leadsError) throw new Error(leadsError.message);
 
+  const { signCampaignStepMedia, mediaFromStepConfig } = await import(
+    "@/lib/unipile/campaignStepMedia"
+  );
+  const signedSteps = await Promise.all(
+    (steps ?? []).map(async (step) => {
+      const media = mediaFromStepConfig(step.config);
+      if (!media) return step;
+      const signed = await signCampaignStepMedia(media);
+      return {
+        ...step,
+        config: {
+          ...((step.config as Record<string, unknown> | null) ?? {}),
+          media: signed,
+        },
+      };
+    })
+  );
+
   return {
     campaign,
-    steps: steps ?? [],
+    steps: signedSteps,
     leads: leads ?? [],
     jobs,
   };
@@ -280,10 +298,16 @@ export async function createCampaign(
     name: string;
     outreach_account_id?: string | null;
     channel?: "linkedin" | "email";
+    template_id?: string | null;
   }
 ) {
-  const name = input.name.trim() || "Untitled campaign";
-  const channel = input.channel === "email" ? "email" : "linkedin";
+  const { getCampaignCreateTemplate } = await import(
+    "@/lib/unipile/campaignCreateTemplates"
+  );
+  const template = getCampaignCreateTemplate(input.template_id);
+  const name = input.name.trim() || template?.name || "Untitled campaign";
+  const channel =
+    template?.channel ?? (input.channel === "email" ? "email" : "linkedin");
   const { count } = await supabaseAdmin
     .from("linkedin_campaigns")
     .select("id", { count: "exact", head: true })
@@ -308,7 +332,12 @@ export async function createCampaign(
     .select("*")
     .single();
   if (error) throw new Error(error.message);
-  if (channel === "email" && data?.id) {
+  if (template && data?.id && template.steps.length > 0) {
+    await replaceCampaignSteps(
+      data.id,
+      template.steps.map((s, i) => ({ ...s, position: i }))
+    );
+  } else if (channel === "email" && data?.id) {
     await supabaseAdmin.from("linkedin_campaign_steps").insert({
       campaign_id: data.id,
       position: 0,

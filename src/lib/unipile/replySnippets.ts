@@ -141,6 +141,22 @@ What I find is that every level has its devil, and usually there's something tha
 
   // ── Scorecard ───────────────────────────────────────────────────────
   {
+    id: "scorecard-link-only",
+    group: "scorecard",
+    when: "BOSS Scorecard link",
+    channel: "any",
+    body: `Here's the 3-minute BOSS Scorecard:
+{{assessment_url}}`,
+  },
+  {
+    id: "scorecard-personalised-link",
+    group: "scorecard",
+    when: "Personalised BOSS Scorecard link",
+    channel: "any",
+    body: `Here's your personalised BOSS Scorecard:
+{{personalised_assessment_url}}`,
+  },
+  {
     id: "send-scorecard",
     group: "scorecard",
     when: "Interested → send assessment (before call)",

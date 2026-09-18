@@ -3,6 +3,7 @@ import { utcToZonedParts } from "@/lib/booking/bookingTime";
 import {
   cancelSentInvitation,
   listSentInvitations,
+  UNIPILE_SENT_INVITE_PAGE_MAX,
   type UnipileSentInvitation,
 } from "@/lib/unipile/client";
 import {
@@ -111,6 +112,8 @@ export async function listPendingInvitesForCoach(
     /** How many invite rows to return (lead-matched). Total always pages to PENDING_LIST_MAX. */
     maxItems?: number;
     outreachAccountId?: string;
+    /** Stop paging before the platform kills the request with an HTML error page. */
+    deadlineAt?: number;
   }
 ): Promise<{
   account_id: string;
@@ -131,7 +134,14 @@ export async function listPendingInvitesForCoach(
 
   // Always page far enough for an accurate dial total (not capped at 100).
   do {
-    const pageLimit = Math.min(100, PENDING_LIST_MAX - items.length);
+    if (options?.deadlineAt && Date.now() >= options.deadlineAt) {
+      hasMore = true;
+      break;
+    }
+    const pageLimit = Math.min(
+      UNIPILE_SENT_INVITE_PAGE_MAX,
+      PENDING_LIST_MAX - items.length
+    );
     if (pageLimit <= 0) break;
     const listed = await listSentInvitations({
       account_id: account.unipile_account_id,

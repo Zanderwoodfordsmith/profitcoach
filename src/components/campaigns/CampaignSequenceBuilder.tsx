@@ -5,30 +5,40 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   ChevronDown,
+  CircleAlert,
   Clock,
   Eye,
   FolderInput,
+  GripVertical,
   Heart,
   Mail,
   MessageCircle,
   MessageSquare,
+  Mic,
   Phone,
   PhoneCall,
   UserPlus,
   UserRoundPlus,
+  Video,
   X,
   Zap,
 } from "lucide-react";
 import {
   addToCampaignIdFrom,
   campaignStepAllowsVariants,
+  campaignStepDisplayLabel,
   campaignStepHasCopy,
-  campaignStepTypeLabel,
+  campaignStepIncompleteHint,
   callWaitFrom,
+  inviteNoConnectFrom,
+  isCampaignStepType,
+  messageMediaKindFrom,
   notifyChannelSummary,
   notifyConfigFrom,
+  type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
+import { moveSequenceItem } from "@/lib/unipile/campaignStepReorder";
 import {
   WAIT_UNITS,
   WAIT_UNIT_MAX,
@@ -57,6 +67,11 @@ import {
   normalizeUnipileProvider,
   type UnipileConnectProvider,
 } from "@/lib/unipile/providers";
+import {
+  InviteNoConnectBranch,
+  MessageStepMedia,
+} from "@/components/campaigns/CampaignStepExtras";
+import { startDragAutoScroll } from "@/lib/campaigns/dragAutoScroll";
 
 export type SequenceAccount = {
   id: string;
@@ -89,8 +104,48 @@ type LeadDrawerPayload = {
   title: string;
 };
 
+const STEP_DRAG_PREFIX = "pc-step:";
+const STEP_MOVE_PREFIX = "pc-move:";
+
+function paletteDragValue(
+  type: CampaignStepType,
+  mediaKind?: CampaignStepMediaKind
+) {
+  return mediaKind
+    ? `${STEP_DRAG_PREFIX}${type}:${mediaKind}`
+    : `${STEP_DRAG_PREFIX}${type}`;
+}
+
+function parseDragType(event: React.DragEvent): {
+  type: CampaignStepType;
+  mediaKind?: CampaignStepMediaKind;
+} | null {
+  const raw =
+    event.dataTransfer.getData("text/plain") ||
+    event.dataTransfer.getData("text");
+  if (!raw.startsWith(STEP_DRAG_PREFIX)) return null;
+  const rest = raw.slice(STEP_DRAG_PREFIX.length);
+  const [type, mediaKind] = rest.split(":");
+  if (!type || !isCampaignStepType(type)) return null;
+  return {
+    type: type as CampaignStepType,
+    mediaKind:
+      mediaKind === "voice" || mediaKind === "video" ? mediaKind : undefined,
+  };
+}
+
+function parseMoveIndex(event: React.DragEvent): number | null {
+  const raw =
+    event.dataTransfer.getData("text/plain") ||
+    event.dataTransfer.getData("text");
+  if (!raw.startsWith(STEP_MOVE_PREFIX)) return null;
+  const index = Number(raw.slice(STEP_MOVE_PREFIX.length));
+  return Number.isInteger(index) && index >= 0 ? index : null;
+}
+
 type PaletteItem = {
   type?: CampaignStepType;
+  mediaKind?: CampaignStepMediaKind;
   label: string;
   hint?: string;
   icon: LucideIcon;
@@ -117,7 +172,7 @@ function PaletteItemRow({
 }: {
   item: PaletteItem;
   connectingProvider: string | null;
-  onAdd: (type: CampaignStepType) => void;
+  onAdd: (type: CampaignStepType, mediaKind?: CampaignStepMediaKind) => void;
   onConnect: (provider: UnipileConnectProvider) => void;
   onDragStart: (type: CampaignStepType) => void;
   onDragEnd: () => void;
@@ -132,13 +187,13 @@ function PaletteItemRow({
           onDragStart={(event) => {
             event.dataTransfer.setData(
               "text/plain",
-              `${STEP_DRAG_PREFIX}${item.type}`
+              paletteDragValue(item.type!, item.mediaKind)
             );
             event.dataTransfer.effectAllowed = "copy";
             onDragStart(item.type!);
           }}
           onDragEnd={onDragEnd}
-          onClick={() => onAdd(item.type!)}
+          onClick={() => onAdd(item.type!, item.mediaKind)}
           className="flex w-full cursor-grab items-start gap-2.5 rounded-lg px-1.5 py-2 text-left hover:bg-white active:cursor-grabbing"
         >
           <Icon
@@ -193,8 +248,6 @@ function PaletteItemRow({
   );
 }
 
-const STEP_DRAG_PREFIX = "pc-step:";
-
 const STEP_ICONS: Record<CampaignStepType, LucideIcon> = {
   invite: UserPlus,
   message: MessageSquare,
@@ -215,6 +268,24 @@ const STEP_ICONS: Record<CampaignStepType, LucideIcon> = {
   call: PhoneCall,
 };
 
+function messageCopyPlaceholder(
+  config: Record<string, unknown> | null | undefined
+) {
+  const kind = messageMediaKindFrom(config);
+  if (kind === "video") return "Optional note with the video";
+  if (kind === "voice") return "Optional note with the voice note";
+  return undefined;
+}
+
+function stepIcon(step: SequenceStep): LucideIcon {
+  if (step.step_type === "message") {
+    const kind = messageMediaKindFrom(step.config);
+    if (kind === "voice") return Mic;
+    if (kind === "video") return Video;
+  }
+  return STEP_ICONS[step.step_type];
+}
+
 function accountOk(
   accounts: SequenceAccount[],
   match: (provider: string) => boolean
@@ -222,15 +293,6 @@ function accountOk(
   return accounts.some(
     (a) => a.status === "OK" && match(normalizeUnipileProvider(a.provider))
   );
-}
-
-function parseDragType(event: React.DragEvent): CampaignStepType | null {
-  const raw =
-    event.dataTransfer.getData("text/plain") ||
-    event.dataTransfer.getData("text");
-  if (!raw.startsWith(STEP_DRAG_PREFIX)) return null;
-  const type = raw.slice(STEP_DRAG_PREFIX.length);
-  return type in STEP_ICONS ? (type as CampaignStepType) : null;
 }
 
 function stepPreview(
@@ -249,6 +311,19 @@ function stepPreview(
     const targetId = addToCampaignIdFrom(step.config);
     const name = campaigns.find((c) => c.id === targetId)?.name;
     return name || "Choose a campaign";
+  }
+  if (step.step_type === "invite") {
+    const branch = inviteNoConnectFrom(step.config);
+    if (branch.on_no_connect === "other_campaign") {
+      const name = campaigns.find((c) => c.id === branch.no_connect_campaign_id)
+        ?.name;
+      return name
+        ? `If they don't connect → ${name}`
+        : "If they don't connect → pick a campaign";
+    }
+  }
+  if (step.step_type === "message") {
+    return (step.variants?.[0]?.body ?? step.body ?? "").trim();
   }
   if (step.step_type === "call") {
     const notes = (step.body ?? "").trim();
@@ -318,14 +393,16 @@ function DropGap({
   insertAt,
   dragging,
   dropAt,
+  dropEffect,
   onDragOverGap,
   onDropGap,
 }: {
   insertAt: number;
   dragging: boolean;
   dropAt: number | null;
+  dropEffect: "copy" | "move";
   onDragOverGap: () => void;
-  onDropGap: (type: CampaignStepType) => void;
+  onDropGap: (event: React.DragEvent) => void;
 }) {
   const hot = dragging && dropAt === insertAt;
 
@@ -336,13 +413,12 @@ function DropGap({
       }`}
       onDragOver={(event) => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
+        event.dataTransfer.dropEffect = dropEffect;
         onDragOverGap();
       }}
       onDrop={(event) => {
         event.preventDefault();
-        const type = parseDragType(event);
-        if (type) onDropGap(type);
+        onDropGap(event);
       }}
     >
       <div
@@ -360,14 +436,20 @@ function DropGap({
 
 function WaitRow({
   step,
+  stepIndex,
   onChange,
   onCommit,
   onDelete,
+  onReorderDragStart,
+  onReorderDragEnd,
 }: {
   step: SequenceStep;
+  stepIndex: number;
   onChange: (patch: Partial<SequenceStep>) => void;
   onCommit: () => void;
   onDelete: () => void;
+  onReorderDragStart: () => void;
+  onReorderDragEnd: () => void;
 }) {
   const inferred = inferWaitDuration(step.wait_hours);
   const [editing, setEditing] = useState(false);
@@ -414,6 +496,20 @@ function WaitRow({
 
   return (
     <div className="group/wait flex items-center gap-2 px-2">
+      <button
+        type="button"
+        draggable
+        aria-label="Drag to reorder"
+        onDragStart={(event) => {
+          event.dataTransfer.setData("text/plain", `${STEP_MOVE_PREFIX}${stepIndex}`);
+          event.dataTransfer.effectAllowed = "move";
+          onReorderDragStart();
+        }}
+        onDragEnd={onReorderDragEnd}
+        className="cursor-grab rounded p-0.5 text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+      >
+        <GripVertical className="h-3.5 w-3.5" aria-hidden />
+      </button>
       <span className="h-px min-w-4 flex-1 bg-slate-200" aria-hidden />
       {editing ? (
         <div
@@ -517,14 +613,69 @@ function ChannelToggle({
   );
 }
 
+function AbVariantPane({
+  variant,
+  rate,
+  isBest,
+  placeholder,
+  onChange,
+  onCommit,
+}: {
+  variant: { key: string; label?: string; body: string };
+  rate: number | null;
+  isBest: boolean;
+  placeholder?: string;
+  onChange: (patch: { label?: string; body?: string }) => void;
+  onCommit: () => void;
+}) {
+  const name = variant.label?.trim() || `Version ${variant.key}`;
+  return (
+    <div className="min-w-0">
+      <div className="mb-1.5 flex items-center gap-2">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Version name</span>
+          <input
+            value={variant.label ?? ""}
+            onChange={(e) => onChange({ label: e.target.value })}
+            onBlur={onCommit}
+            placeholder={`Version ${variant.key}`}
+            className="w-full rounded-md bg-transparent px-0.5 py-0.5 text-xs font-semibold text-slate-800 outline-none placeholder:font-medium placeholder:text-slate-400 hover:text-[#0c5290] focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+          />
+        </label>
+        {isBest || rate != null ? (
+          <span className="shrink-0 text-[11px] font-normal tabular-nums text-slate-400">
+            {isBest ? (
+              <span className="font-semibold text-[#0c5290]">Best</span>
+            ) : null}
+            {rate != null ? (
+              <span className={isBest ? " ml-1 text-[#0c5290]" : " ml-1"}>
+                {rate}%
+              </span>
+            ) : null}
+          </span>
+        ) : null}
+      </div>
+      <MergeFieldComposer
+        value={variant.body}
+        ariaLabel={name}
+        placeholder={placeholder}
+        onChange={(body) => onChange({ body })}
+        onCommit={onCommit}
+      />
+    </div>
+  );
+}
+
 function StepInlineEditor({
   step,
+  campaignId,
   abStats,
   campaigns,
   onChange,
   onCommit,
 }: {
   step: SequenceStep;
+  campaignId: string;
   abStats: Record<string, Record<string, AbVariantStats>> | null;
   campaigns: SequenceCampaignOption[];
   onChange: (patch: Partial<SequenceStep>) => void;
@@ -532,24 +683,11 @@ function StepInlineEditor({
 }) {
   const variants = step.variants ?? [];
   const hasAb = variants.length > 0;
-  const [abKey, setAbKey] = useState(variants[0]?.key ?? "A");
-  const activeVariant =
-    variants.find((v) => v.key === abKey) ?? variants[0] ?? null;
-  const activeIndex = activeVariant
-    ? variants.findIndex((v) => v.key === activeVariant.key)
-    : -1;
   const metric = abMetricForStep(step.step_type);
   const stepStats = step.id ? abStats?.[step.id] : undefined;
   const winner = hasAb
     ? abWinningKey(variants, stepStats, metric.key)
     : null;
-
-  useEffect(() => {
-    if (!hasAb) return;
-    if (!variants.some((v) => v.key === abKey)) {
-      setAbKey(variants[0]?.key ?? "A");
-    }
-  }, [abKey, hasAb, variants]);
 
   if (step.step_type === "react") {
     return (
@@ -707,6 +845,22 @@ function StepInlineEditor({
 
   return (
     <div className="space-y-3">
+      {step.step_type === "invite" ? (
+        <InviteNoConnectBranch
+          config={step.config}
+          campaigns={campaigns}
+          onChange={onChange}
+          onCommit={onCommit}
+        />
+      ) : null}
+      {step.step_type === "message" ? (
+        <MessageStepMedia
+          campaignId={campaignId}
+          config={step.config}
+          onChange={onChange}
+          onCommit={onCommit}
+        />
+      ) : null}
       {step.step_type === "email" ? (
         <p className="text-xs leading-relaxed text-slate-500">
           Sends from your connected Gmail or Outlook. Start the first line with
@@ -776,7 +930,6 @@ function StepInlineEditor({
                     ],
                     body,
                   });
-                  setAbKey("A");
                 }
                 onCommit();
               }}
@@ -807,85 +960,44 @@ function StepInlineEditor({
         </label>
       ) : null}
 
-      {hasAb && activeVariant ? (
-        <div>
-          <div
-            role="tablist"
-            aria-label="A/B versions"
-            className="flex flex-col gap-0.5 rounded-lg bg-slate-100 p-0.5"
-          >
-            {variants.map((v) => {
-              const selected = v.key === activeVariant.key;
-              const stats = stepStats?.[v.key];
-              const rate = abRatePercent(stats, metric.key);
-              const isBest = winner === v.key;
-              return (
-                <button
-                  key={v.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  title={v.label || v.key}
-                  onClick={() => setAbKey(v.key)}
-                  className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-semibold transition ${
-                    selected
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  <span className="min-w-0 truncate">
-                    {v.label?.trim() || v.key}
-                  </span>
-                  <span className="shrink-0 font-normal tabular-nums text-slate-400">
-                    {isBest ? (
-                      <span className="font-semibold text-[#0c5290]">Best</span>
-                    ) : null}
-                    {rate != null ? (
-                      <span className={isBest ? " ml-1 text-[#0c5290]" : " ml-1"}>
-                        {rate}%
-                      </span>
-                    ) : null}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <label className="mt-2 block text-[11px] font-medium text-slate-500">
-            Version name
-            <input
-              value={activeVariant.label ?? ""}
-              onChange={(e) => {
-                const next = [...variants];
-                next[activeIndex] = {
-                  ...activeVariant,
-                  label: e.target.value,
-                };
-                onChange({ variants: next });
-              }}
-              onBlur={onCommit}
-              placeholder={`Version ${activeVariant.key}`}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-normal text-slate-800"
-            />
-          </label>
-          <div className="mt-2">
-            <MergeFieldComposer
-              value={activeVariant.body}
-              ariaLabel={activeVariant.label || `Version ${activeVariant.key}`}
-              onChange={(body) => {
-                const next = [...variants];
-                next[activeIndex] = { ...activeVariant, body };
-                onChange({
-                  variants: next,
-                  body: next[0]?.body || body,
-                });
-              }}
-              onCommit={onCommit}
-            />
-          </div>
+      {hasAb ? (
+        <div
+          className={`grid grid-cols-1 gap-4 ${
+            variants.length > 1 ? "sm:grid-cols-2" : ""
+          }`}
+        >
+          {variants.map((variant, index) => (
+            <div
+              key={variant.key}
+              className={
+                index === variants.length - 1 && variants.length % 2 === 1
+                  ? "sm:col-span-2"
+                  : ""
+              }
+            >
+              <AbVariantPane
+                variant={variant}
+                rate={abRatePercent(stepStats?.[variant.key], metric.key)}
+                isBest={winner === variant.key}
+                placeholder={messageCopyPlaceholder(step.config)}
+                onChange={(patch) => {
+                  const next = variants.map((item, i) =>
+                    i === index ? { ...item, ...patch } : item
+                  );
+                  onChange({
+                    variants: next,
+                    body: next[0]?.body || patch.body || "",
+                  });
+                }}
+                onCommit={onCommit}
+              />
+            </div>
+          ))}
         </div>
       ) : campaignStepHasCopy(step.step_type) ? (
         <MergeFieldComposer
           value={step.body ?? ""}
+          placeholder={messageCopyPlaceholder(step.config)}
           onChange={(body) => onChange({ body })}
           onCommit={onCommit}
         />
@@ -896,6 +1008,7 @@ function StepInlineEditor({
 
 export function CampaignSequenceBuilder({
   steps,
+  campaignId,
   countAtStep,
   abStats,
   accounts,
@@ -906,20 +1019,27 @@ export function CampaignSequenceBuilder({
   onPatchStep,
   onCommitSteps,
   onDeleteStep,
+  onReorderSteps,
   onOpenLeads,
   sidebarExtra,
 }: {
   steps: SequenceStep[];
+  campaignId: string;
   countAtStep: (step: SequenceStep, index: number) => number;
   abStats: Record<string, Record<string, AbVariantStats>> | null;
   accounts: SequenceAccount[];
   connectingProvider: string | null;
   campaigns?: SequenceCampaignOption[];
-  onAddStep: (type: CampaignStepType, atIndex?: number) => void;
+  onAddStep: (
+    type: CampaignStepType,
+    atIndex?: number,
+    mediaKind?: CampaignStepMediaKind
+  ) => void;
   onConnect: (provider: UnipileConnectProvider) => void;
   onPatchStep: (index: number, patch: Partial<SequenceStep>) => void;
   onCommitSteps: () => void;
   onDeleteStep: (index: number) => void;
+  onReorderSteps: (next: SequenceStep[]) => void;
   onOpenLeads: (payload: LeadDrawerPayload) => void;
   sidebarExtra?: ReactNode;
 }) {
@@ -927,8 +1047,14 @@ export function CampaignSequenceBuilder({
   const [openGroups, setOpenGroups] = useState<Set<PaletteGroupId>>(
     () => new Set(["linkedin", "instagram", "channels", "timing", "your-side"])
   );
-  const [dragging, setDragging] = useState(false);
+  const [dragging, setDragging] = useState<"palette" | "reorder" | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
+  const sequenceScrollRootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!dragging) return;
+    return startDragAutoScroll(sequenceScrollRootRef.current);
+  }, [dragging]);
 
   const emailReady = accountOk(accounts, isMailingProvider);
   const whatsappReady = accountOk(accounts, (p) => p === "WHATSAPP");
@@ -951,6 +1077,20 @@ export function CampaignSequenceBuilder({
             type: "message",
             label: "LinkedIn message",
             icon: MessageSquare,
+            enabled: true,
+          },
+          {
+            type: "message",
+            mediaKind: "voice",
+            label: "Voice note",
+            icon: Mic,
+            enabled: true,
+          },
+          {
+            type: "message",
+            mediaKind: "video",
+            label: "Video message",
+            icon: Video,
             enabled: true,
           },
           {
@@ -1097,11 +1237,31 @@ export function CampaignSequenceBuilder({
     setExpanded(new Set([index]));
   }
 
-  function addAt(type: CampaignStepType, atIndex?: number) {
+  function addAt(
+    type: CampaignStepType,
+    atIndex?: number,
+    mediaKind?: CampaignStepMediaKind
+  ) {
     const insertAt = atIndex ?? steps.length;
-    onAddStep(type, atIndex);
+    onAddStep(type, atIndex, mediaKind);
     expandIndex(insertAt, type);
     setDropAt(null);
+  }
+
+  function handleGapDrop(event: React.DragEvent, insertAt: number) {
+    const from = parseMoveIndex(event);
+    if (from != null) {
+      const next = moveSequenceItem(steps, from, insertAt).map((step, i) => ({
+        ...step,
+        position: i,
+      }));
+      onReorderSteps(next);
+      setDropAt(null);
+      setDragging(null);
+      return;
+    }
+    const dragged = parseDragType(event);
+    if (dragged) addAt(dragged.type, insertAt, dragged.mediaKind);
   }
 
   function toggle(index: number) {
@@ -1120,16 +1280,18 @@ export function CampaignSequenceBuilder({
   const insertGap = (insertAt: number) => (
     <DropGap
       insertAt={insertAt}
-      dragging={dragging}
+      dragging={Boolean(dragging)}
       dropAt={dropAt}
+      dropEffect={dragging === "reorder" ? "move" : "copy"}
       onDragOverGap={() => setDropAt(insertAt)}
-      onDropGap={(type) => addAt(type, insertAt)}
+      onDropGap={(event) => handleGapDrop(event, insertAt)}
     />
   );
 
   return (
     <ContentWithRail className="mt-4 min-h-[60vh]">
       <ContentWithRailMain>
+        <div ref={sequenceScrollRootRef}>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-500">
             {steps.length === 0
@@ -1171,8 +1333,7 @@ export function CampaignSequenceBuilder({
             }}
             onDrop={(event) => {
               event.preventDefault();
-              const type = parseDragType(event);
-              if (type) addAt(type, 0);
+              handleGapDrop(event, 0);
             }}
           >
             <p className="text-sm text-slate-600">No steps yet</p>
@@ -1186,28 +1347,41 @@ export function CampaignSequenceBuilder({
             {steps.map((step, idx) => {
               const count = countAtStep(step, idx);
               const open = expanded.has(idx);
-              const hasAb = Boolean(step.variants && step.variants.length > 0);
-              const Icon = STEP_ICONS[step.step_type];
+              const Icon = stepIcon(step);
+              const incompleteHint = open
+                ? null
+                : campaignStepIncompleteHint(step);
+              const stepTitle = campaignStepDisplayLabel(
+                step.step_type,
+                step.config
+              );
+              const preview = stepPreview(step, campaigns);
               return (
                 <div key={step.id || `${step.step_type}-${idx}`}>
                   {step.step_type === "wait" ? (
                     <div
                       onDragOver={(event) => {
                         event.preventDefault();
-                        event.dataTransfer.dropEffect = "copy";
+                        event.dataTransfer.dropEffect =
+                          dragging === "reorder" ? "move" : "copy";
                         setDropAt(idx + 1);
                       }}
                       onDrop={(event) => {
                         event.preventDefault();
-                        const type = parseDragType(event);
-                        if (type) addAt(type, idx + 1);
+                        handleGapDrop(event, idx + 1);
                       }}
                     >
                       <WaitRow
                         step={step}
+                        stepIndex={idx}
                         onChange={(patch) => onPatchStep(idx, patch)}
                         onCommit={onCommitSteps}
                         onDelete={() => onDeleteStep(idx)}
+                        onReorderDragStart={() => setDragging("reorder")}
+                        onReorderDragEnd={() => {
+                          setDragging(null);
+                          setDropAt(null);
+                        }}
                       />
                     </div>
                   ) : (
@@ -1215,29 +1389,68 @@ export function CampaignSequenceBuilder({
                       className="rounded-xl border border-slate-200 bg-white"
                       onDragOver={(event) => {
                         event.preventDefault();
-                        event.dataTransfer.dropEffect = "copy";
+                        event.dataTransfer.dropEffect =
+                          dragging === "reorder" ? "move" : "copy";
                         setDropAt(idx + 1);
                       }}
                       onDrop={(event) => {
                         event.preventDefault();
-                        const type = parseDragType(event);
-                        if (type) addAt(type, idx + 1);
+                        handleGapDrop(event, idx + 1);
                       }}
                     >
                       <div className="flex items-stretch">
                         <button
                           type="button"
+                          draggable
+                          aria-label="Drag to reorder"
+                          onDragStart={(event) => {
+                            event.dataTransfer.setData(
+                              "text/plain",
+                              `${STEP_MOVE_PREFIX}${idx}`
+                            );
+                            event.dataTransfer.effectAllowed = "move";
+                            setDragging("reorder");
+                          }}
+                          onDragEnd={() => {
+                            setDragging(null);
+                            setDropAt(null);
+                          }}
+                          className="flex shrink-0 cursor-grab items-center px-1.5 text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+                        >
+                          <GripVertical className="h-4 w-4" aria-hidden />
+                        </button>
+                        <button
+                          type="button"
                           aria-expanded={open}
                           onClick={() => toggle(idx)}
-                          className="flex min-w-0 flex-1 items-start gap-3 px-4 py-3 text-left hover:bg-slate-50/80"
+                          className="flex min-w-0 flex-1 items-start gap-3 py-3 pr-4 text-left hover:bg-slate-50/80"
                         >
                           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
                             <Icon className="h-3.5 w-3.5" aria-hidden />
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="text-sm font-semibold text-slate-900">
-                                {campaignStepTypeLabel(step.step_type)}
+                              <p className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-slate-900">
+                                <span className="min-w-0 truncate">
+                                  {stepTitle}
+                                </span>
+                                {incompleteHint ? (
+                                  <span
+                                    className="group/warn relative inline-flex shrink-0 text-rose-600"
+                                    aria-label={incompleteHint}
+                                  >
+                                    <CircleAlert
+                                      className="h-4 w-4"
+                                      aria-hidden
+                                    />
+                                    <span
+                                      role="tooltip"
+                                      className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-center text-[11px] font-medium leading-snug text-white shadow-sm group-hover/warn:block"
+                                    >
+                                      {incompleteHint}
+                                    </span>
+                                  </span>
+                                ) : null}
                               </p>
                               <span className="mt-0.5 flex shrink-0 flex-wrap items-center justify-end gap-1">
                                 {step.step_type === "message" ? (
@@ -1248,6 +1461,13 @@ export function CampaignSequenceBuilder({
                                         : "auto"
                                     }
                                   />
+                                ) : null}
+                                {step.step_type === "invite" &&
+                                inviteNoConnectFrom(step.config).on_no_connect ===
+                                  "other_campaign" ? (
+                                  <span className="inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-800">
+                                    If no connect
+                                  </span>
                                 ) : null}
                                 {step.step_type === "call" ? (
                                   callWaitFrom(step.config) ? (
@@ -1262,14 +1482,9 @@ export function CampaignSequenceBuilder({
                                     </span>
                                   )
                                 ) : null}
-                                {hasAb ? (
-                                  <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                                    A/B
-                                  </span>
-                                ) : null}
                               </span>
                             </div>
-                            {!open ? (
+                            {!open && preview ? (
                               <p className="mt-1 line-clamp-3 max-w-prose text-xs leading-relaxed text-slate-500">
                                 {step.step_type === "react" ||
                                 step.step_type === "visit" ||
@@ -1278,11 +1493,9 @@ export function CampaignSequenceBuilder({
                                 step.step_type === "notify" ||
                                 step.step_type === "add_to_campaign" ||
                                 step.step_type === "call" ? (
-                                  stepPreview(step, campaigns)
+                                  preview
                                 ) : (
-                                  <MergeFieldPreview
-                                    text={stepPreview(step, campaigns)}
-                                  />
+                                  <MergeFieldPreview text={preview} />
                                 )}
                               </p>
                             ) : null}
@@ -1301,7 +1514,7 @@ export function CampaignSequenceBuilder({
                               onOpenLeads({
                                 kind: "step",
                                 position: step.position ?? idx,
-                                title: campaignStepTypeLabel(step.step_type),
+                                title: stepTitle,
                               })
                             }
                             className="shrink-0 border-l border-slate-100 px-3 text-xs font-semibold tabular-nums text-slate-700 hover:bg-slate-50"
@@ -1316,6 +1529,7 @@ export function CampaignSequenceBuilder({
                         <div className="space-y-3 border-t border-slate-100 px-4 py-4 sm:px-5">
                           <StepInlineEditor
                             step={step}
+                            campaignId={campaignId}
                             abStats={abStats}
                             campaigns={campaigns}
                             onChange={(patch) => onPatchStep(idx, patch)}
@@ -1338,6 +1552,7 @@ export function CampaignSequenceBuilder({
             })}
           </div>
         )}
+        </div>
       </ContentWithRailMain>
 
       <ContentWithRailAside className="lg:top-24">
@@ -1377,11 +1592,11 @@ export function CampaignSequenceBuilder({
                           key={item.label}
                           item={item}
                           connectingProvider={connectingProvider}
-                          onAdd={(type) => addAt(type)}
+                          onAdd={(type, mediaKind) => addAt(type, undefined, mediaKind)}
                           onConnect={onConnect}
-                          onDragStart={() => setDragging(true)}
+                          onDragStart={() => setDragging("palette")}
                           onDragEnd={() => {
-                            setDragging(false);
+                            setDragging(null);
                             setDropAt(null);
                           }}
                         />

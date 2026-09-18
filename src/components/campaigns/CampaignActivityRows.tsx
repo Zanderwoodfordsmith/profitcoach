@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   Bell,
@@ -113,6 +114,7 @@ export function ActivityTableHeader() {
 
 export function ActivityTableRow({
   name,
+  href,
   status,
   next,
   open,
@@ -120,17 +122,30 @@ export function ActivityTableRow({
   children,
 }: {
   name: string;
+  href?: string | null;
   status: { tone: LeadStatusTone; icon: LeadStatusIcon; label: string };
   next: string;
   open?: boolean;
   onToggle?: () => void;
   children?: ReactNode;
 }) {
+  const nameEl = href ? (
+    <Link
+      href={href}
+      title={name}
+      className="min-w-0 truncate text-sm font-medium text-[#0c5290] hover:underline"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {name}
+    </Link>
+  ) : (
+    <span className="min-w-0 truncate text-sm font-medium text-slate-900" title={name}>
+      {name}
+    </span>
+  );
   const main = (
     <>
-      <span className="min-w-0 truncate text-sm font-medium text-slate-900" title={name}>
-        {name}
-      </span>
+      {nameEl}
       <span className="min-w-0">
         <PaneStatusChip {...status} />
       </span>

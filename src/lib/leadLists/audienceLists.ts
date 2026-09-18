@@ -627,7 +627,11 @@ export async function insertPeopleOnList(opts: {
     const { error } = await supabaseAdmin
       .from("coach_lead_list_items")
       .insert(chunk);
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Concurrent imports into the same pool can race the unique index.
+      if (error.code === "23505") continue;
+      throw new Error(error.message);
+    }
   }
 
   return { added: rows.length, skipped, blacklisted: blocked };

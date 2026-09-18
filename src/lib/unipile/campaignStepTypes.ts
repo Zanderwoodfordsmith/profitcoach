@@ -1,3 +1,5 @@
+import { clampWaitHours } from "@/lib/unipile/waitDuration";
+
 export const CAMPAIGN_STEP_TYPES = [
   "invite",
   "message",
@@ -43,26 +45,73 @@ export type CallStepConfig = {
   wait: boolean;
 };
 
+export type CampaignStepMediaKind = "voice" | "video";
+
+export type CampaignStepMedia = {
+  kind: CampaignStepMediaKind;
+  path: string;
+  mime: string;
+  filename: string;
+  size: number;
+};
+
+export type MessageStepConfig = {
+  media_kind: CampaignStepMediaKind | null;
+  media: CampaignStepMedia | null;
+};
+
+export type InviteNoConnectAction = "none" | "other_campaign";
+
+export type InviteStepConfig = {
+  on_no_connect: InviteNoConnectAction;
+  no_connect_wait_hours: number | null;
+  no_connect_campaign_id: string | null;
+};
+
 export type CampaignStepConfig = NotifyStepConfig &
   AddToCampaignStepConfig &
-  CallStepConfig;
+  CallStepConfig &
+  MessageStepConfig &
+  InviteStepConfig;
+
+const EMPTY_CONFIG: CampaignStepConfig = {
+  in_app: false,
+  email: false,
+  whatsapp: false,
+  campaign_id: null,
+  wait: false,
+  media_kind: null,
+  media: null,
+  on_no_connect: "none",
+  no_connect_wait_hours: null,
+  no_connect_campaign_id: null,
+};
 
 export function defaultStepConfig(type: CampaignStepType): CampaignStepConfig {
   if (type === "notify") {
-    return {
-      in_app: true,
-      email: false,
-      whatsapp: false,
-      campaign_id: null,
-      wait: false,
-    };
+    return { ...EMPTY_CONFIG, in_app: true };
   }
+  return { ...EMPTY_CONFIG };
+}
+
+function asMediaKind(value: unknown): CampaignStepMediaKind | null {
+  return value === "voice" || value === "video" ? value : null;
+}
+
+function sanitizeMedia(raw: Record<string, unknown>): CampaignStepMedia | null {
+  const kind = asMediaKind(raw.kind);
+  const path = typeof raw.path === "string" ? raw.path.trim() : "";
+  if (!kind || !path || path.includes("..") || path.length > 500) return null;
+  const mime = typeof raw.mime === "string" ? raw.mime.trim().slice(0, 120) : "";
+  const filename =
+    typeof raw.filename === "string" ? raw.filename.trim().slice(0, 200) : "";
+  const size = typeof raw.size === "number" && Number.isFinite(raw.size) ? raw.size : 0;
   return {
-    in_app: false,
-    email: false,
-    whatsapp: false,
-    campaign_id: null,
-    wait: false,
+    kind,
+    path,
+    mime: mime || "application/octet-stream",
+    filename: filename || path.split("/").pop() || "file",
+    size: Math.max(0, Math.round(size)),
   };
 }
 
@@ -92,6 +141,38 @@ export function sanitizeStepConfig(
   if (type === "call") {
     return { wait: raw.wait === true };
   }
+  if (type === "message") {
+    const mediaRaw =
+      raw.media && typeof raw.media === "object" && !Array.isArray(raw.media)
+        ? (raw.media as Record<string, unknown>)
+        : null;
+    const media = mediaRaw ? sanitizeMedia(mediaRaw) : null;
+    const mediaKind = media?.kind ?? asMediaKind(raw.media_kind);
+    return {
+      media_kind: mediaKind,
+      media,
+    };
+  }
+  if (type === "invite") {
+    const action: InviteNoConnectAction =
+      raw.on_no_connect === "other_campaign" ? "other_campaign" : "none";
+    const id =
+      typeof raw.no_connect_campaign_id === "string"
+        ? raw.no_connect_campaign_id.trim()
+        : "";
+    const waitRaw = Number(raw.no_connect_wait_hours);
+    return {
+      on_no_connect: action,
+      no_connect_wait_hours:
+        action === "other_campaign"
+          ? clampWaitHours(
+              Number.isFinite(waitRaw) && waitRaw > 0 ? waitRaw : 24 * 7
+            )
+          : null,
+      no_connect_campaign_id:
+        action === "other_campaign" && UUID_RE.test(id) ? id : null,
+    };
+  }
   return {};
 }
 
@@ -119,6 +200,46 @@ export function addToCampaignIdFrom(config: unknown): string | null {
   const id =
     typeof raw.campaign_id === "string" ? raw.campaign_id.trim() : "";
   return UUID_RE.test(id) ? id : null;
+}
+
+export function messageMediaFrom(config: unknown): CampaignStepMedia | null {
+  const raw =
+    config && typeof config === "object" && !Array.isArray(config)
+      ? (config as Record<string, unknown>)
+      : {};
+  const mediaRaw =
+    raw.media && typeof raw.media === "object" && !Array.isArray(raw.media)
+      ? (raw.media as Record<string, unknown>)
+      : null;
+  return mediaRaw ? sanitizeMedia(mediaRaw) : null;
+}
+
+export function messageMediaKindFrom(
+  config: unknown
+): CampaignStepMediaKind | null {
+  const media = messageMediaFrom(config);
+  if (media) return media.kind;
+  const raw =
+    config && typeof config === "object" && !Array.isArray(config)
+      ? (config as Record<string, unknown>)
+      : {};
+  return asMediaKind(raw.media_kind);
+}
+
+export function inviteNoConnectFrom(config: unknown): InviteStepConfig {
+  const sanitized = sanitizeStepConfig("invite", config);
+  return {
+    on_no_connect:
+      sanitized.on_no_connect === "other_campaign" ? "other_campaign" : "none",
+    no_connect_wait_hours:
+      typeof sanitized.no_connect_wait_hours === "number"
+        ? sanitized.no_connect_wait_hours
+        : null,
+    no_connect_campaign_id:
+      typeof sanitized.no_connect_campaign_id === "string"
+        ? sanitized.no_connect_campaign_id
+        : null,
+  };
 }
 
 /** True only when the coach opted in. Missing config means the sequence carries on. */
@@ -178,6 +299,46 @@ export function campaignStepTypeLabel(type: string): string {
     default:
       return type;
   }
+}
+
+export function campaignStepDisplayLabel(
+  type: string,
+  config?: unknown
+): string {
+  if (type === "message") {
+    const kind = messageMediaKindFrom(config);
+    if (kind === "voice") return "Voice note";
+    if (kind === "video") return "Video message";
+  }
+  return campaignStepTypeLabel(type);
+}
+
+function stepHasCopy(
+  body: string | null | undefined,
+  variants?: Array<{ body: string }> | null
+): boolean {
+  if (variants && variants.length > 0) {
+    return variants.some((v) => v.body.trim().length > 0);
+  }
+  return Boolean((body ?? "").trim());
+}
+
+/** Collapsed-card hint when a message, voice, or video step is still empty. */
+export function campaignStepIncompleteHint(input: {
+  step_type: string;
+  body?: string | null;
+  variants?: Array<{ body: string }> | null;
+  config?: unknown;
+}): string | null {
+  if (input.step_type !== "message") return null;
+  const kind = messageMediaKindFrom(input.config);
+  const media = messageMediaFrom(input.config);
+  if (kind === "voice" && !media) return "You need to add a voice note";
+  if (kind === "video" && !media) return "You need to add a video";
+  if (!kind && !stepHasCopy(input.body, input.variants)) {
+    return "You need to add a message";
+  }
+  return null;
 }
 
 /** Steps whose body is copy the coach writes to the prospect. */

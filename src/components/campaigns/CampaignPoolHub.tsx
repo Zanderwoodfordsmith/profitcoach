@@ -775,7 +775,7 @@ export function CampaignPoolHub({
     }
 
     void pollImports();
-    const handle = window.setInterval(() => void pollImports(), 2_000);
+    const handle = window.setInterval(() => void pollImports(), 5_000);
     return () => {
       cancelled = true;
       window.clearInterval(handle);

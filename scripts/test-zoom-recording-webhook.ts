@@ -19,6 +19,7 @@ import {
   parseZoomRecordingCompletedPayload,
   verifyZoomWebhookSignature,
 } from "../src/lib/zoomWebhook";
+import { evaluateCommunityZoomRecordingIngest } from "../src/lib/zoomRecordingIngestFilter";
 import { findBestCalendarOccurrenceForZoomRecording } from "../src/lib/zoomRecordingCalendarSync";
 
 function assert(condition: boolean, message: string) {
@@ -30,8 +31,8 @@ function assert(condition: boolean, message: string) {
 }
 
 assert(
-  extractZoomMeetingIdFromUrl("https://us02web.zoom.us/j/81234567890?pwd=abc") ===
-    "81234567890",
+  extractZoomMeetingIdFromUrl("https://us02web.zoom.us/j/7981269644?pwd=abc") ===
+    "7981269644",
   "extract meeting id from zoom join url"
 );
 
@@ -43,10 +44,19 @@ const sample = JSON.parse(readFileSync(fixturePath, "utf8"));
 const parsed = parseZoomRecordingCompletedPayload(sample);
 assert(!("error" in parsed), "parse sample recording.completed payload");
 if (!("error" in parsed)) {
-  assert(parsed.meetingId === "81234567890", "meeting id parsed");
+  assert(parsed.meetingId === "7981269644", "meeting id parsed");
+  assert(
+    parsed.hostEmail === "support@businesscoachacademy.com",
+    "host email parsed"
+  );
+  assert(parsed.durationMinutes === 62, "duration parsed");
   assert(
     parsed.shareUrl === "https://zoom.us/rec/share/sample-recording-share-url",
     "share url parsed"
+  );
+  assert(
+    evaluateCommunityZoomRecordingIngest(parsed).ok === true,
+    "sample recording passes community ingest filter"
   );
 }
 
@@ -79,11 +89,11 @@ const event: CommunityCalendarEventRow = {
   title: "Wednesday Coach Call",
   description: "",
   cover_image_url: null,
-  starts_at: "2026-06-25T13:00:00.000Z",
-  ends_at: "2026-06-25T14:00:00.000Z",
+  starts_at: "2026-06-25T15:00:00.000Z",
+  ends_at: "2026-06-25T16:00:00.000Z",
   display_timezone: "Europe/London",
   location_kind: "link",
-  location_url: "https://us02web.zoom.us/j/81234567890",
+  location_url: "https://us02web.zoom.us/j/7981269644",
   recording_link_url: null,
   recording_video_url: null,
   is_recurring: false,
@@ -134,7 +144,7 @@ function baseEvent(
   };
 }
 
-// Wide window: 4pm London recording should still attach to a 1pm London PCT slot.
+// A 4pm London recording must not attach to a leftover 1pm calendar slot.
 {
   const pct = baseEvent({
     id: "pct-1",
@@ -151,13 +161,51 @@ function baseEvent(
     meetingId: null,
     startTimeIso: "2026-07-30T15:00:00.000Z", // 16:00 London
   });
-  assert(
-    Boolean(lateMatch && !("ambiguous" in lateMatch)),
-    "wide window matches 4pm recording to 1pm calendar slot"
+  assert(lateMatch === null, "4pm recording does not match a 1pm calendar slot");
+}
+
+// 4pm London recording attaches to the 4pm slot.
+{
+  const pct = baseEvent({
+    id: "pct-4pm",
+    title: "Profit Coach Training",
+    starts_at: "2026-09-17T15:00:00.000Z", // 16:00 London
+    ends_at: "2026-09-17T16:00:00.000Z",
+  });
+  const pctOccs = expandCommunityCalendar(
+    [pct],
+    DateTime.fromISO("2026-09-16T00:00:00.000Z", { zone: "utc" }),
+    DateTime.fromISO("2026-09-18T00:00:00.000Z", { zone: "utc" })
   );
-  if (lateMatch && !("ambiguous" in lateMatch)) {
-    assert(lateMatch.occurrence.eventId === "pct-1", "wide window chose PCT");
-  }
+  const match = findBestCalendarOccurrenceForZoomRecording([pct], pctOccs, {
+    meetingId: null,
+    startTimeIso: "2026-09-17T15:02:00.000Z",
+  });
+  assert(
+    Boolean(
+      match && !("ambiguous" in match) && match.occurrence.eventId === "pct-4pm"
+    ),
+    "4pm recording matches the 4pm calendar slot"
+  );
+}
+
+{
+  assert(
+    evaluateCommunityZoomRecordingIngest({
+      meetingId: "7981269644",
+      startTimeIso: "2026-09-17T15:00:00.000Z",
+      durationMinutes: 40,
+    }).ok === true,
+    "support room at call time is accepted regardless of host"
+  );
+  assert(
+    evaluateCommunityZoomRecordingIngest({
+      meetingId: "7540888016",
+      startTimeIso: "2026-09-17T15:00:00.000Z",
+      durationMinutes: 40,
+    }).ok === false,
+    "a different personal room is rejected even at call time"
+  );
 }
 
 // First Monday: first recording → Monthly Momentum, second → Win The Week.

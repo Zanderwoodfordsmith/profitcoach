@@ -20,11 +20,11 @@ import {
 } from "@/lib/zoomWebhook";
 
 /**
- * Mon/Thu schedule: allow a recording that starts well before or after the
- * scheduled slot so time drift (e.g. 1pm calendar vs 4pm actual) still attaches.
+ * Meeting start must sit near the scheduled slot. Same-calendar-day is not
+ * enough — that is how a daytime personal Zoom attached to the 4pm call.
  */
-const MATCH_BEFORE_START_MS = 8 * 60 * 60 * 1000;
-const MATCH_AFTER_END_MS = 8 * 60 * 60 * 1000;
+const MATCH_BEFORE_START_MS = 45 * 60 * 1000;
+const MATCH_AFTER_END_MS = 15 * 60 * 1000;
 const MATCH_SCAN_BUFFER_DAYS = 2;
 
 export type ZoomRecordingCalendarMatchStatus =
@@ -137,8 +137,8 @@ function scoreOccurrenceMatch(
     Boolean(locationMeetingId) &&
     meetingId === locationMeetingId;
 
-  // Accept: Zoom meeting ID match, ±8h of the slot, or same local calendar day.
-  if (!inTimeWindow && !sameDay && !meetingIdMatch) return null;
+  // Same local day alone is not enough. Require the meeting to start near the slot.
+  if (!inTimeWindow) return null;
 
   let score = 0;
   if (meetingIdMatch) score += 1000;

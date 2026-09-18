@@ -21,10 +21,13 @@ export type SnippetFillVars = {
   theirReply?: string | null;
   coachName?: string | null;
   assessmentUrl?: string | null;
+  personalisedAssessmentUrl?: string | null;
   reviewName?: string | null;
 };
 
 function fillTokens(body: string, vars: SnippetFillVars): string {
+  const generic = vars.assessmentUrl?.trim() || "[scorecard link]";
+  const personalised = vars.personalisedAssessmentUrl?.trim() || generic;
   return body
     .replace(/\{\{first_name\}\}/gi, vars.firstName?.trim() || "there")
     .replace(/\{\{company\}\}/gi, vars.company?.trim() || "business")
@@ -33,10 +36,8 @@ function fillTokens(body: string, vars: SnippetFillVars): string {
       vars.theirReply?.trim() || "your note"
     )
     .replace(/\{\{coach_name\}\}/gi, vars.coachName?.trim() || "me")
-    .replace(
-      /\{\{assessment_url\}\}/gi,
-      vars.assessmentUrl?.trim() || "[scorecard link]"
-    )
+    .replace(/\{\{personalised_assessment_url\}\}/gi, personalised)
+    .replace(/\{\{assessment_url\}\}/gi, generic)
     .replace(
       /\{\{review_name\}\}/gi,
       vars.reviewName?.trim() || "Business Clarity Review"

@@ -1,3 +1,4 @@
+import { parseCoachIdHeader } from "@/lib/coachId";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function requireCoachRequest(
@@ -45,7 +46,9 @@ export async function requireCoachRequest(
     .eq("id", user.id)
     .maybeSingle();
 
-  const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
+  const impersonateId = parseCoachIdHeader(
+    request.headers.get("x-impersonate-coach-id")
+  );
   const effectiveId =
     profile?.role === "admin" && impersonateId ? impersonateId : user.id;
 

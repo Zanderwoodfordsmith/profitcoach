@@ -36,11 +36,16 @@ import {
 } from "@/lib/formatShortDate";
 import {
   consumeMessagingComposeDraft,
+  clearMessagingComposeDraft,
+  messagingComposeDraftIds,
   peekMessagingComposeDraft,
+  setMessagingComposeDraft,
+  type MessagingComposeChannel,
 } from "@/lib/messaging/composeDraft";
 import {
   conversationPersonName,
   inboundReplyChannels,
+  looksLikePersonName,
 } from "@/lib/messaging/conversationDisplay";
 import {
   displayConversationPreview,
@@ -83,6 +88,15 @@ import {
 } from "@/components/messaging/ComposerMediaTools";
 import { NewConversationPicker } from "@/components/messaging/NewConversationPicker";
 import { ReplySnippetPicker } from "@/components/messaging/ReplySnippetPicker";
+import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
+import { ReplyCopilotButton } from "@/components/messaging/ReplyCopilotButton";
+import { ScorecardInsertButtons } from "@/components/messaging/ScorecardInsertButtons";
+import {
+  ScheduledMessageCard,
+  type ScheduledThreadMessage,
+} from "@/components/messaging/ScheduledMessageCard";
+import type { ReplyDisposition } from "@/lib/prospects/replyDisposition";
+import { inferReplyDisposition } from "@/lib/prospects/replyDisposition";
 import { ProspectContactFields } from "@/components/prospects/ProspectContactFields";
 import { ProspectDetailsHeader } from "@/components/prospects/ProspectDetailsHeader";
 import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDuplicates";
@@ -140,6 +154,61 @@ type ConversationRow = {
   sibling_conversation_ids?: string[];
 };
 
+function personNameKey(name: string | null | undefined): string {
+  return (name || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function samePersonName(
+  a: string | null | undefined,
+  b: string | null | undefined
+): boolean {
+  const left = personNameKey(a);
+  const right = personNameKey(b);
+  if (!left || !right) return true;
+  if (left === right) return true;
+  return left.split(" ")[0] === right.split(" ")[0];
+}
+
+/** Side-panel contact must be the same person as the open inbox row. */
+function prospectFitsConversation(
+  prospect: ProspectDetails | null,
+  conversation: ConversationRow | null | undefined
+): boolean {
+  if (!prospect) return false;
+  if (!conversation) return false;
+  if (
+    looksLikePersonName(conversation.prospect_name) &&
+    looksLikePersonName(prospect.full_name) &&
+    !samePersonName(conversation.prospect_name, prospect.full_name)
+  ) {
+    return false;
+  }
+  if (conversation.contact_id && prospect.id !== conversation.contact_id) {
+    return false;
+  }
+  return true;
+}
+
+function pinnedConversationIdentity(
+  current: ConversationRow,
+  incoming: ConversationRow | null | undefined,
+  contactName?: string | null
+): Pick<ConversationRow, "prospect_name" | "prospect_avatar_url"> {
+  const incomingName = (contactName || incoming?.prospect_name || "").trim() || null;
+  const keepCurrentName =
+    looksLikePersonName(current.prospect_name) &&
+    looksLikePersonName(incomingName) &&
+    !samePersonName(current.prospect_name, incomingName);
+  return {
+    prospect_name: keepCurrentName
+      ? current.prospect_name
+      : incomingName || current.prospect_name,
+    prospect_avatar_url: keepCurrentName
+      ? current.prospect_avatar_url
+      : incoming?.prospect_avatar_url || current.prospect_avatar_url,
+  };
+}
+
 function conversationForContact(
   conversations: Array<Record<string, unknown>> | undefined,
   contactId: string | undefined
@@ -160,6 +229,7 @@ type MessageAttachment = {
 
 type MessageRow = {
   id: string;
+  conversation_id?: string;
   channel: string;
   direction: string;
   status: string;
@@ -207,6 +277,7 @@ type ProspectDetails = {
   tags?: string[];
   has_whatsapp?: boolean;
   whatsapp_on?: boolean | null;
+  reply_disposition?: string | null;
 };
 
 type BookingDetails = {
@@ -238,7 +309,8 @@ type ProspectCampaignMembership = {
 
 type FeedItem =
   | { kind: "message"; at: string; message: MessageRow }
-  | { kind: "activity"; at: string; activity: ActivityEvent };
+  | { kind: "activity"; at: string; activity: ActivityEvent }
+  | { kind: "scheduled"; at: string; scheduled: ScheduledThreadMessage };
 
 function previewText(body: string | null | undefined, max = 96): string {
   const compact = displayConversationPreview(body);
@@ -321,6 +393,9 @@ function Avatar({
   tone?: "neutral" | "sky";
 }) {
   const [broken, setBroken] = useState(false);
+  useEffect(() => {
+    setBroken(false);
+  }, [url]);
   const sizeClass =
     size === "lg" ? "h-11 w-11 text-sm" : size === "md" ? "h-9 w-9 text-[11px]" : "h-8 w-8 text-[10px]";
   const toneClass =
@@ -331,6 +406,7 @@ function Avatar({
   if (url && !broken) {
     return (
       <img
+        key={url}
         src={url}
         alt=""
         referrerPolicy="no-referrer"
@@ -1082,6 +1158,14 @@ export function MessagingInbox({
     () => cachedProspectConversation?.id ?? null
   );
   const [messages, setMessages] = useState<MessageRow[]>([]);
+  /** Conversation whose messages are currently in `messages`. Blocks stale paints. */
+  const [openThreadId, setOpenThreadId] = useState<string | null>(
+    () => cachedProspectConversation?.id ?? null
+  );
+  /** Conversation whose side-panel prospect is currently in `prospectDetails`. */
+  const [openSideId, setOpenSideId] = useState<string | null>(
+    () => cachedProspectConversation?.id ?? null
+  );
   const [prospectDetails, setProspectDetails] = useState<ProspectDetails | null>(
     () => initialProspect ?? null
   );
@@ -1130,6 +1214,8 @@ export function MessagingInbox({
     "GOOGLE" | "OUTLOOK" | null
   >(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [copilotLoading, setCopilotLoading] = useState(false);
+  const [copilotError, setCopilotError] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<PendingComposerFile[]>([]);
   const [pendingVoice, setPendingVoice] = useState<PendingVoiceNote | null>(
     null
@@ -1143,13 +1229,25 @@ export function MessagingInbox({
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleNotice, setScheduleNotice] = useState<string | null>(null);
   const [assessmentUrl, setAssessmentUrl] = useState<string | null>(null);
+  const [personalisedAssessmentUrl, setPersonalisedAssessmentUrl] = useState<
+    string | null
+  >(null);
+  const [scheduledMessages, setScheduledMessages] = useState<
+    ScheduledThreadMessage[]
+  >([]);
+  const [replyDisposition, setReplyDisposition] =
+    useState<ReplyDisposition | null>(null);
+  const [replyDispositionBusy, setReplyDispositionBusy] = useState(false);
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  const [draftConversationIds, setDraftConversationIds] = useState<Set<string>>(
+    () => new Set(messagingComposeDraftIds())
+  );
   const [detailSectionsOpen, setDetailSectionsOpen] = useState({
     contact: true,
     profile: true,
     campaigns: true,
     assessment: true,
     booking: true,
-    conversation: true,
     notes: true,
   });
   const [coachTags, setCoachTags] = useState<string[]>([]);
@@ -1174,11 +1272,17 @@ export function MessagingInbox({
   const liSoftSyncAttempted = useRef(false);
   /** Avoid mid-sync list flashes; apply one refresh when sync finishes. */
   const liSyncingRef = useRef(false);
-  const selectedIdRef = useRef<string | null>(null);
+  const selectedIdRef = useRef<string | null>(selectedId);
+  /** Bumped on every conversation switch so in-flight fetches cannot paint the previous person. */
+  const paneGenRef = useRef(0);
   const conversationsRef = useRef<ConversationRow[]>([]);
   const composerDirtyRef = useRef(false);
   const pendingDraftChannelRef = useRef<ReplyChannel | null>(null);
   const pendingListRefreshRef = useRef(false);
+  const replyBodyRef = useRef("");
+  const replySubjectRef = useRef("");
+  const replyChannelRef = useRef<ReplyChannel>("email");
+  const prevSelectedIdRef = useRef<string | null>(null);
   const threadInflightRef = useRef(new Map<string, Promise<void>>());
   const warmupDoneRef = useRef(false);
   const loadingOlderRef = useRef(false);
@@ -1192,8 +1296,54 @@ export function MessagingInbox({
   const adminOrgWideInbox =
     Boolean(pathname?.startsWith("/admin")) && !impersonatingCoachId;
 
-  selectedIdRef.current = selectedId;
   conversationsRef.current = conversations;
+
+  const resetThreadPane = useCallback((opts?: { keepProspect?: boolean }) => {
+    setMessages([]);
+    setOpenThreadId(null);
+    setHasOlder(false);
+    setLoadingOlder(false);
+    setExpandedIds(new Set());
+    setScheduledMessages([]);
+    setActivityEvents([]);
+    setBookingDetails(null);
+    setAssessmentUrl(null);
+    setPersonalisedAssessmentUrl(null);
+    setReplyDisposition(null);
+    setCoachTags([]);
+    setCopilotError(null);
+    setCopilotLoading(false);
+    if (!opts?.keepProspect) {
+      setProspectDetails(null);
+      setOpenSideId(null);
+      setBusinessDraft("");
+      setProspectCampaigns([]);
+    }
+  }, []);
+
+  const openConversation = useCallback(
+    (id: string | null, opts?: { keepProspect?: boolean }) => {
+      if (selectedIdRef.current === id) {
+        setSelectedId(id);
+        return;
+      }
+      selectedIdRef.current = id;
+      paneGenRef.current += 1;
+      resetThreadPane({ keepProspect: opts?.keepProspect ?? prospectMode });
+      setSelectedId(id);
+    },
+    [prospectMode, resetThreadPane]
+  );
+
+  const selectConversation = useCallback(
+    (id: string) => {
+      openConversation(id, { keepProspect: prospectMode });
+    },
+    [openConversation, prospectMode]
+  );
+  replyBodyRef.current = replyBody;
+  replySubjectRef.current = replySubject;
+  replyChannelRef.current = replyChannel;
   composerDirtyRef.current =
     Boolean(replyBody.trim()) ||
     pendingFiles.length > 0 ||
@@ -1207,6 +1357,7 @@ export function MessagingInbox({
     warmupDoneRef.current = false;
     liSoftSyncAttempted.current = false;
     threadInflightRef.current.clear();
+    paneGenRef.current += 1;
   }, [impersonatingCoachId]);
 
   useEffect(() => {
@@ -1374,19 +1525,9 @@ export function MessagingInbox({
     el.indeterminate = checkedCount > 0 && !allVisibleChecked;
   }, [checkedCount, allVisibleChecked]);
 
+  const listLoadGenerationRef = useRef(0);
   const authHeaders = useCallback(async () => {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return null;
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    };
-    if (impersonatingCoachId) {
-      headers["x-impersonate-coach-id"] = impersonatingCoachId;
-    }
-    return headers;
+    return getCoachAuthHeaders(impersonatingCoachId);
   }, [impersonatingCoachId]);
 
   const connectMailbox = useCallback(
@@ -1435,6 +1576,7 @@ export function MessagingInbox({
         setLoading(true);
         setError(null);
       }
+      const generation = ++listLoadGenerationRef.current;
       try {
         const headers = await authHeaders();
         if (!headers) {
@@ -1450,6 +1592,7 @@ export function MessagingInbox({
           error?: string;
           conversations?: ConversationRow[];
         };
+        if (generation !== listLoadGenerationRef.current) return;
         if (!res.ok) {
           if (!silent) {
             setError(body.error || `Request failed (${res.status}).`);
@@ -1460,19 +1603,22 @@ export function MessagingInbox({
         const list = Array.isArray(body.conversations) ? body.conversations : [];
         writeHubQuery(conversationsCacheKey, { conversations: list });
         setConversations(list);
-        setSelectedId((prev) => {
-          const pending = peekMessagingComposeDraft();
+        const pending = peekMessagingComposeDraft();
+        const prev = selectedIdRef.current;
+        let next = prev;
+        if (!prev) {
           if (
             pending?.conversationId &&
             list.some((c) => c.id === pending.conversationId)
           ) {
-            return pending.conversationId;
+            next = pending.conversationId;
+          } else if (!silent) {
+            next = list[0]?.id ?? null;
           }
-          if (prev && list.some((c) => c.id === prev)) return prev;
-          // Background sync refresh: never steal focus / auto-select.
-          if (silent) return prev;
-          return list[0]?.id ?? null;
-        });
+        } else if (!list.some((c) => c.id === prev)) {
+          next = silent ? prev : list[0]?.id ?? null;
+        }
+        openConversation(next, { keepProspect: prospectMode });
       } catch (err) {
         if (
           (err instanceof DOMException && err.name === "AbortError") ||
@@ -1480,14 +1626,17 @@ export function MessagingInbox({
         ) {
           return;
         }
+        if (generation !== listLoadGenerationRef.current) return;
         if (!silent) {
           setError(err instanceof Error ? err.message : "Load failed.");
         }
       } finally {
-        if (!silent) setLoading(false);
+        if (!silent && generation === listLoadGenerationRef.current) {
+          setLoading(false);
+        }
       }
     },
-    [authHeaders, contactId, conversationsCacheKey]
+    [authHeaders, contactId, conversationsCacheKey, openConversation, prospectMode]
   );
 
   const loadInboxAccounts = useCallback(async () => {
@@ -1519,6 +1668,9 @@ export function MessagingInbox({
 
   const loadThreadSide = useCallback(
     async (id: string) => {
+      const gen = paneGenRef.current;
+      const stillOpen = () =>
+        selectedIdRef.current === id && paneGenRef.current === gen;
       try {
         const headers = await authHeaders();
         if (!headers) return;
@@ -1532,11 +1684,15 @@ export function MessagingInbox({
           booking?: BookingDetails | null;
           activity?: ActivityEvent[];
           coachTags?: string[];
+          assessment_url?: string | null;
+          personalised_assessment_url?: string | null;
         };
-        if (!res.ok || selectedIdRef.current !== id) return;
+        if (!res.ok || !stillOpen()) return;
         if (body.prospect !== undefined) {
           setProspectDetails(body.prospect ?? null);
+          setOpenSideId(id);
         }
+        if (!stillOpen()) return;
         if (body.booking !== undefined) {
           setBookingDetails(body.booking ?? null);
         }
@@ -1546,13 +1702,28 @@ export function MessagingInbox({
         if (Array.isArray(body.coachTags)) {
           setCoachTags(body.coachTags);
         }
+        if (typeof body.assessment_url === "string" && body.assessment_url) {
+          setAssessmentUrl(body.assessment_url);
+        }
+        if (
+          typeof body.personalised_assessment_url === "string" &&
+          body.personalised_assessment_url
+        ) {
+          setPersonalisedAssessmentUrl(body.personalised_assessment_url);
+        }
+        setReplyDisposition(
+          inferReplyDisposition({
+            replyDisposition: body.prospect?.reply_disposition,
+            prospectStatus: body.prospect?.prospect_status,
+          })
+        );
         const prospectPhone = body.prospect?.phone?.trim();
         const prospectId = body.prospect?.id;
         if (
           prospectId &&
           prospectPhone &&
           !body.prospect?.has_whatsapp &&
-          selectedIdRef.current === id
+          stillOpen()
         ) {
           void (async () => {
             const h = await authHeaders();
@@ -1561,7 +1732,7 @@ export function MessagingInbox({
               `/api/coach/contacts/${encodeURIComponent(prospectId)}/whatsapp-check`,
               { method: "POST", headers: h, body: "{}" }
             );
-            if (!checkRes.ok || selectedIdRef.current !== id) return;
+            if (!checkRes.ok || !stillOpen()) return;
             const checkBody = (await checkRes.json().catch(() => ({}))) as {
               has_whatsapp?: boolean;
             };
@@ -1577,17 +1748,20 @@ export function MessagingInbox({
         if (body.conversation) {
           const contactName = body.prospect?.full_name?.trim() || null;
           const contactBusiness = body.prospect?.business_name?.trim() || null;
+          if (!stillOpen()) return;
           setConversations((prev) =>
             prev.map((c) =>
               c.id === id
                 ? {
                     ...c,
                     ...body.conversation,
+                    id: c.id,
                     unread_count: 0,
-                    prospect_name:
-                      contactName ||
-                      body.conversation?.prospect_name ||
-                      c.prospect_name,
+                    ...pinnedConversationIdentity(
+                      c,
+                      body.conversation,
+                      contactName
+                    ),
                     prospect_business_name:
                       contactBusiness ||
                       body.conversation?.prospect_business_name ||
@@ -1607,8 +1781,11 @@ export function MessagingInbox({
   const loadOlderMessages = useCallback(
     async (id: string, before: string) => {
       if (loadingOlderRef.current) return;
+      const gen = paneGenRef.current;
+      const stillOpen = () =>
+        selectedIdRef.current === id && paneGenRef.current === gen;
       loadingOlderRef.current = true;
-      if (selectedIdRef.current === id) setLoadingOlder(true);
+      if (stillOpen()) setLoadingOlder(true);
       try {
         const headers = await authHeaders();
         if (!headers) return;
@@ -1624,11 +1801,12 @@ export function MessagingInbox({
         const list = Array.isArray(body.messages) ? body.messages : [];
         const nextHasOlder = Boolean(body.has_older);
         writeThreadCache(id, list, nextHasOlder);
-        if (selectedIdRef.current !== id) return;
+        if (!stillOpen()) return;
         const el = threadScrollRef.current;
         const prevHeight = el?.scrollHeight ?? 0;
         const prevTop = el?.scrollTop ?? 0;
         setMessages((prev) => mergeMessagesChronological(prev, list));
+        setOpenThreadId(id);
         setHasOlder(nextHasOlder);
         requestAnimationFrame(() => {
           if (!el || pinThreadToBottomRef.current) return;
@@ -1649,31 +1827,46 @@ export function MessagingInbox({
     ) => {
       const silent = Boolean(opts?.silent);
       const prefetch = Boolean(opts?.prefetch);
-      const inflightKey = `recent:${id}`;
+      const gen = paneGenRef.current;
+      const inflightKey = prefetch ? `prefetch:${id}` : `ui:${id}:${gen}`;
       const existing = threadInflightRef.current.get(inflightKey);
-      if (existing && !silent) return existing;
+      if (existing && (prefetch || !silent)) return existing;
+
+      if (!prefetch) {
+        const prefetchInflight = threadInflightRef.current.get(`prefetch:${id}`);
+        if (prefetchInflight) await prefetchInflight;
+        if (selectedIdRef.current !== id || paneGenRef.current !== gen) return;
+        const existingUi = threadInflightRef.current.get(inflightKey);
+        if (existingUi && !silent) return existingUi;
+      }
 
       const run = (async () => {
-        const isActive = () => selectedIdRef.current === id;
+        const isActive = () =>
+          selectedIdRef.current === id && paneGenRef.current === gen;
         const cached = readThreadCache<MessageRow>(id);
         if (!prefetch && isActive()) {
           if (cached) {
             setMessages(cached.messages);
+            setOpenThreadId(id);
             setHasOlder(cached.hasOlder);
             if (!silent) setLoadingThread(false);
           } else if (!silent) {
             setLoadingThread(true);
             setMessages([]);
+            setOpenThreadId(null);
             setHasOlder(false);
             setExpandedIds(new Set());
           }
           if (!silent && !contactId) {
             setProspectDetails(null);
+            setOpenSideId(null);
             setBookingDetails(null);
             setActivityEvents([]);
             setCoachTags([]);
           }
         }
+
+        if (!prefetch && !isActive()) return;
 
         try {
           const headers = await authHeaders();
@@ -1683,12 +1876,13 @@ export function MessagingInbox({
             `/api/messaging/conversations/${encodeURIComponent(id)}?limit=${THREAD_MESSAGE_PAGE_SIZE}`,
             { headers }
           );
-          const body = (await res.json().catch(() => ({}))) as {
-            error?: string;
-            conversation?: ConversationRow;
-            messages?: MessageRow[];
-            has_older?: boolean;
-          };
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          conversation?: ConversationRow;
+          messages?: MessageRow[];
+          has_older?: boolean;
+          scheduled?: ScheduledThreadMessage[];
+        };
           if (!res.ok) {
             if (!silent && !prefetch && isActive()) {
               setError(body.error || `Thread failed (${res.status}).`);
@@ -1718,7 +1912,11 @@ export function MessagingInbox({
           if (prefetch || !isActive()) return;
 
           setMessages(merged);
+          setOpenThreadId(id);
           setHasOlder(prior ? prior.hasOlder : pageHasOlder);
+          if (Array.isArray(body.scheduled)) {
+            setScheduledMessages(body.scheduled);
+          }
           setExpandedIds((prev) => {
             if (silent) {
               const known = new Set(merged.map((m) => m.id));
@@ -1734,7 +1932,13 @@ export function MessagingInbox({
             setConversations((prev) =>
               prev.map((c) =>
                 c.id === id
-                  ? { ...c, ...body.conversation, unread_count: 0 }
+                  ? {
+                      ...c,
+                      ...body.conversation,
+                      id: c.id,
+                      unread_count: 0,
+                      ...pinnedConversationIdentity(c, body.conversation),
+                    }
                   : c
               )
             );
@@ -1770,6 +1974,7 @@ export function MessagingInbox({
               writeThreadCache(id, current, older, "replace");
               if (!isActive()) return;
               setMessages(current);
+              setOpenThreadId(id);
               setHasOlder(older);
             }
             if (isActive() && !warmupDoneRef.current) {
@@ -1972,6 +2177,97 @@ export function MessagingInbox({
     [authHeaders]
   );
 
+  const patchScheduledMessage = useCallback(
+    async (
+      scheduledId: string,
+      patch: { body_text?: string; scheduled_for?: string }
+    ) => {
+      if (!selectedId) throw new Error("No conversation selected.");
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Please sign in again.");
+      const res = await fetch(
+        `/api/messaging/conversations/${encodeURIComponent(selectedId)}/scheduled/${encodeURIComponent(scheduledId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(patch),
+        }
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        scheduled?: ScheduledThreadMessage;
+      };
+      if (!res.ok || !body.scheduled) {
+        throw new Error(body.error || "Could not update scheduled message.");
+      }
+      setScheduledMessages((prev) =>
+        prev.map((row) => (row.id === scheduledId ? body.scheduled! : row))
+      );
+    },
+    [authHeaders, selectedId]
+  );
+
+  const deleteScheduledMessage = useCallback(
+    async (scheduledId: string) => {
+      if (!selectedId) throw new Error("No conversation selected.");
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Please sign in again.");
+      const res = await fetch(
+        `/api/messaging/conversations/${encodeURIComponent(selectedId)}/scheduled/${encodeURIComponent(scheduledId)}`,
+        { method: "DELETE", headers }
+      );
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(body.error || "Could not delete scheduled message.");
+      }
+      setScheduledMessages((prev) => prev.filter((row) => row.id !== scheduledId));
+    },
+    [authHeaders, selectedId]
+  );
+
+  const markReplyDisposition = useCallback(
+    async (disposition: ReplyDisposition) => {
+      if (!selectedId) return;
+      setReplyDispositionBusy(true);
+      try {
+        const headers = await authHeaders();
+        if (!headers) return;
+        const res = await fetch(
+          `/api/messaging/conversations/${encodeURIComponent(selectedId)}/reply-disposition`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ disposition }),
+          }
+        );
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          prospect_status?: string | null;
+          reply_disposition?: ReplyDisposition;
+        };
+        if (!res.ok) {
+          setSendError(body.error || "Could not save reply.");
+          return;
+        }
+        setReplyDisposition(body.reply_disposition ?? disposition);
+        if (body.prospect_status) {
+          setProspectDetails((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  prospect_status: body.prospect_status ?? prev.prospect_status,
+                  reply_disposition: body.reply_disposition ?? disposition,
+                }
+              : prev
+          );
+        }
+      } finally {
+        setReplyDispositionBusy(false);
+      }
+    },
+    [authHeaders, selectedId]
+  );
+
   const applyBulkAction = useCallback(
     async (
       action:
@@ -2010,9 +2306,12 @@ export function MessagingInbox({
           const removed = new Set(ids);
           setConversations((prev) => {
             const remaining = prev.filter((c) => !removed.has(c.id));
-            setSelectedId((cur) =>
-              cur && removed.has(cur) ? remaining[0]?.id ?? null : cur
-            );
+            const cur = selectedIdRef.current;
+            const next =
+              cur && removed.has(cur) ? remaining[0]?.id ?? null : cur;
+            if (next !== cur) {
+              openConversation(next, { keepProspect: prospectMode });
+            }
             return remaining;
           });
           setCheckedIds(new Set());
@@ -2042,7 +2341,7 @@ export function MessagingInbox({
         setBulkBusy(false);
       }
     },
-    [authHeaders, bulkBusy, checkedIds]
+    [authHeaders, bulkBusy, checkedIds, openConversation, prospectMode]
   );
 
   const mediaComposerEnabled =
@@ -2157,6 +2456,50 @@ export function MessagingInbox({
     },
     [replyBody]
   );
+
+  const suggestReply = useCallback(async () => {
+    if (!selected?.id || replyChannel === "comment" || copilotLoading) return;
+    const headers = await authHeaders();
+    if (!headers) {
+      setCopilotError("Sign in again, then retry.");
+      return;
+    }
+    setCopilotError(null);
+    setCopilotLoading(true);
+    try {
+      const res = await fetch(
+        `/api/messaging/conversations/${encodeURIComponent(selected.id)}/reply-suggest`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ channel: replyChannel }),
+        }
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        suggestion?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.suggestion?.trim()) {
+        throw new Error(data.error || "Could not draft a reply.");
+      }
+      const suggestion = data.suggestion.trim();
+      setReplyBody(suggestion);
+      setComposerOpen(true);
+      requestAnimationFrame(() => {
+        const ta = replyTextareaRef.current;
+        if (!ta) return;
+        ta.focus();
+        const pos = suggestion.length;
+        ta.setSelectionRange(pos, pos);
+      });
+    } catch (err) {
+      setCopilotError(
+        err instanceof Error ? err.message : "Could not draft a reply."
+      );
+    } finally {
+      setCopilotLoading(false);
+    }
+  }, [authHeaders, copilotLoading, replyChannel, selected?.id]);
 
   const scrollThreadToBottom = useCallback(() => {
     const el = threadScrollRef.current;
@@ -2367,7 +2710,7 @@ export function MessagingInbox({
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
           message?: MessageRow;
-          scheduled?: { scheduled_for?: string };
+          scheduled?: ScheduledThreadMessage & { scheduled_for?: string };
         };
         if (!res.ok) {
           const err = body.error || `Send failed (${res.status}).`;
@@ -2400,9 +2743,16 @@ export function MessagingInbox({
           setComposerOpen(false);
           setComposerExpanded(false);
           setScheduleOpen(false);
-          setScheduleNotice(
-            `Scheduled for ${formatShortDateTime(opts.scheduledFor)}.`
-          );
+          setScheduleNotice(null);
+          clearMessagingComposeDraft(conversationId);
+          setDraftConversationIds(new Set(messagingComposeDraftIds()));
+          setScheduledMessages((prev) => {
+            const next = body.scheduled!;
+            if (prev.some((row) => row.id === next.id)) {
+              return prev.map((row) => (row.id === next.id ? next : row));
+            }
+            return [...prev, next];
+          });
           return;
         }
         if (body.message) {
@@ -2437,6 +2787,8 @@ export function MessagingInbox({
           setScheduleOpen(false);
         }
         await loadList();
+        clearMessagingComposeDraft(conversationId);
+        setDraftConversationIds(new Set(messagingComposeDraftIds()));
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Send failed.";
         if (optimisticId) {
@@ -2525,7 +2877,7 @@ export function MessagingInbox({
       );
       if (cachedMatch) {
         setConversations([cachedMatch]);
-        setSelectedId(cachedMatch.id);
+        openConversation(cachedMatch.id, { keepProspect: true });
         setLoading(false);
       } else {
         setLoading(true);
@@ -2554,12 +2906,12 @@ export function MessagingInbox({
           if (!cachedMatch) {
             setError(body.error || "Could not open this conversation.");
             setConversations([]);
-            setSelectedId(null);
+            openConversation(null, { keepProspect: true });
           }
           return;
         }
         setConversations([body.conversation]);
-        setSelectedId(body.conversation.id);
+        openConversation(body.conversation.id, { keepProspect: true });
       } catch (err) {
         if (!cancelled && !cachedMatch) {
           setError(err instanceof Error ? err.message : "Load failed.");
@@ -2572,7 +2924,7 @@ export function MessagingInbox({
     return () => {
       cancelled = true;
     };
-  }, [authHeaders, contactId, conversationsCacheKey]);
+  }, [authHeaders, contactId, conversationsCacheKey, openConversation]);
 
   useEffect(() => {
     if (!contactId) {
@@ -2705,20 +3057,78 @@ export function MessagingInbox({
     };
   }, [authHeaders, contactId, loadList, loadThread]);
 
+  const persistComposerDraft = useCallback(
+    (conversationId: string | null | undefined) => {
+      const id = conversationId?.trim();
+      if (!id) return;
+      const body = replyBodyRef.current;
+      const subject = replySubjectRef.current;
+      const channel = replyChannelRef.current;
+      if (!body.trim() && !subject.trim()) {
+        clearMessagingComposeDraft(id);
+      } else {
+        setMessagingComposeDraft({
+          conversationId: id,
+          body,
+          channel:
+            channel === "comment"
+              ? undefined
+              : (channel as MessagingComposeChannel | undefined),
+          subject: subject || undefined,
+        });
+      }
+      setDraftConversationIds(new Set(messagingComposeDraftIds()));
+    },
+    []
+  );
+
   useEffect(() => {
     if (selected?.id) {
+      const prevId = prevSelectedIdRef.current;
+      const switched = prevId !== selected.id;
+      if (prevId && switched) {
+        persistComposerDraft(prevId);
+      }
+      prevSelectedIdRef.current = selected.id;
+      if (!switched) return;
       const draft = consumeMessagingComposeDraft(selected.id);
       pendingDraftChannelRef.current = draft?.channel ?? null;
-      setComposerOpen(Boolean(draft));
+      setComposerOpen(Boolean(draft?.body?.trim()));
       setChannelMenuOpen(false);
       setSendError(null);
+      setCopilotError(null);
+      setCopilotLoading(false);
       setReplyBody(draft?.body ?? "");
       setReplySubject(
-        selected.subject ? `Re: ${selected.subject}` : ""
+        draft?.subject ??
+          (selected.subject ? `Re: ${selected.subject}` : "")
       );
+      setScheduledMessages([]);
+      setScheduleNotice(null);
       void loadThread(selected.id);
     }
-  }, [selected?.id, loadThread, selected?.subject]);
+  }, [selected?.id, loadThread, selected?.subject, persistComposerDraft]);
+
+  useEffect(() => {
+    if (!selected?.id) return;
+    const id = selected.id;
+    const timer = window.setTimeout(() => persistComposerDraft(id), 400);
+    return () => window.clearTimeout(timer);
+  }, [selected?.id, replyBody, replySubject, replyChannel, persistComposerDraft]);
+
+  useEffect(() => {
+    const flush = () => persistComposerDraft(selectedIdRef.current);
+    const onHide = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      flush();
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [persistComposerDraft]);
 
   useEffect(() => {
     if (!selected) return;
@@ -2754,12 +3164,26 @@ export function MessagingInbox({
     }
   }, [prospectMode, replyChannel]);
 
+  const threadMessages =
+    openThreadId === selectedId
+      ? messages.filter(
+          (m) => !m.conversation_id || m.conversation_id === selectedId
+        )
+      : [];
+  const threadActivity = openSideId === selectedId ? activityEvents : [];
+  const threadScheduled =
+    openThreadId === selectedId ? scheduledMessages : [];
+  const threadProspect =
+    openSideId === selectedId && prospectFitsConversation(prospectDetails, selected)
+      ? prospectDetails
+      : null;
+
   const feedByDay = useMemo(() => {
     const optimisticForThread = selectedId
       ? optimisticMessages.filter((m) => m.conversationId === selectedId)
       : [];
     const items: FeedItem[] = [
-      ...messages
+      ...threadMessages
         .filter(
           (message) =>
             !(prospectMode && (message.channel || "").toLowerCase() === "system")
@@ -2787,11 +3211,18 @@ export function MessagingInbox({
             message,
           })
         ),
-      ...activityEvents.map(
+      ...threadActivity.map(
         (activity): FeedItem => ({
           kind: "activity",
           at: activity.at,
           activity,
+        })
+      ),
+      ...threadScheduled.map(
+        (scheduled): FeedItem => ({
+          kind: "scheduled",
+          at: scheduled.scheduled_for,
+          scheduled,
         })
       ),
     ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
@@ -2804,7 +3235,7 @@ export function MessagingInbox({
       else groups.push({ label, items: [item] });
     }
     return groups;
-  }, [messages, activityEvents, optimisticMessages, selectedId, prospectMode]);
+  }, [threadMessages, threadActivity, optimisticMessages, selectedId, prospectMode, threadScheduled]);
 
   useEffect(() => {
     pinThreadToBottomRef.current = true;
@@ -2865,10 +3296,11 @@ export function MessagingInbox({
     };
   }, [
     selectedId,
-    messages.length,
+    threadMessages.length,
     loadingThread,
     feedByDay.length,
     optimisticMessages.length,
+    scheduledMessages.length,
     scrollThreadToBottom,
   ]);
 
@@ -2885,6 +3317,7 @@ export function MessagingInbox({
       setMessages((prev) =>
         prev.some((row) => row.id === incoming.id) ? prev : [...prev, incoming]
       );
+      setOpenThreadId(conversationId);
     }
     window.addEventListener(PROSPECT_INTERNAL_NOTE_EVENT, onInternalNote);
     return () => {
@@ -2893,12 +3326,12 @@ export function MessagingInbox({
   }, []);
 
   const noteCount = useMemo(
-    () => messages.filter((m) => m.channel === "system").length,
-    [messages]
+    () => threadMessages.filter((m) => m.channel === "system").length,
+    [threadMessages]
   );
   const noteMessages = useMemo(
-    () => messages.filter((m) => m.channel === "system").slice(-8).reverse(),
-    [messages]
+    () => threadMessages.filter((m) => m.channel === "system").slice(-8).reverse(),
+    [threadMessages]
   );
 
   const toggleDetailSection = useCallback(
@@ -2909,61 +3342,63 @@ export function MessagingInbox({
   );
 
   const displayName = conversationPersonName({
-    prospectFullName: prospectDetails?.full_name,
+    prospectFullName: looksLikePersonName(selected?.prospect_name)
+      ? selected?.prospect_name
+      : threadProspect?.full_name,
     prospectName: selected?.prospect_name,
     prospectEmail: selected?.prospect_email,
     channel: selected?.last_channel,
   });
   const prospectAvatarUrl =
-    selected?.prospect_avatar_url || prospectDetails?.photo_url || null;
+    selected?.prospect_avatar_url || threadProspect?.photo_url || null;
   const replyChannels = useMemo(() => {
-    if (messages.length) {
-      return inboundReplyChannels(messages, selected?.last_channel);
+    if (threadMessages.length) {
+      return inboundReplyChannels(threadMessages, selected?.last_channel);
     }
     if (selected?.reply_channels?.length) return selected.reply_channels;
     return inboundReplyChannels([], selected?.last_channel);
-  }, [messages, selected]);
+  }, [threadMessages, selected]);
 
   const subtitle =
-    prospectDetails?.business_name?.trim() ||
+    threadProspect?.business_name?.trim() ||
     selected?.prospect_business_name?.trim() ||
     null;
 
   const email =
-    prospectDetails?.email || selected?.prospect_email || null;
+    threadProspect?.email || selected?.prospect_email || null;
   const phone =
-    prospectDetails?.phone || selected?.prospect_phone || null;
+    threadProspect?.phone || selected?.prospect_phone || null;
   const linkedIn =
-    prospectDetails?.linkedin_url?.trim() ||
+    threadProspect?.linkedin_url?.trim() ||
     selected?.prospect_linkedin_url?.trim() ||
     null;
 
   const snippetFirstName = useMemo(() => {
-    const fromDetails = prospectDetails?.full_name?.trim().split(/\s+/)[0];
+    const fromDetails = threadProspect?.full_name?.trim().split(/\s+/)[0];
     if (fromDetails) return fromDetails;
     const fromConv = selected?.prospect_name?.trim().split(/\s+/)[0];
     if (fromConv) return fromConv;
     return displayName.split(/\s+/)[0] || null;
-  }, [prospectDetails?.full_name, selected?.prospect_name, displayName]);
+  }, [threadProspect?.full_name, selected?.prospect_name, displayName]);
 
   const lastInboundSnippet = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const m = messages[i];
+    for (let i = threadMessages.length - 1; i >= 0; i--) {
+      const m = threadMessages[i];
       if (m.direction === "inbound" && m.body_text?.trim()) {
         const t = m.body_text.trim();
         return t.length > 160 ? `${t.slice(0, 157)}…` : t;
       }
     }
     return null;
-  }, [messages]);
+  }, [threadMessages]);
 
   // Keep denormalized conversation fields aligned with live contact details so
   // WhatsApp/SMS stay enabled after a phone is added on the prospect.
   useEffect(() => {
-    if (!selected?.id || !prospectDetails) return;
-    const nextPhone = prospectDetails.phone?.trim() || null;
-    const nextEmail = prospectDetails.email?.trim() || null;
-    const nextLinkedIn = prospectDetails.linkedin_url?.trim() || null;
+    if (!selected?.id || !threadProspect) return;
+    const nextPhone = threadProspect.phone?.trim() || null;
+    const nextEmail = threadProspect.email?.trim() || null;
+    const nextLinkedIn = threadProspect.linkedin_url?.trim() || null;
     if (
       (nextPhone || null) === (selected.prospect_phone || null) &&
       (nextEmail || null) === (selected.prospect_email || null) &&
@@ -2988,20 +3423,20 @@ export function MessagingInbox({
     selected?.prospect_phone,
     selected?.prospect_email,
     selected?.prospect_linkedin_url,
-    prospectDetails?.phone,
-    prospectDetails?.email,
-    prospectDetails?.linkedin_url,
+    threadProspect?.phone,
+    threadProspect?.email,
+    threadProspect?.linkedin_url,
   ]);
 
   useEffect(() => {
     setBusinessDraft(
-      prospectDetails?.business_name?.trim() ||
+      threadProspect?.business_name?.trim() ||
         selected?.prospect_business_name?.trim() ||
         ""
     );
   }, [
     selected?.id,
-    prospectDetails?.business_name,
+    threadProspect?.business_name,
     selected?.prospect_business_name,
   ]);
 
@@ -3009,7 +3444,7 @@ export function MessagingInbox({
     if (!selected?.id) return;
     const next = businessDraft.trim() || null;
     const current =
-      prospectDetails?.business_name?.trim() ||
+      threadProspect?.business_name?.trim() ||
       selected.prospect_business_name?.trim() ||
       null;
     if (next === current) return;
@@ -3026,13 +3461,13 @@ export function MessagingInbox({
     selected?.id,
     selected?.prospect_business_name,
     businessDraft,
-    prospectDetails?.business_name,
+    threadProspect?.business_name,
     patchConversation,
   ]);
 
   const patchProspectContact = useCallback(
     async (patch: ProspectFieldPatch) => {
-      const contactId = prospectDetails?.id || selected?.contact_id;
+      const contactId = threadProspect?.id || selected?.contact_id;
       if (!contactId) {
         throw new Error("Link a prospect before editing details.");
       }
@@ -3132,7 +3567,7 @@ export function MessagingInbox({
         });
       }
     },
-    [authHeaders, pathname, prospectDetails?.id, selected?.contact_id, selected?.id]
+    [authHeaders, pathname, threadProspect?.id, selected?.contact_id, selected?.id]
   );
 
   const saveProspectTags = useCallback(
@@ -3267,7 +3702,7 @@ export function MessagingInbox({
                         ? prev
                         : [row, ...prev]
                     );
-                    setSelectedId(row.id);
+                    selectConversation(row.id);
                     setComposerOpen(true);
                     setChannelMenuOpen(false);
                   }}
@@ -3782,11 +4217,12 @@ export function MessagingInbox({
                       />
                       <button
                         type="button"
-                        onClick={() => setSelectedId(c.id)}
+                        onClick={() => selectConversation(c.id)}
                         className="min-w-0 flex-1 text-left"
                       >
                         <div className="flex items-start gap-2.5">
                           <AvatarWithChannels
+                            key={`${c.id}:${c.prospect_avatar_url || ""}`}
                             name={personName}
                             url={c.prospect_avatar_url}
                             size="md"
@@ -3809,6 +4245,11 @@ export function MessagingInbox({
                               >
                                 {personName}
                               </span>
+                              {draftConversationIds.has(c.id) ? (
+                                <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200">
+                                  Draft
+                                </span>
+                              ) : null}
                             </span>
                             <span className="mt-0.5 block truncate text-xs text-slate-500">
                               {previewText(c.last_preview || c.subject, 72) ||
@@ -3871,7 +4312,7 @@ export function MessagingInbox({
             prospectMode ? "max-lg:order-1 lg:order-2" : ""
           }`}
         >
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
             {selected ? (
               <>
                 {canOpenProspectProfile ? (
@@ -3882,6 +4323,7 @@ export function MessagingInbox({
                     aria-label={`Open ${displayName} profile`}
                   >
                     <AvatarWithChannels
+                      key={`${selected.id}:${prospectAvatarUrl || ""}`}
                       name={displayName}
                       url={prospectAvatarUrl}
                       size="md"
@@ -3918,6 +4360,7 @@ export function MessagingInbox({
                 ) : (
                   <div className="flex min-w-0 items-center gap-3">
                     <AvatarWithChannels
+                      key={`${selected.id}:${prospectAvatarUrl || ""}`}
                       name={displayName}
                       url={prospectAvatarUrl}
                       size="md"
@@ -3946,35 +4389,39 @@ export function MessagingInbox({
                     </div>
                   </div>
                 )}
-                <div className="flex shrink-0 items-center gap-1">
-                  {(selected.unread_count ?? 0) === 0 ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void patchConversation(selected.id, { unread_count: 1 })
-                      }
-                      className="rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    >
-                      Mark unread
-                    </button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {selected ? (
+                    <ReplyDispositionBar
+                      value={replyDisposition}
+                      busy={replyDispositionBusy}
+                      onChange={(next) => void markReplyDisposition(next)}
+                    />
                   ) : null}
                   <button
                     type="button"
+                    title={selected.starred ? "Unstar" : "Star"}
+                    aria-label={selected.starred ? "Unstar" : "Star"}
                     onClick={() =>
                       void patchConversation(selected.id, {
                         starred: !selected.starred,
                       })
                     }
-                    className={`rounded-md px-2 py-1 text-lg ${
-                      selected.starred ? "text-amber-500" : "text-slate-300"
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-sky-300 ${
+                      selected.starred
+                        ? "text-amber-500 hover:text-amber-600"
+                        : "text-slate-400 hover:text-slate-700"
                     }`}
-                    aria-label={selected.starred ? "Unstar" : "Star"}
                   >
-                    {selected.starred ? "★" : "☆"}
+                    <Star
+                      className={`h-4 w-4 ${
+                        selected.starred ? "fill-amber-400" : ""
+                      }`}
+                      aria-hidden
+                    />
                   </button>
                 </div>
               </>
-            ) : prospectMode && (prospectDetails || displayName) ? (
+            ) : prospectMode && (threadProspect || displayName) ? (
               <div className="flex min-w-0 items-center gap-3">
                 <AvatarWithChannels
                   name={displayName || "Prospect"}
@@ -4090,6 +4537,21 @@ export function MessagingInbox({
                             </div>
                           )}
                         </div>
+                      );
+                    }
+
+                    if (item.kind === "scheduled") {
+                      return (
+                        <ScheduledMessageCard
+                          key={item.scheduled.id}
+                          message={item.scheduled}
+                          busy={scheduleSending}
+                          onSaveBody={(id, body) =>
+                            patchScheduledMessage(id, { body_text: body })
+                          }
+                          onReschedule={(id) => setRescheduleId(id)}
+                          onDelete={(id) => deleteScheduledMessage(id)}
+                        />
                       );
                     }
 
@@ -4733,7 +5195,7 @@ export function MessagingInbox({
                     ) : null}
 
                     <div
-                      className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-sky-400 ${
+                      className={`relative flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-sky-400 ${
                         composerExpanded ? "flex-1" : ""
                       }`}
                     >
@@ -4757,11 +5219,21 @@ export function MessagingInbox({
                               : "Type a message"
                         }
                         className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm outline-none ${
-                          composerExpanded ? "min-h-0 flex-1" : ""
-                        }`}
+                          replyChannel === "comment" ? "" : "pr-12 pb-10"
+                        } ${composerExpanded ? "min-h-0 flex-1" : ""}`}
                       />
+                      {replyChannel !== "comment" ? (
+                        <ReplyCopilotButton
+                          loading={copilotLoading}
+                          disabled={scheduleSending}
+                          onClick={() => void suggestReply()}
+                        />
+                      ) : null}
                     </div>
 
+                    {copilotError ? (
+                      <p className="shrink-0 text-xs text-red-600">{copilotError}</p>
+                    ) : null}
                     {sendError ? (
                       <p className="shrink-0 text-xs text-red-600">{sendError}</p>
                     ) : null}
@@ -4778,7 +5250,8 @@ export function MessagingInbox({
                         pendingVoice={pendingVoice}
                         pendingVideo={pendingVideo}
                         leadingTools={
-                          <ReplySnippetPicker
+                          <>
+                            <ReplySnippetPicker
                             replyChannel={replyChannel}
                             vars={{
                               firstName: snippetFirstName,
@@ -4789,11 +5262,19 @@ export function MessagingInbox({
                               theirReply: lastInboundSnippet,
                               coachName: coachProfile.name,
                               assessmentUrl,
+                              personalisedAssessmentUrl,
                               reviewName: "Business Clarity Review",
                             }}
                             onInsert={insertSnippetText}
                             disabled={scheduleSending}
                           />
+                            <ScorecardInsertButtons
+                              assessmentUrl={assessmentUrl}
+                              personalisedUrl={personalisedAssessmentUrl}
+                              onInsert={insertSnippetText}
+                              disabled={scheduleSending}
+                            />
+                          </>
                         }
                         onAddFiles={(list) => addPendingFiles(list)}
                         onRemoveFile={(id) => {
@@ -4827,6 +5308,12 @@ export function MessagingInbox({
                           setComposerOpen(false);
                           setComposerExpanded(false);
                           setSendError(null);
+                          if (selected?.id) {
+                            clearMessagingComposeDraft(selected.id);
+                            setDraftConversationIds(
+                              new Set(messagingComposeDraftIds())
+                            );
+                          }
                         }}
                         onSend={() => void sendReply()}
                         onOpenSchedule={() => setScheduleOpen(true)}
@@ -4851,6 +5338,32 @@ export function MessagingInbox({
                     onClose={() => setScheduleOpen(false)}
                     busy={scheduleSending}
                     onSchedule={(iso) => void sendReply({ scheduledFor: iso })}
+                  />
+                  <ScheduleMessageModal
+                    open={Boolean(rescheduleId)}
+                    onClose={() => setRescheduleId(null)}
+                    busy={scheduleSending}
+                    initialIso={
+                      scheduledMessages.find((row) => row.id === rescheduleId)
+                        ?.scheduled_for
+                    }
+                    title="Change send time"
+                    confirmLabel="Save time"
+                    onSchedule={(iso) => {
+                      const id = rescheduleId;
+                      if (!id) return;
+                      setScheduleSending(true);
+                      void patchScheduledMessage(id, { scheduled_for: iso })
+                        .then(() => setRescheduleId(null))
+                        .catch((err) => {
+                          setSendError(
+                            err instanceof Error
+                              ? err.message
+                              : "Could not reschedule."
+                          );
+                        })
+                        .finally(() => setScheduleSending(false));
+                    }}
                   />
                 </div>
               )}
@@ -4908,13 +5421,14 @@ export function MessagingInbox({
                 <ProspectDetailsHeader
                   avatar={
                     <Avatar
+                      key={`${selected.id}:${prospectAvatarUrl || ""}`}
                       name={displayName}
                       url={prospectAvatarUrl}
                       size="lg"
                     />
                   }
                   displayName={displayName}
-                  jobTitle={prospectDetails?.job_title}
+                  jobTitle={threadProspect?.job_title}
                   businessDraft={businessDraft}
                   onBusinessChange={setBusinessDraft}
                   onBusinessSave={() => void saveBusinessName()}
@@ -4925,11 +5439,11 @@ export function MessagingInbox({
                   onOpenProfile={
                     canOpenProspectProfile ? openProspectProfile : undefined
                   }
-                  tags={prospectDetails?.tags ?? []}
+                  tags={threadProspect?.tags ?? []}
                   tagCatalog={coachTags}
                   tagsSaving={savingTags}
                   canEditTags={Boolean(
-                    prospectDetails?.id || selected.contact_id
+                    threadProspect?.id || selected.contact_id
                   )}
                   onTagsChange={saveProspectTags}
                   onEmail={() => {
@@ -4947,33 +5461,33 @@ export function MessagingInbox({
                   onToggle={() => toggleDetailSection("contact")}
                   panel
                 >
-                  {prospectDetails?.id || selected.contact_id ? (
+                  {threadProspect?.id || selected.contact_id ? (
                     <>
                       <ProspectContactFields
                         values={{
-                          email: prospectDetails?.email ?? email,
-                          phone: prospectDetails?.phone ?? phone,
-                          job_title: prospectDetails?.job_title ?? null,
+                          email: threadProspect?.email ?? email,
+                          phone: threadProspect?.phone ?? phone,
+                          job_title: threadProspect?.job_title ?? null,
                           business_name:
-                            prospectDetails?.business_name ?? subtitle,
+                            threadProspect?.business_name ?? subtitle,
                           company_website:
-                            prospectDetails?.company_website ?? null,
+                            threadProspect?.company_website ?? null,
                           linkedin_url:
-                            prospectDetails?.linkedin_url ?? linkedIn,
+                            threadProspect?.linkedin_url ?? linkedIn,
                         }}
                         saving={savingContact}
                         whatsappKnown={
-                          Boolean(prospectDetails?.has_whatsapp) ||
+                          Boolean(threadProspect?.has_whatsapp) ||
                           replyChannels.includes("whatsapp") ||
                           selected.last_channel === "whatsapp"
                         }
                         onSave={saveProspectContact}
                       />
-                      {(prospectDetails?.id || selected.contact_id) && (
+                      {(threadProspect?.id || selected.contact_id) && (
                         <div className="mt-3">
                           <ProspectMergeDuplicates
                             contactId={
-                              (prospectDetails?.id || selected.contact_id)!
+                              (threadProspect?.id || selected.contact_id)!
                             }
                             authHeaders={authHeaders}
                             onMerged={() => {
@@ -4989,7 +5503,7 @@ export function MessagingInbox({
                         <DetailRow label="Status">
                           <select
                             aria-label="Prospect status"
-                            value={prospectDetails?.prospect_status ?? ""}
+                            value={threadProspect?.prospect_status ?? ""}
                             disabled={savingContact}
                             onChange={(e) => {
                               const value = e.target.value || null;
@@ -4998,9 +5512,9 @@ export function MessagingInbox({
                               });
                             }}
                             className={`w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200 ${
-                              prospectDetails?.prospect_status
+                              threadProspect?.prospect_status
                                 ? prospectStatusBadgeClass(
-                                    prospectDetails.prospect_status
+                                    threadProspect.prospect_status
                                   )
                                 : "text-slate-600"
                             }`}
@@ -5039,7 +5553,7 @@ export function MessagingInbox({
                               >
                                 {formatPhoneDisplay(phone) ?? phone}
                               </a>
-                              {Boolean(prospectDetails?.has_whatsapp) ||
+                              {Boolean(threadProspect?.has_whatsapp) ||
                               replyChannels.includes("whatsapp") ||
                               selected.last_channel === "whatsapp" ? (
                                 <span title="WhatsApp available">
@@ -5080,9 +5594,9 @@ export function MessagingInbox({
                   )}
                 </CollapsibleDetailSection>
 
-                {prospectDetails?.about?.trim() ||
-                prospectDetails?.headline?.trim() ||
-                prospectDetails?.location?.trim() ? (
+                {threadProspect?.about?.trim() ||
+                threadProspect?.headline?.trim() ||
+                threadProspect?.location?.trim() ? (
                   <CollapsibleDetailSection
                     title="Profile"
                     open={detailSectionsOpen.profile}
@@ -5090,22 +5604,22 @@ export function MessagingInbox({
                     panel
                   >
                     <dl className="space-y-2.5">
-                      {prospectDetails?.headline?.trim() ? (
+                      {threadProspect?.headline?.trim() ? (
                         <DetailRow label="Headline">
                           <span className="whitespace-pre-wrap text-sm leading-snug text-slate-800">
-                            {prospectDetails.headline.trim()}
+                            {threadProspect.headline.trim()}
                           </span>
                         </DetailRow>
                       ) : null}
-                      {prospectDetails?.location?.trim() ? (
+                      {threadProspect?.location?.trim() ? (
                         <DetailRow label="Location">
-                          {prospectDetails.location.trim()}
+                          {threadProspect.location.trim()}
                         </DetailRow>
                       ) : null}
-                      {prospectDetails?.about?.trim() ? (
+                      {threadProspect?.about?.trim() ? (
                         <DetailRow label="About">
                           <span className="whitespace-pre-wrap text-sm leading-snug text-slate-800">
-                            {prospectDetails.about.trim()}
+                            {threadProspect.about.trim()}
                           </span>
                         </DetailRow>
                       ) : null}
@@ -5165,13 +5679,13 @@ export function MessagingInbox({
                 >
                   <dl className="space-y-2.5">
                     <DetailRow label="Boss Score">
-                      {prospectDetails?.boss_score != null ? (
+                      {threadProspect?.boss_score != null ? (
                         <>
-                          {`${Math.round(prospectDetails.boss_score)}%`}
-                          {prospectDetails.boss_score_at ? (
+                          {`${Math.round(threadProspect.boss_score)}%`}
+                          {threadProspect.boss_score_at ? (
                             <span className="text-slate-500">
                               {" "}
-                              · {formatShortDate(prospectDetails.boss_score_at)}
+                              · {formatShortDate(threadProspect.boss_score_at)}
                             </span>
                           ) : null}
                         </>
@@ -5180,15 +5694,15 @@ export function MessagingInbox({
                       )}
                     </DetailRow>
                     <DetailRow label="Boss Pro">
-                      {prospectDetails?.boss_score_premium != null ? (
+                      {threadProspect?.boss_score_premium != null ? (
                         <>
-                          {Math.round(prospectDetails.boss_score_premium)}
-                          {prospectDetails.boss_score_premium_at ? (
+                          {Math.round(threadProspect.boss_score_premium)}
+                          {threadProspect.boss_score_premium_at ? (
                             <span className="text-slate-500">
                               {" "}
                               ·{" "}
                               {formatShortDate(
-                                prospectDetails.boss_score_premium_at
+                                threadProspect.boss_score_premium_at
                               )}
                             </span>
                           ) : null}
@@ -5198,10 +5712,10 @@ export function MessagingInbox({
                       )}
                     </DetailRow>
                     <DetailRow label="Revenue">
-                      {prospectDetails?.revenue?.trim() || <DetailEmpty />}
+                      {threadProspect?.revenue?.trim() || <DetailEmpty />}
                     </DetailRow>
                     <DetailRow label="Team size">
-                      {prospectDetails?.team_size?.trim() || <DetailEmpty />}
+                      {threadProspect?.team_size?.trim() || <DetailEmpty />}
                     </DetailRow>
                   </dl>
                 </CollapsibleDetailSection>
@@ -5238,22 +5752,6 @@ export function MessagingInbox({
                     </dl>
                   </CollapsibleDetailSection>
                 ) : null}
-
-                {prospectMode ? null : (
-                  <CollapsibleDetailSection
-                    title="Conversation"
-                    open={detailSectionsOpen.conversation}
-                    onToggle={() => toggleDetailSection("conversation")}
-                    panel
-                  >
-                    <dl className="space-y-2.5">
-                      <DetailRow label="Last activity">
-                        {formatShortDateTime(selected.last_message_at)}
-                      </DetailRow>
-                      <DetailRow label="Messages">{messages.length}</DetailRow>
-                    </dl>
-                  </CollapsibleDetailSection>
-                )}
 
                 {journeyPane ? null : (
                   <CollapsibleDetailSection
@@ -5318,13 +5816,14 @@ export function MessagingInbox({
             <ProspectDetailsHeader
               avatar={
                 <Avatar
+                  key={`${selected.id}:${prospectAvatarUrl || ""}`}
                   name={displayName}
                   url={prospectAvatarUrl}
                   size="md"
                 />
               }
               displayName={displayName}
-              jobTitle={prospectDetails?.job_title}
+              jobTitle={threadProspect?.job_title}
               businessDraft={businessDraft}
               onBusinessChange={setBusinessDraft}
               onBusinessSave={() => void saveBusinessName()}
@@ -5335,10 +5834,10 @@ export function MessagingInbox({
               onOpenProfile={
                 canOpenProspectProfile ? openProspectProfile : undefined
               }
-              tags={prospectDetails?.tags ?? []}
+              tags={threadProspect?.tags ?? []}
               tagCatalog={coachTags}
               tagsSaving={savingTags}
-              canEditTags={Boolean(prospectDetails?.id || selected.contact_id)}
+              canEditTags={Boolean(threadProspect?.id || selected.contact_id)}
               onTagsChange={saveProspectTags}
               onEmail={() => {
                 setReplyChannel("email");
@@ -5346,29 +5845,26 @@ export function MessagingInbox({
                 setChannelMenuOpen(false);
               }}
             />
-            <p className="mt-2 text-xs text-slate-400">
-              Last activity {formatShortDateTime(selected.last_message_at)}
-            </p>
-            {prospectDetails?.id || selected.contact_id ? (
+            {threadProspect?.id || selected.contact_id ? (
               <div className="mt-4">
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Contact
                 </h3>
                 <ProspectContactFields
                   values={{
-                    email: prospectDetails?.email ?? email,
-                    phone: prospectDetails?.phone ?? phone,
-                    job_title: prospectDetails?.job_title ?? null,
+                    email: threadProspect?.email ?? email,
+                    phone: threadProspect?.phone ?? phone,
+                    job_title: threadProspect?.job_title ?? null,
                     business_name:
-                      prospectDetails?.business_name ?? subtitle,
+                      threadProspect?.business_name ?? subtitle,
                     company_website:
-                      prospectDetails?.company_website ?? null,
+                      threadProspect?.company_website ?? null,
                     linkedin_url:
-                      prospectDetails?.linkedin_url ?? linkedIn,
+                      threadProspect?.linkedin_url ?? linkedIn,
                   }}
                   saving={savingContact}
                   whatsappKnown={
-                    Boolean(prospectDetails?.has_whatsapp) ||
+                    Boolean(threadProspect?.has_whatsapp) ||
                     replyChannels.includes("whatsapp") ||
                     selected.last_channel === "whatsapp"
                   }
@@ -5380,7 +5876,7 @@ export function MessagingInbox({
                   </span>
                   <select
                     aria-label="Prospect status"
-                    value={prospectDetails?.prospect_status ?? ""}
+                    value={threadProspect?.prospect_status ?? ""}
                     disabled={savingContact}
                     onChange={(e) => {
                       const value = e.target.value || null;

@@ -19,6 +19,12 @@ import { MAX_POOL_ITEMS_PER_REQUEST } from "@/lib/leadLists/audienceLists";
 import { parseProspectsCsv } from "@/lib/prospects/parseProspectsCsv";
 import { splitPersonName } from "@/lib/leadLists/audienceLists";
 import { poolIdentityKey } from "@/lib/pool/identity";
+import {
+  extraImportTeamSizeOptions,
+  formatImportTeamSizeList,
+  implicitImportTeamSizes,
+  salesNavUrlWithImportTeamSizes,
+} from "@/lib/salesNavigator/importHeadcounts";
 import { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
 import {
   unwatchSalesNavImport,
@@ -74,7 +80,7 @@ const SALES_NAV_IMPORT_SOURCES: Array<{
   {
     id: "first",
     title: "1st degree",
-    body: "Classroom filters, your connections only.",
+    body: "Classroom filters, your connections only. Company sizes 1-10, 11-50 and 51-200.",
     url: SALES_NAV_BASE_SEARCH_1ST_URL,
   },
   {
@@ -107,7 +113,7 @@ const MAPS_SELECT_CLASS =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 [color-scheme:light]";
 const MAPS_COUNTRY_STORAGE_KEY = "profit-coach.google-maps-country";
 const MAPS_US_STATE_STORAGE_KEY = "profit-coach.google-maps-us-state";
-const UNIPILE_POLL_MS = 2_000;
+const UNIPILE_POLL_MS = 5_000;
 
 function loadStoredMapsCountry(): GoogleMapsCountryCode {
   if (typeof window === "undefined") return GOOGLE_MAPS_DEFAULT_COUNTRY;
@@ -214,6 +220,7 @@ export function ImportPoolModal({
     null
   );
   const [poolSize, setPoolSize] = useState<SalesNavPoolSizeValue>("all");
+  const [extraTeamSizes, setExtraTeamSizes] = useState<string[]>([]);
   const pendingSaveListNameRef = useRef<string | null>(null);
   const [importJobId, setImportJobId] = useState<string | null>(null);
   const [importKind, setImportKind] = useState<ImportKind>("sales_nav");
@@ -366,6 +373,20 @@ export function ImportPoolModal({
     stateCode: mapsUsState || null,
   });
   const mapsLocationReady = !("error" in mapsResolvedLocation);
+  const salesNavUrlReady = isSalesNavSearchUrl(searchUrl.trim());
+  const importTeamBase = salesNavUrlReady
+    ? implicitImportTeamSizes(searchUrl.trim())
+    : [];
+  const importTeamExtras = salesNavUrlReady
+    ? extraImportTeamSizeOptions(searchUrl.trim())
+    : [];
+  const importTeamExtraSelected = extraTeamSizes.filter((label) =>
+    importTeamExtras.some((band) => band.label === label)
+  );
+  const importTeamSummary = formatImportTeamSizeList([
+    ...importTeamBase,
+    ...importTeamExtraSelected,
+  ]);
 
   if (!open) return null;
 
@@ -377,6 +398,7 @@ export function ImportPoolModal({
     setSearchUrl("");
     setSalesNavSource(null);
     setPoolSize("all");
+    setExtraTeamSizes([]);
     pendingSaveListNameRef.current = null;
     setImportJobId(null);
     setImportKind("sales_nav");
@@ -409,6 +431,17 @@ export function ImportPoolModal({
       );
       return;
     }
+    let importUrl = url;
+    try {
+      importUrl = salesNavUrlWithImportTeamSizes(url, extraTeamSizes);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not apply company-size filters to that URL."
+      );
+      return;
+    }
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -422,7 +455,7 @@ export function ImportPoolModal({
         method: "POST",
         headers,
         body: JSON.stringify({
-          salesNavUrl: url,
+          salesNavUrl: importUrl,
           name: "Pool import",
           ...(cap ? { poolLimit: cap } : {}),
         }),
@@ -662,6 +695,7 @@ export function ImportPoolModal({
                   setMode("pick");
                   setError(null);
                   setSalesNavSource(null);
+                  setExtraTeamSizes([]);
                 }}
                 disabled={Boolean(importJobId)}
                 className="mb-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 disabled:opacity-50"
@@ -743,7 +777,7 @@ export function ImportPoolModal({
                         ? "Finishing import"
                         : "Importing into pool"}
                     </span>
-                    <span className="tabular-nums text-amber-900/80">
+                    <span className="tabular-nums text-amber-950">
                       {importProgress.phase === "finalizing"
                         ? `${importProgress.progressCount.toLocaleString()} people`
                         : importProgress.targetCount > 0
@@ -770,9 +804,15 @@ export function ImportPoolModal({
                       <div className="h-full w-1/3 animate-pulse rounded-full bg-amber-500" />
                     )}
                   </div>
-                  <p className="mt-2 text-xs leading-snug text-amber-900/80">
-                    You can close this and keep working. Progress stays on the
-                    pool page.
+                  <p className="mt-2 text-xs leading-snug text-amber-950">
+                    {importProgress.segmentLabel &&
+                    importProgress.phase !== "finalizing"
+                      ? `Company size ${importProgress.segmentLabel}${
+                          importProgress.segmentTotal > 1
+                            ? ` (${importProgress.segmentIndex + 1} of ${importProgress.segmentTotal})`
+                            : ""
+                        }. You can close this and keep working.`
+                      : "You can close this and keep working. Progress stays on the pool page."}
                   </p>
                 </div>
               ) : null}
@@ -825,6 +865,7 @@ export function ImportPoolModal({
                         onClick={() => {
                           setError(null);
                           setSalesNavSource(source.id);
+                          setExtraTeamSizes([]);
                           if (source.url) setSearchUrl(source.url);
                           else if (!searchUrl.trim()) setSearchUrl("");
                         }}
@@ -888,10 +929,58 @@ export function ImportPoolModal({
                 </div>
               ) : null}
 
+              {salesNavSource && salesNavUrlReady ? (
+                <div className="space-y-2">
+                  <p className="text-sm leading-snug text-slate-900">
+                    We&apos;ll import company sizes{" "}
+                    <span className="font-semibold">{importTeamSummary}</span>.
+                  </p>
+                  {importTeamExtras.length > 0 ? (
+                    <fieldset disabled={Boolean(importJobId)} className="min-w-0">
+                      <legend className="text-xs font-medium text-slate-900">
+                        Add other sizes if you want them too
+                      </legend>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {importTeamExtras.map((band) => {
+                          const on = importTeamExtraSelected.includes(
+                            band.label
+                          );
+                          return (
+                            <label
+                              key={band.id}
+                              className={`inline-flex cursor-pointer items-center rounded-lg border px-2 py-1 text-xs transition-colors focus-within:ring-2 focus-within:ring-[#0c5290]/40 ${
+                                on
+                                  ? "border-[#0c5290] bg-[#0c5290] text-white"
+                                  : "border-slate-200 bg-white text-slate-900 hover:border-sky-300"
+                              } ${importJobId ? "cursor-not-allowed opacity-50" : ""}`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={on}
+                                disabled={Boolean(importJobId)}
+                                onChange={() => {
+                                  setExtraTeamSizes((prev) =>
+                                    prev.includes(band.label)
+                                      ? prev.filter((x) => x !== band.label)
+                                      : [...prev, band.label]
+                                  );
+                                }}
+                              />
+                              {band.label}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+                  ) : null}
+                </div>
+              ) : null}
+
               {salesNavSource ? (
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                   <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                    <span className="whitespace-nowrap text-slate-500">
+                    <span className="whitespace-nowrap text-slate-900">
                       Import size
                     </span>
                     <select
@@ -905,7 +994,7 @@ export function ImportPoolModal({
                           );
                       }}
                       disabled={Boolean(importJobId)}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm"
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
                     >
                       <option value="all">All available</option>
                       {SALES_NAV_POOL_LIMIT_OPTIONS.map((n) => (

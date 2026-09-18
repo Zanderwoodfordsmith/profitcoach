@@ -14,7 +14,8 @@ import { toSalesNavImportLeadSnapshot } from "@/lib/salesNavigator/importLeadSna
 import {
   loadImportJob,
   mergeSalesNavLeadSnapshots,
-  targetCountForJob,
+  requestedPagesForJob,
+  supersedeRunningSalesNavImports,
   type SalesNavImportJobRow,
 } from "@/lib/salesNavigator/importJob";
 import {
@@ -25,6 +26,10 @@ import {
   SALES_NAV_EXTRACT_CAP,
   type SalesNavImportSegmentPlan,
 } from "@/lib/salesNavigator/importSegments";
+import {
+  segmentScrapedCap,
+  shouldFinishUnipileSegment,
+} from "@/lib/salesNavigator/importProgress";
 import {
   normalizeRequestedTakePages,
   salesNavGlobalLeadCapFromPages,
@@ -154,6 +159,7 @@ export async function createUnipileSalesNavImportJob(opts: {
   }
 
   const unipileAccountId = await requireLiveLinkedInUnipileAccount(opts.coachId);
+  await supersedeRunningSalesNavImports({ coachId: opts.coachId });
 
   const requestedTakePages = normalizeRequestedTakePages(opts.takePages);
   const targetCount = salesNavLeadTarget(requestedTakePages);
@@ -249,10 +255,10 @@ async function syncUnipileSalesNavImportJobInner(
     );
   }
 
-  const segmentTarget = targetCountForJob(job);
-  const globalCap = salesNavGlobalLeadCapFromPages(
-    job.requested_take_pages ?? job.take_pages ?? 100
-  );
+  const pages = requestedPagesForJob(job);
+  const pageTarget = salesNavLeadTarget(pages);
+  const globalCap = salesNavGlobalLeadCapFromPages(pages);
+  const importAll = globalCap == null;
   type Snapshot = ReturnType<typeof toSalesNavImportLeadSnapshot>;
   let snapshot: Snapshot[] = Array.isArray(job.lead_snapshot)
     ? (job.lead_snapshot as Snapshot[])
@@ -297,7 +303,12 @@ async function syncUnipileSalesNavImportJobInner(
     }
 
     const segmentScraped = current?.scrapedCount ?? 0;
-    if (segmentScraped >= segmentTarget) {
+    const scrapedCap = segmentScrapedCap({
+      searchTotalCount: current?.searchTotalCount,
+      pageTarget,
+      importAll,
+    });
+    if (segmentScraped >= scrapedCap) {
       if (segmentPlan[segmentIndex]) {
         segmentPlan[segmentIndex] = {
           ...segmentPlan[segmentIndex],
@@ -336,7 +347,7 @@ async function syncUnipileSalesNavImportJobInner(
     pagesUsed += 1;
 
     const remaining = Math.min(
-      segmentTarget - segmentScraped,
+      scrapedCap - segmentScraped,
       globalCap != null
         ? Math.max(0, globalCap - snapshot.length)
         : Number.POSITIVE_INFINITY
@@ -364,16 +375,9 @@ async function syncUnipileSalesNavImportJobInner(
 
     if (!res.ok) {
       if (isRetryableUnipileSearch(res)) {
-        return persistProgress(job, {
-          snapshot,
-          cursor,
-          cacheInserted,
-          cacheUpdated,
-          cacheSkipped,
-          segmentPlan,
-          segmentIndex,
-          done: false,
-        });
+        // Don't write — a stale overlapping tick used to persist old snapshot
+        // and rewind a job that had already moved on.
+        return (await loadImportJob(job.id)) ?? job;
       }
       const message = unipileLinkedInAccountError(res);
       return markFailed(job.id, job.started_at, job.created_at, message);
@@ -425,6 +429,7 @@ async function syncUnipileSalesNavImportJobInner(
     const nextCursor = nextCursorFromSearch(res.data);
     const stalledCursor = Boolean(nextCursor && cursor && nextCursor === cursor);
 
+    const snapshotBefore = snapshot.length;
     if (items.length > 0) {
       const cache = await upsertSalesNavLeadsToCache({
         leads: items,
@@ -448,6 +453,7 @@ async function syncUnipileSalesNavImportJobInner(
         };
       }
     }
+    const newUniqueCount = Math.max(0, snapshot.length - snapshotBefore);
 
     if (globalCap != null && snapshot.length >= globalCap) {
       if (segmentPlan[segmentIndex]) {
@@ -460,11 +466,19 @@ async function syncUnipileSalesNavImportJobInner(
       return finalizeNow();
     }
 
-    const segmentDone =
-      (segmentPlan[segmentIndex]?.scrapedCount ?? 0) >= segmentTarget ||
-      !nextCursor ||
-      stalledCursor ||
-      items.length === 0;
+    const scrapedCapAfter = segmentScrapedCap({
+      searchTotalCount: segmentPlan[segmentIndex]?.searchTotalCount,
+      pageTarget,
+      importAll,
+    });
+    const segmentDone = shouldFinishUnipileSegment({
+      scrapedCount: segmentPlan[segmentIndex]?.scrapedCount ?? 0,
+      scrapedCap: scrapedCapAfter,
+      nextCursor,
+      stalledCursor,
+      itemsLength: items.length,
+      newUniqueCount,
+    });
 
     if (segmentDone) {
       if (segmentPlan[segmentIndex]) {

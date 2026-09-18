@@ -65,24 +65,34 @@ function PillarInfoButton({ label, text }: { label: string; text: string }) {
   }, [open]);
 
   return (
-    <span ref={wrapRef} className="relative inline-flex shrink-0">
+    <span
+      ref={wrapRef}
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="-m-0.5 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 aria-expanded:bg-slate-100 aria-expanded:text-slate-600"
+        onClick={() => setOpen(true)}
+        className="-m-0.5 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 aria-expanded:bg-slate-100 aria-expanded:text-slate-700"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-label={`${label} info`}
       >
-        <CircleHelp className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+        <CircleHelp className="h-4 w-4" strokeWidth={1.75} aria-hidden />
       </button>
       {open ? (
         <span
           id={panelId}
           role="tooltip"
-          className="absolute right-full top-1/2 z-30 mr-1.5 w-52 -translate-y-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-slate-600 shadow-lg"
+          className="absolute bottom-full right-0 z-30 mb-1.5 w-64 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-lg"
         >
-          {text}
+          <span className="block text-sm font-semibold leading-snug text-slate-900">
+            {label}
+          </span>
+          <span className="mt-1 block text-sm leading-relaxed text-slate-800">
+            {text}
+          </span>
         </span>
       ) : null}
     </span>
@@ -99,7 +109,7 @@ function SsiSpeedDial({
   const cx = 120;
   const cy = 126;
   const r = 92;
-  const stroke = 14;
+  const stroke = 16;
   const pct = score == null ? 0 : Math.min(1, Math.max(0, score / 100));
   const track = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
   const length = Math.PI * r;
@@ -108,7 +118,7 @@ function SsiSpeedDial({
 
   return (
     <div
-      className={`relative ${compact ? "w-[9.25rem]" : "mx-auto w-[13.5rem]"}`}
+      className={`relative ${compact ? "w-[10.25rem]" : "mx-auto w-[13.5rem]"}`}
       role="img"
       aria-label={
         score == null
@@ -116,7 +126,7 @@ function SsiSpeedDial({
           : `Social Selling Index ${Math.round(score)} of 100`
       }
     >
-      <svg viewBox="0 0 240 148" className="h-auto w-full">
+      <svg viewBox="0 0 240 148" className="h-auto w-full" aria-hidden>
         <path
           d={track}
           fill="none"
@@ -135,7 +145,7 @@ function SsiSpeedDial({
           />
         ) : null}
       </svg>
-      <div className="absolute inset-x-0 bottom-1 flex flex-col items-center">
+      <div className="pointer-events-none absolute inset-x-0 bottom-1 flex flex-col items-center">
         <p
           className={`font-semibold leading-none tabular-nums tracking-tight text-slate-900 ${
             compact ? "text-[1.7rem]" : "text-[2.35rem]"
@@ -160,10 +170,10 @@ function SsiPillarBars({ pillars }: { pillars: SsiPillar[] }) {
         return (
           <li key={pillar.id}>
             <div className="mb-1.5 flex min-w-0 items-center gap-1.5">
-              <p className="shrink-0 text-[13px] font-semibold tabular-nums text-slate-900">
+              <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
                 {pillar.score}
               </p>
-              <p className="min-w-0 truncate text-[13px] text-slate-600">
+              <p className="min-w-0 truncate text-sm font-medium text-slate-800">
                 {pillar.label}
               </p>
               {meta?.info ? (
@@ -244,9 +254,9 @@ export function CampaignSsiCard({
 
   return (
     <section className="relative z-10 shrink-0 overflow-visible rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
-      <div className="flex items-center gap-4 py-3 pl-4 pr-5">
+      <div className="flex items-center gap-4 py-4 pl-5 pr-5">
         <div className="min-w-0 flex-1">
-          <h2 className="min-w-0 truncate text-base font-semibold tracking-tight text-slate-900">
+          <h2 className="min-w-0 text-lg font-semibold leading-snug tracking-tight text-slate-900">
             Social Selling Index
           </h2>
           {canBreakdown ? (
@@ -254,24 +264,24 @@ export function CampaignSsiCard({
               type="button"
               aria-expanded={breakdownOpen}
               onClick={() => setBreakdownOpen((open) => !open)}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#0c5290] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-[#0c5290] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
             >
               Breakdown
               <ChevronDown
-                className={`h-3.5 w-3.5 transition ${
+                className={`h-4 w-4 transition ${
                   breakdownOpen ? "rotate-180" : ""
                 }`}
                 aria-hidden
               />
             </button>
           ) : (
-            <p className="mt-2 text-[11px] text-slate-500">
+            <p className="mt-2 text-sm text-slate-600">
               {disconnected ? "Connect LinkedIn to load this" : "LinkedIn score"}
             </p>
           )}
         </div>
         {loading ? (
-          <div className="h-[5.5rem] w-[9.25rem] rounded-t-full bg-slate-100" aria-hidden />
+          <div className="h-[5.75rem] w-[10.25rem] rounded-t-full bg-slate-100" aria-hidden />
         ) : unavailable ? (
           <p className="max-w-[10rem] text-right text-xs text-slate-500">
             {ssi?.message || "Couldn't load SSI right now."}

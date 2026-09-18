@@ -180,7 +180,8 @@ export function LeadMagnetEditor() {
   function addStep(
     campaignId: string,
     type: CampaignStepType,
-    atIndex?: number
+    atIndex?: number,
+    mediaKind?: "voice" | "video"
   ) {
     const seq = sequencesRef.current.find((s) => s.campaignId === campaignId);
     if (!seq) return;
@@ -196,7 +197,10 @@ export function LeadMagnetEditor() {
       send_mode: "auto",
       fallback_hours: null,
       fallback_body: null,
-      config: defaultStepConfig(type),
+      config: {
+        ...defaultStepConfig(type),
+        ...(mediaKind ? { media_kind: mediaKind } : {}),
+      },
     };
     const next = [
       ...seq.steps.slice(0, insertAt),
@@ -231,6 +235,15 @@ export function LeadMagnetEditor() {
     const next = seq.steps
       .filter((_, i) => i !== index)
       .map((s, i) => ({ ...s, position: i }));
+    updateSequence(campaignId, next);
+    void saveSteps(campaignId, next)
+      .then((saved) => updateSequence(campaignId, saved))
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Save failed.")
+      );
+  }
+
+  function reorderSteps(campaignId: string, next: SequenceStep[]) {
     updateSequence(campaignId, next);
     void saveSteps(campaignId, next)
       .then((saved) => updateSequence(campaignId, saved))
@@ -352,12 +365,13 @@ export function LeadMagnetEditor() {
           <p className="text-sm text-slate-500">{activeSequence.def.description}</p>
           <CampaignSequenceBuilder
             steps={activeSequence.steps}
+            campaignId={activeSequence.campaignId}
             countAtStep={() => 0}
             abStats={null}
             accounts={accounts}
             connectingProvider={connectingProvider}
-            onAddStep={(type, at) =>
-              addStep(activeSequence.campaignId, type, at)
+            onAddStep={(type, at, mediaKind) =>
+              addStep(activeSequence.campaignId, type, at, mediaKind)
             }
             onConnect={(provider) => void connectProvider(provider)}
             onPatchStep={(index, patch) =>
@@ -366,6 +380,9 @@ export function LeadMagnetEditor() {
             onCommitSteps={() => void commitSequence(activeSequence.campaignId)}
             onDeleteStep={(index) =>
               deleteStep(activeSequence.campaignId, index)
+            }
+            onReorderSteps={(next) =>
+              reorderSteps(activeSequence.campaignId, next)
             }
             onOpenLeads={() => undefined}
             campaigns={otherCampaigns.filter(

@@ -6,12 +6,12 @@
     "account_id": "sample-account-id",
     "object": {
       "uuid": "sample-meeting-uuid",
-      "id": 81234567890,
+      "id": 7981269644,
       "host_id": "sample-host-id",
-      "host_email": "coach@example.com",
+      "host_email": "support@businesscoachacademy.com",
       "topic": "Wednesday Coach Call",
       "type": 8,
-      "start_time": "2026-06-25T13:00:00Z",
+      "start_time": "2026-06-25T15:00:00Z",
       "timezone": "Europe/London",
       "duration": 62,
       "total_size": 123456789,
@@ -20,9 +20,9 @@
       "recording_files": [
         {
           "id": "sample-file-id",
-          "meeting_id": "81234567890",
-          "recording_start": "2026-06-25T13:01:12Z",
-          "recording_end": "2026-06-25T14:02:45Z",
+          "meeting_id": "7981269644",
+          "recording_start": "2026-06-25T15:01:12Z",
+          "recording_end": "2026-06-25T16:02:45Z",
           "file_type": "MP4",
           "file_extension": "MP4",
           "file_size": 123456789,

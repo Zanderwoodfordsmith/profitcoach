@@ -35,12 +35,14 @@ export async function POST(request: Request) {
     name?: string;
     outreach_account_id?: string | null;
     channel?: "linkedin" | "email";
+    template_id?: string | null;
   };
   try {
     const campaign = await createCampaign(auth.coachId, {
-      name: body.name || "Untitled campaign",
+      name: typeof body.name === "string" ? body.name : "",
       outreach_account_id: body.outreach_account_id ?? null,
       channel: body.channel === "email" ? "email" : "linkedin",
+      template_id: body.template_id ?? null,
     });
     return NextResponse.json({ campaign });
   } catch (err) {

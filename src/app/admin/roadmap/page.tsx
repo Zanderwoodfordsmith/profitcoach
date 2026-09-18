@@ -34,6 +34,7 @@ import {
 } from "@/lib/roadmap/core";
 
 const AREA_LABELS: Record<string, string> = {
+  "get-clients": "Get Clients · Campaign Builder",
   beat1: "Beat 1 · Relaunch",
   beat2: "Beat 2 · Content",
   website: "Website",

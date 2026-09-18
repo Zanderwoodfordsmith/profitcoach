@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AdminCoachAiPromptEditor } from "@/components/admin/AdminCoachAiPromptEditor";
 import { AdminLinkedInOptimizerPromptEditor } from "@/components/admin/AdminLinkedInOptimizerPromptEditor";
+import { AdminReplyCopilotPromptEditor } from "@/components/admin/AdminReplyCopilotPromptEditor";
 import { BrainExpandableItem } from "@/components/admin/brand/BrainExpandableItem";
 import {
   getOutputById,
@@ -99,6 +100,17 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
           </p>
           <div className="mt-2">
             <AdminLinkedInOptimizerPromptEditor />
+          </div>
+        </div>
+      ) : null}
+
+      {skill.promptEditor === "reply-copilot" ? (
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            Conversations reply copilot
+          </p>
+          <div className="mt-2">
+            <AdminReplyCopilotPromptEditor />
           </div>
         </div>
       ) : null}

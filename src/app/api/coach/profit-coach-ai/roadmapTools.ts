@@ -25,7 +25,7 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
         area: {
           type: "string",
           description:
-            "Filter by area: beat1, beat2, website, ai-panel, q4, general",
+            "Filter by area: get-clients, beat1, beat2, website, ai-panel, q4, general",
         },
         status: {
           type: "string",
@@ -50,7 +50,8 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
         },
         area: {
           type: "string",
-          description: "beat1, beat2, website, ai-panel, q4, or general",
+          description:
+            "get-clients, beat1, beat2, website, ai-panel, q4, or general",
         },
         status: {
           type: "string",
@@ -117,7 +118,7 @@ export const ROADMAP_TOOLS_SYSTEM_SECTION = `# Build roadmap tools (admin only)
 You can read and write the internal build roadmap (jobs to be done) using tools.
 - Granularity rule: a job = an outcome/deliverable. Steps, sub-tasks, and inputs belong on an existing job's checklist — prefer add_checklist_items over creating a new job. Only create a new job for a genuinely new deliverable.
 - Always call list_roadmap_jobs before updating, and never invent job ids.
-- Areas: beat1 (Sept relaunch), beat2 (content studio), website, ai-panel, q4, general.
+- Areas: get-clients (Campaign Builder Monday push — current priority), beat1 (Sept relaunch), beat2 (content studio), website, ai-panel, q4, general.
 - Statuses (workflow order): todo, up_next, in_progress, done, live. parked = backlog/someday. Visibility: internal (default) or members.
 - "done" means built and verified; "live" means released to coaches/members. "Shipped" or "released" from the admin means live.
 - Blocked is NOT a status: to mark a job blocked, set blocked_by to the reason (keep its status). To unblock, set blocked_by to an empty string.

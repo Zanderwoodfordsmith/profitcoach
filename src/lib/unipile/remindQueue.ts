@@ -3,11 +3,8 @@
  */
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import {
-  sendUnipileChatMessage,
-  startUnipileChat,
-} from "@/lib/unipile/client";
 import { buildMessageBody } from "@/lib/unipile/campaigns";
+import { sendCampaignLinkedInMessage } from "@/lib/unipile/campaignLinkedInSend";
 import { advanceLeadAfterStep } from "@/lib/unipile/worker";
 import {
   resolveStepBodyForLead,
@@ -353,37 +350,6 @@ async function advanceIfStillOnStep(input: {
   });
 }
 
-async function sendLinkedInMessageForLead(input: {
-  accountId: string;
-  providerId: string;
-  lead: Record<string, unknown>;
-  text: string;
-}): Promise<{ chatId: string | null; messageId: string | null }> {
-  let chatId = (input.lead.unipile_chat_id as string | null) ?? null;
-  if (chatId) {
-    const res = await sendUnipileChatMessage({
-      chat_id: chatId,
-      text: input.text,
-    });
-    if (!res.ok) throw new Error(res.error || "Send message failed");
-    return { chatId, messageId: res.data?.message_id ?? null };
-  }
-  const res = await startUnipileChat({
-    account_id: input.accountId,
-    attendees_ids: [input.providerId],
-    text: input.text,
-  });
-  if (!res.ok) throw new Error(res.error || "Start chat failed");
-  chatId = res.data?.chat_id ?? null;
-  if (chatId) {
-    await supabaseAdmin
-      .from("linkedin_campaign_leads")
-      .update({ unipile_chat_id: chatId })
-      .eq("id", input.lead.id);
-  }
-  return { chatId, messageId: res.data?.message_id ?? null };
-}
-
 async function resolveAccountAndProvider(input: {
   campaign: Record<string, unknown>;
   lead: Record<string, unknown>;
@@ -460,18 +426,18 @@ export async function sendRemindJob(input: {
       step: step as Record<string, unknown>,
       draftBody: input.body ?? (job.draft_body as string | null),
     });
-    if (!text.trim()) throw new Error("Empty message body.");
-
     const { accountId, providerId } = await resolveAccountAndProvider({
       campaign: campaign as Record<string, unknown>,
       lead: lead as Record<string, unknown>,
     });
-
-    const sent = await sendLinkedInMessageForLead({
+    const sent = await sendCampaignLinkedInMessage({
+      coachId: input.coachId,
+      campaignId: job.campaign_id as string,
       accountId,
       providerId,
       lead: lead as Record<string, unknown>,
       text,
+      stepConfig: step.config,
     });
 
     await advanceLeadAfterStep({
@@ -723,11 +689,14 @@ export async function processRemindFallbacks(): Promise<{
         lead: lead as Record<string, unknown>,
       });
 
-      const sent = await sendLinkedInMessageForLead({
+      const sent = await sendCampaignLinkedInMessage({
+        coachId: job.coach_id as string,
+        campaignId: job.campaign_id as string,
         accountId,
         providerId,
         lead: lead as Record<string, unknown>,
         text,
+        stepConfig: step.config,
       });
 
       await advanceLeadAfterStep({

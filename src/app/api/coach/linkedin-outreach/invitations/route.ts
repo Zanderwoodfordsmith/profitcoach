@@ -15,17 +15,23 @@ import {
   inviteSentAt,
 } from "@/lib/unipile/inviteWithdraw";
 
+/** LinkedIn paging via Unipile is slow; stay under the platform kill that returns HTML. */
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
-  const auth = await requireOutreachCoach(request);
-  if (auth.error || !auth.coachId) {
-    return NextResponse.json({ error: auth.error }, { status: 401 });
-  }
-  const url = new URL(request.url);
-  const full = url.searchParams.get("full") === "1";
+  let coachId: string | null = null;
   try {
-    const data = await listPendingInvitesForCoach(auth.coachId, {
+    const auth = await requireOutreachCoach(request);
+    if (auth.error || !auth.coachId) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+    coachId = auth.coachId;
+    const url = new URL(request.url);
+    const full = url.searchParams.get("full") === "1";
+    const data = await listPendingInvitesForCoach(coachId, {
       // Total always counts the full pending pile; maxItems only limits returned rows.
       maxItems: full ? PENDING_LIST_MAX : 1,
+      deadlineAt: Date.now() + 45_000,
     });
     const quota = remainingAutoQuota(data.withdraw, utcDateYmd());
     const wouldWithdraw = selectInvitesToWithdraw(
@@ -43,18 +49,21 @@ export async function GET(request: Request) {
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Could not list invitations.";
-    try {
-      const withdraw = await getInviteWithdrawPolicy(auth.coachId);
-      return NextResponse.json({
-        invitations: [],
-        total: 0,
-        has_more: false,
-        withdraw,
-        error: message,
-      });
-    } catch {
-      return NextResponse.json({ error: message }, { status: 500 });
+    if (coachId) {
+      try {
+        const withdraw = await getInviteWithdrawPolicy(coachId);
+        return NextResponse.json({
+          invitations: [],
+          total: 0,
+          has_more: false,
+          withdraw,
+          error: message,
+        });
+      } catch {
+        /* still return JSON below */
+      }
     }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -83,6 +92,7 @@ export async function POST(request: Request) {
       await withdrawInvitation(auth.coachId, body.invitation_id.trim());
       const data = await listPendingInvitesForCoach(auth.coachId, {
         maxItems: PENDING_LIST_MAX,
+        deadlineAt: Date.now() + 45_000,
       });
       return NextResponse.json({ ok: true, ...data });
     }
@@ -93,6 +103,7 @@ export async function POST(request: Request) {
       );
       const data = await listPendingInvitesForCoach(auth.coachId, {
         maxItems: PENDING_LIST_MAX,
+        deadlineAt: Date.now() + 45_000,
       });
       return NextResponse.json({ ok: true, ...result, ...data });
     }

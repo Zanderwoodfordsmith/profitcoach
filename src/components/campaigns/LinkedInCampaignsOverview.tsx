@@ -53,6 +53,10 @@ import {
 } from "@/lib/campaigns/demoPreview";
 import { useCampaignDemoPreview } from "@/hooks/useCampaignDemoPreview";
 import { CampaignDemoPreviewToggle } from "@/components/campaigns/CampaignDemoPreviewToggle";
+import {
+  CAMPAIGN_CREATE_TEMPLATES,
+  type CampaignCreateTemplateId,
+} from "@/lib/unipile/campaignCreateTemplates";
 
 type Account = {
   id: string;
@@ -469,6 +473,8 @@ export function LinkedInCampaignsOverview() {
   const [showSending, setShowSending] = useState(false);
   const [newName, setNewName] = useState("");
   const [newChannel, setNewChannel] = useState<"linkedin" | "email">("linkedin");
+  const [newTemplateId, setNewTemplateId] =
+    useState<CampaignCreateTemplateId>("blank");
   const [configured, setConfigured] = useState(() => cached?.configured ?? true);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [coachSlug, setCoachSlug] = useState<string | null>(
@@ -625,18 +631,27 @@ export function LinkedInCampaignsOverview() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          name: newName.trim() || "Untitled campaign",
+          name: newName.trim(),
           outreach_account_id:
-            newChannel === "email"
+            (newTemplateId !== "blank"
+              ? CAMPAIGN_CREATE_TEMPLATES.find((t) => t.id === newTemplateId)
+                  ?.channel
+              : newChannel) === "email"
               ? mailingAccount?.id ?? null
               : primaryAccount?.id ?? null,
-          channel: newChannel,
+          channel:
+            newTemplateId !== "blank"
+              ? CAMPAIGN_CREATE_TEMPLATES.find((t) => t.id === newTemplateId)
+                  ?.channel ?? "linkedin"
+              : newChannel,
+          template_id: newTemplateId === "blank" ? null : newTemplateId,
         }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Create failed.");
       setNewName("");
       setNewChannel("linkedin");
+      setNewTemplateId("blank");
       setShowCreate(false);
       router.push(`${prefix}/campaigns/${body.campaign.id}`);
     } catch (err) {
@@ -855,39 +870,79 @@ export function LinkedInCampaignsOverview() {
             ) : (
               <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40 xl:col-start-1 xl:row-start-2 xl:h-full xl:min-h-0">
                 {showCreate ? (
-                  <div className="flex shrink-0 flex-wrap gap-2 border-b border-slate-100 px-4 py-4">
+                  <div className="shrink-0 space-y-3 border-b border-slate-100 px-4 py-4">
                     <input
                       autoFocus
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       placeholder="e.g. SaaS Founders Outreach"
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none ring-[#0c5290]/30 placeholder:text-slate-400 focus:ring-2"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none ring-[#0c5290]/30 placeholder:text-slate-400 focus:ring-2"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") void createCampaign();
                         if (e.key === "Escape") setShowCreate(false);
                       }}
                     />
-                    <select
-                      value={newChannel}
-                      onChange={(e) =>
-                        setNewChannel(
-                          e.target.value === "email" ? "email" : "linkedin"
-                        )
-                      }
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#0c5290]/30"
-                      aria-label="Campaign channel"
-                    >
-                      <option value="linkedin">LinkedIn</option>
-                      <option value="email">Email</option>
-                    </select>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void createCampaign()}
-                      className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-                    >
-                      Create
-                    </button>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Start from
+                      </p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {CAMPAIGN_CREATE_TEMPLATES.map((template) => {
+                          const selected = newTemplateId === template.id;
+                          return (
+                            <button
+                              key={template.id}
+                              type="button"
+                              onClick={() => {
+                                setNewTemplateId(template.id);
+                                setNewChannel(template.channel);
+                              }}
+                              className={`rounded-xl border px-3 py-2.5 text-left ${
+                                selected
+                                  ? "border-[#0c5290] bg-sky-50"
+                                  : "border-slate-200 bg-white hover:bg-slate-50"
+                              }`}
+                            >
+                              <span
+                                className={`block text-sm font-semibold ${
+                                  selected ? "text-[#0c5290]" : "text-slate-800"
+                                }`}
+                              >
+                                {template.name}
+                              </span>
+                              <span className="mt-0.5 block text-[11px] leading-snug text-slate-500">
+                                {template.description}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {newTemplateId === "blank" ? (
+                      <select
+                        value={newChannel}
+                        onChange={(e) =>
+                          setNewChannel(
+                            e.target.value === "email" ? "email" : "linkedin"
+                          )
+                        }
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#0c5290]/30"
+                        aria-label="Campaign channel"
+                      >
+                        <option value="linkedin">LinkedIn</option>
+                        <option value="email">Email</option>
+                      </select>
+                    ) : null}
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void createCampaign()}
+                        className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                      >
+                        Create
+                      </button>
+                    </div>
                   </div>
                 ) : null}
 

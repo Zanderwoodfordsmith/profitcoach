@@ -122,6 +122,8 @@ export async function logLeadInterest(input: {
   outcome: InterestOutcome;
   note?: string | null;
   status?: FunnelStatus;
+  /** When the caller already wrote contacts.reply_disposition. */
+  skipContactSync?: boolean;
 }) {
   const { data: lead, error } = await supabaseAdmin
     .from("linkedin_campaign_leads")
@@ -150,7 +152,9 @@ export async function logLeadInterest(input: {
       interest_logged_at: new Date().toISOString(),
       status: nextStatus,
       next_action_at:
-        input.outcome === "positive" || input.outcome === "soft"
+        input.outcome === "positive" ||
+        input.outcome === "soft" ||
+        input.outcome === "negative"
           ? null
           : undefined,
       funnel_events: appendFunnelEvent(lead.funnel_events, {
@@ -165,9 +169,38 @@ export async function logLeadInterest(input: {
     .maybeSingle();
   if (upErr) throw new Error(upErr.message);
 
-  if (input.outcome === "positive" || input.outcome === "soft") {
+  if (
+    input.outcome === "positive" ||
+    input.outcome === "soft" ||
+    input.outcome === "negative"
+  ) {
     const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
-    await cancelOpenSendJobs(input.leadId, "Paused — interested reply logged");
+    const reason =
+      input.outcome === "negative"
+        ? "Paused — not interested"
+        : "Paused — interested reply logged";
+    await cancelOpenSendJobs(input.leadId, reason);
+  }
+
+  if (!input.skipContactSync) {
+    const { data: leadContact } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("contact_id")
+      .eq("id", input.leadId)
+      .maybeSingle();
+    const contactId = (leadContact?.contact_id as string | null) ?? null;
+    if (contactId) {
+      const { applyContactReplyDisposition, dispositionFromInterestOutcome } =
+        await import("@/lib/prospects/replyDisposition");
+      const disposition = dispositionFromInterestOutcome(input.outcome);
+      if (disposition) {
+        await applyContactReplyDisposition({
+          coachId: input.coachId,
+          contactId,
+          disposition,
+        });
+      }
+    }
   }
 
   if (nextStatus === "interested" && updated?.campaign_id) {

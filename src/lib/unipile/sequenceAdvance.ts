@@ -3,6 +3,7 @@ import { clampWaitHours } from "@/lib/unipile/waitDuration";
 import {
   addToCampaignIdFrom,
   callWaitFrom,
+  inviteNoConnectFrom,
 } from "@/lib/unipile/campaignStepTypes";
 
 type StepRow = {
@@ -94,7 +95,7 @@ async function enqueueCallReminderJob(input: {
   });
 }
 
-async function enrollLeadInOtherCampaign(input: {
+export async function enrollLeadInOtherCampaign(input: {
   coachId: string;
   sourceCampaignId: string;
   targetCampaignId: string | null;
@@ -145,4 +146,75 @@ async function enrollLeadInOtherCampaign(input: {
         typeof input.lead.title === "string" ? input.lead.title : null,
     },
   ]);
+}
+
+const INVITE_TIMEOUT_BATCH = 20;
+
+/** After the wait on a connection invite, enrol the lead in another campaign. */
+export async function processExpiredInviteTimeouts(): Promise<number> {
+  const now = new Date().toISOString();
+  const { data: leads, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select(
+      "id, coach_id, campaign_id, contact_id, linkedin_url, linkedin_provider_id, first_name, last_name, company, title, current_step_position"
+    )
+    .eq("status", "invited")
+    .lte("next_action_at", now)
+    .not("next_action_at", "is", null)
+    .limit(INVITE_TIMEOUT_BATCH);
+  if (error || !leads?.length) return 0;
+
+  let moved = 0;
+  for (const lead of leads) {
+    const campaignId = String(lead.campaign_id || "");
+    const coachId = String(lead.coach_id || "");
+    if (!campaignId || !coachId) continue;
+
+    const { data: campaign } = await supabaseAdmin
+      .from("linkedin_campaigns")
+      .select("id, status")
+      .eq("id", campaignId)
+      .eq("coach_id", coachId)
+      .maybeSingle();
+    if (!campaign || campaign.status !== "running") continue;
+
+    const { data: steps } = await supabaseAdmin
+      .from("linkedin_campaign_steps")
+      .select("position, step_type, config")
+      .eq("campaign_id", campaignId)
+      .order("position", { ascending: true });
+    const pos = Number(lead.current_step_position ?? 0);
+    const inviteStep =
+      (steps ?? []).find(
+        (s) => s.position === pos && s.step_type === "invite"
+      ) ?? (steps ?? []).find((s) => s.step_type === "invite");
+    const branch = inviteNoConnectFrom(inviteStep?.config);
+    if (
+      branch.on_no_connect !== "other_campaign" ||
+      !branch.no_connect_campaign_id
+    ) {
+      await supabaseAdmin
+        .from("linkedin_campaign_leads")
+        .update({ next_action_at: null })
+        .eq("id", lead.id);
+      continue;
+    }
+
+    await enrollLeadInOtherCampaign({
+      coachId,
+      sourceCampaignId: campaignId,
+      targetCampaignId: branch.no_connect_campaign_id,
+      lead,
+    });
+    await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .update({
+        status: "skipped",
+        next_action_at: null,
+        last_error: "Did not connect — moved to another campaign",
+      })
+      .eq("id", lead.id);
+    moved += 1;
+  }
+  return moved;
 }

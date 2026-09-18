@@ -1,6 +1,7 @@
 import {
   MAX_MESSAGING_ATTACHMENTS,
   parseMessagingAttachments,
+  signMessagingAttachments,
   type MessagingAttachmentMeta,
 } from "@/lib/messaging/messageAttachments";
 import { replyUnipileConversation } from "@/lib/unipile/inboxSync";
@@ -141,4 +142,150 @@ export async function processDueScheduledMessages(limit = 20): Promise<{
     failed,
     errors,
   };
+}
+
+const SCHEDULED_SELECT =
+  "id, conversation_id, coach_id, channel, body_text, attachments, scheduled_for, status, attempts, last_error, created_at";
+
+export type MessagingScheduledMessagePublic = {
+  id: string;
+  conversation_id: string;
+  channel: string;
+  body_text: string | null;
+  attachments: MessagingAttachmentMeta[];
+  scheduled_for: string;
+  status: string;
+  last_error: string | null;
+  created_at: string;
+};
+
+function asPublicRow(
+  row: Record<string, unknown>,
+  attachments: MessagingAttachmentMeta[]
+): MessagingScheduledMessagePublic {
+  return {
+    id: String(row.id),
+    conversation_id: String(row.conversation_id),
+    channel: String(row.channel || ""),
+    body_text: (row.body_text as string | null) ?? null,
+    attachments,
+    scheduled_for: String(row.scheduled_for),
+    status: String(row.status || "scheduled"),
+    last_error: (row.last_error as string | null) ?? null,
+    created_at: String(row.created_at || row.scheduled_for),
+  };
+}
+
+export async function listScheduledForConversation(input: {
+  conversationId: string;
+  coachId: string;
+}): Promise<MessagingScheduledMessagePublic[]> {
+  const { data, error } = await supabaseAdmin
+    .from("messaging_scheduled_messages")
+    .select(SCHEDULED_SELECT)
+    .eq("conversation_id", input.conversationId)
+    .eq("coach_id", input.coachId)
+    .in("status", ["scheduled", "failed"])
+    .order("scheduled_for", { ascending: true });
+  if (error) throw new Error(error.message);
+
+  return Promise.all(
+    (data ?? []).map(async (row) => {
+      const rec = row as Record<string, unknown>;
+      const attachments = await signMessagingAttachments(
+        parseMessagingAttachments(rec.attachments)
+      );
+      return asPublicRow(rec, attachments);
+    })
+  );
+}
+
+async function loadOwnedScheduled(input: {
+  id: string;
+  conversationId: string;
+  coachId: string;
+}) {
+  const { data, error } = await supabaseAdmin
+    .from("messaging_scheduled_messages")
+    .select(SCHEDULED_SELECT)
+    .eq("id", input.id)
+    .eq("conversation_id", input.conversationId)
+    .eq("coach_id", input.coachId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as Record<string, unknown> | null;
+}
+
+export async function updateScheduledMessage(input: {
+  id: string;
+  conversationId: string;
+  coachId: string;
+  bodyText?: string;
+  scheduledFor?: string;
+}): Promise<MessagingScheduledMessagePublic> {
+  const existing = await loadOwnedScheduled(input);
+  if (!existing) throw new Error("Scheduled message not found.");
+  const status = String(existing.status || "");
+  if (status !== "scheduled" && status !== "failed") {
+    throw new Error("Only upcoming scheduled messages can be edited.");
+  }
+
+  const patch: Record<string, unknown> = {};
+  if (input.bodyText !== undefined) {
+    patch.body_text = input.bodyText;
+  }
+  if (input.scheduledFor !== undefined) {
+    const when = new Date(input.scheduledFor);
+    if (Number.isNaN(when.getTime())) {
+      throw new Error("Invalid schedule time.");
+    }
+    if (when.getTime() < Date.now() + 60_000) {
+      throw new Error("Schedule at least one minute in the future.");
+    }
+    patch.scheduled_for = when.toISOString();
+  }
+  if (!Object.keys(patch).length) {
+    const attachments = await signMessagingAttachments(
+      parseMessagingAttachments(existing.attachments)
+    );
+    return asPublicRow(existing, attachments);
+  }
+
+  patch.status = "scheduled";
+  patch.last_error = null;
+
+  const { data, error } = await supabaseAdmin
+    .from("messaging_scheduled_messages")
+    .update(patch)
+    .eq("id", input.id)
+    .eq("conversation_id", input.conversationId)
+    .select(SCHEDULED_SELECT)
+    .maybeSingle();
+  if (error || !data) {
+    throw new Error(error?.message || "Could not update scheduled message.");
+  }
+  const rec = data as Record<string, unknown>;
+  const attachments = await signMessagingAttachments(
+    parseMessagingAttachments(rec.attachments)
+  );
+  return asPublicRow(rec, attachments);
+}
+
+export async function cancelScheduledMessage(input: {
+  id: string;
+  conversationId: string;
+  coachId: string;
+}): Promise<void> {
+  const existing = await loadOwnedScheduled(input);
+  if (!existing) throw new Error("Scheduled message not found.");
+  const status = String(existing.status || "");
+  if (status !== "scheduled" && status !== "failed") {
+    throw new Error("Only upcoming scheduled messages can be deleted.");
+  }
+  const { error } = await supabaseAdmin
+    .from("messaging_scheduled_messages")
+    .update({ status: "cancelled" })
+    .eq("id", input.id)
+    .eq("conversation_id", input.conversationId);
+  if (error) throw new Error(error.message);
 }

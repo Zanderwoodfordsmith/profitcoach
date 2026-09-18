@@ -7,6 +7,7 @@ export type CampaignFeedItem = {
   campaignId: string;
   campaignName: string;
   leadId: string;
+  contactId: string | null;
   leadStatus: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -46,7 +47,7 @@ async function hydrateJobs(
         .in("id", campaignIds),
       supabaseAdmin
         .from("linkedin_campaign_leads")
-        .select("id, first_name, last_name, company, status")
+        .select("id, first_name, last_name, company, status, contact_id")
         .eq("coach_id", coachId)
         .in("id", leadIds),
       supabaseAdmin
@@ -73,6 +74,7 @@ async function hydrateJobs(
       campaignId: job.campaign_id,
       campaignName: String(campaign.name || "Campaign"),
       leadId: job.lead_id,
+      contactId: (lead.contact_id as string | null) ?? null,
       leadStatus: (lead.status as string | null) ?? null,
       firstName: (lead.first_name as string | null) ?? null,
       lastName: (lead.last_name as string | null) ?? null,
@@ -160,7 +162,7 @@ export async function loadCampaignActivityFeed(
 
   const { data: queuedLeads } = await supabaseAdmin
     .from("linkedin_campaign_leads")
-    .select("id, campaign_id, first_name, last_name, company, next_action_at, status")
+    .select("id, campaign_id, contact_id, first_name, last_name, company, next_action_at, status")
     .eq("coach_id", coachId)
     .eq("status", "queued")
     .in("campaign_id", runningIds)
@@ -179,6 +181,7 @@ export async function loadCampaignActivityFeed(
       campaignId,
       campaignName: campaignNameById.get(campaignId) || "Campaign",
       leadId,
+      contactId: (lead.contact_id as string | null) ?? null,
       leadStatus: (lead.status as string | null) ?? "queued",
       firstName: (lead.first_name as string | null) ?? null,
       lastName: (lead.last_name as string | null) ?? null,

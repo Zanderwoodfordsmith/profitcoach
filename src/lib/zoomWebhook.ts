@@ -25,6 +25,8 @@ export type ZoomRecordingObject = {
   id?: number | string;
   uuid?: string;
   topic?: string;
+  host_email?: string;
+  host_id?: string;
   start_time?: string;
   duration?: number;
   share_url?: string;
@@ -149,12 +151,24 @@ export function extractZoomTranscriptDownloadUrl(
   return null;
 }
 
+function asDurationMinutes(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.trunc(value);
+  }
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+    return Number.parseInt(value.trim(), 10);
+  }
+  return null;
+}
+
 export type ParsedZoomRecordingCompleted = {
   accountId: string | null;
   meetingId: string | null;
   meetingUuid: string | null;
+  hostEmail: string | null;
   topic: string | null;
   startTimeIso: string;
+  durationMinutes: number | null;
   shareUrl: string;
   transcriptDownloadUrl: string | null;
 };
@@ -181,8 +195,10 @@ export function parseZoomRecordingCompletedPayload(
     accountId: asTrimmedString(body.payload?.account_id),
     meetingId: extractZoomMeetingId(object.id),
     meetingUuid: asTrimmedString(object.uuid),
+    hostEmail: asTrimmedString(object.host_email)?.toLowerCase() ?? null,
     topic: asTrimmedString(object.topic),
     startTimeIso,
+    durationMinutes: asDurationMinutes(object.duration),
     shareUrl,
     transcriptDownloadUrl: extractZoomTranscriptDownloadUrl(object),
   };
@@ -214,8 +230,10 @@ export function parseZoomBookingRecordingPayload(
     accountId: asTrimmedString(body.payload?.account_id),
     meetingId: extractZoomMeetingId(object.id),
     meetingUuid: asTrimmedString(object.uuid),
+    hostEmail: asTrimmedString(object.host_email)?.toLowerCase() ?? null,
     topic: asTrimmedString(object.topic),
     startTimeIso,
+    durationMinutes: asDurationMinutes(object.duration),
     shareUrl: shareUrl ?? "",
     transcriptDownloadUrl,
   };

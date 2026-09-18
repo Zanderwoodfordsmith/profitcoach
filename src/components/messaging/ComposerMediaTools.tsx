@@ -58,28 +58,43 @@ export function ScheduleMessageModal({
   onClose,
   onSchedule,
   busy,
+  initialIso,
+  title,
+  confirmLabel,
 }: {
   open: boolean;
   onClose: () => void;
   onSchedule: (iso: string) => void;
   busy?: boolean;
+  initialIso?: string | null;
+  title?: string;
+  confirmLabel?: string;
 }) {
   const tz = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     []
   );
   const defaults = useMemo(() => {
-    const d = new Date();
-    d.setMinutes(0, 0, 0);
-    d.setHours(d.getHours() + 1);
+    const d = initialIso ? new Date(initialIso) : new Date();
+    if (!initialIso || Number.isNaN(d.getTime())) {
+      const n = new Date();
+      n.setMinutes(0, 0, 0);
+      n.setHours(n.getHours() + 1);
+      const yyyy = n.getFullYear();
+      const mm = String(n.getMonth() + 1).padStart(2, "0");
+      const dd = String(n.getDate()).padStart(2, "0");
+      const hh = String(n.getHours()).padStart(2, "0");
+      const mi = String(n.getMinutes()).padStart(2, "0");
+      return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}` };
+    }
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
     const hh = String(d.getHours()).padStart(2, "0");
     const mi = String(d.getMinutes()).padStart(2, "0");
     return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}` };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional on open
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when the modal opens
+  }, [open, initialIso]);
 
   const [date, setDate] = useState(defaults.date);
   const [time, setTime] = useState(defaults.time);
@@ -106,7 +121,7 @@ export function ScheduleMessageModal({
             id="schedule-message-title"
             className="text-sm font-semibold text-slate-900"
           >
-            Schedule your message
+            {title || "Schedule your message"}
           </h3>
           <button
             type="button"
@@ -159,7 +174,7 @@ export function ScheduleMessageModal({
             }}
             className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
           >
-            {busy ? "Scheduling…" : "Schedule"}
+            {busy ? "Saving…" : confirmLabel || "Schedule"}
           </button>
         </div>
       </div>

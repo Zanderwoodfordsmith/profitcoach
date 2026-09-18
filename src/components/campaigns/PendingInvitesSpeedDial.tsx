@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   PENDING_DIAL_MAX,
   PENDING_KEEP_UNDER,
@@ -10,7 +11,7 @@ import {
 import { BOSS_PRO_RING_TRACK } from "@/lib/bossProDialGradients";
 
 /**
- * SSI-style progress arc: gray track, fill up to count in the zone colour.
+ * Green → red tachometer: the full scale stays painted, a bead marks the count.
  */
 export function PendingInvitesSpeedDial({
   count,
@@ -23,16 +24,26 @@ export function PendingInvitesSpeedDial({
   loading?: boolean;
   compact?: boolean;
 }) {
+  const rawId = useId();
+  const gradientId = `pending-arc-${rawId.replace(/:/g, "")}`;
   const cx = 120;
   const cy = 126;
   const r = 92;
-  const stroke = compact ? 14 : 16;
-  const length = Math.PI * r;
+  const stroke = 16;
   const track = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
 
   const value = count == null ? 0 : Math.max(0, count);
-  const pct = Math.min(1, Math.max(0, value / PENDING_DIAL_MAX));
-  const filled = `${pct * length} ${length}`;
+  const pct =
+    count == null ? null : Math.min(1, Math.max(0, value / PENDING_DIAL_MAX));
+  const theta = pct == null ? null : Math.PI * (1 - pct);
+  const marker =
+    theta == null
+      ? null
+      : {
+          x: cx + r * Math.cos(theta),
+          y: cy - r * Math.sin(theta),
+        };
+  const beadR = stroke / 2 + 0.5;
 
   const zone = count == null ? null : pendingInviteZone(value);
   const zoneColor = count == null ? "#94a3b8" : pendingInviteZoneColor(value);
@@ -41,7 +52,7 @@ export function PendingInvitesSpeedDial({
 
   return (
     <div
-      className={`relative ${compact ? "w-[9.25rem]" : "mx-auto w-[13.5rem]"}`}
+      className={`relative ${compact ? "w-[10.25rem]" : "mx-auto w-[13.5rem]"}`}
       role="img"
       aria-label={
         count == null
@@ -50,25 +61,36 @@ export function PendingInvitesSpeedDial({
       }
     >
       <svg viewBox="0 0 240 148" className="h-auto w-full" aria-hidden>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#15803d" />
+            <stop offset="25%" stopColor="#ca8a04" />
+            <stop offset="50%" stopColor="#ea580c" />
+            <stop offset="75%" stopColor="#dc2626" />
+            <stop offset="100%" stopColor="#dc2626" />
+          </linearGradient>
+        </defs>
         <path
           d={track}
           fill="none"
-          stroke={BOSS_PRO_RING_TRACK}
+          stroke={
+            pct == null ? BOSS_PRO_RING_TRACK : `url(#${gradientId})`
+          }
           strokeWidth={stroke}
           strokeLinecap="round"
         />
-        {pct > 0 ? (
-          <path
-            d={track}
-            fill="none"
-            stroke={zoneColor}
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={filled}
+        {marker ? (
+          <circle
+            cx={marker.x}
+            cy={marker.y}
+            r={beadR}
+            fill="#ffffff"
+            stroke="#0f172a"
+            strokeWidth={1.75}
           />
         ) : null}
       </svg>
-      <div className="absolute inset-x-0 bottom-1 flex flex-col items-center">
+      <div className="pointer-events-none absolute inset-x-0 bottom-1 flex flex-col items-center">
         <p
           className={`font-semibold leading-none tabular-nums tracking-tight ${
             compact ? "text-[1.7rem]" : "text-[2.35rem]"

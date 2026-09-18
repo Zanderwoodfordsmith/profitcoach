@@ -474,21 +474,31 @@ export type UnipileSentInvitation = {
   invitation_text?: string | null;
 };
 
+/** Unipile `limit` for GET /users/invite/sent is 1–250. */
+export const UNIPILE_SENT_INVITE_PAGE_MAX = 250;
+
 export async function listSentInvitations(input: {
   account_id: string;
   limit?: number;
   cursor?: string | null;
+  timeoutMs?: number;
 }) {
+  const limit = Math.min(
+    UNIPILE_SENT_INVITE_PAGE_MAX,
+    Math.max(1, Math.floor(input.limit ?? 100))
+  );
   const qs = new URLSearchParams({
     account_id: input.account_id,
-    limit: String(input.limit ?? 100),
+    limit: String(limit),
   });
   if (input.cursor) qs.set("cursor", input.cursor);
   return unipileFetch<{
     object?: string;
     items?: UnipileSentInvitation[];
     cursor?: string | null;
-  }>("GET", `/api/v1/users/invite/sent?${qs.toString()}`);
+  }>("GET", `/api/v1/users/invite/sent?${qs.toString()}`, undefined, {
+    timeoutMs: input.timeoutMs ?? 12_000,
+  });
 }
 
 export async function cancelSentInvitation(input: {

@@ -32,6 +32,7 @@ import type { AbVariantStats } from "@/lib/unipile/abMetrics";
 import {
   campaignStepHasCopy,
   defaultStepConfig,
+  type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
 import {
@@ -511,7 +512,11 @@ export function LinkedInCampaignEditor() {
     }
   }
 
-  function addStep(type: Step["step_type"], atIndex?: number) {
+  function addStep(
+    type: Step["step_type"],
+    atIndex?: number,
+    mediaKind?: CampaignStepMediaKind
+  ) {
     const insertAt = Math.max(0, Math.min(atIndex ?? steps.length, steps.length));
     const created: Step = {
       position: insertAt,
@@ -521,11 +526,19 @@ export function LinkedInCampaignEditor() {
       send_mode: type === "message" ? "auto" : "auto",
       fallback_hours: null,
       fallback_body: null,
-      config: defaultStepConfig(type),
+      config: {
+        ...defaultStepConfig(type),
+        ...(mediaKind ? { media_kind: mediaKind } : {}),
+      },
     };
     const next = [...steps.slice(0, insertAt), created, ...steps.slice(insertAt)].map(
       (s, i) => ({ ...s, position: i })
     );
+    setSteps(next);
+    void saveSteps(next);
+  }
+
+  function reorderSteps(next: Step[]) {
     setSteps(next);
     void saveSteps(next);
   }
@@ -843,10 +856,17 @@ export function LinkedInCampaignEditor() {
             steps={steps}
             jobs={jobs}
             campaignStatus={campaign.status}
+            prospectHref={(lead) =>
+              lead.contact_id
+                ? `${prefix}/prospects/${encodeURIComponent(lead.contact_id)}`
+                : null
+            }
             busy={busy}
             onAdd={() => setAddLeadsOpen(true)}
             onDelete={(leadId) => void deleteLead(leadId)}
-            onMarkInterest={(leadId) => void markLeadInterest(leadId, "positive")}
+            onMarkInterest={(leadId, outcome) =>
+              void markLeadInterest(leadId, outcome)
+            }
           />
         </div>
       ) : null}
@@ -855,6 +875,7 @@ export function LinkedInCampaignEditor() {
       {tab === "steps" ? (
         <CampaignSequenceBuilder
           steps={steps}
+          campaignId={campaign.id}
           countAtStep={countAtStep}
           abStats={abStats}
           accounts={accounts}
@@ -864,6 +885,7 @@ export function LinkedInCampaignEditor() {
           onPatchStep={patchStep}
           onCommitSteps={commitSteps}
           onDeleteStep={deleteStep}
+          onReorderSteps={reorderSteps}
           onOpenLeads={setLeadDrawer}
           campaigns={otherCampaigns}
         />
@@ -927,9 +949,18 @@ export function LinkedInCampaignEditor() {
               ) : (
                 drawerLeads.map((lead) => (
                   <li key={lead.id} className="px-5 py-3">
-                    <div className="text-sm font-medium text-slate-900">
-                      {leadName(lead)}
-                    </div>
+                    {lead.contact_id ? (
+                      <Link
+                        href={`${prefix}/prospects/${encodeURIComponent(lead.contact_id)}`}
+                        className="text-sm font-medium text-[#0c5290] hover:underline"
+                      >
+                        {leadName(lead)}
+                      </Link>
+                    ) : (
+                      <div className="text-sm font-medium text-slate-900">
+                        {leadName(lead)}
+                      </div>
+                    )}
                     <div className="text-xs text-slate-500">
                       {activityLeadStatusLabel(lead.status)}
                       {lead.company ? ` · ${lead.company}` : ""}

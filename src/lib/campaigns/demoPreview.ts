@@ -77,6 +77,7 @@ export type DemoPreviewFeedItem = {
   campaignId: string;
   campaignName: string;
   leadId: string;
+  contactId: string | null;
   leadStatus: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -641,6 +642,7 @@ function feedItem(
     campaignId: input.campaignId,
     campaignName: input.campaignName,
     leadId: `${DEMO_PREVIEW_ID_PREFIX}lead-${input.prefix}-${index}`,
+    contactId: null,
     leadStatus: input.leadStatus,
     firstName: person.first,
     lastName: person.last,

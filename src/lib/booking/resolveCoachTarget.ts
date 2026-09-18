@@ -3,6 +3,7 @@ import {
   isSupportCallHostSlug,
   type SupportCallHostSlug,
 } from "@/lib/support/supportCallHosts";
+import { parseCoachIdHeader } from "@/lib/coachId";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type CoachAuthUser = {
@@ -158,7 +159,7 @@ export async function requireCoachOrAdmin(request: Request): Promise<
 
   const impersonateCoachId =
     profile.role === "admin"
-      ? request.headers.get("x-impersonate-coach-id")?.trim() || null
+      ? parseCoachIdHeader(request.headers.get("x-impersonate-coach-id"))
       : null;
 
   return {

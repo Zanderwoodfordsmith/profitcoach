@@ -8,7 +8,7 @@ export const THREAD_LIST_MAX = 250;
 export const THREAD_PREFETCH_COUNT = 3;
 
 export const THREAD_MESSAGE_COLUMNS =
-  "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at";
+  "id, conversation_id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at";
 
 export function clampInt(
   raw: string | number | null | undefined,

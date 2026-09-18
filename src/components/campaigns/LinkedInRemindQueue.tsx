@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import {
   ActivityTableHeader,
@@ -13,6 +14,7 @@ import {
   isDemoPreviewId,
 } from "@/lib/campaigns/demoPreview";
 import type { LeadStatusIcon, LeadStatusTone } from "@/lib/unipile/campaignLeadActivity";
+import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
 
 type RemindItem = {
   job_id: string;
@@ -30,6 +32,7 @@ type RemindItem = {
   last_name: string | null;
   company: string | null;
   linkedin_url: string | null;
+  contact_id?: string | null;
 };
 
 async function authHeaders(): Promise<Record<string, string> | null> {
@@ -75,6 +78,8 @@ export function LinkedInRemindQueue({
   /** Compact list for the campaigns activity pane (no outer card). */
   embedded?: boolean;
 }) {
+  const pathname = usePathname() ?? "";
+  const isAdmin = pathname.startsWith("/admin");
   const [items, setItems] = useState<RemindItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -229,6 +234,7 @@ export function LinkedInRemindQueue({
                   <ActivityTableRow
                     key={item.job_id}
                     name={leadName(item)}
+                    href={prospectDetailHref(item.contact_id, isAdmin)}
                     status={status}
                     next={shortStepLabel(item.step_type || "message")}
                     open={open}

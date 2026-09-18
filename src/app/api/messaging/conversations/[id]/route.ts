@@ -17,7 +17,7 @@ import {
   validateMessagingAttachment,
   type MessagingAttachmentMeta,
 } from "@/lib/messaging/messageAttachments";
-import { scheduleMessagingReply } from "@/lib/messaging/scheduledMessages";
+import { scheduleMessagingReply, listScheduledForConversation } from "@/lib/messaging/scheduledMessages";
 import { loadEnrichedProspectById } from "@/lib/prospects/loadEnrichedProspect";
 import { listCoachProspectTags } from "@/lib/prospects/tags";
 import { updateProspectFields } from "@/lib/prospects/updateProspectFields";
@@ -27,54 +27,22 @@ import {
   clampThreadMessageLimit,
   parseBeforeCursor,
 } from "@/lib/messaging/threadWindow";
-import { requireAdmin } from "@/lib/requireAdmin";
-import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import { resolveMessagingAccess } from "@/lib/messaging/resolveMessagingAccess";
 import { listOutreachAccounts } from "@/lib/unipile/outreachAccounts";
 import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
+import { buildLeadAssessmentUrl } from "@/lib/unipile/interest";
+import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-async function resolveAccess(request: Request): Promise<
-  | { error: string; status: number; coachId: null; isAdmin: false }
-  | { error: null; coachId: string | null; isAdmin: boolean; userId: string }
-> {
-  const admin = await requireAdmin(request);
-  if (admin.error === null && admin.userId) {
-    const impersonateId = request.headers
-      .get("x-impersonate-coach-id")
-      ?.trim();
-    return {
-      error: null,
-      coachId: impersonateId || null,
-      isAdmin: true,
-      userId: admin.userId,
-    };
-  }
-  const coach = await requireCoachRequest(request);
-  if (coach.error || !coach.userId) {
-    return {
-      error: coach.error || admin.error || "Not authorized.",
-      status: 401,
-      coachId: null,
-      isAdmin: false,
-    };
-  }
-  return {
-    error: null,
-    coachId: coach.userId,
-    isAdmin: false,
-    userId: coach.userId,
-  };
-}
-
-async function loadConversation(id: string, coachId: string | null) {
-  let q = supabaseAdmin
+async function loadConversation(id: string, coachId: string) {
+  return supabaseAdmin
     .from("messaging_conversations")
     .select(
       "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, prospect_avatar_url, prospect_linkedin_url, prospect_business_name, last_message_at, starred, unread_count, last_preview, last_channel, unipile_chat_id, hidden_at"
     )
-    .eq("id", id);
-  if (coachId) q = q.eq("coach_id", coachId);
-  return q.maybeSingle();
+    .eq("id", id)
+    .eq("coach_id", coachId)
+    .maybeSingle();
 }
 
 async function signThreadMessages(
@@ -117,8 +85,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const access = await resolveAccess(request);
-  if (access.error) {
+  const access = await resolveMessagingAccess(request);
+  if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
@@ -147,7 +115,8 @@ export async function GET(
     await supabaseAdmin
       .from("messaging_conversations")
       .update({ unread_count: 0 })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("coach_id", access.coachId);
     conversation.unread_count = 0;
   }
 
@@ -186,18 +155,27 @@ export async function GET(
       enrichedConversation.prospect_linkedin_url = linkedInUrl;
     }
 
+    let scheduled: Awaited<ReturnType<typeof listScheduledForConversation>> = [];
+    try {
+      scheduled = await listScheduledForConversation({
+        conversationId: id,
+        coachId: access.coachId,
+      });
+    } catch (err) {
+      console.error("messaging scheduled list:", err);
+    }
+
     return noStoreJson({
       conversation: enrichedConversation ?? conversation,
       messages: enrichedMessages,
       has_older: page.hasOlder,
+      scheduled,
     });
   }
 
   // Prefer explicit contact_id; otherwise resolve via booking or email and backfill.
   let contactId = (conversation.contact_id as string | null) ?? null;
-  const coachIdForContact =
-    (access.coachId as string | null) ||
-    ((conversation.coach_id as string | null) ?? null);
+  const coachIdForContact = access.coachId;
 
   if (!contactId && conversation.booking_id) {
     const { data: bookingContact } = await supabaseAdmin
@@ -239,13 +217,12 @@ export async function GET(
   let prospect = null;
   let activity: Awaited<ReturnType<typeof loadProspectActivity>> = [];
   if (contactId) {
-    const loaded = await loadEnrichedProspectById(
-      contactId,
-      access.coachId ? { coachId: access.coachId } : undefined
-    );
+    const loaded = await loadEnrichedProspectById(contactId, {
+      coachId: access.coachId,
+    });
     prospect = loaded?.prospect ?? null;
     activity = await loadProspectActivity(contactId, {
-      coachId: access.coachId ?? coachIdForContact,
+      coachId: access.coachId,
     });
   }
 
@@ -293,12 +270,60 @@ export async function GET(
     ? await listCoachProspectTags(coachIdForContact)
     : [];
 
+  let replyDisposition: string | null = null;
+  let assessmentUrl: string | null = null;
+  let personalisedAssessmentUrl: string | null = null;
+  if (coachIdForContact) {
+    try {
+      assessmentUrl = await buildLeadAssessmentUrl({ coachId: coachIdForContact });
+      const prospectRec = prospect as {
+        full_name?: string | null;
+        email?: string | null;
+        business_name?: string | null;
+        first_name?: string | null;
+        last_name?: string | null;
+      } | null;
+      const names = splitFullName(prospectRec?.full_name || "");
+      personalisedAssessmentUrl = await buildLeadAssessmentUrl({
+        coachId: coachIdForContact,
+        firstName: prospectRec?.first_name || names.first_name,
+        lastName: prospectRec?.last_name || names.last_name,
+        company: prospectRec?.business_name,
+        email: prospectRec?.email,
+      });
+    } catch (err) {
+      console.error("assessment urls:", err);
+    }
+  }
+  if (contactId) {
+    const { data: dispositionRow, error: dispErr } = await supabaseAdmin
+      .from("contacts")
+      .select("reply_disposition")
+      .eq("id", contactId)
+      .maybeSingle();
+    if (!dispErr) {
+      const raw = (dispositionRow as { reply_disposition?: string | null } | null)
+        ?.reply_disposition;
+      if (
+        raw === "interested" ||
+        raw === "neutral" ||
+        raw === "not_interested"
+      ) {
+        replyDisposition = raw;
+      }
+    }
+  }
+
   return noStoreJson({
     conversation: enrichedConversation ?? conversation,
-    prospect,
+    prospect: prospect
+      ? { ...prospect, reply_disposition: replyDisposition }
+      : prospect,
     booking,
     activity,
     coachTags,
+    assessment_url: assessmentUrl,
+    personalised_assessment_url: personalisedAssessmentUrl,
   });
 }
 
@@ -311,8 +336,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const access = await resolveAccess(request);
-  if (access.error) {
+  const access = await resolveMessagingAccess(request);
+  if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
@@ -337,9 +362,8 @@ export async function PATCH(
     prospectBusiness = body.business_name?.trim() || null;
     patch.prospect_business_name = prospectBusiness;
     const contactId = (conversation.contact_id as string | null) ?? null;
-    const coachIdForContact =
-      access.coachId || ((conversation.coach_id as string | null) ?? null);
-    if (contactId && coachIdForContact) {
+    const coachIdForContact = access.coachId;
+    if (contactId) {
       try {
         const updatedProspect = await updateProspectFields(
           contactId,
@@ -370,6 +394,7 @@ export async function PATCH(
     .from("messaging_conversations")
     .update(patch)
     .eq("id", id)
+    .eq("coach_id", access.coachId)
     .select(
       "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, prospect_avatar_url, prospect_linkedin_url, prospect_business_name, last_message_at, starred, unread_count, last_preview, last_channel"
     )
@@ -397,8 +422,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const access = await resolveAccess(request);
-  if (access.error) {
+  const access = await resolveMessagingAccess(request);
+  if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
@@ -407,12 +432,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
   }
 
-  let q = supabaseAdmin
+  const { error } = await supabaseAdmin
     .from("messaging_conversations")
     .update({ hidden_at: new Date().toISOString() })
-    .eq("id", id);
-  if (access.coachId) q = q.eq("coach_id", access.coachId);
-  const { error } = await q;
+    .eq("id", id)
+    .eq("coach_id", access.coachId);
 
   if (error) {
     console.error("messaging conversation hide:", error);
@@ -436,8 +460,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const access = await resolveAccess(request);
-  if (access.error !== null) {
+  const access = await resolveMessagingAccess(request);
+  if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
   const authorUserId = access.userId;

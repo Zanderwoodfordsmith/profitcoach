@@ -22,6 +22,7 @@ Add these on Vercel (or `.env.local` for local testing):
 |----------|----------|-------------|
 | `ZOOM_WEBHOOK_SECRET_TOKEN` | Yes | Secret token from your Zoom app’s **Event Subscriptions** feature |
 | `ZOOM_ACCOUNT_ID` | No | If set, only recordings from this Zoom account are processed |
+| `ZOOM_RECORDING_MEETING_IDS` | No | Extra Zoom meeting IDs allowed besides the support personal room `7981269644` (comma-separated) |
 
 `SUPABASE_SERVICE_ROLE_KEY` must already be configured — the webhook uses the admin client to update calendar rows.
 
@@ -42,20 +43,28 @@ Add these on Vercel (or `.env.local` for local testing):
 
 Optional: copy your Zoom **Account ID** from the app credentials page into `ZOOM_ACCOUNT_ID` so only your account’s recordings are attached.
 
+The Zoom app is account-level, so every user on the Business Coach Academy Zoom account can fire `recording.completed`. Community-calendar ingest therefore also requires:
+
+1. **Meeting ID** is the support personal room **7981269644** (`https://businesscoachacademy.com/calls`). Whoever started the room (support@, Pam, Zander, …) does not matter.
+2. **Meeting start** is **14:45–17:00 Europe/London** (Monthly Momentum ~15:30, Win The Week / Profit Coach Training at 16:00)
+3. **Duration**, when Zoom sends it, is **15–180 minutes**
+
+These checks use the meeting’s `id` and `start_time` in the webhook payload, not when Zoom finished processing. Legitimate 4pm calls typically land on the calendar around **17:30–18:45 UK**.
+
 ## How matching works
 
 When Zoom sends `recording.completed`, the app:
 
 1. Verifies the `x-zm-signature` header using your secret token
-2. Reads the meeting `start_time` and recording `share_url`
-3. Expands community calendar events around that date
-4. Finds the best matching occurrence using:
-   - **Zoom meeting ID** from the calendar event’s `location_url` (strongest signal)
-   - **Same local calendar day** as the event (in the event’s `display_timezone`)
-   - **Wide time window** — meeting start within **8 hours** before the event start and **8 hours** after the event end
-5. When several same-day calls match (notably first-Monday **Monthly Momentum** then **Win The Week**), assigns recordings in **chronological event order**: the earliest occurrence still missing a recording gets the next webhook
-6. When the recording attaches to **Monthly Momentum** and same-day **Win The Week** still has no recording, **copies the same share URL** onto Win The Week (common when one continuous Zoom recording covers both)
-7. Writes the share URL to:
+2. Drops the recording unless the personal-room meeting ID, London start window, and duration checks above pass
+3. Reads the meeting `start_time` and recording `share_url`
+4. Expands community calendar events around that date
+5. Finds the best matching occurrence using:
+   - Meeting start within **45 minutes before** the slot start and **15 minutes after** the slot end
+   - **Zoom meeting ID** from the calendar event’s `location_url` (score bonus; not enough on its own)
+6. When several same-day calls match (notably first-Monday **Monthly Momentum** then **Win The Week**), assigns recordings in **chronological event order**: the earliest occurrence still missing a recording gets the next webhook
+7. When the recording attaches to **Monthly Momentum** and same-day **Win The Week** still has no recording, **copies the same share URL** onto Win The Week (common when one continuous Zoom recording covers both)
+8. Writes the share URL to:
    - `community_calendar_events.recording_link_url` for one-off events
    - `community_calendar_event_exceptions.recording_link_url` for recurring events
 
@@ -122,8 +131,8 @@ For URL validation during Zoom setup, use Zoom’s built-in **Validate** button 
 
 ## Tips for reliable matching
 
-- Put the Zoom join link in each calendar event’s **Location URL** field (meeting ID is the strongest signal)
-- With the Mon/Thu schedule, same-day + ±8h matching tolerates large start-time drift
+- Record in personal room **798 126 9644** (`/calls`). It is fine if Pam or Zander starts the room instead of support@
+- Put the Zoom join link in each calendar event’s **Location URL** field when you have one (meeting ID is a score bonus)
 - On the first Monday of the month, run Monthly Momentum before Win The Week so the first finished recording attaches to Momentum (and is copied to Win The Week). If you stop/start a second recording for Win The Week, that second webhook replaces the mirrored link.
 
 ## Deferred (optional later)

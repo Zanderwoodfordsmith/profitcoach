@@ -49,6 +49,7 @@ type ProfileData = {
   latitude?: number | null;
   longitude?: number | null;
   location_geocoded_source?: string | null;
+  reply_copilot_notes?: string | null;
 };
 
 export type BossDashboardSettingsTabId =
@@ -101,6 +102,7 @@ export function BossDashboardSettings({
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [communityBio, setCommunityBio] = useState("");
   const [location, setLocation] = useState("");
+  const [replyCopilotNotes, setReplyCopilotNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<"success" | "error" | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -178,6 +180,7 @@ export function BossDashboardSettings({
     setLinkedinUrl(data.linkedin_url ?? "");
     setCommunityBio(data.community_bio ?? data.bio ?? "");
     setLocation(data.location ?? "");
+    setReplyCopilotNotes(data.reply_copilot_notes ?? "");
 
     setLinkedinImportLoading(true);
     setLinkedinImportError(null);
@@ -280,6 +283,7 @@ export function BossDashboardSettings({
         linkedin_url: linkedinUrl.trim() || null,
         community_bio: communityBio.trim() || null,
         location: location.trim() || null,
+        reply_copilot_notes: replyCopilotNotes.trim() || null,
       }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -663,6 +667,27 @@ export function BossDashboardSettings({
               rows={4}
               value={communityBio}
               onChange={(e) => setCommunityBio(e.target.value)}
+            />
+          </ProfileFieldRow>
+        </ProfileSectionCard>
+
+        <ProfileSectionCard
+          title="Reply style"
+          description="Optional notes the reply copilot layers on top of the shared prompt — how you sign off, what you never pitch, phrases you like."
+        >
+          <ProfileFieldRow
+            label="Notes"
+            htmlFor="reply_copilot_notes"
+            alignTop
+            hint="Used when you tap the sparkle in Conversations. Leave blank to use the shared voice only."
+            last
+          >
+            <ProfileMinimalTextarea
+              id="reply_copilot_notes"
+              rows={4}
+              value={replyCopilotNotes}
+              onChange={(e) => setReplyCopilotNotes(e.target.value)}
+              placeholder="e.g. Sign off as Dan. Never pitch a call in the first reply."
             />
           </ProfileFieldRow>
         </ProfileSectionCard>

@@ -59,7 +59,7 @@ type PollBody = {
 };
 
 /** Unipile pool imports update often; keep the toast live. */
-const POLL_MS = 3_000;
+const POLL_MS = 5_000;
 const SUCCESS_TOAST_MS = 8000;
 const ERROR_TOAST_MS = 10_000;
 const LEAD_FINDER_PATH = "/admin/lead-finder";

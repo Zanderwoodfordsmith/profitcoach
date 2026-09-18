@@ -250,9 +250,9 @@ export function LinkedInInterestQueue() {
                           onClick={() =>
                             void mark(lead.id, { outcome: "soft" })
                           }
-                          className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-medium hover:bg-slate-50 disabled:opacity-50"
+                          className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-50"
                         >
-                          Soft yes
+                          Neutral
                         </button>
                         <button
                           type="button"
@@ -260,12 +260,22 @@ export function LinkedInInterestQueue() {
                           onClick={() =>
                             void mark(lead.id, { outcome: "negative" })
                           }
-                          className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+                          className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-900 hover:bg-rose-100 disabled:opacity-50"
                         >
-                          Not now
+                          Not interested
                         </button>
                       </>
-                    ) : null}
+                    ) : (
+                      <span className="self-center text-[11px] font-medium text-slate-600">
+                        {lead.interest_outcome === "positive"
+                          ? "Interested"
+                          : lead.interest_outcome === "soft"
+                            ? "Neutral"
+                            : lead.interest_outcome === "negative"
+                              ? "Not interested"
+                              : lead.interest_outcome}
+                      </span>
+                    )}
                     {(lead.status === "interested" ||
                       lead.interest_outcome === "positive" ||
                       lead.interest_outcome === "soft") &&

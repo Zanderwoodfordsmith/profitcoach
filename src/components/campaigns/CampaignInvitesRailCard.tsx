@@ -20,6 +20,18 @@ type Snapshot = {
   policy: InviteWithdrawPolicy;
 };
 
+type InvitesResponse = {
+  error?: string;
+  total?: number;
+  has_more?: boolean;
+  withdraw?: InviteWithdrawPolicy;
+};
+
+async function readInvitesJson(res: Response): Promise<InvitesResponse | null> {
+  const body = (await res.json().catch(() => null)) as InvitesResponse | null;
+  return body && typeof body === "object" ? body : null;
+}
+
 function AutoCleanInfo() {
   const panelId = useId();
   const wrapRef = useRef<HTMLSpanElement>(null);
@@ -111,12 +123,8 @@ export function CampaignInvitesRailCard({
       const res = await fetch("/api/coach/linkedin-outreach/invitations", {
         headers,
       });
-      const body = (await res.json()) as {
-        error?: string;
-        total?: number;
-        has_more?: boolean;
-        withdraw?: InviteWithdrawPolicy;
-      };
+      const body = await readInvitesJson(res);
+      if (!body) throw new Error("Could not load invites.");
       if (!res.ok) throw new Error(body.error || "Could not load invites.");
       setSnap({
         total: Number(body.total ?? 0),
@@ -128,7 +136,7 @@ export function CampaignInvitesRailCard({
           ranCount: 0,
         },
       });
-      setError(null);
+      setError(typeof body.error === "string" && body.error ? body.error : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load.");
     }
@@ -181,10 +189,8 @@ export function CampaignInvitesRailCard({
           value: DEFAULT_KEEP_UNDER,
         }),
       });
-      const body = (await res.json()) as {
-        error?: string;
-        withdraw?: InviteWithdrawPolicy;
-      };
+      const body = await readInvitesJson(res);
+      if (!body) throw new Error("Could not save.");
       if (!res.ok) throw new Error(body.error || "Could not save.");
       if (body.withdraw) {
         setSnap((current) =>

@@ -38,9 +38,8 @@ const BAND_BY_LABEL = new Map(
 
 const BAND_BY_ID = new Map(SALES_NAV_HEADCOUNT_BANDS.map((b) => [b.id, b]));
 
-/** Default bands when auto-segmenting imports (base search + self-employed). */
+/** Default bands when a search has no company-size filter: classroom 1–200. */
 export const DEFAULT_IMPORT_SEGMENT_TEAM_SIZES = [
-  "Self-employed",
   "1-10",
   "11-50",
   "51-200",

@@ -277,6 +277,17 @@ For the live artifact editor + copy-for-LinkedIn, point them to Get Clients → 
     coachPicker: false,
     promptEditor: "coach-ai",
   },
+  {
+    id: "reply_copilot",
+    label: "Reply copilot",
+    description:
+      "On-demand reply drafts in Conversations — Pam-style, channel-aware, never auto-sends",
+    placeholder: "",
+    systemInstructions: "",
+    knowledgeRefs: [],
+    coachPicker: false,
+    promptEditor: "reply-copilot",
+  },
 ];
 
 /** Skills coaches can pick in Create and the docked AI panel. */

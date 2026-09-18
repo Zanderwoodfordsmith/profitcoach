@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { attachZoomRecordingToCommunityCalendar } from "@/lib/zoomRecordingCalendarSync";
+import { evaluateCommunityZoomRecordingIngest } from "@/lib/zoomRecordingIngestFilter";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   buildZoomUrlValidationResponse,
@@ -84,6 +85,25 @@ export async function POST(request: Request) {
       ok: true,
       ignored: true,
       reason: "account_mismatch",
+    });
+  }
+
+  const ingest = evaluateCommunityZoomRecordingIngest({
+    meetingId: parsed.meetingId,
+    startTimeIso: parsed.startTimeIso,
+    durationMinutes: parsed.durationMinutes,
+  });
+  if (!ingest.ok) {
+    console.warn("zoom recording webhook ignored:", ingest.reason, {
+      topic: parsed.topic,
+      startTimeIso: parsed.startTimeIso,
+      durationMinutes: parsed.durationMinutes,
+      meetingId: parsed.meetingId,
+    });
+    return NextResponse.json({
+      ok: true,
+      ignored: true,
+      reason: ingest.reason,
     });
   }
 

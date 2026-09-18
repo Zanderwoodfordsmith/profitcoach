@@ -8,7 +8,51 @@ Working tracker for the relaunch plan agreed 22 Aug 2026. Full audit behind
 this plan: four-track code review of Get Clients, admin, backend systems, and
 academy.
 
-Statuses: `todo` · `doing` · `done` · `blocked`
+Statuses: `todo` · `up_next` · `in_progress` · `done` · `live` · `parked`
+
+## Next — Get Clients / Campaign Builder (Monday push)
+
+Top priority ahead of Beat 1. Six cards on `/admin/roadmap` (area
+`get-clients`). Tidy templates and test sending before the Monday call.
+
+### Campaigns (`up_next`)
+
+- [ ] LinkedIn voice + video in builder
+- [ ] Reorder steps
+- [ ] “If they don’t connect” → trigger another campaign
+- [ ] Create New Campaign: blank vs from template
+- [ ] Tidy preloaded templates + test sending (for Monday call)
+- [ ] Campaign overview: don’t count plain Gmail — only lead activity
+
+### Leads & replies (`up_next`)
+
+- [ ] Click lead in campaign/overview → prospect detail
+- [ ] Mark replies positive / neutral / interested
+- [ ] Conversations tab: correct links
+- [ ] Save drafts when leaving page
+
+### Pool & import (`up_next`)
+
+- [ ] Investigate Peter Bugless pool (1500 people, import got 306 in 40min)
+- [ ] Short video: Sales Robot CSV export → upload to platform
+
+### UI polish (`up_next`)
+
+- [ ] Fix SSI text size (too small)
+- [ ] Invites colour wheel → speed dial
+- [ ] SSI auto toggle above/below 70
+
+### Lead magnet / Boss (`up_next`)
+
+- [ ] Fix lead magnet design + sequences
+- [ ] Check unsubscribe flow
+- [ ] Test adding people to campaign
+- [ ] Boss Skool calendars working
+
+### Later (`parked`)
+
+- [ ] AI copilot/autopilot for reply suggestions
+- [ ] Email marketing limits (Gmail vs secondary)
 
 ## Beat 1 — relaunch (target: Sept 1)
 

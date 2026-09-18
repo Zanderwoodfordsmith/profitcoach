@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Bell, Check, Clock } from "lucide-react";
 import {
   ActivityTableHeader,
@@ -13,6 +14,7 @@ import { LinkedInRemindQueue } from "@/components/campaigns/LinkedInRemindQueue"
 import { demoPreviewActivityFeed } from "@/lib/campaigns/demoPreview";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { CampaignFeedItem } from "@/lib/unipile/campaignActivityFeed";
+import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
 
 type PaneTab = "due" | "sent" | "planned";
 
@@ -55,10 +57,12 @@ function FeedList({
   items,
   emptyTitle,
   emptyBody,
+  isAdmin,
 }: {
   items: CampaignFeedItem[];
   emptyTitle: string;
   emptyBody: string;
+  isAdmin: boolean;
 }) {
   if (items.length === 0) {
     return (
@@ -77,6 +81,7 @@ function FeedList({
           <ActivityTableRow
             key={item.id}
             name={personName(item)}
+            href={prospectDetailHref(item.contactId, isAdmin)}
             status={leadChip(item.leadStatus)}
             next={shortStepLabel(item.stepType)}
           />
@@ -87,6 +92,8 @@ function FeedList({
 }
 
 export function CampaignActivityPane({ preview = false }: { preview?: boolean }) {
+  const pathname = usePathname() ?? "";
+  const isAdmin = pathname.startsWith("/admin");
   const tabId = useId();
   const [tab, setTab] = useState<PaneTab>("due");
   const [loading, setLoading] = useState(true);
@@ -234,12 +241,14 @@ export function CampaignActivityPane({ preview = false }: { preview?: boolean })
         ) : tab === "sent" ? (
           <FeedList
             items={sent}
+            isAdmin={isAdmin}
             emptyTitle="Nothing sent yet"
             emptyBody="Invites and messages that go out will list here."
           />
         ) : (
           <FeedList
             items={plannedAll}
+            isAdmin={isAdmin}
             emptyTitle="Nothing queued"
             emptyBody="Queued invites and messages will list here."
           />

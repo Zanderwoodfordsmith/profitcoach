@@ -12,14 +12,19 @@ import {
   type SalesNavImportedLead,
 } from "@/lib/apify/salesNavigatorSearch";
 import { estimateSalesNavShortCostUsd } from "@/lib/salesNavigator/apifyCost";
-import { toSalesNavImportLeadSnapshot } from "@/lib/salesNavigator/importLeadSnapshot";
 import {
   planSalesNavImportSegments,
   type SalesNavImportSegmentPlan,
 } from "@/lib/salesNavigator/importSegments";
+import { toSalesNavImportLeadSnapshot } from "@/lib/salesNavigator/importLeadSnapshot";
+import {
+  jobDisplayTargetCount,
+  salesNavLeadDedupeKey,
+} from "@/lib/salesNavigator/importProgress";
 import {
   apifyTakePagesForRequest,
   normalizeRequestedTakePages,
+  salesNavGlobalLeadCapFromPages,
   salesNavLeadTarget,
 } from "@/lib/salesNavigator/importSizing";
 import { upsertSalesNavLeadsToCache } from "@/lib/salesNavigator/upsertSalesNavLeadsToCache";
@@ -131,6 +136,12 @@ function parseSegmentPlan(value: unknown): SalesNavImportSegmentPlan[] | null {
       cacheUpdated: Number(r.cacheUpdated ?? 0),
       errorMessage:
         typeof r.errorMessage === "string" ? r.errorMessage : null,
+      searchTotalCount:
+        typeof r.searchTotalCount === "number" &&
+        Number.isFinite(r.searchTotalCount) &&
+        r.searchTotalCount >= 0
+          ? Math.floor(r.searchTotalCount)
+          : null,
     });
   }
   return out.length > 0 ? out : null;
@@ -153,19 +164,16 @@ export function requestedPagesForJob(job: {
 export function targetCountForJob(job: {
   requested_take_pages?: number | null;
   take_pages?: number | null;
+  progress_count?: number;
   segment_plan?: Array<{ searchTotalCount?: number | null }> | null;
 }): number {
-  const pageTarget = salesNavLeadTarget(requestedPagesForJob(job));
-  const known = job.segment_plan?.find(
-    (seg) =>
-      typeof seg?.searchTotalCount === "number" &&
-      Number.isFinite(seg.searchTotalCount) &&
-      seg.searchTotalCount >= 0
-  )?.searchTotalCount;
-  if (typeof known === "number") {
-    return Math.max(1, Math.min(pageTarget, Math.floor(known)));
-  }
-  return pageTarget;
+  const pages = requestedPagesForJob(job);
+  return jobDisplayTargetCount({
+    pageTarget: salesNavLeadTarget(pages),
+    progressCount: job.progress_count,
+    segmentPlan: job.segment_plan,
+    importAll: salesNavGlobalLeadCapFromPages(pages) == null,
+  });
 }
 
 function activeSegmentUrl(job: SalesNavImportJobRow): string | null {
@@ -184,16 +192,12 @@ export function mergeSalesNavLeadSnapshots(
 ): SalesNavImportLeadSnapshot[] {
   const byKey = new Map<string, SalesNavImportLeadSnapshot>();
   for (const row of existing) {
-    const key =
-      row.linkedinUrl?.trim().toLowerCase() ||
-      `${row.fullName ?? ""}|${row.company ?? ""}`.toLowerCase();
+    const key = salesNavLeadDedupeKey(row);
     if (key) byKey.set(key, row);
   }
   for (const lead of incoming) {
     const snap = toSalesNavImportLeadSnapshot(lead);
-    const key =
-      snap.linkedinUrl?.trim().toLowerCase() ||
-      `${snap.fullName ?? ""}|${snap.company ?? ""}`.toLowerCase();
+    const key = salesNavLeadDedupeKey(snap);
     if (key) byKey.set(key, snap);
   }
   return [...byKey.values()];
@@ -583,6 +587,59 @@ export async function loadImportJob(
   return mapJobRow(data as Record<string, unknown>);
 }
 
+const SYNC_LOCK_MS = 45_000;
+
+async function tryAcquireImportSyncLock(
+  jobId: string
+): Promise<string | null> {
+  const until = new Date(Date.now() + SYNC_LOCK_MS).toISOString();
+  const now = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from("sales_nav_import_runs")
+    .update({ sync_lock_until: until })
+    .eq("id", jobId)
+    .in("status", ["pending", "running"])
+    .or(`sync_lock_until.is.null,sync_lock_until.lt."${now}"`)
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    console.error("sales nav import sync lock:", error.message);
+    return until;
+  }
+  if (!data?.id) return null;
+  return until;
+}
+
+async function releaseImportSyncLock(jobId: string, until: string) {
+  await supabaseAdmin
+    .from("sales_nav_import_runs")
+    .update({ sync_lock_until: null })
+    .eq("id", jobId)
+    .eq("sync_lock_until", until);
+}
+
+/** Stop older in-flight imports for this coach so retries don't share one Unipile account. */
+export async function supersedeRunningSalesNavImports(opts: {
+  coachId: string;
+  exceptJobId?: string;
+}): Promise<void> {
+  const now = new Date().toISOString();
+  let q = supabaseAdmin
+    .from("sales_nav_import_runs")
+    .update({
+      status: "failed",
+      error_message: "Replaced by a newer import.",
+      finished_at: now,
+      sync_lock_until: null,
+    })
+    .eq("coach_id", opts.coachId)
+    .in("status", ["pending", "running"]);
+  if (opts.exceptJobId) {
+    q = q.neq("id", opts.exceptJobId);
+  }
+  await q;
+}
+
 /**
  * Poll Apify or Unipile for a running job; finalize when the run finishes.
  * Safe to call from client poll + cron.
@@ -599,6 +656,21 @@ export async function syncSalesNavImportJob(
     return job;
   }
 
+  const lockUntil = await tryAcquireImportSyncLock(job.id);
+  if (!lockUntil) {
+    return job;
+  }
+
+  try {
+    return await syncSalesNavImportJobLocked(job);
+  } finally {
+    await releaseImportSyncLock(job.id, lockUntil);
+  }
+}
+
+async function syncSalesNavImportJobLocked(
+  job: SalesNavImportJobRow
+): Promise<SalesNavImportJobRow> {
   if (job.provider === "unipile") {
     const { syncUnipileSalesNavImportJob } = await import(
       "@/lib/unipile/salesNavImportJob"
@@ -632,7 +704,7 @@ export async function syncSalesNavImportJob(
     priorSnapshotCount + state.itemCount
   );
 
-  const segmentTarget = targetCountForJob(job);
+  const segmentTarget = salesNavLeadTarget(requestedPagesForJob(job));
 
   if (
     job.segmented &&

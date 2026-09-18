@@ -19,7 +19,10 @@ export type KnowledgeRef =
   | { type: "legacy-knowledge"; file: string };
 
 /** DB-backed prompt editors in Admin → Brand → Core brain → Skills. */
-export type ProfitCoachPromptEditor = "coach-ai" | "linkedin-optimizer";
+export type ProfitCoachPromptEditor =
+  | "coach-ai"
+  | "linkedin-optimizer"
+  | "reply-copilot";
 
 export type ProfitCoachOutputDefinition = {
   id: string;

@@ -16,6 +16,7 @@ import { formatPersonName } from "@/lib/formatPersonName";
 import { resolveAccountTimezoneToPersist } from "@/lib/accountProfileTimezones";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { geocodeLocation, reverseGeocodeLocation } from "@/lib/geocodeLocation";
+import { clipReplyCopilotNotes } from "@/lib/messaging/replyCopilot";
 
 /**
  * If the coach has no timezone yet, persist one from request IP (when not
@@ -143,7 +144,7 @@ export async function GET(request: Request) {
     let coachRowResult = await supabaseAdmin
       .from("coaches")
       .select(
-        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_profile_name, crm_location_id, ghl_calendar_id, booking_calendar_provider"
+        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_profile_name, crm_location_id, ghl_calendar_id, booking_calendar_provider, reply_copilot_notes"
       )
       .eq("id", coachId)
       .maybeSingle();
@@ -151,6 +152,15 @@ export async function GET(request: Request) {
     let calendarEmbedColumnMissing = false;
     let crmLocationColumnMissing = false;
     let bookingProviderColumnMissing = false;
+    if (coachRowResult.error?.code === "42703") {
+      coachRowResult = await supabaseAdmin
+        .from("coaches")
+        .select(
+          "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_profile_name, crm_location_id, ghl_calendar_id, booking_calendar_provider"
+        )
+        .eq("id", coachId)
+        .maybeSingle();
+    }
     if (coachRowResult.error?.code === "42703") {
       bookingProviderColumnMissing = true;
       coachRowResult = await supabaseAdmin
@@ -251,6 +261,7 @@ export async function GET(request: Request) {
             ? prof.landing_variant_preference
             : null,
         account_email,
+        reply_copilot_notes: null,
         ...buildCoachCalendarSyncFields({
           booking_calendar_provider: "ghl",
         }),
@@ -332,6 +343,9 @@ export async function GET(request: Request) {
           ? prof.landing_variant_preference
           : null,
       account_email,
+      reply_copilot_notes:
+        (coachRow as { reply_copilot_notes?: string | null } | null)
+          ?.reply_copilot_notes ?? null,
       ...buildCoachCalendarSyncFields(
         crmLocationColumnMissing
           ? {
@@ -402,6 +416,8 @@ type PatchBody = {
   landing_copy_overrides?: Record<string, unknown> | null;
   /** Reserved for future funnel routing; /score currently always opens landing D. */
   landing_variant_preference?: "a" | "b" | "c" | "d" | null;
+  /** Optional overlay for the Conversations reply copilot. */
+  reply_copilot_notes?: string | null;
   slug?: string | null;
   crm_profile_name?: string | null;
   crm_location_id?: string | null;
@@ -643,6 +659,20 @@ export async function PATCH(request: Request) {
     coachUpdates.booking_calendar_provider = body.booking_calendar_provider;
   }
 
+  if (body.reply_copilot_notes !== undefined) {
+    if (body.reply_copilot_notes === null) {
+      coachUpdates.reply_copilot_notes = null;
+    } else if (typeof body.reply_copilot_notes === "string") {
+      const clipped = clipReplyCopilotNotes(body.reply_copilot_notes);
+      coachUpdates.reply_copilot_notes = clipped.length > 0 ? clipped : null;
+    } else {
+      return NextResponse.json(
+        { error: "reply_copilot_notes must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
+
   if (body.landing_copy_overrides !== undefined) {
     if (body.landing_copy_overrides === null) {
       updates.landing_copy_overrides = {};
@@ -723,10 +753,17 @@ export async function PATCH(request: Request) {
         coachUpdates,
         "booking_calendar_provider"
       );
+      const includesReplyCopilot = Object.prototype.hasOwnProperty.call(
+        coachUpdates,
+        "reply_copilot_notes"
+      );
       let msg: string;
       let status = 500;
       if (coachUpdateError.code === "42703") {
-        if (includesBookingProvider) {
+        if (includesReplyCopilot) {
+          msg =
+            "Reply copilot notes column is missing. Deploy the latest database migration.";
+        } else if (includesBookingProvider) {
           msg =
             "Booking calendar provider column is missing. Deploy the latest database migration.";
         } else if (includesWebhook && includesCalendarEmbed) {

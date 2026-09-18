@@ -28,6 +28,7 @@ export type RoadmapVisibility = (typeof ROADMAP_VISIBILITIES)[number];
 
 /** Suggested areas (free text in the DB; keep these as the working set). */
 export const ROADMAP_AREAS = [
+  "get-clients",
   "beat1",
   "beat2",
   "website",
@@ -177,6 +178,7 @@ export type CreateRoadmapJobInput = {
   blockedBy?: string | null;
   appPath?: string | null;
   visibility?: RoadmapVisibility | null;
+  sortOrder?: number | null;
 };
 
 export async function createRoadmapJob(
@@ -197,6 +199,7 @@ export async function createRoadmapJob(
         input.visibility && isRoadmapVisibility(input.visibility)
           ? input.visibility
           : "internal",
+      ...(typeof input.sortOrder === "number" ? { sort_order: input.sortOrder } : {}),
     })
     .select(JOB_COLUMNS)
     .single();

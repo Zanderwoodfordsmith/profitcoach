@@ -4,17 +4,17 @@ import {
 } from "@/lib/contacts/linkedinIdentity";
 import {
   resolveUnipileUser,
-  sendUnipileChatMessage,
   sendUnipileInvitation,
-  startUnipileChat,
   commentUnipilePost,
   reactUnipilePost,
   listUnipileUserPosts,
 } from "@/lib/unipile/client";
 import { buildMessageBody } from "@/lib/unipile/campaigns";
-import { consumeNonOutboundSteps } from "@/lib/unipile/sequenceAdvance";
+import { consumeNonOutboundSteps, processExpiredInviteTimeouts } from "@/lib/unipile/sequenceAdvance";
+import { sendCampaignLinkedInMessage } from "@/lib/unipile/campaignLinkedInSend";
 import {
   campaignStepCreatesJob,
+  inviteNoConnectFrom,
   isLinkedInOutreachStep,
 } from "@/lib/unipile/campaignStepTypes";
 import {
@@ -347,6 +347,7 @@ export async function processOutreachJobsTick(): Promise<{
 }> {
   const { processRemindFallbacks } = await import("@/lib/unipile/remindQueue");
   const fallback = await processRemindFallbacks();
+  await processExpiredInviteTimeouts();
 
   const now = new Date().toISOString();
   const { data: candidates, error } = await supabaseAdmin
@@ -694,42 +695,38 @@ export async function processOutreachJobsTick(): Promise<{
           throw new Error(res.error || "Invite failed");
         }
         providerRef = res.data?.invitation_id ?? null;
-        // Stay on invite step until new_relation webhook (accept) advances.
+        const noConnect = inviteNoConnectFrom(step.config);
+        const timeoutAt =
+          noConnect.on_no_connect === "other_campaign" &&
+          noConnect.no_connect_wait_hours
+            ? new Date(
+                Date.now() + noConnect.no_connect_wait_hours * 3600 * 1000
+              ).toISOString()
+            : null;
+        // Stay on invite step until new_relation webhook (accept) advances,
+        // or the no-connect wait fires.
         await supabaseAdmin
           .from("linkedin_campaign_leads")
           .update({
             status: "invited",
             invitation_id: providerRef,
-            next_action_at: null,
+            next_action_at: timeoutAt,
             last_error: null,
           })
           .eq("id", lead.id);
       } else if (step.step_type === "message") {
         const { text, variantKey } = await renderedStepBody();
-        if (!text.trim()) throw new Error("Empty message body.");
-        // keep variantKey on job metadata via provider_ref suffix if needed
         void variantKey;
-        let chatId = lead.unipile_chat_id as string | null;
-        if (chatId) {
-          const res = await sendUnipileChatMessage({ chat_id: chatId, text });
-          if (!res.ok) throw new Error(res.error || "Send message failed");
-          providerRef = res.data?.message_id ?? null;
-        } else {
-          const res = await startUnipileChat({
-            account_id: accountId,
-            attendees_ids: [providerId as string],
-            text,
-          });
-          if (!res.ok) throw new Error(res.error || "Start chat failed");
-          chatId = res.data?.chat_id ?? null;
-          providerRef = res.data?.message_id ?? null;
-          if (chatId) {
-            await supabaseAdmin
-              .from("linkedin_campaign_leads")
-              .update({ unipile_chat_id: chatId })
-              .eq("id", lead.id);
-          }
-        }
+        const sent = await sendCampaignLinkedInMessage({
+          coachId: job.coach_id,
+          campaignId: job.campaign_id,
+          accountId,
+          providerId: providerId as string,
+          lead,
+          text,
+          stepConfig: step.config,
+        });
+        providerRef = sent.messageId;
         await advanceLeadAfterStep({
           lead,
           campaignId: job.campaign_id,

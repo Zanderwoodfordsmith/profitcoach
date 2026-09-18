@@ -11,6 +11,7 @@ import {
 
 export type CampaignActivityLead = {
   id: string;
+  contact_id?: string | null;
   linkedin_url: string | null;
   first_name: string | null;
   last_name: string | null;

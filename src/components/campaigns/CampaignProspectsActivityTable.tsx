@@ -16,6 +16,9 @@ import {
   Search,
 } from "lucide-react";
 import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
+import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
+import { dispositionFromInterestOutcome } from "@/lib/prospects/replyDisposition";
+import Link from "next/link";
 import { campaignStepTypeLabel } from "@/lib/unipile/campaignStepTypes";
 import {
   actionSteps,
@@ -45,10 +48,11 @@ type Props = {
   steps: CampaignActivityStep[];
   jobs: CampaignActivityJob[];
   campaignStatus: string;
+  prospectHref?: (lead: CampaignActivityLead) => string | null;
   busy?: boolean;
   onAdd: () => void;
   onDelete: (leadId: string) => void;
-  onMarkInterest: (leadId: string) => void;
+  onMarkInterest: (leadId: string, outcome: "positive" | "soft" | "negative") => void;
 };
 
 const FILTERS: Array<{ id: ActivityFilterId; label: string }> = [
@@ -149,6 +153,7 @@ export function CampaignProspectsActivityTable({
   steps,
   jobs,
   campaignStatus,
+  prospectHref,
   busy = false,
   onAdd,
   onDelete,
@@ -372,13 +377,9 @@ export function CampaignProspectsActivityTable({
           <ul>
             {rows.map((row) => {
               const open = openId === row.lead.id;
-              const canInterest =
-                (row.lead.status === "replied" ||
-                  row.lead.status === "in_sequence" ||
-                  row.lead.status === "connected") &&
-                !row.lead.interest_outcome;
               const subtitle = row.lead.company || row.lead.title || "";
-              return (
+                const href = prospectHref?.(row.lead) ?? null;
+                return (
                 <li key={row.lead.id} className="border-b border-slate-100 last:border-b-0">
                   <div className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50/80">
                     <button
@@ -390,9 +391,19 @@ export function CampaignProspectsActivityTable({
                       <ProspectTableAvatar name={row.name} />
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1">
-                          <span className="truncate font-medium text-slate-900">
-                            {row.name}
-                          </span>
+                          {href ? (
+                            <Link
+                              href={href}
+                              onClick={(e) => e.stopPropagation()}
+                              className="truncate font-medium text-[#0c5290] hover:underline"
+                            >
+                              {row.name}
+                            </Link>
+                          ) : (
+                            <span className="truncate font-medium text-slate-900">
+                              {row.name}
+                            </span>
+                          )}
                           <ChevronDown
                             className={`h-3.5 w-3.5 shrink-0 text-slate-300 transition-transform ${open ? "rotate-180" : ""}`}
                             aria-hidden
@@ -446,9 +457,10 @@ export function CampaignProspectsActivityTable({
                         lead={row.lead}
                         steps={steps}
                         jobs={row.jobs}
-                        canInterest={canInterest}
                         busy={busy}
-                        onMarkInterest={() => onMarkInterest(row.lead.id)}
+                        onMarkInterest={(outcome) =>
+                          onMarkInterest(row.lead.id, outcome)
+                        }
                       />
                     </div>
                   ) : null}
@@ -489,16 +501,14 @@ function LeadActivityDetail({
   lead,
   steps,
   jobs,
-  canInterest,
   busy,
   onMarkInterest,
 }: {
   lead: CampaignActivityLead;
   steps: CampaignActivityStep[];
   jobs: CampaignActivityJob[];
-  canInterest: boolean;
   busy: boolean;
-  onMarkInterest: () => void;
+  onMarkInterest: (outcome: "positive" | "soft" | "negative") => void;
 }) {
   const action = actionSteps(steps);
   if (!action.length) {
@@ -522,16 +532,20 @@ function LeadActivityDetail({
             Open LinkedIn profile
           </a>
         ) : null}
-        {canInterest ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onMarkInterest}
-            className="text-xs font-medium text-emerald-700 hover:underline disabled:opacity-50"
-          >
-            Mark interested
-          </button>
-        ) : null}
+        <ReplyDispositionBar
+          compact
+          value={dispositionFromInterestOutcome(lead.interest_outcome)}
+          busy={busy}
+          onChange={(disposition) =>
+            onMarkInterest(
+              disposition === "interested"
+                ? "positive"
+                : disposition === "neutral"
+                  ? "soft"
+                  : "negative"
+            )
+          }
+        />
       </div>
       {lead.last_error ? (
         <p className="text-xs text-rose-700">{lead.last_error}</p>

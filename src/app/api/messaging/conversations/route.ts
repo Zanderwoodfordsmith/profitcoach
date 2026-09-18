@@ -2,51 +2,35 @@ import { NextResponse } from "next/server";
 import { collapseConversationsByContact } from "@/lib/messaging/collapseConversationsByContact";
 import { enrichConversationFilters } from "@/lib/messaging/enrichConversationFilters";
 import { enrichMessagingConversationPeople } from "@/lib/messaging/enrichConversationPeople";
+import { resolveMessagingAccess } from "@/lib/messaging/resolveMessagingAccess";
 import { findOrCreateConversationForContact } from "@/lib/messaging/startConversation";
 import { clampConversationListLimit } from "@/lib/messaging/threadWindow";
-import { requireAdmin } from "@/lib/requireAdmin";
-import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
  * GET /api/messaging/conversations
- * Admin: all threads. Coach: own threads.
+ * Always one coach: the signed-in coach, or the coach an admin is viewing as.
  */
 export async function GET(request: Request) {
-  const admin = await requireAdmin(request);
-  let coachId: string | null = null;
-
-  const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
-  if (admin.error === null) {
-    // Admin inbox is org-wide unless they are viewing as a specific coach.
-    coachId = impersonateId || null;
-  } else {
-    const coach = await requireCoachRequest(request);
-    if (coach.error || !coach.userId) {
-      return NextResponse.json(
-        { error: coach.error || admin.error || "Not authorized." },
-        { status: 401 }
-      );
-    }
-    coachId = coach.userId;
+  const access = await resolveMessagingAccess(request);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
+  const coachId = access.coachId;
 
   const limit = clampConversationListLimit(
     new URL(request.url).searchParams.get("limit")
   );
 
-  let q = supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("messaging_conversations")
     .select(
       "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, prospect_avatar_url, prospect_linkedin_url, prospect_linkedin_provider_id, prospect_business_name, last_message_at, created_at, starred, unread_count, last_preview, last_channel, last_direction, unipile_chat_id"
     )
+    .eq("coach_id", coachId)
     .is("hidden_at", null)
     .order("last_message_at", { ascending: false })
     .limit(limit);
-
-  if (coachId) q = q.eq("coach_id", coachId);
-
-  const { data, error } = await q;
   if (error) {
     console.error("messaging conversations list:", error);
     return NextResponse.json({ error: "Could not load conversations." }, { status: 500 });
@@ -90,22 +74,11 @@ export async function GET(request: Request) {
  * Open an existing thread for a contact, or start a blank one.
  */
 export async function POST(request: Request) {
-  const admin = await requireAdmin(request);
-  const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
-  let coachId: string | null = null;
-
-  if (admin.error === null && admin.userId) {
-    coachId = impersonateId || admin.userId;
-  } else {
-    const coach = await requireCoachRequest(request);
-    if (coach.error || !coach.userId) {
-      return NextResponse.json(
-        { error: coach.error || admin.error || "Not authorized." },
-        { status: 401 }
-      );
-    }
-    coachId = coach.userId;
+  const access = await resolveMessagingAccess(request);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
+  const coachId = access.coachId;
 
   const body = (await request.json().catch(() => ({}))) as {
     contact_id?: string;

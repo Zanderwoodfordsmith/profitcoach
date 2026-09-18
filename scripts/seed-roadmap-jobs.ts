@@ -5,8 +5,11 @@
  * its checklist. Blockers go in blocked_by (red flag), not separate cards.
  *
  * Usage:
- *   npx tsx scripts/seed-roadmap-jobs.ts           # seeds only if table empty
- *   npx tsx scripts/seed-roadmap-jobs.ts --reset   # wipes and reseeds
+ *   npx tsx scripts/seed-roadmap-jobs.ts                    # seeds only if table empty
+ *   npx tsx scripts/seed-roadmap-jobs.ts --reset            # wipes and reseeds
+ *   npx tsx scripts/seed-roadmap-jobs.ts --append-get-clients
+ *     Inserts missing Get Clients / Campaign Builder cards; does not wipe.
+ *     Also demotes Beat 1 "up next" so this push sits first.
  */
 import { randomUUID } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
@@ -46,11 +49,96 @@ type Seed = {
 };
 
 const SEEDS: Seed[] = [
+  // ── Get Clients / Campaign Builder — next (priority, Sept 2026) ────────
+  {
+    area: "get-clients",
+    sort_order: -10,
+    status: "up_next",
+    title: "Campaigns",
+    notes:
+      "Get Clients / Campaign Builder Monday push \u2014 top priority ahead of Beat 1. Tidy preloaded templates and test sending before the Monday call.",
+    app_path: "/admin/campaigns",
+    checklist: [
+      "LinkedIn voice + video in builder",
+      "Reorder steps",
+      "If they don't connect \u2192 trigger another campaign",
+      "Create New Campaign: blank vs from template",
+      "Tidy preloaded templates + test sending (for Monday call)",
+      "Campaign overview: don't count plain Gmail \u2014 only lead activity",
+    ],
+  },
+  {
+    area: "get-clients",
+    sort_order: -9,
+    status: "up_next",
+    title: "Leads & replies",
+    notes:
+      "Campaign Builder: click-through to prospect detail, reply sentiment, Conversations links, and draft persistence.",
+    app_path: "/admin/campaigns",
+    checklist: [
+      "Click lead in campaign/overview \u2192 prospect detail",
+      "Mark replies positive / neutral / interested",
+      "Conversations tab: correct links",
+      "Save drafts when leaving page",
+    ],
+  },
+  {
+    area: "get-clients",
+    sort_order: -8,
+    status: "up_next",
+    title: "Pool & import",
+    notes:
+      "Peter Bugless pool dropped from ~1500 people to 306 imported in 40 minutes \u2014 find why, then record the Sales Robot CSV \u2192 platform upload path.",
+    checklist: [
+      "Investigate Peter Bugless pool (1500 people, import got 306 in 40min)",
+      "Short video: Sales Robot CSV export \u2192 upload to platform",
+    ],
+  },
+  {
+    area: "get-clients",
+    sort_order: -7,
+    status: "up_next",
+    title: "UI polish",
+    notes: "Campaign Builder / Get Clients visual fixes for SSI and invites.",
+    app_path: "/admin/campaigns/invites",
+    checklist: [
+      "Fix SSI text size (too small)",
+      "Invites colour wheel \u2192 speed dial",
+      "SSI auto toggle above/below 70",
+    ],
+  },
+  {
+    area: "get-clients",
+    sort_order: -6,
+    status: "up_next",
+    title: "Lead magnet / Boss",
+    notes:
+      "Lead magnet design and sequences, unsubscribe, add-to-campaign, and Boss Skool calendars.",
+    app_path: "/admin/campaigns",
+    checklist: [
+      "Fix lead magnet design + sequences",
+      "Check unsubscribe flow",
+      "Test adding people to campaign",
+      "Boss Skool calendars working",
+    ],
+  },
+  {
+    area: "get-clients",
+    sort_order: -5,
+    status: "parked",
+    title: "Later",
+    notes:
+      "After the Campaign Builder Monday push. Not blocking the call.",
+    checklist: [
+      "AI copilot/autopilot for reply suggestions",
+      "Email marketing limits (Gmail vs secondary)",
+    ],
+  },
+
   // ── Beat 1 — September relaunch ────────────────────────────────────────
   {
     area: "beat1",
-    sort_order: 1,
-    status: "up_next",
+    sort_order: 10,
     title: "Release the acquisition core to coaches",
     notes:
       "Flip the admin-preview gates so coaches get First Campaign, Ideal Client and the Create hub. This IS the relaunch — it is already built.",
@@ -66,7 +154,7 @@ const SEEDS: Seed[] = [
   },
   {
     area: "beat1",
-    sort_order: 2,
+    sort_order: 11,
     title: "Switch on native booking + Conversations",
     notes:
       "Native Google booking becomes the default and the Conversations inbox ships with it \u2014 booking replies already route there via conversationReplyToAddress.",
@@ -79,7 +167,7 @@ const SEEDS: Seed[] = [
   },
   {
     area: "beat1",
-    sort_order: 3,
+    sort_order: 12,
     title: "Profile Optimizer: launch scope",
     notes:
       "Ship headline + About + banner copy only. Multi-role experience editing is phase 2 \u2014 that turns 'needs finishing' into days.",
@@ -91,7 +179,7 @@ const SEEDS: Seed[] = [
   },
   {
     area: "beat1",
-    sort_order: 4,
+    sort_order: 13,
     title: "'Activated in an hour' onboarding path",
     notes:
       "Join \u2192 First Campaign wizard \u2192 calendar connected \u2192 starter list exported. One golden path; the September story.",
@@ -103,7 +191,7 @@ const SEEDS: Seed[] = [
   },
   {
     area: "beat1",
-    sort_order: 5,
+    sort_order: 14,
     title: "Classroom: swap Sales Nav videos for the tools",
     notes:
       "Replace the five click-by-click Sales Navigator videos with short 'use the tool' lessons.",
@@ -111,7 +199,7 @@ const SEEDS: Seed[] = [
   },
   {
     area: "beat1",
-    sort_order: 6,
+    sort_order: 15,
     title: "Remove legacy unauthenticated /api/message-generator",
     notes: "Security housekeeping \u2014 endpoint has no auth.",
   },
@@ -255,9 +343,24 @@ function toChecklist(items: string[] | undefined) {
   });
 }
 
+function rowFromSeed(s: Seed) {
+  return {
+    title: s.title,
+    notes: s.notes ?? null,
+    area: s.area,
+    status: s.status ?? "todo",
+    blocked_by: s.blocked_by ?? null,
+    app_path: s.app_path ?? null,
+    sort_order: s.sort_order ?? 0,
+    checklist: toChecklist(s.checklist),
+    comments: [],
+  };
+}
+
 async function main() {
   loadEnvLocal();
   const reset = process.argv.includes("--reset");
+  const appendGetClients = process.argv.includes("--append-get-clients");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
@@ -266,6 +369,53 @@ async function main() {
     );
   }
   const supabase = createClient(url, key);
+
+  if (appendGetClients) {
+    const { data: existing, error: listError } = await supabase
+      .from("roadmap_jobs")
+      .select("id, title, area, status");
+    if (listError) throw new Error(listError.message);
+    const rows = existing ?? [];
+    const present = new Set(
+      rows.map((j) => `${j.area}::${j.title.toLowerCase()}`)
+    );
+    const toInsert = SEEDS.filter(
+      (s) =>
+        s.area === "get-clients" &&
+        !present.has(`${s.area}::${s.title.toLowerCase()}`)
+    );
+    if (toInsert.length === 0) {
+      console.log("Get Clients cards already present — nothing to insert.");
+    } else {
+      const { error } = await supabase
+        .from("roadmap_jobs")
+        .insert(toInsert.map(rowFromSeed));
+      if (error) throw new Error(error.message);
+      console.log(`Inserted ${toInsert.length} Get Clients cards.`);
+    }
+
+    const beat1UpNext = rows.filter(
+      (j) => j.area === "beat1" && j.status === "up_next"
+    );
+    if (beat1UpNext.length === 0) {
+      console.log("No Beat 1 up-next jobs to demote.");
+    } else {
+      const { error } = await supabase
+        .from("roadmap_jobs")
+        .update({ status: "todo", updated_at: new Date().toISOString() })
+        .in(
+          "id",
+          beat1UpNext.map((j) => j.id)
+        );
+      if (error) throw new Error(error.message);
+      console.log(
+        `Demoted ${beat1UpNext.length} Beat 1 job(s) from up_next → todo: ${beat1UpNext
+          .map((j) => j.title)
+          .join(", ")}`
+      );
+    }
+    return;
+  }
 
   const { count, error: countError } = await supabase
     .from("roadmap_jobs")
@@ -276,6 +426,7 @@ async function main() {
     if (!reset) {
       console.log(`roadmap_jobs already has ${count} rows — skipping seed.`);
       console.log("Run with --reset to wipe and reseed.");
+      console.log("Or --append-get-clients to add the Campaign Builder cards.");
       return;
     }
     const { error: delError } = await supabase
@@ -286,19 +437,7 @@ async function main() {
     console.log(`Deleted ${count} existing jobs.`);
   }
 
-  const { error } = await supabase.from("roadmap_jobs").insert(
-    SEEDS.map((s) => ({
-      title: s.title,
-      notes: s.notes ?? null,
-      area: s.area,
-      status: s.status ?? "todo",
-      blocked_by: s.blocked_by ?? null,
-      app_path: s.app_path ?? null,
-      sort_order: s.sort_order ?? 0,
-      checklist: toChecklist(s.checklist),
-      comments: [],
-    }))
-  );
+  const { error } = await supabase.from("roadmap_jobs").insert(SEEDS.map(rowFromSeed));
   if (error) throw new Error(error.message);
   console.log(`Seeded ${SEEDS.length} roadmap jobs.`);
 }

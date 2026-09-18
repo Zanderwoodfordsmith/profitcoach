@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
-import { requireAdmin } from "@/lib/requireAdmin";
-import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import { resolveMessagingAccess } from "@/lib/messaging/resolveMessagingAccess";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 function escapeIlike(value: string): string {
@@ -13,22 +12,11 @@ function escapeIlike(value: string): string {
  * Search the current coach's people to start a conversation.
  */
 export async function GET(request: Request) {
-  const admin = await requireAdmin(request);
-  const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
-  let coachId: string | null = null;
-
-  if (admin.error === null && admin.userId) {
-    coachId = impersonateId || admin.userId;
-  } else {
-    const coach = await requireCoachRequest(request);
-    if (coach.error || !coach.userId) {
-      return NextResponse.json(
-        { error: coach.error || admin.error || "Not authorized." },
-        { status: 401 }
-      );
-    }
-    coachId = coach.userId;
+  const access = await resolveMessagingAccess(request);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
+  const coachId = access.coachId;
 
   const q = escapeIlike(new URL(request.url).searchParams.get("q") ?? "").slice(
     0,

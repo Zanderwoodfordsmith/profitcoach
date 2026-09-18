@@ -74,11 +74,9 @@ export function parseActivityDays(raw: string | null): ActivityDayRange {
 /**
  * Daily outbound effort for the campaigns activity heatmap.
  *
- * - invites / sequence messages / soft-touch: linkedin_send_jobs (succeeded)
- * - emails: messaging_messages outbound email
- *
- * LinkedIn DMs from messaging_messages are omitted so synced campaign
- * messages are not double-counted with send_jobs.
+ * Invites / sequence messages / emails / soft-touch come from
+ * linkedin_send_jobs (succeeded). Synced personal Gmail is omitted so
+ * dentist appointments and other inbox mail are not counted as outreach.
  */
 export async function loadActivityHeatmap(
   coachId: string,
@@ -116,24 +114,6 @@ export async function loadActivityHeatmap(
     else if (bucket === "message") bump(byDay, day, "message");
     else if (bucket === "email") bump(byDay, day, "email");
     else if (bucket === "engagement") bump(byDay, day, "engagement");
-  }
-
-  const { data: emails, error: emailError } = await supabaseAdmin
-    .from("messaging_messages")
-    .select("created_at")
-    .eq("coach_id", coachId)
-    .eq("direction", "outbound")
-    .eq("channel", "email")
-    .gte("created_at", sinceIso);
-
-  if (emailError) {
-    throw new Error(emailError.message || "Could not load emails.");
-  }
-
-  for (const row of emails ?? []) {
-    const day = utcDayKey(String(row.created_at || ""));
-    if (!day || day < start || day > end) continue;
-    bump(byDay, day, "email");
   }
 
   const buckets: ActivityDayCounts[] = [];
@@ -386,31 +366,6 @@ export async function countPeopleReachedInRange(
     else if (row.lead_id) keys.add(`l:${row.lead_id}`);
   }
 
-  const { data: emails, error: emailError } = await supabaseAdmin
-    .from("messaging_messages")
-    .select("created_at, messaging_conversations(contact_id, id)")
-    .eq("coach_id", coachId)
-    .eq("direction", "outbound")
-    .eq("channel", "email")
-    .gte("created_at", sinceIso)
-    .lt("created_at", untilIso);
-
-  if (emailError) {
-    throw new Error(emailError.message || "Could not load email reaches.");
-  }
-
-  for (const row of emails ?? []) {
-    const day = zonedDayKey(String(row.created_at || ""), timeZone);
-    if (!day || day < startYmd || day > endYmd) continue;
-    const conv = row.messaging_conversations as
-      | { contact_id?: string | null; id?: string }
-      | { contact_id?: string | null; id?: string }[]
-      | null;
-    const conversation = Array.isArray(conv) ? conv[0] : conv;
-    if (conversation?.contact_id) keys.add(`c:${conversation.contact_id}`);
-    else if (conversation?.id) keys.add(`v:${conversation.id}`);
-  }
-
   return keys.size;
 }
 
@@ -451,25 +406,6 @@ export async function loadActivityInRange(
       : step?.step_type;
     const field = classifyStepType(stepType);
     if (field) bump(byDay, day, field);
-  }
-
-  const { data: emails, error: emailError } = await supabaseAdmin
-    .from("messaging_messages")
-    .select("created_at")
-    .eq("coach_id", coachId)
-    .eq("direction", "outbound")
-    .eq("channel", "email")
-    .gte("created_at", sinceIso)
-    .lt("created_at", untilIso);
-
-  if (emailError) {
-    throw new Error(emailError.message || "Could not load emails.");
-  }
-
-  for (const row of emails ?? []) {
-    const day = zonedDayKey(String(row.created_at || ""), timeZone);
-    if (!day || day < startYmd || day > endYmd) continue;
-    bump(byDay, day, "email");
   }
 
   const buckets: ActivityDayCounts[] = [];
