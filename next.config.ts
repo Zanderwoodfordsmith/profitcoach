@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/academy",
+        destination: "/new-academy",
+        permanent: false,
+      },
+      {
         source: "/zoom-zander",
         destination: "https://us02web.zoom.us/j/9183502510",
         permanent: false,

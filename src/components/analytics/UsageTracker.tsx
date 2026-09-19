@@ -14,32 +14,36 @@ export function UsageTracker() {
   const latestPathRef = useRef<string>("/");
 
   async function sendUsageEvent(eventType: TrackEventType, path: string) {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return;
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
 
-    const response = await fetch("/api/usage/session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        sessionId: sessionIdRef.current,
-        eventType,
-        path,
-      }),
-      keepalive: true,
-    });
+      const response = await fetch("/api/usage/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          eventType,
+          path,
+        }),
+        keepalive: true,
+      });
 
-    if (!response.ok) return;
-    const body = (await response.json().catch(() => ({}))) as {
-      sessionId?: string;
-    };
-    if (body.sessionId) {
-      sessionIdRef.current = body.sessionId;
+      if (!response.ok) return;
+      const body = (await response.json().catch(() => ({}))) as {
+        sessionId?: string;
+      };
+      if (body.sessionId) {
+        sessionIdRef.current = body.sessionId;
+      }
+    } catch {
+      // Usage tracking must not surface as a Next overlay (dev HMR, tab close, offline).
     }
   }
 
