@@ -31,6 +31,7 @@ import {
 import {
   SupportChatAvatar,
   SupportChatThread,
+  SupportViaEmailMark,
   supportAuthorShortName,
 } from "@/components/support/SupportChatBubbles";
 import { SeeMoreText } from "@/components/support/SeeMoreText";
@@ -54,6 +55,7 @@ import {
 import {
   parseSupportReplyMedia,
   parseSupportTicketMedia,
+  supportComposerFallbackBody,
 } from "@/lib/support/supportTicketMedia";
 import {
   clearAdminReplyDraft,
@@ -88,9 +90,9 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
-  SUPPORT_AUTHOR_SELECT,
+  SUPPORT_REPLY_LIST_SELECT,
   SUPPORT_STATUS_ADMIN_LABELS,
-  normalizeSupportAuthor,
+  mapSupportReplyRow,
   supportStatusAfterStaffReply,
   type SupportReply,
   type SupportTicketStatus,
@@ -113,6 +115,8 @@ export type AdminTicketOpening = {
   createdAt: string;
   typeLabel: string;
   media?: unknown;
+  /** Original ticket arrived through the support mailbox. */
+  viaEmail?: boolean;
 };
 
 type AdminTicketRepliesProps = {
@@ -182,6 +186,7 @@ export function AdminTicketReplies({
   const [notifyNote, setNotifyNote] = useState<string | null>(null);
   const loadGenerationRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const threadScrollRef = useRef<HTMLDivElement>(null);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -233,19 +238,7 @@ export function AdminTicketReplies({
     const [repliesResult, notesResult] = await Promise.all([
       supabaseClient
         .from("community_feedback_replies")
-        .select(
-          `
-          id,
-          created_at,
-          edited_at,
-          report_id,
-          created_by,
-          body,
-          media,
-          community_comment_id,
-          author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
-        `
-        )
+        .select(SUPPORT_REPLY_LIST_SELECT)
         .eq("report_id", reportId)
         .order("created_at", { ascending: true }),
       loadSupportInternalNotes(reportId),
@@ -261,19 +254,7 @@ export function AdminTicketReplies({
       return;
     }
 
-    setReplies(
-      (repliesResult.data ?? []).map((raw) => ({
-        id: raw.id,
-        created_at: raw.created_at,
-        edited_at: raw.edited_at ?? null,
-        report_id: raw.report_id,
-        created_by: raw.created_by,
-        body: raw.body,
-        media: raw.media,
-        community_comment_id: raw.community_comment_id ?? null,
-        author: normalizeSupportAuthor(raw.author),
-      }))
-    );
+    setReplies((repliesResult.data ?? []).map((raw) => mapSupportReplyRow(raw)));
     setInternalNotes(notesResult.notes);
     if (notesResult.error) {
       setError(notesResult.error);
@@ -303,32 +284,10 @@ export function AdminTicketReplies({
         .update({ body })
         .eq("id", replyId)
         .eq("report_id", reportId)
-        .select(
-          `
-          id,
-          created_at,
-          edited_at,
-          report_id,
-          created_by,
-          body,
-          media,
-          community_comment_id,
-          author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
-        `
-        )
+        .select(SUPPORT_REPLY_LIST_SELECT)
         .single();
       if (updateError) throw updateError;
-      const next: SupportReply = {
-        id: data.id,
-        created_at: data.created_at,
-        edited_at: data.edited_at ?? null,
-        report_id: data.report_id,
-        created_by: data.created_by,
-        body: data.body,
-        media: data.media,
-        community_comment_id: data.community_comment_id ?? null,
-        author: normalizeSupportAuthor(data.author),
-      };
+      const next = mapSupportReplyRow(data);
       setReplies((current) =>
         current.map((r) => (r.id === replyId ? next : r))
       );
@@ -495,6 +454,11 @@ export function AdminTicketReplies({
 
   useEffect(() => {
     if (!inbox) return;
+    const scroller = threadScrollRef.current;
+    if (scroller) {
+      scroller.scrollTop = scroller.scrollHeight;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
   }, [inbox, reportId, replies.length, internalNotes.length, loading]);
 
@@ -666,14 +630,14 @@ export function AdminTicketReplies({
         uploaded.push(up.media);
       }
 
-      const replyBody =
-        body ||
-        (pendingVoice
-          ? "Sent a voice note"
-          : pendingVideo
-            ? "Sent a video"
-            : "");
+      const replyBody = supportComposerFallbackBody({
+        text: body,
+        voice: Boolean(pendingVoice),
+        video: Boolean(pendingVideo),
+        imageCount: pendingImages.length,
+      });
 
+      const emailed = Boolean(canEmailNotify && emailNotify && replyBody);
       const { data, error: insertError } = await supabaseClient
         .from("community_feedback_replies")
         .insert({
@@ -681,35 +645,14 @@ export function AdminTicketReplies({
           created_by: authorId,
           body: replyBody,
           media: uploaded.length > 0 ? uploaded : null,
+          via_email: emailed,
         })
-        .select(
-          `
-          id,
-          created_at,
-          edited_at,
-          report_id,
-          created_by,
-          body,
-          media,
-          community_comment_id,
-          author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
-        `
-        )
+        .select(SUPPORT_REPLY_LIST_SELECT)
         .single();
 
       if (insertError) throw insertError;
 
-      const reply: SupportReply = {
-        id: data.id,
-        created_at: data.created_at,
-        edited_at: data.edited_at ?? null,
-        report_id: data.report_id,
-        created_by: data.created_by,
-        body: data.body,
-        media: data.media,
-        community_comment_id: data.community_comment_id ?? null,
-        author: normalizeSupportAuthor(data.author),
-      };
+      const reply = mapSupportReplyRow(data);
       setReplies((current) => [...current, reply]);
       setDraft("");
       void clearAdminReplyDraft(reportId);
@@ -775,6 +718,20 @@ export function AdminTicketReplies({
                 : notifyBody.emailed
                   ? `Email to ${notifyBody.emailed} will retry shortly.`
                   : "Email notification queued."
+            );
+          }
+          const emailFailed =
+            !notifyRes.ok || Boolean(notifyBody.error && !notifyBody.sent);
+          if (emailFailed) {
+            await supabaseClient
+              .from("community_feedback_replies")
+              .update({ via_email: false })
+              .eq("id", reply.id)
+              .eq("report_id", reportId);
+            setReplies((current) =>
+              current.map((row) =>
+                row.id === reply.id ? { ...row, via_email: false } : row
+              )
             );
           }
         }
@@ -1592,68 +1549,75 @@ export function AdminTicketReplies({
       </span>
     );
 
+    const openingMedia = openingMessage
+      ? parseSupportTicketMedia(openingMessage.media)
+      : [];
+    const openingBody = openingMessage?.body.trim() ?? "";
+
     return (
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white">
-        <div
-          className={`min-h-0 overflow-y-auto overscroll-contain bg-[#f7f8fa] ${
-            composerOpen && composerExpanded ? "max-h-[45%] shrink-0" : "flex-1"
-          }`}
-        >
-          {openingMessage ? (
-            <div className="border-b border-slate-200/80 bg-white px-4 py-4 sm:px-6">
-              <div className="flex items-start gap-3">
-                <SupportChatAvatar
-                  name={openingMessage.authorLabel}
-                  avatarUrl={openingMessage.authorAvatarUrl}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold leading-none text-slate-900">
-                        {openingMessage.authorLabel}
-                      </p>
-                      <p className="mt-1 text-xs leading-none text-slate-500">
-                        {formatCommunityPostTimestamp(openingMessage.createdAt)}
-                        <span className="mx-0.5 select-none text-slate-400">
-                          ·
-                        </span>
-                        <span className="font-semibold text-slate-600">
-                          {openingMessage.typeLabel}
-                        </span>
-                      </p>
-                    </div>
-                    {statusSelect}
+        {openingMessage ? (
+          <div className="shrink-0 border-b border-slate-200/80 bg-white px-4 py-4 sm:px-6">
+            <div className="flex items-start gap-3">
+              <SupportChatAvatar
+                name={openingMessage.authorLabel}
+                avatarUrl={openingMessage.authorAvatarUrl}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold leading-none text-slate-900">
+                      {openingMessage.authorLabel}
+                    </p>
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-xs leading-none text-slate-500">
+                      {formatCommunityPostTimestamp(openingMessage.createdAt)}
+                      {openingMessage.viaEmail ? (
+                        <SupportViaEmailMark
+                          className="text-slate-400"
+                          label="Received by email"
+                        />
+                      ) : null}
+                      <span className="select-none text-slate-400">·</span>
+                      <span className="font-semibold text-slate-600">
+                        {openingMessage.typeLabel}
+                      </span>
+                    </p>
                   </div>
+                  {statusSelect}
                 </div>
               </div>
-              <h2 className="mt-3 text-lg font-semibold leading-snug tracking-tight text-slate-900 sm:text-xl">
-                {openingMessage.title}
-              </h2>
-              {openingMessage.body.trim() ? (
-                <div className="mt-1.5">
+            </div>
+            <h2 className="mt-3 text-lg font-semibold leading-snug tracking-tight text-slate-900 sm:text-xl">
+              {openingMessage.title}
+            </h2>
+            {openingBody || openingMedia.length > 0 ? (
+              <div className="mt-1.5 max-h-[min(28vh,12rem)] overflow-y-auto overscroll-contain">
+                {openingBody ? (
                   <SeeMoreText
                     key={reportId}
                     text={openingMessage.body}
                     variant="feed"
                   />
-                </div>
-              ) : null}
-              {(() => {
-                const openingMedia = parseSupportTicketMedia(
-                  openingMessage.media
-                );
-                return openingMedia.length > 0 ? (
-                  <div className="mt-3">
+                ) : null}
+                {openingMedia.length > 0 ? (
+                  <div className={openingBody ? "mt-3" : undefined}>
                     <CommunityPostMediaGallery
                       items={openingMedia}
                       variant="compact"
                     />
                   </div>
-                ) : null;
-              })()}
-            </div>
-          ) : null}
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
+        <div
+          ref={threadScrollRef}
+          className={`min-h-0 overflow-y-auto overscroll-contain bg-[#f7f8fa] ${
+            composerOpen && composerExpanded ? "max-h-[45%] shrink-0" : "flex-1"
+          }`}
+        >
           <div className="px-4 py-4 sm:px-6">
             {loading ? (
               <p className="text-sm text-slate-500">Loading conversation…</p>

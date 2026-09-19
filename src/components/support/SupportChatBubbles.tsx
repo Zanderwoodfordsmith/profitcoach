@@ -7,7 +7,7 @@ import {
   type FormEvent,
   type MouseEvent,
 } from "react";
-import { Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Eye, Mail, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import { SupportMessageBody } from "@/components/support/SupportMessageBody";
 import { profileInitialsFromName } from "@/lib/communityProfile";
@@ -422,6 +422,24 @@ function SupportReplyActionsMenu({
   );
 }
 
+export function SupportViaEmailMark({
+  label,
+  className,
+}: {
+  label: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center ${className ?? ""}`}
+      title={label}
+    >
+      <Mail className="h-3 w-3" strokeWidth={2} aria-hidden />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
 type BubbleProps = {
   reply: SupportReply;
   /** True when this bubble is on the right (outgoing for this viewer). */
@@ -430,6 +448,8 @@ type BubbleProps = {
   fallbackName?: string;
   /** Admin-only: show ⋮ edit/delete next to the timestamp. */
   canManage?: boolean;
+  /** Admin-only: Mail icon when this message went over email. */
+  showEmailChannel?: boolean;
   onUpdateBody?: (replyId: string, body: string) => Promise<void>;
   onDelete?: (replyId: string) => Promise<void>;
 };
@@ -439,6 +459,7 @@ export function SupportChatBubble({
   outbound,
   fallbackName = "Support",
   canManage = false,
+  showEmailChannel = false,
   onUpdateBody,
   onDelete,
 }: BubbleProps) {
@@ -591,6 +612,12 @@ export function SupportChatBubble({
           <span className="text-[10px] tabular-nums">
             {formatShortTime(reply.created_at)}
           </span>
+          {showEmailChannel && reply.via_email ? (
+            <SupportViaEmailMark
+              className="opacity-80"
+              label={outbound ? "Also sent by email" : "Received by email"}
+            />
+          ) : null}
           {reply.edited_at ? (
             <span className="text-[10px] opacity-80">· edited</span>
           ) : null}
@@ -709,6 +736,7 @@ export function SupportChatThread({
                 reply={reply}
                 outbound={outbound}
                 canManage={canManageReplies}
+                showEmailChannel={perspective === "admin"}
                 onUpdateBody={onUpdateReplyBody}
                 onDelete={onDeleteReply}
                 fallbackName={

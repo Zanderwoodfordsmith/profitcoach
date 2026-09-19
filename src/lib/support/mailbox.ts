@@ -16,6 +16,10 @@ import {
   parseSupportTicketNumberFromSubject,
   stripEmailQuotedReply,
 } from "@/lib/support/ingestEmailReply";
+import {
+  formatSkippedEmailAttachmentNote,
+  ingestSupportEmailAttachments,
+} from "@/lib/support/ingestEmailAttachments";
 import { findCoachProfileIdByEmail } from "@/lib/support/matchCoachByEmail";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
@@ -506,6 +510,21 @@ export async function handleSupportMailReceived(
   const threadId = String(body.thread_id || "").trim() || null;
   const emailDate = parseUnipileEmailDate(body);
 
+  const ingested = await ingestSupportEmailAttachments({
+    emailId,
+    accountId,
+    webhookBody: body,
+  }).catch((err) => {
+    console.warn("support mail attachments:", err);
+    return { media: [] as const, skippedNames: [] as string[] };
+  });
+  const detailsWithFiles =
+    `${details}${formatSkippedEmailAttachmentNote(ingested.skippedNames)}`.slice(
+      0,
+      9000
+    );
+  const mailMedia = ingested.media.length > 0 ? ingested.media : null;
+
   const appendReplyToTicket = async (
     ticket: { id: string; status: string | null },
     options?: { linkThreadId?: string | null }
@@ -518,7 +537,9 @@ export async function handleSupportMailReceived(
       await supabaseAdmin.from("community_feedback_replies").insert({
         report_id: ticket.id,
         created_by: replyAuthor,
-        body: details,
+        body: detailsWithFiles,
+        via_email: true,
+        media: mailMedia,
         ...(emailDate ? { created_at: emailDate } : {}),
       });
     }
@@ -583,7 +604,7 @@ export async function handleSupportMailReceived(
     created_by: createdBy,
     type: "question",
     title: subject,
-    details,
+    details: detailsWithFiles,
     contact_email: contactEmail,
     submitter_name: submitterName,
     page_path: null,
@@ -593,6 +614,7 @@ export async function handleSupportMailReceived(
     unipile_email_id: emailId,
     unipile_thread_id: threadId,
     unipile_account_id: accountId,
+    media: mailMedia,
     ...(emailDate ? { created_at: emailDate } : {}),
   });
 

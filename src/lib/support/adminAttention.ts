@@ -1,18 +1,22 @@
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export type SupportAttentionFlags = {
-  /** Unread chat replies from someone else (not the initial ticket body). */
+  /**
+   * Unread follow-up replies from someone else. 0 on a brand-new ticket
+   * that has never been opened (the original body still counts as unread).
+   */
   unreadReplies: number;
   mention: boolean;
 };
 
 export type SupportAttentionMap = Record<string, SupportAttentionFlags>;
 
+/** Unread tickets that need a look. Follow-ups show volume; new tickets show 1. */
 export function supportAttentionBadgeCount(
   flags: SupportAttentionFlags | undefined
 ): number {
   if (!flags) return 0;
-  return flags.unreadReplies;
+  return Math.max(flags.unreadReplies, 1);
 }
 
 export async function loadAdminSupportAttention(): Promise<{

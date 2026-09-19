@@ -44,7 +44,7 @@ export const EXT_BY_MIME: Record<string, string> = {
   "audio/mp3": "mp3",
 };
 
-const MIME_BY_EXT: Record<string, string> = {
+export const MIME_BY_EXT: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   png: "image/png",
@@ -77,15 +77,20 @@ export function maxBytesForCommunityPostMime(mime: string): number {
 }
 
 /** Resolve MIME from File.type or filename when the browser omits type (common for .mov). */
-export function resolveCommunityPostMediaMime(file: File): string | null {
-  const trimmed = file.type?.trim();
-  if (trimmed && mediaKindForMime(trimmed)) {
-    return trimmed.split(";")[0]!.trim().toLowerCase();
-  }
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+export function resolveMediaMimeFromName(
+  filename: string,
+  declaredMime?: string | null
+): string | null {
+  const declared = (declaredMime || "").split(";")[0]!.trim().toLowerCase();
+  if (declared && mediaKindForMime(declared)) return declared;
+  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   const fromExt = MIME_BY_EXT[ext];
   if (fromExt && mediaKindForMime(fromExt)) return fromExt;
   return null;
+}
+
+export function resolveCommunityPostMediaMime(file: File): string | null {
+  return resolveMediaMimeFromName(file.name, file.type);
 }
 
 export function validateCommunityPostMediaFile(

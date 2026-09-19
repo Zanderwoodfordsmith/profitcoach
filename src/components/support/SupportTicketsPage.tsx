@@ -16,7 +16,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
   SUPPORT_AUTHOR_SELECT,
-  normalizeSupportAuthor,
+  SUPPORT_REPLY_LIST_SELECT,
+  mapSupportReplyRow,
   mapSupportTicketRow,
   ticketHasUnreadStaffReply,
   type SupportReply,
@@ -124,19 +125,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
     const ids = list.map((t) => t.id);
     const { data: replies, error: repliesError } = await supabaseClient
       .from("community_feedback_replies")
-      .select(
-        `
-        id,
-        created_at,
-        edited_at,
-        report_id,
-        created_by,
-        body,
-        media,
-        community_comment_id,
-        author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
-      `
-      )
+      .select(SUPPORT_REPLY_LIST_SELECT)
       .in("report_id", ids)
       .order("created_at", { ascending: true });
     if (generation !== loadGenerationRef.current) return;
@@ -151,17 +140,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
 
     const repliesByReport = new Map<string, SupportReply[]>();
     for (const raw of replies ?? []) {
-      const reply: SupportReply = {
-        id: raw.id,
-        created_at: raw.created_at,
-        edited_at: raw.edited_at ?? null,
-        report_id: raw.report_id,
-        created_by: raw.created_by,
-        body: raw.body,
-        media: raw.media,
-        community_comment_id: raw.community_comment_id ?? null,
-        author: normalizeSupportAuthor(raw.author),
-      };
+      const reply = mapSupportReplyRow(raw);
       const bucket = repliesByReport.get(reply.report_id) ?? [];
       bucket.push(reply);
       repliesByReport.set(reply.report_id, bucket);
@@ -283,36 +262,12 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       if (ids.length === 0) return;
       const { data, error: queryError } = await supabaseClient
         .from("community_feedback_replies")
-        .select(
-          `
-          id,
-          created_at,
-          edited_at,
-          report_id,
-          created_by,
-          body,
-          media,
-          community_comment_id,
-          author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
-        `
-        )
+        .select(SUPPORT_REPLY_LIST_SELECT)
         .in("report_id", ids)
         .order("created_at", { ascending: true });
       if (queryError || !data) return;
 
-      replaceRepliesFromFetch(
-        data.map((raw) => ({
-          id: raw.id,
-          created_at: raw.created_at,
-          edited_at: raw.edited_at ?? null,
-          report_id: raw.report_id,
-          created_by: raw.created_by,
-          body: raw.body,
-          media: raw.media,
-          community_comment_id: raw.community_comment_id ?? null,
-          author: normalizeSupportAuthor(raw.author),
-        }))
-      );
+      replaceRepliesFromFetch(data.map((raw) => mapSupportReplyRow(raw)));
     };
 
     const channel = supabaseClient
@@ -334,6 +289,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
             body: string;
             media: SupportReply["media"];
             community_comment_id?: string | null;
+            via_email?: boolean | null;
           };
           if (!raw?.id || !raw.report_id) return;
           if (!ticketIdsRef.current.has(raw.report_id)) return;
@@ -345,17 +301,10 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
               .eq("id", raw.created_by)
               .maybeSingle();
 
-            const reply: SupportReply = {
-              id: raw.id,
-              created_at: raw.created_at,
-              edited_at: raw.edited_at ?? null,
-              report_id: raw.report_id,
-              created_by: raw.created_by,
-              body: raw.body,
-              media: raw.media,
-              community_comment_id: raw.community_comment_id ?? null,
-              author: normalizeSupportAuthor(authorRow),
-            };
+            const reply = mapSupportReplyRow({
+              ...raw,
+              author: authorRow,
+            });
 
             mergeIncomingReplies([reply]);
 
@@ -387,6 +336,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
             body: string;
             media: SupportReply["media"];
             community_comment_id?: string | null;
+            via_email?: boolean | null;
           };
           if (!raw?.id || !raw.report_id) return;
           if (!ticketIdsRef.current.has(raw.report_id)) return;
@@ -398,7 +348,8 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
               const prev = ticket.replies[idx]!;
               if (
                 prev.body === raw.body &&
-                (prev.edited_at ?? null) === (raw.edited_at ?? null)
+                (prev.edited_at ?? null) === (raw.edited_at ?? null) &&
+                Boolean(prev.via_email) === Boolean(raw.via_email)
               ) {
                 return ticket;
               }
@@ -408,6 +359,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
                 body: raw.body,
                 media: raw.media,
                 edited_at: raw.edited_at ?? null,
+                via_email: Boolean(raw.via_email),
                 community_comment_id:
                   raw.community_comment_id ?? prev.community_comment_id,
               };

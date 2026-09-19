@@ -1469,6 +1469,7 @@ export function AdminSupportPage() {
                         createdAt: selected.created_at,
                         typeLabel: supportTypeOptionLabel(selected.type),
                         media: selected.media,
+                        viaEmail: selected.source === "email_inbox",
                       }}
                       onStatusTouched={() => {
                         void loadTickets();

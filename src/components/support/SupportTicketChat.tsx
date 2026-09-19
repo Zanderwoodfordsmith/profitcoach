@@ -25,14 +25,15 @@ import {
   applyTextareaWrap,
 } from "@/lib/support/textareaFormat";
 import {
-  SUPPORT_AUTHOR_SELECT,
-  normalizeSupportAuthor,
+  SUPPORT_REPLY_LIST_SELECT,
+  mapSupportReplyRow,
   supportStatusAfterMemberReply,
   type SupportReply,
   type SupportTicket,
   type SupportTicketAuthor,
 } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { supportComposerFallbackBody } from "@/lib/support/supportTicketMedia";
 
 type TicketWithReplies = SupportTicket & { replies: SupportReply[] };
 
@@ -222,13 +223,12 @@ export function SupportTicketChat({
         uploaded.push(up.media);
       }
 
-      const body =
-        draft.trim() ||
-        (pendingVoice
-          ? "Sent a voice note"
-          : pendingVideo
-            ? "Sent a video"
-            : "");
+      const body = supportComposerFallbackBody({
+        text: draft,
+        voice: Boolean(pendingVoice),
+        video: Boolean(pendingVideo),
+        imageCount: pendingImages.length,
+      });
 
       const { data, error: insertError } = await supabaseClient
         .from("community_feedback_replies")
@@ -238,34 +238,12 @@ export function SupportTicketChat({
           body,
           media: uploaded.length > 0 ? uploaded : null,
         })
-        .select(
-          `
-          id,
-          created_at,
-          edited_at,
-          report_id,
-          created_by,
-          body,
-          media,
-          community_comment_id,
-          author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
-        `
-        )
+        .select(SUPPORT_REPLY_LIST_SELECT)
         .single();
 
       if (insertError) throw insertError;
 
-      const reply: SupportReply = {
-        id: data.id,
-        created_at: data.created_at,
-        edited_at: data.edited_at ?? null,
-        report_id: data.report_id,
-        created_by: data.created_by,
-        body: data.body,
-        media: data.media,
-        community_comment_id: data.community_comment_id ?? null,
-        author: normalizeSupportAuthor(data.author) ?? viewer,
-      };
+      const reply = mapSupportReplyRow(data, { fallbackAuthor: viewer });
 
       let nextStatus = ticket.status;
       const statusAfterReply = supportStatusAfterMemberReply(ticket.status);

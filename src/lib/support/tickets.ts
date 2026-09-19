@@ -58,10 +58,55 @@ export type SupportReply = {
   media?: unknown;
   /** Set when an admin edited the body; null/undefined = never edited. */
   edited_at?: string | null;
+  /** Arrived via email, or was included in an email to the member. */
+  via_email?: boolean;
 };
 
 export const SUPPORT_AUTHOR_SELECT =
   "id, full_name, first_name, last_name, avatar_url, role";
+
+export const SUPPORT_REPLY_LIST_SELECT = `
+  id,
+  created_at,
+  edited_at,
+  report_id,
+  created_by,
+  body,
+  media,
+  community_comment_id,
+  via_email,
+  author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
+`;
+
+export function mapSupportReplyRow(
+  raw: {
+    id: string;
+    created_at: string;
+    edited_at?: string | null;
+    report_id: string;
+    created_by: string;
+    body: string;
+    media?: unknown;
+    community_comment_id?: string | null;
+    via_email?: boolean | null;
+    author?: SupportTicketAuthor | SupportTicketAuthor[] | null;
+  },
+  options?: { fallbackAuthor?: SupportTicketAuthor | null }
+): SupportReply {
+  return {
+    id: raw.id,
+    created_at: raw.created_at,
+    edited_at: raw.edited_at ?? null,
+    report_id: raw.report_id,
+    created_by: raw.created_by,
+    body: raw.body,
+    media: raw.media,
+    community_comment_id: raw.community_comment_id ?? null,
+    via_email: Boolean(raw.via_email),
+    author:
+      normalizeSupportAuthor(raw.author) ?? options?.fallbackAuthor ?? null,
+  };
+}
 
 export function normalizeSupportAuthor(
   author: SupportTicketAuthor | SupportTicketAuthor[] | null | undefined

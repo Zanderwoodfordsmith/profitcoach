@@ -250,6 +250,7 @@ export async function tryIngestSupportReplyFromBird(input: {
       created_by: authorId,
       body: cleaned,
       bird_message_id: input.inboundId,
+      via_email: true,
       ...(emailDate ? { created_at: emailDate } : {}),
     });
 

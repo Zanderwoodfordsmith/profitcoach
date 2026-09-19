@@ -792,6 +792,15 @@ export async function deleteUnipileEmail(
   return unipileFetch<{ object?: string }>("DELETE", path);
 }
 
+export type UnipileEmailAttachment = {
+  id?: string;
+  name?: string;
+  mime?: string;
+  size?: number;
+  inline?: boolean;
+  cid?: string;
+};
+
 export async function getUnipileEmail(
   emailId: string,
   accountId?: string | null
@@ -801,6 +810,8 @@ export async function getUnipileEmail(
     thread_id?: string | null;
     provider_id?: string | null;
     subject?: string | null;
+    attachments?: UnipileEmailAttachment[];
+    has_attachments?: boolean;
   }>
 > {
   const qs = new URLSearchParams();
@@ -809,6 +820,88 @@ export async function getUnipileEmail(
     ? `/api/v1/emails/${encodeURIComponent(emailId)}?${qs}`
     : `/api/v1/emails/${encodeURIComponent(emailId)}`;
   return unipileFetch("GET", path);
+}
+
+async function unipileFetchBinary(
+  path: string,
+  options?: { timeoutMs?: number; maxBytes?: number }
+): Promise<UnipileResult<{ bytes: Uint8Array; contentType: string | null }>> {
+  const { dsn, apiKey } = unipileConfig();
+  if (!dsn || !apiKey) {
+    return { ok: false, status: 0, error: "Unipile is not configured." };
+  }
+
+  const url = `${dsn}${path.startsWith("/") ? path : `/${path}`}`;
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "X-API-KEY": apiKey,
+        Authorization: `Bearer ${apiKey}`,
+        accept: "*/*",
+      },
+      ...(options?.timeoutMs
+        ? { signal: AbortSignal.timeout(options.timeoutMs) }
+        : {}),
+    });
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (
+      typeof options?.maxBytes === "number" &&
+      buf.byteLength > options.maxBytes
+    ) {
+      return {
+        ok: false,
+        status: res.status,
+        error: "Unipile response was too large.",
+      };
+    }
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        error: `Unipile HTTP ${res.status}`,
+      };
+    }
+    return {
+      ok: true,
+      status: res.status,
+      data: {
+        bytes: buf,
+        contentType: res.headers.get("content-type"),
+      },
+    };
+  } catch (err) {
+    const timedOut =
+      err instanceof Error &&
+      (err.name === "TimeoutError" || err.name === "AbortError");
+    return {
+      ok: false,
+      status: 0,
+      error: timedOut
+        ? "Unipile request timed out."
+        : err instanceof Error
+          ? err.message
+          : "Unipile request failed.",
+    };
+  }
+}
+
+/** Download one email attachment from Unipile (raw bytes). */
+export async function downloadUnipileEmailAttachment(input: {
+  emailId: string;
+  attachmentId: string;
+  accountId?: string | null;
+  maxBytes?: number;
+}): Promise<UnipileResult<{ bytes: Uint8Array; contentType: string | null }>> {
+  const qs = new URLSearchParams();
+  if (input.accountId) qs.set("account_id", input.accountId);
+  const path = `/api/v1/emails/${encodeURIComponent(input.emailId)}/attachments/${encodeURIComponent(input.attachmentId)}${
+    qs.toString() ? `?${qs}` : ""
+  }`;
+  return unipileFetchBinary(path, {
+    timeoutMs: 25_000,
+    maxBytes: input.maxBytes,
+  });
 }
 
 export async function sendUnipileEmail(input: {
@@ -820,6 +913,7 @@ export async function sendUnipileEmail(input: {
   reply_to?: string;
   from?: { identifier: string; display_name?: string };
   custom_headers?: Array<{ name: string; value: string }>;
+  attachments?: Array<{ blob: Blob; filename: string }>;
 }) {
   const form = new FormData();
   form.append("account_id", input.account_id);
@@ -830,6 +924,9 @@ export async function sendUnipileEmail(input: {
   if (input.from) form.append("from", JSON.stringify(input.from));
   if (input.custom_headers?.length) {
     form.append("custom_headers", JSON.stringify(input.custom_headers));
+  }
+  for (const file of input.attachments ?? []) {
+    form.append("attachments", file.blob, file.filename);
   }
   return unipileFormFetch<{
     object?: string;

@@ -1,11 +1,12 @@
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
 import { BCA_SUPPORT_EMAIL } from "@/config/businessContact";
+import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import { getSupportMailboxAccount } from "@/lib/support/mailbox";
 import {
-  buildSupportCallBookingUrl,
-  loadSupportCallContactPrefill,
-  resolveSupportCallHostSlug,
-} from "@/lib/support/supportCallPrefill";
+  parseSupportReplyMedia,
+  supportEmailAttachmentFilename,
+  supportReplyBodyForEmail,
+} from "@/lib/support/supportTicketMedia";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { SupportTicketSource } from "@/lib/support/tickets";
 import {
@@ -30,6 +31,7 @@ export type SupportNotifyRecipient = {
 type StaffReplyForEmail = {
   body: string;
   authorFirstName: string | null;
+  media: CommunityPostMediaItem[];
 };
 
 /**
@@ -137,15 +139,27 @@ function firstNameOf(profile: {
   return full.split(/\s+/)[0] || null;
 }
 
-function staffReplyIntro(authorNames: string[]): string {
-  const unique = [...new Set(authorNames.map((n) => n.trim()).filter(Boolean))];
-  if (unique.length === 1) {
-    return `${unique[0]} from Profit Coach Support replied to your request:`;
+function lastStaffSignature(replies: StaffReplyForEmail[]): string | null {
+  for (let i = replies.length - 1; i >= 0; i -= 1) {
+    const name = replies[i]?.authorFirstName?.trim();
+    if (name) return name;
   }
-  if (unique.length === 2) {
-    return `${unique[0]} and ${unique[1]} from Profit Coach Support replied to your request:`;
-  }
-  return "The Profit Coach support team replied to your request:";
+  return null;
+}
+
+export function buildSupportReplyEmailHtml(input: {
+  replyBody: string;
+  signatureName: string | null;
+  supportUrl: string;
+}): string {
+  const preview = input.replyBody.trim().slice(0, 2000);
+  const bodyHtml = escapeHtml(preview).replace(/\n/g, "<br>");
+  const signature = input.signatureName?.trim() || "Profit Coach Support";
+  return `<p style="margin:0 0 20px;">${bodyHtml}</p>
+<p style="color:#334155;font-size:14px;margin:0 0 20px;">You can reply to this email or <a href="${escapeHtml(
+    input.supportUrl
+  )}" style="color:#0369a1;text-decoration:underline;">open Support in the app</a>, whichever is easiest.</p>
+<p style="color:#334155;font-size:14px;margin:0;">${escapeHtml(signature)}</p>`;
 }
 
 function formatStaffReplyBodies(replies: StaffReplyForEmail[]): string {
@@ -155,14 +169,52 @@ function formatStaffReplyBodies(replies: StaffReplyForEmail[]): string {
     ),
   ];
   if (names.length <= 1) {
-    return replies.map((r) => r.body).join("\n\n");
+    return replies
+      .map((r) => supportReplyBodyForEmail(r.body, r.media))
+      .filter(Boolean)
+      .join("\n\n");
   }
   return replies
     .map((r) => {
+      const body = supportReplyBodyForEmail(r.body, r.media);
+      if (!body) return "";
       const who = r.authorFirstName?.trim();
-      return who ? `${who}:\n${r.body}` : r.body;
+      return who ? `${who}:\n${body}` : body;
     })
+    .filter(Boolean)
     .join("\n\n");
+}
+
+const EMAIL_ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024;
+
+async function emailAttachmentsFromSupportMedia(
+  media: CommunityPostMediaItem[]
+): Promise<Array<{ blob: Blob; filename: string }>> {
+  const seen = new Set<string>();
+  const files: Array<{ blob: Blob; filename: string }> = [];
+  for (const [index, item] of media.entries()) {
+    const url = item.url.trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+      if (!res.ok) continue;
+      const buf = await res.arrayBuffer();
+      if (!buf.byteLength || buf.byteLength > EMAIL_ATTACHMENT_MAX_BYTES) {
+        continue;
+      }
+      const type =
+        res.headers.get("content-type")?.split(";")[0]?.trim() ||
+        "application/octet-stream";
+      files.push({
+        blob: new Blob([buf], { type }),
+        filename: supportEmailAttachmentFilename(item, index),
+      });
+    } catch (err) {
+      console.warn("support notify attachment:", err);
+    }
+  }
+  return files;
 }
 
 /**
@@ -177,7 +229,7 @@ export async function processDueSupportReplyEmails(
   let query = supabaseAdmin
     .from("community_feedback_reports")
     .select(
-      "id, ticket_number, title, created_by, contact_email, submitter_name, assigned_to, member_notify_email, email_notify_after, email_notify_last_sent_at, unipile_email_id, unipile_thread_id, unipile_account_id"
+      "id, ticket_number, title, created_by, contact_email, submitter_name, member_notify_email, email_notify_after, email_notify_last_sent_at, unipile_email_id, unipile_thread_id, unipile_account_id"
     )
     .not("email_notify_after", "is", null)
     .lte("email_notify_after", nowIso);
@@ -220,7 +272,7 @@ export async function processDueSupportReplyEmails(
     const { data: replies, error: repliesError } = await supabaseAdmin
       .from("community_feedback_replies")
       .select(
-        "body, created_at, created_by, author:profiles!created_by ( role, full_name, first_name )"
+        "id, body, media, created_at, created_by, author:profiles!created_by ( role, full_name, first_name )"
       )
       .eq("report_id", ticket.id)
       .gt("created_at", since)
@@ -235,13 +287,13 @@ export async function processDueSupportReplyEmails(
       continue;
     }
 
-    const staffReplies: StaffReplyForEmail[] = (replies ?? [])
-      .filter((r) => {
-        const author = Array.isArray(r.author) ? r.author[0] : r.author;
-        const role = (author as { role?: string | null } | null)?.role;
-        if (role === "admin") return true;
-        return Boolean(ticket.created_by && r.created_by !== ticket.created_by);
-      })
+    const staffRows = (replies ?? []).filter((r) => {
+      const author = Array.isArray(r.author) ? r.author[0] : r.author;
+      const role = (author as { role?: string | null } | null)?.role;
+      if (role === "admin") return true;
+      return Boolean(ticket.created_by && r.created_by !== ticket.created_by);
+    });
+    const staffReplies: StaffReplyForEmail[] = staffRows
       .map((r) => {
         const author = Array.isArray(r.author) ? r.author[0] : r.author;
         return {
@@ -252,48 +304,35 @@ export async function processDueSupportReplyEmails(
               first_name?: string | null;
             } | null
           ),
+          media: parseSupportReplyMedia(r.media),
         };
       })
-      .filter((r) => Boolean(r.body));
+      .filter((r) => Boolean(r.body) || r.media.length > 0);
+    const staffReplyIds = staffRows
+      .filter((r) => {
+        const body = (r.body ?? "").trim();
+        return Boolean(body) || parseSupportReplyMedia(r.media).length > 0;
+      })
+      .map((r) => r.id as string)
+      .filter(Boolean);
 
     if (staffReplies.length === 0) {
       continue;
     }
 
     const replyBody = formatStaffReplyBodies(staffReplies);
-    const authorNames = staffReplies
-      .map((r) => r.authorFirstName)
-      .filter((n): n is string => Boolean(n));
-
-    const hostSlug = await resolveSupportCallHostSlug(
-      (ticket as { assigned_to?: string | null }).assigned_to
+    const attachments = await emailAttachmentsFromSupportMedia(
+      staffReplies.flatMap((r) => r.media)
     );
-    const contactPrefill = ticket.created_by
-      ? await loadSupportCallContactPrefill(ticket.created_by)
-      : {
-          firstName: ticket.submitter_name?.trim()?.split(/\s+/)[0] || null,
-          lastName:
-            ticket.submitter_name?.trim()?.split(/\s+/).slice(1).join(" ") ||
-            null,
-          email: recipient.email,
-          phone: null,
-        };
-    if (!contactPrefill.email) {
-      contactPrefill.email = recipient.email;
-    }
 
     const result = await notifyCoachOfSupportReply({
       ticketId: ticket.id,
       title: ticket.title,
       replyBody,
-      intro: staffReplyIntro(authorNames),
+      signatureName: lastStaffSignature(staffReplies),
       recipient,
       unipileEmailId: ticket.unipile_email_id,
-      supportCallUrl: buildSupportCallBookingUrl({
-        baseUrl: getAppBaseUrl(request),
-        hostSlug,
-        contact: contactPrefill,
-      }),
+      attachments,
       request,
     });
 
@@ -304,6 +343,13 @@ export async function processDueSupportReplyEmails(
         .update({ email_notify_after: new Date().toISOString() })
         .eq("id", ticket.id);
       continue;
+    }
+
+    if (staffReplyIds.length > 0) {
+      await supabaseAdmin
+        .from("community_feedback_replies")
+        .update({ via_email: true })
+        .in("id", staffReplyIds);
     }
 
     await supabaseAdmin
@@ -365,11 +411,10 @@ export async function notifyCoachOfSupportReply(input: {
   ticketId: string;
   title: string | null;
   replyBody: string;
-  intro: string;
+  signatureName: string | null;
   recipient: SupportNotifyRecipient;
   unipileEmailId?: string | null;
-  /** Prefillable /support-call-* link for the assignee host. */
-  supportCallUrl?: string | null;
+  attachments?: Array<{ blob: Blob; filename: string }>;
   request?: Request;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!isUnipileConfigured()) {
@@ -394,37 +439,11 @@ export async function notifyCoachOfSupportReply(input: {
   const base = getAppBaseUrl(input.request);
   const subjectTitle = (input.title || "").trim() || "your support request";
   const supportUrl = `${base}/coach/support`;
-  const supportCallUrl = input.supportCallUrl?.trim() || null;
-  const preview = input.replyBody.trim().slice(0, 2000);
-  const greeting = `Hi${
-    input.recipient.name ? ` ${input.recipient.name.split(" ")[0]}` : ""
-  },`;
-  const outro =
-    "You can reply to this email, open Support in the app, or book a short call — whichever is easiest.";
-
-  const callButton = supportCallUrl
-    ? `<p><a href="${escapeHtml(
-        supportCallUrl
-      )}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;margin-right:8px;">Book a support call</a>
-<a href="${escapeHtml(
-        supportUrl
-      )}" style="display:inline-block;background:#0369a1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">Open Support</a></p>`
-    : `<p><a href="${escapeHtml(
-        supportUrl
-      )}" style="display:inline-block;background:#0369a1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">Open Support</a></p>`;
-
-  const html = `<p>${escapeHtml(greeting)}</p>
-<p>${escapeHtml(input.intro)}${
-    subjectTitle !== "your support request"
-      ? ` <strong>${escapeHtml(subjectTitle)}</strong>`
-      : ""
-  }</p>
-<blockquote style="margin:16px 0;padding:12px 16px;border-left:3px solid #0c5290;background:#f8fafc;white-space:pre-wrap;">${escapeHtml(
-    preview
-  )}</blockquote>
-<p style="color:#334155;font-size:14px;">${escapeHtml(outro)}</p>
-${callButton}
-<p style="color:#64748b;font-size:13px;">— Profit Coach Support</p>`;
+  const html = buildSupportReplyEmailHtml({
+    replyBody: input.replyBody,
+    signatureName: input.signatureName,
+    supportUrl,
+  });
 
   // Always RE: so member inbox shows a reply, not a bare ticket title.
   const subjectBase = /^(re|RE|Re):\s*/i.test(subjectTitle)
@@ -451,6 +470,7 @@ ${callButton}
     subject,
     body: html,
     reply_to: replyTo,
+    attachments: input.attachments,
   });
 
   // Stale inbound ids fail with parent_mail_not_found; retry as a new thread.
@@ -462,6 +482,7 @@ ${callButton}
       from,
       subject,
       body: html,
+      attachments: input.attachments,
     });
   }
 
@@ -473,6 +494,7 @@ ${callButton}
       to,
       subject,
       body: html,
+      attachments: input.attachments,
     });
   }
 
