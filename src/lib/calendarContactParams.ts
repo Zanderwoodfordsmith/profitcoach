@@ -79,13 +79,14 @@ export function resolveReportCalendarContact(options: {
 }): CalendarContactParams {
   const urlContact = options.searchParams
     ? parseAssessmentContactParams(options.searchParams)
-    : {
+      : {
         firstName: null,
         lastName: null,
         fullName: null,
         email: null,
         phone: null,
         businessName: null,
+        inviteToken: null,
       };
   const merged = mergeAssessmentContactWithSession(
     urlContact,

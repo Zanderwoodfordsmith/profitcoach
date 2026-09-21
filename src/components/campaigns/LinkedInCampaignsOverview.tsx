@@ -5,10 +5,10 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Archive, ChevronDown, Copy, MoreVertical, Pencil, Plus, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { Archive, ChevronDown, Copy, MoreVertical, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import { fetchHubQuery, invalidateHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
 import { hubQueryKey } from "@/lib/getClients/hubKeys";
 import {
   loadCampaignsHubPayload,
@@ -53,10 +53,7 @@ import {
 } from "@/lib/campaigns/demoPreview";
 import { useCampaignDemoPreview } from "@/hooks/useCampaignDemoPreview";
 import { CampaignDemoPreviewToggle } from "@/components/campaigns/CampaignDemoPreviewToggle";
-import {
-  CAMPAIGN_CREATE_TEMPLATES,
-  type CampaignCreateTemplateId,
-} from "@/lib/unipile/campaignCreateTemplates";
+import { CampaignCreateModal } from "@/components/campaigns/CampaignCreateModal";
 
 type Account = {
   id: string;
@@ -145,6 +142,7 @@ function RowMenu({
   onDuplicate,
   onArchive,
   onUnarchive,
+  onDelete,
   busy,
 }: {
   open: boolean;
@@ -153,6 +151,7 @@ function RowMenu({
   onDuplicate: () => void;
   onArchive?: () => void;
   onUnarchive?: () => void;
+  onDelete: () => void;
   busy: boolean;
 }) {
   const menuId = useId();
@@ -171,7 +170,7 @@ function RowMenu({
     function updatePosition() {
       const rect = buttonRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const menuHeight = menuRef.current?.offsetHeight ?? 140;
+      const menuHeight = menuRef.current?.offsetHeight ?? 180;
       const gap = 4;
       const openUp = rect.bottom + gap + menuHeight > window.innerHeight - 8;
       const top = openUp
@@ -289,6 +288,20 @@ function RowMenu({
                 Archive
               </button>
             ) : null}
+            <button
+              type="button"
+              role="menuitem"
+              disabled={busy}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-40"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenChange(false);
+                onDelete();
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5 text-rose-400" aria-hidden />
+              Delete
+            </button>
           </div>,
           document.body
         )
@@ -330,6 +343,7 @@ function CampaignTableRow({
   onDuplicate,
   onArchive,
   onUnarchive,
+  onDelete,
 }: {
   campaign: Campaign;
   archived?: boolean;
@@ -343,6 +357,7 @@ function CampaignTableRow({
   onDuplicate: () => void;
   onArchive?: () => void;
   onUnarchive?: () => void;
+  onDelete: () => void;
 }) {
   const contacts = c.lead_count ?? 0;
   const { progress, replies } = campaignRates(c);
@@ -439,6 +454,7 @@ function CampaignTableRow({
           onDuplicate={onDuplicate}
           onArchive={onArchive}
           onUnarchive={onUnarchive}
+          onDelete={onDelete}
         />
       </td>
     </tr>
@@ -471,10 +487,6 @@ export function LinkedInCampaignsOverview() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showSending, setShowSending] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newChannel, setNewChannel] = useState<"linkedin" | "email">("linkedin");
-  const [newTemplateId, setNewTemplateId] =
-    useState<CampaignCreateTemplateId>("blank");
   const [configured, setConfigured] = useState(() => cached?.configured ?? true);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [coachSlug, setCoachSlug] = useState<string | null>(
@@ -621,7 +633,10 @@ export function LinkedInCampaignsOverview() {
     }
   }
 
-  async function createCampaign() {
+  async function createCampaign(input: {
+    name: string;
+    libraryTemplateId?: string;
+  }) {
     setBusy(true);
     setError(null);
     try {
@@ -631,31 +646,23 @@ export function LinkedInCampaignsOverview() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          name: newName.trim(),
-          outreach_account_id:
-            (newTemplateId !== "blank"
-              ? CAMPAIGN_CREATE_TEMPLATES.find((t) => t.id === newTemplateId)
-                  ?.channel
-              : newChannel) === "email"
-              ? mailingAccount?.id ?? null
-              : primaryAccount?.id ?? null,
-          channel:
-            newTemplateId !== "blank"
-              ? CAMPAIGN_CREATE_TEMPLATES.find((t) => t.id === newTemplateId)
-                  ?.channel ?? "linkedin"
-              : newChannel,
-          template_id: newTemplateId === "blank" ? null : newTemplateId,
+          name: input.name.trim(),
+          outreach_account_id: primaryAccount?.id ?? null,
+          ...(input.libraryTemplateId
+            ? { library_template_id: input.libraryTemplateId }
+            : {}),
         }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Create failed.");
-      setNewName("");
-      setNewChannel("linkedin");
-      setNewTemplateId("blank");
       setShowCreate(false);
-      router.push(`${prefix}/campaigns/${body.campaign.id}`);
+      invalidateHubQuery(hubQueryKey("campaigns", impersonatingCoachId));
+      router.push(
+        `${prefix}/campaigns/${body.campaign.id}?tab=steps`
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed.");
+    } finally {
       setBusy(false);
     }
   }
@@ -754,6 +761,35 @@ export function LinkedInCampaignsOverview() {
     }
   }
 
+  async function deleteCampaign(campaign: Campaign) {
+    if (isDemoPreviewId(campaign.id)) return;
+    const ok = window.confirm(
+      `Delete “${campaign.name}”? This removes the campaign, its steps, and everyone in its queue. Conversations and prospect records stay. This cannot be undone.`
+    );
+    if (!ok) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaign.id)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ action: "delete" }),
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Delete failed.");
+      await load(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function unarchiveCampaign(campaign: Campaign) {
     if (isDemoPreviewId(campaign.id)) return;
     setBusy(true);
@@ -783,7 +819,7 @@ export function LinkedInCampaignsOverview() {
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
-      {error ? (
+      {error && !showCreate ? (
         <div className="shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           {error}
         </div>
@@ -823,7 +859,10 @@ export function LinkedInCampaignsOverview() {
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => setShowCreate((v) => !v)}
+                  onClick={() => {
+                    setError(null);
+                    setShowCreate(true);
+                  }}
                   className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 text-sm font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
                 >
                   <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
@@ -869,83 +908,6 @@ export function LinkedInCampaignsOverview() {
               </div>
             ) : (
               <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40 xl:col-start-1 xl:row-start-2 xl:h-full xl:min-h-0">
-                {showCreate ? (
-                  <div className="shrink-0 space-y-3 border-b border-slate-100 px-4 py-4">
-                    <input
-                      autoFocus
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="e.g. SaaS Founders Outreach"
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none ring-[#0c5290]/30 placeholder:text-slate-400 focus:ring-2"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") void createCampaign();
-                        if (e.key === "Escape") setShowCreate(false);
-                      }}
-                    />
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                        Start from
-                      </p>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                        {CAMPAIGN_CREATE_TEMPLATES.map((template) => {
-                          const selected = newTemplateId === template.id;
-                          return (
-                            <button
-                              key={template.id}
-                              type="button"
-                              onClick={() => {
-                                setNewTemplateId(template.id);
-                                setNewChannel(template.channel);
-                              }}
-                              className={`rounded-xl border px-3 py-2.5 text-left ${
-                                selected
-                                  ? "border-[#0c5290] bg-sky-50"
-                                  : "border-slate-200 bg-white hover:bg-slate-50"
-                              }`}
-                            >
-                              <span
-                                className={`block text-sm font-semibold ${
-                                  selected ? "text-[#0c5290]" : "text-slate-800"
-                                }`}
-                              >
-                                {template.name}
-                              </span>
-                              <span className="mt-0.5 block text-[11px] leading-snug text-slate-500">
-                                {template.description}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {newTemplateId === "blank" ? (
-                      <select
-                        value={newChannel}
-                        onChange={(e) =>
-                          setNewChannel(
-                            e.target.value === "email" ? "email" : "linkedin"
-                          )
-                        }
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#0c5290]/30"
-                        aria-label="Campaign channel"
-                      >
-                        <option value="linkedin">LinkedIn</option>
-                        <option value="email">Email</option>
-                      </select>
-                    ) : null}
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void createCampaign()}
-                        className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-                      >
-                        Create
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
                 {sorted.length === 0 && archivedCampaigns.length === 0 ? (
                   <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
                     <p className="text-sm font-medium text-slate-800">
@@ -956,7 +918,10 @@ export function LinkedInCampaignsOverview() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => setShowCreate(true)}
+                      onClick={() => {
+                        setError(null);
+                        setShowCreate(true);
+                      }}
                       className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#0c5290] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0a457a]"
                     >
                       <Plus
@@ -1061,6 +1026,7 @@ export function LinkedInCampaignsOverview() {
                                   }}
                                   onDuplicate={() => void duplicateCampaign(c)}
                                   onArchive={() => void archiveCampaign(c)}
+                                  onDelete={() => void deleteCampaign(c)}
                                 />
                               );
                             })
@@ -1131,6 +1097,7 @@ export function LinkedInCampaignsOverview() {
                                       onUnarchive={() =>
                                         void unarchiveCampaign(c)
                                       }
+                                      onDelete={() => void deleteCampaign(c)}
                                     />
                                   ))
                                 : null}
@@ -1163,6 +1130,21 @@ export function LinkedInCampaignsOverview() {
           </div>
         </div>
       ) : null}
+
+      <CampaignCreateModal
+        open={showCreate}
+        busy={busy}
+        error={showCreate ? error : null}
+        onClose={() => {
+          if (busy) return;
+          setShowCreate(false);
+          setError(null);
+        }}
+        onCreateBlank={(name) => void createCampaign({ name })}
+        onCreateFromTemplate={(name, template) =>
+          void createCampaign({ name, libraryTemplateId: template.id })
+        }
+      />
 
       <AccountSendingModal
         open={showSending}

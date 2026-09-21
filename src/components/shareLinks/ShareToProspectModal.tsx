@@ -49,6 +49,7 @@ type ProspectPickerRow = {
   business_name: string | null;
   linkedin_url: string | null;
   type: string | null;
+  inviteToken: string | null;
 };
 
 type Props = {
@@ -173,6 +174,7 @@ export function ShareToProspectModal({
         phone: string | null;
         linkedin_url: string | null;
         type: string | null;
+        assessment_invite_token: string | null;
       }>(
         async (columns) =>
           supabaseClient
@@ -182,7 +184,7 @@ export function ShareToProspectModal({
             .in("type", ["prospect", "client"])
             .order("created_at", { ascending: false }),
         "id, full_name, email, business_name, type, created_at",
-        ["linkedin_url"]
+        ["linkedin_url", "assessment_invite_token"]
       );
 
       if (cancelled) return;
@@ -199,6 +201,7 @@ export function ShareToProspectModal({
             business_name: row.business_name,
             linkedin_url: row.linkedin_url,
             type: row.type,
+            inviteToken: row.assessment_invite_token,
           }))
         );
       }
@@ -248,6 +251,7 @@ export function ShareToProspectModal({
       email: selected.email ?? "",
       phone: selected.phone ?? "",
       businessName: selected.business_name ?? "",
+      inviteToken: selected.inviteToken ?? undefined,
       origin: appOrigin,
       coachSlug,
     };

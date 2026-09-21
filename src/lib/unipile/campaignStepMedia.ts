@@ -6,6 +6,7 @@ import {
   type MessagingAttachmentKind,
   type MessagingAttachmentMeta,
 } from "@/lib/messaging/messageAttachments";
+import { MAX_CAMPAIGN_STEP_MEDIA_BYTES } from "@/lib/unipile/campaignStepMediaLimits";
 import type { CampaignStepMedia } from "@/lib/unipile/campaignStepTypes";
 import { messageMediaFrom } from "@/lib/unipile/campaignStepTypes";
 
@@ -37,6 +38,7 @@ export async function uploadCampaignStepMedia(input: {
     mime: input.mime,
     size: input.blob.size,
     filename: input.filename,
+    maxBytes: MAX_CAMPAIGN_STEP_MEDIA_BYTES,
   });
   if (err) throw new Error(err);
   if (input.kind !== "voice" && input.kind !== "video") {
@@ -56,6 +58,7 @@ export async function uploadCampaignStepMedia(input: {
     filename: input.filename,
     mime: input.mime,
     kind: input.kind,
+    maxBytes: MAX_CAMPAIGN_STEP_MEDIA_BYTES,
   });
 }
 

@@ -6,6 +6,7 @@ import {
   BOSS_PRO_RING_TRACK,
   BOSS_PILLAR_DIAL_GRADIENTS,
 } from "@/lib/bossProDialGradients";
+import { leadStatusLabel } from "@/lib/unipile/campaignLeadActivity";
 
 export type CampaignDialMetric = {
   id: string;
@@ -632,103 +633,263 @@ export function campaignFuelStarvedCopy(fuel: CampaignFuel): string | null {
   return "Nothing left in this campaign. Add prospects or pause it.";
 }
 
+export const CAMPAIGN_STATUS_ORDER = [
+  "queued",
+  "invited",
+  "connected",
+  "in_sequence",
+  "paused",
+  "replied",
+  "interested",
+  "assessment_sent",
+  "assessment_done",
+  "call_offered",
+  "completed",
+  "failed",
+  "skipped",
+] as const;
+
+const CAMPAIGN_STATUS_COLORS: Record<string, string> = {
+  queued: "#94a3b8",
+  invited: "#f59e0b",
+  connected: "#0c5290",
+  in_sequence: "#2b8fd6",
+  paused: "#8b5cf6",
+  replied: "#10b981",
+  interested: "#047857",
+  assessment_sent: "#5eb4f4",
+  assessment_done: "#0e7490",
+  call_offered: "#22c55e",
+  completed: "#14532d",
+  failed: "#e11d48",
+  skipped: "#64748b",
+};
+
+const STATUS_COLOR_FALLBACK = [
+  "#475569",
+  "#0369a1",
+  "#7c3aed",
+  "#c2410c",
+  "#0f766e",
+] as const;
+
+const ADD_PROSPECTS_BTN =
+  "rounded-lg bg-[#0c5290] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#0a457a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2";
+
+export type CampaignStatusMixRow = {
+  status: string;
+  label: string;
+  count: number;
+  color: string;
+};
+
+export function campaignStatusMix(
+  counts: Record<string, number>
+): CampaignStatusMixRow[] {
+  const known = CAMPAIGN_STATUS_ORDER.filter((status) => (counts[status] ?? 0) > 0);
+  const extras = Object.keys(counts)
+    .filter(
+      (status) =>
+        !(CAMPAIGN_STATUS_ORDER as readonly string[]).includes(status) &&
+        (counts[status] ?? 0) > 0
+    )
+    .sort();
+  return [...known, ...extras].map((status, i) => ({
+    status,
+    label: leadStatusLabel(status),
+    count: counts[status] ?? 0,
+    color:
+      CAMPAIGN_STATUS_COLORS[status] ??
+      STATUS_COLOR_FALLBACK[i % STATUS_COLOR_FALLBACK.length],
+  }));
+}
+
+function CampaignStatusDonut({
+  rows,
+  total,
+}: {
+  rows: CampaignStatusMixRow[];
+  total: number;
+}) {
+  const viewSize = 180;
+  const stroke = 28;
+  const cx = viewSize / 2;
+  const cy = viewSize / 2;
+  const radius = (viewSize - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+  const segments =
+    total > 0
+      ? rows.map((row) => {
+          const length = (row.count / total) * circumference;
+          const segment = { ...row, length, offset };
+          offset += length;
+          return segment;
+        })
+      : [];
+
+  return (
+    <div className="relative h-[11.5rem] w-[11.5rem] shrink-0 sm:h-[12.5rem] sm:w-[12.5rem]">
+      <svg className="h-full w-full" viewBox={`0 0 ${viewSize} ${viewSize}`}>
+        <g transform={`rotate(-90 ${cx} ${cy})`}>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={radius}
+            fill="none"
+            stroke="#e2e8f0"
+            strokeWidth={stroke}
+          />
+          {segments.map((segment) => (
+            <circle
+              key={segment.status}
+              cx={cx}
+              cy={cy}
+              r={radius}
+              fill="none"
+              stroke={segment.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${segment.length} ${circumference}`}
+              strokeDashoffset={-segment.offset}
+              strokeLinecap="butt"
+            />
+          ))}
+        </g>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[2rem] font-semibold tabular-nums leading-none tracking-tight text-slate-900 sm:text-[2.25rem]">
+          {total}
+        </span>
+        <span className="mt-1.5 text-xs font-medium text-slate-500">
+          {total === 1 ? "person" : "people"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function CampaignFuelPanel({
   fuel,
+  statusCounts,
   onAddProspects,
-  onOpenQueued,
-  onOpenFollowUp,
+  onOpenStatus,
+  onViewAll,
 }: {
   fuel: CampaignFuel;
+  statusCounts: Record<string, number>;
   onAddProspects: () => void;
-  onOpenQueued?: () => void;
-  onOpenFollowUp?: () => void;
+  onOpenStatus?: (status: string) => void;
+  onViewAll?: () => void;
 }) {
-  const leftLabel = fuel.hasInviteStep ? "left to invite" : "left to start";
-  const followLabel = fuel.hasInviteStep ? "in follow-up" : "in sequence";
+  const rows = campaignStatusMix(statusCounts);
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
   const runway = campaignRunwayLabel(fuel.leftToInvite, fuel.dailyLimit);
   const starved = campaignFuelStarvedCopy(fuel);
-  const emptyQueue = fuel.leftToInvite === 0;
-  const warn = emptyQueue && fuel.campaignStatus === "running";
-
-  const countClass = `block text-[2rem] font-semibold tabular-nums tracking-tight sm:text-[2.25rem] ${
-    warn ? "text-amber-800" : "text-slate-900"
-  }`;
-  const labelClass = "mt-1 block text-sm text-slate-600";
-  const countButtonClass =
-    "rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2";
-
-  const leftCount = (
-    <>
-      <span className={countClass}>{fuel.leftToInvite}</span>
-      <span className={labelClass}>{leftLabel}</span>
-    </>
-  );
-  const followCount = (
-    <>
-      <span className="block text-[2rem] font-semibold tabular-nums tracking-tight text-slate-900 sm:text-[2.25rem]">
-        {fuel.inFollowUp}
-      </span>
-      <span className={labelClass}>{followLabel}</span>
-    </>
-  );
+  const mixLabel =
+    rows.length === 0
+      ? "No activity yet"
+      : rows.map((row) => `${row.count} ${row.label}`).join(", ");
 
   return (
     <div className={`${DIAL_CARD_SHELL} flex h-full flex-col`}>
-      <div className={CARD_HEADER}>Queue</div>
-      <div className="flex flex-1 flex-col px-4 py-4 sm:px-5 sm:py-5">
-        <div className="grid grid-cols-2 gap-6">
-          {onOpenQueued ? (
-            <button
-              type="button"
-              onClick={onOpenQueued}
-              className={countButtonClass}
-            >
-              {leftCount}
-            </button>
-          ) : (
-            <div>{leftCount}</div>
-          )}
-          {onOpenFollowUp ? (
-            <button
-              type="button"
-              onClick={onOpenFollowUp}
-              className={countButtonClass}
-            >
-              {followCount}
-            </button>
-          ) : (
-            <div>{followCount}</div>
-          )}
-        </div>
-
-        <div className="mt-4">
-          <CampaignBatchBar
-            queued={fuel.leftToInvite}
-            inFollowUp={fuel.inFollowUp}
-            total={fuel.total}
-            label={`${fuel.leftToInvite} ${leftLabel}, ${fuel.inFollowUp} ${followLabel}`}
-          />
-        </div>
-
-        {runway ? (
-          <p className="mt-3 text-sm text-slate-600">{runway}</p>
-        ) : null}
-
-        {starved ? (
-          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm leading-snug text-amber-950">
-            {starved}
-          </p>
-        ) : null}
-
-        <div className="mt-auto pt-5">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-600/40 bg-slate-700 px-4 py-2.5">
+        <h2 className="text-sm font-semibold tracking-wide text-white">
+          By status
+        </h2>
+        {onViewAll ? (
           <button
             type="button"
-            onClick={onAddProspects}
-            className="rounded-lg bg-[#0c5290] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a457a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+            onClick={onViewAll}
+            className="text-xs font-medium text-sky-200 hover:text-white"
           >
-            Add prospects
+            View all
           </button>
-        </div>
+        ) : null}
+      </div>
+      <div className="flex flex-1 flex-col px-4 py-4 sm:px-5 sm:py-5">
+        {rows.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-500">No activity yet</p>
+        ) : (
+          <div
+            className="flex flex-1 flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-6"
+            role="img"
+            aria-label={mixLabel}
+          >
+            <div className="flex shrink-0 items-center justify-center">
+              <CampaignStatusDonut rows={rows} total={total} />
+            </div>
+            <div className="flex w-full min-w-0 flex-1 flex-col">
+              <ul className="w-max min-w-[10.5rem] max-w-full">
+                {rows.map((row) => {
+                  const rowInner = (
+                    <>
+                      <span className="flex min-w-0 items-center gap-2.5 font-medium text-slate-700">
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ background: row.color }}
+                          aria-hidden
+                        />
+                        <span className="truncate">{row.label}</span>
+                      </span>
+                      <span className="tabular-nums font-semibold text-slate-900">
+                        {row.count}
+                      </span>
+                    </>
+                  );
+                  return (
+                    <li key={row.status}>
+                      {onOpenStatus ? (
+                        <button
+                          type="button"
+                          onClick={() => onOpenStatus(row.status)}
+                          className="flex w-full items-center justify-between gap-5 rounded-md px-1 py-1 text-left text-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                        >
+                          {rowInner}
+                        </button>
+                      ) : (
+                        <div className="flex items-center justify-between gap-5 px-1 py-1 text-sm">
+                          {rowInner}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <div className="mt-5 flex flex-col items-start gap-3">
+                {runway ? (
+                  <p className="text-sm leading-snug text-slate-600">{runway}</p>
+                ) : null}
+
+                {starved ? (
+                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm leading-snug text-amber-950">
+                    {starved}
+                  </p>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={onAddProspects}
+                  className={ADD_PROSPECTS_BTN}
+                >
+                  Add prospects
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {rows.length === 0 ? (
+          <div className="mt-auto pt-4">
+            <button
+              type="button"
+              onClick={onAddProspects}
+              className={ADD_PROSPECTS_BTN}
+            >
+              Add prospects
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

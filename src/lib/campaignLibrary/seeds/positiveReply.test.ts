@@ -5,6 +5,7 @@ import { POSITIVE_REPLY_LIBRARY_SEED, positiveReplyLibrarySteps } from "./positi
 describe("positive reply library template", () => {
   it("is a published positive-reply template with only manual LinkedIn sends", () => {
     assert.equal(POSITIVE_REPLY_LIBRARY_SEED.kind, "positive_reply");
+    assert.equal(POSITIVE_REPLY_LIBRARY_SEED.name, "Positive replies");
     assert.equal(POSITIVE_REPLY_LIBRARY_SEED.itemType, "template");
     assert.equal(POSITIVE_REPLY_LIBRARY_SEED.status, "published");
     const steps = positiveReplyLibrarySteps();

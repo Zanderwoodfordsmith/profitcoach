@@ -1,5 +1,4 @@
 import {
-  MARKETING_EMAILS,
   OWNER_EMAILS,
   PROFIT_EMAILS,
 } from "@/lib/unipile/playbooks/pamEmails";
@@ -16,18 +15,13 @@ import {
 const TWO_WEEKS = 336;
 
 function fiveDayOpeners(): Array<Omit<PlaybookStep, "position">> {
-  const days = Math.min(
-    OWNER_EMAILS.length,
-    PROFIT_EMAILS.length,
-    MARKETING_EMAILS.length
-  );
+  const days = Math.min(OWNER_EMAILS.length, PROFIT_EMAILS.length);
   const items: Array<Omit<PlaybookStep, "position">> = [];
   for (let i = 0; i < days; i++) {
     if (i > 0) items.push(waitStep(24));
     const owner = OWNER_EMAILS[i];
     const profit = PROFIT_EMAILS[i];
-    const marketing = MARKETING_EMAILS[i];
-    if (!owner || !profit || !marketing) continue;
+    if (!owner || !profit) continue;
     items.push(
       emailStep(owner.subject, owner.preview, owner.body, [
         {
@@ -40,28 +34,19 @@ function fiveDayOpeners(): Array<Omit<PlaybookStep, "position">> {
           label: "Profit leakage",
           body: packEmailBody(profit.subject, profit.preview, profit.body),
         },
-        {
-          key: "C",
-          label: "Marketing",
-          body: packEmailBody(
-            marketing.subject,
-            marketing.preview,
-            marketing.body
-          ),
-        },
       ])
     );
   }
   return items;
 }
 
-/** After Connector: 5-day email (three angles), then LinkedIn value DMs. */
+/** After Connector: 5-day email (owner / profit), then LinkedIn value DMs. */
 export const VIP_NURTURE_PLAYBOOK: OutreachPlaybook = {
   id: "vip-nurture",
   name: "Nurture",
   channel: "linkedin",
   description:
-    "People who did not convert in Connector. 5-day email (owner / profit / marketing variants), then LinkedIn value DMs every two weeks.",
+    "People who did not convert in Connector. 5-day email (owner / profit variants), then LinkedIn value DMs every two weeks.",
   northStar: "interested_reply",
   seedDefault: true,
   steps: spaced([

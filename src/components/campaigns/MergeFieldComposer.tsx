@@ -40,10 +40,14 @@ function chipClass(kind: "field" | "unknown", size: "editor" | "preview") {
   return "inline-flex items-baseline whitespace-nowrap rounded-md bg-sky-200 px-1.5 py-0.5 font-semibold text-sky-950";
 }
 
+function escapedTextWithBreaks(value: string): string {
+  return escapeHtml(value).replaceAll("\n", "<br>");
+}
+
 function segmentsToHtml(segments: MergeSegment[], size: "editor" | "preview") {
   return segments
     .map((seg) => {
-      if (seg.kind === "text") return escapeHtml(seg.value);
+      if (seg.kind === "text") return escapedTextWithBreaks(seg.value);
       if (seg.kind === "unknown") {
         return `<span contenteditable="false" data-merge-unknown="${escapeHtml(
           seg.key
@@ -56,6 +60,35 @@ function segmentsToHtml(segments: MergeSegment[], size: "editor" | "preview") {
       )}" class="${chipClass("field", size)}">${escapeHtml(seg.field.label)}</span>`;
     })
     .join("");
+}
+
+export function mergeTextToEditorHtml(text: string): string {
+  return segmentsToHtml(tokenizeMergeFields(text), "editor");
+}
+
+function insertLineBreakInEditor(editor: HTMLElement) {
+  editor.focus();
+  const sel = window.getSelection();
+  if (!sel) return;
+  if (sel.rangeCount === 0 || !editor.contains(sel.anchorNode)) {
+    const end = document.createRange();
+    end.selectNodeContents(editor);
+    end.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(end);
+  }
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const br = document.createElement("br");
+  range.insertNode(br);
+  if (!br.nextSibling) {
+    br.after(document.createElement("br"));
+  }
+  const caret = document.createRange();
+  caret.setStartAfter(br);
+  caret.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(caret);
 }
 
 function serializeEditor(root: HTMLElement): string {
@@ -123,7 +156,9 @@ export function MergeFieldPreview({
     <span className={className}>
       {segments.map((seg, i) =>
         seg.kind === "text" ? (
-          <span key={i}>{seg.value}</span>
+          <span key={i} className="whitespace-pre-wrap">
+            {seg.value}
+          </span>
         ) : (
           <FieldChip key={i} segment={seg} size="preview" />
         )
@@ -419,13 +454,14 @@ export function MergeFieldComposer({
           onCommit();
         }}
         onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            document.execCommand("insertLineBreak");
-            emit();
-          }
+          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+          event.preventDefault();
+          event.stopPropagation();
+          const el = editorRef.current;
+          if (el) insertLineBreakInEditor(el);
+          emit();
         }}
-        className="min-h-[8.5rem] w-full bg-white px-3 py-2.5 text-[15px] leading-relaxed text-slate-800 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)]"
+        className="min-h-[8.5rem] w-full whitespace-pre-wrap bg-white px-3 py-2.5 text-[15px] leading-relaxed text-slate-800 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)]"
       />
       <div
         className="flex items-stretch border-t border-slate-200 bg-slate-100"

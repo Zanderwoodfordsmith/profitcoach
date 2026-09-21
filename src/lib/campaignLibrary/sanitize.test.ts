@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { CAMPAIGN_LIBRARY_KIND_LABEL } from "./types";
 import {
   blankLibraryMessageStep,
   cleanLibraryStep,
@@ -17,6 +18,10 @@ describe("campaign library kinds and types", () => {
     assert.equal(parseLibraryKind("nurture"), "nurture");
     assert.equal(parseLibraryKind("positive_reply"), "positive_reply");
     assert.equal(parseLibraryKind("lead_magnet"), null);
+    assert.equal(CAMPAIGN_LIBRARY_KIND_LABEL.connector, "Connection");
+    assert.equal(CAMPAIGN_LIBRARY_KIND_LABEL.reactivation, "Reactivation");
+    assert.equal(CAMPAIGN_LIBRARY_KIND_LABEL.nurture, "Ongoing nurture");
+    assert.equal(CAMPAIGN_LIBRARY_KIND_LABEL.positive_reply, "Positive replies");
     assert.equal(parseLibraryItemType("template"), "template");
     assert.equal(parseLibraryItemType("sequence"), "sequence");
     assert.equal(parseLibraryItemType("step"), "step");
@@ -108,5 +113,25 @@ describe("campaign library step replace", () => {
     assert.deepEqual(normalizeLibrarySteps("template", []), []);
     assert.deepEqual(normalizeLibrarySteps("sequence", []), []);
     assert.equal(blankLibraryMessageStep().step_type, "message");
+  });
+
+  it("drops C and extra variant keys", () => {
+    const step = cleanLibraryStep(
+      {
+        position: 0,
+        step_type: "message",
+        body: "A copy",
+        variants: [
+          { key: "B", body: "B copy" },
+          { key: "C", body: "C copy" },
+          { key: "A", body: "A copy" },
+        ],
+      },
+      0
+    );
+    assert.deepEqual(
+      step?.variants?.map((variant) => variant.key),
+      ["A", "B"]
+    );
   });
 });

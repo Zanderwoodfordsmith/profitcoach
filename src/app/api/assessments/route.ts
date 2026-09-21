@@ -27,6 +27,7 @@ import { resolveLandingEventTestId } from "@/lib/landingEvergreenTest";
 import { prospectSourceForAssessmentType } from "@/lib/prospectSourceKind";
 import { canonicalizeProspectStatus } from "@/lib/prospectStatus";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
+import { findContactByAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -42,6 +43,8 @@ type Body = {
     business_name?: string;
     phone?: string;
   };
+  /** Personalised assessment invite token (`?c=`). */
+  invite_token?: string | null;
   answers: Record<string, number>;
   total_score: number;
   methodology_version?: number;
@@ -256,8 +259,30 @@ async function resolveOrCreateContact(
   email: string | null,
   businessName: string | null,
   phone: string | null,
-  assessmentType: AssessmentType
+  assessmentType: AssessmentType,
+  inviteToken: string | null
 ): Promise<{ contactId: string | null; error?: NextResponse }> {
+  const invited = await findContactByAssessmentInviteToken({
+    token: inviteToken,
+    coachId,
+  });
+  if (invited) {
+    await patchExistingContactFields(
+      invited.id,
+      {
+        full_name: invited.fullName,
+        business_name: invited.businessName,
+      },
+      fullName,
+      businessName,
+      phone,
+      assessmentType
+    );
+    if (email && !invited.email) {
+      await tryUpdateContactStripping(invited.id, { email });
+    }
+    return { contactId: invited.id };
+  }
   let contactId: string | null = null;
   let existingContact: {
     id: string;
@@ -404,6 +429,8 @@ export async function POST(request: Request) {
   const email = body.contact?.email?.trim().toLowerCase() || null;
   const businessName = body.contact?.business_name?.trim() || null;
   const phone = body.contact?.phone?.trim() || null;
+  const inviteToken =
+    typeof body.invite_token === "string" ? body.invite_token : null;
 
   const contactResult = await resolveOrCreateContact(
     coachId,
@@ -411,7 +438,8 @@ export async function POST(request: Request) {
     email,
     businessName,
     phone,
-    assessmentType
+    assessmentType,
+    inviteToken
   );
   if (contactResult.error) return contactResult.error;
   const contactId = contactResult.contactId;

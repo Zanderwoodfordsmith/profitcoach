@@ -19,6 +19,7 @@ type ProspectPickerRow = {
   email: string | null;
   phone: string | null;
   business_name: string | null;
+  inviteToken: string | null;
 };
 
 type PersonalisedLinkModalProps = {
@@ -122,6 +123,7 @@ export function PersonalisedLinkModal({
         email: string | null;
         business_name: string | null;
         phone: string | null;
+        assessment_invite_token: string | null;
       }>(
         async (columns) =>
           supabaseClient
@@ -130,7 +132,8 @@ export function PersonalisedLinkModal({
             .eq("coach_id", effectiveId)
             .eq("type", "prospect")
             .order("created_at", { ascending: false }),
-        "id, full_name, email, business_name, type, created_at"
+        "id, full_name, email, business_name, type, created_at",
+        ["assessment_invite_token"]
       );
 
       if (cancelled) return;
@@ -146,6 +149,7 @@ export function PersonalisedLinkModal({
             email: row.email,
             phone: row.phone,
             business_name: row.business_name,
+            inviteToken: row.assessment_invite_token,
           }))
         );
       }
@@ -221,7 +225,8 @@ export function PersonalisedLinkModal({
     if (!slug || !product) return;
 
     const emailVal = email.trim();
-    if (!emailVal) {
+    const inviteToken = selectedProspect?.inviteToken ?? undefined;
+    if (!emailVal && !inviteToken) {
       setGenerateError("Email is required to generate a personalised link.");
       setGeneratedLink(null);
       return;
@@ -231,9 +236,10 @@ export function PersonalisedLinkModal({
       coachSlug: slug,
       firstName,
       lastName,
-      email: emailVal,
+      email: emailVal || undefined,
       phone,
       businessName,
+      inviteToken,
       origin: appOrigin,
     };
 

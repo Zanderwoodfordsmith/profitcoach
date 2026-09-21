@@ -286,6 +286,7 @@ export async function GET(
       const names = splitFullName(prospectRec?.full_name || "");
       personalisedAssessmentUrl = await buildLeadAssessmentUrl({
         coachId: coachIdForContact,
+        contactId,
         firstName: prospectRec?.first_name || names.first_name,
         lastName: prospectRec?.last_name || names.last_name,
         company: prospectRec?.business_name,

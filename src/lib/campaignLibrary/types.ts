@@ -23,13 +23,26 @@ export const CAMPAIGN_LIBRARY_STATUSES = ["draft", "published"] as const;
 
 export type CampaignLibraryStatus = (typeof CAMPAIGN_LIBRARY_STATUSES)[number];
 
+/** CROP: Connection, Reactivation, Ongoing nurture, Positive replies. */
 export const CAMPAIGN_LIBRARY_KIND_LABEL: Record<CampaignLibraryKind, string> =
   {
-    connector: "Connector",
+    connector: "Connection",
     reactivation: "Reactivation",
     nurture: "Ongoing nurture",
-    positive_reply: "Positive reply",
+    positive_reply: "Positive replies",
   };
+
+export function sortByCampaignLibraryKind<
+  T extends { kind: CampaignLibraryKind; name?: string },
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const kind =
+      CAMPAIGN_LIBRARY_KINDS.indexOf(a.kind) -
+      CAMPAIGN_LIBRARY_KINDS.indexOf(b.kind);
+    if (kind !== 0) return kind;
+    return (a.name ?? "").localeCompare(b.name ?? "");
+  });
+}
 
 export const CAMPAIGN_LIBRARY_TYPE_LABEL: Record<
   CampaignLibraryItemType,
@@ -73,6 +86,29 @@ export type CampaignLibraryItemSummary = {
 export type CampaignLibraryItemDetail = CampaignLibraryItemSummary & {
   steps: CampaignStepInput[];
 };
+
+/** Published templates a coach can start from. No drafts or admin settings. */
+export type CoachCampaignTemplate = {
+  id: string;
+  name: string;
+  description: string | null;
+  kind: CampaignLibraryKind;
+  step_count: number;
+  step_types: string[];
+};
+
+export function toCoachCampaignTemplate(
+  item: CampaignLibraryItemSummary
+): CoachCampaignTemplate {
+  return {
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    kind: item.kind,
+    step_count: item.step_count,
+    step_types: item.step_types,
+  };
+}
 
 export function isCampaignLibraryItemType(
   value: unknown

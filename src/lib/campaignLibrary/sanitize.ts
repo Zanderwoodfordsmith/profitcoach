@@ -4,6 +4,7 @@ import {
   campaignStepStoresBody,
   defaultStepConfig,
   isCampaignStepType,
+  keepAbPair,
   sanitizeMessageMediaPatch,
   sanitizeStepConfig,
   type CampaignStepType,
@@ -162,21 +163,23 @@ export function cleanLibraryStep(
       campaignStepAllowsVariants(step.step_type) &&
       Array.isArray(step.variants) &&
       step.variants.length
-        ? step.variants
-            .filter((v) => v?.key)
-            .map((v) => {
-              const media = sanitizeMessageMediaPatch({
-                media_kind: v.media_kind,
-                media: v.media,
-              });
-              return {
-                key: String(v.key).slice(0, 32),
-                label: v.label ? String(v.label).slice(0, 120) : undefined,
-                body: String(v.body ?? "").slice(0, 16000),
-                media_kind: media.media_kind,
-                media: media.media,
-              };
-            })
+        ? keepAbPair(
+            step.variants
+              .filter((v) => v?.key)
+              .map((v) => {
+                const media = sanitizeMessageMediaPatch({
+                  media_kind: v.media_kind,
+                  media: v.media,
+                });
+                return {
+                  key: String(v.key).slice(0, 32),
+                  label: v.label ? String(v.label).slice(0, 120) : undefined,
+                  body: String(v.body ?? "").slice(0, 16000),
+                  media_kind: media.media_kind,
+                  media: media.media,
+                };
+              })
+          )
         : [],
     send_mode: sendMode,
     fallback_hours: fallbackHours,

@@ -11,6 +11,8 @@ export type CampaignLibrarySeed = {
   itemType: CampaignLibraryItemType;
   kind: CampaignLibraryKind;
   name: string;
+  /** Older display names to match when renaming a canonical seed. */
+  previousNames?: string[];
   description: string;
   status: CampaignLibraryStatus;
   settings?: Partial<CampaignLibraryTemplateSettings>;

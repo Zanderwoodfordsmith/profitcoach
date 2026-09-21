@@ -23,8 +23,11 @@ export const OUTREACH_TEMPLATE_VARIABLES = [
   "location",
   "assessment_url",
   "scorecard_url",
+  "scorecard_link",
   "assessment_pro_url",
   "coach_name",
+  "type_of_owner",
+  "market_observation",
   "review_name",
   "boss_score",
   "business_level_number",
@@ -144,8 +147,11 @@ export function outreachTemplateVars(
     location,
     assessment_url: "",
     scorecard_url: "",
+    scorecard_link: "",
     assessment_pro_url: "",
     coach_name: "",
+    type_of_owner: "",
+    market_observation: "",
     review_name: "Business Clarity Review",
     boss_score: "",
     business_level_number: "",
@@ -164,6 +170,9 @@ export function outreachTemplateVars(
   }
   if (base.assessment_url && !base.scorecard_url) {
     base.scorecard_url = base.assessment_url;
+  }
+  if (base.assessment_url && !base.scorecard_link) {
+    base.scorecard_link = base.assessment_url;
   }
   return base;
 }

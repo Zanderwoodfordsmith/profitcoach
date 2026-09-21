@@ -11,6 +11,7 @@ import {
   resolvePrimaryCoachSlug,
 } from "@/lib/primaryCoach";
 import { prospectSourceForAssessmentType } from "@/lib/prospectSourceKind";
+import { findContactByAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -24,6 +25,7 @@ type Body = {
     phone?: string;
     business_name?: string;
   };
+  invite_token?: string | null;
 };
 
 function normalizeProspectFunnel(
@@ -51,7 +53,9 @@ export async function POST(request: Request) {
   }
 
   const email = body.contact?.email?.trim().toLowerCase() || null;
-  if (!email) {
+  const inviteToken =
+    typeof body.invite_token === "string" ? body.invite_token.trim() : null;
+  if (!email && !inviteToken) {
     return NextResponse.json(
       { ok: false, skipped: "missing_email" },
       { status: 200 }
@@ -93,6 +97,19 @@ export async function POST(request: Request) {
 
   const coachId = coach.id as string;
 
+  if (!email) {
+    const invited = await findContactByAssessmentInviteToken({
+      token: inviteToken,
+      coachId,
+    });
+    if (!invited) {
+      return NextResponse.json(
+        { ok: false, skipped: "unknown_invite" },
+        { status: 200 }
+      );
+    }
+  }
+
   const fullNameRaw = body.contact?.full_name?.trim() || "";
   const firstNameRaw = body.contact?.first_name?.trim() || "";
   const lastNameRaw = body.contact?.last_name?.trim() || "";
@@ -127,6 +144,7 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       businessName,
+      inviteToken,
       type: "prospect",
       prospectSource: prospectFunnel
         ? prospectSourceForAssessmentType(prospectFunnel)

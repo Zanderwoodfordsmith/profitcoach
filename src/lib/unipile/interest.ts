@@ -3,9 +3,11 @@ import {
   buildPersonalisedAssessmentLink,
   buildPersonalisedAssessmentProLink,
 } from "@/lib/assessmentContactParams";
+import { loadAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import type { AbVariantStats } from "@/lib/unipile/abMetrics";
 import {
   sanitizeMessageMediaPatch,
+  keepAbPair,
   type CampaignStepMedia,
   type CampaignStepMediaKind,
 } from "@/lib/unipile/campaignStepTypes";
@@ -69,6 +71,7 @@ export async function resolveCoachSlug(coachId: string): Promise<string | null> 
 
 export async function buildLeadAssessmentUrl(input: {
   coachId: string;
+  contactId?: string | null;
   firstName?: string | null;
   lastName?: string | null;
   company?: string | null;
@@ -76,18 +79,21 @@ export async function buildLeadAssessmentUrl(input: {
 }): Promise<string | null> {
   const slug = await resolveCoachSlug(input.coachId);
   if (!slug) return null;
+  const inviteToken = await loadAssessmentInviteToken(input.contactId);
   return buildPersonalisedAssessmentLink({
     coachSlug: slug,
     firstName: input.firstName || undefined,
     lastName: input.lastName || undefined,
     businessName: input.company || undefined,
     email: input.email || undefined,
+    inviteToken: inviteToken || undefined,
     origin: PUBLIC_HOST,
   });
 }
 
 export async function buildLeadAssessmentProUrl(input: {
   coachId: string;
+  contactId?: string | null;
   firstName?: string | null;
   lastName?: string | null;
   company?: string | null;
@@ -95,12 +101,14 @@ export async function buildLeadAssessmentProUrl(input: {
 }): Promise<string | null> {
   const slug = await resolveCoachSlug(input.coachId);
   if (!slug) return null;
+  const inviteToken = await loadAssessmentInviteToken(input.contactId);
   return buildPersonalisedAssessmentProLink({
     coachSlug: slug,
     firstName: input.firstName || undefined,
     lastName: input.lastName || undefined,
     businessName: input.company || undefined,
     email: input.email || undefined,
+    inviteToken: inviteToken || undefined,
     origin: PUBLIC_HOST,
   });
 }
@@ -371,7 +379,7 @@ export type StepVariant = {
 
 export function parseStepVariants(raw: unknown): StepVariant[] {
   if (!Array.isArray(raw)) return [];
-  return raw
+  const parsed = raw
     .map((v) => {
       if (!v || typeof v !== "object") return null;
       const r = v as Record<string, unknown>;
@@ -393,6 +401,7 @@ export function parseStepVariants(raw: unknown): StepVariant[] {
       };
     })
     .filter(Boolean) as StepVariant[];
+  return keepAbPair(parsed);
 }
 
 /** Pick (and persist) A/B body for a step. */

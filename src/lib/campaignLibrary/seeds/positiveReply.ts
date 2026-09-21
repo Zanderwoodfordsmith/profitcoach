@@ -68,7 +68,8 @@ export const POSITIVE_REPLY_LIBRARY_SEED: CampaignLibrarySeed = {
   sourceKey: "positive-reply",
   itemType: "template",
   kind: "positive_reply",
-  name: "Positive reply",
+  name: "Positive replies",
+  previousNames: ["Positive reply"],
   description:
     "When they show interest: call the same day, then a short manual call-and-message follow-up. After the last ping, move them into nurture.",
   status: "published" as const,

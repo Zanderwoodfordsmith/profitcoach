@@ -7,6 +7,7 @@ import {
   campaignStepIncompleteHint,
   campaignStepSendMode,
   inviteNoConnectFrom,
+  keepAbPair,
   messageMediaFrom,
   messageMediaKindFrom,
   sanitizeStepConfig,
@@ -114,6 +115,22 @@ describe("campaign message step labels", () => {
         { media_kind: "voice" },
       ]),
       "A/B message"
+    );
+  });
+});
+
+describe("keepAbPair", () => {
+  it("keeps A then B and drops extra keys", () => {
+    assert.deepEqual(
+      keepAbPair([
+        { key: "B", body: "b" },
+        { key: "C", body: "c" },
+        { key: "A", body: "a" },
+      ]),
+      [
+        { key: "A", body: "a" },
+        { key: "B", body: "b" },
+      ]
     );
   });
 });

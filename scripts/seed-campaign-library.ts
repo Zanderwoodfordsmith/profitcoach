@@ -1,5 +1,5 @@
 /**
- * Seed canonical campaign library templates (Positive reply, etc.).
+ * Seed canonical CROP campaign library templates.
  *
  *   npx tsx scripts/seed-campaign-library.ts
  */

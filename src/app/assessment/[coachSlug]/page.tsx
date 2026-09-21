@@ -13,6 +13,7 @@ import {
 } from "@/components/scorecard/ScorecardReportGenerating";
 import { ScorecardAssessmentIntro } from "@/components/scorecard/ScorecardAssessmentIntro";
 import { ScorecardProgressBar } from "@/components/scorecard/ScorecardProgressBar";
+import { ScorecardResultsContactStep } from "@/components/scorecard/ScorecardResultsContactStep";
 import { SmileyRatingScale } from "@/components/scorecard/SmileyRatingScale";
 import { SCORECARD_INTRO } from "@/lib/bossScorecardCopy";
 import {
@@ -44,8 +45,10 @@ import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 import {
   assessmentContactToSessionPayload,
+  getResultsContactPrompt,
   LANDING_CONTACT_SESSION_KEY,
   mergeAssessmentContactWithSession,
+  normalizeAssessmentResultsEmail,
   parseAssessmentContactParams,
   readLandingContactSession,
   resolveAssessmentProspectFirstName,
@@ -153,6 +156,9 @@ export default function ScorecardAssessmentPage({
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [gateChecked, setGateChecked] = useState(false);
+  const [showResultsContact, setShowResultsContact] = useState(false);
+  const [inviteHasEmail, setInviteHasEmail] = useState(false);
+  const [inviteHasPhone, setInviteHasPhone] = useState(false);
 
   const [fullName, setFullName] = useState(initialContact.fullName ?? "");
   const [email, setEmail] = useState(initialContact.email ?? "");
@@ -168,6 +174,26 @@ export default function ScorecardAssessmentPage({
         fullName,
       }),
     [urlContact, landingSession, fullName]
+  );
+
+  const resultsContactPrompt = useMemo(
+    () =>
+      getResultsContactPrompt({
+        fromLanding: isFromLandingFunnel,
+        urlContact,
+        email: initialContact.email,
+        phone: initialContact.phone,
+        inviteHasEmail,
+        inviteHasPhone,
+      }),
+    [
+      isFromLandingFunnel,
+      urlContact,
+      initialContact.email,
+      initialContact.phone,
+      inviteHasEmail,
+      inviteHasPhone,
+    ]
   );
 
   const currentScreen = SCREENS[screenIndex] ?? SCREENS[0];
@@ -197,8 +223,36 @@ export default function ScorecardAssessmentPage({
   }, []);
 
   useEffect(() => {
+    const token = urlContact.inviteToken;
+    if (!token || isFromLandingFunnel) return;
+    const slug = coachSlug?.trim();
+    if (!slug) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/public/assessment-invite?c=${encodeURIComponent(token)}&coach=${encodeURIComponent(slug)}`
+        );
+        const body = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          hasEmail?: boolean;
+          hasPhone?: boolean;
+        };
+        if (cancelled || !body.ok) return;
+        setInviteHasEmail(Boolean(body.hasEmail));
+        setInviteHasPhone(Boolean(body.hasPhone));
+      } catch {
+        // ignore — fall back to asking for email
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [coachSlug, isFromLandingFunnel, urlContact.inviteToken]);
+
+  useEffect(() => {
     if (isFromLandingFunnel || directLeadCaptured.current) return;
-    if (!urlContact.email) return;
+    if (!urlContact.email && !urlContact.inviteToken) return;
 
     directLeadCaptured.current = true;
     try {
@@ -216,11 +270,12 @@ export default function ScorecardAssessmentPage({
       body: JSON.stringify({
         coachSlug: coachSlug?.trim() || null,
         assessment_type: "boss_scorecard",
+        invite_token: urlContact.inviteToken,
         contact: {
           first_name: urlContact.firstName ?? undefined,
           last_name: urlContact.lastName ?? undefined,
           full_name: urlContact.fullName ?? undefined,
-          email: urlContact.email,
+          email: urlContact.email ?? undefined,
           phone: urlContact.phone ?? undefined,
           business_name: urlContact.businessName ?? undefined,
         },
@@ -258,7 +313,7 @@ export default function ScorecardAssessmentPage({
 
   const reportProgress = useCallback(
     (screen: number, abandoned = false) => {
-      if (!email.trim() && !abandoned) return;
+      if (!email.trim() && !urlContact.inviteToken && !abandoned) return;
       if (!abandoned && screen <= lastReportedScreen.current) return;
       if (!abandoned) lastReportedScreen.current = screen;
 
@@ -267,6 +322,7 @@ export default function ScorecardAssessmentPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           coachSlug: assessmentCoachSlugForApi(coachSlug ?? "") ?? null,
+          invite_token: urlContact.inviteToken,
           contact: {
             email: email.trim() || undefined,
             full_name: fullName.trim() || undefined,
@@ -277,7 +333,7 @@ export default function ScorecardAssessmentPage({
         }),
       }).catch(() => {});
     },
-    [coachSlug, email, fullName, phone]
+    [coachSlug, email, fullName, phone, urlContact.inviteToken]
   );
 
   useEffect(() => {
@@ -320,6 +376,11 @@ export default function ScorecardAssessmentPage({
   function goBack() {
     clearAdvanceTimer();
     setQualifyingError(null);
+    if (showResultsContact) {
+      setShowResultsContact(false);
+      setSubmitError(null);
+      return;
+    }
     setScreenIndex((i) => Math.max(0, i - 1));
   }
 
@@ -338,14 +399,76 @@ export default function ScorecardAssessmentPage({
     }, 280);
   }
 
-  const canGoBack = screenIndex > 0;
+  const canGoBack = showResultsContact || screenIndex > 0;
 
   function handleScoreSelect(questionId: string, score: ScorecardScore) {
     setAnswers((prev) => ({ ...prev, [questionId]: score }));
     scheduleAutoAdvance(screenIndex);
   }
 
-  async function handleSubmit() {
+  function captureResultsContact(next: { email: string; phone: string }) {
+    const contact = {
+      firstName: urlContact.firstName,
+      lastName: urlContact.lastName,
+      fullName: fullName.trim() || urlContact.fullName,
+      email: next.email,
+      phone: next.phone || null,
+      businessName: businessName.trim() || urlContact.businessName,
+      inviteToken: urlContact.inviteToken,
+    };
+    try {
+      sessionStorage.setItem(
+        LANDING_CONTACT_SESSION_KEY,
+        JSON.stringify(assessmentContactToSessionPayload(contact))
+      );
+    } catch {
+      // ignore
+    }
+    fetch("/api/leads/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coachSlug: coachSlug?.trim() || null,
+        assessment_type: "boss_scorecard",
+        invite_token: urlContact.inviteToken,
+        contact: {
+          first_name: contact.firstName ?? undefined,
+          last_name: contact.lastName ?? undefined,
+          full_name: contact.fullName ?? undefined,
+          email: contact.email,
+          phone: contact.phone ?? undefined,
+          business_name: contact.businessName ?? undefined,
+        },
+      }),
+    }).catch(() => {});
+  }
+
+  function requestResults() {
+    if (resultsContactPrompt.show) {
+      setSubmitError(null);
+      setShowResultsContact(true);
+      return;
+    }
+    void handleSubmit();
+  }
+
+  function submitResultsContact() {
+    const normalizedEmail = normalizeAssessmentResultsEmail(email);
+    if (!normalizedEmail) {
+      setSubmitError("Please enter a valid email so we can send your results.");
+      return;
+    }
+    const nextPhone = phone.trim();
+    setEmail(normalizedEmail);
+    setPhone(nextPhone);
+    captureResultsContact({ email: normalizedEmail, phone: nextPhone });
+    void handleSubmit({ email: normalizedEmail, phone: nextPhone });
+  }
+
+  async function handleSubmit(contactOverride?: {
+    email?: string;
+    phone?: string;
+  }) {
     if (!isScorecardComplete(answers)) {
       const firstUnansweredId = SCORED_QUESTION_IDS.find((id) => {
         const v = answers[id];
@@ -361,6 +484,7 @@ export default function ScorecardAssessmentPage({
       if (targetIndex >= 0) {
         clearAdvanceTimer();
         setScreenIndex(targetIndex);
+        setShowResultsContact(false);
       }
       setSubmitError(
         "Looks like a question was skipped. We've taken you back to it — please answer it to continue."
@@ -371,6 +495,8 @@ export default function ScorecardAssessmentPage({
       setQualifyingError("Please complete all questions.");
       return;
     }
+    const emailVal = (contactOverride?.email ?? email).trim();
+    const phoneVal = (contactOverride?.phone ?? phone).trim();
     setSubmitting(true);
     setSubmitError(null);
     setIsGeneratingReport(true);
@@ -402,10 +528,11 @@ export default function ScorecardAssessmentPage({
             ? searchParams.get("landing_coach_slug")?.trim() || null
             : undefined,
           assessment_type: "boss_scorecard",
+          invite_token: urlContact.inviteToken,
           contact: {
             full_name: fullName,
-            email,
-            phone: phone || undefined,
+            email: emailVal,
+            phone: phoneVal || undefined,
             business_name: businessName,
           },
           answers,
@@ -440,8 +567,8 @@ export default function ScorecardAssessmentPage({
               first_name: first_name ?? undefined,
               last_name: last_name ?? undefined,
               full_name: fullName.trim() || undefined,
-              email: email.trim() || undefined,
-              phone: phone.trim() || undefined,
+              email: emailVal || undefined,
+              phone: phoneVal || undefined,
             },
           })
         );
@@ -691,7 +818,28 @@ export default function ScorecardAssessmentPage({
             <ScorecardReportGenerating />
           ) : null}
 
-          {currentScreen.kind === "open_text" && !isGeneratingReport ? (
+          {currentScreen.kind === "open_text" &&
+          !isGeneratingReport &&
+          showResultsContact ? (
+            <ScorecardResultsContactStep
+              firstName={prospectFirstName}
+              askPhone={resultsContactPrompt.askPhone}
+              email={email}
+              phone={phone}
+              error={submitError}
+              submitting={submitting}
+              onEmailChange={(value) => {
+                setEmail(value);
+                if (submitError) setSubmitError(null);
+              }}
+              onPhoneChange={setPhone}
+              onSubmit={submitResultsContact}
+            />
+          ) : null}
+
+          {currentScreen.kind === "open_text" &&
+          !isGeneratingReport &&
+          !showResultsContact ? (
             <div className="rounded-3xl bg-white p-7 pb-8 shadow-xl ring-1 ring-slate-200 md:p-11 md:pb-12 lg:p-14 lg:pb-14">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
                 Optional
@@ -707,7 +855,7 @@ export default function ScorecardAssessmentPage({
               </div>
               <button
                 type="button"
-                onClick={() => void handleSubmit()}
+                onClick={requestResults}
                 disabled={submitting}
                 className="mt-8 w-full rounded-full bg-[#0c5290] py-4 text-sm font-bold uppercase tracking-wide text-white shadow hover:bg-[#0a4580] disabled:opacity-50"
               >

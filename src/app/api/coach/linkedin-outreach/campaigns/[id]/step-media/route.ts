@@ -10,6 +10,7 @@ import { filesFromFormData } from "@/lib/messaging/messageAttachments";
 import type { CampaignStepMediaKind } from "@/lib/unipile/campaignStepTypes";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 function asKind(raw: unknown): CampaignStepMediaKind | null {
   return raw === "voice" || raw === "video" ? raw : null;

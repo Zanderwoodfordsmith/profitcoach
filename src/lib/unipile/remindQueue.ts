@@ -7,6 +7,11 @@ import { buildMessageBody } from "@/lib/unipile/campaigns";
 import { sendCampaignLinkedInMessage } from "@/lib/unipile/campaignLinkedInSend";
 import { advanceLeadAfterStep } from "@/lib/unipile/worker";
 import {
+  checkOutreachSendSafety,
+  recordSuccessfulOutreachSend,
+} from "@/lib/unipile/outreachSendSafety";
+import { loadAccountSendSettings } from "@/lib/unipile/accountSendPlan";
+import {
   resolveStepBodyForLead,
   buildLeadAssessmentUrl,
   buildLeadAssessmentProUrl,
@@ -84,12 +89,14 @@ async function renderPreviewForJob(input: {
     "";
   const assessmentUrl = await buildLeadAssessmentUrl({
     coachId: input.coachId,
+    contactId: (input.lead.contact_id as string | null) ?? null,
     firstName: input.lead.first_name as string | null,
     lastName: input.lead.last_name as string | null,
     company: input.lead.company as string | null,
   });
   const assessmentProUrl = await buildLeadAssessmentProUrl({
     coachId: input.coachId,
+    contactId: (input.lead.contact_id as string | null) ?? null,
     firstName: input.lead.first_name as string | null,
     lastName: input.lead.last_name as string | null,
     company: input.lead.company as string | null,
@@ -104,6 +111,7 @@ async function renderPreviewForJob(input: {
   const extras = {
     assessment_url: assessmentUrl,
     scorecard_url: assessmentUrl,
+    scorecard_link: assessmentUrl,
     assessment_pro_url: assessmentProUrl,
     coach_name: coachName,
     review_name: "Business Clarity Review",
@@ -470,6 +478,24 @@ export async function sendRemindJob(input: {
       })
       .eq("id", job.id);
 
+    const outreachAccountId =
+      (campaign.outreach_account_id as string | null) ?? null;
+    const sendAccount = outreachAccountId
+      ? await loadAccountSendSettings(outreachAccountId)
+      : null;
+    try {
+      await recordSuccessfulOutreachSend({
+        coachId: input.coachId,
+        jobId: job.id as string,
+        outreachAccountId,
+        sendAccount,
+        kind: "message",
+        delaySeed: String(job.id),
+      });
+    } catch {
+      /* LinkedIn already sent — do not revert the job. */
+    }
+
     return { ok: true as const };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Send failed";
@@ -609,6 +635,7 @@ export async function processRemindFallbacks(): Promise<{
   let succeeded = 0;
   let failed = 0;
   const errors: string[] = [];
+  const sentAccounts = new Set<string>();
 
   for (const job of jobs ?? []) {
     const { data: step } = await supabaseAdmin
@@ -626,6 +653,92 @@ export async function processRemindFallbacks(): Promise<{
     const fallbackAt = dueAt + fallbackHours * 3600 * 1000;
     if (now < fallbackAt) continue;
 
+    if (step.step_type !== "message") continue;
+
+    const { data: campaign } = await supabaseAdmin
+      .from("linkedin_campaigns")
+      .select("*, linkedin_outreach_accounts(unipile_account_id, status)")
+      .eq("id", job.campaign_id)
+      .maybeSingle();
+    if (!campaign || campaign.status !== "running") {
+      await supabaseAdmin
+        .from("linkedin_send_jobs")
+        .update({
+          status: "cancelled",
+          last_error: "Campaign not running",
+        })
+        .eq("id", job.id);
+      continue;
+    }
+
+    const { data: lead } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("*")
+      .eq("id", job.lead_id)
+      .maybeSingle();
+    if (!lead) {
+      await supabaseAdmin
+        .from("linkedin_send_jobs")
+        .update({ last_error: "Lead missing." })
+        .eq("id", job.id)
+        .eq("status", "awaiting_coach");
+      continue;
+    }
+
+    if (
+      [
+        "replied",
+        "interested",
+        "assessment_sent",
+        "assessment_done",
+        "call_offered",
+        "paused",
+        "failed",
+        "completed",
+        "skipped",
+      ].includes(lead.status as string)
+    ) {
+      await supabaseAdmin
+        .from("linkedin_send_jobs")
+        .update({
+          status: "cancelled",
+          last_error: `Lead status ${lead.status}`,
+        })
+        .eq("id", job.id);
+      continue;
+    }
+
+    const outreachAccountId =
+      (campaign.outreach_account_id as string | null) ?? null;
+    const accountKey = outreachAccountId || `coach:${String(job.coach_id)}`;
+    if (sentAccounts.has(accountKey)) continue;
+
+    const sendAccount = outreachAccountId
+      ? await loadAccountSendSettings(outreachAccountId)
+      : null;
+    const safety = await checkOutreachSendSafety({
+      coachId: String(job.coach_id),
+      campaign: {
+        id: String(campaign.id),
+        timezone: campaign.timezone as string | null,
+        send_rules: campaign.send_rules,
+        daily_invite_limit: campaign.daily_invite_limit as number | null,
+        daily_message_limit: campaign.daily_message_limit as number | null,
+        outreach_account_id: outreachAccountId,
+      },
+      kind: "message",
+      sendAccount,
+    });
+    if (!safety.result.ok) {
+      // Do not move scheduled_for — fallbackAt is derived from it.
+      await supabaseAdmin
+        .from("linkedin_send_jobs")
+        .update({ last_error: safety.result.reason })
+        .eq("id", job.id)
+        .eq("status", "awaiting_coach");
+      continue;
+    }
+
     processed += 1;
     const { data: claimed } = await supabaseAdmin
       .from("linkedin_send_jobs")
@@ -637,56 +750,6 @@ export async function processRemindFallbacks(): Promise<{
     if (!claimed) continue;
 
     try {
-      const { data: campaign } = await supabaseAdmin
-        .from("linkedin_campaigns")
-        .select("*, linkedin_outreach_accounts(unipile_account_id, status)")
-        .eq("id", job.campaign_id)
-        .maybeSingle();
-      if (!campaign || campaign.status !== "running") {
-        await supabaseAdmin
-          .from("linkedin_send_jobs")
-          .update({
-            status: "cancelled",
-            last_error: "Campaign not running",
-          })
-          .eq("id", job.id);
-        continue;
-      }
-
-      const { data: lead } = await supabaseAdmin
-        .from("linkedin_campaign_leads")
-        .select("*")
-        .eq("id", job.lead_id)
-        .maybeSingle();
-      if (!lead) throw new Error("Lead missing.");
-
-      if (
-        [
-          "replied",
-          "interested",
-          "assessment_sent",
-          "assessment_done",
-          "call_offered",
-          "paused",
-          "failed",
-          "completed",
-          "skipped",
-        ].includes(lead.status as string)
-      ) {
-        await supabaseAdmin
-          .from("linkedin_send_jobs")
-          .update({
-            status: "cancelled",
-            last_error: `Lead status ${lead.status}`,
-          })
-          .eq("id", job.id);
-        continue;
-      }
-
-      if (step.step_type !== "message") {
-        throw new Error("Fallback only supported for message steps.");
-      }
-
       const picked = await resolveStepBodyForLead({
         leadId: lead.id as string,
         stepId: step.id as string,
@@ -737,6 +800,20 @@ export async function processRemindFallbacks(): Promise<{
           last_error: null,
         })
         .eq("id", job.id);
+
+      try {
+        await recordSuccessfulOutreachSend({
+          coachId: String(job.coach_id),
+          jobId: String(job.id),
+          outreachAccountId,
+          sendAccount: safety.sendAccount,
+          kind: "message",
+          delaySeed: String(job.id),
+        });
+      } catch {
+        /* LinkedIn already sent — do not revert the job. */
+      }
+      sentAccounts.add(accountKey);
       succeeded += 1;
     } catch (err) {
       failed += 1;

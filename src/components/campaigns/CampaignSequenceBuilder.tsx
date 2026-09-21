@@ -20,6 +20,7 @@ import {
   Phone,
   PhoneCall,
   Plus,
+  LayoutTemplate,
   Trash2,
   User,
   UserPlus,
@@ -32,6 +33,7 @@ import {
   campaignSendModePatch,
   campaignStepAllowsVariants,
   campaignStepDisplayLabel,
+  keepAbPair,
   campaignStepHasCopy,
   campaignStepHasSendMode,
   campaignStepIncompleteHint,
@@ -143,7 +145,8 @@ export type LeadDrawerPayload =
       slice: InviteFunnelSlice;
       position: number;
       title: string;
-    };
+    }
+  | { kind: "hopper"; hopper: "staging" | "active"; title: string };
 
 const STEP_DRAG_PREFIX = "pc-step:";
 const STEP_MOVE_PREFIX = "pc-move:";
@@ -501,7 +504,7 @@ function InviteFunnelBar({
             >
               <span className="block">{title}</span>
               {names ? (
-                <span className="mt-0.5 block font-normal text-slate-300">
+                <span className="mt-0.5 block font-normal text-white/80">
                   {names}
                 </span>
               ) : null}
@@ -509,6 +512,48 @@ function InviteFunnelBar({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+type SequenceVariant = NonNullable<SequenceStep["variants"]>[number];
+
+function AbTestToggle({
+  on,
+  onChange,
+}: {
+  on: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      <span className="text-xs font-semibold text-slate-500">A/B</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="A/B testing"
+        onClick={() => onChange(!on)}
+        className={`relative h-6 w-12 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+          on
+            ? "bg-emerald-700 focus-visible:ring-emerald-700/40"
+            : "bg-rose-800 focus-visible:ring-rose-800/40"
+        }`}
+      >
+        <span
+          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-wide text-white ${
+            on ? "left-[6px]" : "right-[6px]"
+          }`}
+          aria-hidden
+        >
+          {on ? "On" : "Off"}
+        </span>
+        <span
+          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
+            on ? "translate-x-6" : ""
+          }`}
+        />
+      </button>
     </div>
   );
 }
@@ -858,6 +903,58 @@ function ManualSendAfter({
   );
 }
 
+function QueueRow({
+  count,
+  names,
+  onOpenLeads,
+}: {
+  count: number;
+  names: string[];
+  onOpenLeads: () => void;
+}) {
+  const empty = count <= 0;
+  const nameLine = funnelNameLine(count, names);
+  const label = empty
+    ? "None set to send"
+    : count === 1
+      ? "1 set to send"
+      : `${count} set to send`;
+  return (
+    <div className="flex items-center gap-2 px-2">
+      <span className="h-px min-w-4 flex-1 bg-slate-200" aria-hidden />
+      <button
+        type="button"
+        onClick={onOpenLeads}
+        aria-label={
+          empty
+            ? "Nobody is set to receive a connection request yet"
+            : `${label}. Open the queue.`
+        }
+        className="group/queue relative inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-[#0c5290] shadow-sm hover:border-[#0c5290] hover:bg-sky-50"
+      >
+        <UserRoundPlus className="h-4 w-4" aria-hidden />
+        {label}
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/queue:block"
+        >
+          <span className="block">
+            {empty
+              ? "Add prospects and they wait here until a connection request goes out"
+              : "Waiting for a connection request"}
+          </span>
+          {nameLine ? (
+            <span className="mt-0.5 block font-normal text-white/80">
+              {nameLine}
+            </span>
+          ) : null}
+        </span>
+      </button>
+      <span className="h-px min-w-4 flex-[0.8] bg-slate-200" aria-hidden />
+    </div>
+  );
+}
+
 function WaitPeopleChip({
   count,
   names,
@@ -882,11 +979,7 @@ function WaitPeopleChip({
               nextLabel ? `, next ${nextLabel}` : ""
             }`
       }
-      className={`group/waitn relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-semibold tabular-nums ${
-        empty
-          ? "text-slate-400 hover:text-slate-500"
-          : "text-slate-600 hover:text-slate-800"
-      }`}
+      className="group/waitn relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-semibold tabular-nums text-slate-600 hover:text-slate-800"
     >
       <User className="h-3.5 w-3.5" aria-hidden />
       {count}
@@ -898,12 +991,12 @@ function WaitPeopleChip({
           {empty ? "Nobody waiting yet" : `${count} waiting for the next send`}
         </span>
         {!empty && nextLabel ? (
-          <span className="mt-0.5 block font-normal text-slate-300">
+          <span className="mt-0.5 block font-normal text-white/80">
             Next {nextLabel}
           </span>
         ) : null}
         {nameLine ? (
-          <span className="mt-0.5 block font-normal text-slate-300">
+          <span className="mt-0.5 block font-normal text-white/80">
             {nameLine}
           </span>
         ) : null}
@@ -1169,8 +1262,9 @@ export function StepInlineEditor({
   uploadUrl?: string;
   libraryMode?: boolean;
 }) {
-  const variants = step.variants ?? [];
+  const variants = keepAbPair(step.variants ?? []);
   const hasAb = variants.length > 0;
+  const allowsAb = campaignStepAllowsVariants(step.step_type);
   const metric = abMetricForStep(step.step_type);
   const stepStats = step.id ? abStats?.[step.id] : undefined;
   const winner = hasAb
@@ -1184,6 +1278,67 @@ export function StepInlineEditor({
   const activeIndex = activeVariant
     ? variants.findIndex((item) => item.key === activeVariant.key)
     : 0;
+
+  function patchActiveVariant(patch: Partial<SequenceVariant>) {
+    const next = keepAbPair(
+      variants.map((item, i) => (i === activeIndex ? { ...item, ...patch } : item))
+    );
+    onChange({
+      variants: next,
+      body: next[0]?.body ?? patch.body ?? step.body ?? "",
+    });
+  }
+
+  function setAbEnabled(on: boolean) {
+    if (on === hasAb) return;
+    if (on) {
+      const body = step.body || "";
+      const mediaKind = messageMediaKindFrom(step.config);
+      const media = messageMediaFrom(step.config);
+      onChange({
+        variants: [
+          {
+            key: "A",
+            label: "A",
+            body,
+            media_kind: mediaKind,
+            media,
+          },
+          {
+            key: "B",
+            label: "B",
+            body,
+            media_kind: mediaKind,
+            media,
+          },
+        ],
+        body,
+      });
+      setActiveVariantKey("A");
+      onCommit();
+      return;
+    }
+    const source = activeVariant ?? variants[0];
+    onChange({
+      variants: null,
+      body: source?.body ?? step.body ?? "",
+      ...(step.step_type === "message"
+        ? {
+            config: {
+              ...(step.config ?? {}),
+              media_kind:
+                source?.media_kind ?? messageMediaKindFrom(step.config),
+              media: source?.media ?? messageMediaFrom(step.config),
+            },
+          }
+        : {}),
+    });
+    onCommit();
+  }
+
+  const abToggle = allowsAb ? (
+    <AbTestToggle on={hasAb} onChange={setAbEnabled} />
+  ) : null;
 
   if (step.step_type === "react") {
     return (
@@ -1349,18 +1504,6 @@ export function StepInlineEditor({
 
   return (
     <div className="space-y-4">
-      {step.step_type === "message" && !hasAb ? (
-        <MessageStepMedia
-          campaignId={campaignId}
-          uploadUrl={uploadUrl}
-          mediaKind={messageMediaKindFrom(step.config)}
-          media={messageMediaFrom(step.config)}
-          onChange={(patch) =>
-            onChange({ config: { ...(step.config ?? {}), ...patch } })
-          }
-          onCommit={onCommit}
-        />
-      ) : null}
       {step.step_type === "invite" ? (
         <InviteNoConnectBranch
           config={step.config}
@@ -1395,11 +1538,9 @@ export function StepInlineEditor({
 
       {hasAb && activeVariant ? (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="flex w-full items-center justify-between gap-3">
             <div
-              className={`inline-grid rounded-full bg-slate-100 p-0.5 ${
-                variants.length >= 3 ? "grid-cols-3" : "grid-cols-2"
-              }`}
+              className="inline-grid grid-cols-2 rounded-full bg-slate-100 p-0.5"
               role="tablist"
               aria-label="Message versions"
             >
@@ -1447,51 +1588,7 @@ export function StepInlineEditor({
                 );
               })}
             </div>
-            <div className="flex shrink-0 items-center gap-3">
-              {variants.length === 2 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const source = activeVariant ?? variants[0];
-                    onChange({
-                      variants: [
-                        ...variants,
-                        {
-                          key: "C",
-                          label: "C",
-                          body: source?.body || step.body || "",
-                          media_kind: source?.media_kind ?? null,
-                          media: source?.media ?? null,
-                        },
-                      ],
-                    });
-                    setActiveVariantKey("C");
-                    onCommit();
-                  }}
-                  className="text-xs font-medium text-[#0c5290] hover:underline"
-                >
-                  Add a third
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => {
-                  onChange({
-                    variants: null,
-                    body: activeVariant.body ?? step.body ?? "",
-                    config: {
-                      ...(step.config ?? {}),
-                      media_kind: activeVariant.media_kind ?? null,
-                      media: activeVariant.media ?? null,
-                    },
-                  });
-                  onCommit();
-                }}
-                className="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline"
-              >
-                Turn off A/B
-              </button>
-            </div>
+            {abToggle ? <div className="ml-auto shrink-0">{abToggle}</div> : null}
           </div>
           {step.step_type === "message" ? (
             <MessageStepMedia
@@ -1499,15 +1596,7 @@ export function StepInlineEditor({
               uploadUrl={uploadUrl}
               mediaKind={activeVariant.media_kind ?? null}
               media={activeVariant.media ?? null}
-              onChange={(patch) => {
-                const next = variants.map((item, i) =>
-                  i === activeIndex ? { ...item, ...patch } : item
-                );
-                onChange({
-                  variants: next,
-                  body: next[0]?.body ?? step.body ?? "",
-                });
-              }}
+              onChange={patchActiveVariant}
               onCommit={onCommit}
             />
           ) : null}
@@ -1517,55 +1606,26 @@ export function StepInlineEditor({
               step.config,
               activeVariant.media_kind
             )}
-            onChange={(patch) => {
-              const next = variants.map((item, i) =>
-                i === activeIndex ? { ...item, ...patch } : item
-              );
-              onChange({
-                variants: next,
-                body: next[0]?.body || patch.body || "",
-              });
-            }}
+            onChange={patchActiveVariant}
             onCommit={onCommit}
           />
         </div>
       ) : campaignStepHasCopy(step.step_type) ? (
         <div className="space-y-2">
-          {campaignStepAllowsVariants(step.step_type) ? (
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  const body = step.body || "";
-                  const mediaKind = messageMediaKindFrom(step.config);
-                  const media = messageMediaFrom(step.config);
-                  onChange({
-                    variants: [
-                      {
-                        key: "A",
-                        label: "A",
-                        body,
-                        media_kind: mediaKind,
-                        media,
-                      },
-                      {
-                        key: "B",
-                        label: "B",
-                        body,
-                        media_kind: mediaKind,
-                        media,
-                      },
-                    ],
-                    body,
-                  });
-                  setActiveVariantKey("A");
-                  onCommit();
-                }}
-                className="text-xs font-medium text-[#0c5290] hover:underline"
-              >
-                A/B test
-              </button>
-            </div>
+          {step.step_type === "message" ? (
+            <MessageStepMedia
+              campaignId={campaignId}
+              uploadUrl={uploadUrl}
+              mediaKind={messageMediaKindFrom(step.config)}
+              media={messageMediaFrom(step.config)}
+              trailing={abToggle}
+              onChange={(patch) =>
+                onChange({ config: { ...(step.config ?? {}), ...patch } })
+              }
+              onCommit={onCommit}
+            />
+          ) : abToggle ? (
+            <div className="flex justify-end">{abToggle}</div>
           ) : null}
           <MergeFieldComposer
             value={step.body ?? ""}
@@ -1606,6 +1666,8 @@ export function CampaignSequenceBuilder({
   sidebarExtra,
   mode = "live",
   uploadUrl,
+  queuePeople,
+  onChooseTemplate,
 }: {
   steps: SequenceStep[];
   campaignId?: string;
@@ -1629,6 +1691,8 @@ export function CampaignSequenceBuilder({
   sidebarExtra?: ReactNode;
   mode?: "live" | "library";
   uploadUrl?: string;
+  queuePeople?: { count: number; names: string[] };
+  onChooseTemplate?: () => void;
 }) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [openGroups, setOpenGroups] = useState<Set<PaletteGroupId>>(
@@ -1648,6 +1712,7 @@ export function CampaignSequenceBuilder({
   }, [dragging]);
 
   const library = mode === "library";
+  const firstInviteIndex = steps.findIndex((item) => item.step_type === "invite");
   const emailReady = library || accountOk(accounts, isMailingProvider);
   const whatsappReady = library || accountOk(accounts, (p) => p === "WHATSAPP");
   const instagramReady = library || accountOk(accounts, (p) => p === "INSTAGRAM");
@@ -1993,7 +2058,7 @@ export function CampaignSequenceBuilder({
               dragging
                 ? "border-[#0c5290] bg-sky-50/60"
                 : "border-slate-200"
-            } ${pickerOpen ? "py-6" : "py-14"}`}
+            } ${pickerOpen || onChooseTemplate ? "py-6" : "py-14"}`}
             onDragOver={(event) => {
               if (isMergeFieldDrag()) return;
               event.preventDefault();
@@ -2005,27 +2070,91 @@ export function CampaignSequenceBuilder({
               handleGapDrop(event, 0);
             }}
           >
-            <div className="text-center">
-              <button
-                type="button"
-                aria-expanded={pickerOpen}
-                aria-controls={pickerOpen ? pickerId : undefined}
-                onClick={() => setPickerOpen((open) => !open)}
-                className={`inline-flex items-center gap-2 rounded-xl font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 ${
-                  pickerOpen
-                    ? "bg-white px-4 py-2 text-sm text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50"
-                    : "bg-[#0c5290] px-6 py-3 text-base text-white hover:bg-[#0a4578]"
-                }`}
-              >
-                <Plus className={pickerOpen ? "h-4 w-4" : "h-5 w-5"} aria-hidden />
-                Add steps
-              </button>
-              <p className="mt-3 text-sm text-slate-500">
-                {pickerOpen
-                  ? "Pick an action, or drag one from the list."
-                  : "Or drag an action from the list."}
-              </p>
-            </div>
+            {pickerOpen ? (
+              <div className="text-center">
+                <button
+                  type="button"
+                  aria-expanded
+                  aria-controls={pickerId}
+                  onClick={() => setPickerOpen(false)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Add steps
+                </button>
+                <p className="mt-3 text-sm text-slate-500">
+                  Pick an action, or drag one from the list.
+                </p>
+              </div>
+            ) : onChooseTemplate ? (
+              <div className="mx-auto max-w-lg text-center">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+                  No steps yet
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Write the sequence, or start from a template. Add people once
+                  the steps are in place.
+                </p>
+                <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setPickerOpen(true)}
+                    className="flex min-h-[7.25rem] flex-col items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-[#0c5290]">
+                      <Plus className="h-5 w-5" strokeWidth={2.1} aria-hidden />
+                    </span>
+                    <span>
+                      <span className="block text-[15px] font-semibold text-slate-900">
+                        Add steps
+                      </span>
+                      <span className="mt-0.5 block text-sm leading-snug text-slate-600">
+                        Build the invite and follow-ups yourself.
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onChooseTemplate}
+                    className="flex min-h-[7.25rem] flex-col items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-[#0c5290]">
+                      <LayoutTemplate
+                        className="h-5 w-5"
+                        strokeWidth={2.1}
+                        aria-hidden
+                      />
+                    </span>
+                    <span>
+                      <span className="block text-[15px] font-semibold text-slate-900">
+                        Choose from template
+                      </span>
+                      <span className="mt-0.5 block text-sm leading-snug text-slate-600">
+                        Start from a sequence that is already written.
+                      </span>
+                    </span>
+                  </button>
+                </div>
+                <p className="mt-4 text-sm text-slate-500">
+                  Or drag an action from the list.
+                </p>
+              </div>
+            ) : (
+              <div className="text-center">
+                <button
+                  type="button"
+                  aria-expanded={false}
+                  onClick={() => setPickerOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#0c5290] px-6 py-3 text-base font-semibold text-white hover:bg-[#0a4578] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                >
+                  <Plus className="h-5 w-5" aria-hidden />
+                  Add steps
+                </button>
+                <p className="mt-3 text-sm text-slate-500">
+                  Or drag an action from the list.
+                </p>
+              </div>
+            )}
             {pickerOpen ? (
               <div id={pickerId} className="mt-5 space-y-4">
                 {groups.map((group) => (
@@ -2076,6 +2205,21 @@ export function CampaignSequenceBuilder({
               const stepPosition = step.position ?? idx;
               return (
                 <div key={step.id || `${step.step_type}-${idx}`}>
+                  {!library && idx === firstInviteIndex ? (
+                    <div className="py-2">
+                      <QueueRow
+                        count={queuePeople?.count ?? 0}
+                        names={queuePeople?.names ?? []}
+                        onOpenLeads={() =>
+                          onOpenLeads({
+                            kind: "hopper",
+                            hopper: "staging",
+                            title: "Set to send",
+                          })
+                        }
+                      />
+                    </div>
+                  ) : null}
                   {step.step_type === "wait" ? (
                     <div
                       onDragOver={(event) => {

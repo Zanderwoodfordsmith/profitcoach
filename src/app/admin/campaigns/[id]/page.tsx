@@ -44,7 +44,7 @@ export default function AdminCampaignDetailPage() {
 
   return (
     <DashboardPageSection
-      contentMaxWidthClass="max-w-7xl"
+      contentMaxWidthClass="max-w-none"
       gapClass="gap-3"
       header={
         <StickyPageHeader

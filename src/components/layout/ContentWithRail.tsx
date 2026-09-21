@@ -9,7 +9,7 @@ export const CONTENT_WITH_RAIL_ROW_CLASS =
   "flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10";
 
 export const CONTENT_WITH_RAIL_MAIN_CLASS =
-  "mx-auto w-full min-w-0 max-w-3xl lg:mx-0";
+  "w-full min-w-0 max-w-3xl";
 
 export const CONTENT_WITH_RAIL_RAIL_CLASS =
   "w-full shrink-0 lg:sticky lg:w-80 lg:self-start";

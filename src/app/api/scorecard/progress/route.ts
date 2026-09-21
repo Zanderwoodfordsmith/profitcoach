@@ -9,6 +9,7 @@ import {
   ensurePrimaryCoachRow,
   resolvePrimaryCoachSlug,
 } from "@/lib/primaryCoach";
+import { findContactByAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -18,6 +19,7 @@ type Body = {
     full_name?: string;
     phone?: string;
   };
+  invite_token?: string | null;
   screen: number;
   abandoned?: boolean;
 };
@@ -73,9 +75,17 @@ export async function POST(request: Request) {
   const email = body.contact?.email?.trim().toLowerCase() || null;
   const fullName = body.contact?.full_name?.trim() || null;
   const phone = body.contact?.phone?.trim() || null;
+  const inviteToken =
+    typeof body.invite_token === "string" ? body.invite_token : null;
 
   let contactId: string | null = null;
-  if (email) {
+  const invited = await findContactByAssessmentInviteToken({
+    token: inviteToken,
+    coachId,
+  });
+  if (invited) {
+    contactId = invited.id;
+  } else if (email) {
     const { data: existing } = await supabaseAdmin
       .from("contacts")
       .select("id")

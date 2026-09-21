@@ -7,10 +7,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BossProAssessmentIntro } from "@/components/scorecard/BossProAssessmentIntro";
 import { AssessmentPersonalisedGreeting } from "@/components/scorecard/AssessmentPersonalisedGreeting";
 import { BossScoreProWordmark } from "@/components/scorecard/BossScoreWordmark";
+import { ScorecardResultsContactStep } from "@/components/scorecard/ScorecardResultsContactStep";
 import {
   assessmentContactToSessionPayload,
+  getResultsContactPrompt,
   LANDING_CONTACT_SESSION_KEY,
   mergeAssessmentContactWithSession,
+  normalizeAssessmentResultsEmail,
   parseAssessmentContactParams,
   readLandingContactSession,
   resolveAssessmentProspectFirstName,
@@ -91,6 +94,9 @@ export default function BossProAssessmentPage({
   const [answers, setAnswers] = useState<AnswersMap>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showResultsContact, setShowResultsContact] = useState(false);
+  const [inviteHasEmail, setInviteHasEmail] = useState(false);
+  const [inviteHasPhone, setInviteHasPhone] = useState(false);
 
   const [fullName, setFullName] = useState(initialContact.fullName ?? "");
   const [email, setEmail] = useState(initialContact.email ?? "");
@@ -106,6 +112,26 @@ export default function BossProAssessmentPage({
         fullName,
       }),
     [urlContact, landingSession, fullName]
+  );
+
+  const resultsContactPrompt = useMemo(
+    () =>
+      getResultsContactPrompt({
+        fromLanding: landingVariant != null,
+        urlContact,
+        email: initialContact.email,
+        phone: initialContact.phone,
+        inviteHasEmail,
+        inviteHasPhone,
+      }),
+    [
+      landingVariant,
+      urlContact,
+      initialContact.email,
+      initialContact.phone,
+      inviteHasEmail,
+      inviteHasPhone,
+    ]
   );
 
   const [clientDashboardChecked, setClientDashboardChecked] = useState(false);
@@ -148,8 +174,36 @@ export default function BossProAssessmentPage({
   );
 
   useEffect(() => {
+    const token = urlContact.inviteToken;
+    if (!token || landingVariant) return;
+    const slug = coachSlug?.trim();
+    if (!slug) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/public/assessment-invite?c=${encodeURIComponent(token)}&coach=${encodeURIComponent(slug)}`
+        );
+        const body = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          hasEmail?: boolean;
+          hasPhone?: boolean;
+        };
+        if (cancelled || !body.ok) return;
+        setInviteHasEmail(Boolean(body.hasEmail));
+        setInviteHasPhone(Boolean(body.hasPhone));
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [coachSlug, landingVariant, urlContact.inviteToken]);
+
+  useEffect(() => {
     if (landingVariant || directLeadCaptured.current) return;
-    if (!urlContact.email) return;
+    if (!urlContact.email && !urlContact.inviteToken) return;
 
     directLeadCaptured.current = true;
     try {
@@ -167,11 +221,12 @@ export default function BossProAssessmentPage({
       body: JSON.stringify({
         coachSlug: coachSlug?.trim() || null,
         assessment_type: "diagnostic_50",
+        invite_token: urlContact.inviteToken,
         contact: {
           first_name: urlContact.firstName ?? undefined,
           last_name: urlContact.lastName ?? undefined,
           full_name: urlContact.fullName ?? undefined,
-          email: urlContact.email,
+          email: urlContact.email ?? undefined,
           phone: urlContact.phone ?? undefined,
           business_name: urlContact.businessName ?? undefined,
         },
@@ -188,6 +243,7 @@ export default function BossProAssessmentPage({
         body: JSON.stringify({
           coachSlug: coachSlug?.trim() || null,
           assessment_type: "diagnostic_50",
+          invite_token: urlContact.inviteToken,
           contact: {
             full_name: fullName.trim() || undefined,
             email: emailVal,
@@ -350,7 +406,7 @@ export default function BossProAssessmentPage({
       currentLevel === TOTAL_LEVELS &&
       clampedQuestionIndex === levelQuestions.length - 1;
     if (isLastQuestion) {
-      void handleSubmitAssessment(newAnswers);
+      requestProResults(newAnswers);
       return;
     }
 
@@ -371,8 +427,75 @@ export default function BossProAssessmentPage({
     }, 180);
   }
 
-  async function handleSubmitAssessment(overrideAnswers?: AnswersMap) {
+  function captureResultsContact(next: { email: string; phone: string }) {
+    const contact = {
+      firstName: urlContact.firstName,
+      lastName: urlContact.lastName,
+      fullName: fullName.trim() || urlContact.fullName,
+      email: next.email,
+      phone: next.phone || null,
+      businessName: businessName.trim() || urlContact.businessName,
+      inviteToken: urlContact.inviteToken,
+    };
+    try {
+      sessionStorage.setItem(
+        LANDING_CONTACT_SESSION_KEY,
+        JSON.stringify(assessmentContactToSessionPayload(contact))
+      );
+    } catch {
+      // ignore
+    }
+    fetch("/api/leads/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coachSlug: coachSlug?.trim() || null,
+        assessment_type: "diagnostic_50",
+        invite_token: urlContact.inviteToken,
+        contact: {
+          first_name: contact.firstName ?? undefined,
+          last_name: contact.lastName ?? undefined,
+          full_name: contact.fullName ?? undefined,
+          email: contact.email,
+          phone: contact.phone ?? undefined,
+          business_name: contact.businessName ?? undefined,
+        },
+      }),
+    }).catch(() => {});
+  }
+
+  function requestProResults(overrideAnswers?: AnswersMap) {
+    if (resultsContactPrompt.show) {
+      setSubmitError(null);
+      setShowResultsContact(true);
+      return;
+    }
+    void handleSubmitAssessment(overrideAnswers);
+  }
+
+  function submitResultsContact() {
+    const normalizedEmail = normalizeAssessmentResultsEmail(email);
+    if (!normalizedEmail) {
+      setSubmitError("Please enter a valid email so we can send your results.");
+      return;
+    }
+    const nextPhone = phone.trim();
+    setEmail(normalizedEmail);
+    setPhone(nextPhone);
+    captureResultsContact({ email: normalizedEmail, phone: nextPhone });
+    void handleSubmitAssessment(undefined, {
+      email: normalizedEmail,
+      phone: nextPhone,
+    });
+  }
+
+  async function handleSubmitAssessment(
+    overrideAnswers?: AnswersMap,
+    contactOverride?: { email?: string; phone?: string }
+  ) {
     const answersToSubmit = overrideAnswers ?? answers;
+    const emailVal = (contactOverride?.email ?? email).trim();
+    const phoneVal = (contactOverride?.phone ?? phone).trim();
     setSubmitting(true);
     setSubmitError(null);
     const total_score = computeTotalScore(answersToSubmit);
@@ -386,10 +509,11 @@ export default function BossProAssessmentPage({
           from_landing: landingVariant ?? undefined,
           assessment_type: "diagnostic_50",
           methodology_version: METHODOLOGY_VERSION,
+          invite_token: urlContact.inviteToken,
           contact: {
             full_name: fullName,
-            email,
-            phone: phone || undefined,
+            email: emailVal,
+            phone: phoneVal || undefined,
             business_name: businessName,
           },
           answers: answersToSubmit,
@@ -415,8 +539,8 @@ export default function BossProAssessmentPage({
               first_name: first_name ?? undefined,
               last_name: last_name ?? undefined,
               full_name: fullName.trim() || undefined,
-              email: email.trim() || undefined,
-              phone: phone.trim() || undefined,
+              email: emailVal || undefined,
+              phone: phoneVal || undefined,
             },
           })
         );
@@ -613,7 +737,34 @@ export default function BossProAssessmentPage({
         </header>
 
         <main className="flex flex-col gap-6 pt-6 pb-8 flex-1 flex items-start w-full">
-          {currentQuestion ? (
+          {showResultsContact ? (
+            <div className="w-full">
+              <ScorecardResultsContactStep
+                firstName={prospectFirstName}
+                askPhone={resultsContactPrompt.askPhone}
+                email={email}
+                phone={phone}
+                error={submitError}
+                submitting={submitting}
+                onEmailChange={(value) => {
+                  setEmail(value);
+                  if (submitError) setSubmitError(null);
+                }}
+                onPhoneChange={setPhone}
+                onSubmit={submitResultsContact}
+              />
+              <button
+                type="button"
+                className="mt-4 text-sm md:text-base text-slate-500 hover:text-slate-700 hover:underline inline-flex items-center gap-1.5 px-4 md:px-8"
+                onClick={() => {
+                  setShowResultsContact(false);
+                  setSubmitError(null);
+                }}
+              >
+                ← Previous
+              </button>
+            </div>
+          ) : currentQuestion ? (
             <>
               <div className="w-full px-4 md:px-8">
                 <div
@@ -700,9 +851,9 @@ export default function BossProAssessmentPage({
           ) : null}
         </main>
 
-        {submitError && (
+        {submitError && !showResultsContact ? (
           <p className="mt-1 text-xs text-rose-600">{submitError}</p>
-        )}
+        ) : null}
       </div>
       <button
         type="button"
@@ -710,7 +861,7 @@ export default function BossProAssessmentPage({
         onClick={() => {
           const acceleratedAnswers = buildUniformAnswers(1);
           setAnswers(acceleratedAnswers);
-          void handleSubmitAssessment(acceleratedAnswers);
+          requestProResults(acceleratedAnswers);
         }}
         className="fixed bottom-4 right-4 z-50 rounded-full border border-slate-300 bg-white/95 px-4 py-2 text-xs font-semibold text-slate-700 shadow-lg backdrop-blur hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
         aria-label="Auto-complete all assessment answers with the same value and continue to report"

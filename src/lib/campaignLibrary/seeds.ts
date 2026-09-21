@@ -1,32 +1,39 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { defaultLibraryTemplateSettings } from "@/lib/campaignLibrary/sanitize";
-import { CONNECTOR_LIBRARY_SEED } from "@/lib/campaignLibrary/seeds/connector";
-import { POSITIVE_REPLY_LIBRARY_SEED } from "@/lib/campaignLibrary/seeds/positiveReply";
+import { LIBRARY_SEEDS } from "@/lib/campaignLibrary/seeds/catalog";
 import type { CampaignLibrarySeed } from "@/lib/campaignLibrary/seeds/types";
 import { replaceLibrarySteps } from "@/lib/campaignLibrary/store";
 import type { CampaignStepInput } from "@/lib/unipile/campaigns";
 
-const LIBRARY_SEEDS: CampaignLibrarySeed[] = [
-  CONNECTOR_LIBRARY_SEED,
-  POSITIVE_REPLY_LIBRARY_SEED,
-];
+export { LIBRARY_SEEDS } from "@/lib/campaignLibrary/seeds/catalog";
 
 function stepsWithPositions(seed: CampaignLibrarySeed): CampaignStepInput[] {
   return seed.steps.map((step, position) => ({ ...step, position }));
+}
+
+async function findExistingSeed(
+  seed: CampaignLibrarySeed
+): Promise<{ id: string; name: string } | null> {
+  const names = [seed.name, ...(seed.previousNames ?? [])];
+  const { data, error } = await supabaseAdmin
+    .from("campaign_library_items")
+    .select("id, name")
+    .eq("item_type", seed.itemType)
+    .eq("kind", seed.kind)
+    .in("name", names);
+  if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  const current = rows.find((row) => row.name === seed.name);
+  const row = current ?? rows[0];
+  if (!row?.id) return null;
+  return { id: row.id, name: row.name };
 }
 
 async function upsertLibrarySeed(
   seed: CampaignLibrarySeed,
   replace: boolean
 ): Promise<{ id: string; created: boolean }> {
-  const { data: existing, error } = await supabaseAdmin
-    .from("campaign_library_items")
-    .select("id")
-    .eq("item_type", seed.itemType)
-    .eq("kind", seed.kind)
-    .eq("name", seed.name)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
+  const existing = await findExistingSeed(seed);
 
   const settings = {
     ...defaultLibraryTemplateSettings(),
@@ -34,17 +41,25 @@ async function upsertLibrarySeed(
   };
 
   if (existing?.id) {
-    if (replace) {
+    const shouldRename = existing.name !== seed.name;
+    if (replace || shouldRename) {
       const { error: updateError } = await supabaseAdmin
         .from("campaign_library_items")
-        .update({
-          description: seed.description,
-          status: seed.status,
-          settings,
-        })
+        .update(
+          replace
+            ? {
+                name: seed.name,
+                description: seed.description,
+                status: seed.status,
+                settings,
+              }
+            : { name: seed.name }
+        )
         .eq("id", existing.id);
       if (updateError) throw new Error(updateError.message);
-      await replaceLibrarySteps(existing.id, stepsWithPositions(seed));
+      if (replace) {
+        await replaceLibrarySteps(existing.id, stepsWithPositions(seed));
+      }
     }
     return { id: existing.id, created: false };
   }

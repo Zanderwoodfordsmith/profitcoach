@@ -8,6 +8,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   experimental: {
     viewTransition: true,
+    proxyClientMaxBodySize: "50mb",
   },
   turbopack: {
     root: process.cwd(),

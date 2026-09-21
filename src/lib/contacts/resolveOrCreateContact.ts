@@ -15,6 +15,7 @@ import {
   parseLinkedInIdentity,
   resolveLinkedInIdentityPair,
 } from "@/lib/contacts/linkedinIdentity";
+import { findContactByAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type ResolveOrCreateContactInput = ContactIdentityInput & {
@@ -29,6 +30,8 @@ export type ResolveOrCreateContactInput = ContactIdentityInput & {
   type?: "prospect" | "client";
   prospectSource?: string | null;
   prospectStatus?: string | null;
+  /** Personalised assessment invite token (`?c=`). */
+  inviteToken?: string | null;
   /** When set, resolve missing vanity↔provider half via Unipile. */
   unipileAccountId?: string | null;
   /** Extra fields merged into insert/update (e.g. company_website). */
@@ -39,6 +42,7 @@ export type ResolveOrCreateContactResult = {
   contactId: string;
   created: boolean;
   matchedBy:
+    | "invite_token"
     | "linkedin"
     | "linkedin_provider"
     | "email"
@@ -99,12 +103,21 @@ export async function resolveOrCreateContact(
     normalizeContactLinkedInProviderId(pair.providerId) ||
     normalizeContactLinkedInProviderId(input.linkedinProviderId);
 
-  const match = await findContactByIdentity(input.coachId, {
-    email,
-    phone,
-    linkedinUrl,
-    linkedinProviderId,
+  const invited = await findContactByAssessmentInviteToken({
+    token: input.inviteToken,
+    coachId: input.coachId,
   });
+  const match = invited
+    ? {
+        id: invited.id,
+        matchedBy: "invite_token" as const,
+      }
+    : await findContactByIdentity(input.coachId, {
+        email,
+        phone,
+        linkedinUrl,
+        linkedinProviderId,
+      });
 
   const typedFields: Record<string, unknown> = {
     full_name: input.fullName?.trim() || null,

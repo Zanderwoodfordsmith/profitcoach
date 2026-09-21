@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
+import { applyLibraryTemplateToCampaign } from "@/lib/campaignLibrary/instantiate";
 import {
   addCampaignLeads,
   addCampaignLeadsFromContacts,
@@ -108,6 +109,18 @@ export async function PATCH(request: Request, ctx: Ctx) {
         auth.coachId,
         id,
         body.playbook_id
+      );
+      return NextResponse.json(result);
+    }
+
+    if (
+      body.action === "apply_library_template" &&
+      typeof body.library_template_id === "string"
+    ) {
+      const result = await applyLibraryTemplateToCampaign(
+        auth.coachId,
+        id,
+        body.library_template_id
       );
       return NextResponse.json(result);
     }

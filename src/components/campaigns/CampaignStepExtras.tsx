@@ -1,7 +1,7 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
-import { MessageSquare, Mic, Video, X } from "lucide-react";
+import { useId, useRef, useState, type ReactNode } from "react";
+import { MessageSquare, Mic, Upload, Video, X } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -12,6 +12,10 @@ import {
   waitToHours,
   type WaitUnit,
 } from "@/lib/unipile/waitDuration";
+import {
+  MAX_CAMPAIGN_STEP_MEDIA_BYTES,
+  MAX_CAMPAIGN_STEP_MEDIA_MB,
+} from "@/lib/unipile/campaignStepMediaLimits";
 import {
   inviteNoConnectFrom,
   type CampaignStepMedia,
@@ -168,6 +172,7 @@ export function MessageStepMedia({
   onChange,
   onCommit,
   uploadUrl,
+  trailing,
 }: {
   campaignId: string;
   mediaKind: CampaignStepMediaKind | null;
@@ -178,9 +183,11 @@ export function MessageStepMedia({
   }) => void;
   onCommit: () => void;
   uploadUrl?: string;
+  trailing?: ReactNode;
 }) {
   const { impersonatingCoachId } = useImpersonation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const hintId = useId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const selected: CampaignStepMediaKind | "message" = mediaKind ?? "message";
@@ -207,6 +214,9 @@ export function MessageStepMedia({
     setBusy(true);
     setError(null);
     try {
+      if (file.size > MAX_CAMPAIGN_STEP_MEDIA_BYTES) {
+        throw new Error(`Each file must be under ${MAX_CAMPAIGN_STEP_MEDIA_MB}MB.`);
+      }
       const headers = await getCoachAuthHeaders(impersonatingCoachId);
       if (!headers) throw new Error("Sign in required.");
       const fd = new FormData();
@@ -239,7 +249,14 @@ export function MessageStepMedia({
     }
   }
 
-  const accept = selected === "voice" ? "audio/*" : "video/*";
+  const accept =
+    selected === "voice"
+      ? "audio/mp4,audio/m4a,audio/mpeg,audio/webm,audio/ogg,.m4a,.mp3,.webm,.ogg"
+      : "video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm";
+  const uploadHint =
+    selected === "voice"
+      ? `M4A or MP3, under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB — up to about 5 minutes.`
+      : `MP4 or MOV, under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB — up to about 5 minutes.`;
 
   function selectKind(next: CampaignStepMediaKind | "message") {
     if (next === selected) return;
@@ -255,48 +272,59 @@ export function MessageStepMedia({
 
   return (
     <div>
-      <div
-        role="group"
-        aria-label="Message type"
-        className="inline-grid grid-cols-3 rounded-full bg-slate-100 p-0.5"
-      >
-        {(
-          [
-            { id: "message", label: "Message", icon: MessageSquare },
-            { id: "voice", label: "Voice", icon: Mic },
-            { id: "video", label: "Video", icon: Video },
-          ] as const
-        ).map((option) => {
-          const on = selected === option.id;
-          const Icon = option.icon;
-          return (
-            <button
-              key={option.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => selectKind(option.id)}
-              className={`inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-[13px] font-semibold leading-tight transition duration-150 ${
-                on
-                  ? "bg-[#1a8fd4] text-white"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" aria-hidden />
-              {option.label}
-            </button>
-          );
-        })}
+      <div className="flex w-full items-center justify-between gap-3">
+        <div
+          role="group"
+          aria-label="Message type"
+          className="inline-grid grid-cols-3 rounded-full bg-slate-100 p-0.5"
+        >
+          {(
+            [
+              { id: "message", label: "Message", icon: MessageSquare },
+              { id: "voice", label: "Voice", icon: Mic },
+              { id: "video", label: "Video", icon: Video },
+            ] as const
+          ).map((option) => {
+            const on = selected === option.id;
+            const Icon = option.icon;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => selectKind(option.id)}
+                className={`inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-[13px] font-semibold leading-tight transition duration-150 ${
+                  on
+                    ? "bg-[#1a8fd4] text-white"
+                    : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        {trailing ? <div className="ml-auto shrink-0">{trailing}</div> : null}
       </div>
       {selected !== "message" && !media ? (
-        <div className="mt-2">
+        <div className="mt-2.5 flex items-center gap-3">
           <button
             type="button"
             disabled={busy}
+            aria-describedby={hintId}
             onClick={() => inputRef.current?.click()}
-            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#0c5290] px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-[#0c5290]/20 hover:bg-[#0a4478] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a8fd4] focus-visible:ring-offset-2 disabled:opacity-50"
           >
+            <Upload className="h-4 w-4" aria-hidden />
             {busy ? "Uploading…" : "Upload"}
           </button>
+          <p
+            id={hintId}
+            className="min-w-0 flex-1 text-xs leading-snug text-slate-600"
+          >
+            {uploadHint}
+          </p>
           <input
             ref={inputRef}
             type="file"

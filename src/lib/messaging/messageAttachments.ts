@@ -86,13 +86,15 @@ export function validateMessagingAttachment(file: {
   mime: string;
   size: number;
   filename?: string;
+  maxBytes?: number;
 }): string | null {
   const mime = normalizeMessagingMime(file.mime);
   if (!isAllowedMessagingAttachmentMime(mime)) {
     return `Unsupported file type${file.filename ? ` (${file.filename})` : ""}.`;
   }
-  if (file.size <= 0 || file.size > MAX_MESSAGING_ATTACHMENT_BYTES) {
-    return `Each file must be under ${Math.round(MAX_MESSAGING_ATTACHMENT_BYTES / (1024 * 1024))}MB.`;
+  const maxBytes = file.maxBytes ?? MAX_MESSAGING_ATTACHMENT_BYTES;
+  if (file.size <= 0 || file.size > maxBytes) {
+    return `Each file must be under ${Math.round(maxBytes / (1024 * 1024))}MB.`;
   }
   return null;
 }
@@ -104,6 +106,7 @@ export async function uploadMessagingAttachment(input: {
   filename: string;
   mime: string;
   kind?: MessagingAttachmentKind;
+  maxBytes?: number;
 }): Promise<MessagingAttachmentMeta> {
   const mime =
     normalizeMessagingMime(input.mime) || "application/octet-stream";
@@ -112,6 +115,7 @@ export async function uploadMessagingAttachment(input: {
     mime,
     size,
     filename: input.filename,
+    maxBytes: input.maxBytes,
   });
   if (err) throw new Error(err);
 

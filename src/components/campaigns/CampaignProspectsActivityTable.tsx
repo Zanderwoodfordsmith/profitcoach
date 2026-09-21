@@ -24,6 +24,8 @@ import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar"
 import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
+import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
 import { dispositionFromInterestOutcome } from "@/lib/prospects/replyDisposition";
 import {
   formatBusinessLabel,
@@ -68,7 +70,7 @@ type Props = {
   campaigns?: CampaignOption[];
   prospectHref?: (lead: CampaignActivityLead) => string | null;
   busy?: boolean;
-  onAdd: () => void;
+  onAdd: (mode?: CampaignAddProspectsMode) => void;
   onDelete: (leadIds: string[]) => void;
   onPause: (leadIds: string[]) => void;
   onResume: (leadIds: string[]) => void;
@@ -422,6 +424,7 @@ export function CampaignProspectsActivityTable({
 
   return (
     <div className="min-h-[60vh]">
+      {leads.length > 0 ? (
       <div
         ref={toolbarRef}
         className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2"
@@ -663,27 +666,17 @@ export function CampaignProspectsActivityTable({
           ) : null}
           <button
             type="button"
-            onClick={onAdd}
+            onClick={() => onAdd()}
             className="inline-flex h-10 shrink-0 items-center rounded-lg bg-[#0c5290] px-3.5 text-sm font-semibold text-white hover:bg-[#0a457a]"
           >
             Add prospects
           </button>
         </div>
       </div>
+      ) : null}
 
       {leads.length === 0 ? (
-        <div className="flex min-h-[40vh] items-center justify-center rounded-2xl bg-slate-50">
-          <div className="text-center">
-            <p className="text-sm text-slate-500">No prospects yet</p>
-            <button
-              type="button"
-              onClick={onAdd}
-              className="mt-2 text-sm font-semibold text-[#0c5290] hover:underline"
-            >
-              Add prospects
-            </button>
-          </div>
-        </div>
+        <CampaignAudienceEmpty variant="prospects" onAdd={onAdd} />
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center text-sm text-slate-500">
           No prospects match this view.

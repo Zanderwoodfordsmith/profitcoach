@@ -451,6 +451,15 @@ export function campaignStepAllowsVariants(type: string): boolean {
   );
 }
 
+/** A/B is two versions. Extra keys (C, D, …) are dropped. */
+export function keepAbPair<T extends { key: string }>(variants: T[]): T[] {
+  const byKey = new Map(variants.map((variant) => [variant.key, variant]));
+  return ["A", "B"].flatMap((key) => {
+    const variant = byKey.get(key);
+    return variant ? [variant] : [];
+  });
+}
+
 /** LinkedIn messages (text, voice, video) can send automatically or wait for the coach. */
 export type CampaignSendMode = "auto" | "remind";
 

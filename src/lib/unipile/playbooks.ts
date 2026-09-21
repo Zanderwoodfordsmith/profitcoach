@@ -105,19 +105,6 @@ It gives you a score out of 100 and shows where the business may be over-relying
 What do you reckon you'll score?
 {{assessment_url}}`;
 
-const VIP100_OWNER = `Hi {{first_name}},
-Quick one. I've created a 3-minute BOSS Scorecard that shows how much the business may be relying on you across team, systems, sales, marketing and performance.
-It gives you a score out of 100 and highlights what to focus on first.
-Is this of interest?
-{{assessment_url}}`;
-
-const VIP100_90DAY = `Hi {{first_name}},
-Most business owners are working hard, but not always on the highest-leverage priority.
-The BOSS Scorecard takes 3 minutes and shows what could make the biggest difference over the next 90 days.
-Here's the link if useful:
-{{assessment_url}}
-What do you reckon you'll score out of 100?`;
-
 /** Warm VIP 100 list — soft scorecard invite + nudge (personalise first line). */
 export const VIP_100_SCORECARD_PLAYBOOK: OutreachPlaybook = {
   id: "vip-100-scorecard",
@@ -130,8 +117,6 @@ export const VIP_100_SCORECARD_PLAYBOOK: OutreachPlaybook = {
     messageStep(VIP100_SOFT_A, [
       { key: "A", label: "Soft invite, stretched thin", body: VIP100_SOFT_A },
       { key: "B", label: "Soft invite, short", body: VIP100_SOFT_B },
-      { key: "C", label: "Owner dependence angle", body: VIP100_OWNER },
-      { key: "D", label: "90-day priority angle", body: VIP100_90DAY },
     ]),
     waitStep(72),
     messageStep(`Hi {{first_name}},

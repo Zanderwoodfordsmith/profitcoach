@@ -14,6 +14,7 @@ import {
   campaignStepCreatesJob,
   campaignStepStoresBody,
   isCampaignStepType,
+  keepAbPair,
   sanitizeStepConfig,
   sanitizeMessageMediaPatch,
   type CampaignStepMedia,
@@ -309,16 +310,10 @@ export async function createCampaign(
     name: string;
     outreach_account_id?: string | null;
     channel?: "linkedin" | "email";
-    template_id?: string | null;
   }
 ) {
-  const { getCampaignCreateTemplate } = await import(
-    "@/lib/unipile/campaignCreateTemplates"
-  );
-  const template = getCampaignCreateTemplate(input.template_id);
-  const name = input.name.trim() || template?.name || "Untitled campaign";
-  const channel =
-    template?.channel ?? (input.channel === "email" ? "email" : "linkedin");
+  const name = input.name.trim() || "Untitled campaign";
+  const channel = input.channel === "email" ? "email" : "linkedin";
   const priority = campaignPriorityValues("medium");
   const { data, error } = await supabaseAdmin
     .from("linkedin_campaigns")
@@ -339,12 +334,7 @@ export async function createCampaign(
     .select("*")
     .single();
   if (error) throw new Error(error.message);
-  if (template && data?.id && template.steps.length > 0) {
-    await replaceCampaignSteps(
-      data.id,
-      template.steps.map((s, i) => ({ ...s, position: i }))
-    );
-  } else if (channel === "email" && data?.id) {
+  if (channel === "email" && data?.id) {
     await supabaseAdmin.from("linkedin_campaign_steps").insert({
       campaign_id: data.id,
       position: 0,
@@ -558,21 +548,23 @@ export async function replaceCampaignSteps(
           campaignStepAllowsVariants(s.step_type) &&
           Array.isArray(s.variants) &&
           s.variants.length
-            ? s.variants
-                .filter((v) => v?.key)
-                .map((v) => {
-                  const media = sanitizeMessageMediaPatch({
-                    media_kind: v.media_kind,
-                    media: v.media,
-                  });
-                  return {
-                    key: String(v.key).slice(0, 32),
-                    label: v.label ? String(v.label).slice(0, 120) : undefined,
-                    body: String(v.body ?? "").slice(0, 16000),
-                    media_kind: media.media_kind,
-                    media: media.media,
-                  };
-                })
+            ? keepAbPair(
+                s.variants
+                  .filter((v) => v?.key)
+                  .map((v) => {
+                    const media = sanitizeMessageMediaPatch({
+                      media_kind: v.media_kind,
+                      media: v.media,
+                    });
+                    return {
+                      key: String(v.key).slice(0, 32),
+                      label: v.label ? String(v.label).slice(0, 120) : undefined,
+                      body: String(v.body ?? "").slice(0, 16000),
+                      media_kind: media.media_kind,
+                      media: media.media,
+                    };
+                  })
+              )
             : [],
         send_mode: sendMode,
         fallback_hours: fallbackHours,

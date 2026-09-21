@@ -38,29 +38,22 @@ import {
   type OutreachLeadFields,
 } from "@/lib/unipile/profileVars";
 import {
-  nextCampaignSendAt,
-  parseCampaignSendRules,
-} from "@/lib/unipile/campaignSendWindow";
-import {
-  bumpDailyPlanAssigned,
-  ensureDailySendPlan,
-  isInvitePaused,
-  isRateLimited,
   loadAccountSendSettings,
-  nextActionDelayForAccount,
   pauseInvitesUntil,
   setRateLimitedUntil,
   type AccountSendSettings,
 } from "@/lib/unipile/accountSendPlan";
+import {
+  checkOutreachSendSafety,
+  jitterSeconds,
+  recordSuccessfulOutreachSend,
+  sendKindFromStepType,
+} from "@/lib/unipile/outreachSendSafety";
 
 /** Global jobs claimed per cron tick (across coaches). */
 const MAX_JOBS_PER_TICK = 8;
 /** Lookahead so we can pick one job per LinkedIn account. */
 const CANDIDATE_JOBS_PER_TICK = 48;
-
-function jitterSeconds(min: number, max: number) {
-  return min + Math.floor(Math.random() * Math.max(1, max - min + 1));
-}
 
 function isCannotResendYet(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
@@ -460,50 +453,36 @@ export async function processOutreachJobsTick(): Promise<{
         );
       }
 
-      if (sendAccount && isRateLimited(sendAccount)) {
+      const stepType = step.step_type as string;
+      const sendKind = sendKindFromStepType(stepType);
+
+      const safety = await checkOutreachSendSafety({
+        coachId: job.coach_id,
+        campaign: {
+          id: String(campaign.id),
+          timezone: campaign.timezone as string | null,
+          send_rules: campaign.send_rules,
+          daily_invite_limit: campaign.daily_invite_limit as number | null,
+          daily_message_limit: campaign.daily_message_limit as number | null,
+          outreach_account_id: campaign.outreach_account_id as string | null,
+        },
+        kind: sendKind,
+        sendAccount,
+      });
+      sendAccount = safety.sendAccount;
+      if (!safety.result.ok) {
         await supabaseAdmin
           .from("linkedin_send_jobs")
           .update({
             status: "pending",
-            scheduled_for: sendAccount.rate_limited_until,
-            last_error: "Account rate-limited; deferred.",
-          })
-          .eq("id", job.id);
-        continue;
-      }
-
-      let plan = sendAccount
-        ? (await ensureDailySendPlan(sendAccount)).plan
-        : null;
-      if (sendAccount) {
-        const refreshed = await loadAccountSendSettings(sendAccount.id);
-        if (refreshed) sendAccount = refreshed;
-      }
-
-      const timezone =
-        sendAccount?.timezone?.trim() ||
-        (campaign.timezone as string | null)?.trim() ||
-        "Europe/London";
-      const sendRules = parseCampaignSendRules(
-        sendAccount?.send_rules ?? campaign.send_rules
-      );
-      const sendAt = nextCampaignSendAt({ timezone, rules: sendRules });
-      if (sendAt.getTime() > Date.now() + 15_000) {
-        await supabaseAdmin
-          .from("linkedin_send_jobs")
-          .update({
-            status: "pending",
-            scheduled_for: new Date(
-              sendAt.getTime() + jitterSeconds(60, 900) * 1000
-            ).toISOString(),
-            last_error: "Outside sending hours; deferred.",
+            scheduled_for: safety.result.deferUntil.toISOString(),
+            last_error: safety.result.reason,
           })
           .eq("id", job.id);
         continue;
       }
 
       const linkedInAccountId = sendAccount?.unipile_account_id;
-      const stepType = step.step_type as string;
       const needsLinkedIn = isLinkedInOutreachStep(stepType);
       if (
         needsLinkedIn &&
@@ -534,56 +513,6 @@ export async function processOutreachJobsTick(): Promise<{
           })
           .eq("id", job.id);
         continue;
-      }
-
-      const isInvite =
-        stepType === "invite" || stepType === "instagram_follow";
-      const isMessage =
-        stepType === "message" ||
-        stepType === "instagram" ||
-        stepType === "messenger";
-      const isReact =
-        stepType === "react" || stepType === "instagram_react";
-
-      if (isInvite && sendAccount && isInvitePaused(sendAccount)) {
-        await supabaseAdmin
-          .from("linkedin_send_jobs")
-          .update({
-            status: "pending",
-            scheduled_for:
-              sendAccount.invite_paused_until ||
-              new Date(Date.now() + 3600_000).toISOString(),
-            last_error: "Invite pause active; deferred.",
-          })
-          .eq("id", job.id);
-        continue;
-      }
-
-      // Account-level daily quotas (from today's plan).
-      if (plan && sendAccount) {
-        const overInvite =
-          isInvite && plan.invitesAssigned >= plan.inviteQuota;
-        const overMessage =
-          isMessage && plan.messagesAssigned >= plan.messageQuota;
-        const overReact = isReact && plan.reactsAssigned >= plan.reactQuota;
-        if (overInvite || overMessage || overReact) {
-          const nextWindow = nextCampaignSendAt({
-            timezone,
-            rules: sendRules,
-            afterCurrentWindow: true,
-          });
-          await supabaseAdmin
-            .from("linkedin_send_jobs")
-            .update({
-              status: "pending",
-              scheduled_for: new Date(
-                nextWindow.getTime() + jitterSeconds(60, 600) * 1000
-              ).toISOString(),
-              last_error: "Account daily limit reached; deferred.",
-            })
-            .eq("id", job.id);
-          continue;
-        }
       }
 
       let providerId: string | null = lead.linkedin_provider_id as string | null;
@@ -621,12 +550,14 @@ export async function processOutreachJobsTick(): Promise<{
         "";
       const assessmentUrl = await buildLeadAssessmentUrl({
         coachId: job.coach_id,
+        contactId: (lead.contact_id as string | null) ?? null,
         firstName: leadForMessage.first_name as string | null,
         lastName: leadForMessage.last_name as string | null,
         company: leadForMessage.company as string | null,
       });
       const assessmentProUrl = await buildLeadAssessmentProUrl({
         coachId: job.coach_id,
+        contactId: (lead.contact_id as string | null) ?? null,
         firstName: leadForMessage.first_name as string | null,
         lastName: leadForMessage.last_name as string | null,
         company: leadForMessage.company as string | null,
@@ -641,6 +572,7 @@ export async function processOutreachJobsTick(): Promise<{
       const templateExtras = {
         assessment_url: assessmentUrl,
         scorecard_url: assessmentUrl,
+        scorecard_link: assessmentUrl,
         assessment_pro_url: assessmentProUrl,
         coach_name: coachName,
         review_name: "Business Clarity Review",
@@ -996,37 +928,20 @@ export async function processOutreachJobsTick(): Promise<{
       }
 
       // Space out next actions for this account (one outbound at a time).
-      const delay = sendAccount
-        ? nextActionDelayForAccount(sendAccount, String(job.id))
-        : Math.max(60, (campaign.min_action_delay_seconds as number) || 180) +
-          jitterSeconds(0, 60);
-      const deferUntil = new Date(Date.now() + delay * 1000).toISOString();
-      let pendingQuery = supabaseAdmin
-        .from("linkedin_send_jobs")
-        .update({
-          scheduled_for: deferUntil,
-        })
-        .eq("coach_id", job.coach_id)
-        .eq("status", "pending")
-        .neq("id", job.id)
-        .lt("scheduled_for", deferUntil);
-      if (campaign.outreach_account_id) {
-        const { data: siblingCampaigns } = await supabaseAdmin
-          .from("linkedin_campaigns")
-          .select("id")
-          .eq("outreach_account_id", campaign.outreach_account_id as string);
-        const siblingIds = (siblingCampaigns ?? []).map((c) => c.id as string);
-        if (siblingIds.length) {
-          pendingQuery = pendingQuery.in("campaign_id", siblingIds);
-        }
-      }
-      await pendingQuery;
-
-      if (sendAccount) {
-        if (isInvite) await bumpDailyPlanAssigned(sendAccount.id, "invite");
-        else if (isMessage)
-          await bumpDailyPlanAssigned(sendAccount.id, "message");
-        else if (isReact) await bumpDailyPlanAssigned(sendAccount.id, "react");
+      try {
+        await recordSuccessfulOutreachSend({
+          coachId: job.coach_id,
+          jobId: job.id,
+          outreachAccountId:
+            (campaign.outreach_account_id as string | null) ?? null,
+          sendAccount,
+          kind: sendKind,
+          delaySeed: String(job.id),
+          fallbackDelaySeconds:
+            (campaign.min_action_delay_seconds as number) || 180,
+        });
+      } catch {
+        /* LinkedIn already sent — do not fail the job on bookkeeping. */
       }
 
       await supabaseAdmin

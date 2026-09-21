@@ -1,6 +1,10 @@
 import { sanitizeProspectUrlParam } from "@/lib/landingCopy";
 import { splitFullName } from "@/lib/splitFullName";
 import { formatPersonName } from "@/lib/formatPersonName";
+import {
+  ASSESSMENT_INVITE_PARAM,
+  normalizeAssessmentInviteToken,
+} from "@/lib/assessmentInviteToken";
 
 export type AssessmentContactFromUrl = {
   firstName: string | null;
@@ -9,6 +13,7 @@ export type AssessmentContactFromUrl = {
   email: string | null;
   phone: string | null;
   businessName: string | null;
+  inviteToken: string | null;
 };
 
 type SearchParamsLike = {
@@ -38,6 +43,9 @@ export function parseAssessmentContactParams(
     email: emailRaw ? emailRaw.toLowerCase() : null,
     phone,
     businessName,
+    inviteToken: normalizeAssessmentInviteToken(
+      searchParams.get(ASSESSMENT_INVITE_PARAM)
+    ),
   };
 }
 
@@ -50,6 +58,7 @@ export type LandingContactSession = {
   email?: string;
   phone?: string;
   businessName?: string;
+  inviteToken?: string;
 };
 
 /** Opt-in details stored when a prospect completes the landing funnel form. */
@@ -79,6 +88,7 @@ export function landingContactSessionToAssessmentContact(
     email: session.email?.trim().toLowerCase() || null,
     phone: session.phone?.trim() || null,
     businessName: session.businessName?.trim() || null,
+    inviteToken: normalizeAssessmentInviteToken(session.inviteToken),
   };
 }
 
@@ -96,6 +106,7 @@ export function mergeAssessmentContactWithSession(
     email: urlContact.email ?? fromSession.email,
     phone: urlContact.phone ?? fromSession.phone,
     businessName: urlContact.businessName ?? fromSession.businessName,
+    inviteToken: urlContact.inviteToken ?? fromSession.inviteToken,
   };
 }
 
@@ -145,6 +156,7 @@ export function assessmentContactToSessionPayload(
     email: contact.email ?? undefined,
     phone: contact.phone ?? undefined,
     businessName: contact.businessName ?? undefined,
+    inviteToken: contact.inviteToken ?? undefined,
   };
 }
 
@@ -155,6 +167,8 @@ export type PersonalisedAssessmentLinkInput = {
   email?: string;
   phone?: string;
   businessName?: string;
+  /** Opaque contact invite token (`?c=`). */
+  inviteToken?: string;
   /** Full origin, e.g. https://theprofitcoach.com — omit for a path-only link. */
   origin?: string;
 };
@@ -163,7 +177,7 @@ function appendPersonalisedContactParams(
   q: URLSearchParams,
   input: Pick<
     PersonalisedAssessmentLinkInput,
-    "firstName" | "lastName" | "email" | "phone" | "businessName"
+    "firstName" | "lastName" | "email" | "phone" | "businessName" | "inviteToken"
   >
 ) {
   const first = input.firstName?.trim();
@@ -171,12 +185,14 @@ function appendPersonalisedContactParams(
   const email = input.email?.trim();
   const phone = input.phone?.trim();
   const business = input.businessName?.trim();
+  const invite = normalizeAssessmentInviteToken(input.inviteToken);
 
   if (first) q.set("first_name", first);
   if (last) q.set("last_name", last);
   if (email) q.set("email", email);
   if (phone) q.set("phone", phone);
   if (business) q.set("business", business);
+  if (invite) q.set(ASSESSMENT_INVITE_PARAM, invite);
 }
 
 /** Builds /assessment/{slug}?… with correctly encoded contact query params. */
@@ -207,4 +223,80 @@ export function buildPersonalisedAssessmentProLink(
   const suffix = query ? `?${query}` : "";
   const origin = input.origin?.replace(/\/$/, "");
   return origin ? `${origin}${path}${suffix}` : `${path}${suffix}`;
+}
+
+const RESULTS_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Personalised /assessment links carry at least one known-person query param. */
+export function isPersonalisedAssessmentEntry(
+  contact: AssessmentContactFromUrl
+): boolean {
+  return Boolean(
+    contact.firstName ||
+      contact.lastName ||
+      contact.fullName ||
+      contact.email ||
+      contact.phone ||
+      contact.businessName ||
+      contact.inviteToken
+  );
+}
+
+export type ResultsContactPrompt = {
+  show: boolean;
+  askEmail: boolean;
+  askPhone: boolean;
+};
+
+function hasContactValue(value: string | null | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+/**
+ * Ask for email (required) and phone (optional) just before results — only on
+ * personalised assessment links, and only for fields we do not already have.
+ * Landing opt-in already collected contact, so that path never shows this.
+ * If email is already known, skip entirely (do not interrupt for optional phone).
+ */
+export function getResultsContactPrompt(input: {
+  fromLanding: boolean;
+  urlContact: AssessmentContactFromUrl;
+  email?: string | null;
+  phone?: string | null;
+  /** True when the invite token already maps to a contact with email. */
+  inviteHasEmail?: boolean;
+  /** True when the invite token already maps to a contact with phone. */
+  inviteHasPhone?: boolean;
+}): ResultsContactPrompt {
+  const hidden = { show: false, askEmail: false, askPhone: false };
+  if (input.fromLanding) return hidden;
+  if (!isPersonalisedAssessmentEntry(input.urlContact)) return hidden;
+
+  const hasEmail =
+    input.inviteHasEmail === true ||
+    hasContactValue(input.email) ||
+    hasContactValue(input.urlContact.email);
+  if (hasEmail) return hidden;
+
+  const hasPhone =
+    input.inviteHasPhone === true ||
+    hasContactValue(input.phone) ||
+    hasContactValue(input.urlContact.phone);
+
+  return {
+    show: true,
+    askEmail: true,
+    askPhone: !hasPhone,
+  };
+}
+
+/** Lowercased email if valid; otherwise null. */
+export function normalizeAssessmentResultsEmail(
+  raw: string | null | undefined
+): string | null {
+  const value = (raw ?? "").trim().toLowerCase();
+  if (!value || value.length > 254 || !RESULTS_EMAIL_RE.test(value)) {
+    return null;
+  }
+  return value;
 }

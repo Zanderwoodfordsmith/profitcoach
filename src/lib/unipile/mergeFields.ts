@@ -69,12 +69,27 @@ export const MERGE_FIELD_CATALOG: MergeField[] = [
     example: "Zander",
   },
   {
+    key: "type_of_owner",
+    label: "Type of owner",
+    group: "You",
+    hint: "Who you work with, e.g. scaffolding owners",
+    example: "scaffolding owners",
+  },
+  {
+    key: "market_observation",
+    label: "Market observation",
+    group: "You",
+    hint: "The thing you hear a lot from this market",
+    example:
+      "Most owners tell me revenue is fine, but they still can't take a week off.",
+  },
+  {
     key: "assessment_url",
     label: "Assessment link",
     group: "Scorecard",
     hint: "Link for them to take the BOSS Scorecard",
     example: "…/assessment/your-name",
-    aliases: ["scorecard_url"],
+    aliases: ["scorecard_url", "scorecard_link"],
   },
   {
     key: "assessment_pro_url",

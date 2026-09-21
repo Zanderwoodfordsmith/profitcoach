@@ -74,6 +74,7 @@ import {
   toggleCollapsedGroupKey,
 } from "@/lib/table/groupedTableItems";
 import { buildPersonalisedAssessmentLink, buildPersonalisedAssessmentProLink } from "@/lib/assessmentContactParams";
+import { normalizeAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { splitFullName } from "@/lib/splitFullName";
@@ -1216,7 +1217,19 @@ export function ProspectsTable({
     if (!slug) return;
 
     const email = prospect.email?.trim();
-    if (!email) {
+    let inviteToken: string | undefined;
+    const { data: tokenRow } = await supabaseClient
+      .from("contacts")
+      .select("assessment_invite_token")
+      .eq("id", prospect.id)
+      .maybeSingle();
+    inviteToken =
+      normalizeAssessmentInviteToken(
+        (tokenRow as { assessment_invite_token?: string | null } | null)
+          ?.assessment_invite_token
+      ) ?? undefined;
+
+    if (!email && !inviteToken) {
       openContactEdit(prospect);
       return;
     }
@@ -1226,9 +1239,10 @@ export function ProspectsTable({
       coachSlug: slug,
       firstName: first_name ?? undefined,
       lastName: last_name ?? undefined,
-      email,
+      email: email || undefined,
       phone: prospect.phone ?? undefined,
       businessName: prospect.business_name ?? undefined,
+      inviteToken,
       origin:
         typeof window !== "undefined" ? window.location.origin : undefined,
     };

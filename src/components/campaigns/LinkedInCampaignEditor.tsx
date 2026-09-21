@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { Pencil, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, Pencil, SlidersHorizontal } from "lucide-react";
+import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import type { CampaignActivityDay } from "@/components/campaigns/CampaignOverviewMetrics";
@@ -51,6 +52,9 @@ import {
   type InviteFunnelSlice,
 } from "@/lib/unipile/campaignLeadActivity";
 import { magnetForPlaybookId } from "@/lib/leadMagnets/catalog";
+import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
+import { CampaignTemplatePickerModal } from "@/components/campaigns/CampaignTemplatePicker";
+import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
 
 const CampaignSequenceBuilder = dynamic(() =>
   import("@/components/campaigns/CampaignSequenceBuilder").then((m) => ({
@@ -276,6 +280,7 @@ export function LinkedInCampaignEditor() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("overview");
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [abStats, setAbStats] = useState<Record<
     string,
@@ -286,6 +291,8 @@ export function LinkedInCampaignEditor() {
   );
   const [leadDrawer, setLeadDrawer] = useState<LeadDrawerFilter | null>(null);
   const [addLeadsOpen, setAddLeadsOpen] = useState(false);
+  const [addLeadsMode, setAddLeadsMode] =
+    useState<CampaignAddProspectsMode>("named");
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -301,6 +308,20 @@ export function LinkedInCampaignEditor() {
     nameInputRef.current?.focus();
     nameInputRef.current?.select();
   }, [editingName]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const raw = url.searchParams.get("tab");
+    if (raw !== "steps" && raw !== "prospects") return;
+    setTab(raw);
+    url.searchParams.delete("tab");
+    const next = url.searchParams.toString();
+    window.history.replaceState(
+      null,
+      "",
+      next ? `${url.pathname}?${next}` : url.pathname
+    );
+  }, []);
 
   const primaryAccount = accounts[0] ?? null;
   const mailingAccount =
@@ -695,6 +716,38 @@ export function LinkedInCampaignEditor() {
     void saveSteps(next);
   }
 
+  async function applyLibraryTemplate(templateId: string) {
+    if (!campaignId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await authHeaders(impersonatingCoachId);
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            action: "apply_library_template",
+            library_template_id: templateId,
+          }),
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Could not apply template.");
+      const next = asSteps(body.steps);
+      stepsRef.current = next;
+      setSteps(next);
+      setTemplatePickerOpen(false);
+      invalidateHubQuery(campaignCoreQueryKey(campaignId, impersonatingCoachId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not apply template.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function connectProvider(provider: UnipileConnectProvider) {
     setConnectingProvider(provider);
     setError(null);
@@ -786,6 +839,11 @@ export function LinkedInCampaignEditor() {
   const hasInviteStep = steps.some((s) => s.step_type === "invite");
   const running = activeCampaign.status === "running";
   const archived = activeCampaign.status === "archived";
+
+  function openAddLeads(mode: CampaignAddProspectsMode = "named") {
+    setAddLeadsMode(mode);
+    setAddLeadsOpen(true);
+  }
 
   function startEditingName() {
     setNameDraft(activeCampaign.name);
@@ -908,7 +966,7 @@ export function LinkedInCampaignEditor() {
         />
       </div>
 
-      {error ? (
+      {error && !templatePickerOpen ? (
         <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
         </div>
@@ -922,21 +980,13 @@ export function LinkedInCampaignEditor() {
               Loading overview…
             </div>
           ) : leads.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
-              <p className="text-sm font-medium text-slate-800">
-                No prospects yet
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Add people so this campaign has a queue to work through.
-              </p>
-              <button
-                type="button"
-                onClick={() => setAddLeadsOpen(true)}
-                className="mt-4 text-sm font-semibold text-[#0c5290] hover:underline"
-              >
-                Add prospects
-              </button>
-            </div>
+            <CampaignAudienceEmpty
+              variant="overview"
+              running={running}
+              hasSteps={steps.length > 0}
+              onAdd={openAddLeads}
+              onSetupSteps={() => setTab("steps")}
+            />
           ) : (
             <>
               <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
@@ -947,21 +997,16 @@ export function LinkedInCampaignEditor() {
                     campaignStatus: campaign.status,
                     hasInviteStep,
                   })}
-                  onAddProspects={() => setAddLeadsOpen(true)}
-                  onOpenQueued={() =>
+                  statusCounts={statusCounts}
+                  onAddProspects={() => openAddLeads()}
+                  onOpenStatus={(status) =>
                     setLeadDrawer({
-                      kind: "hopper",
-                      hopper: "staging",
-                      title: hasInviteStep ? "Left to invite" : "Left to start",
+                      kind: "status",
+                      status,
+                      title: activityLeadStatusLabel(status),
                     })
                   }
-                  onOpenFollowUp={() =>
-                    setLeadDrawer({
-                      kind: "hopper",
-                      hopper: "active",
-                      title: hasInviteStep ? "In follow-up" : "In sequence",
-                    })
-                  }
+                  onViewAll={() => setTab("prospects")}
                 />
                 <CampaignDialsPanel
                   dials={buildCampaignDials({
@@ -972,53 +1017,6 @@ export function LinkedInCampaignEditor() {
               </div>
 
               <CampaignDailyStackChart buckets={activityBuckets} />
-
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]">
-                <div className="flex items-center justify-between gap-3 border-b border-slate-600/40 bg-slate-700 px-4 py-2.5">
-                  <h2 className="text-sm font-semibold tracking-wide text-white">
-                    By status
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => setTab("prospects")}
-                    className="text-xs font-medium text-sky-200 hover:text-white"
-                  >
-                    View all
-                  </button>
-                </div>
-                <ul className="divide-y divide-slate-100 px-1">
-                  {Object.keys(statusCounts).length === 0 ? (
-                    <li className="py-8 text-center text-sm text-slate-500">
-                      No activity yet
-                    </li>
-                  ) : (
-                    Object.entries(statusCounts)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([status, count]) => (
-                        <li key={status}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setLeadDrawer({
-                                kind: "status",
-                                status,
-                                title: activityLeadStatusLabel(status),
-                              })
-                            }
-                            className="flex w-full items-center justify-between px-3 py-3 text-sm hover:bg-slate-50"
-                          >
-                            <span className="font-medium text-slate-700">
-                              {activityLeadStatusLabel(status)}
-                            </span>
-                            <span className="tabular-nums font-semibold text-slate-900">
-                              {count}
-                            </span>
-                          </button>
-                        </li>
-                      ))
-                  )}
-                </ul>
-              </div>
             </>
           )}
         </div>
@@ -1033,13 +1031,11 @@ export function LinkedInCampaignEditor() {
             jobs={jobs}
             campaignStatus={campaign.status}
             prospectHref={(lead) =>
-              lead.contact_id
-                ? `${prefix}/prospects/${encodeURIComponent(lead.contact_id)}`
-                : null
+              prospectDetailHref(lead.contact_id, prefix === "/admin")
             }
             busy={busy}
             campaigns={otherCampaigns}
-            onAdd={() => setAddLeadsOpen(true)}
+            onAdd={openAddLeads}
             onDelete={(leadIds) => void deleteLeads(leadIds)}
             onPause={(leadIds) => void pauseLeads(leadIds)}
             onResume={(leadIds) => void resumeLeads(leadIds)}
@@ -1070,8 +1066,25 @@ export function LinkedInCampaignEditor() {
           onReorderSteps={reorderSteps}
           onOpenLeads={setLeadDrawer}
           campaigns={otherCampaigns}
+          queuePeople={{
+            count: stagingLeads.length,
+            names: stagingLeads.slice(0, 4).map(leadName),
+          }}
+          onChooseTemplate={() => setTemplatePickerOpen(true)}
         />
       ) : null}
+
+      <CampaignTemplatePickerModal
+        open={templatePickerOpen}
+        busy={busy}
+        error={templatePickerOpen ? error : null}
+        onClose={() => {
+          if (busy) return;
+          setTemplatePickerOpen(false);
+          setError(null);
+        }}
+        onPick={(template) => void applyLibraryTemplate(template.id)}
+      />
 
       <CampaignSettingsModal
         open={settingsOpen}
@@ -1170,26 +1183,53 @@ export function LinkedInCampaignEditor() {
                   Nobody here yet
                 </li>
               ) : (
-                drawerLeads.map((lead) => (
-                  <li key={lead.id} className="px-5 py-3">
-                    {lead.contact_id ? (
-                      <Link
-                        href={`${prefix}/prospects/${encodeURIComponent(lead.contact_id)}`}
-                        className="text-sm font-medium text-[#0c5290] hover:underline"
-                      >
-                        {leadName(lead)}
-                      </Link>
-                    ) : (
-                      <div className="text-sm font-medium text-slate-900">
-                        {leadName(lead)}
+                drawerLeads.map((lead) => {
+                  const href = prospectDetailHref(
+                    lead.contact_id,
+                    prefix === "/admin"
+                  );
+                  const name = leadName(lead);
+                  const body = (
+                    <>
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className={`truncate text-sm font-medium ${
+                            href ? "text-[#0c5290]" : "text-slate-900"
+                          }`}
+                        >
+                          {name}
+                        </div>
+                        <div className="truncate text-xs text-slate-500">
+                          {activityLeadStatusLabel(lead.status)}
+                          {lead.company ? ` · ${lead.company}` : ""}
+                        </div>
                       </div>
-                    )}
-                    <div className="text-xs text-slate-500">
-                      {activityLeadStatusLabel(lead.status)}
-                      {lead.company ? ` · ${lead.company}` : ""}
-                    </div>
-                  </li>
-                ))
+                      {href ? (
+                        <ChevronRight
+                          className="h-4 w-4 shrink-0 text-slate-400"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </>
+                  );
+                  return (
+                    <li key={lead.id}>
+                      {href ? (
+                        <Link
+                          href={href}
+                          aria-label={`Open ${name}`}
+                          className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50"
+                        >
+                          {body}
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-3 px-5 py-3">
+                          {body}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })
               )}
             </ul>
           </aside>
@@ -1197,9 +1237,11 @@ export function LinkedInCampaignEditor() {
       ) : null}
 
       <CampaignAddProspectsModal
+        key={addLeadsMode}
         open={addLeadsOpen}
         campaignId={campaignId}
         campaignChannel={campaign?.channel}
+        initialMode={addLeadsMode}
         existingContactIds={leads
           .map((lead) => lead.contact_id)
           .filter((id): id is string => Boolean(id))}

@@ -104,16 +104,21 @@ export async function countInvitesInRollingDays(
 export async function countSucceededActionToday(
   coachId: string,
   stepTypes: string[],
-  timeZone: string
+  timeZone: string,
+  campaignId?: string | null
 ): Promise<number> {
   const { startOfZonedDay } = await import("@/lib/unipile/campaignSendWindow");
   const start = startOfZonedDay(new Date(), timeZone || "Europe/London");
-  const { data: jobs } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("linkedin_send_jobs")
     .select("id, step_id")
     .eq("coach_id", coachId)
     .eq("status", "succeeded")
     .gte("updated_at", start.toISOString());
+  if (campaignId) {
+    query = query.eq("campaign_id", campaignId);
+  }
+  const { data: jobs } = await query;
   if (!jobs?.length) return 0;
   const stepIds = [...new Set(jobs.map((j) => j.step_id as string))];
   const { data: steps } = await supabaseAdmin

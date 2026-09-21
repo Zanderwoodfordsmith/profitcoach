@@ -9,6 +9,7 @@ import {
 } from "@/lib/campaignLibrary/sanitize";
 import {
   DEFAULT_LIBRARY_ITEM_NAME,
+  sortByCampaignLibraryKind,
   type CampaignLibraryItemDetail,
   type CampaignLibraryItemSummary,
   type CampaignLibraryItemType,
@@ -166,6 +167,7 @@ function insertRowsFor(
 export async function listLibraryItems(input: {
   itemType: CampaignLibraryItemType;
   kind?: CampaignLibraryKind | null;
+  status?: CampaignLibraryStatus | null;
 }): Promise<CampaignLibraryItemSummary[]> {
   try {
     const { ensureCampaignLibrarySeeds } = await import(
@@ -182,14 +184,17 @@ export async function listLibraryItems(input: {
     .eq("item_type", input.itemType)
     .order("updated_at", { ascending: false });
   if (input.kind) query = query.eq("kind", input.kind);
+  if (input.status) query = query.eq("status", input.status);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as ItemRow[];
   const stepTypes = await loadStepTypesByItem(rows.map((row) => row.id));
-  return rows.map((row) =>
-    summaryFrom(
-      row,
-      (stepTypes.get(row.id) ?? []).map((step_type) => ({ step_type }))
+  return sortByCampaignLibraryKind(
+    rows.map((row) =>
+      summaryFrom(
+        row,
+        (stepTypes.get(row.id) ?? []).map((step_type) => ({ step_type }))
+      )
     )
   );
 }

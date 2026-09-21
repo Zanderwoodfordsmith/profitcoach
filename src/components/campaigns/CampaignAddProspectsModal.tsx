@@ -16,8 +16,11 @@ import {
   displayListPersonName,
   type AudienceListSummary,
 } from "@/lib/leadLists/audienceLists";
+import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
 
-type AudienceMode = "list" | "named" | "search" | "urls";
+export type { CampaignAddProspectsMode };
+
+type AudienceMode = CampaignAddProspectsMode;
 
 type SearchHit = {
   linkedin_url: string | null;
@@ -33,6 +36,7 @@ type Props = {
   campaignId: string;
   /** Primary campaign channel — gates which prospects are eligible. */
   campaignChannel?: string;
+  initialMode?: CampaignAddProspectsMode;
   existingContactIds: string[];
   existingLinkedInUrls: string[];
   onClose: () => void;
@@ -63,6 +67,7 @@ export function CampaignAddProspectsModal({
   open,
   campaignId,
   campaignChannel = "linkedin",
+  initialMode = "named",
   existingContactIds,
   existingLinkedInUrls,
   onClose,
@@ -73,7 +78,7 @@ export function CampaignAddProspectsModal({
   async function authHeaders() {
     return getCoachAuthHeaders(impersonatingCoachId);
   }
-  const [mode, setMode] = useState<AudienceMode>("named");
+  const [mode, setMode] = useState<AudienceMode>(initialMode);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -154,7 +159,7 @@ export function CampaignAddProspectsModal({
     if (!open) return;
     setError(null);
     setNotice(null);
-    setMode("named");
+    setMode(initialMode);
     setSelectedIds([]);
     setListQuery("");
     setStatusFilter("all");
@@ -174,7 +179,7 @@ export function CampaignAddProspectsModal({
     setNamedItemIds([]);
     setNamedQuery("");
     namedListsLoadedRef.current = false;
-  }, [open]);
+  }, [open, initialMode]);
 
   useEffect(() => {
     if (!open || mode !== "list" || listLoadedRef.current) return;

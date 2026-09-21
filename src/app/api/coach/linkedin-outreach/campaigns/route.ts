@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
+import { createCampaignFromLibraryTemplate } from "@/lib/campaignLibrary/instantiate";
 import {
   createCampaign,
   listArchivedCampaigns,
@@ -35,20 +36,26 @@ export async function POST(request: Request) {
     name?: string;
     outreach_account_id?: string | null;
     channel?: "linkedin" | "email";
-    template_id?: string | null;
+    library_template_id?: string;
   };
   try {
+    if (typeof body.library_template_id === "string") {
+      const campaign = await createCampaignFromLibraryTemplate(auth.coachId, {
+        name: typeof body.name === "string" ? body.name : "",
+        outreach_account_id: body.outreach_account_id ?? null,
+        templateId: body.library_template_id,
+      });
+      return NextResponse.json({ campaign });
+    }
     const campaign = await createCampaign(auth.coachId, {
       name: typeof body.name === "string" ? body.name : "",
       outreach_account_id: body.outreach_account_id ?? null,
       channel: body.channel === "email" ? "email" : "linkedin",
-      template_id: body.template_id ?? null,
     });
     return NextResponse.json({ campaign });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Create failed." },
-      { status: 500 }
-    );
+    const message = err instanceof Error ? err.message : "Create failed.";
+    const status = message === "Template not found." ? 404 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
