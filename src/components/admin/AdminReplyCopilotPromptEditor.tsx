@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import {
-  DEFAULT_ANTHROPIC_MODEL,
-} from "@/lib/anthropicModel";
-import { REPLY_COPILOT_DEFAULT_VOICE } from "@/lib/messaging/replyCopilot";
+import { DEFAULT_ANTHROPIC_MODEL } from "@/lib/anthropicModel";
 
 const MODEL_OPTIONS: Array<{ id: string; label: string }> = [
   { id: DEFAULT_ANTHROPIC_MODEL, label: "Claude Sonnet 4.6 (recommended)" },
@@ -42,7 +39,7 @@ export function AdminReplyCopilotPromptEditor() {
           model?: string;
           usingDefault?: boolean;
         };
-        setPrompt(data.prompt ?? REPLY_COPILOT_DEFAULT_VOICE);
+        setPrompt(data.prompt ?? "");
         setModel(data.model?.trim() || DEFAULT_ANTHROPIC_MODEL);
         setUsingDefault(Boolean(data.usingDefault));
       }
@@ -105,16 +102,24 @@ export function AdminReplyCopilotPromptEditor() {
           htmlFor="reply-copilot-prompt"
           className="block text-sm font-medium text-slate-700"
         >
-          Reply voice
+          Router
         </label>
         <p className="text-xs text-slate-500">
-          {usingDefault ? "Using the code default" : "Custom — overrides the default"}
+          {usingDefault ? "Using ROUTER.md (repo or Knowledge override)" : "Custom — overrides the router file"}
         </p>
       </div>
       <p className="mt-1 text-xs text-slate-500">
-        How every coach is guided in Conversations. Channel length (short DMs vs
-        email) stays locked in code. Coaches can add their own style notes in
-        Settings.
+        Layer 1 map: classify the inbound, then follow that situation. Shared
+        rules and situation files always load from{" "}
+        <a
+          href="/admin/brand?tab=brain&brainTab=knowledge&open=reply-copilot/ROUTER.md"
+          className="font-medium text-sky-700 hover:underline"
+        >
+          Knowledge → Reply copilot
+        </a>
+        . Channel length stays locked in code. Coaches can add style notes in
+        Settings. If you previously saved a custom voice, use Reset to pick up
+        the new router.
       </p>
       <textarea
         id="reply-copilot-prompt"

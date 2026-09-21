@@ -242,7 +242,7 @@ export function LinkedInInterestQueue() {
                           }
                           className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                         >
-                          Interested
+                          Positive
                         </button>
                         <button
                           type="button"
@@ -262,17 +262,17 @@ export function LinkedInInterestQueue() {
                           }
                           className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-900 hover:bg-rose-100 disabled:opacity-50"
                         >
-                          Not interested
+                          Deselect
                         </button>
                       </>
                     ) : (
                       <span className="self-center text-[11px] font-medium text-slate-600">
                         {lead.interest_outcome === "positive"
-                          ? "Interested"
+                          ? "Positive"
                           : lead.interest_outcome === "soft"
                             ? "Neutral"
                             : lead.interest_outcome === "negative"
-                              ? "Not interested"
+                              ? "Deselect"
                               : lead.interest_outcome}
                       </span>
                     )}

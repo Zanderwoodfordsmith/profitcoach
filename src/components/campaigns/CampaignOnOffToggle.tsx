@@ -30,22 +30,30 @@ export function CampaignOnOffToggle({
         e.stopPropagation();
         onChange();
       }}
-      className={`relative shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/40 focus-visible:ring-offset-2 disabled:opacity-40 ${
+      className={`relative shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-40 ${
         compact ? "h-5 w-10" : "h-6 w-12"
-      } ${on ? "bg-emerald-700" : "bg-slate-200"}`}
+      } ${
+        on
+          ? "bg-emerald-700 focus-visible:ring-emerald-700/40"
+          : "bg-rose-800 focus-visible:ring-rose-800/40"
+      }`}
     >
-      {on ? (
-        <span
-          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 font-bold tracking-wide text-white ${
-            compact
-              ? "left-[5px] text-[9px]"
-              : "left-[6px] text-[10px]"
-          }`}
-          aria-hidden
-        >
-          On
-        </span>
-      ) : null}
+      <span
+        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 font-bold tracking-wide text-white ${
+          compact ? "text-[9px]" : "text-[10px]"
+        } ${
+          on
+            ? compact
+              ? "left-[5px]"
+              : "left-[6px]"
+            : compact
+              ? "right-[5px]"
+              : "right-[6px]"
+        }`}
+        aria-hidden
+      >
+        {on ? "On" : "Off"}
+      </span>
       <span
         className={`absolute left-0.5 rounded-full bg-white shadow transition ${
           compact ? "top-0.5 h-4 w-4" : "top-0.5 h-5 w-5"

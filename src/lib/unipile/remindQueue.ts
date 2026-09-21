@@ -11,7 +11,7 @@ import {
   buildLeadAssessmentUrl,
   buildLeadAssessmentProUrl,
 } from "@/lib/unipile/interest";
-import { callWaitFrom } from "@/lib/unipile/campaignStepTypes";
+import { callWaitFrom, messageMediaFrom, messageSendConfigFrom } from "@/lib/unipile/campaignStepTypes";
 
 export type RemindQueueItem = {
   job_id: string;
@@ -437,7 +437,18 @@ export async function sendRemindJob(input: {
       providerId,
       lead: lead as Record<string, unknown>,
       text,
-      stepConfig: step.config,
+      stepConfig: messageSendConfigFrom(
+        step.config,
+        (
+          await resolveStepBodyForLead({
+            leadId: lead.id as string,
+            stepId: step.id as string,
+            body: (step.body as string) || "",
+            variants: step.variants,
+            abAssignments: (lead as { ab_assignments?: unknown }).ab_assignments,
+          })
+        ).variant
+      ),
     });
 
     await advanceLeadAfterStep({
@@ -676,13 +687,23 @@ export async function processRemindFallbacks(): Promise<{
         throw new Error("Fallback only supported for message steps.");
       }
 
+      const picked = await resolveStepBodyForLead({
+        leadId: lead.id as string,
+        stepId: step.id as string,
+        body: (step.body as string) || "",
+        variants: step.variants,
+        abAssignments: (lead as { ab_assignments?: unknown }).ab_assignments,
+      });
       const text = await renderPreviewForJob({
         coachId: job.coach_id as string,
         lead: lead as Record<string, unknown>,
         step: step as Record<string, unknown>,
         useFallback: true,
       });
-      if (!text.trim()) throw new Error("Empty fallback body.");
+      const sendConfig = messageSendConfigFrom(step.config, picked.variant);
+      if (!text.trim() && !messageMediaFrom(sendConfig)) {
+        throw new Error("Empty fallback body.");
+      }
 
       const { accountId, providerId } = await resolveAccountAndProvider({
         campaign: campaign as Record<string, unknown>,
@@ -696,7 +717,7 @@ export async function processRemindFallbacks(): Promise<{
         providerId,
         lead: lead as Record<string, unknown>,
         text,
-        stepConfig: step.config,
+        stepConfig: sendConfig,
       });
 
       await advanceLeadAfterStep({

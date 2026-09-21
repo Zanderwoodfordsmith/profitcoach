@@ -9,7 +9,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
  * brand_knowledge_files override them (editable from Admin → Brand → Canon).
  */
 
-export type BrandKnowledgeGroup = "core" | "skill";
+export type BrandKnowledgeGroup = "core" | "skill" | "reply-copilot";
 
 export type BrandKnowledgeFileMeta = {
   file: string;
@@ -108,6 +108,85 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
       "Real connector message feedback — what got replies. Loaded by the outreach skills.",
     group: "skill",
   },
+  {
+    file: "reply-copilot/ROUTER.md",
+    label: "Reply copilot router",
+    description:
+      "Layer 1 map: classify the inbound, then follow that situation. Skills tab edits the live copy of this.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/shared-rules.md",
+    label: "Reply copilot shared rules",
+    description:
+      "Layer 3 factory: chat conduct, LVQ, scorecard path, personalisation. Loaded on every suggestion.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/interested.md",
+    label: "Situation: interested",
+    description: "Yes / tell me more → scorecard, not a calendar link.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/question.md",
+    label: "Situation: question",
+    description: "They asked how it works, price, or who it is for.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/not-yet.md",
+    label: "Situation: not yet",
+    description: "Maybe later / busy. Ask what they are focused on.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/thumbs-up.md",
+    label: "Situation: thumbs-up",
+    description: "👍 or ok only. Clarify interest vs agreement.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/fine-for-now.md",
+    label: "Situation: fine for now",
+    description: "We're good. Every level has its devil.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/no-thanks.md",
+    label: "Situation: no thanks",
+    description: "Decline. Clarify this message, profit, or never again.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/objection.md",
+    label: "Situation: objection",
+    description: "Price, time, already have someone. Acknowledge, then ask.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/quiet.md",
+    label: "Situation: quiet",
+    description: "Went silent after interest. New value, not guilt.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "reply-copilot/situations/scorecard-done.md",
+    label: "Situation: scorecard done",
+    description: "They completed the scorecard. Offer a 30-minute review.",
+    group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
 ];
 
 const CORE_DIR = path.join(process.cwd(), "content", "ai-knowledge");
@@ -125,11 +204,12 @@ export function isBrandKnowledgeFile(file: string): boolean {
 export function readBrandKnowledgeRepoFile(file: string): string | null {
   const meta = metaFor(file);
   if (!meta) return null;
-  const dir =
-    (meta.dir ?? (meta.group === "core" ? "ai-knowledge" : "legacy")) ===
-    "ai-knowledge"
-      ? CORE_DIR
-      : SKILL_DIR;
+  const dirKind =
+    meta.dir ??
+    (meta.group === "core" || meta.group === "reply-copilot"
+      ? "ai-knowledge"
+      : "legacy");
+  const dir = dirKind === "ai-knowledge" ? CORE_DIR : SKILL_DIR;
   const p = path.join(dir, file);
   if (!fs.existsSync(p)) return null;
   return fs.readFileSync(p, "utf8");

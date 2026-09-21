@@ -224,6 +224,51 @@ export function messagingComposeDraftIds(): string[] {
   return Object.keys(readStore().drafts);
 }
 
+export type MessagingComposeDraftSummary = {
+  preview: string;
+  channel?: MessagingComposeChannel;
+};
+
+export function composeDraftPreview(
+  draft: Pick<MessagingComposeDraft, "body" | "subject">,
+  max = 72
+): string {
+  const text = draft.body.trim() || draft.subject?.trim() || "";
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(1, max - 1))}…`;
+}
+
+export function messagingComposeDraftSummaries(): Record<
+  string,
+  MessagingComposeDraftSummary
+> {
+  const out: Record<string, MessagingComposeDraftSummary> = {};
+  for (const [id, draft] of Object.entries(readStore().drafts)) {
+    out[id] = {
+      preview: composeDraftPreview(draft),
+      channel: draft.channel,
+    };
+  }
+  return out;
+}
+
+/** Keep the original draft channel until the coach edits the text. */
+export function nextComposeDraftChannel(input: {
+  existing: MessagingComposeDraft | null;
+  body: string;
+  subject?: string;
+  channel?: MessagingComposeChannel | "comment";
+}): MessagingComposeChannel | undefined {
+  const nextChannel =
+    input.channel && input.channel !== "comment" ? input.channel : undefined;
+  if (input.channel === "comment") return input.existing?.channel;
+  if (!input.existing?.channel) return nextChannel;
+  const bodyChanged = input.existing.body !== input.body;
+  const subjectChanged = (input.existing.subject || "") !== (input.subject || "");
+  if (bodyChanged || subjectChanged) return nextChannel;
+  return input.existing.channel;
+}
+
 export function hasMessagingComposeDraft(conversationId: string): boolean {
   return Boolean(readStore().drafts[conversationId.trim()]);
 }

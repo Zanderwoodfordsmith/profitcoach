@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  composeDraftPreview,
   emptyComposeDraftStore,
+  nextComposeDraftChannel,
   parseComposeDraftStore,
   removeDraftFromStore,
   upsertDraftInStore,
@@ -38,5 +40,33 @@ describe("composeDraft store", () => {
     assert.equal(store.drafts.two?.body, "Draft two");
     store = removeDraftFromStore(store, "two");
     assert.deepEqual(store.drafts, {});
+  });
+
+  it("keeps the original draft channel until the text changes", () => {
+    const existing = {
+      conversationId: "one",
+      body: "Hello",
+      channel: "linkedin" as const,
+    };
+    assert.equal(
+      nextComposeDraftChannel({
+        existing,
+        body: "Hello",
+        channel: "email",
+      }),
+      "linkedin"
+    );
+    assert.equal(
+      nextComposeDraftChannel({
+        existing,
+        body: "Hello there",
+        channel: "email",
+      }),
+      "email"
+    );
+    assert.equal(
+      composeDraftPreview({ body: "A short draft", subject: "Hi" }),
+      "A short draft"
+    );
   });
 });

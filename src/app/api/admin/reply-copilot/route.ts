@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { loadBrandKnowledgeOverrides } from "@/lib/profitCoachAi/brandKnowledge";
 import {
   clipReplyCopilotPrompt,
-  REPLY_COPILOT_DEFAULT_VOICE,
   resolveReplyCopilotModel,
 } from "@/lib/messaging/replyCopilot";
+import { resolveReplyCopilotRouter } from "@/lib/messaging/replyCopilotKnowledge";
 
 async function loadSettings() {
   return supabaseAdmin
@@ -31,13 +32,18 @@ export async function GET(request: Request) {
 
   const stored =
     typeof data?.system_prompt === "string" ? data.system_prompt.trim() : "";
+  const overrides = await loadBrandKnowledgeOverrides();
+  const { router, usingDefault } = resolveReplyCopilotRouter({
+    storedPrompt: stored,
+    overrides,
+  });
 
   return NextResponse.json({
-    prompt: stored || REPLY_COPILOT_DEFAULT_VOICE,
+    prompt: router,
     model: resolveReplyCopilotModel(
       typeof data?.model === "string" ? data.model : null
     ),
-    usingDefault: stored.length === 0,
+    usingDefault,
     updated_at: data?.updated_at ?? null,
   });
 }
@@ -94,10 +100,16 @@ export async function PUT(request: Request) {
     }
   }
 
+  const overrides = await loadBrandKnowledgeOverrides();
+  const { router, usingDefault } = resolveReplyCopilotRouter({
+    storedPrompt: systemPrompt,
+    overrides,
+  });
+
   return NextResponse.json({
     ok: true,
-    usingDefault: systemPrompt.length === 0,
-    prompt: systemPrompt || REPLY_COPILOT_DEFAULT_VOICE,
+    usingDefault,
+    prompt: router,
     model,
   });
 }

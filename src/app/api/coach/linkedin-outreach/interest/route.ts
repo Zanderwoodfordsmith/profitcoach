@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import {
   advanceLeadFunnel,
+  clearLeadInterest,
   listInterestQueue,
   logLeadInterest,
   type FunnelStatus,
@@ -77,6 +78,13 @@ export async function POST(request: Request) {
         leadId: body.lead_id,
         status: body.status,
         note: body.note,
+      });
+      return NextResponse.json({ ok: true, lead });
+    }
+    if (body.action === "clear") {
+      const lead = await clearLeadInterest({
+        coachId: auth.coachId,
+        leadId: body.lead_id,
       });
       return NextResponse.json({ ok: true, lead });
     }

@@ -6,6 +6,7 @@ import {
   interestOutcomeForDisposition,
   isReplyDisposition,
   prospectStatusForDisposition,
+  REPLY_DISPOSITION_LABELS,
 } from "./replyDisposition";
 
 describe("replyDisposition", () => {
@@ -43,5 +44,11 @@ describe("replyDisposition", () => {
       "neutral"
     );
     assert.equal(isReplyDisposition("maybe"), false);
+  });
+
+  it("shows Positive / Neutral / Deselect to coaches", () => {
+    assert.equal(REPLY_DISPOSITION_LABELS.interested, "Positive");
+    assert.equal(REPLY_DISPOSITION_LABELS.neutral, "Neutral");
+    assert.equal(REPLY_DISPOSITION_LABELS.not_interested, "Deselect");
   });
 });

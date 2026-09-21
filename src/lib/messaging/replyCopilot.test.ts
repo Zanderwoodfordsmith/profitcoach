@@ -6,11 +6,16 @@ import {
   formatCopilotProspectFacts,
   isReplyCopilotChannel,
   REPLY_COPILOT_CHANNEL_CONTRACT,
-  REPLY_COPILOT_DEFAULT_VOICE,
+  REPLY_COPILOT_ROUTER_FALLBACK,
   sanitizeCopilotSuggestion,
   selectCopilotThreadWindow,
   type CopilotThreadMessage,
 } from "./replyCopilot";
+import {
+  assembleReplyCopilotKnowledge,
+  loadReplyCopilotRouterDefault,
+  selectReplyCopilotSituationIds,
+} from "./replyCopilotKnowledge";
 
 function msg(
   partial: Partial<CopilotThreadMessage> & Pick<CopilotThreadMessage, "id">
@@ -138,20 +143,64 @@ describe("composeReplyCopilotSystem", () => {
     const system = composeReplyCopilotSystem({
       adminVoice: "Be brief and northern.",
       coachNotes: "Sign off as Dan. Never pitch a call first.",
+      knowledge: "# Loaded situation: interested\nOffer the scorecard.",
     });
     assert.match(system, /Be brief and northern/);
     assert.match(system, /Sign off as Dan/);
+    assert.match(system, /Offer the scorecard/);
     assert.ok(system.includes(REPLY_COPILOT_CHANNEL_CONTRACT));
-    assert.ok(!system.includes(REPLY_COPILOT_DEFAULT_VOICE.slice(0, 40)));
+    assert.ok(!system.includes(REPLY_COPILOT_ROUTER_FALLBACK.slice(0, 40)));
   });
 
-  it("falls back to the default voice when admin prompt is empty", () => {
+  it("falls back to the router fallback when admin prompt is empty", () => {
     const system = composeReplyCopilotSystem({
       adminVoice: "  ",
       coachNotes: null,
     });
-    assert.ok(system.startsWith(REPLY_COPILOT_DEFAULT_VOICE));
+    assert.ok(system.startsWith(REPLY_COPILOT_ROUTER_FALLBACK));
     assert.ok(!system.includes("Coach style notes"));
+  });
+});
+
+describe("selectReplyCopilotSituationIds", () => {
+  it("loads scorecard-done when a score exists", () => {
+    assert.deepEqual(
+      selectReplyCopilotSituationIds({ disposition: "interested", bossScore: 61 }),
+      ["scorecard-done"]
+    );
+  });
+
+  it("scopes interested vs not_interested vs untagged", () => {
+    assert.deepEqual(selectReplyCopilotSituationIds({ disposition: "interested" }), [
+      "interested",
+      "question",
+    ]);
+    assert.deepEqual(
+      selectReplyCopilotSituationIds({ disposition: "not_interested" }),
+      ["no-thanks", "objection"]
+    );
+    const untagged = selectReplyCopilotSituationIds({});
+    assert.ok(untagged.includes("thumbs-up"));
+    assert.ok(untagged.includes("quiet"));
+    assert.ok(untagged.length > 4);
+  });
+});
+
+describe("assembleReplyCopilotKnowledge", () => {
+  it("always includes shared rules and the selected situation", () => {
+    const assembled = assembleReplyCopilotKnowledge({
+      disposition: "interested",
+    });
+    assert.match(assembled.markdown, /Give before you ask/);
+    assert.match(assembled.markdown, /Loaded situation: interested/);
+    assert.ok(!assembled.markdown.includes("Loaded situation: no-thanks"));
+    assert.ok(assembled.files.includes("reply-copilot/shared-rules.md"));
+  });
+
+  it("loads the repo router", () => {
+    const router = loadReplyCopilotRouterDefault();
+    assert.match(router, /Situation map/);
+    assert.match(router, /interested/);
   });
 });
 

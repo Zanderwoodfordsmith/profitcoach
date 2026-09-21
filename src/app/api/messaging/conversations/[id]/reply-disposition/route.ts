@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { applyReplyDisposition, isReplyDisposition } from "@/lib/prospects/replyDisposition";
+import {
+  applyReplyDisposition,
+  clearReplyDisposition,
+  isReplyDisposition,
+} from "@/lib/prospects/replyDisposition";
 import { resolveMessagingAccess } from "@/lib/messaging/resolveMessagingAccess";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -24,20 +28,31 @@ export async function POST(
   }
 
   const body = (await request.json().catch(() => ({}))) as {
-    disposition?: string;
+    disposition?: string | null;
   };
-  if (!isReplyDisposition(body.disposition)) {
-    return NextResponse.json(
-      { error: "disposition must be interested, neutral, or not_interested." },
-      { status: 400 }
-    );
-  }
+  const contactId = (conversation.contact_id as string | null) ?? null;
+  const unipileChatId =
+    (conversation.unipile_chat_id as string | null) ?? null;
 
   try {
+    if (body.disposition === null || body.disposition === "") {
+      const result = await clearReplyDisposition({
+        coachId: access.coachId,
+        contactId,
+        unipileChatId,
+      });
+      return NextResponse.json({ ok: true, ...result });
+    }
+    if (!isReplyDisposition(body.disposition)) {
+      return NextResponse.json(
+        { error: "disposition must be interested, neutral, or not_interested." },
+        { status: 400 }
+      );
+    }
     const result = await applyReplyDisposition({
       coachId: access.coachId,
-      contactId: (conversation.contact_id as string | null) ?? null,
-      unipileChatId: (conversation.unipile_chat_id as string | null) ?? null,
+      contactId,
+      unipileChatId,
       disposition: body.disposition,
     });
     return NextResponse.json({ ok: true, ...result });

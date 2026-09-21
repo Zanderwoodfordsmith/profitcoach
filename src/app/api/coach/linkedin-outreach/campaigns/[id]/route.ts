@@ -4,12 +4,17 @@ import {
   addCampaignLeads,
   addCampaignLeadsFromContacts,
   applyCampaignPlaybook,
+  campaignOwnedByCoach,
+  deleteCampaign,
   deleteCampaignLead,
+  deleteCampaignLeads,
   duplicateCampaign,
   getCampaign,
   getCampaignJobs,
-  campaignOwnedByCoach,
+  moveCampaignLeads,
+  pauseCampaignLeads,
   replaceCampaignSteps,
+  resumeCampaignLeads,
   setCampaignStatus,
   updateCampaign,
   type CampaignStepInput,
@@ -75,9 +80,16 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
   try {
     if (Array.isArray(body.steps)) {
+      const releaseWaitPosition =
+        typeof body.release_wait_position === "number" &&
+        Number.isInteger(body.release_wait_position) &&
+        body.release_wait_position >= 0
+          ? body.release_wait_position
+          : undefined;
       const steps = await replaceCampaignSteps(
         id,
-        body.steps as CampaignStepInput[]
+        body.steps as CampaignStepInput[],
+        releaseWaitPosition != null ? { releaseWaitPosition } : undefined
       );
       return NextResponse.json({ steps });
     }
@@ -133,9 +145,42 @@ export async function PATCH(request: Request, ctx: Ctx) {
       return NextResponse.json({ ok: true });
     }
 
+    if (body.action === "delete_leads") {
+      const result = await deleteCampaignLeads(auth.coachId, id, body.lead_ids);
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "pause_leads") {
+      const result = await pauseCampaignLeads(auth.coachId, id, body.lead_ids);
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "resume_leads") {
+      const result = await resumeCampaignLeads(auth.coachId, id, body.lead_ids);
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "move_leads" && typeof body.target_campaign_id === "string") {
+      const result = await moveCampaignLeads(
+        auth.coachId,
+        id,
+        body.lead_ids,
+        body.target_campaign_id
+      );
+      return NextResponse.json(result);
+    }
+
     if (body.action === "duplicate") {
       const campaign = await duplicateCampaign(auth.coachId, id);
       return NextResponse.json({ campaign });
+    }
+
+    if (body.action === "delete") {
+      const deleted = await deleteCampaign(auth.coachId, id);
+      if (!deleted) {
+        return NextResponse.json({ error: "Not found." }, { status: 404 });
+      }
+      return NextResponse.json({ ok: true });
     }
 
     if (body.action === "archive") {

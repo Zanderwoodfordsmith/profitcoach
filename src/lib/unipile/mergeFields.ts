@@ -4,48 +4,113 @@ export type MergeField = {
   key: string;
   label: string;
   group: MergeFieldGroup;
+  /** What this fills in. */
+  hint: string;
+  /** What it looks like once filled. */
+  example: string;
   aliases?: string[];
 };
 
 /** Fields coaches can insert. Stored as {{key}}; shown as the label. */
 export const MERGE_FIELD_CATALOG: MergeField[] = [
-  { key: "first_name", label: "First name", group: "Prospect", aliases: ["firstName"] },
-  { key: "last_name", label: "Last name", group: "Prospect", aliases: ["lastName"] },
+  {
+    key: "first_name",
+    label: "First name",
+    group: "Prospect",
+    hint: "Their first name",
+    example: "Sarah",
+    aliases: ["firstName"],
+  },
+  {
+    key: "last_name",
+    label: "Last name",
+    group: "Prospect",
+    hint: "Their last name",
+    example: "Chen",
+    aliases: ["lastName"],
+  },
   {
     key: "full_name",
     label: "Full name",
     group: "Prospect",
+    hint: "First and last name",
+    example: "Sarah Chen",
     aliases: ["fullName", "name"],
   },
   {
     key: "company",
     label: "Company",
     group: "Prospect",
+    hint: "The business they work at",
+    example: "Northwind Accounting",
     aliases: ["company_name", "companyName"],
   },
   {
     key: "title",
     label: "Title",
     group: "Prospect",
+    hint: "Their job title on LinkedIn",
+    example: "Managing Director",
     aliases: ["headline", "job_title", "jobTitle"],
   },
-  { key: "location", label: "Location", group: "Prospect", aliases: ["city"] },
-  { key: "coach_name", label: "Coach name", group: "You" },
+  {
+    key: "location",
+    label: "Location",
+    group: "Prospect",
+    hint: "City or region from their profile",
+    example: "Manchester",
+    aliases: ["city"],
+  },
+  {
+    key: "coach_name",
+    label: "Coach name",
+    group: "You",
+    hint: "Your name, as they see it",
+    example: "Zander",
+  },
   {
     key: "assessment_url",
     label: "Assessment link",
     group: "Scorecard",
+    hint: "Link for them to take the BOSS Scorecard",
+    example: "…/assessment/your-name",
     aliases: ["scorecard_url"],
   },
   {
     key: "assessment_pro_url",
     label: "Pro assessment link",
     group: "Scorecard",
+    hint: "Link for them to take the Pro scorecard",
+    example: "…/assessment/your-name/pro",
   },
-  { key: "boss_score", label: "BOSS score", group: "Scorecard" },
-  { key: "focus_area_1", label: "Focus area", group: "Scorecard" },
-  { key: "desired_outcome", label: "Desired outcome", group: "Scorecard" },
-  { key: "boss_score_report_link", label: "Report link", group: "Scorecard" },
+  {
+    key: "boss_score",
+    label: "BOSS score",
+    group: "Scorecard",
+    hint: "Their score out of 100, after they finish",
+    example: "62",
+  },
+  {
+    key: "focus_area_1",
+    label: "Focus area",
+    group: "Scorecard",
+    hint: "The weakest area on their scorecard",
+    example: "Profit & Cash",
+  },
+  {
+    key: "desired_outcome",
+    label: "Desired outcome",
+    group: "Scorecard",
+    hint: "What they said they want most",
+    example: "More time and freedom",
+  },
+  {
+    key: "boss_score_report_link",
+    label: "Report link",
+    group: "Scorecard",
+    hint: "Link to their completed scorecard results",
+    example: "…/assessment/your-name/report",
+  },
 ];
 
 const BY_KEY = new Map<string, MergeField>();

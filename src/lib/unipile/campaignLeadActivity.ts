@@ -22,6 +22,7 @@ export type CampaignActivityLead = {
   last_error: string | null;
   current_step_position?: number;
   next_action_at?: string | null;
+  created_at?: string | null;
 };
 
 export type CampaignActivityStep = {
@@ -139,10 +140,13 @@ export function leadStatusTone(status: string): LeadStatusTone {
     case "interested":
     case "assessment_done":
     case "call_offered":
+    case "completed":
       return "emerald";
+    case "queued":
     case "in_sequence":
     case "assessment_sent":
       return "sky";
+    case "invited":
     case "paused":
       return "amber";
     case "failed":
@@ -187,11 +191,123 @@ export function actionSteps(
     .sort((a, b) => a.position - b.position);
 }
 
-function stepAt(
+function isSkippableNextStep(step: CampaignActivityStep): boolean {
+  return (
+    step.step_type === "wait" ||
+    campaignStepIsInternal(step.step_type) ||
+    (step.step_type === "call" && !callWaitFrom(step.config))
+  );
+}
+
+function sortedSteps(steps: CampaignActivityStep[]): CampaignActivityStep[] {
+  return [...steps].sort((a, b) => a.position - b.position);
+}
+
+function nextOutboundAfterWait(
   steps: CampaignActivityStep[],
-  position: number
-): CampaignActivityStep | undefined {
-  return steps.find((step) => step.position === position);
+  waitIndex: number
+): CampaignActivityStep | null {
+  for (let i = waitIndex + 1; i < steps.length; i++) {
+    if (!isSkippableNextStep(steps[i])) return steps[i];
+  }
+  return null;
+}
+
+function lastWaitBeforeAction(
+  steps: CampaignActivityStep[],
+  actionIndex: number
+): CampaignActivityStep | null {
+  for (let i = actionIndex - 1; i >= 0; i--) {
+    const step = steps[i];
+    if (step.step_type === "wait") return step;
+    if (!isSkippableNextStep(step)) return null;
+  }
+  return null;
+}
+
+type WaitOccupancyLead = {
+  status: string;
+  current_step_position?: number | null;
+  next_action_at?: string | null;
+};
+
+/**
+ * True when this lead is waiting to take the next send after `waitPosition`.
+ * They stay here until that send actually goes out — not only while the timer
+ * is still running.
+ */
+export function leadIsHeldByWait(input: {
+  lead: WaitOccupancyLead;
+  waitPosition: number;
+  steps: CampaignActivityStep[];
+}): boolean {
+  if (!isOpenLeadStatus(input.lead.status)) return false;
+
+  const steps = sortedSteps(input.steps);
+  const waitIndex = steps.findIndex((s) => s.position === input.waitPosition);
+  if (waitIndex < 0 || steps[waitIndex]?.step_type !== "wait") return false;
+  if (steps[waitIndex + 1]?.step_type === "wait") return false;
+
+  const nextAction = nextOutboundAfterWait(steps, waitIndex);
+  if (!nextAction) return false;
+  return (input.lead.current_step_position ?? 0) === nextAction.position;
+}
+
+/** True when this lead is still in a wait immediately before `actionPosition`. */
+export function leadIsHeldBeforeAction(input: {
+  lead: WaitOccupancyLead;
+  actionPosition: number;
+  steps: CampaignActivityStep[];
+}): boolean {
+  const steps = sortedSteps(input.steps);
+  const actionIndex = steps.findIndex((s) => s.position === input.actionPosition);
+  if (actionIndex < 0) return false;
+  const wait = lastWaitBeforeAction(steps, actionIndex);
+  if (!wait) return false;
+  return leadIsHeldByWait({
+    lead: input.lead,
+    waitPosition: wait.position,
+    steps,
+  });
+}
+
+export type LeadWaitDeletePatch = {
+  id: string;
+  current_step_position?: number;
+  next_action_at?: string;
+};
+
+/** Shift later leads back one step; anyone in the deleted wait becomes due now. */
+export function patchesAfterDeletedWait(input: {
+  waitPosition: number;
+  steps: CampaignActivityStep[];
+  leads: Array<{ id: string } & WaitOccupancyLead>;
+  nowIso: string;
+}): LeadWaitDeletePatch[] {
+  const held = new Set(
+    input.leads
+      .filter((lead) =>
+        leadIsHeldByWait({
+          lead,
+          waitPosition: input.waitPosition,
+          steps: input.steps,
+        })
+      )
+      .map((lead) => lead.id)
+  );
+  const patches: LeadWaitDeletePatch[] = [];
+  for (const lead of input.leads) {
+    const pos = lead.current_step_position ?? 0;
+    const nextPos = pos > input.waitPosition ? pos - 1 : pos;
+    const release = held.has(lead.id);
+    if (nextPos === pos && !release) continue;
+    patches.push({
+      id: lead.id,
+      ...(nextPos !== pos ? { current_step_position: nextPos } : {}),
+      ...(release ? { next_action_at: input.nowIso } : {}),
+    });
+  }
+  return patches;
 }
 
 /** The next outbound action still ahead for this lead, or null if finished. */
@@ -203,17 +319,9 @@ export function nextActionStep(
   const sorted = [...steps].sort((a, b) => a.position - b.position);
   let pos = lead.current_step_position ?? 0;
   if (lead.status === "invited") pos += 1;
-  for (let i = 0; i < sorted.length + 2; i += 1) {
-    const step = stepAt(sorted, pos);
-    if (!step) return null;
-    if (
-      step.step_type === "wait" ||
-      campaignStepIsInternal(step.step_type) ||
-      (step.step_type === "call" && !callWaitFrom(step.config))
-    ) {
-      pos += 1;
-      continue;
-    }
+  for (const step of sorted) {
+    if (step.position < pos) continue;
+    if (isSkippableNextStep(step)) continue;
     return step;
   }
   return null;
@@ -228,8 +336,9 @@ export function nextStepLabel(
   if (lead.status === "replied" || lead.status === "interested") return "Finished";
   if (lead.status === "completed") return "Finished";
   const step = nextActionStep(lead, steps);
-  if (!step) return "Finished";
-  return campaignStepTypeLabel(step.step_type);
+  if (step) return campaignStepTypeLabel(step.step_type);
+  if (isOpenLeadStatus(lead.status)) return "—";
+  return "Finished";
 }
 
 function latestJobForStep(
@@ -251,6 +360,25 @@ export function leadNeedsCoach(
   return jobs.some(
     (job) => job.lead_id === lead.id && job.status === "awaiting_coach"
   );
+}
+
+const STARTED_JOB_STATUSES = new Set([
+  "succeeded",
+  "running",
+  "failed",
+  "awaiting_coach",
+]);
+
+/** When the sequence actually began — first send, not when they were enrolled. */
+export function leadStartedAt(jobs: CampaignActivityJob[]): string | null {
+  let started: string | null = null;
+  for (const job of jobs) {
+    if (!STARTED_JOB_STATUSES.has(job.status)) continue;
+    const at = job.updated_at || job.scheduled_for;
+    if (!at) continue;
+    if (!started || at < started) started = at;
+  }
+  return started;
 }
 
 export function leadProgressDots(
@@ -334,7 +462,8 @@ export type ActivityFilterId =
   | "replied"
   | "finished"
   | "failed"
-  | "needsYou";
+  | "needsYou"
+  | "paused";
 
 export function matchesActivityFilter(
   lead: CampaignActivityLead,
@@ -362,6 +491,8 @@ export function matchesActivityFilter(
       return lead.status === "failed";
     case "needsYou":
       return leadNeedsCoach(lead, jobs);
+    case "paused":
+      return lead.status === "paused";
     default:
       return true;
   }
@@ -412,4 +543,56 @@ export function stepHistoryLabel(input: {
     return lead.status === "failed" ? "Failed" : doneVerb;
   }
   return step.step_type === "call" ? "Not called" : "Not sent";
+}
+
+export type InviteFunnelSlice = "connected" | "waiting" | "remaining";
+
+export type InviteFunnelCounts = {
+  connected: number;
+  waiting: number;
+  remaining: number;
+  total: number;
+};
+
+const INVITE_CONNECTED_STATUSES = new Set([
+  "connected",
+  "in_sequence",
+  "replied",
+  "interested",
+  "assessment_sent",
+  "assessment_done",
+  "call_offered",
+  "completed",
+]);
+
+/** Where a lead sits on the connection-request funnel. */
+export function inviteFunnelSliceForLead(
+  lead: { status: string; current_step_position?: number | null },
+  invitePosition: number
+): InviteFunnelSlice {
+  if (lead.status === "invited") return "waiting";
+  if (INVITE_CONNECTED_STATUSES.has(lead.status)) return "connected";
+  if (
+    lead.status === "paused" &&
+    (lead.current_step_position ?? 0) > invitePosition
+  ) {
+    return "connected";
+  }
+  return "remaining";
+}
+
+export function inviteFunnelCounts(
+  leads: Array<{ status: string; current_step_position?: number | null }>,
+  invitePosition: number
+): InviteFunnelCounts {
+  const counts: InviteFunnelCounts = {
+    connected: 0,
+    waiting: 0,
+    remaining: 0,
+    total: leads.length,
+  };
+  for (const lead of leads) {
+    counts[inviteFunnelSliceForLead(lead, invitePosition)] += 1;
+  }
+  return counts;
 }

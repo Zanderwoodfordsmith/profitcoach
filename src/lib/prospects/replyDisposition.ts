@@ -10,6 +10,19 @@ export const REPLY_DISPOSITIONS = [
 
 export type ReplyDisposition = (typeof REPLY_DISPOSITIONS)[number];
 
+/** Coach-facing labels. Stored values stay interested / neutral / not_interested. */
+export const REPLY_DISPOSITION_LABELS: Record<ReplyDisposition, string> = {
+  interested: "Positive",
+  neutral: "Neutral",
+  not_interested: "Deselect",
+};
+
+const DISPOSITION_PIPELINE_STATUSES = new Set([
+  "interested",
+  "follow_up",
+  "lost",
+]);
+
 const PIPELINE_LOCK = new Set(["booked", "rebook", "won"]);
 
 export function isReplyDisposition(
@@ -218,6 +231,134 @@ export async function applyReplyDisposition(input: {
   return {
     prospect_status: prospectStatus,
     reply_disposition: input.disposition,
+    lead_ids: [...leadIds],
+  };
+}
+
+export async function clearContactReplyDisposition(input: {
+  coachId: string;
+  contactId: string;
+}): Promise<{ prospect_status: string | null }> {
+  const { data: contact, error } = await supabaseAdmin
+    .from("contacts")
+    .select("id, prospect_status")
+    .eq("id", input.contactId)
+    .eq("coach_id", input.coachId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!contact) throw new Error("Prospect not found.");
+
+  const canonical = canonicalizeProspectStatus(
+    (contact.prospect_status as string | null) ?? null
+  );
+  const nextStatus =
+    canonical &&
+    DISPOSITION_PIPELINE_STATUSES.has(canonical) &&
+    !PIPELINE_LOCK.has(canonical)
+      ? "replied"
+      : null;
+  const patch: Record<string, unknown> = {
+    reply_disposition: null,
+    reply_disposition_at: null,
+  };
+  if (nextStatus) patch.prospect_status = nextStatus;
+
+  const { data: updated, error: upErr } = await supabaseAdmin
+    .from("contacts")
+    .update(patch)
+    .eq("id", input.contactId)
+    .eq("coach_id", input.coachId)
+    .select("prospect_status")
+    .maybeSingle();
+  if (upErr) {
+    if (upErr.code === "42703" || upErr.code === "PGRST204") {
+      if (nextStatus) {
+        const { error: statusErr } = await supabaseAdmin
+          .from("contacts")
+          .update({ prospect_status: nextStatus })
+          .eq("id", input.contactId)
+          .eq("coach_id", input.coachId);
+        if (statusErr) throw new Error(statusErr.message);
+      }
+      return {
+        prospect_status:
+          nextStatus ?? ((contact.prospect_status as string | null) ?? null),
+      };
+    }
+    throw new Error(upErr.message);
+  }
+
+  return {
+    prospect_status:
+      (updated?.prospect_status as string | null) ??
+      nextStatus ??
+      ((contact.prospect_status as string | null) ?? null),
+  };
+}
+
+/** Remove a reply mark so the coach can choose again. */
+export async function clearReplyDisposition(input: {
+  coachId: string;
+  contactId?: string | null;
+  unipileChatId?: string | null;
+}): Promise<{
+  prospect_status: string | null;
+  reply_disposition: null;
+  lead_ids: string[];
+}> {
+  let prospectStatus: string | null = null;
+  if (input.contactId) {
+    const contact = await clearContactReplyDisposition({
+      coachId: input.coachId,
+      contactId: input.contactId,
+    });
+    prospectStatus = contact.prospect_status;
+  }
+
+  const leadIds = new Set<string>();
+  if (input.contactId) {
+    const { data, error } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("id")
+      .eq("coach_id", input.coachId)
+      .eq("contact_id", input.contactId)
+      .not("interest_outcome", "is", null);
+    if (error && error.code !== "42703" && error.code !== "PGRST204") {
+      throw new Error(error.message);
+    }
+    for (const row of data ?? []) {
+      if (row.id) leadIds.add(row.id as string);
+    }
+  }
+  if (input.unipileChatId) {
+    const { data, error } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("id")
+      .eq("coach_id", input.coachId)
+      .eq("unipile_chat_id", input.unipileChatId)
+      .not("interest_outcome", "is", null);
+    if (error && error.code !== "42703" && error.code !== "PGRST204") {
+      throw new Error(error.message);
+    }
+    for (const row of data ?? []) {
+      if (row.id) leadIds.add(row.id as string);
+    }
+  }
+
+  if (leadIds.size) {
+    const { clearLeadInterest } = await import("@/lib/unipile/interest");
+    for (const leadId of leadIds) {
+      await clearLeadInterest({
+        coachId: input.coachId,
+        leadId,
+        skipContactSync: true,
+      });
+    }
+  }
+
+  return {
+    prospect_status: prospectStatus,
+    reply_disposition: null,
     lead_ids: [...leadIds],
   };
 }

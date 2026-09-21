@@ -1,40 +1,50 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   ChevronDown,
   CircleAlert,
   Clock,
+  Copy,
   Eye,
   FolderInput,
   GripVertical,
   Heart,
+  Info,
   Mail,
   MessageCircle,
   MessageSquare,
   Mic,
   Phone,
   PhoneCall,
+  Plus,
+  Trash2,
+  User,
   UserPlus,
   UserRoundPlus,
   Video,
   X,
-  Zap,
 } from "lucide-react";
 import {
   addToCampaignIdFrom,
+  campaignSendModePatch,
   campaignStepAllowsVariants,
   campaignStepDisplayLabel,
   campaignStepHasCopy,
+  campaignStepHasSendMode,
   campaignStepIncompleteHint,
+  campaignStepSendMode,
+  sequenceMessageSendMode,
   callWaitFrom,
   inviteNoConnectFrom,
   isCampaignStepType,
+  messageMediaFrom,
   messageMediaKindFrom,
   notifyChannelSummary,
   notifyConfigFrom,
+  type CampaignStepMedia,
   type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
@@ -54,6 +64,7 @@ import {
   type AbVariantStats,
 } from "@/lib/unipile/abMetrics";
 import {
+  isMergeFieldDrag,
   MergeFieldComposer,
   MergeFieldPreview,
 } from "@/components/campaigns/MergeFieldComposer";
@@ -72,6 +83,7 @@ import {
   MessageStepMedia,
 } from "@/components/campaigns/CampaignStepExtras";
 import { startDragAutoScroll } from "@/lib/campaigns/dragAutoScroll";
+import type { InviteFunnelSlice } from "@/lib/unipile/campaignLeadActivity";
 
 export type SequenceAccount = {
   id: string;
@@ -86,7 +98,13 @@ export type SequenceStep = {
   step_type: CampaignStepType;
   body: string | null;
   wait_hours: number | null;
-  variants?: Array<{ key: string; label?: string; body: string }> | null;
+  variants?: Array<{
+    key: string;
+    label?: string;
+    body: string;
+    media_kind?: CampaignStepMediaKind | null;
+    media?: CampaignStepMedia | null;
+  }> | null;
   send_mode?: "auto" | "remind" | null;
   fallback_hours?: number | null;
   fallback_body?: string | null;
@@ -98,11 +116,34 @@ export type SequenceCampaignOption = {
   name: string;
 };
 
-type LeadDrawerPayload = {
-  kind: "step";
-  position: number;
-  title: string;
+export type { InviteFunnelSlice };
+
+export type StepPeopleCounts = {
+  here: number;
+  wait?: {
+    names: string[];
+    nextLabel: string | null;
+  };
+  invite?: {
+    connected: number;
+    waiting: number;
+    remaining: number;
+    total: number;
+    names: Record<InviteFunnelSlice, string[]>;
+  };
 };
+
+export const EMPTY_STEP_PEOPLE: StepPeopleCounts = { here: 0 };
+
+export type LeadDrawerPayload =
+  | { kind: "step"; position: number; title: string }
+  | { kind: "wait"; position: number; title: string }
+  | {
+      kind: "invite";
+      slice: InviteFunnelSlice;
+      position: number;
+      title: string;
+    };
 
 const STEP_DRAG_PREFIX = "pc-step:";
 const STEP_MOVE_PREFIX = "pc-move:";
@@ -148,13 +189,14 @@ type PaletteItem = {
   mediaKind?: CampaignStepMediaKind;
   label: string;
   hint?: string;
+  info?: string;
   icon: LucideIcon;
   enabled: boolean;
   connectProvider?: UnipileConnectProvider;
   soon?: boolean;
 };
 
-type PaletteGroupId = "linkedin" | "instagram" | "channels" | "timing" | "your-side";
+type PaletteGroupId = "flow" | "linkedin" | "channels" | "instagram";
 
 type PaletteGroup = {
   id: PaletteGroupId;
@@ -169,6 +211,7 @@ function PaletteItemRow({
   onConnect,
   onDragStart,
   onDragEnd,
+  variant = "rail",
 }: {
   item: PaletteItem;
   connectingProvider: string | null;
@@ -176,25 +219,34 @@ function PaletteItemRow({
   onConnect: (provider: UnipileConnectProvider) => void;
   onDragStart: (type: CampaignStepType) => void;
   onDragEnd: () => void;
+  variant?: "rail" | "menu";
 }) {
   const Icon = item.icon;
+  const rowClass =
+    variant === "menu"
+      ? "flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
+      : "flex w-full cursor-grab items-start gap-2.5 rounded-lg px-1.5 py-2 text-left hover:bg-white active:cursor-grabbing";
   if (item.enabled && item.type) {
     return (
       <li>
         <button
           type="button"
-          draggable
-          onDragStart={(event) => {
-            event.dataTransfer.setData(
-              "text/plain",
-              paletteDragValue(item.type!, item.mediaKind)
-            );
-            event.dataTransfer.effectAllowed = "copy";
-            onDragStart(item.type!);
-          }}
-          onDragEnd={onDragEnd}
+          draggable={variant === "rail"}
+          onDragStart={
+            variant === "rail"
+              ? (event) => {
+                  event.dataTransfer.setData(
+                    "text/plain",
+                    paletteDragValue(item.type!, item.mediaKind)
+                  );
+                  event.dataTransfer.effectAllowed = "copy";
+                  onDragStart(item.type!);
+                }
+              : undefined
+          }
+          onDragEnd={variant === "rail" ? onDragEnd : undefined}
           onClick={() => onAdd(item.type!, item.mediaKind)}
-          className="flex w-full cursor-grab items-start gap-2.5 rounded-lg px-1.5 py-2 text-left hover:bg-white active:cursor-grabbing"
+          className={rowClass}
         >
           <Icon
             className="mt-0.5 h-4 w-4 shrink-0 text-slate-500"
@@ -222,8 +274,27 @@ function PaletteItemRow({
           aria-hidden
         />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium text-slate-400">
-            {item.label}
+          <span className="flex min-w-0 items-center gap-1">
+            <span className="block text-sm font-medium text-slate-400">
+              {item.label}
+            </span>
+            {item.info ? (
+              <span className="group/info relative inline-flex shrink-0">
+                <button
+                  type="button"
+                  aria-label={`What ${item.label} can do`}
+                  className="rounded-full p-0.5 text-slate-400 hover:text-slate-600 focus-visible:text-slate-600 focus-visible:outline-none"
+                >
+                  <Info className="h-3.5 w-3.5" aria-hidden />
+                </button>
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full right-0 z-20 mb-1 hidden w-max max-w-[14rem] rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/info:block group-focus-within/info:block"
+                >
+                  {item.info}
+                </span>
+              </span>
+            ) : null}
           </span>
           {item.soon ? (
             <span className="mt-0.5 block text-[11px] text-slate-400">
@@ -269,9 +340,10 @@ const STEP_ICONS: Record<CampaignStepType, LucideIcon> = {
 };
 
 function messageCopyPlaceholder(
-  config: Record<string, unknown> | null | undefined
+  config: Record<string, unknown> | null | undefined,
+  mediaKind?: CampaignStepMediaKind | null
 ) {
-  const kind = messageMediaKindFrom(config);
+  const kind = mediaKind ?? messageMediaKindFrom(config);
   if (kind === "video") return "Optional note with the video";
   if (kind === "voice") return "Optional note with the voice note";
   return undefined;
@@ -336,20 +408,159 @@ function stepPreview(
   return first.trim() || "No copy yet";
 }
 
-function SendModeBadge({ mode }: { mode: "auto" | "remind" }) {
-  if (mode === "remind") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-950">
-        <Bell className="h-3 w-3" aria-hidden />
-        Remind me
-      </span>
-    );
-  }
+function StepDiscloseButton({
+  open,
+  onToggle,
+}: {
+  open: boolean;
+  onToggle: () => void;
+}) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-[#0c5290]">
-      <Zap className="h-3 w-3" aria-hidden />
-      Auto
-    </span>
+    <button
+      type="button"
+      aria-expanded={open}
+      onClick={onToggle}
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+    >
+      {open ? "Done" : "Edit"}
+      <ChevronDown
+        className={`h-3.5 w-3.5 text-slate-400 transition ${
+          open ? "rotate-180" : ""
+        }`}
+        aria-hidden
+      />
+    </button>
+  );
+}
+
+const INVITE_FUNNEL_SEGMENTS: Array<{
+  slice: InviteFunnelSlice;
+  phrase: string;
+  className: string;
+}> = [
+  {
+    slice: "connected",
+    phrase: "connected",
+    className: "bg-emerald-500 hover:bg-emerald-400",
+  },
+  {
+    slice: "waiting",
+    phrase: "waiting for accept",
+    className: "bg-amber-400 hover:bg-amber-300",
+  },
+  {
+    slice: "remaining",
+    phrase: "not sent yet",
+    className: "bg-slate-300 hover:bg-slate-400",
+  },
+];
+
+function funnelNameLine(count: number, names: string[]): string | null {
+  if (count <= 0 || names.length === 0) return null;
+  const shown = names.slice(0, 4);
+  const extra = count - shown.length;
+  if (extra > 0) return `${shown.join(", ")} +${extra} more`;
+  return shown.join(", ");
+}
+
+function InviteFunnelBar({
+  invite,
+  roundBottom,
+  onOpenSlice,
+}: {
+  invite: NonNullable<StepPeopleCounts["invite"]>;
+  roundBottom: boolean;
+  onOpenSlice: (slice: InviteFunnelSlice, title: string) => void;
+}) {
+  if (invite.total <= 0) return null;
+  return (
+    <div
+      className={`flex h-2 w-full ${roundBottom ? "rounded-b-xl" : ""}`}
+      role="img"
+      aria-label={`${invite.connected} connected, ${invite.waiting} waiting, ${invite.remaining} not sent yet`}
+    >
+      {INVITE_FUNNEL_SEGMENTS.map((segment) => {
+        const count = invite[segment.slice];
+        if (count <= 0) return null;
+        const names = funnelNameLine(count, invite.names[segment.slice]);
+        const title = `${count} ${segment.phrase}`;
+        return (
+          <button
+            key={segment.slice}
+            type="button"
+            style={{ flex: count }}
+            aria-label={title}
+            onClick={() => onOpenSlice(segment.slice, title)}
+            className={`group/seg relative min-w-[8px] ${segment.className} ${
+              roundBottom ? "first:rounded-bl-xl last:rounded-br-xl" : ""
+            } focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/50`}
+          >
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/seg:block"
+            >
+              <span className="block">{title}</span>
+              {names ? (
+                <span className="mt-0.5 block font-normal text-slate-300">
+                  {names}
+                </span>
+              ) : null}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SendModeToggle({
+  mode,
+  onChange,
+  ariaLabel = "Send mode",
+}: {
+  mode: "auto" | "remind" | null;
+  onChange: (mode: "auto" | "remind") => void;
+  ariaLabel?: string;
+}) {
+  const options = [
+    { value: "remind" as const, label: "Manual" },
+    { value: "auto" as const, label: "Auto" },
+  ];
+
+  return (
+    <div
+      className="inline-grid shrink-0 grid-cols-2 rounded-full bg-slate-100 p-0.5"
+      role="group"
+      aria-label={ariaLabel}
+    >
+      {options.map((option) => {
+        const selected = mode === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={selected}
+            title={
+              option.value === "remind"
+                ? "You send this yourself"
+                : "Sends on its own"
+            }
+            onClick={() => {
+              if (!selected) onChange(option.value);
+            }}
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold leading-tight transition duration-150 focus-visible:outline-none focus-visible:ring-2 ${
+              selected
+                ? option.value === "auto"
+                  ? "bg-[#0c5290] text-white focus-visible:ring-[#0c5290]/50"
+                  : "bg-teal-600 text-white focus-visible:ring-teal-500/50"
+                : "text-slate-400 hover:text-slate-600 focus-visible:ring-slate-400/50"
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -396,6 +607,14 @@ function DropGap({
   dropEffect,
   onDragOverGap,
   onDropGap,
+  showAdd,
+  menuOpen,
+  onToggleMenu,
+  onCloseMenu,
+  groups,
+  connectingProvider,
+  onAdd,
+  onConnect,
 }: {
   insertAt: number;
   dragging: boolean;
@@ -403,15 +622,44 @@ function DropGap({
   dropEffect: "copy" | "move";
   onDragOverGap: () => void;
   onDropGap: (event: React.DragEvent) => void;
+  showAdd: boolean;
+  menuOpen: boolean;
+  onToggleMenu: () => void;
+  onCloseMenu: () => void;
+  groups: PaletteGroup[];
+  connectingProvider: string | null;
+  onAdd: (type: CampaignStepType, mediaKind?: CampaignStepMediaKind) => void;
+  onConnect: (provider: UnipileConnectProvider) => void;
 }) {
   const hot = dragging && dropAt === insertAt;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const plusVisible = showAdd && !dragging;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) onCloseMenu();
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onCloseMenu();
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen, onCloseMenu]);
 
   return (
     <div
-      className={`relative flex items-center justify-center transition-[height] duration-150 ${
-        hot ? "h-10" : dragging ? "h-6" : "h-3"
+      ref={rootRef}
+      className={`relative flex flex-col items-center ${
+        menuOpen && plusVisible ? "z-20" : ""
       }`}
       onDragOver={(event) => {
+        if (isMergeFieldDrag()) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = dropEffect;
         onDragOverGap();
@@ -422,34 +670,276 @@ function DropGap({
       }}
     >
       <div
-        className={`absolute inset-x-10 h-px transition ${
-          hot
-            ? "bg-[#0c5290]"
-            : dragging
-              ? "bg-slate-200"
-              : "bg-transparent"
+        className={`flex w-full items-center justify-center px-8 transition-[height] duration-150 ${
+          hot ? "h-10" : dragging ? "h-6" : plusVisible ? "py-4" : "h-3"
         }`}
-      />
+      >
+        {plusVisible ? (
+          <>
+            <span className="h-px min-w-4 flex-1 bg-slate-200" aria-hidden />
+            <button
+              type="button"
+              aria-label="Add a step here"
+              aria-expanded={menuOpen}
+              aria-controls={menuOpen ? menuId : undefined}
+              onClick={onToggleMenu}
+              className="mx-2 inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-medium text-[#0c5290] transition duration-150 hover:bg-sky-200/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+            >
+              <Plus
+                className={`h-3.5 w-3.5 transition ${menuOpen ? "rotate-45" : ""}`}
+                strokeWidth={1.75}
+                aria-hidden
+              />
+              Add step
+            </button>
+            <span className="h-px min-w-4 flex-1 bg-slate-200" aria-hidden />
+          </>
+        ) : (
+          <span
+            className={`absolute inset-x-10 h-px transition ${
+              hot
+                ? "bg-[#0c5290]"
+                : dragging
+                  ? "bg-slate-200"
+                  : "bg-transparent"
+            }`}
+            aria-hidden
+          />
+        )}
+      </div>
+      {menuOpen && plusVisible ? (
+        <div
+          id={menuId}
+          className="absolute top-full z-30 mb-2 w-[min(100%,18rem)] -translate-y-1 rounded-xl border border-slate-200 bg-white py-2 shadow-lg"
+        >
+          <div className="max-h-72 overflow-y-auto">
+            {groups.map((group) => (
+              <div key={group.id}>
+                <p className="px-3 py-1 text-[11px] font-semibold text-slate-500">
+                  {group.title}
+                </p>
+                <ul>
+                  {group.items.map((item) => (
+                    <PaletteItemRow
+                      key={item.label}
+                      item={item}
+                      variant="menu"
+                      connectingProvider={connectingProvider}
+                      onAdd={(type, mediaKind) => onAdd(type, mediaKind)}
+                      onConnect={onConnect}
+                      onDragStart={() => {}}
+                      onDragEnd={() => {}}
+                    />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+function WaitUnitToggle({
+  unit,
+  onChange,
+  units = WAIT_UNITS,
+  ariaLabel = "Wait unit",
+}: {
+  unit: WaitUnit;
+  onChange: (unit: WaitUnit) => void;
+  units?: readonly WaitUnit[];
+  ariaLabel?: string;
+}) {
+  return (
+    <div
+      className="inline-flex rounded-full bg-white p-0.5 ring-1 ring-slate-200"
+      role="group"
+      aria-label={ariaLabel}
+    >
+      {units.map((option) => {
+        const selected = unit === option;
+        return (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => {
+              if (!selected) onChange(option);
+            }}
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 ${
+              selected
+                ? "bg-[#0c5290] text-white"
+                : "text-slate-400 hover:text-slate-700"
+            }`}
+          >
+            {option}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+const SEND_AFTER_UNITS = ["hours", "days", "weeks"] as const;
+
+function sendAfterDuration(hours: number | null | undefined): {
+  amount: number;
+  unit: WaitUnit;
+} {
+  const inferred = inferWaitDuration(hours ?? 24);
+  if (inferred.unit === "minutes") {
+    return { amount: Math.max(1, inferred.amount), unit: "hours" };
+  }
+  return inferred;
+}
+
+function ManualSendAfter({
+  hours,
+  onChange,
+  onCommit,
+}: {
+  hours: number | null | undefined;
+  onChange: (hours: number) => void;
+  onCommit: () => void;
+}) {
+  const { amount, unit } = sendAfterDuration(hours);
+
+  function setDuration(nextAmount: number, nextUnit: WaitUnit) {
+    const clamped = Math.min(
+      WAIT_UNIT_MAX[nextUnit],
+      Math.max(1, nextAmount)
+    );
+    onChange(waitToHours(clamped, nextUnit));
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs text-slate-500">If not sent, send after</span>
+      <input
+        type="number"
+        min={1}
+        max={WAIT_UNIT_MAX[unit]}
+        aria-label="Send after amount"
+        value={amount}
+        onChange={(e) =>
+          setDuration(Number(e.target.value || 1), unit)
+        }
+        onBlur={onCommit}
+        className="w-12 rounded-full bg-white px-2 py-1 text-center text-sm font-semibold tabular-nums text-[#0c5290] outline-none ring-1 ring-[#0c5290]/20 focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+      />
+      <WaitUnitToggle
+        unit={unit}
+        units={SEND_AFTER_UNITS}
+        ariaLabel="Send after unit"
+        onChange={(nextUnit) => {
+          setDuration(amount, nextUnit);
+          onCommit();
+        }}
+      />
+      <span className="group/info relative inline-flex">
+        <button
+          type="button"
+          aria-label="About sending if you don't"
+          className="rounded-full p-0.5 text-slate-400 hover:text-[#0c5290] focus-visible:text-[#0c5290] focus-visible:outline-none"
+        >
+          <Info className="h-3.5 w-3.5" aria-hidden />
+        </button>
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/info:block group-focus-within/info:block"
+        >
+          You send this yourself. If you haven&apos;t sent it by then, it goes
+          out automatically.
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function WaitPeopleChip({
+  count,
+  names,
+  nextLabel,
+  onOpenLeads,
+}: {
+  count: number;
+  names: string[];
+  nextLabel: string | null;
+  onOpenLeads: () => void;
+}) {
+  const empty = count <= 0;
+  const nameLine = funnelNameLine(count, names);
+  return (
+    <button
+      type="button"
+      onClick={onOpenLeads}
+      aria-label={
+        empty
+          ? "0 people waiting for the next send"
+          : `${count} people waiting for the next send${
+              nextLabel ? `, next ${nextLabel}` : ""
+            }`
+      }
+      className={`group/waitn relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-semibold tabular-nums ${
+        empty
+          ? "text-slate-400 hover:text-slate-500"
+          : "text-slate-600 hover:text-slate-800"
+      }`}
+    >
+      <User className="h-3.5 w-3.5" aria-hidden />
+      {count}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/waitn:block"
+      >
+        <span className="block">
+          {empty ? "Nobody waiting yet" : `${count} waiting for the next send`}
+        </span>
+        {!empty && nextLabel ? (
+          <span className="mt-0.5 block font-normal text-slate-300">
+            Next {nextLabel}
+          </span>
+        ) : null}
+        {nameLine ? (
+          <span className="mt-0.5 block font-normal text-slate-300">
+            {nameLine}
+          </span>
+        ) : null}
+      </span>
+    </button>
   );
 }
 
 function WaitRow({
   step,
   stepIndex,
+  peopleHere,
+  waitNames,
+  nextLabel,
+  onOpenLeads,
   onChange,
   onCommit,
   onDelete,
+  onDuplicate,
   onReorderDragStart,
   onReorderDragEnd,
+  showPeople = true,
 }: {
   step: SequenceStep;
   stepIndex: number;
+  peopleHere: number;
+  waitNames: string[];
+  nextLabel: string | null;
+  onOpenLeads: () => void;
   onChange: (patch: Partial<SequenceStep>) => void;
   onCommit: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onReorderDragStart: () => void;
   onReorderDragEnd: () => void;
+  showPeople?: boolean;
 }) {
   const inferred = inferWaitDuration(step.wait_hours);
   const [editing, setEditing] = useState(false);
@@ -511,76 +1001,100 @@ function WaitRow({
         <GripVertical className="h-3.5 w-3.5" aria-hidden />
       </button>
       <span className="h-px min-w-4 flex-1 bg-slate-200" aria-hidden />
-      {editing ? (
-        <div
-          ref={editorRef}
-          className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-2"
-        >
-          <Clock className="h-4 w-4 text-slate-400" aria-hidden />
-          <input
-            type="number"
-            min={1}
-            max={WAIT_UNIT_MAX[unit]}
-            autoFocus
-            aria-label="Wait amount"
-            value={amount}
-            onChange={(e) => {
-              const next = Math.min(
-                WAIT_UNIT_MAX[unit],
-                Math.max(1, Number(e.target.value || 1))
-              );
-              setAmount(next);
-              applyHours(waitToHours(next, unit));
-            }}
-            className="w-12 border-0 bg-transparent p-0 text-center text-sm tabular-nums text-slate-700 outline-none"
-          />
-          <label className="relative inline-flex items-center">
-            <span className="sr-only">Wait unit</span>
-            <select
-              value={unit}
+      <div className="relative flex items-center">
+        {editing ? (
+          <div
+            ref={editorRef}
+            className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-[#0c5290]/25 bg-sky-50 py-1.5 pl-3 pr-2"
+          >
+            <Clock className="h-4 w-4 text-[#0c5290]" aria-hidden />
+            <input
+              type="number"
+              min={1}
+              max={WAIT_UNIT_MAX[unit]}
+              autoFocus
+              aria-label="Wait amount"
+              value={amount}
               onChange={(e) => {
-                const nextUnit = e.target.value as WaitUnit;
+                const next = Math.min(
+                  WAIT_UNIT_MAX[unit],
+                  Math.max(1, Number(e.target.value || 1))
+                );
+                setAmount(next);
+                applyHours(waitToHours(next, unit));
+              }}
+              className="w-12 rounded-full bg-white px-2 py-1 text-center text-sm font-semibold tabular-nums text-[#0c5290] outline-none ring-1 ring-[#0c5290]/20 focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+            />
+            <WaitUnitToggle
+              unit={unit}
+              onChange={(nextUnit) => {
                 const nextAmount = Math.min(
                   WAIT_UNIT_MAX[nextUnit],
-                  Math.max(1, amount)
+                  Math.max(1, amountRef.current)
                 );
                 setUnit(nextUnit);
                 setAmount(nextAmount);
                 applyHours(waitToHours(nextAmount, nextUnit));
               }}
-              className="cursor-pointer appearance-none rounded-full border-0 bg-transparent py-0.5 pl-1 pr-5 text-sm text-slate-600 outline-none hover:bg-slate-50"
-            >
-              {WAIT_UNITS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="pointer-events-none absolute right-0.5 h-3 w-3 text-slate-400"
-              aria-hidden
             />
-          </label>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={beginEdit}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-[#0c5290] shadow-sm hover:border-[#0c5290] hover:bg-sky-50"
+          >
+            <Clock className="h-4 w-4" aria-hidden />
+            Wait {formatWaitDuration(step.wait_hours)}
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+          </button>
+        )}
+        <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2">
+          {showPeople ? (
+            <WaitPeopleChip
+              count={peopleHere}
+              names={waitNames}
+              nextLabel={nextLabel}
+              onOpenLeads={onOpenLeads}
+            />
+          ) : null}
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={beginEdit}
-          className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm text-slate-600 hover:bg-white hover:text-slate-800"
-        >
-          <Clock className="h-4 w-4" aria-hidden />
-          Wait {formatWaitDuration(step.wait_hours)}
-        </button>
-      )}
+      </div>
+      <span className="flex min-w-4 flex-[0.8] items-center pl-10" aria-hidden>
+        <span className="h-px w-full bg-slate-200" />
+      </span>
       <button
         type="button"
-        aria-label="Remove wait"
-        onClick={onDelete}
-        className="rounded-full p-0.5 text-slate-300 opacity-0 hover:text-rose-600 group-hover/wait:opacity-100 focus:opacity-100"
+        aria-label="Duplicate wait step"
+        onClick={onDuplicate}
+        className="group/dup inline-flex items-center gap-0 rounded-full p-1 text-slate-400 opacity-0 transition-all duration-150 hover:gap-1 hover:bg-slate-100 hover:px-2.5 hover:text-slate-700 focus-visible:gap-1 focus-visible:bg-slate-100 focus-visible:px-2.5 focus-visible:text-slate-700 focus-visible:opacity-100 focus-visible:outline-none group-hover/wait:opacity-100"
       >
-        <X className="h-3.5 w-3.5" aria-hidden />
+        <Copy className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-semibold opacity-0 transition-all duration-150 group-hover/dup:max-w-[7.5rem] group-hover/dup:opacity-100 group-focus-visible/dup:max-w-[7.5rem] group-focus-visible/dup:opacity-100">
+          Duplicate
+        </span>
       </button>
-      <span className="h-px min-w-4 flex-1 bg-slate-200" aria-hidden />
+      <button
+        type="button"
+        aria-label="Delete wait step"
+        onClick={() => {
+          if (peopleHere > 0) {
+            const ok = window.confirm(
+              peopleHere === 1
+                ? "1 person is waiting here. Delete this wait? They will go on to the next step now."
+                : `${peopleHere} people are waiting here. Delete this wait? They will go on to the next step now.`
+            );
+            if (!ok) return;
+          }
+          onDelete();
+        }}
+        className="group/del inline-flex items-center gap-0 rounded-full p-1 text-rose-500 opacity-0 transition-all duration-150 hover:gap-1 hover:bg-rose-50 hover:px-2.5 hover:text-rose-700 focus-visible:gap-1 focus-visible:bg-rose-50 focus-visible:px-2.5 focus-visible:text-rose-700 focus-visible:opacity-100 focus-visible:outline-none group-hover/wait:opacity-100"
+      >
+        <X className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-semibold opacity-0 transition-all duration-150 group-hover/del:max-w-[7.5rem] group-hover/del:opacity-100 group-focus-visible/del:max-w-[7.5rem] group-focus-visible/del:opacity-100">
+          Delete wait step
+        </span>
+      </button>
     </div>
   );
 }
@@ -615,64 +1129,36 @@ function ChannelToggle({
 
 function AbVariantPane({
   variant,
-  rate,
-  isBest,
   placeholder,
   onChange,
   onCommit,
 }: {
   variant: { key: string; label?: string; body: string };
-  rate: number | null;
-  isBest: boolean;
   placeholder?: string;
   onChange: (patch: { label?: string; body?: string }) => void;
   onCommit: () => void;
 }) {
   const name = variant.label?.trim() || `Version ${variant.key}`;
   return (
-    <div className="min-w-0">
-      <div className="mb-1.5 flex items-center gap-2">
-        <label className="min-w-0 flex-1">
-          <span className="sr-only">Version name</span>
-          <input
-            value={variant.label ?? ""}
-            onChange={(e) => onChange({ label: e.target.value })}
-            onBlur={onCommit}
-            placeholder={`Version ${variant.key}`}
-            className="w-full rounded-md bg-transparent px-0.5 py-0.5 text-xs font-semibold text-slate-800 outline-none placeholder:font-medium placeholder:text-slate-400 hover:text-[#0c5290] focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
-          />
-        </label>
-        {isBest || rate != null ? (
-          <span className="shrink-0 text-[11px] font-normal tabular-nums text-slate-400">
-            {isBest ? (
-              <span className="font-semibold text-[#0c5290]">Best</span>
-            ) : null}
-            {rate != null ? (
-              <span className={isBest ? " ml-1 text-[#0c5290]" : " ml-1"}>
-                {rate}%
-              </span>
-            ) : null}
-          </span>
-        ) : null}
-      </div>
-      <MergeFieldComposer
-        value={variant.body}
-        ariaLabel={name}
-        placeholder={placeholder}
-        onChange={(body) => onChange({ body })}
-        onCommit={onCommit}
-      />
-    </div>
+    <MergeFieldComposer
+      value={variant.body}
+      ariaLabel={name}
+      placeholder={placeholder}
+      onChange={(body) => onChange({ body })}
+      onCommit={onCommit}
+    />
   );
 }
 
-function StepInlineEditor({
+export function StepInlineEditor({
   step,
   campaignId,
   abStats,
   campaigns,
   onChange,
   onCommit,
+  uploadUrl,
+  libraryMode = false,
 }: {
   step: SequenceStep;
   campaignId: string;
@@ -680,6 +1166,8 @@ function StepInlineEditor({
   campaigns: SequenceCampaignOption[];
   onChange: (patch: Partial<SequenceStep>) => void;
   onCommit: () => void;
+  uploadUrl?: string;
+  libraryMode?: boolean;
 }) {
   const variants = step.variants ?? [];
   const hasAb = variants.length > 0;
@@ -688,6 +1176,14 @@ function StepInlineEditor({
   const winner = hasAb
     ? abWinningKey(variants, stepStats, metric.key)
     : null;
+  const [activeVariantKey, setActiveVariantKey] = useState(
+    variants[0]?.key ?? "A"
+  );
+  const activeVariant =
+    variants.find((item) => item.key === activeVariantKey) ?? variants[0];
+  const activeIndex = activeVariant
+    ? variants.findIndex((item) => item.key === activeVariant.key)
+    : 0;
 
   if (step.step_type === "react") {
     return (
@@ -756,6 +1252,14 @@ function StepInlineEditor({
     );
   }
   if (step.step_type === "add_to_campaign") {
+    if (libraryMode) {
+      return (
+        <p className="text-sm leading-relaxed text-slate-500">
+          Adds them to another campaign when this template is used live. Pick
+          the destination then.
+        </p>
+      );
+    }
     const targetId = addToCampaignIdFrom(step.config) ?? "";
     return (
       <div className="space-y-2">
@@ -844,19 +1348,24 @@ function StepInlineEditor({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {step.step_type === "message" && !hasAb ? (
+        <MessageStepMedia
+          campaignId={campaignId}
+          uploadUrl={uploadUrl}
+          mediaKind={messageMediaKindFrom(step.config)}
+          media={messageMediaFrom(step.config)}
+          onChange={(patch) =>
+            onChange({ config: { ...(step.config ?? {}), ...patch } })
+          }
+          onCommit={onCommit}
+        />
+      ) : null}
       {step.step_type === "invite" ? (
         <InviteNoConnectBranch
           config={step.config}
           campaigns={campaigns}
-          onChange={onChange}
-          onCommit={onCommit}
-        />
-      ) : null}
-      {step.step_type === "message" ? (
-        <MessageStepMedia
-          campaignId={campaignId}
-          config={step.config}
+          libraryMode={libraryMode}
           onChange={onChange}
           onCommit={onCommit}
         />
@@ -884,121 +1393,193 @@ function StepInlineEditor({
         </p>
       ) : null}
 
-      {step.step_type === "message" ||
-      campaignStepAllowsVariants(step.step_type) ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {step.step_type === "message" ? (
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
-              Send
-              <select
-                value={step.send_mode === "remind" ? "remind" : "auto"}
-                onChange={(e) => {
+      {hasAb && activeVariant ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div
+              className={`inline-grid rounded-full bg-slate-100 p-0.5 ${
+                variants.length >= 3 ? "grid-cols-3" : "grid-cols-2"
+              }`}
+              role="tablist"
+              aria-label="Message versions"
+            >
+              {variants.map((variant) => {
+                const selected = variant.key === activeVariant.key;
+                const rate = abRatePercent(
+                  stepStats?.[variant.key],
+                  metric.key
+                );
+                const isBest = winner === variant.key;
+                const KindIcon =
+                  variant.media_kind === "voice"
+                    ? Mic
+                    : variant.media_kind === "video"
+                      ? Video
+                      : MessageSquare;
+                return (
+                  <button
+                    key={variant.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => setActiveVariantKey(variant.key)}
+                    className={`inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-[13px] font-semibold leading-tight transition duration-150 ${
+                      selected
+                        ? "bg-[#1a8fd4] text-white"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    {step.step_type === "message" ? (
+                      <KindIcon className="h-3.5 w-3.5" aria-hidden />
+                    ) : null}
+                    {variant.key}
+                    {isBest || rate != null ? (
+                      <span
+                        className={`text-[11px] font-medium tabular-nums ${
+                          selected ? "text-white/80" : "text-slate-400"
+                        }`}
+                      >
+                        {isBest ? "Best " : ""}
+                        {rate != null ? `${rate}%` : ""}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              {variants.length === 2 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const source = activeVariant ?? variants[0];
+                    onChange({
+                      variants: [
+                        ...variants,
+                        {
+                          key: "C",
+                          label: "C",
+                          body: source?.body || step.body || "",
+                          media_kind: source?.media_kind ?? null,
+                          media: source?.media ?? null,
+                        },
+                      ],
+                    });
+                    setActiveVariantKey("C");
+                    onCommit();
+                  }}
+                  className="text-xs font-medium text-[#0c5290] hover:underline"
+                >
+                  Add a third
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => {
                   onChange({
-                    send_mode: e.target.value as "auto" | "remind",
-                    ...(e.target.value === "auto"
-                      ? { fallback_hours: null, fallback_body: null }
-                      : {}),
+                    variants: null,
+                    body: activeVariant.body ?? step.body ?? "",
+                    config: {
+                      ...(step.config ?? {}),
+                      media_kind: activeVariant.media_kind ?? null,
+                      media: activeVariant.media ?? null,
+                    },
                   });
                   onCommit();
                 }}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium"
+                className="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline"
               >
-                <option value="auto">Auto</option>
-                <option value="remind">Remind me</option>
-              </select>
-            </label>
-          ) : (
-            <span />
-          )}
+                Turn off A/B
+              </button>
+            </div>
+          </div>
+          {step.step_type === "message" ? (
+            <MessageStepMedia
+              campaignId={campaignId}
+              uploadUrl={uploadUrl}
+              mediaKind={activeVariant.media_kind ?? null}
+              media={activeVariant.media ?? null}
+              onChange={(patch) => {
+                const next = variants.map((item, i) =>
+                  i === activeIndex ? { ...item, ...patch } : item
+                );
+                onChange({
+                  variants: next,
+                  body: next[0]?.body ?? step.body ?? "",
+                });
+              }}
+              onCommit={onCommit}
+            />
+          ) : null}
+          <AbVariantPane
+            variant={activeVariant}
+            placeholder={messageCopyPlaceholder(
+              step.config,
+              activeVariant.media_kind
+            )}
+            onChange={(patch) => {
+              const next = variants.map((item, i) =>
+                i === activeIndex ? { ...item, ...patch } : item
+              );
+              onChange({
+                variants: next,
+                body: next[0]?.body || patch.body || "",
+              });
+            }}
+            onCommit={onCommit}
+          />
+        </div>
+      ) : campaignStepHasCopy(step.step_type) ? (
+        <div className="space-y-2">
           {campaignStepAllowsVariants(step.step_type) ? (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={hasAb}
-              onClick={() => {
-                if (hasAb) {
-                  onChange({
-                    variants: null,
-                    body: step.variants?.[0]?.body ?? step.body ?? "",
-                  });
-                } else {
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
                   const body = step.body || "";
+                  const mediaKind = messageMediaKindFrom(step.config);
+                  const media = messageMediaFrom(step.config);
                   onChange({
                     variants: [
-                      { key: "A", label: "Version A", body },
-                      { key: "B", label: "Version B", body },
+                      {
+                        key: "A",
+                        label: "A",
+                        body,
+                        media_kind: mediaKind,
+                        media,
+                      },
+                      {
+                        key: "B",
+                        label: "B",
+                        body,
+                        media_kind: mediaKind,
+                        media,
+                      },
                     ],
                     body,
                   });
-                }
-                onCommit();
-              }}
-              className="text-xs font-medium text-[#0c5290] hover:underline"
-            >
-              {hasAb ? "Turn off A/B" : "A/B test"}
-            </button>
+                  setActiveVariantKey("A");
+                  onCommit();
+                }}
+                className="text-xs font-medium text-[#0c5290] hover:underline"
+              >
+                A/B test
+              </button>
+            </div>
           ) : null}
+          <MergeFieldComposer
+            value={step.body ?? ""}
+            placeholder={messageCopyPlaceholder(step.config)}
+            onChange={(body) => onChange({ body })}
+            onCommit={onCommit}
+          />
         </div>
       ) : null}
 
       {step.send_mode === "remind" ? (
-        <label className="block text-xs font-medium text-slate-600">
-          Fallback after (hours)
-          <input
-            type="number"
-            min={1}
-            max={720}
-            value={step.fallback_hours ?? ""}
-            onChange={(e) =>
-              onChange({
-                fallback_hours: e.target.value ? Number(e.target.value) : null,
-              })
-            }
-            onBlur={onCommit}
-            className="mt-1 w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-sm font-normal"
-          />
-        </label>
-      ) : null}
-
-      {hasAb ? (
-        <div
-          className={`grid grid-cols-1 gap-4 ${
-            variants.length > 1 ? "sm:grid-cols-2" : ""
-          }`}
-        >
-          {variants.map((variant, index) => (
-            <div
-              key={variant.key}
-              className={
-                index === variants.length - 1 && variants.length % 2 === 1
-                  ? "sm:col-span-2"
-                  : ""
-              }
-            >
-              <AbVariantPane
-                variant={variant}
-                rate={abRatePercent(stepStats?.[variant.key], metric.key)}
-                isBest={winner === variant.key}
-                placeholder={messageCopyPlaceholder(step.config)}
-                onChange={(patch) => {
-                  const next = variants.map((item, i) =>
-                    i === index ? { ...item, ...patch } : item
-                  );
-                  onChange({
-                    variants: next,
-                    body: next[0]?.body || patch.body || "",
-                  });
-                }}
-                onCommit={onCommit}
-              />
-            </div>
-          ))}
-        </div>
-      ) : campaignStepHasCopy(step.step_type) ? (
-        <MergeFieldComposer
-          value={step.body ?? ""}
-          placeholder={messageCopyPlaceholder(step.config)}
-          onChange={(body) => onChange({ body })}
+        <ManualSendAfter
+          hours={step.fallback_hours}
+          onChange={(fallback_hours) => onChange({ fallback_hours })}
           onCommit={onCommit}
         />
       ) : null}
@@ -1008,61 +1589,105 @@ function StepInlineEditor({
 
 export function CampaignSequenceBuilder({
   steps,
-  campaignId,
-  countAtStep,
-  abStats,
-  accounts,
-  connectingProvider,
+  campaignId = "",
+  peopleAtStep = () => EMPTY_STEP_PEOPLE,
+  abStats = null,
+  accounts = [],
+  connectingProvider = null,
   campaigns = [],
   onAddStep,
-  onConnect,
+  onConnect = () => undefined,
   onPatchStep,
   onCommitSteps,
   onDeleteStep,
+  onDuplicateStep,
   onReorderSteps,
-  onOpenLeads,
+  onOpenLeads = () => undefined,
   sidebarExtra,
+  mode = "live",
+  uploadUrl,
 }: {
   steps: SequenceStep[];
-  campaignId: string;
-  countAtStep: (step: SequenceStep, index: number) => number;
-  abStats: Record<string, Record<string, AbVariantStats>> | null;
-  accounts: SequenceAccount[];
-  connectingProvider: string | null;
+  campaignId?: string;
+  peopleAtStep?: (step: SequenceStep, index: number) => StepPeopleCounts;
+  abStats?: Record<string, Record<string, AbVariantStats>> | null;
+  accounts?: SequenceAccount[];
+  connectingProvider?: string | null;
   campaigns?: SequenceCampaignOption[];
   onAddStep: (
     type: CampaignStepType,
     atIndex?: number,
     mediaKind?: CampaignStepMediaKind
   ) => void;
-  onConnect: (provider: UnipileConnectProvider) => void;
+  onConnect?: (provider: UnipileConnectProvider) => void;
   onPatchStep: (index: number, patch: Partial<SequenceStep>) => void;
   onCommitSteps: () => void;
   onDeleteStep: (index: number) => void;
+  onDuplicateStep: (index: number) => void;
   onReorderSteps: (next: SequenceStep[]) => void;
-  onOpenLeads: (payload: LeadDrawerPayload) => void;
+  onOpenLeads?: (payload: LeadDrawerPayload) => void;
   sidebarExtra?: ReactNode;
+  mode?: "live" | "library";
+  uploadUrl?: string;
 }) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [openGroups, setOpenGroups] = useState<Set<PaletteGroupId>>(
-    () => new Set(["linkedin", "instagram", "channels", "timing", "your-side"])
+    () => new Set(["flow", "linkedin", "channels", "instagram"])
   );
   const [dragging, setDragging] = useState<"palette" | "reorder" | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [insertMenuAt, setInsertMenuAt] = useState<number | null>(null);
+  const pickerId = useId();
   const sequenceScrollRootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!dragging) return;
+    setInsertMenuAt(null);
     return startDragAutoScroll(sequenceScrollRootRef.current);
   }, [dragging]);
 
-  const emailReady = accountOk(accounts, isMailingProvider);
-  const whatsappReady = accountOk(accounts, (p) => p === "WHATSAPP");
-  const instagramReady = accountOk(accounts, (p) => p === "INSTAGRAM");
-  const messengerReady = accountOk(accounts, (p) => p === "MESSENGER");
+  const library = mode === "library";
+  const emailReady = library || accountOk(accounts, isMailingProvider);
+  const whatsappReady = library || accountOk(accounts, (p) => p === "WHATSAPP");
+  const instagramReady = library || accountOk(accounts, (p) => p === "INSTAGRAM");
+  const messengerReady = library || accountOk(accounts, (p) => p === "MESSENGER");
 
-  const groups: PaletteGroup[] = useMemo(
-    () => [
+  const groups: PaletteGroup[] = useMemo(() => {
+    const next: PaletteGroup[] = [
+      {
+        id: "flow",
+        title: "Flow",
+        items: [
+          {
+            type: "wait",
+            label: "Wait",
+            icon: Clock,
+            enabled: true,
+          },
+          {
+            type: "notify",
+            label: "Notify me",
+            hint: "Bell, email, or WhatsApp to you",
+            icon: Bell,
+            enabled: true,
+          },
+          {
+            type: "call",
+            label: "Phone call",
+            hint: "You call them. Sequence carries on.",
+            icon: PhoneCall,
+            enabled: true,
+          },
+          {
+            type: "add_to_campaign",
+            label: "Add to other campaign",
+            hint: "Enrol them in another sequence",
+            icon: FolderInput,
+            enabled: true,
+          },
+        ],
+      },
       {
         id: "linkedin",
         title: "LinkedIn",
@@ -1120,40 +1745,6 @@ export function CampaignSequenceBuilder({
         ],
       },
       {
-        id: "instagram",
-        title: "Instagram",
-        items: [
-          {
-            type: "instagram",
-            label: "Instagram message",
-            icon: MessageSquare,
-            enabled: instagramReady,
-            connectProvider: "INSTAGRAM",
-          },
-          {
-            type: "instagram_react",
-            label: "Like post",
-            icon: Heart,
-            enabled: instagramReady,
-            connectProvider: "INSTAGRAM",
-          },
-          {
-            type: "instagram_comment",
-            label: "Comment",
-            icon: MessageCircle,
-            enabled: instagramReady,
-            connectProvider: "INSTAGRAM",
-          },
-          {
-            type: "instagram_follow",
-            label: "Follow",
-            icon: UserRoundPlus,
-            enabled: instagramReady,
-            connectProvider: "INSTAGRAM",
-          },
-        ],
-      },
-      {
         id: "channels",
         title: "Other channels",
         items: [
@@ -1178,50 +1769,63 @@ export function CampaignSequenceBuilder({
             enabled: messengerReady,
             connectProvider: "MESSENGER",
           },
+          ...(instagramReady
+            ? []
+            : [
+                {
+                  type: "instagram" as const,
+                  label: "Instagram",
+                  info: "Message, like posts, comment, and follow.",
+                  icon: MessageSquare,
+                  enabled: false,
+                  connectProvider: "INSTAGRAM" as const,
+                },
+              ]),
         ],
       },
-      {
-        id: "timing",
-        title: "Timing",
+    ];
+    if (instagramReady) {
+      next.push({
+        id: "instagram",
+        title: "Instagram",
         items: [
           {
-            type: "wait",
-            label: "Wait",
-            icon: Clock,
+            type: "instagram",
+            label: "Instagram message",
+            icon: MessageSquare,
+            enabled: true,
+          },
+          {
+            type: "instagram_react",
+            label: "Like post",
+            icon: Heart,
+            enabled: true,
+          },
+          {
+            type: "instagram_comment",
+            label: "Comment",
+            icon: MessageCircle,
+            enabled: true,
+          },
+          {
+            type: "instagram_follow",
+            label: "Follow",
+            icon: UserRoundPlus,
             enabled: true,
           },
         ],
-      },
-      {
-        id: "your-side",
-        title: "Your side",
-        items: [
-          {
-            type: "notify",
-            label: "Notify me",
-            hint: "Bell, email, or WhatsApp to you",
-            icon: Bell,
-            enabled: true,
-          },
-          {
-            type: "call",
-            label: "Phone call",
-            hint: "You call them. Sequence carries on.",
-            icon: PhoneCall,
-            enabled: true,
-          },
-          {
-            type: "add_to_campaign",
-            label: "Add to other campaign",
-            hint: "Enrol them in another sequence",
-            icon: FolderInput,
-            enabled: true,
-          },
-        ],
-      },
-    ],
-    [emailReady, whatsappReady, instagramReady, messengerReady]
-  );
+      });
+    }
+    if (library) {
+      return next.map((group) => ({
+        ...group,
+        items: group.items
+          .filter((item) => item.type !== "add_to_campaign")
+          .map((item) => ({ ...item, connectProvider: undefined })),
+      }));
+    }
+    return next;
+  }, [emailReady, whatsappReady, instagramReady, messengerReady, library]);
 
   function toggleGroup(id: PaletteGroupId) {
     setOpenGroups((prev) => {
@@ -1246,6 +1850,7 @@ export function CampaignSequenceBuilder({
     onAddStep(type, atIndex, mediaKind);
     expandIndex(insertAt, type);
     setDropAt(null);
+    setInsertMenuAt(null);
   }
 
   function handleGapDrop(event: React.DragEvent, insertAt: number) {
@@ -1273,11 +1878,47 @@ export function CampaignSequenceBuilder({
     });
   }
 
+  function duplicateAt(index: number) {
+    onDuplicateStep(index);
+    const insertAt = index + 1;
+    setExpanded((prev) => {
+      const next = new Set<number>();
+      for (const i of prev) {
+        next.add(i >= insertAt ? i + 1 : i);
+      }
+      return next;
+    });
+  }
+
   const allExpanded =
     steps.length > 0 &&
     steps.every((s, i) => s.step_type === "wait" || expanded.has(i));
+  const allStepsSendMode = sequenceMessageSendMode(steps);
 
-  const insertGap = (insertAt: number) => (
+  function setAllSendModes(mode: "auto" | "remind") {
+    if (allStepsSendMode === mode) return;
+    onReorderSteps(
+      steps.map((step) =>
+        campaignStepHasSendMode(step.step_type)
+          ? { ...step, ...campaignSendModePatch(mode, step.fallback_hours) }
+          : step
+      )
+    );
+  }
+
+  const insertGap = (insertAt: number) => {
+    const before = steps[insertAt - 1];
+    const after = steps[insertAt];
+    const atEnd = insertAt === steps.length;
+    const showAdd =
+      atEnd ||
+      Boolean(
+        before &&
+          after &&
+          before.step_type !== "wait" &&
+          after.step_type !== "wait"
+      );
+    return (
     <DropGap
       insertAt={insertAt}
       dragging={Boolean(dragging)}
@@ -1285,48 +1926,76 @@ export function CampaignSequenceBuilder({
       dropEffect={dragging === "reorder" ? "move" : "copy"}
       onDragOverGap={() => setDropAt(insertAt)}
       onDropGap={(event) => handleGapDrop(event, insertAt)}
+      showAdd={showAdd}
+      menuOpen={showAdd && insertMenuAt === insertAt}
+      onToggleMenu={() =>
+        setInsertMenuAt((current) => (current === insertAt ? null : insertAt))
+      }
+      onCloseMenu={() => setInsertMenuAt(null)}
+      groups={groups}
+      connectingProvider={connectingProvider}
+      onAdd={(type, mediaKind) => addAt(type, insertAt, mediaKind)}
+      onConnect={onConnect}
     />
-  );
+    );
+  };
 
   return (
     <ContentWithRail className="mt-4 min-h-[60vh]">
       <ContentWithRailMain>
         <div ref={sequenceScrollRootRef}>
+        {steps.length > 0 ? (
         <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-500">
-            {steps.length === 0
-              ? "Drag an action onto the sequence"
-              : `${steps.length} step${steps.length === 1 ? "" : "s"}`}
+            {`${steps.length} step${steps.length === 1 ? "" : "s"}`}
           </p>
-          {steps.some((s) => s.step_type !== "wait") ? (
-            <button
-              type="button"
-              onClick={() =>
-                setExpanded(
-                  allExpanded
-                    ? new Set()
-                    : new Set(
-                        steps
-                          .map((s, i) => (s.step_type === "wait" ? -1 : i))
-                          .filter((i) => i >= 0)
-                      )
-                )
-              }
-              className="text-xs font-medium text-[#0c5290] hover:underline"
-            >
-              {allExpanded ? "Collapse all" : "Expand all"}
-            </button>
-          ) : null}
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {allStepsSendMode ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-500">
+                  All steps
+                </span>
+                <SendModeToggle
+                  mode={
+                    allStepsSendMode === "mixed" ? null : allStepsSendMode
+                  }
+                  ariaLabel="Send mode for all steps"
+                  onChange={setAllSendModes}
+                />
+              </div>
+            ) : null}
+            {steps.some((s) => s.step_type !== "wait") ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setExpanded(
+                    allExpanded
+                      ? new Set()
+                      : new Set(
+                          steps
+                            .map((s, i) => (s.step_type === "wait" ? -1 : i))
+                            .filter((i) => i >= 0)
+                        )
+                  )
+                }
+                className="text-xs font-medium text-[#0c5290] hover:underline"
+              >
+                {allExpanded ? "Collapse all" : "Expand all"}
+              </button>
+            ) : null}
+          </div>
         </div>
+        ) : null}
 
         {steps.length === 0 ? (
           <div
-            className={`rounded-2xl border border-dashed px-6 py-16 text-center transition ${
+            className={`rounded-2xl border border-dashed px-6 transition ${
               dragging
                 ? "border-[#0c5290] bg-sky-50/60"
                 : "border-slate-200"
-            }`}
+            } ${pickerOpen ? "py-6" : "py-14"}`}
             onDragOver={(event) => {
+              if (isMergeFieldDrag()) return;
               event.preventDefault();
               event.dataTransfer.dropEffect = "copy";
               setDropAt(0);
@@ -1336,16 +2005,63 @@ export function CampaignSequenceBuilder({
               handleGapDrop(event, 0);
             }}
           >
-            <p className="text-sm text-slate-600">No steps yet</p>
-            <p className="mt-1 text-xs text-slate-500">
-              Drag Notify me, a message, or any other action from the right.
-            </p>
+            <div className="text-center">
+              <button
+                type="button"
+                aria-expanded={pickerOpen}
+                aria-controls={pickerOpen ? pickerId : undefined}
+                onClick={() => setPickerOpen((open) => !open)}
+                className={`inline-flex items-center gap-2 rounded-xl font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 ${
+                  pickerOpen
+                    ? "bg-white px-4 py-2 text-sm text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50"
+                    : "bg-[#0c5290] px-6 py-3 text-base text-white hover:bg-[#0a4578]"
+                }`}
+              >
+                <Plus className={pickerOpen ? "h-4 w-4" : "h-5 w-5"} aria-hidden />
+                Add steps
+              </button>
+              <p className="mt-3 text-sm text-slate-500">
+                {pickerOpen
+                  ? "Pick an action, or drag one from the list."
+                  : "Or drag an action from the list."}
+              </p>
+            </div>
+            {pickerOpen ? (
+              <div id={pickerId} className="mt-5 space-y-4">
+                {groups.map((group) => (
+                  <div key={group.id}>
+                    <p className="px-2 text-xs font-semibold text-slate-700">
+                      {group.title}
+                    </p>
+                    <ul className="mt-1">
+                      {group.items.map((item) => (
+                        <PaletteItemRow
+                          key={item.label}
+                          item={item}
+                          variant="menu"
+                          connectingProvider={connectingProvider}
+                          onAdd={(type, mediaKind) =>
+                            addAt(type, undefined, mediaKind)
+                          }
+                          onConnect={onConnect}
+                          onDragStart={() => setDragging("palette")}
+                          onDragEnd={() => {
+                            setDragging(null);
+                            setDropAt(null);
+                          }}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : (
           <div>
             {insertGap(0)}
             {steps.map((step, idx) => {
-              const count = countAtStep(step, idx);
+              const people = peopleAtStep(step, idx);
               const open = expanded.has(idx);
               const Icon = stepIcon(step);
               const incompleteHint = open
@@ -1353,14 +2069,17 @@ export function CampaignSequenceBuilder({
                 : campaignStepIncompleteHint(step);
               const stepTitle = campaignStepDisplayLabel(
                 step.step_type,
-                step.config
+                step.config,
+                step.variants
               );
               const preview = stepPreview(step, campaigns);
+              const stepPosition = step.position ?? idx;
               return (
                 <div key={step.id || `${step.step_type}-${idx}`}>
                   {step.step_type === "wait" ? (
                     <div
                       onDragOver={(event) => {
+                        if (isMergeFieldDrag()) return;
                         event.preventDefault();
                         event.dataTransfer.dropEffect =
                           dragging === "reorder" ? "move" : "copy";
@@ -1374,20 +2093,33 @@ export function CampaignSequenceBuilder({
                       <WaitRow
                         step={step}
                         stepIndex={idx}
+                        peopleHere={people.here}
+                        waitNames={people.wait?.names ?? []}
+                        nextLabel={people.wait?.nextLabel ?? null}
+                        onOpenLeads={() =>
+                          onOpenLeads({
+                            kind: "wait",
+                            position: stepPosition,
+                            title: `Wait ${formatWaitDuration(step.wait_hours)}`,
+                          })
+                        }
                         onChange={(patch) => onPatchStep(idx, patch)}
                         onCommit={onCommitSteps}
                         onDelete={() => onDeleteStep(idx)}
+                        onDuplicate={() => duplicateAt(idx)}
                         onReorderDragStart={() => setDragging("reorder")}
                         onReorderDragEnd={() => {
                           setDragging(null);
                           setDropAt(null);
                         }}
+                        showPeople={!library}
                       />
                     </div>
                   ) : (
                     <article
                       className="rounded-xl border border-slate-200 bg-white"
                       onDragOver={(event) => {
+                        if (isMergeFieldDrag()) return;
                         event.preventDefault();
                         event.dataTransfer.dropEffect =
                           dragging === "reorder" ? "move" : "copy";
@@ -1419,129 +2151,162 @@ export function CampaignSequenceBuilder({
                         >
                           <GripVertical className="h-4 w-4" aria-hidden />
                         </button>
-                        <button
-                          type="button"
-                          aria-expanded={open}
-                          onClick={() => toggle(idx)}
-                          className="flex min-w-0 flex-1 items-start gap-3 py-3 pr-4 text-left hover:bg-slate-50/80"
-                        >
-                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                            <Icon className="h-3.5 w-3.5" aria-hidden />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-slate-900">
-                                <span className="min-w-0 truncate">
-                                  {stepTitle}
-                                </span>
-                                {incompleteHint ? (
+                        <div className="min-w-0 flex-1 py-3 pr-3">
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                              <Icon className="h-3.5 w-3.5" aria-hidden />
+                            </span>
+                            <p className="flex min-w-0 flex-1 items-center gap-1.5 pt-px text-sm font-semibold text-slate-900">
+                              <span className="shrink-0">
+                                {stepTitle}
+                              </span>
+                              {incompleteHint ? (
+                                <span
+                                  className="group/warn relative inline-flex shrink-0 text-rose-600"
+                                  aria-label={incompleteHint}
+                                >
+                                  <CircleAlert
+                                    className="h-4 w-4"
+                                    aria-hidden
+                                  />
                                   <span
-                                    className="group/warn relative inline-flex shrink-0 text-rose-600"
-                                    aria-label={incompleteHint}
+                                    role="tooltip"
+                                    className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-center text-[11px] font-medium leading-snug text-white shadow-sm group-hover/warn:block"
                                   >
-                                    <CircleAlert
-                                      className="h-4 w-4"
+                                    {incompleteHint}
+                                  </span>
+                                </span>
+                              ) : null}
+                            </p>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              {step.step_type === "invite" &&
+                              inviteNoConnectFrom(step.config)
+                                .on_no_connect === "other_campaign" ? (
+                                <span className="inline-flex shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-800">
+                                  If no connect
+                                </span>
+                              ) : null}
+                              {step.step_type === "call" ? (
+                                callWaitFrom(step.config) ? (
+                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-950">
+                                    <PhoneCall
+                                      className="h-3 w-3"
                                       aria-hidden
                                     />
-                                    <span
-                                      role="tooltip"
-                                      className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-center text-[11px] font-medium leading-snug text-white shadow-sm group-hover/warn:block"
-                                    >
-                                      {incompleteHint}
-                                    </span>
+                                    Waits
                                   </span>
-                                ) : null}
-                              </p>
-                              <span className="mt-0.5 flex shrink-0 flex-wrap items-center justify-end gap-1">
-                                {step.step_type === "message" ? (
-                                  <SendModeBadge
-                                    mode={
-                                      step.send_mode === "remind"
-                                        ? "remind"
-                                        : "auto"
-                                    }
-                                  />
-                                ) : null}
-                                {step.step_type === "invite" &&
-                                inviteNoConnectFrom(step.config).on_no_connect ===
-                                  "other_campaign" ? (
-                                  <span className="inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-800">
-                                    If no connect
-                                  </span>
-                                ) : null}
-                                {step.step_type === "call" ? (
-                                  callWaitFrom(step.config) ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-950">
-                                      <PhoneCall className="h-3 w-3" aria-hidden />
-                                      Waits
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                                      <Bell className="h-3 w-3" aria-hidden />
-                                      Reminder
-                                    </span>
-                                  )
-                                ) : null}
-                              </span>
-                            </div>
-                            {!open && preview ? (
-                              <p className="mt-1 line-clamp-3 max-w-prose text-xs leading-relaxed text-slate-500">
-                                {step.step_type === "react" ||
-                                step.step_type === "visit" ||
-                                step.step_type === "instagram_react" ||
-                                step.step_type === "instagram_follow" ||
-                                step.step_type === "notify" ||
-                                step.step_type === "add_to_campaign" ||
-                                step.step_type === "call" ? (
-                                  preview
                                 ) : (
-                                  <MergeFieldPreview text={preview} />
-                                )}
-                              </p>
-                            ) : null}
+                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                    <Bell className="h-3 w-3" aria-hidden />
+                                    Reminder
+                                  </span>
+                                )
+                              ) : null}
+                              {campaignStepHasSendMode(step.step_type) ? (
+                                <SendModeToggle
+                                  mode={campaignStepSendMode(step.send_mode)}
+                                  onChange={(mode) => {
+                                    onPatchStep(
+                                      idx,
+                                      campaignSendModePatch(
+                                        mode,
+                                        step.fallback_hours
+                                      )
+                                    );
+                                    onCommitSteps();
+                                  }}
+                                />
+                              ) : null}
+                            </div>
                           </div>
-                          <ChevronDown
-                            className={`mt-1 h-4 w-4 shrink-0 text-slate-400 transition ${
-                              open ? "rotate-180" : ""
-                            }`}
-                            aria-hidden
-                          />
-                        </button>
-                        {count > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onOpenLeads({
-                                kind: "step",
-                                position: step.position ?? idx,
-                                title: stepTitle,
-                              })
-                            }
-                            className="shrink-0 border-l border-slate-100 px-3 text-xs font-semibold tabular-nums text-slate-700 hover:bg-slate-50"
-                          >
-                            {count}
-                          </button>
-                        ) : (
-                          <span className="w-2 shrink-0" aria-hidden />
-                        )}
+                          {!open ? (
+                            <div className="mt-1.5 flex items-end gap-2 pl-10">
+                              {preview ? (
+                                <button
+                                  type="button"
+                                  aria-expanded={open}
+                                  onClick={() => toggle(idx)}
+                                  className="min-w-0 flex-1 text-left text-[13px] leading-relaxed text-slate-600 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                                >
+                                  <span className="line-clamp-3 max-w-prose">
+                                    {step.step_type === "react" ||
+                                    step.step_type === "visit" ||
+                                    step.step_type === "instagram_react" ||
+                                    step.step_type === "instagram_follow" ||
+                                    step.step_type === "notify" ||
+                                    step.step_type === "add_to_campaign" ||
+                                    step.step_type === "call" ? (
+                                      preview
+                                    ) : (
+                                      <MergeFieldPreview text={preview} />
+                                    )}
+                                  </span>
+                                </button>
+                              ) : (
+                                <span className="min-w-0 flex-1" />
+                              )}
+                              <StepDiscloseButton
+                                open={open}
+                                onToggle={() => toggle(idx)}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
+                      {people.invite && !library ? (
+                        <InviteFunnelBar
+                          invite={people.invite}
+                          roundBottom={!open}
+                          onOpenSlice={(slice, title) =>
+                            onOpenLeads({
+                              kind: "invite",
+                              slice,
+                              position: stepPosition,
+                              title,
+                            })
+                          }
+                        />
+                      ) : null}
                       {open ? (
-                        <div className="space-y-3 border-t border-slate-100 px-4 py-4 sm:px-5">
+                        <div
+                          className={`space-y-3 px-4 py-4 sm:px-5 ${
+                            people.invite && !library ? "" : "border-t border-slate-100"
+                          }`}
+                        >
                           <StepInlineEditor
                             step={step}
                             campaignId={campaignId}
+                            uploadUrl={uploadUrl}
+                            libraryMode={library}
                             abStats={abStats}
                             campaigns={campaigns}
                             onChange={(patch) => onPatchStep(idx, patch)}
                             onCommit={onCommitSteps}
                           />
-                          <button
-                            type="button"
-                            onClick={() => onDeleteStep(idx)}
-                            className="text-xs font-medium text-rose-600 hover:underline"
-                          >
-                            Delete
-                          </button>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => duplicateAt(idx)}
+                                className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:underline"
+                              >
+                                <Copy className="h-3.5 w-3.5" aria-hidden />
+                                Duplicate
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onDeleteStep(idx)}
+                                className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                                Delete
+                              </button>
+                            </div>
+                            <StepDiscloseButton
+                              open={open}
+                              onToggle={() => toggle(idx)}
+                            />
+                          </div>
                         </div>
                       ) : null}
                     </article>

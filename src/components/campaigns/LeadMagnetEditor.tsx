@@ -5,8 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
-import { CampaignSequenceBuilder } from "@/components/campaigns/CampaignSequenceBuilder";
-import type { SequenceStep } from "@/components/campaigns/CampaignSequenceBuilder";
+import {
+  CampaignSequenceBuilder,
+  EMPTY_STEP_PEOPLE,
+  type SequenceStep,
+} from "@/components/campaigns/CampaignSequenceBuilder";
 import { CampaignsSubTabs } from "@/components/campaigns/CampaignsSubTabs";
 import { CoachWatchRulesPanel } from "@/components/campaigns/CoachWatchRulesPanel";
 import { LeadMagnetShareSettings } from "@/components/leadMagnets/LeadMagnetShareSettings";
@@ -18,6 +21,7 @@ import {
   type LeadMagnetSequenceDef,
 } from "@/lib/leadMagnets/catalog";
 import { campaignStepHasCopy, defaultStepConfig, type CampaignStepType } from "@/lib/unipile/campaignStepTypes";
+import { duplicateCampaignStep } from "@/lib/unipile/campaignStepDuplicate";
 import type { UnipileConnectProvider } from "@/lib/unipile/providers";
 
 type Account = {
@@ -145,12 +149,25 @@ export function LeadMagnetEditor() {
     };
   }, [load]);
 
-  async function saveSteps(campaignId: string, nextSteps: SequenceStep[]) {
+  async function saveSteps(
+    campaignId: string,
+    nextSteps: SequenceStep[],
+    options?: { releaseWaitPosition?: number }
+  ) {
     const headers = await authHeaders();
     if (!headers) throw new Error("Sign in required.");
     const res = await fetch(
       `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-      { method: "PATCH", headers, body: JSON.stringify({ steps: nextSteps }) }
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          steps: nextSteps,
+          ...(options?.releaseWaitPosition != null
+            ? { release_wait_position: options.releaseWaitPosition }
+            : {}),
+        }),
+      }
     );
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || "Save failed.");
@@ -232,9 +249,29 @@ export function LeadMagnetEditor() {
   function deleteStep(campaignId: string, index: number) {
     const seq = sequencesRef.current.find((s) => s.campaignId === campaignId);
     if (!seq) return;
+    const removed = seq.steps[index];
     const next = seq.steps
       .filter((_, i) => i !== index)
       .map((s, i) => ({ ...s, position: i }));
+    updateSequence(campaignId, next);
+    void saveSteps(
+      campaignId,
+      next,
+      removed?.step_type === "wait"
+        ? { releaseWaitPosition: removed.position ?? index }
+        : undefined
+    )
+      .then((saved) => updateSequence(campaignId, saved))
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Save failed.")
+      );
+  }
+
+  function duplicateStep(campaignId: string, index: number) {
+    const seq = sequencesRef.current.find((s) => s.campaignId === campaignId);
+    if (!seq) return;
+    const next = duplicateCampaignStep(seq.steps, index);
+    if (next === seq.steps) return;
     updateSequence(campaignId, next);
     void saveSteps(campaignId, next)
       .then((saved) => updateSequence(campaignId, saved))
@@ -366,7 +403,7 @@ export function LeadMagnetEditor() {
           <CampaignSequenceBuilder
             steps={activeSequence.steps}
             campaignId={activeSequence.campaignId}
-            countAtStep={() => 0}
+            peopleAtStep={() => EMPTY_STEP_PEOPLE}
             abStats={null}
             accounts={accounts}
             connectingProvider={connectingProvider}
@@ -380,6 +417,9 @@ export function LeadMagnetEditor() {
             onCommitSteps={() => void commitSequence(activeSequence.campaignId)}
             onDeleteStep={(index) =>
               deleteStep(activeSequence.campaignId, index)
+            }
+            onDuplicateStep={(index) =>
+              duplicateStep(activeSequence.campaignId, index)
             }
             onReorderSteps={(next) =>
               reorderSteps(activeSequence.campaignId, next)

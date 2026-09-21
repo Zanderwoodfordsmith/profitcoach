@@ -37,11 +37,22 @@ import {
 import {
   consumeMessagingComposeDraft,
   clearMessagingComposeDraft,
-  messagingComposeDraftIds,
+  composeDraftPreview,
+  getMessagingComposeDraft,
+  messagingComposeDraftSummaries,
+  nextComposeDraftChannel,
   peekMessagingComposeDraft,
   setMessagingComposeDraft,
   type MessagingComposeChannel,
+  type MessagingComposeDraftSummary,
 } from "@/lib/messaging/composeDraft";
+import {
+  composerChannelMenuSections,
+  composerChannelOptions,
+  connectedComposerChannels,
+  type ComposerChannelOption,
+  type ComposerReplyChannel,
+} from "@/lib/messaging/composerChannels";
 import {
   conversationPersonName,
   inboundReplyChannels,
@@ -75,6 +86,15 @@ import {
   THREAD_MESSAGE_PAGE_SIZE,
   THREAD_PREFETCH_COUNT,
 } from "@/lib/messaging/threadWindow";
+import {
+  EMPTY_INBOX_FILTERS,
+  conversationMatchesFilters,
+  inboxFiltersActive,
+  isOtherLinkedInConversation,
+  toggleInboxFlag,
+  type InboxChannelFilter,
+  type InboxFilters,
+} from "@/lib/messaging/inboxFilters";
 import { leadStatusLabel } from "@/lib/unipile/campaignLeadActivity";
 import { WhatsAppGlyph } from "@/components/icons/WhatsAppGlyph";
 import {
@@ -109,14 +129,7 @@ import {
 import "./prospectViewTransition.css";
 
 type InboxTab = "unread" | "all" | "recent" | "starred";
-type ChannelFilter =
-  | "all"
-  | "linkedin"
-  | "email"
-  | "sms"
-  | "whatsapp"
-  | "instagram"
-  | "messenger";
+type ChannelFilter = InboxChannelFilter;
 type InboxSort = "newest" | "oldest" | "unread";
 type ReplyChannel =
   | "email"
@@ -699,83 +712,154 @@ function ChannelIcon({
   );
 }
 
-function composerChannelOptions(
-  selected: {
-    last_channel?: string | null;
-    prospect_email?: string | null;
-    prospect_phone?: string | null;
-    prospect_linkedin_url?: string | null;
-  },
-  options?: { includeInternalNote?: boolean }
-): { id: ReplyChannel; label: string; enabled: boolean }[] {
-  const last = (selected.last_channel || "").toLowerCase();
-  const hasPhone = Boolean(selected.prospect_phone);
-  const hasEmail = Boolean(selected.prospect_email);
-  const hasLinkedIn =
-    Boolean(selected.prospect_linkedin_url) || last === "linkedin";
-  const channels: { id: ReplyChannel; label: string; enabled: boolean }[] = [
-    { id: "sms", label: "SMS", enabled: hasPhone },
-    { id: "whatsapp", label: "WhatsApp", enabled: hasPhone || last === "whatsapp" },
-    {
-      id: "email",
-      label: "Email",
-      enabled: hasEmail || last === "email",
-    },
-    { id: "linkedin", label: "LinkedIn", enabled: hasLinkedIn },
-    { id: "instagram", label: "Instagram", enabled: last === "instagram" },
-    { id: "messenger", label: "Messenger", enabled: last === "messenger" },
-  ];
-  if (options?.includeInternalNote !== false) {
-    channels.push({ id: "comment", label: "Internal Comment", enabled: true });
+function ChannelPickerRow({
+  item,
+  current,
+  draftChannel,
+  onPick,
+}: {
+  item: ComposerChannelOption;
+  current: ReplyChannel;
+  draftChannel?: MessagingComposeChannel | null;
+  onPick: (id: ReplyChannel) => void;
+}) {
+  const active = current === item.id;
+  const hasDraft = draftChannel === item.id;
+  const canPick = !item.noContact;
+  if (!canPick) {
+    return (
+      <div
+        role="menuitem"
+        aria-disabled="true"
+        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-400"
+      >
+        <span className="opacity-50">
+          <ChannelMark channel={item.id} />
+        </span>
+        <span className="min-w-0 flex-1">{item.label}</span>
+        {hasDraft ? <DraftChip /> : null}
+        {item.blockedLabel ? (
+          <span className="max-w-[7.5rem] shrink-0 truncate text-right text-[11px] leading-tight text-slate-400">
+            {item.blockedLabel}
+          </span>
+        ) : null}
+      </div>
+    );
   }
-  return channels;
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={() => onPick(item.id)}
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
+        active
+          ? "bg-sky-50 font-medium text-sky-800"
+          : "text-slate-800 hover:bg-slate-50"
+      }`}
+    >
+      <ChannelMark channel={item.id} />
+      <span className="min-w-0 flex-1">{item.label}</span>
+      {hasDraft ? <DraftChip /> : null}
+      {!item.sendable && item.blockedLabel ? (
+        <span className="max-w-[7.5rem] shrink-0 truncate text-right text-[11px] leading-tight text-slate-500">
+          {item.blockedLabel}
+        </span>
+      ) : null}
+      {active ? (
+        <Check className="h-3.5 w-3.5 shrink-0 text-sky-600" strokeWidth={2.5} />
+      ) : null}
+    </button>
+  );
+}
+
+function DraftChip() {
+  return (
+    <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200">
+      Draft
+    </span>
+  );
 }
 
 function ChannelPickerMenu({
   open,
   current,
   options,
+  draftChannel,
   onPick,
 }: {
   open: boolean;
   current: ReplyChannel;
-  options: { id: ReplyChannel; label: string; enabled: boolean }[];
+  options: ComposerChannelOption[];
+  draftChannel?: MessagingComposeChannel | null;
   onPick: (id: ReplyChannel) => void;
 }) {
+  const [showBlocked, setShowBlocked] = useState(false);
+  useEffect(() => {
+    if (!open) setShowBlocked(false);
+  }, [open]);
   if (!open) return null;
+  const sections = composerChannelMenuSections(
+    options,
+    current as ComposerReplyChannel,
+    draftChannel
+  );
   return (
     <div
       role="menu"
-      className="absolute bottom-full left-0 z-20 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/10"
+      className="absolute bottom-full left-0 z-20 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/10"
     >
-      {options.map((item) => {
-        const active = current === item.id;
-        return (
+      {sections.visible.map((item) => (
+        <ChannelPickerRow
+          key={item.id}
+          item={item}
+          current={current}
+          draftChannel={draftChannel}
+          onPick={onPick}
+        />
+      ))}
+      {sections.hidden.length > 0 ? (
+        <>
           <button
-            key={item.id}
             type="button"
             role="menuitem"
-            disabled={!item.enabled}
-            onClick={() => {
-              if (!item.enabled) return;
-              onPick(item.id);
-            }}
-            className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
-              !item.enabled
-                ? "cursor-not-allowed text-slate-300"
-                : active
-                  ? "bg-sky-50 font-medium text-sky-800"
-                  : "text-slate-800 hover:bg-slate-50"
-            }`}
+            aria-expanded={showBlocked}
+            onClick={() => setShowBlocked((value) => !value)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-50"
           >
-            <ChannelMark channel={item.id} />
-            <span className="min-w-0 flex-1">{item.label}</span>
-            {active ? (
-              <Check className="h-3.5 w-3.5 shrink-0 text-sky-600" strokeWidth={2.5} />
-            ) : null}
+            <span className="min-w-0 flex-1">Can't send</span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
+                showBlocked ? "rotate-180" : ""
+              }`}
+              strokeWidth={2}
+            />
           </button>
-        );
-      })}
+          {showBlocked
+            ? sections.hidden.map((item) => (
+                <ChannelPickerRow
+                  key={item.id}
+                  item={item}
+                  current={current}
+                  draftChannel={draftChannel}
+                  onPick={onPick}
+                />
+              ))
+            : null}
+        </>
+      ) : null}
+      {sections.comment.length > 0 &&
+      (sections.visible.length > 0 || sections.hidden.length > 0) ? (
+        <div className="my-1 border-t border-slate-100" />
+      ) : null}
+      {sections.comment.map((item) => (
+        <ChannelPickerRow
+          key={item.id}
+          item={item}
+          current={current}
+          draftChannel={draftChannel}
+          onPick={onPick}
+        />
+      ))}
     </div>
   );
 }
@@ -872,79 +956,40 @@ const SORT_OPTIONS: { id: InboxSort; label: string }[] = [
   { id: "unread", label: "Unread first" },
 ];
 
-function conversationMatchesChannel(
-  conversation: ConversationRow,
-  channel: ChannelFilter
-): boolean {
-  if (channel === "all") return true;
-  // Filter on the latest message channel only (not "ever messaged on").
-  return (conversation.last_channel || "").toLowerCase() === channel;
-}
-
-type InboxFilters = {
-  needsReply: boolean;
-  hasBooking: boolean;
-  inCampaign: boolean;
-  campaignId: string | null;
-  channel: ChannelFilter;
-  tag: string | null;
-};
-
-const EMPTY_INBOX_FILTERS: InboxFilters = {
-  needsReply: false,
-  hasBooking: false,
-  inCampaign: false,
-  campaignId: null,
-  channel: "all",
-  tag: null,
-};
-
-function inboxFiltersActive(filters: InboxFilters): boolean {
-  return (
-    filters.needsReply ||
-    filters.hasBooking ||
-    filters.inCampaign ||
-    Boolean(filters.campaignId) ||
-    filters.channel !== "all" ||
-    Boolean(filters.tag)
-  );
-}
-
-function conversationMatchesFilters(
-  conversation: ConversationRow,
-  filters: InboxFilters
-): boolean {
-  if (!conversationMatchesChannel(conversation, filters.channel)) return false;
-  if (filters.needsReply && conversation.last_direction !== "inbound") {
-    return false;
-  }
-  if (filters.hasBooking && !conversation.booking_id) return false;
-  if (filters.inCampaign && !conversation.in_campaign) return false;
-  if (filters.campaignId) {
-    const ids = conversation.campaign_ids || [];
-    if (!ids.includes(filters.campaignId)) return false;
-  }
-  if (filters.tag) {
-    const needle = filters.tag.toLowerCase();
-    const tags = conversation.prospect_tags || [];
-    if (!tags.some((tag) => tag.toLowerCase() === needle)) return false;
-  }
-  return true;
-}
-
 function inboxEmptyCopy(
   tab: InboxTab,
   filters: InboxFilters,
-  searching: boolean
+  searching: boolean,
+  otherLinkedInCount: number
 ): string {
   if (searching) return "No conversations match that search.";
+  if (filters.otherLinkedIn) {
+    return filters.needsReply ||
+      filters.hasBooking ||
+      filters.channel !== "all" ||
+      Boolean(filters.tag)
+      ? "No other LinkedIn chats match these filters."
+      : "No other LinkedIn chats.";
+  }
   if (inboxFiltersActive(filters)) {
     return "No conversations match these filters.";
   }
-  if (tab === "unread") return "No unread conversations.";
+  const otherHint =
+    otherLinkedInCount === 1
+      ? "Open Filters for 1 other LinkedIn chat."
+      : otherLinkedInCount > 1
+        ? `Open Filters for ${otherLinkedInCount} other LinkedIn chats.`
+        : null;
+  if (tab === "unread") {
+    return otherHint
+      ? `No unread work conversations. ${otherHint}`
+      : "No unread conversations.";
+  }
   if (tab === "starred") return "No starred conversations.";
   if (tab === "recent") return "No recent conversations.";
-  return "No conversations yet. Book a call to create the first thread.";
+  return otherHint
+    ? `Work conversations will show here. ${otherHint}`
+    : "No conversations yet. Book a call to create the first thread.";
 }
 
 function formatInboxSyncedAt(iso: string | null): string {
@@ -1239,9 +1284,9 @@ export function MessagingInbox({
     useState<ReplyDisposition | null>(null);
   const [replyDispositionBusy, setReplyDispositionBusy] = useState(false);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
-  const [draftConversationIds, setDraftConversationIds] = useState<Set<string>>(
-    () => new Set(messagingComposeDraftIds())
-  );
+  const [draftsByConversation, setDraftsByConversation] = useState<
+    Record<string, MessagingComposeDraftSummary>
+  >(() => messagingComposeDraftSummaries());
   const [detailSectionsOpen, setDetailSectionsOpen] = useState({
     contact: true,
     profile: true,
@@ -1338,6 +1383,10 @@ export function MessagingInbox({
   const selectConversation = useCallback(
     (id: string) => {
       openConversation(id, { keepProspect: prospectMode });
+      const draft = getMessagingComposeDraft(id);
+      if (draft?.body?.trim() || draft?.subject?.trim()) {
+        setComposerOpen(true);
+      }
     },
     [openConversation, prospectMode]
   );
@@ -1363,7 +1412,11 @@ export function MessagingInbox({
   useEffect(() => {
     setInboxFilters((prev) => {
       if (prev.campaignId === campaignQuery) return prev;
-      return { ...prev, campaignId: campaignQuery };
+      return {
+        ...prev,
+        campaignId: campaignQuery,
+        otherLinkedIn: campaignQuery ? false : prev.otherLinkedIn,
+      };
     });
   }, [campaignQuery]);
 
@@ -1417,6 +1470,11 @@ export function MessagingInbox({
     [conversations, selectedId]
   );
 
+  const otherLinkedInCount = useMemo(
+    () => conversations.filter((c) => isOtherLinkedInConversation(c)).length,
+    [conversations]
+  );
+
   const unreadTotal = useMemo(
     () =>
       conversations.filter(
@@ -1443,7 +1501,9 @@ export function MessagingInbox({
 
   const filtered = useMemo(() => {
     let list = conversations.filter((c) =>
-      conversationMatchesFilters(c, inboxFilters)
+      conversationMatchesFilters(c, inboxFilters, {
+        searching: Boolean(searchQuery.trim()),
+      })
     );
     if (tab === "unread") list = list.filter((c) => (c.unread_count ?? 0) > 0);
     if (tab === "starred") list = list.filter((c) => !!c.starred);
@@ -2226,7 +2286,7 @@ export function MessagingInbox({
   );
 
   const markReplyDisposition = useCallback(
-    async (disposition: ReplyDisposition) => {
+    async (disposition: ReplyDisposition | null) => {
       if (!selectedId) return;
       setReplyDispositionBusy(true);
       try {
@@ -2243,24 +2303,22 @@ export function MessagingInbox({
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
           prospect_status?: string | null;
-          reply_disposition?: ReplyDisposition;
+          reply_disposition?: ReplyDisposition | null;
         };
         if (!res.ok) {
           setSendError(body.error || "Could not save reply.");
           return;
         }
         setReplyDisposition(body.reply_disposition ?? disposition);
-        if (body.prospect_status) {
-          setProspectDetails((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  prospect_status: body.prospect_status ?? prev.prospect_status,
-                  reply_disposition: body.reply_disposition ?? disposition,
-                }
-              : prev
-          );
-        }
+        setProspectDetails((prev) =>
+          prev
+            ? {
+                ...prev,
+                prospect_status: body.prospect_status ?? prev.prospect_status,
+                reply_disposition: body.reply_disposition ?? disposition,
+              }
+            : prev
+        );
       } finally {
         setReplyDispositionBusy(false);
       }
@@ -2745,7 +2803,7 @@ export function MessagingInbox({
           setScheduleOpen(false);
           setScheduleNotice(null);
           clearMessagingComposeDraft(conversationId);
-          setDraftConversationIds(new Set(messagingComposeDraftIds()));
+          setDraftsByConversation(messagingComposeDraftSummaries());
           setScheduledMessages((prev) => {
             const next = body.scheduled!;
             if (prev.some((row) => row.id === next.id)) {
@@ -2788,7 +2846,7 @@ export function MessagingInbox({
         }
         await loadList();
         clearMessagingComposeDraft(conversationId);
-        setDraftConversationIds(new Set(messagingComposeDraftIds()));
+        setDraftsByConversation(messagingComposeDraftSummaries());
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Send failed.";
         if (optimisticId) {
@@ -2927,24 +2985,27 @@ export function MessagingInbox({
   }, [authHeaders, contactId, conversationsCacheKey, openConversation]);
 
   useEffect(() => {
-    if (!contactId) {
+    const campaignContactId = (contactId || selected?.contact_id || "").trim();
+    if (!campaignContactId) {
       setProspectCampaigns([]);
       return;
     }
-    const prospectContactId = contactId;
     let cancelled = false;
     async function loadCampaigns() {
       const headers = await authHeaders();
       if (!headers) return;
       try {
         const res = await fetch(
-          `/api/messaging/contacts/${encodeURIComponent(prospectContactId)}/feed`,
+          `/api/messaging/contacts/${encodeURIComponent(campaignContactId)}/feed`,
           { headers, cache: "no-store" }
         );
         const body = (await res.json().catch(() => ({}))) as {
           campaigns?: ProspectCampaignMembership[];
         };
-        if (cancelled || !res.ok) return;
+        if (cancelled || !res.ok) {
+          if (!cancelled) setProspectCampaigns([]);
+          return;
+        }
         setProspectCampaigns(
           Array.isArray(body.campaigns) ? body.campaigns : []
         );
@@ -2956,7 +3017,7 @@ export function MessagingInbox({
     return () => {
       cancelled = true;
     };
-  }, [authHeaders, contactId]);
+  }, [authHeaders, contactId, selected?.contact_id]);
 
   useEffect(() => {
     void loadInboxAccounts();
@@ -3067,17 +3128,20 @@ export function MessagingInbox({
       if (!body.trim() && !subject.trim()) {
         clearMessagingComposeDraft(id);
       } else {
+        const existing = getMessagingComposeDraft(id);
         setMessagingComposeDraft({
           conversationId: id,
           body,
-          channel:
-            channel === "comment"
-              ? undefined
-              : (channel as MessagingComposeChannel | undefined),
+          channel: nextComposeDraftChannel({
+            existing,
+            body,
+            subject,
+            channel,
+          }),
           subject: subject || undefined,
         });
       }
-      setDraftConversationIds(new Set(messagingComposeDraftIds()));
+      setDraftsByConversation(messagingComposeDraftSummaries());
     },
     []
   );
@@ -3093,7 +3157,7 @@ export function MessagingInbox({
       if (!switched) return;
       const draft = consumeMessagingComposeDraft(selected.id);
       pendingDraftChannelRef.current = draft?.channel ?? null;
-      setComposerOpen(Boolean(draft?.body?.trim()));
+      setComposerOpen(Boolean(draft?.body?.trim() || draft?.subject?.trim()));
       setChannelMenuOpen(false);
       setSendError(null);
       setCopilotError(null);
@@ -3637,6 +3701,37 @@ export function MessagingInbox({
     [inboxAccounts]
   );
 
+  const replyChannelOptions = useMemo(
+    () =>
+      selected
+        ? composerChannelOptions({
+            lastChannel: selected.last_channel,
+            prospectEmail: email,
+            prospectPhone: phone,
+            prospectLinkedInUrl: linkedIn,
+            connected: connectedComposerChannels({
+              accounts: inboxAccounts,
+              adminOrgWideEmail: adminOrgWideInbox,
+              accountsLoaded,
+            }),
+            includeInternalNote: !prospectMode,
+          })
+        : [],
+    [
+      selected,
+      email,
+      phone,
+      linkedIn,
+      inboxAccounts,
+      adminOrgWideInbox,
+      accountsLoaded,
+      prospectMode,
+    ]
+  );
+  const selectedDraft = selected?.id
+    ? draftsByConversation[selected.id]
+    : undefined;
+
   useEffect(() => {
     if (replyChannel !== "email") return;
     const stillValid =
@@ -3780,6 +3875,14 @@ export function MessagingInbox({
                             label: "In campaign",
                             hint: "Active LinkedIn outreach",
                           },
+                          {
+                            key: "otherLinkedIn" as const,
+                            label: "Other LinkedIn",
+                            hint:
+                              otherLinkedInCount > 0
+                                ? `Not in CRM or a campaign · ${otherLinkedInCount}`
+                                : "Not in CRM or a campaign",
+                          },
                         ] as const
                       ).map((item) => {
                         const active = inboxFilters[item.key];
@@ -3788,12 +3891,15 @@ export function MessagingInbox({
                             key={item.key}
                             type="button"
                             aria-pressed={active}
-                            onClick={() =>
-                              setInboxFilters((prev) => ({
-                                ...prev,
-                                [item.key]: !prev[item.key],
-                              }))
-                            }
+                            onClick={() => {
+                              const turningOnOther =
+                                item.key === "otherLinkedIn" &&
+                                !inboxFilters.otherLinkedIn;
+                              setInboxFilters((prev) =>
+                                toggleInboxFlag(prev, item.key)
+                              );
+                              if (turningOnOther) clearCampaignFilterFromUrl();
+                            }}
                             className={`flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left ${
                               active
                                 ? "bg-sky-50 text-sky-900"
@@ -4058,26 +4164,46 @@ export function MessagingInbox({
             })}
           </div>
 
-          {inboxFilters.campaignId ? (
-            <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
-              <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
-                <span className="truncate">
-                  {campaignFilterLabel
-                    ? `Campaign: ${campaignFilterLabel}`
-                    : "Campaign replies"}
+          {inboxFilters.campaignId || inboxFilters.otherLinkedIn ? (
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-3 py-2">
+              {inboxFilters.campaignId ? (
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
+                  <span className="truncate">
+                    {campaignFilterLabel
+                      ? `Campaign: ${campaignFilterLabel}`
+                      : "Campaign replies"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Clear campaign filter"
+                    onClick={() => {
+                      setInboxFilters((prev) => ({ ...prev, campaignId: null }));
+                      clearCampaignFilterFromUrl();
+                    }}
+                    className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"
+                  >
+                    <X className="h-3 w-3" strokeWidth={2} />
+                  </button>
                 </span>
-                <button
-                  type="button"
-                  aria-label="Clear campaign filter"
-                  onClick={() => {
-                    setInboxFilters((prev) => ({ ...prev, campaignId: null }));
-                    clearCampaignFilterFromUrl();
-                  }}
-                  className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"
-                >
-                  <X className="h-3 w-3" strokeWidth={2} />
-                </button>
-              </span>
+              ) : null}
+              {inboxFilters.otherLinkedIn ? (
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
+                  <span className="truncate">Other LinkedIn</span>
+                  <button
+                    type="button"
+                    aria-label="Clear other LinkedIn filter"
+                    onClick={() =>
+                      setInboxFilters((prev) => ({
+                        ...prev,
+                        otherLinkedIn: false,
+                      }))
+                    }
+                    className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"
+                  >
+                    <X className="h-3 w-3" strokeWidth={2} />
+                  </button>
+                </span>
+              ) : null}
             </div>
           ) : null}
 
@@ -4166,7 +4292,12 @@ export function MessagingInbox({
             ) : null}
             {filtered.length === 0 && !loading ? (
               <li className="px-4 py-8 text-sm text-slate-500">
-                {inboxEmptyCopy(tab, inboxFilters, Boolean(searchQuery.trim()))}
+                {inboxEmptyCopy(
+                  tab,
+                  inboxFilters,
+                  Boolean(searchQuery.trim()),
+                  otherLinkedInCount
+                )}
               </li>
             ) : null}
             {filtered.map((c, index) => {
@@ -4245,14 +4376,28 @@ export function MessagingInbox({
                               >
                                 {personName}
                               </span>
-                              {draftConversationIds.has(c.id) ? (
-                                <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200">
+                              {draftsByConversation[c.id] ? (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200">
+                                  {draftsByConversation[c.id]?.channel ? (
+                                    <ChannelMark
+                                      channel={
+                                        draftsByConversation[c.id]?.channel
+                                      }
+                                    />
+                                  ) : null}
                                   Draft
                                 </span>
                               ) : null}
                             </span>
-                            <span className="mt-0.5 block truncate text-xs text-slate-500">
-                              {previewText(c.last_preview || c.subject, 72) ||
+                            <span
+                              className={`mt-0.5 block truncate text-xs ${
+                                draftsByConversation[c.id]
+                                  ? "text-amber-800"
+                                  : "text-slate-500"
+                              }`}
+                            >
+                              {draftsByConversation[c.id]?.preview ||
+                                previewText(c.last_preview || c.subject, 72) ||
                                 "No messages yet"}
                             </span>
                           </span>
@@ -4987,9 +5132,25 @@ export function MessagingInbox({
                           setComposerOpen(true);
                           setChannelMenuOpen(false);
                         }}
-                        className="min-w-0 flex-1 px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50"
+                        className={`min-w-0 flex-1 px-3 py-2 text-left text-sm hover:bg-slate-50 ${
+                          replyBody.trim()
+                            ? "text-slate-800"
+                            : "text-slate-400"
+                        }`}
                       >
-                        Type a message
+                        {replyBody.trim() ? (
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <span className="min-w-0 truncate">
+                              {composeDraftPreview({
+                                body: replyBody,
+                                subject: replySubject,
+                              })}
+                            </span>
+                            <DraftChip />
+                          </span>
+                        ) : (
+                          "Type a message"
+                        )}
                       </button>
                       <button
                         type="button"
@@ -5006,15 +5167,8 @@ export function MessagingInbox({
                     <ChannelPickerMenu
                       open={channelMenuOpen}
                       current={replyChannel}
-                      options={composerChannelOptions(
-                        {
-                          ...selected,
-                          prospect_email: email,
-                          prospect_phone: phone,
-                          prospect_linkedin_url: linkedIn,
-                        },
-                        { includeInternalNote: !prospectMode }
-                      )}
+                      options={replyChannelOptions}
+                      draftChannel={selectedDraft?.channel}
                       onPick={(id) => {
                         setReplyChannel(id);
                         setChannelMenuOpen(false);
@@ -5039,6 +5193,9 @@ export function MessagingInbox({
                     >
                       <ChannelMark channel={replyChannel} size="md" />
                       <span>{channelLabelOf(replyChannel)}</span>
+                      {selectedDraft?.channel === replyChannel ? (
+                        <DraftChip />
+                      ) : null}
                       <ChevronDown className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />
                     </button>
                     <div className="flex items-center gap-0.5">
@@ -5070,15 +5227,8 @@ export function MessagingInbox({
                     <ChannelPickerMenu
                       open={channelMenuOpen}
                       current={replyChannel}
-                      options={composerChannelOptions(
-                        {
-                          ...selected,
-                          prospect_email: email,
-                          prospect_phone: phone,
-                          prospect_linkedin_url: linkedIn,
-                        },
-                        { includeInternalNote: !prospectMode }
-                      )}
+                      options={replyChannelOptions}
+                      draftChannel={selectedDraft?.channel}
                       onPick={(id) => {
                         setReplyChannel(id);
                         setChannelMenuOpen(false);
@@ -5310,8 +5460,8 @@ export function MessagingInbox({
                           setSendError(null);
                           if (selected?.id) {
                             clearMessagingComposeDraft(selected.id);
-                            setDraftConversationIds(
-                              new Set(messagingComposeDraftIds())
+                            setDraftsByConversation(
+                              messagingComposeDraftSummaries()
                             );
                           }
                         }}
@@ -5627,49 +5777,47 @@ export function MessagingInbox({
                   </CollapsibleDetailSection>
                 ) : null}
 
-                {prospectMode ? (
-                  <CollapsibleDetailSection
-                    title="Campaigns"
-                    open={detailSectionsOpen.campaigns}
-                    onToggle={() => toggleDetailSection("campaigns")}
-                    panel
-                    badge={
-                      prospectCampaigns.length > 0 ? (
-                        <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
-                          {prospectCampaigns.length}
-                        </span>
-                      ) : null
-                    }
-                  >
-                    {prospectCampaigns.length === 0 ? (
-                      <p className="text-sm text-slate-500">
-                        Not in a campaign yet.
-                      </p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {prospectCampaigns.map((campaign) => (
-                          <li key={campaign.id}>
-                            <Link
-                              href={`${
-                                pathname?.startsWith("/admin")
-                                  ? "/admin"
-                                  : "/coach"
-                              }/campaigns/${encodeURIComponent(campaign.campaignId)}`}
-                              className="block rounded-md hover:text-sky-800"
-                            >
-                              <p className="text-[15px] font-medium leading-snug text-slate-900">
-                                {campaign.name}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                {leadStatusLabel(campaign.leadStatus)}
-                              </p>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </CollapsibleDetailSection>
-                ) : null}
+                <CollapsibleDetailSection
+                  title="Campaigns"
+                  open={detailSectionsOpen.campaigns}
+                  onToggle={() => toggleDetailSection("campaigns")}
+                  panel
+                  badge={
+                    prospectCampaigns.length > 0 ? (
+                      <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
+                        {prospectCampaigns.length}
+                      </span>
+                    ) : null
+                  }
+                >
+                  {prospectCampaigns.length === 0 ? (
+                    <p className="text-sm text-slate-500">
+                      Not in a campaign yet.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {prospectCampaigns.map((campaign) => (
+                        <li key={campaign.id}>
+                          <Link
+                            href={`${
+                              pathname?.startsWith("/admin")
+                                ? "/admin"
+                                : "/coach"
+                            }/campaigns/${encodeURIComponent(campaign.campaignId)}`}
+                            className="block rounded-md hover:text-sky-800"
+                          >
+                            <p className="text-[15px] font-medium leading-snug text-slate-900">
+                              {campaign.name}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {leadStatusLabel(campaign.leadStatus)}
+                            </p>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CollapsibleDetailSection>
 
                 <CollapsibleDetailSection
                   title="Assessment"

@@ -115,6 +115,43 @@ function sanitizeMedia(raw: Record<string, unknown>): CampaignStepMedia | null {
   };
 }
 
+export function sanitizeMessageMediaPatch(raw: {
+  media_kind?: unknown;
+  media?: unknown;
+}): {
+  media_kind: CampaignStepMediaKind | null;
+  media: CampaignStepMedia | null;
+} {
+  const mediaRaw =
+    raw.media && typeof raw.media === "object" && !Array.isArray(raw.media)
+      ? (raw.media as Record<string, unknown>)
+      : null;
+  const media = mediaRaw ? sanitizeMedia(mediaRaw) : null;
+  return {
+    media_kind: media?.kind ?? asMediaKind(raw.media_kind),
+    media,
+  };
+}
+
+export function messageSendConfigFrom(
+  stepConfig: unknown,
+  variant?: {
+    media_kind?: CampaignStepMediaKind | null;
+    media?: CampaignStepMedia | null;
+  } | null
+): unknown {
+  if (
+    variant &&
+    (variant.media_kind !== undefined || variant.media !== undefined)
+  ) {
+    return {
+      media_kind: variant.media_kind ?? null,
+      media: variant.media ?? null,
+    };
+  }
+  return stepConfig;
+}
+
 export function sanitizeStepConfig(
   type: CampaignStepType,
   config: unknown
@@ -142,16 +179,10 @@ export function sanitizeStepConfig(
     return { wait: raw.wait === true };
   }
   if (type === "message") {
-    const mediaRaw =
-      raw.media && typeof raw.media === "object" && !Array.isArray(raw.media)
-        ? (raw.media as Record<string, unknown>)
-        : null;
-    const media = mediaRaw ? sanitizeMedia(mediaRaw) : null;
-    const mediaKind = media?.kind ?? asMediaKind(raw.media_kind);
-    return {
-      media_kind: mediaKind,
-      media,
-    };
+    return sanitizeMessageMediaPatch({
+      media_kind: raw.media_kind,
+      media: raw.media,
+    });
   }
   if (type === "invite") {
     const action: InviteNoConnectAction =
@@ -303,9 +334,22 @@ export function campaignStepTypeLabel(type: string): string {
 
 export function campaignStepDisplayLabel(
   type: string,
-  config?: unknown
+  config?: unknown,
+  variants?: Array<{ media_kind?: CampaignStepMediaKind | null }> | null
 ): string {
   if (type === "message") {
+    if (variants && variants.length > 0) {
+      const kinds = new Set(
+        variants.map((variant) => variant.media_kind ?? null)
+      );
+      if (kinds.size === 1) {
+        const kind = [...kinds][0];
+        if (kind === "voice") return "Voice note";
+        if (kind === "video") return "Video message";
+      } else {
+        return "A/B message";
+      }
+    }
     const kind = messageMediaKindFrom(config);
     if (kind === "voice") return "Voice note";
     if (kind === "video") return "Video message";
@@ -327,10 +371,28 @@ function stepHasCopy(
 export function campaignStepIncompleteHint(input: {
   step_type: string;
   body?: string | null;
-  variants?: Array<{ body: string }> | null;
+  variants?: Array<{
+    body: string;
+    media_kind?: CampaignStepMediaKind | null;
+    media?: CampaignStepMedia | null;
+  }> | null;
   config?: unknown;
 }): string | null {
   if (input.step_type !== "message") return null;
+  if (input.variants && input.variants.length > 0) {
+    for (const variant of input.variants) {
+      if (variant.media_kind === "voice" && !variant.media) {
+        return "You need to add a voice note";
+      }
+      if (variant.media_kind === "video" && !variant.media) {
+        return "You need to add a video";
+      }
+      if (!variant.media_kind && !variant.body.trim()) {
+        return "You need to add a message";
+      }
+    }
+    return null;
+  }
   const kind = messageMediaKindFrom(input.config);
   const media = messageMediaFrom(input.config);
   if (kind === "voice" && !media) return "You need to add a voice note";
@@ -387,6 +449,44 @@ export function campaignStepAllowsVariants(type: string): boolean {
     type === "instagram" ||
     type === "messenger"
   );
+}
+
+/** LinkedIn messages (text, voice, video) can send automatically or wait for the coach. */
+export type CampaignSendMode = "auto" | "remind";
+
+export function campaignStepHasSendMode(type: string): boolean {
+  return type === "message";
+}
+
+export function campaignStepSendMode(
+  sendMode: string | null | undefined
+): CampaignSendMode {
+  return sendMode === "remind" ? "remind" : "auto";
+}
+
+export function campaignSendModePatch(
+  mode: CampaignSendMode,
+  fallbackHours?: number | null
+): {
+  send_mode: CampaignSendMode;
+  fallback_hours: number | null;
+  fallback_body?: null;
+} {
+  if (mode === "auto") {
+    return { send_mode: "auto", fallback_hours: null, fallback_body: null };
+  }
+  return { send_mode: "remind", fallback_hours: fallbackHours ?? 24 };
+}
+
+export function sequenceMessageSendMode(
+  steps: Array<{ step_type: string; send_mode?: string | null }>
+): CampaignSendMode | "mixed" | null {
+  const modes = steps
+    .filter((step) => campaignStepHasSendMode(step.step_type))
+    .map((step) => campaignStepSendMode(step.send_mode));
+  if (modes.length === 0) return null;
+  const first = modes[0];
+  return modes.every((mode) => mode === first) ? first : "mixed";
 }
 
 /** Coach-facing actions that run when a lead reaches this point (no send job). */

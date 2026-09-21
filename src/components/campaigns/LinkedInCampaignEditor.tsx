@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Pencil, SlidersHorizontal } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import type { CampaignActivityDay } from "@/components/campaigns/CampaignOverviewMetrics";
@@ -17,7 +17,7 @@ import {
 } from "@/components/campaigns/CampaignOverviewMetrics";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
-import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import { fetchHubQuery, invalidateHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
 import { hubQueryKey } from "@/lib/getClients/hubKeys";
 import {
   campaignCoreQueryKey,
@@ -35,13 +35,20 @@ import {
   type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
+import { duplicateCampaignStep } from "@/lib/unipile/campaignStepDuplicate";
 import {
   isMailingProvider,
   type UnipileConnectProvider,
 } from "@/lib/unipile/providers";
 import {
+  inviteFunnelCounts,
+  inviteFunnelSliceForLead,
+  leadIsHeldBeforeAction,
+  leadIsHeldByWait,
+  formatUpcomingWhen,
   leadStatusLabel as activityLeadStatusLabel,
   type CampaignActivityJob,
+  type InviteFunnelSlice,
 } from "@/lib/unipile/campaignLeadActivity";
 import { magnetForPlaybookId } from "@/lib/leadMagnets/catalog";
 
@@ -60,9 +67,9 @@ const CampaignAddProspectsModal = dynamic(() =>
     default: m.CampaignAddProspectsModal,
   }))
 );
-const CampaignSettingsForm = dynamic(() =>
+const CampaignSettingsModal = dynamic(() =>
   import("@/components/campaigns/CampaignSettingsForm").then((m) => ({
-    default: m.CampaignSettingsForm,
+    default: m.CampaignSettingsModal,
   }))
 );
 
@@ -117,13 +124,21 @@ type Lead = {
   last_error: string | null;
   current_step_position?: number;
   next_action_at?: string | null;
+  created_at?: string | null;
 };
 
-type TabId = "overview" | "prospects" | "steps" | "settings";
+type TabId = "overview" | "prospects" | "steps";
 
 type LeadDrawerFilter =
   | { kind: "status"; status: string; title: string }
   | { kind: "step"; position: number; title: string }
+  | { kind: "wait"; position: number; title: string }
+  | {
+      kind: "invite";
+      slice: InviteFunnelSlice;
+      position: number;
+      title: string;
+    }
   | { kind: "hopper"; hopper: "staging" | "active"; title: string };
 
 async function authHeaders(impersonatingCoachId?: string | null) {
@@ -150,7 +165,6 @@ const TAB_ITEMS: Array<{ id: TabId; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "prospects", label: "Prospects" },
   { id: "steps", label: "Steps" },
-  { id: "settings", label: "Settings" },
 ];
 
 function asCampaign(row: unknown): Campaign | null {
@@ -262,6 +276,7 @@ export function LinkedInCampaignEditor() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("overview");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [abStats, setAbStats] = useState<Record<
     string,
     Record<string, AbVariantStats>
@@ -427,10 +442,31 @@ export function LinkedInCampaignEditor() {
     if (leadDrawer.kind === "hopper") {
       return leadDrawer.hopper === "staging" ? stagingLeads : activeLeads;
     }
+    if (leadDrawer.kind === "invite") {
+      return leads.filter(
+        (l) =>
+          inviteFunnelSliceForLead(l, leadDrawer.position) === leadDrawer.slice
+      );
+    }
+    if (leadDrawer.kind === "wait") {
+      return leads.filter((l) =>
+        leadIsHeldByWait({
+          lead: l,
+          waitPosition: leadDrawer.position,
+          steps,
+        })
+      );
+    }
     return leads.filter(
-      (l) => (l.current_step_position ?? 0) === leadDrawer.position
+      (l) =>
+        (l.current_step_position ?? 0) === leadDrawer.position &&
+        !leadIsHeldBeforeAction({
+          lead: l,
+          actionPosition: leadDrawer.position,
+          steps,
+        })
     );
-  }, [leadDrawer, leads, stagingLeads, activeLeads]);
+  }, [leadDrawer, leads, stagingLeads, activeLeads, steps]);
 
   async function saveSettings(patch: Record<string, unknown>) {
     if (!campaignId) return;
@@ -454,7 +490,10 @@ export function LinkedInCampaignEditor() {
     }
   }
 
-  async function saveSteps(nextSteps?: Step[]) {
+  async function saveSteps(
+    nextSteps?: Step[],
+    options?: { releaseWaitPosition?: number }
+  ) {
     if (!campaignId) return;
     const payload = nextSteps ?? steps;
     setBusy(true);
@@ -464,11 +503,21 @@ export function LinkedInCampaignEditor() {
       if (!headers) throw new Error("Sign in required.");
       const res = await fetch(
         `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-        { method: "PATCH", headers, body: JSON.stringify({ steps: payload }) }
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            steps: payload,
+            ...(options?.releaseWaitPosition != null
+              ? { release_wait_position: options.releaseWaitPosition }
+              : {}),
+          }),
+        }
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Save failed.");
       setSteps(body.steps ?? payload);
+      if (options?.releaseWaitPosition != null) await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed.");
     } finally {
@@ -476,7 +525,7 @@ export function LinkedInCampaignEditor() {
     }
   }
 
-  async function markLeadInterest(leadId: string, outcome: string) {
+  async function markLeadInterest(leadId: string, outcome: string | null) {
     setBusy(true);
     try {
       const headers = await authHeaders(impersonatingCoachId);
@@ -484,7 +533,11 @@ export function LinkedInCampaignEditor() {
       await fetch("/api/coach/linkedin-outreach/interest", {
         method: "POST",
         headers,
-        body: JSON.stringify({ lead_id: leadId, outcome }),
+        body: JSON.stringify(
+          outcome
+            ? { lead_id: leadId, outcome }
+            : { lead_id: leadId, action: "clear" }
+        ),
       });
       await load();
     } finally {
@@ -492,8 +545,8 @@ export function LinkedInCampaignEditor() {
     }
   }
 
-  async function deleteLead(leadId: string) {
-    if (!campaignId) return;
+  async function deleteLeads(leadIds: string[]) {
+    if (!campaignId || leadIds.length === 0) return;
     setBusy(true);
     try {
       const headers = await authHeaders(impersonatingCoachId);
@@ -503,7 +556,71 @@ export function LinkedInCampaignEditor() {
         {
           method: "PATCH",
           headers,
-          body: JSON.stringify({ action: "delete_lead", lead_id: leadId }),
+          body: JSON.stringify({ action: "delete_leads", lead_ids: leadIds }),
+        }
+      );
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function pauseLeads(leadIds: string[]) {
+    if (!campaignId || leadIds.length === 0) return;
+    setBusy(true);
+    try {
+      const headers = await authHeaders(impersonatingCoachId);
+      if (!headers) return;
+      await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ action: "pause_leads", lead_ids: leadIds }),
+        }
+      );
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resumeLeads(leadIds: string[]) {
+    if (!campaignId || leadIds.length === 0) return;
+    setBusy(true);
+    try {
+      const headers = await authHeaders(impersonatingCoachId);
+      if (!headers) return;
+      await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ action: "resume_leads", lead_ids: leadIds }),
+        }
+      );
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function moveLeads(leadIds: string[], targetCampaignId: string) {
+    if (!campaignId || leadIds.length === 0) return;
+    setBusy(true);
+    try {
+      const headers = await authHeaders(impersonatingCoachId);
+      if (!headers) return;
+      await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            action: "move_leads",
+            lead_ids: leadIds,
+            target_campaign_id: targetCampaignId,
+          }),
         }
       );
       await load();
@@ -556,9 +673,24 @@ export function LinkedInCampaignEditor() {
   }
 
   function deleteStep(index: number) {
+    const removed = steps[index];
     const next = steps
       .filter((_, i) => i !== index)
       .map((s, i) => ({ ...s, position: i }));
+    setSteps(next);
+    void saveSteps(
+      next,
+      removed?.step_type === "wait"
+        ? { releaseWaitPosition: removed.position ?? index }
+        : undefined
+    );
+  }
+
+  function duplicateStep(index: number) {
+    const current = stepsRef.current;
+    const next = duplicateCampaignStep(current, index);
+    if (next === current) return;
+    stepsRef.current = next;
     setSteps(next);
     void saveSteps(next);
   }
@@ -585,10 +717,38 @@ export function LinkedInCampaignEditor() {
     }
   }
 
-  function countAtStep(step: Step, index: number) {
-    return leads.filter(
-      (l) => (l.current_step_position ?? 0) === (step.position ?? index)
-    ).length;
+  function peopleAtStep(step: Step, index: number) {
+    const pos = step.position ?? index;
+    if (step.step_type === "wait") {
+      const held = leads.filter((l) =>
+        leadIsHeldByWait({ lead: l, waitPosition: pos, steps })
+      );
+      const nextTimes = held
+        .map((l) => l.next_action_at)
+        .filter((iso): iso is string => Boolean(iso))
+        .sort(
+          (a, b) => new Date(a).getTime() - new Date(b).getTime()
+        );
+      return {
+        here: held.length,
+        wait: {
+          names: held.slice(0, 4).map(leadName),
+          nextLabel: formatUpcomingWhen(nextTimes[0] ?? null),
+        },
+      };
+    }
+    if (step.step_type !== "invite") return { here: 0 };
+    const funnel = inviteFunnelCounts(leads, pos);
+    const names: Record<InviteFunnelSlice, string[]> = {
+      connected: [],
+      waiting: [],
+      remaining: [],
+    };
+    for (const lead of leads) {
+      const slice = inviteFunnelSliceForLead(lead, pos);
+      if (names[slice].length < 4) names[slice].push(leadName(lead));
+    }
+    return { here: 0, invite: { ...funnel, names } };
   }
 
   if (loading) {
@@ -625,6 +785,7 @@ export function LinkedInCampaignEditor() {
   const activeCampaign = campaign;
   const hasInviteStep = steps.some((s) => s.step_type === "invite");
   const running = activeCampaign.status === "running";
+  const archived = activeCampaign.status === "archived";
 
   function startEditingName() {
     setNameDraft(activeCampaign.name);
@@ -643,6 +804,7 @@ export function LinkedInCampaignEditor() {
   }
 
   function toggleRunning() {
+    if (activeCampaign.status === "archived") return;
     if (activeCampaign.status === "running") {
       void saveSettings({ status: "paused" });
       return;
@@ -659,63 +821,83 @@ export function LinkedInCampaignEditor() {
   return (
     <div className="flex w-full min-w-0 flex-col">
       {/* Campaign chrome */}
-      <div className="pt-3 pb-1">
+      <div className="pt-1">
         <Link
           href={`${prefix}/campaigns`}
           className="inline-flex items-center text-sm text-slate-500 hover:text-slate-800"
         >
           ← Campaigns
         </Link>
-        <div className="mt-2 flex min-w-0 items-center gap-3">
-          <CampaignOnOffToggle
-            on={running}
-            busy={busy}
-            disabled={!running && !canStart}
-            onChange={toggleRunning}
-            ariaLabel={running ? "Turn campaign off" : "Turn campaign on"}
-          />
-          {editingName ? (
-            <input
-              ref={nameInputRef}
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              onBlur={() => void commitNameEdit()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void commitNameEdit();
-                }
-                if (e.key === "Escape") {
-                  e.preventDefault();
-                  setEditingName(false);
-                  setNameDraft(campaign.name);
-                }
-              }}
-              aria-label="Campaign name"
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-lg font-semibold tracking-tight text-slate-900 outline-none ring-emerald-700/30 focus:ring-2 sm:text-xl"
+        <div className="mt-1.5 flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+            <CampaignOnOffToggle
+              on={running}
+              busy={busy}
+              disabled={archived || (!running && !canStart)}
+              onChange={toggleRunning}
+              ariaLabel={running ? "Turn campaign off" : "Turn campaign on"}
             />
-          ) : (
-            <>
-              <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
-                {campaign.name}
-              </h1>
-              <button
-                type="button"
-                onClick={startEditingName}
-                aria-label="Edit campaign name"
-                className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                <Pencil className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-              </button>
-            </>
-          )}
+            {editingName ? (
+              <input
+                ref={nameInputRef}
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onBlur={() => void commitNameEdit()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void commitNameEdit();
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setEditingName(false);
+                    setNameDraft(campaign.name);
+                  }
+                }}
+                aria-label="Campaign name"
+                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-lg font-semibold tracking-tight text-slate-900 outline-none ring-emerald-700/30 focus:ring-2 sm:text-xl"
+              />
+            ) : (
+              <div className="flex min-w-0 items-center gap-1.5">
+                <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+                  {campaign.name}
+                </h1>
+                <button
+                  type="button"
+                  onClick={startEditingName}
+                  aria-label="Edit campaign name"
+                  className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                >
+                  <Pencil className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                </button>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={settingsOpen}
+            className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 ${
+              settingsOpen
+                ? "border-slate-400 bg-slate-50"
+                : "border-slate-300 bg-transparent hover:border-slate-400 hover:bg-slate-50/60"
+            }`}
+          >
+            <SlidersHorizontal
+              className="h-3.5 w-3.5 text-slate-500"
+              strokeWidth={2.25}
+              aria-hidden
+            />
+            Settings
+          </button>
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-slate-200">
+      <div className="mt-2 border-b border-slate-200">
         <PageHeaderUnderlineTabs
           ariaLabel="Campaign sections"
-          className="min-w-0 flex-1"
+          className="min-w-0"
           items={TAB_ITEMS.map((item) => ({
             kind: "button" as const,
             id: item.id,
@@ -724,12 +906,6 @@ export function LinkedInCampaignEditor() {
             onClick: () => setTab(item.id),
           }))}
         />
-        <Link
-          href={`${prefix}/conversations?campaign=${encodeURIComponent(campaign.id)}`}
-          className="mb-1.5 inline-flex shrink-0 items-center rounded-lg bg-[#0c5290] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a4578]"
-        >
-          View replies
-        </Link>
       </div>
 
       {error ? (
@@ -740,7 +916,7 @@ export function LinkedInCampaignEditor() {
 
       {/* ——— OVERVIEW ——— */}
       {tab === "overview" ? (
-        <div className="mt-6 min-h-[60vh] space-y-6">
+        <div className="mt-4 min-h-[60vh] space-y-6">
           {!coreReady ? (
             <div className="rounded-2xl border border-slate-200 px-6 py-16 text-center text-sm text-slate-500">
               Loading overview…
@@ -862,8 +1038,13 @@ export function LinkedInCampaignEditor() {
                 : null
             }
             busy={busy}
+            campaigns={otherCampaigns}
             onAdd={() => setAddLeadsOpen(true)}
-            onDelete={(leadId) => void deleteLead(leadId)}
+            onDelete={(leadIds) => void deleteLeads(leadIds)}
+            onPause={(leadIds) => void pauseLeads(leadIds)}
+            onResume={(leadIds) => void resumeLeads(leadIds)}
+            onMove={(leadIds, targetId) => void moveLeads(leadIds, targetId)}
+            repliesHref={`${prefix}/conversations?campaign=${encodeURIComponent(campaign.id)}`}
             onMarkInterest={(leadId, outcome) =>
               void markLeadInterest(leadId, outcome)
             }
@@ -876,7 +1057,7 @@ export function LinkedInCampaignEditor() {
         <CampaignSequenceBuilder
           steps={steps}
           campaignId={campaign.id}
-          countAtStep={countAtStep}
+          peopleAtStep={peopleAtStep}
           abStats={abStats}
           accounts={accounts}
           connectingProvider={connectingProvider}
@@ -885,30 +1066,72 @@ export function LinkedInCampaignEditor() {
           onPatchStep={patchStep}
           onCommitSteps={commitSteps}
           onDeleteStep={deleteStep}
+          onDuplicateStep={duplicateStep}
           onReorderSteps={reorderSteps}
           onOpenLeads={setLeadDrawer}
           campaigns={otherCampaigns}
         />
       ) : null}
 
-      {/* ——— SETTINGS ——— */}
-      {tab === "settings" ? (
-        <CampaignSettingsForm
-          key={campaign.id}
-          campaign={campaign}
-          busy={busy}
-          onCampaignChange={(patch) =>
-            setCampaign({ ...campaign, ...patch })
+      <CampaignSettingsModal
+        open={settingsOpen}
+        campaign={campaign}
+        busy={busy}
+        onClose={() => setSettingsOpen(false)}
+        onCampaignChange={(patch) =>
+          setCampaign({ ...campaign, ...patch })
+        }
+        onSave={(patch) => void saveSettings(patch)}
+        onArchive={() => {
+          if (
+            !window.confirm(
+              `Archive “${campaign.name}”? You can restore it later from Archived, or pick Live again.`
+            )
+          ) {
+            return;
           }
-          onSave={(patch) => void saveSettings(patch)}
-          onArchive={() => {
-            if (!window.confirm("Archive this campaign?")) return;
-            void saveSettings({ status: "archived" }).then(() =>
-              router.push(`${prefix}/campaigns`)
-            );
-          }}
-        />
-      ) : null}
+          void saveSettings({ status: "archived" }).then(() => {
+            invalidateHubQuery(hubQueryKey("campaigns", impersonatingCoachId));
+          });
+        }}
+        onUnarchive={() => {
+          void saveSettings({ action: "unarchive" }).then(() => {
+            invalidateHubQuery(hubQueryKey("campaigns", impersonatingCoachId));
+          });
+        }}
+        onDelete={() => {
+          void (async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              const headers = await authHeaders(impersonatingCoachId);
+              if (!headers) throw new Error("Sign in required.");
+              const res = await fetch(
+                `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaign.id)}`,
+                {
+                  method: "PATCH",
+                  headers,
+                  body: JSON.stringify({ action: "delete" }),
+                }
+              );
+              const body = await res.json().catch(() => ({}));
+              if (!res.ok) throw new Error(body.error || "Delete failed.");
+              setSettingsOpen(false);
+              invalidateHubQuery(
+                hubQueryKey("campaigns", impersonatingCoachId)
+              );
+              invalidateHubQuery(
+                campaignCoreQueryKey(campaign.id, impersonatingCoachId)
+              );
+              router.push(`${prefix}/campaigns`);
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Delete failed.");
+            } finally {
+              setBusy(false);
+            }
+          })();
+        }}
+      />
 
       {/* Lead drawer */}
       {leadDrawer ? (

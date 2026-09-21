@@ -772,9 +772,25 @@ export function CampaignOverviewHero({
                         </div>
                       ))}
                     </div>
-                    {hoverBar && !loading ? (
+                    {hoverBar && !loading && hasAny ? (
                       <div className="pointer-events-none absolute top-1 left-2 z-30">
                         <BarHoverCard bar={hoverBar} />
+                      </div>
+                    ) : null}
+                    {!loading && data && !hasAny ? (
+                      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-3">
+                        <div
+                          role="status"
+                          className="max-w-[17.5rem] rounded-xl bg-slate-100 px-4 py-3 text-center"
+                        >
+                          <p className="text-sm font-semibold text-slate-800">
+                            Nothing sent or planned
+                          </p>
+                          <p className="mt-1 text-xs leading-snug text-slate-600">
+                            Start a campaign or add people to one that&apos;s
+                            running so there&apos;s always activity going out.
+                          </p>
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -803,12 +819,6 @@ export function CampaignOverviewHero({
                   </div>
                 </div>
               </div>
-
-              {!loading && data && !hasAny ? (
-                <p className="mt-4 text-center text-sm text-slate-500">
-                  Nothing sent or planned in this window.
-                </p>
-              ) : null}
             </>
           )}
         </div>

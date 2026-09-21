@@ -10,7 +10,7 @@ export type CanonFile = {
   file: string;
   label: string;
   description: string;
-  group: "core" | "skill";
+  group: "core" | "skill" | "reply-copilot";
   content: string;
   overridden: boolean;
   updated_at: string | null;
@@ -261,6 +261,7 @@ export function CoreBrainKnowledgeTab({
 
   const core = files.filter((f) => f.group === "core");
   const skill = files.filter((f) => f.group === "skill");
+  const replyCopilot = files.filter((f) => f.group === "reply-copilot");
 
   return (
     <div className="flex flex-col gap-8">
@@ -273,6 +274,15 @@ export function CoreBrainKnowledgeTab({
         title="Always loaded — core"
         hint="Every AI prompt gets these before the coach's personal brain."
         files={core}
+        openId={openId}
+        setOpenId={setOpenId}
+        authHeaders={authHeaders}
+        onSaved={load}
+      />
+      <KnowledgeGroup
+        title="Reply copilot"
+        hint="Conversations drafts. The router is the map. Shared rules always load. Situation files load from the tagged reply type, or all of them if untagged."
+        files={replyCopilot}
         openId={openId}
         setOpenId={setOpenId}
         authHeaders={authHeaders}

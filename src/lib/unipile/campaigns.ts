@@ -15,14 +15,19 @@ import {
   campaignStepStoresBody,
   isCampaignStepType,
   sanitizeStepConfig,
+  sanitizeMessageMediaPatch,
+  type CampaignStepMedia,
+  type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
 import { clampWaitHours } from "@/lib/unipile/waitDuration";
+import { patchesAfterDeletedWait } from "@/lib/unipile/campaignLeadActivity";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { splitFullName } from "@/lib/splitFullName";
 import { mergeSocialUrls, socialUrlsFromUnknown } from "@/lib/unipile/socialUrls";
 import { normalizeFacebookProfileUrl } from "@/lib/unipile/facebookIdentity";
 import { normalizeInstagramProfileUrl } from "@/lib/unipile/instagramIdentity";
+import { campaignPriorityValues } from "@/lib/unipile/campaignPriority";
 import {
   clampDailyLimit,
   DAILY_INVITE_LIMIT_MAX,
@@ -55,7 +60,13 @@ export type CampaignStepInput = {
   step_type: StepType;
   body?: string | null;
   wait_hours?: number | null;
-  variants?: Array<{ key: string; label?: string; body: string }> | null;
+  variants?: Array<{
+    key: string;
+    label?: string;
+    body: string;
+    media_kind?: CampaignStepMediaKind | null;
+    media?: CampaignStepMedia | null;
+  }> | null;
   send_mode?: "auto" | "remind" | null;
   fallback_hours?: number | null;
   fallback_body?: string | null;
@@ -308,11 +319,7 @@ export async function createCampaign(
   const name = input.name.trim() || template?.name || "Untitled campaign";
   const channel =
     template?.channel ?? (input.channel === "email" ? "email" : "linkedin");
-  const { count } = await supabaseAdmin
-    .from("linkedin_campaigns")
-    .select("id", { count: "exact", head: true })
-    .eq("coach_id", coachId);
-  const priority = Math.max(1, (count ?? 0) + 1);
+  const priority = campaignPriorityValues("medium");
   const { data, error } = await supabaseAdmin
     .from("linkedin_campaigns")
     .insert({
@@ -326,8 +333,8 @@ export async function createCampaign(
       timezone: "Europe/London",
       send_rules: DEFAULT_CAMPAIGN_SEND_RULES,
       outreach_account_id: input.outreach_account_id ?? null,
-      outreach_priority: priority,
-      outreach_weight: 1,
+      outreach_priority: priority.outreach_priority,
+      outreach_weight: priority.outreach_weight,
     })
     .select("*")
     .single();
@@ -374,11 +381,7 @@ export async function duplicateCampaign(coachId: string, campaignId: string) {
     200
   );
 
-  const { count } = await supabaseAdmin
-    .from("linkedin_campaigns")
-    .select("id", { count: "exact", head: true })
-    .eq("coach_id", coachId);
-  const priority = Math.max(1, (count ?? 0) + 1);
+  const fallbackPriority = campaignPriorityValues("medium");
 
   const { data, error } = await supabaseAdmin
     .from("linkedin_campaigns")
@@ -396,8 +399,10 @@ export async function duplicateCampaign(coachId: string, campaignId: string) {
       send_rules: parseCampaignSendRules(source.send_rules),
       stop_on_reply: source.stop_on_reply ?? true,
       outreach_account_id: source.outreach_account_id ?? null,
-      outreach_priority: priority,
-      outreach_weight: source.outreach_weight ?? 1,
+      outreach_priority:
+        source.outreach_priority ?? fallbackPriority.outreach_priority,
+      outreach_weight:
+        source.outreach_weight ?? fallbackPriority.outreach_weight,
     })
     .select("*")
     .single();
@@ -514,8 +519,20 @@ export async function updateCampaign(
 
 export async function replaceCampaignSteps(
   campaignId: string,
-  steps: CampaignStepInput[]
+  steps: CampaignStepInput[],
+  options?: { releaseWaitPosition?: number }
 ) {
+  const releaseWaitPosition = options?.releaseWaitPosition;
+  let oldSteps: Array<{ position: number; step_type: string; config?: unknown }> =
+    [];
+  if (releaseWaitPosition != null) {
+    const { data } = await supabaseAdmin
+      .from("linkedin_campaign_steps")
+      .select("position, step_type, config")
+      .eq("campaign_id", campaignId)
+      .order("position", { ascending: true });
+    oldSteps = data ?? [];
+  }
   const cleaned = steps
     .map((s, i) => {
       const sendMode =
@@ -542,12 +559,20 @@ export async function replaceCampaignSteps(
           Array.isArray(s.variants) &&
           s.variants.length
             ? s.variants
-                .filter((v) => v?.key && v?.body)
-                .map((v) => ({
-                  key: String(v.key).slice(0, 32),
-                  label: v.label ? String(v.label).slice(0, 120) : undefined,
-                  body: String(v.body).slice(0, 16000),
-                }))
+                .filter((v) => v?.key)
+                .map((v) => {
+                  const media = sanitizeMessageMediaPatch({
+                    media_kind: v.media_kind,
+                    media: v.media,
+                  });
+                  return {
+                    key: String(v.key).slice(0, 32),
+                    label: v.label ? String(v.label).slice(0, 120) : undefined,
+                    body: String(v.body ?? "").slice(0, 16000),
+                    media_kind: media.media_kind,
+                    media: media.media,
+                  };
+                })
             : [],
         send_mode: sendMode,
         fallback_hours: fallbackHours,
@@ -566,7 +591,21 @@ export async function replaceCampaignSteps(
     .eq("campaign_id", campaignId);
   if (delErr) throw new Error(delErr.message);
 
-  if (cleaned.length === 0) return [];
+  async function maybeRelease() {
+    if (releaseWaitPosition == null) return;
+    const wait = oldSteps.find((s) => s.position === releaseWaitPosition);
+    if (wait?.step_type !== "wait") return;
+    await releaseLeadsAfterDeletedWait(
+      campaignId,
+      releaseWaitPosition,
+      oldSteps
+    );
+  }
+
+  if (cleaned.length === 0) {
+    await maybeRelease();
+    return [];
+  }
 
   const { data, error } = await supabaseAdmin
     .from("linkedin_campaign_steps")
@@ -574,7 +613,51 @@ export async function replaceCampaignSteps(
     .select("*")
     .order("position", { ascending: true });
   if (error) throw new Error(error.message);
+  await maybeRelease();
   return data ?? [];
+}
+
+async function releaseLeadsAfterDeletedWait(
+  campaignId: string,
+  waitPosition: number,
+  oldSteps: Array<{ position: number; step_type: string; config?: unknown }>
+) {
+  const { data: leads, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select("id, status, current_step_position, next_action_at")
+    .eq("campaign_id", campaignId);
+  if (error) throw new Error(error.message);
+
+  const nowIso = new Date().toISOString();
+  const patches = patchesAfterDeletedWait({
+    waitPosition,
+    steps: oldSteps,
+    leads: leads ?? [],
+    nowIso,
+  });
+  const heldIds = patches
+    .filter((patch) => patch.next_action_at)
+    .map((patch) => patch.id);
+
+  for (const patch of patches) {
+    const { id, ...update } = patch;
+    if (Object.keys(update).length === 0) continue;
+    const { error: updateError } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .update(update)
+      .eq("id", id)
+      .eq("campaign_id", campaignId);
+    if (updateError) throw new Error(updateError.message);
+  }
+
+  if (heldIds.length === 0) return;
+  const { error: jobError } = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .update({ scheduled_for: nowIso })
+    .eq("campaign_id", campaignId)
+    .in("lead_id", heldIds)
+    .in("status", ["pending", "awaiting_coach"]);
+  if (jobError) throw new Error(jobError.message);
 }
 
 export type LeadImportRow = {
@@ -1047,6 +1130,220 @@ export async function deleteCampaignLead(
     .eq("campaign_id", campaignId)
     .eq("coach_id", coachId);
   if (error) throw new Error(error.message);
+}
+
+const PAUSABLE_LEAD_STATUSES = new Set([
+  "queued",
+  "invited",
+  "connected",
+  "in_sequence",
+]);
+
+const MAX_LEAD_BATCH = 100;
+
+function asLeadIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const ids: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string" || !CONTACT_ID_RE.test(item)) continue;
+    if (!ids.includes(item)) ids.push(item);
+    if (ids.length >= MAX_LEAD_BATCH) break;
+  }
+  return ids;
+}
+
+function appendLeadFunnelEvent(
+  existing: unknown,
+  event: { type: string; meta?: Record<string, unknown> }
+) {
+  const list = Array.isArray(existing) ? [...existing] : [];
+  list.push({
+    type: event.type,
+    at: new Date().toISOString(),
+    ...(event.meta ? { meta: event.meta } : {}),
+  });
+  return list.slice(-40);
+}
+
+function pausedFromStatus(events: unknown): string | null {
+  if (!Array.isArray(events)) return null;
+  for (let i = events.length - 1; i >= 0; i -= 1) {
+    const event = events[i];
+    if (!event || typeof event !== "object") continue;
+    const row = event as { type?: unknown; meta?: { from?: unknown } };
+    if (row.type !== "sequence_paused") continue;
+    return typeof row.meta?.from === "string" ? row.meta.from : null;
+  }
+  return null;
+}
+
+export async function deleteCampaignLeads(
+  coachId: string,
+  campaignId: string,
+  leadIds: unknown
+) {
+  const ids = asLeadIds(leadIds);
+  if (!ids.length) return { deleted: 0 };
+  const { error, count } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .delete({ count: "exact" })
+    .in("id", ids)
+    .eq("campaign_id", campaignId)
+    .eq("coach_id", coachId);
+  if (error) throw new Error(error.message);
+  return { deleted: count ?? ids.length };
+}
+
+export async function pauseCampaignLeads(
+  coachId: string,
+  campaignId: string,
+  leadIds: unknown
+) {
+  const ids = asLeadIds(leadIds);
+  if (!ids.length) return { updated: 0 };
+  const { data: leads, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select("id, status, funnel_events")
+    .in("id", ids)
+    .eq("campaign_id", campaignId)
+    .eq("coach_id", coachId);
+  if (error) throw new Error(error.message);
+
+  const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
+  let updated = 0;
+  for (const lead of leads ?? []) {
+    const status = String(lead.status || "");
+    if (!PAUSABLE_LEAD_STATUSES.has(status)) continue;
+    const { error: upErr } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .update({
+        status: "paused",
+        funnel_events: appendLeadFunnelEvent(lead.funnel_events, {
+          type: "sequence_paused",
+          meta: { from: status },
+        }),
+      })
+      .eq("id", lead.id);
+    if (upErr) throw new Error(upErr.message);
+    await cancelOpenSendJobs(lead.id as string, "Lead paused");
+    updated += 1;
+  }
+  return { updated };
+}
+
+export async function resumeCampaignLeads(
+  coachId: string,
+  campaignId: string,
+  leadIds: unknown
+) {
+  const ids = asLeadIds(leadIds);
+  if (!ids.length) return { updated: 0 };
+  const { data: leads, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select("id, status, current_step_position, funnel_events")
+    .in("id", ids)
+    .eq("campaign_id", campaignId)
+    .eq("coach_id", coachId);
+  if (error) throw new Error(error.message);
+
+  let updated = 0;
+  for (const lead of leads ?? []) {
+    if (String(lead.status || "") !== "paused") continue;
+    const from = pausedFromStatus(lead.funnel_events);
+    const nextStatus =
+      from && PAUSABLE_LEAD_STATUSES.has(from)
+        ? from
+        : Number(lead.current_step_position ?? 0) > 0
+          ? "in_sequence"
+          : "queued";
+    const { error: upErr } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .update({
+        status: nextStatus,
+        funnel_events: appendLeadFunnelEvent(lead.funnel_events, {
+          type: "sequence_resumed",
+          meta: { to: nextStatus },
+        }),
+      })
+      .eq("id", lead.id);
+    if (upErr) throw new Error(upErr.message);
+    updated += 1;
+  }
+  if (updated > 0) {
+    const { data: campaign } = await supabaseAdmin
+      .from("linkedin_campaigns")
+      .select("status")
+      .eq("id", campaignId)
+      .eq("coach_id", coachId)
+      .maybeSingle();
+    if (campaign?.status === "running") {
+      await enqueuePendingJobsForCampaign(coachId, campaignId);
+    }
+  }
+  return { updated };
+}
+
+export async function moveCampaignLeads(
+  coachId: string,
+  campaignId: string,
+  leadIds: unknown,
+  targetCampaignId: string
+) {
+  if (!CONTACT_ID_RE.test(targetCampaignId) || targetCampaignId === campaignId) {
+    throw new Error("Pick a different campaign.");
+  }
+  const ids = asLeadIds(leadIds);
+  if (!ids.length) return { moved: 0 };
+  const { data: leads, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select(
+      "id, contact_id, linkedin_url, linkedin_provider_id, first_name, last_name, company, title"
+    )
+    .in("id", ids)
+    .eq("campaign_id", campaignId)
+    .eq("coach_id", coachId);
+  if (error) throw new Error(error.message);
+
+  const { enrollLeadInOtherCampaign } = await import(
+    "@/lib/unipile/sequenceAdvance"
+  );
+  let moved = 0;
+  for (const lead of leads ?? []) {
+    await enrollLeadInOtherCampaign({
+      coachId,
+      sourceCampaignId: campaignId,
+      targetCampaignId,
+      lead,
+    });
+    await deleteCampaignLead(coachId, campaignId, lead.id as string);
+    moved += 1;
+  }
+  return { moved };
+}
+
+/**
+ * Hard-delete. AuthZ is coach_id on the row (same as update/archive). Missing
+ * or foreign campaigns return false so the route can 404 without an existence
+ * oracle. Steps, leads, and send jobs cascade in the DB; conversations and
+ * contacts are not campaign-owned and stay. Cancel open jobs first so the
+ * worker cannot pick a row mid-delete.
+ */
+export async function deleteCampaign(coachId: string, campaignId: string) {
+  const owned = await campaignOwnedByCoach(coachId, campaignId);
+  if (!owned) return false;
+
+  const { cancelOpenSendJobsForCampaign } = await import(
+    "@/lib/unipile/remindQueue"
+  );
+  await cancelOpenSendJobsForCampaign(coachId, campaignId, "Campaign deleted");
+
+  const { error, count } = await supabaseAdmin
+    .from("linkedin_campaigns")
+    .delete({ count: "exact" })
+    .eq("id", campaignId)
+    .eq("coach_id", coachId);
+  if (error) throw new Error(error.message);
+  return (count ?? 0) > 0;
 }
 
 export async function setCampaignStatus(

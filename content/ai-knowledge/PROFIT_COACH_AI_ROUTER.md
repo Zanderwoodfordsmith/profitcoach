@@ -29,6 +29,8 @@ You assist **BCA coaches** using Profit Coach / BOSS. You are **not** speaking t
 
 **Skill knowledge** (loaded only when a skill needs them): `avatar-profile.md`, `copywriter-knowledge.md`, plus legacy outreach files (`connection-messages`, `follow-up-campaigns`, etc.) under `src/knowledge/`.
 
+**Reply copilot** (Conversations drafts, not the Create hub): `content/ai-knowledge/reply-copilot/`. Router is the map. Shared rules always load. Situation files load from the tagged reply type (or all of them if untagged). Admins view and edit under **Brand → Core brain → Knowledge → Reply copilot**.
+
 **Playbooks** — `content/playbooks/Source/` excerpts, per skill only (never the whole tree).
 
 ---
@@ -55,8 +57,9 @@ Use the skill id the coach selected. If unclear, start at the top of the funnel.
 | Skill id | Name | Use when |
 |----------|------|----------|
 | `coaching_ai` | Coaching AI | Client-facing AI Coach (clients app, not coach Create) |
+| `reply_copilot` | Reply copilot | Draft a sendable reply in Conversations (human still sends) |
 
-**DB-backed prompts** (edited in admin, not in code): `coaching_ai` system prompt; `linkedin_profile` rewrite voice for the Profile Optimizer tool.
+**DB-backed prompts** (edited in admin, not in code): `coaching_ai` system prompt; `linkedin_profile` rewrite voice for the Profile Optimizer tool; `reply_copilot` router (falls back to `reply-copilot/ROUTER.md`).
 
 Code source of truth for skill definitions: `src/lib/profitCoachAi/registry.ts`.
 

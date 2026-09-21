@@ -134,14 +134,29 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
             Knowledge loaded
           </p>
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
-            {skill.knowledgeRefs.map((ref, i) => (
-              <li
-                key={i}
-                className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200"
-              >
-                {ref.type === "playbook" ? ref.path : ref.file}
-              </li>
-            ))}
+            {skill.knowledgeRefs.map((ref, i) => {
+              const file = ref.type === "playbook" ? ref.path : ref.file;
+              const href =
+                ref.type === "playbook"
+                  ? null
+                  : `/admin/brand?tab=brain&brainTab=knowledge&open=${encodeURIComponent(file)}`;
+              const chip = (
+                <span className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200">
+                  {file}
+                </span>
+              );
+              return (
+                <li key={i}>
+                  {href ? (
+                    <a href={href} className="hover:text-sky-700">
+                      {chip}
+                    </a>
+                  ) : (
+                    chip
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}

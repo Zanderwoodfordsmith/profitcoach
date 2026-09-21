@@ -3,6 +3,7 @@ import {
   CalendarDays,
   FileDown,
   LayoutGrid,
+  Library,
   MessagesSquare,
   Newspaper,
   Palette,
@@ -183,6 +184,10 @@ function IconWallet({ className }: { className?: string }) {
 
 function IconSiteTools({ className }: { className?: string }) {
   return <Wrench className={className} />;
+}
+
+function IconCampaignLibrary({ className }: { className?: string }) {
+  return <Library className={className} />;
 }
 
 function IconRocket({ className }: { className?: string }) {
@@ -470,6 +475,11 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
     href: "/admin/brand",
     label: "Brand",
     icon: IconBrand,
+  },
+  {
+    href: "/admin/campaign-library",
+    label: "Campaign library",
+    icon: IconCampaignLibrary,
   },
   {
     href: "/admin/blog",

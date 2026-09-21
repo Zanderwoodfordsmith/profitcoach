@@ -13,8 +13,13 @@ import {
   selectCopilotThreadWindow,
   type CopilotThreadMessage,
 } from "@/lib/messaging/replyCopilot";
+import {
+  assembleReplyCopilotKnowledge,
+  resolveReplyCopilotRouter,
+} from "@/lib/messaging/replyCopilotKnowledge";
 import { consumeReplyCopilotRateLimit } from "@/lib/messaging/replyCopilotRateLimit";
 import { resolveMessagingAccess } from "@/lib/messaging/resolveMessagingAccess";
+import { loadBrandKnowledgeOverrides } from "@/lib/profitCoachAi/brandKnowledge";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -151,7 +156,7 @@ export async function POST(
     }
   }
 
-  const [{ data: settings }, notesRes, { data: profile }] =
+  const [{ data: settings }, notesRes, { data: profile }, overrides] =
     await Promise.all([
       supabaseAdmin
         .from("reply_copilot_settings")
@@ -169,10 +174,9 @@ export async function POST(
         .select("full_name, first_name")
         .eq("id", access.coachId)
         .maybeSingle(),
+      loadBrandKnowledgeOverrides(),
     ]);
 
-  const adminVoice =
-    typeof settings?.system_prompt === "string" ? settings.system_prompt : "";
   const coachNotesRaw =
     notesRes.error?.code === "42703" || notesRes.error?.code === "PGRST204"
       ? ""
@@ -185,9 +189,21 @@ export async function POST(
     (typeof profile?.first_name === "string" && profile.first_name.trim()) ||
     null;
 
+  const { router } = resolveReplyCopilotRouter({
+    storedPrompt:
+      typeof settings?.system_prompt === "string" ? settings.system_prompt : "",
+    overrides,
+  });
+  const { markdown: knowledge } = assembleReplyCopilotKnowledge({
+    disposition: prospectFacts?.replyDisposition ?? null,
+    bossScore: prospectFacts?.bossScore ?? null,
+    overrides,
+  });
+
   const system = composeReplyCopilotSystem({
-    adminVoice,
+    adminVoice: router,
     coachNotes: coachNotes || null,
+    knowledge,
   });
   const user = composeReplyCopilotUserMessage({
     channel: channelRaw,

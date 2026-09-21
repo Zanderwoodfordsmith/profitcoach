@@ -16,6 +16,7 @@ import {
   campaignStepCreatesJob,
   inviteNoConnectFrom,
   isLinkedInOutreachStep,
+  messageSendConfigFrom,
 } from "@/lib/unipile/campaignStepTypes";
 import {
   engageInstagramLatestPost,
@@ -660,6 +661,7 @@ export async function processOutreachJobsTick(): Promise<{
         return {
           text: buildMessageBody(picked.body, leadForMessage, templateExtras),
           variantKey: picked.variantKey,
+          variant: picked.variant,
         };
       }
 
@@ -715,8 +717,7 @@ export async function processOutreachJobsTick(): Promise<{
           })
           .eq("id", lead.id);
       } else if (step.step_type === "message") {
-        const { text, variantKey } = await renderedStepBody();
-        void variantKey;
+        const { text, variant } = await renderedStepBody();
         const sent = await sendCampaignLinkedInMessage({
           coachId: job.coach_id,
           campaignId: job.campaign_id,
@@ -724,7 +725,7 @@ export async function processOutreachJobsTick(): Promise<{
           providerId: providerId as string,
           lead,
           text,
-          stepConfig: step.config,
+          stepConfig: messageSendConfigFrom(step.config, variant),
         });
         providerRef = sent.messageId;
         await advanceLeadAfterStep({

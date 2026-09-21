@@ -360,11 +360,11 @@ export function CampaignCompactDial({
 
 const REPLY_COLORS = {
   positive: "#10b981",
-  negative: "#f43f5e",
-  other: "#f59e0b",
+  neutral: "#f59e0b",
+  deselect: "#f43f5e",
 } as const;
 
-/** Compact replies donut + Positive / Negative / Other, for a campaign row. */
+/** Compact replies donut + Positive / Neutral / Deselect, for a campaign row. */
 export function CampaignReplyMix({
   positive,
   negative,
@@ -385,8 +385,8 @@ export function CampaignReplyMix({
   const circumference = 2 * Math.PI * radius;
   const parts = [
     { key: "positive", value: positive, color: REPLY_COLORS.positive },
-    { key: "negative", value: negative, color: REPLY_COLORS.negative },
-    { key: "other", value: other, color: REPLY_COLORS.other },
+    { key: "neutral", value: other, color: REPLY_COLORS.neutral },
+    { key: "deselect", value: negative, color: REPLY_COLORS.deselect },
   ];
   let offset = 0;
   const segments =
@@ -410,7 +410,7 @@ export function CampaignReplyMix({
     <div
       className={`flex items-center ${gapClass}`}
       role="img"
-      aria-label={`Replies ${total}: ${positive} positive, ${negative} negative, ${other} other`}
+      aria-label={`Replies ${total}: ${positive} positive, ${other} neutral, ${negative} deselect`}
     >
       <div className={`relative shrink-0 ${dialClass}`}>
         <svg className="h-full w-full" viewBox={`0 0 ${viewSize} ${viewSize}`}>
@@ -448,8 +448,8 @@ export function CampaignReplyMix({
       <ul className={listClass}>
         {[
           { label: "Positive", value: positive, color: REPLY_COLORS.positive },
-          { label: "Negative", value: negative, color: REPLY_COLORS.negative },
-          { label: "Other", value: other, color: REPLY_COLORS.other },
+          { label: "Neutral", value: other, color: REPLY_COLORS.neutral },
+          { label: "Deselect", value: negative, color: REPLY_COLORS.deselect },
         ].map((row) => (
           <li
             key={row.label}

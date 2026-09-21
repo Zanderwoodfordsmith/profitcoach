@@ -4,6 +4,11 @@ import {
   buildPersonalisedAssessmentProLink,
 } from "@/lib/assessmentContactParams";
 import type { AbVariantStats } from "@/lib/unipile/abMetrics";
+import {
+  sanitizeMessageMediaPatch,
+  type CampaignStepMedia,
+  type CampaignStepMediaKind,
+} from "@/lib/unipile/campaignStepTypes";
 
 export type InterestOutcome = "positive" | "soft" | "negative" | "unclear";
 
@@ -222,6 +227,60 @@ export async function logLeadInterest(input: {
   return updated;
 }
 
+/** Remove a reply mark so the coach can choose again. */
+export async function clearLeadInterest(input: {
+  coachId: string;
+  leadId: string;
+  skipContactSync?: boolean;
+}) {
+  const { data: lead, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select(
+      "id, coach_id, campaign_id, status, funnel_events, interest_outcome, contact_id"
+    )
+    .eq("id", input.leadId)
+    .eq("coach_id", input.coachId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!lead) throw new Error("Lead not found.");
+
+  const currentStatus = (lead.status as string) || "";
+  const nextStatus = currentStatus === "interested" ? "replied" : currentStatus;
+
+  const { data: updated, error: upErr } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .update({
+      interest_outcome: null,
+      interest_logged_at: null,
+      status: nextStatus,
+      funnel_events: appendFunnelEvent(lead.funnel_events, {
+        type: "interest_cleared",
+        meta: { status: nextStatus },
+      }),
+    })
+    .eq("id", input.leadId)
+    .select(
+      "id, status, interest_outcome, interest_note, interest_logged_at, funnel_events, campaign_id"
+    )
+    .maybeSingle();
+  if (upErr) throw new Error(upErr.message);
+
+  if (!input.skipContactSync) {
+    const contactId = (lead.contact_id as string | null) ?? null;
+    if (contactId) {
+      const { clearContactReplyDisposition } = await import(
+        "@/lib/prospects/replyDisposition"
+      );
+      await clearContactReplyDisposition({
+        coachId: input.coachId,
+        contactId,
+      });
+    }
+  }
+
+  return updated;
+}
+
 export async function advanceLeadFunnel(input: {
   coachId: string;
   leadId: string;
@@ -302,7 +361,13 @@ export async function listInterestQueue(coachId: string) {
   return data ?? [];
 }
 
-export type StepVariant = { key: string; label?: string; body: string };
+export type StepVariant = {
+  key: string;
+  label?: string;
+  body: string;
+  media_kind?: CampaignStepMediaKind | null;
+  media?: CampaignStepMedia | null;
+};
 
 export function parseStepVariants(raw: unknown): StepVariant[] {
   if (!Array.isArray(raw)) return [];
@@ -311,12 +376,20 @@ export function parseStepVariants(raw: unknown): StepVariant[] {
       if (!v || typeof v !== "object") return null;
       const r = v as Record<string, unknown>;
       const key = String(r.key || "").trim();
+      if (!key) return null;
       const body = String(r.body || "");
-      if (!key || !body) return null;
+      const hasMedia = "media_kind" in r || "media" in r;
+      const mediaFields = hasMedia
+        ? sanitizeMessageMediaPatch({
+            media_kind: r.media_kind,
+            media: r.media,
+          })
+        : {};
       return {
         key,
         label: typeof r.label === "string" ? r.label : undefined,
         body,
+        ...mediaFields,
       };
     })
     .filter(Boolean) as StepVariant[];
@@ -330,10 +403,18 @@ export async function resolveStepBodyForLead(input: {
   variants: unknown;
   abAssignments: unknown;
   preferredVariantKey?: string | null;
-}): Promise<{ body: string; variantKey: string | null }> {
+}): Promise<{
+  body: string;
+  variantKey: string | null;
+  variant: StepVariant | null;
+}> {
   const variants = parseStepVariants(input.variants);
   if (!variants.length) {
-    return { body: (input.body || "").trim(), variantKey: null };
+    return {
+      body: (input.body || "").trim(),
+      variantKey: null,
+      variant: null,
+    };
   }
 
   const assignments =
@@ -361,7 +442,7 @@ export async function resolveStepBodyForLead(input: {
   }
 
   const chosen = variants.find((v) => v.key === key) || variants[0];
-  return { body: chosen.body, variantKey: key };
+  return { body: chosen.body, variantKey: key, variant: chosen };
 }
 
 export async function abStatsForCampaign(campaignId: string) {
