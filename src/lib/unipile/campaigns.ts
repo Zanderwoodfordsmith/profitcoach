@@ -10,18 +10,13 @@ import {
 } from "@/lib/unipile/profileVars";
 import {
   campaignChannelsFromSteps,
-  campaignStepAllowsVariants,
   campaignStepCreatesJob,
-  campaignStepStoresBody,
-  isCampaignStepType,
-  keepAbPair,
-  sanitizeStepConfig,
-  sanitizeMessageMediaPatch,
+  parseManualFallbackHours,
   type CampaignStepMedia,
   type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
-import { clampWaitHours } from "@/lib/unipile/waitDuration";
+import { cleanCampaignStepsForSave } from "@/lib/unipile/campaignStepReplace";
 import { patchesAfterDeletedWait } from "@/lib/unipile/campaignLeadActivity";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { splitFullName } from "@/lib/splitFullName";
@@ -364,6 +359,7 @@ export async function duplicateCampaign(coachId: string, campaignId: string) {
     outreach_account_id?: string | null;
     outreach_priority?: number | null;
     outreach_weight?: number | null;
+    manual_fallback_hours?: number | null;
   };
 
   const copyName = `${String(source.name || "Untitled campaign").trim()} (copy)`.slice(
@@ -393,6 +389,9 @@ export async function duplicateCampaign(coachId: string, campaignId: string) {
         source.outreach_priority ?? fallbackPriority.outreach_priority,
       outreach_weight:
         source.outreach_weight ?? fallbackPriority.outreach_weight,
+      manual_fallback_hours: parseManualFallbackHours(
+        source.manual_fallback_hours
+      ),
     })
     .select("*")
     .single();
@@ -445,6 +444,7 @@ export async function updateCampaign(
     "channel",
     "outreach_priority",
     "outreach_weight",
+    "manual_fallback_hours",
   ];
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
@@ -492,6 +492,11 @@ export async function updateCampaign(
   if ("stop_on_reply" in update) {
     update.stop_on_reply = update.stop_on_reply === true;
   }
+  if ("manual_fallback_hours" in update) {
+    update.manual_fallback_hours = parseManualFallbackHours(
+      update.manual_fallback_hours
+    );
+  }
   if (typeof update.name === "string") {
     update.name = (update.name as string).trim() || "Untitled campaign";
   }
@@ -523,89 +528,28 @@ export async function replaceCampaignSteps(
       .order("position", { ascending: true });
     oldSteps = data ?? [];
   }
-  const cleaned = steps
-    .map((s, i) => {
-      const sendMode =
-        s.step_type === "message" && s.send_mode === "remind"
-          ? "remind"
-          : "auto";
-      const fallbackHours =
-        sendMode === "remind" && s.fallback_hours != null
-          ? Math.max(1, Math.min(720, Number(s.fallback_hours)))
-          : null;
-      return {
-        campaign_id: campaignId,
-        position: i,
-        step_type: s.step_type,
-        body: campaignStepStoresBody(s.step_type)
-          ? (s.body ?? "").slice(0, 16000)
-          : null,
-        wait_hours:
-          s.step_type === "wait"
-            ? clampWaitHours(Number(s.wait_hours ?? 24))
-            : null,
-        variants:
-          campaignStepAllowsVariants(s.step_type) &&
-          Array.isArray(s.variants) &&
-          s.variants.length
-            ? keepAbPair(
-                s.variants
-                  .filter((v) => v?.key)
-                  .map((v) => {
-                    const media = sanitizeMessageMediaPatch({
-                      media_kind: v.media_kind,
-                      media: v.media,
-                    });
-                    return {
-                      key: String(v.key).slice(0, 32),
-                      label: v.label ? String(v.label).slice(0, 120) : undefined,
-                      body: String(v.body ?? "").slice(0, 16000),
-                      media_kind: media.media_kind,
-                      media: media.media,
-                    };
-                  })
-              )
-            : [],
-        send_mode: sendMode,
-        fallback_hours: fallbackHours,
-        fallback_body:
-          sendMode === "remind" && s.fallback_body
-            ? String(s.fallback_body).slice(0, 16000)
-            : null,
-        config: sanitizeStepConfig(s.step_type, s.config),
-      };
-    })
-    .filter((s) => isCampaignStepType(s.step_type));
+  const cleaned = cleanCampaignStepsForSave(steps);
 
-  const { error: delErr } = await supabaseAdmin
-    .from("linkedin_campaign_steps")
-    .delete()
-    .eq("campaign_id", campaignId);
-  if (delErr) throw new Error(delErr.message);
-
-  async function maybeRelease() {
-    if (releaseWaitPosition == null) return;
-    const wait = oldSteps.find((s) => s.position === releaseWaitPosition);
-    if (wait?.step_type !== "wait") return;
-    await releaseLeadsAfterDeletedWait(
-      campaignId,
-      releaseWaitPosition,
-      oldSteps
-    );
-  }
-
-  if (cleaned.length === 0) {
-    await maybeRelease();
-    return [];
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from("linkedin_campaign_steps")
-    .insert(cleaned)
-    .select("*")
-    .order("position", { ascending: true });
+  const { data, error } = await supabaseAdmin.rpc(
+    "replace_linkedin_campaign_steps",
+    {
+      p_campaign_id: campaignId,
+      p_steps: cleaned,
+    }
+  );
   if (error) throw new Error(error.message);
-  await maybeRelease();
+
+  if (releaseWaitPosition != null) {
+    const wait = oldSteps.find((s) => s.position === releaseWaitPosition);
+    if (wait?.step_type === "wait") {
+      await releaseLeadsAfterDeletedWait(
+        campaignId,
+        releaseWaitPosition,
+        oldSteps
+      );
+    }
+  }
+
   return data ?? [];
 }
 

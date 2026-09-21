@@ -39,6 +39,10 @@ import { upsertSalesNavLeadsToCache } from "@/lib/salesNavigator/upsertSalesNavL
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { flushSalesNavSnapshotToList } from "@/lib/salesNavigator/flushImportToList";
 import { isUnipileConfigured, linkedInSearch, unipileLinkedInAccountError } from "@/lib/unipile/client";
+import {
+  nextUnipileUrlSearchCursor,
+  salesNavUrlForUnipile,
+} from "@/lib/unipile/linkedinSearchCursor";
 import { requireLiveLinkedInUnipileAccount } from "@/lib/unipile/linkedinSearchAccount";
 import { mapUnipileSearchItem } from "@/lib/unipile/salesNavLeads";
 
@@ -291,8 +295,9 @@ async function syncUnipileSalesNavImportJobInner(
     }
 
     const current = segmentPlan[segmentIndex];
-    const searchUrl =
-      current?.salesNavUrl?.trim() || job.sales_nav_url?.trim() || "";
+    const searchUrl = salesNavUrlForUnipile(
+      current?.salesNavUrl?.trim() || job.sales_nav_url?.trim() || ""
+    );
     if (!isSalesNavSearchUrl(searchUrl)) {
       return markFailed(
         job.id,
@@ -361,14 +366,11 @@ async function syncUnipileSalesNavImportJobInner(
       current != null &&
       remaining >= SALES_NAV_EXTRACT_CAP &&
       shouldProbeSalesNavExtractCap(current);
-    const limit = probeForCap
-      ? 1
-      : Math.min(UNIPILE_PAGE_SIZE, Math.max(1, remaining));
+    const limit = Math.min(UNIPILE_PAGE_SIZE, Math.max(1, remaining));
 
     const res = await linkedInSearch({
       account_id: accountId,
-      url: searchUrl,
-      cursor: cursor || undefined,
+      ...(cursor ? { cursor } : { url: searchUrl }),
       limit,
       timeoutMs: SEARCH_TIMEOUT_MS,
     });
@@ -426,9 +428,6 @@ async function syncUnipileSalesNavImportJobInner(
       };
     }
 
-    const nextCursor = nextCursorFromSearch(res.data);
-    const stalledCursor = Boolean(nextCursor && cursor && nextCursor === cursor);
-
     const snapshotBefore = snapshot.length;
     if (items.length > 0) {
       const cache = await upsertSalesNavLeadsToCache({
@@ -454,6 +453,17 @@ async function syncUnipileSalesNavImportJobInner(
       }
     }
     const newUniqueCount = Math.max(0, snapshot.length - snapshotBefore);
+    const scrapedNow = segmentPlan[segmentIndex]?.scrapedCount ?? 0;
+    const zeroUniquePages =
+      items.length > 0 && newUniqueCount === 0
+        ? (segmentPlan[segmentIndex]?.zeroUniquePages ?? 0) + 1
+        : 0;
+    if (segmentPlan[segmentIndex]) {
+      segmentPlan[segmentIndex] = {
+        ...segmentPlan[segmentIndex],
+        zeroUniquePages,
+      };
+    }
 
     if (globalCap != null && snapshot.length >= globalCap) {
       if (segmentPlan[segmentIndex]) {
@@ -471,13 +481,29 @@ async function syncUnipileSalesNavImportJobInner(
       pageTarget,
       importAll,
     });
+    const providerCursor = nextCursorFromSearch(res.data);
+    const stalledCursor = Boolean(
+      providerCursor && cursor && providerCursor === cursor
+    );
+    const moreRemain = scrapedNow < scrapedCapAfter;
+    const nextCursor =
+      moreRemain && items.length > 0
+        ? nextUnipileUrlSearchCursor({
+            accountId,
+            url: searchUrl,
+            start: scrapedNow,
+            limit: UNIPILE_PAGE_SIZE,
+            providerCursor,
+          })
+        : providerCursor;
     const segmentDone = shouldFinishUnipileSegment({
-      scrapedCount: segmentPlan[segmentIndex]?.scrapedCount ?? 0,
+      scrapedCount: scrapedNow,
       scrapedCap: scrapedCapAfter,
       nextCursor,
       stalledCursor,
       itemsLength: items.length,
       newUniqueCount,
+      duplicatePages: zeroUniquePages,
     });
 
     if (segmentDone) {

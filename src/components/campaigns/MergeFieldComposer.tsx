@@ -3,10 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import {
-  MERGE_FIELD_CATALOG,
+  DEFAULT_MERGE_FIELD_PICKER,
+  insertableMergeFields,
+  mergeFieldPickerHint,
+  mergeFieldPickerShowsResultWarning,
   mergeToken,
+  resolveMergeField,
   tokenizeMergeFields,
   type MergeField,
+  type MergeFieldPickerContext,
   type MergeSegment,
 } from "@/lib/unipile/mergeFields";
 
@@ -230,10 +235,12 @@ function mergeKeyFromDrag(data: DataTransfer): string | null {
 
 function InsertChip({
   field,
+  hint,
   onInsert,
   tabbable,
 }: {
   field: MergeField;
+  hint: string;
   onInsert: (key: string) => void;
   tabbable: boolean;
 }) {
@@ -250,7 +257,7 @@ function InsertChip({
         type="button"
         draggable
         tabIndex={tabbable ? 0 : -1}
-        aria-label={`Insert ${field.label}. ${field.hint}. Example: ${field.example}. Click to insert, or drag into the message.`}
+        aria-label={`Insert ${field.label}. ${hint}. Example: ${field.example}. Click to insert, or drag into the message.`}
         onPointerEnter={(event) => showTip(event.currentTarget)}
         onPointerLeave={() => setTip(null)}
         onFocus={(event) => showTip(event.currentTarget)}
@@ -280,7 +287,7 @@ function InsertChip({
           style={{ left: tip.x, top: tip.y - 8 }}
         >
           <span className="block text-[12px] font-medium leading-snug text-white">
-            {field.hint}
+            {hint}
           </span>
           <span className="mt-0.5 block text-[11px] font-normal leading-snug text-sky-200">
             e.g. {field.example}
@@ -300,18 +307,22 @@ export function MergeFieldComposer({
   onCommit,
   placeholder = "Hi First name…",
   ariaLabel,
+  picker = DEFAULT_MERGE_FIELD_PICKER,
 }: {
   value: string;
   onChange: (next: string) => void;
   onCommit: () => void;
   placeholder?: string;
   ariaLabel?: string;
+  picker?: MergeFieldPickerContext;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
   const ignoreBlur = useRef(false);
   const emitted = useRef(value);
   const [expanded, setExpanded] = useState(false);
+  const fields = useMemo(() => insertableMergeFields(picker), [picker]);
+  const resultWarning = mergeFieldPickerShowsResultWarning(picker);
 
   useEffect(() => {
     const el = editorRef.current;
@@ -372,7 +383,7 @@ export function MergeFieldComposer({
   }
 
   function insert(key: string, atPoint?: { x: number; y: number }) {
-    const field = MERGE_FIELD_CATALOG.find((item) => item.key === key);
+    const field = resolveMergeField(key);
     const el = editorRef.current;
     if (!field || !el) return;
     el.focus();
@@ -477,15 +488,22 @@ export function MergeFieldComposer({
                 : "flex flex-nowrap gap-1 overflow-hidden p-1.5"
             }
           >
-            {MERGE_FIELD_CATALOG.map((field) => (
+            {fields.map((field) => (
               <InsertChip
                 key={field.key}
                 field={field}
+                hint={mergeFieldPickerHint(field, picker)}
                 tabbable={expanded}
                 onInsert={insert}
               />
             ))}
           </div>
+          {resultWarning ? (
+            <p className="px-1.5 pb-1.5 text-[11px] leading-snug text-slate-500">
+              Scorecard results only fill in after they finish the Boss
+              Scorecard.
+            </p>
+          ) : null}
         </div>
         <div className="relative z-10 flex shrink-0 self-stretch items-start bg-slate-100">
           {expanded ? null : (

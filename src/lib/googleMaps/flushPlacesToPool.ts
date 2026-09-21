@@ -1,6 +1,8 @@
 import { fetchAllSupabasePages } from "@/lib/contactsSchemaSafeSelect";
 import {
+  copyMatchingPoolItemsOntoList,
   displayListPersonName,
+  ensureCoachPool,
   loadBlacklistedLinkedInUrls,
   recountLeadListItems,
 } from "@/lib/leadLists/audienceLists";
@@ -104,6 +106,21 @@ export async function insertPoolRecords(opts: {
     };
   }
 
+  const pool = await ensureCoachPool(opts.coachId);
+  let copied = 0;
+  if (pool.id !== opts.listId) {
+    const identityKeys = opts.records
+      .map((record) => poolIdentityKey(record))
+      .filter((key): key is string => Boolean(key));
+    const copyResult = await copyMatchingPoolItemsOntoList({
+      coachId: opts.coachId,
+      targetListId: opts.listId,
+      identityKeys,
+    });
+    copied = copyResult.added;
+  }
+  const remainingRoom = Math.max(0, room - copied);
+
   const existing = await loadPoolDedupe({
     coachId: opts.coachId,
     listId: opts.listId,
@@ -135,7 +152,7 @@ export async function insertPoolRecords(opts: {
       skipped += 1;
       continue;
     }
-    if (rows.length >= room) {
+    if (rows.length >= remainingRoom) {
       skipped += 1;
       continue;
     }
@@ -190,8 +207,8 @@ export async function insertPoolRecords(opts: {
   }
 
   return {
-    added: inserted,
-    skipped,
+    added: inserted + copied,
+    skipped: Math.max(0, skipped - copied),
     blacklisted: blocked,
     invalid,
   };

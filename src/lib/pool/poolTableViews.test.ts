@@ -19,6 +19,7 @@ describe("pool table views", () => {
     assert.equal(settings.sourceFilter, "sales_nav");
     assert.equal(settings.campaignFilter, "not_in_campaign");
     assert.equal(settings.contactFilter, "all");
+    assert.equal(settings.linkedinFilter, "all");
     assert.equal(settings.dateAddedFilter, "all");
     assert.equal(settings.tagFilter, "all");
     assert.equal(settings.sortField, "company");
@@ -26,14 +27,16 @@ describe("pool table views", () => {
     assert.equal(settings.grouping.field, null);
   });
 
-  it("keeps contact, date, and tag filters", () => {
+  it("keeps contact, LinkedIn, date, and tag filters", () => {
     const settings = normalizePoolTableViewSettings({
       contactFilter: "both",
+      linkedinFilter: "has",
       dateAddedFilter: "7d",
       tagFilter: "Hot",
       grouping: { field: "tags", order: "asc", manualOrder: {} },
     });
     assert.equal(settings.contactFilter, "both");
+    assert.equal(settings.linkedinFilter, "has");
     assert.equal(settings.dateAddedFilter, "7d");
     assert.equal(settings.tagFilter, "Hot");
     assert.equal(settings.grouping.field, "tags");

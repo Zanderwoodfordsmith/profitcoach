@@ -35,6 +35,7 @@ import {
   formatShortTime,
 } from "@/lib/formatShortDate";
 import {
+  autoEmailReplySubject,
   consumeMessagingComposeDraft,
   clearMessagingComposeDraft,
   composeDraftPreview,
@@ -42,6 +43,7 @@ import {
   messagingComposeDraftSummaries,
   nextComposeDraftChannel,
   peekMessagingComposeDraft,
+  pruneMessagingComposeDrafts,
   setMessagingComposeDraft,
   type MessagingComposeChannel,
   type MessagingComposeDraftSummary,
@@ -385,6 +387,15 @@ function messageAttachmentsOf(m: MessageRow): MessageAttachment[] {
     });
   }
   return out;
+}
+
+function asNamedFile(blob: Blob, filename: string, mime?: string): Blob {
+  const type = (mime || blob.type || "").split(";")[0]!.trim() || blob.type;
+  try {
+    return new File([blob], filename, { type });
+  } catch {
+    return blob;
+  }
 }
 
 function initials(name: string | null | undefined): string {
@@ -1287,6 +1298,11 @@ export function MessagingInbox({
   const [draftsByConversation, setDraftsByConversation] = useState<
     Record<string, MessagingComposeDraftSummary>
   >(() => messagingComposeDraftSummaries());
+
+  useEffect(() => {
+    pruneMessagingComposeDrafts();
+    setDraftsByConversation(messagingComposeDraftSummaries());
+  }, []);
   const [detailSectionsOpen, setDetailSectionsOpen] = useState({
     contact: true,
     profile: true,
@@ -1384,7 +1400,7 @@ export function MessagingInbox({
     (id: string) => {
       openConversation(id, { keepProspect: prospectMode });
       const draft = getMessagingComposeDraft(id);
-      if (draft?.body?.trim() || draft?.subject?.trim()) {
+      if (draft?.body?.trim()) {
         setComposerOpen(true);
       }
     },
@@ -2002,8 +2018,14 @@ export function MessagingInbox({
                   : c
               )
             );
-            if (!silent && body.conversation.subject) {
-              setReplySubject((s) => s || `Re: ${body.conversation!.subject}`);
+            if (
+              !silent &&
+              body.conversation.subject &&
+              (body.conversation.last_channel || "").toLowerCase() === "email"
+            ) {
+              setReplySubject((s) =>
+                s || autoEmailReplySubject("email", body.conversation!.subject)
+              );
             }
           } else {
             setConversations((prev) =>
@@ -2423,21 +2445,24 @@ export function MessagingInbox({
     });
   }, []);
 
-  const dismissOptimistic = useCallback((id: string) => {
-    setOptimisticMessages((prev) => {
-      const victim = prev.find((m) => m.id === id);
-      if (victim) {
-        for (const url of victim.localUrls) {
-          try {
-            URL.revokeObjectURL(url);
-          } catch {
-            /* ignore */
+  const dismissOptimistic = useCallback(
+    (id: string, opts?: { revoke?: boolean }) => {
+      setOptimisticMessages((prev) => {
+        const victim = prev.find((m) => m.id === id);
+        if (victim && opts?.revoke !== false) {
+          for (const url of victim.localUrls) {
+            try {
+              URL.revokeObjectURL(url);
+            } catch {
+              /* ignore */
+            }
           }
         }
-      }
-      return prev.filter((m) => m.id !== id);
-    });
-  }, []);
+        return prev.filter((m) => m.id !== id);
+      });
+    },
+    []
+  );
 
   const addPendingFiles = useCallback(
     (list: FileList | null) => {
@@ -2693,21 +2718,23 @@ export function MessagingInbox({
         setScheduleNotice(null);
       }
 
+      const restoreComposer = (err: string) => {
+        if (optimisticId) {
+          dismissOptimistic(optimisticId, { revoke: false });
+        }
+        setPendingFiles(filesSnap);
+        setPendingVoice(voiceSnap);
+        setPendingVideo(videoSnap);
+        setReplyBody(bodyText);
+        setReplySubject(subjectText);
+        setComposerOpen(true);
+        setSendError(err);
+      };
+
       try {
         const headers = await authHeaders();
         if (!headers) {
-          const err = "Sign in again, then retry.";
-          if (optimisticId) {
-            setOptimisticMessages((prev) =>
-              prev.map((m) =>
-                m.id === optimisticId
-                  ? { ...m, status: "failed", provider_error: err }
-                  : m
-              )
-            );
-          } else {
-            setSendError(err);
-          }
+          restoreComposer("Sign in again, then retry.");
           return;
         }
 
@@ -2716,7 +2743,9 @@ export function MessagingInbox({
           const form = new FormData();
           form.append("channel", channel);
           form.append("body", bodyText);
-          if (subjectText) form.append("subject", subjectText);
+          if (subjectText && channel === "email") {
+            form.append("subject", subjectText);
+          }
           if (emailAccountIdText) {
             form.append("email_account_id", emailAccountIdText);
           }
@@ -2729,7 +2758,7 @@ export function MessagingInbox({
           if (voiceSnap) {
             form.append(
               "voice_message",
-              voiceSnap.blob,
+              asNamedFile(voiceSnap.blob, voiceSnap.filename, voiceSnap.mime),
               voiceSnap.filename
             );
           }
@@ -2758,7 +2787,7 @@ export function MessagingInbox({
               body: JSON.stringify({
                 channel,
                 body: bodyText,
-                subject: subjectText || undefined,
+                subject: channel === "email" ? subjectText || undefined : undefined,
                 email_account_id: emailAccountIdText,
               }),
             }
@@ -2772,27 +2801,10 @@ export function MessagingInbox({
         };
         if (!res.ok) {
           const err = body.error || `Send failed (${res.status}).`;
-          if (optimisticId) {
-            setOptimisticMessages((prev) =>
-              prev.map((m) =>
-                m.id === optimisticId
-                  ? {
-                      ...m,
-                      status: "failed",
-                      provider_error: err,
-                    }
-                  : m
-              )
-            );
-            if (body.message && selectedId === conversationId) {
-              setMessages((prev) => [...prev, body.message!]);
-            }
-          } else {
-            setSendError(err);
-            if (body.message) {
-              setMessages((prev) => [...prev, body.message!]);
-            }
+          if (body.message && selectedId === conversationId) {
+            setMessages((prev) => [...prev, body.message!]);
           }
+          restoreComposer(err);
           return;
         }
         if (opts?.scheduledFor && body.scheduled) {
@@ -2848,18 +2860,7 @@ export function MessagingInbox({
         clearMessagingComposeDraft(conversationId);
         setDraftsByConversation(messagingComposeDraftSummaries());
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Send failed.";
-        if (optimisticId) {
-          setOptimisticMessages((prev) =>
-            prev.map((m) =>
-              m.id === optimisticId
-                ? { ...m, status: "failed", provider_error: msg }
-                : m
-            )
-          );
-        } else {
-          setSendError(msg);
-        }
+        restoreComposer(err instanceof Error ? err.message : "Send failed.");
       } finally {
         setScheduleSending(false);
       }
@@ -3146,6 +3147,22 @@ export function MessagingInbox({
     []
   );
 
+  const pickReplyChannel = useCallback(
+    (id: ReplyChannel) => {
+      setReplyChannel(id);
+      setChannelMenuOpen(false);
+      setComposerOpen(true);
+      if (
+        id === "email" &&
+        !replySubjectRef.current.trim() &&
+        selected?.subject
+      ) {
+        setReplySubject(autoEmailReplySubject("email", selected.subject));
+      }
+    },
+    [selected?.subject]
+  );
+
   useEffect(() => {
     if (selected?.id) {
       const prevId = prevSelectedIdRef.current;
@@ -3157,7 +3174,7 @@ export function MessagingInbox({
       if (!switched) return;
       const draft = consumeMessagingComposeDraft(selected.id);
       pendingDraftChannelRef.current = draft?.channel ?? null;
-      setComposerOpen(Boolean(draft?.body?.trim() || draft?.subject?.trim()));
+      setComposerOpen(Boolean(draft?.body?.trim()));
       setChannelMenuOpen(false);
       setSendError(null);
       setCopilotError(null);
@@ -3165,7 +3182,7 @@ export function MessagingInbox({
       setReplyBody(draft?.body ?? "");
       setReplySubject(
         draft?.subject ??
-          (selected.subject ? `Re: ${selected.subject}` : "")
+          autoEmailReplySubject(selected.last_channel, selected.subject)
       );
       setScheduledMessages([]);
       setScheduleNotice(null);
@@ -4812,10 +4829,10 @@ export function MessagingInbox({
                             className={`w-full max-w-[min(84%,36rem)] overflow-hidden rounded-2xl text-sm shadow-sm ring-1 ${
                               outbound
                                 ? failed
-                                  ? "rounded-br-md bg-sky-50 ring-amber-300/80"
+                                  ? "rounded-br-md bg-sky-50 ring-rose-300/80"
                                   : "rounded-br-md bg-sky-100/90 ring-sky-200/70"
                                 : failed
-                                  ? "rounded-bl-md bg-white ring-amber-300/80"
+                                  ? "rounded-bl-md bg-white ring-rose-300/80"
                                   : "rounded-bl-md bg-white ring-slate-200/80"
                             }`}
                           >
@@ -4987,12 +5004,12 @@ export function MessagingInbox({
                           className={`rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ring-1 ${
                             outbound
                               ? failed
-                                ? "rounded-br-md bg-sky-50 text-slate-900 ring-amber-300/80"
+                                ? "rounded-br-md bg-sky-50 text-slate-900 ring-rose-300/80"
                                 : isSending
                                   ? "rounded-br-md bg-sky-100/70 text-slate-900 ring-sky-200/50"
                                   : "rounded-br-md bg-sky-100/90 text-slate-900 ring-sky-200/70"
                               : failed
-                                ? "rounded-bl-md bg-white text-slate-900 ring-amber-300/80"
+                                ? "rounded-bl-md bg-white text-slate-900 ring-rose-300/80"
                                 : "rounded-bl-md bg-white text-slate-900 ring-slate-200/80"
                           }`}
                         >
@@ -5002,6 +5019,9 @@ export function MessagingInbox({
                                 outbound ? "justify-end" : "justify-start"
                               }`}
                             >
+                              <span className="text-[11px] font-medium text-rose-700">
+                                Couldn’t send
+                              </span>
                               <MessageErrorBadge
                                 message={
                                   m.provider_error || "Failed to send"
@@ -5169,11 +5189,7 @@ export function MessagingInbox({
                       current={replyChannel}
                       options={replyChannelOptions}
                       draftChannel={selectedDraft?.channel}
-                      onPick={(id) => {
-                        setReplyChannel(id);
-                        setChannelMenuOpen(false);
-                        setComposerOpen(true);
-                      }}
+                      onPick={pickReplyChannel}
                     />
                   </div>
                 </div>
@@ -5229,10 +5245,7 @@ export function MessagingInbox({
                       current={replyChannel}
                       options={replyChannelOptions}
                       draftChannel={selectedDraft?.channel}
-                      onPick={(id) => {
-                        setReplyChannel(id);
-                        setChannelMenuOpen(false);
-                      }}
+                      onPick={pickReplyChannel}
                     />
                   </div>
 

@@ -12,15 +12,15 @@ Are you still looking to get more profit and time out of the business, or has th
 
 const MSG1_A = `Hi {{first_name}},
 
-I've put together a 3-minute BOSS Scorecard for {{type_of_owner}} who are doing well on paper, but feel stretched too thin behind the scenes.
+I've put together a 3-minute BOSS Scorecard for owners who are doing well on paper, but feel stretched too thin behind the scenes.
 
 It gives you a score out of 100 and shows where the business may be over-relying on you.
 
 What do you reckon you'll score?`;
 
-const MSG2 = `Hi {{first_name}}, one thing I keep seeing with {{type_of_owner}} is that the visible number looks fine, and the constraint is somewhere else.
+const MSG2 = `Hi {{first_name}}, one thing I keep seeing with owners is that the visible number looks fine, and the constraint is somewhere else.
 
-{{market_observation}}
+Most owners tell me revenue is fine, but they still can't take a week off.
 
 Is that still true your end, or have you already cracked it?`;
 

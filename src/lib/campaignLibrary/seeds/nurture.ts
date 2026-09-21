@@ -10,7 +10,7 @@ const TWO_WEEKS = 336;
 
 const PAIRWISE = `Hi {{first_name}}, I thought this might be useful.
 
-A lot of {{type_of_owner}} get caught fighting fires and never get to the work that actually moves profit.
+A lot of owners get caught fighting fires and never get to the work that actually moves profit.
 
 Pairwise Prioritising takes about 5 minutes. It forces a simple choice between tasks so the low-value work falls out.
 
@@ -19,7 +19,7 @@ https://docs.google.com/spreadsheets/d/1zvApbmFOz7A_5Pd8s2_7Ifzj_mbI83xYAHolME58
 
 Have a play and tell me what you drop.`;
 
-const REVENUE = `Hi {{first_name}}, another one that lands well with {{type_of_owner}}.
+const REVENUE = `Hi {{first_name}}, another one that lands well with owners.
 
 Most owners look at last month's numbers. The Revenue Growth Accelerator shows what has to happen next to hit the number, so invoicing and sales stay aligned to the goal.
 

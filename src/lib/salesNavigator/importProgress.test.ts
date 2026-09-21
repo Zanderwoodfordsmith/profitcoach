@@ -85,7 +85,7 @@ describe("jobDisplayTargetCount", () => {
 });
 
 describe("shouldFinishUnipileSegment", () => {
-  it("stops when a page adds no new unique people", () => {
+  it("stops after two overlapping pages with no new people", () => {
     assert.equal(
       shouldFinishUnipileSegment({
         scrapedCount: 91,
@@ -94,8 +94,24 @@ describe("shouldFinishUnipileSegment", () => {
         stalledCursor: false,
         itemsLength: 50,
         newUniqueCount: 0,
+        duplicatePages: 2,
       }),
       true
+    );
+  });
+
+  it("keeps going after one overlapping page when a next cursor exists", () => {
+    assert.equal(
+      shouldFinishUnipileSegment({
+        scrapedCount: 10,
+        scrapedCap: 1409,
+        nextCursor: "page-2",
+        stalledCursor: false,
+        itemsLength: 10,
+        newUniqueCount: 0,
+        duplicatePages: 1,
+      }),
+      false
     );
   });
 
@@ -110,6 +126,20 @@ describe("shouldFinishUnipileSegment", () => {
         newUniqueCount: 40,
       }),
       false
+    );
+  });
+
+  it("stops on an empty page", () => {
+    assert.equal(
+      shouldFinishUnipileSegment({
+        scrapedCount: 10,
+        scrapedCap: 1409,
+        nextCursor: "page-2",
+        stalledCursor: false,
+        itemsLength: 0,
+        newUniqueCount: 0,
+      }),
+      true
     );
   });
 });

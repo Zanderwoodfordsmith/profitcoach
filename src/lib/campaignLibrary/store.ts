@@ -15,7 +15,7 @@ import {
   type CampaignLibraryItemType,
   type CampaignLibraryKind,
   type CampaignLibraryStatus,
-  type CampaignLibraryTemplateSettings,
+  type CampaignLibraryItemSettings,
 } from "@/lib/campaignLibrary/types";
 
 type ItemRow = {
@@ -50,7 +50,7 @@ const ITEM_SELECT =
 function asSettings(
   itemType: CampaignLibraryItemType,
   raw: unknown
-): CampaignLibraryTemplateSettings | Record<string, never> {
+): CampaignLibraryItemSettings {
   return sanitizeLibraryItemSettings(itemType, raw);
 }
 

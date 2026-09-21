@@ -7,9 +7,9 @@ import {
 import type { CampaignLibrarySeed } from "@/lib/campaignLibrary/seeds/types";
 import type { CampaignStepInput } from "@/lib/unipile/campaigns";
 
-const MSG2_B = `Hi {{first_name}}, thanks for connecting. I work with {{type_of_owner}}, so I hear the same thing a lot.
+const MSG2_B = `Hi {{first_name}}, thanks for connecting. I work with business owners, so I hear the same thing a lot.
 
-{{market_observation}}
+Most owners tell me revenue is fine, but they still can't take a week off.
 
 Ring any bells, or is it different your end?`;
 

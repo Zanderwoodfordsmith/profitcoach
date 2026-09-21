@@ -95,7 +95,10 @@ function normalizeDraft(
   const conversationId = draft.conversationId.trim();
   const body = draft.body;
   if (!conversationId) return null;
-  if (!body.trim() && !draft.subject?.trim()) return null;
+  // LinkedIn headlines are stored as conversation.subject and were being
+  // auto-saved as "Re: …" drafts with no body — yellow Draft chips on chats
+  // the coach never typed in. A draft is typed message text, not a subject.
+  if (!body.trim()) return null;
   return {
     conversationId,
     body,
@@ -271,4 +274,20 @@ export function nextComposeDraftChannel(input: {
 
 export function hasMessagingComposeDraft(conversationId: string): boolean {
   return Boolean(readStore().drafts[conversationId.trim()]);
+}
+
+/** Drop subject-only leftovers (LinkedIn headlines saved as Re: drafts). */
+export function pruneMessagingComposeDrafts(): void {
+  writeStore(readStore());
+}
+
+/** Prefill only for email. LinkedIn stores job titles in `subject`. */
+export function autoEmailReplySubject(
+  channel: string | null | undefined,
+  conversationSubject: string | null | undefined
+): string {
+  if ((channel || "").trim().toLowerCase() !== "email") return "";
+  const subject = (conversationSubject || "").trim();
+  if (!subject) return "";
+  return /^re:\s/i.test(subject) ? subject : `Re: ${subject}`;
 }

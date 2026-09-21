@@ -67,7 +67,12 @@ export type CampaignLibraryTemplateSettings = {
   daily_react_limit: number;
   timezone: string;
   send_rules: AvailabilityRuleRow[];
+  manual_fallback_hours: number | null;
 };
+
+export type CampaignLibraryItemSettings =
+  | CampaignLibraryTemplateSettings
+  | { manual_fallback_hours?: number | null };
 
 export type CampaignLibraryItemSummary = {
   id: string;
@@ -76,7 +81,7 @@ export type CampaignLibraryItemSummary = {
   name: string;
   description: string | null;
   status: CampaignLibraryStatus;
-  settings: CampaignLibraryTemplateSettings | Record<string, never>;
+  settings: CampaignLibraryItemSettings;
   step_count: number;
   step_types: string[];
   created_at: string;

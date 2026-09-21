@@ -74,6 +74,24 @@ export function isImageMessagingAttachmentMime(mime: string): boolean {
   return normalizeMessagingMime(mime).startsWith("image/");
 }
 
+/** FormData + Unipile need a named File with a clean mime, not a raw Blob. */
+export function namedFileFromBlob(
+  blob: Blob,
+  filename: string,
+  mime?: string
+): File {
+  const type =
+    normalizeMessagingMime(mime || blob.type) || "application/octet-stream";
+  if (typeof File !== "undefined") {
+    try {
+      return new File([blob], filename, { type });
+    } catch {
+      /* File constructor is missing in some runtimes */
+    }
+  }
+  return Object.assign(blob, { name: filename, type }) as File;
+}
+
 function extForMime(mime: string, filename?: string): string {
   const lower = normalizeMessagingMime(mime);
   if (EXT_BY_MIME[lower]) return EXT_BY_MIME[lower]!;

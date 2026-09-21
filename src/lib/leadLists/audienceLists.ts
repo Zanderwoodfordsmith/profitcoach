@@ -299,6 +299,7 @@ const LEAD_LIST_ITEM_COPY_FIELDS = [
   "website",
   "identity_key",
   "tags",
+  "contact_id",
 ] as const;
 
 /** Unique copy name for duplicated audience / import list tabs. */
@@ -517,6 +518,78 @@ function toChunks<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+/**
+ * Named-list membership: people already in the pool still belong on the new
+ * list. Copy the pool row (same contact) instead of skipping them.
+ * Skip only when they are already on this list, blacklisted, or over cap.
+ */
+export function planNamedListMembership<T extends { linkedin_url: string }>(opts: {
+  people: T[];
+  urlsOnTarget: Set<string>;
+  urlsInPool: Set<string>;
+  blacklistedUrls: Set<string>;
+  room: number;
+}): {
+  copyUrls: string[];
+  insertPeople: T[];
+  skipped: number;
+  blacklisted: number;
+} {
+  const seen = new Set(opts.urlsOnTarget);
+  const copyUrls: string[] = [];
+  const insertPeople: T[] = [];
+  let skipped = 0;
+  let blacklisted = 0;
+  for (const person of opts.people) {
+    const url = person.linkedin_url;
+    if (seen.has(url)) {
+      skipped += 1;
+      continue;
+    }
+    if (opts.blacklistedUrls.has(url)) {
+      blacklisted += 1;
+      continue;
+    }
+    if (copyUrls.length + insertPeople.length >= opts.room) {
+      skipped += 1;
+      continue;
+    }
+    seen.add(url);
+    if (opts.urlsInPool.has(url)) copyUrls.push(url);
+    else insertPeople.push(person);
+  }
+  return { copyUrls, insertPeople, skipped, blacklisted };
+}
+
+async function insertLeadListItemRows(
+  rows: Record<string, unknown>[]
+): Promise<{ inserted: number; skipped: number }> {
+  let inserted = 0;
+  let skipped = 0;
+  for (const chunk of toChunks(rows, 100)) {
+    const { error } = await supabaseAdmin
+      .from("coach_lead_list_items")
+      .insert(chunk);
+    if (!error) {
+      inserted += chunk.length;
+      continue;
+    }
+    if (error.code !== "23505") throw new Error(error.message);
+    for (const row of chunk) {
+      const { error: oneError } = await supabaseAdmin
+        .from("coach_lead_list_items")
+        .insert(row);
+      if (!oneError) {
+        inserted += 1;
+        continue;
+      }
+      if (oneError.code === "23505") skipped += 1;
+      else throw new Error(oneError.message);
+    }
+  }
+  return { inserted, skipped };
+}
+
 async function loadAllListItemRows<T>(
   coachId: string,
   listId: string,
@@ -561,6 +634,81 @@ async function existingUrlsOnList(
   return urls;
 }
 
+async function loadPoolLinkedInUrls(
+  coachId: string,
+  urls: string[]
+): Promise<Set<string>> {
+  if (!urls.length) return new Set();
+  const pool = await ensureCoachPool(coachId);
+  const found = new Set<string>();
+  for (const chunk of toChunks(
+    urls.map((url) => `li:${url}`),
+    100
+  )) {
+    const { data, error } = await supabaseAdmin
+      .from("coach_lead_list_items")
+      .select("linkedin_url")
+      .eq("coach_id", coachId)
+      .eq("list_id", pool.id)
+      .in("identity_key", chunk);
+    if (error) throw new Error(error.message);
+    for (const row of data ?? []) {
+      const url = normalizeLinkedInProfileUrl(String(row.linkedin_url ?? ""));
+      if (url) found.add(url);
+    }
+  }
+  return found;
+}
+
+/**
+ * Put people who already live in the pool onto a named list by copying the
+ * pool row (same identity / contact). Does not create a second pool record.
+ */
+export async function copyMatchingPoolItemsOntoList(opts: {
+  coachId: string;
+  targetListId: string;
+  identityKeys: string[];
+}): Promise<{ added: number; skipped: number }> {
+  const keys = [...new Set(opts.identityKeys.map((key) => key.trim()).filter(Boolean))];
+  if (!keys.length) return { added: 0, skipped: 0 };
+
+  const pool = await ensureCoachPool(opts.coachId);
+  if (pool.id === opts.targetListId) {
+    return { added: 0, skipped: keys.length };
+  }
+
+  const itemIds: string[] = [];
+  for (const chunk of toChunks(keys, 100)) {
+    const { data, error } = await supabaseAdmin
+      .from("coach_lead_list_items")
+      .select("id")
+      .eq("coach_id", opts.coachId)
+      .eq("list_id", pool.id)
+      .in("identity_key", chunk);
+    if (error) throw new Error(error.message);
+    for (const row of data ?? []) {
+      if (typeof row.id === "string" && isLeadListUuid(row.id)) {
+        itemIds.push(row.id);
+      }
+    }
+  }
+  if (!itemIds.length) return { added: 0, skipped: keys.length };
+
+  let added = 0;
+  let skipped = Math.max(0, keys.length - itemIds.length);
+  for (const chunk of toChunks(itemIds, MAX_LIST_ITEMS_PER_REQUEST)) {
+    const result = await copyLeadListItems({
+      coachId: opts.coachId,
+      sourceListId: pool.id,
+      targetListId: opts.targetListId,
+      itemIds: chunk,
+    });
+    added += result.added;
+    skipped += result.skipped;
+  }
+  return { added, skipped };
+}
+
 export async function insertPeopleOnList(opts: {
   coachId: string;
   listId: string;
@@ -583,58 +731,61 @@ export async function insertPeopleOnList(opts: {
     opts.kind === "blacklist"
       ? new Set<string>()
       : await loadBlacklistedLinkedInUrls(opts.coachId);
+  const urlsInPool =
+    opts.kind === "audience"
+      ? await loadPoolLinkedInUrls(
+          opts.coachId,
+          opts.people.map((person) => person.linkedin_url)
+        )
+      : new Set<string>();
 
-  let skipped = 0;
-  let blocked = 0;
-  const rows: Record<string, unknown>[] = [];
-  for (const person of opts.people) {
-    if (existing.has(person.linkedin_url)) {
-      skipped += 1;
-      continue;
-    }
-    if (blacklisted.has(person.linkedin_url)) {
-      blocked += 1;
-      continue;
-    }
-    if (rows.length >= room) {
-      skipped += 1;
-      continue;
-    }
-    existing.add(person.linkedin_url);
-    rows.push({
-      list_id: opts.listId,
-      coach_id: opts.coachId,
-      source: person.source,
-      leadrocks_id: null,
-      full_name: displayListPersonName(person),
-      first_name: person.first_name,
-      last_name: person.last_name,
-      job_title: person.title,
-      company: person.company,
-      linkedin_url: person.linkedin_url,
-      email: person.email ?? null,
-      phone: person.phone ?? null,
-      identity_key: `li:${person.linkedin_url}`,
-      match_reason:
-        person.source === "search" ? "LinkedIn search" : "Added to pool",
-      raw: person.linkedin_provider_id
-        ? { linkedin_provider_id: person.linkedin_provider_id }
-        : {},
+  const plan = planNamedListMembership({
+    people: opts.people,
+    urlsOnTarget: existing,
+    urlsInPool,
+    blacklistedUrls: blacklisted,
+    room,
+  });
+
+  let copied = 0;
+  let copySkipped = 0;
+  if (plan.copyUrls.length) {
+    const copyResult = await copyMatchingPoolItemsOntoList({
+      coachId: opts.coachId,
+      targetListId: opts.listId,
+      identityKeys: plan.copyUrls.map((url) => `li:${url}`),
     });
+    copied = copyResult.added;
+    copySkipped = copyResult.skipped;
   }
 
-  for (const chunk of toChunks(rows, 100)) {
-    const { error } = await supabaseAdmin
-      .from("coach_lead_list_items")
-      .insert(chunk);
-    if (error) {
-      // Concurrent imports into the same pool can race the unique index.
-      if (error.code === "23505") continue;
-      throw new Error(error.message);
-    }
-  }
+  const rows: Record<string, unknown>[] = plan.insertPeople.map((person) => ({
+    list_id: opts.listId,
+    coach_id: opts.coachId,
+    source: person.source,
+    leadrocks_id: null,
+    full_name: displayListPersonName(person),
+    first_name: person.first_name,
+    last_name: person.last_name,
+    job_title: person.title,
+    company: person.company,
+    linkedin_url: person.linkedin_url,
+    email: person.email ?? null,
+    phone: person.phone ?? null,
+    identity_key: `li:${person.linkedin_url}`,
+    match_reason:
+      person.source === "search" ? "LinkedIn search" : "Added to pool",
+    raw: person.linkedin_provider_id
+      ? { linkedin_provider_id: person.linkedin_provider_id }
+      : {},
+  }));
 
-  return { added: rows.length, skipped, blacklisted: blocked };
+  const inserted = await insertLeadListItemRows(rows);
+  return {
+    added: copied + inserted.inserted,
+    skipped: plan.skipped + copySkipped + inserted.skipped,
+    blacklisted: plan.blacklisted,
+  };
 }
 
 /**
@@ -810,15 +961,11 @@ export async function copyLeadListItems(opts: {
   }
   skipped += Math.max(0, itemIds.length - items.length);
 
-  for (const chunk of toChunks(rows, 100)) {
-    const { error: insertError } = await supabaseAdmin
-      .from("coach_lead_list_items")
-      .insert(chunk);
-    if (insertError) throw new Error(insertError.message);
-  }
+  const inserted = await insertLeadListItemRows(rows);
+  skipped += inserted.skipped;
 
   const itemCount = await recountLeadListItems(opts.targetListId);
-  return { added: rows.length, skipped, itemCount };
+  return { added: inserted.inserted, skipped, itemCount };
 }
 
 /**

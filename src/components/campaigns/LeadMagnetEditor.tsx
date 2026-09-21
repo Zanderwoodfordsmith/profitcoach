@@ -20,7 +20,8 @@ import {
   getLeadMagnet,
   type LeadMagnetSequenceDef,
 } from "@/lib/leadMagnets/catalog";
-import { campaignStepHasCopy, defaultStepConfig, type CampaignStepType } from "@/lib/unipile/campaignStepTypes";
+import { campaignNewStepSendFields, campaignStepHasCopy, defaultStepConfig, sequenceMessageSendMode, type CampaignStepType } from "@/lib/unipile/campaignStepTypes";
+import { mergeFieldPickerForMagnet } from "@/lib/unipile/mergeFields";
 import { duplicateCampaignStep } from "@/lib/unipile/campaignStepDuplicate";
 import type { UnipileConnectProvider } from "@/lib/unipile/providers";
 
@@ -211,9 +212,7 @@ export function LeadMagnetEditor() {
       step_type: type,
       body: campaignStepHasCopy(type) ? "" : null,
       wait_hours: type === "wait" ? 24 : null,
-      send_mode: "auto",
-      fallback_hours: null,
-      fallback_body: null,
+      ...campaignNewStepSendFields(type, sequenceMessageSendMode(seq.steps)),
       config: {
         ...defaultStepConfig(type),
         ...(mediaKind ? { media_kind: mediaKind } : {}),
@@ -403,6 +402,10 @@ export function LeadMagnetEditor() {
           <CampaignSequenceBuilder
             steps={activeSequence.steps}
             campaignId={activeSequence.campaignId}
+            mergeFields={mergeFieldPickerForMagnet(
+              magnet.id,
+              activeSequence.def.slot
+            )}
             peopleAtStep={() => EMPTY_STEP_PEOPLE}
             abStats={null}
             accounts={accounts}

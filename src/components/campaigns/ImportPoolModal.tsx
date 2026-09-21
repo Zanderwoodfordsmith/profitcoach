@@ -377,9 +377,12 @@ export function ImportPoolModal({
   const importTeamBase = salesNavUrlReady
     ? implicitImportTeamSizes(searchUrl.trim())
     : [];
-  const importTeamExtras = salesNavUrlReady
-    ? extraImportTeamSizeOptions(searchUrl.trim())
-    : [];
+  // Extra sizes belong on 1st degree only. A custom URL already carries
+  // company-size filters from Sales Navigator.
+  const importTeamExtras =
+    salesNavSource === "first" && salesNavUrlReady
+      ? extraImportTeamSizeOptions(searchUrl.trim())
+      : [];
   const importTeamExtraSelected = extraTeamSizes.filter((label) =>
     importTeamExtras.some((band) => band.label === label)
   );
@@ -432,15 +435,17 @@ export function ImportPoolModal({
       return;
     }
     let importUrl = url;
-    try {
-      importUrl = salesNavUrlWithImportTeamSizes(url, extraTeamSizes);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not apply company-size filters to that URL."
-      );
-      return;
+    if (salesNavSource === "first") {
+      try {
+        importUrl = salesNavUrlWithImportTeamSizes(url, extraTeamSizes);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Could not apply company-size filters to that URL."
+        );
+        return;
+      }
     }
     setBusy(true);
     setError(null);

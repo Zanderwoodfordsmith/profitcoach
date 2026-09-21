@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  autoEmailReplySubject,
   composeDraftPreview,
   emptyComposeDraftStore,
   nextComposeDraftChannel,
@@ -38,6 +39,13 @@ describe("composeDraft store", () => {
     store = upsertDraftInStore(store, { conversationId: "one", body: "   " });
     assert.equal(store.drafts.one, undefined);
     assert.equal(store.drafts.two?.body, "Draft two");
+    store = upsertDraftInStore(store, {
+      conversationId: "headline",
+      body: "",
+      subject: "Re: Helping North West Business Owners Fix Broken Sales Teams",
+      channel: "linkedin",
+    });
+    assert.equal(store.drafts.headline, undefined);
     store = removeDraftFromStore(store, "two");
     assert.deepEqual(store.drafts, {});
   });
@@ -68,5 +76,18 @@ describe("composeDraft store", () => {
       composeDraftPreview({ body: "A short draft", subject: "Hi" }),
       "A short draft"
     );
+  });
+
+  it("only prefills Re: subject on email threads", () => {
+    assert.equal(
+      autoEmailReplySubject(
+        "linkedin",
+        "Helping North West Business Owners Fix Broken Sales Teams"
+      ),
+      ""
+    );
+    assert.equal(autoEmailReplySubject("email", "LI messaging"), "Re: LI messaging");
+    assert.equal(autoEmailReplySubject("email", "Re: LI messaging"), "Re: LI messaging");
+    assert.equal(autoEmailReplySubject("email", "   "), "");
   });
 });

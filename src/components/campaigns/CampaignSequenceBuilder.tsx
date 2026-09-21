@@ -30,7 +30,10 @@ import {
 } from "lucide-react";
 import {
   addToCampaignIdFrom,
+  campaignFallbackEnabled,
+  campaignFallbackHoursPatch,
   campaignSendModePatch,
+  DEFAULT_MANUAL_FALLBACK_HOURS,
   campaignStepAllowsVariants,
   campaignStepDisplayLabel,
   keepAbPair,
@@ -50,6 +53,7 @@ import {
   type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
+import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { moveSequenceItem } from "@/lib/unipile/campaignStepReorder";
 import {
   WAIT_UNITS,
@@ -70,6 +74,10 @@ import {
   MergeFieldComposer,
   MergeFieldPreview,
 } from "@/components/campaigns/MergeFieldComposer";
+import {
+  DEFAULT_MERGE_FIELD_PICKER,
+  type MergeFieldPickerContext,
+} from "@/lib/unipile/mergeFields";
 import {
   ContentWithRail,
   ContentWithRailAside,
@@ -533,6 +541,7 @@ function AbTestToggle({
         role="switch"
         aria-checked={on}
         aria-label="A/B testing"
+        onMouseDown={(event) => event.preventDefault()}
         onClick={() => onChange(!on)}
         className={`relative h-6 w-12 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
           on
@@ -846,47 +855,75 @@ function ManualSendAfter({
   onCommit,
 }: {
   hours: number | null | undefined;
-  onChange: (hours: number) => void;
+  onChange: (hours: number | null) => void;
   onCommit: () => void;
 }) {
-  const { amount, unit } = sendAfterDuration(hours);
+  const enabled = campaignFallbackEnabled(hours);
+  const [lastHours, setLastHours] = useState(() =>
+    campaignFallbackHoursPatch(true, hours)
+  );
+  const { amount, unit } = sendAfterDuration(enabled ? hours : lastHours);
+
+  useEffect(() => {
+    if (hours != null) setLastHours(campaignFallbackHoursPatch(true, hours));
+  }, [hours]);
 
   function setDuration(nextAmount: number, nextUnit: WaitUnit) {
     const clamped = Math.min(
       WAIT_UNIT_MAX[nextUnit],
       Math.max(1, nextAmount)
     );
-    onChange(waitToHours(clamped, nextUnit));
+    const next = waitToHours(clamped, nextUnit);
+    setLastHours(next);
+    onChange(next);
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-slate-500">If not sent, send after</span>
-      <input
-        type="number"
-        min={1}
-        max={WAIT_UNIT_MAX[unit]}
-        aria-label="Send after amount"
-        value={amount}
-        onChange={(e) =>
-          setDuration(Number(e.target.value || 1), unit)
-        }
-        onBlur={onCommit}
-        className="w-12 rounded-full bg-white px-2 py-1 text-center text-sm font-semibold tabular-nums text-[#0c5290] outline-none ring-1 ring-[#0c5290]/20 focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
-      />
-      <WaitUnitToggle
-        unit={unit}
-        units={SEND_AFTER_UNITS}
-        ariaLabel="Send after unit"
-        onChange={(nextUnit) => {
-          setDuration(amount, nextUnit);
+      <span className="text-xs font-semibold text-slate-500">Fallback</span>
+      <CampaignOnOffToggle
+        size="sm"
+        on={enabled}
+        ariaLabel={enabled ? "Turn fallback off" : "Turn fallback on"}
+        onChange={() => {
+          onChange(campaignFallbackHoursPatch(!enabled, lastHours));
           onCommit();
         }}
       />
+      {enabled ? (
+        <>
+          <span className="text-xs text-slate-500">If not sent, send after</span>
+          <input
+            type="number"
+            min={1}
+            max={WAIT_UNIT_MAX[unit]}
+            aria-label="Send after amount"
+            value={amount}
+            onChange={(e) =>
+              setDuration(Number(e.target.value || 1), unit)
+            }
+            onBlur={onCommit}
+            className="w-12 rounded-full bg-white px-2 py-1 text-center text-sm font-semibold tabular-nums text-[#0c5290] outline-none ring-1 ring-[#0c5290]/20 focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+          />
+          <WaitUnitToggle
+            unit={unit}
+            units={SEND_AFTER_UNITS}
+            ariaLabel="Send after unit"
+            onChange={(nextUnit) => {
+              setDuration(amount, nextUnit);
+              onCommit();
+            }}
+          />
+        </>
+      ) : (
+        <span className="text-xs text-slate-500">
+          Stays in your queue until you send or skip
+        </span>
+      )}
       <span className="group/info relative inline-flex">
         <button
           type="button"
-          aria-label="About sending if you don't"
+          aria-label="About fallback"
           className="rounded-full p-0.5 text-slate-400 hover:text-[#0c5290] focus-visible:text-[#0c5290] focus-visible:outline-none"
         >
           <Info className="h-3.5 w-3.5" aria-hidden />
@@ -895,8 +932,9 @@ function ManualSendAfter({
           role="tooltip"
           className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/info:block group-focus-within/info:block"
         >
-          You send this yourself. If you haven&apos;t sent it by then, it goes
-          out automatically.
+          {enabled
+            ? "You send this yourself. If you haven't sent it by then, it goes out automatically."
+            : "You send this yourself. It will not go out automatically."}
         </span>
       </span>
     </div>
@@ -1223,11 +1261,13 @@ function ChannelToggle({
 function AbVariantPane({
   variant,
   placeholder,
+  picker,
   onChange,
   onCommit,
 }: {
   variant: { key: string; label?: string; body: string };
   placeholder?: string;
+  picker: MergeFieldPickerContext;
   onChange: (patch: { label?: string; body?: string }) => void;
   onCommit: () => void;
 }) {
@@ -1237,6 +1277,7 @@ function AbVariantPane({
       value={variant.body}
       ariaLabel={name}
       placeholder={placeholder}
+      picker={picker}
       onChange={(body) => onChange({ body })}
       onCommit={onCommit}
     />
@@ -1252,6 +1293,7 @@ export function StepInlineEditor({
   onCommit,
   uploadUrl,
   libraryMode = false,
+  mergeFields = DEFAULT_MERGE_FIELD_PICKER,
 }: {
   step: SequenceStep;
   campaignId: string;
@@ -1261,6 +1303,7 @@ export function StepInlineEditor({
   onCommit: () => void;
   uploadUrl?: string;
   libraryMode?: boolean;
+  mergeFields?: MergeFieldPickerContext;
 }) {
   const variants = keepAbPair(step.variants ?? []);
   const hasAb = variants.length > 0;
@@ -1606,6 +1649,7 @@ export function StepInlineEditor({
               step.config,
               activeVariant.media_kind
             )}
+            picker={mergeFields}
             onChange={patchActiveVariant}
             onCommit={onCommit}
           />
@@ -1630,6 +1674,7 @@ export function StepInlineEditor({
           <MergeFieldComposer
             value={step.body ?? ""}
             placeholder={messageCopyPlaceholder(step.config)}
+            picker={mergeFields}
             onChange={(body) => onChange({ body })}
             onCommit={onCommit}
           />
@@ -1668,6 +1713,9 @@ export function CampaignSequenceBuilder({
   uploadUrl,
   queuePeople,
   onChooseTemplate,
+  mergeFields = DEFAULT_MERGE_FIELD_PICKER,
+  manualFallbackHours = null,
+  onManualFallbackHoursChange,
 }: {
   steps: SequenceStep[];
   campaignId?: string;
@@ -1693,6 +1741,9 @@ export function CampaignSequenceBuilder({
   uploadUrl?: string;
   queuePeople?: { count: number; names: string[] };
   onChooseTemplate?: () => void;
+  mergeFields?: MergeFieldPickerContext;
+  manualFallbackHours?: number | null;
+  onManualFallbackHoursChange?: (hours: number | null) => void;
 }) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [openGroups, setOpenGroups] = useState<Set<PaletteGroupId>>(
@@ -1965,7 +2016,14 @@ export function CampaignSequenceBuilder({
     onReorderSteps(
       steps.map((step) =>
         campaignStepHasSendMode(step.step_type)
-          ? { ...step, ...campaignSendModePatch(mode, step.fallback_hours) }
+          ? {
+              ...step,
+              ...campaignSendModePatch(mode, {
+                fromMode: campaignStepSendMode(step.send_mode),
+                fallbackHours: step.fallback_hours,
+                defaultFallbackHours: manualFallbackHours,
+              }),
+            }
           : step
       )
     );
@@ -2016,17 +2074,59 @@ export function CampaignSequenceBuilder({
           </p>
           <div className="flex flex-wrap items-center justify-end gap-3">
             {allStepsSendMode ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-slate-500">
-                  All steps
-                </span>
-                <SendModeToggle
-                  mode={
-                    allStepsSendMode === "mixed" ? null : allStepsSendMode
-                  }
-                  ariaLabel="Send mode for all steps"
-                  onChange={setAllSendModes}
-                />
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-500">
+                    All steps
+                  </span>
+                  <SendModeToggle
+                    mode={
+                      allStepsSendMode === "mixed" ? null : allStepsSendMode
+                    }
+                    ariaLabel="Send mode for all steps"
+                    onChange={setAllSendModes}
+                  />
+                </div>
+                {onManualFallbackHoursChange ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-slate-500">
+                      Fallback default
+                    </span>
+                    <CampaignOnOffToggle
+                      size="sm"
+                      on={campaignFallbackEnabled(manualFallbackHours)}
+                      ariaLabel={
+                        campaignFallbackEnabled(manualFallbackHours)
+                          ? "Turn fallback default off"
+                          : "Turn fallback default on"
+                      }
+                      onChange={() =>
+                        onManualFallbackHoursChange(
+                          campaignFallbackEnabled(manualFallbackHours)
+                            ? null
+                            : DEFAULT_MANUAL_FALLBACK_HOURS
+                        )
+                      }
+                    />
+                    <span className="group/fbdef relative inline-flex">
+                      <button
+                        type="button"
+                        aria-label="About fallback default"
+                        className="rounded-full p-0.5 text-slate-400 hover:text-[#0c5290] focus-visible:text-[#0c5290] focus-visible:outline-none"
+                      >
+                        <Info className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                      <span
+                        role="tooltip"
+                        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/fbdef:block group-focus-within/fbdef:block"
+                      >
+                        {campaignFallbackEnabled(manualFallbackHours)
+                          ? "New manual messages auto-send after 1 day if you don't. Each message can still change that."
+                          : "New manual messages stay in your queue. You can still turn fallback on, and pick a wait, on each message."}
+                      </span>
+                    </span>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             {steps.some((s) => s.step_type !== "wait") ? (
@@ -2347,19 +2447,34 @@ export function CampaignSequenceBuilder({
                                 )
                               ) : null}
                               {campaignStepHasSendMode(step.step_type) ? (
-                                <SendModeToggle
-                                  mode={campaignStepSendMode(step.send_mode)}
-                                  onChange={(mode) => {
-                                    onPatchStep(
-                                      idx,
-                                      campaignSendModePatch(
-                                        mode,
-                                        step.fallback_hours
-                                      )
-                                    );
-                                    onCommitSteps();
-                                  }}
-                                />
+                                <>
+                                  {campaignStepSendMode(step.send_mode) ===
+                                    "remind" &&
+                                  !campaignFallbackEnabled(
+                                    step.fallback_hours
+                                  ) ? (
+                                    <span className="inline-flex shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-800">
+                                      No fallback
+                                    </span>
+                                  ) : null}
+                                  <SendModeToggle
+                                    mode={campaignStepSendMode(step.send_mode)}
+                                    onChange={(mode) => {
+                                      onPatchStep(
+                                        idx,
+                                        campaignSendModePatch(mode, {
+                                          fromMode: campaignStepSendMode(
+                                            step.send_mode
+                                          ),
+                                          fallbackHours: step.fallback_hours,
+                                          defaultFallbackHours:
+                                            manualFallbackHours,
+                                        })
+                                      );
+                                      onCommitSteps();
+                                    }}
+                                  />
+                                </>
                               ) : null}
                             </div>
                           </div>
@@ -2424,6 +2539,7 @@ export function CampaignSequenceBuilder({
                             libraryMode={library}
                             abStats={abStats}
                             campaigns={campaigns}
+                            mergeFields={mergeFields}
                             onChange={(patch) => onPatchStep(idx, patch)}
                             onCommit={onCommitSteps}
                           />

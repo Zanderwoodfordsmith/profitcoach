@@ -28,7 +28,7 @@ export {
 } from "@/lib/campaignLibrary/instantiateCore";
 
 function settingsPatch(
-  settings: CampaignLibraryTemplateSettings | Record<string, never>
+  settings: CampaignLibraryTemplateSettings | { manual_fallback_hours?: number | null }
 ): Record<string, unknown> {
   if (!("daily_invite_limit" in settings)) return {};
   return {
@@ -38,6 +38,7 @@ function settingsPatch(
     daily_react_limit: settings.daily_react_limit,
     timezone: settings.timezone,
     send_rules: settings.send_rules,
+    manual_fallback_hours: settings.manual_fallback_hours,
   };
 }
 

@@ -20,17 +20,29 @@ import {
   type CampaignLibraryTemplateSettings,
 } from "@/lib/campaignLibrary/types";
 import {
+  campaignNewStepSendFields,
   campaignStepHasCopy,
   defaultStepConfig,
+  parseManualFallbackHours,
+  sequenceMessageSendMode,
   type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
+import { mergeFieldPickerForLibraryKind } from "@/lib/unipile/mergeFields";
 import { duplicateCampaignStep } from "@/lib/unipile/campaignStepDuplicate";
 
 function asSettings(
   item: CampaignLibraryItemDetail
 ): CampaignLibraryTemplateSettings {
-  if (item.item_type !== "template") return defaultLibraryTemplateSettings();
+  const fallbackHours = parseManualFallbackHours(
+    (item.settings as { manual_fallback_hours?: unknown }).manual_fallback_hours
+  );
+  if (item.item_type !== "template") {
+    return {
+      ...defaultLibraryTemplateSettings(),
+      manual_fallback_hours: fallbackHours,
+    };
+  }
   const raw = item.settings as Partial<CampaignLibraryTemplateSettings>;
   return {
     ...defaultLibraryTemplateSettings(),
@@ -39,6 +51,7 @@ function asSettings(
       raw.send_rules && raw.send_rules.length > 0
         ? raw.send_rules
         : defaultLibraryTemplateSettings().send_rules,
+    manual_fallback_hours: fallbackHours,
   };
 }
 
@@ -168,9 +181,11 @@ export function LibrarySequenceEditor({
       step_type: type,
       body: campaignStepHasCopy(type) ? "" : null,
       wait_hours: type === "wait" ? 24 : null,
-      send_mode: "auto",
-      fallback_hours: null,
-      fallback_body: null,
+      ...campaignNewStepSendFields(
+        type,
+        sequenceMessageSendMode(steps),
+        parseManualFallbackHours(settings.manual_fallback_hours)
+      ),
       config: {
         ...defaultStepConfig(type),
         ...(mediaKind ? { media_kind: mediaKind } : {}),
@@ -358,6 +373,7 @@ export function LibrarySequenceEditor({
           mode="library"
           steps={steps}
           campaignId={item.id}
+          mergeFields={mergeFieldPickerForLibraryKind(item.kind)}
           uploadUrl={`/api/admin/campaign-library/${encodeURIComponent(item.id)}/step-media`}
           peopleAtStep={() => EMPTY_STEP_PEOPLE}
           abStats={null}
@@ -367,6 +383,19 @@ export function LibrarySequenceEditor({
           onDeleteStep={deleteStep}
           onDuplicateStep={duplicateStep}
           onReorderSteps={reorderSteps}
+          manualFallbackHours={settings.manual_fallback_hours}
+          onManualFallbackHoursChange={(hours) => {
+            const nextSettings = { ...settings, manual_fallback_hours: hours };
+            setSettings(nextSettings);
+            void patchItem({
+              settings:
+                item.item_type === "template"
+                  ? nextSettings
+                  : { manual_fallback_hours: hours },
+            }).catch((err) =>
+              setError(err instanceof Error ? err.message : "Could not save.")
+            );
+          }}
         />
       </div>
 

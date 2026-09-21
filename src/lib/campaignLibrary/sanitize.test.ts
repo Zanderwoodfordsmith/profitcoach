@@ -45,8 +45,13 @@ describe("campaign library settings", () => {
     assert.equal("stop_on_reply" in template && template.stop_on_reply, false);
     assert.equal("daily_invite_limit" in template && template.daily_invite_limit, 9);
     assert.equal("timezone" in template && template.timezone, "America/New_York");
+    assert.equal("manual_fallback_hours" in template && template.manual_fallback_hours, null);
     assert.ok("send_rules" in template && Array.isArray(template.send_rules));
     assert.deepEqual(sanitizeLibraryItemSettings("sequence", { daily_invite_limit: 50 }), {});
+    assert.deepEqual(
+      sanitizeLibraryItemSettings("sequence", { manual_fallback_hours: 24 }),
+      { manual_fallback_hours: 24 }
+    );
     assert.deepEqual(sanitizeLibraryItemSettings("step", { stop_on_reply: false }), {});
   });
 });
@@ -133,5 +138,20 @@ describe("campaign library step replace", () => {
       step?.variants?.map((variant) => variant.key),
       ["A", "B"]
     );
+  });
+
+  it("keeps a manual message with fallback turned off", () => {
+    const step = cleanLibraryStep(
+      {
+        position: 0,
+        step_type: "message",
+        body: "Hi",
+        send_mode: "remind",
+        fallback_hours: null,
+      },
+      0
+    );
+    assert.equal(step?.send_mode, "remind");
+    assert.equal(step?.fallback_hours, null);
   });
 });

@@ -473,9 +473,25 @@ export function campaignStepSendMode(
   return sendMode === "remind" ? "remind" : "auto";
 }
 
+/** Copied onto a new manual step when the campaign fallback default is on. */
+export const DEFAULT_MANUAL_FALLBACK_HOURS = 24;
+
+/** Campaign / template default. Null means new manual steps start with fallback off. */
+export function parseManualFallbackHours(value: unknown): number | null {
+  if (value == null || value === false || value === "") return null;
+  if (value === true) return DEFAULT_MANUAL_FALLBACK_HOURS;
+  const hours = Number(value);
+  if (!Number.isFinite(hours) || hours <= 0) return null;
+  return Math.max(1, Math.min(720, Math.round(hours)));
+}
+
 export function campaignSendModePatch(
   mode: CampaignSendMode,
-  fallbackHours?: number | null
+  input: {
+    fromMode?: string | null;
+    fallbackHours?: number | null;
+    defaultFallbackHours?: number | null;
+  } = {}
 ): {
   send_mode: CampaignSendMode;
   fallback_hours: number | null;
@@ -484,7 +500,70 @@ export function campaignSendModePatch(
   if (mode === "auto") {
     return { send_mode: "auto", fallback_hours: null, fallback_body: null };
   }
-  return { send_mode: "remind", fallback_hours: fallbackHours ?? 24 };
+  if (campaignStepSendMode(input.fromMode) === "remind") {
+    return {
+      send_mode: "remind",
+      fallback_hours: campaignFallbackEnabled(input.fallbackHours)
+        ? campaignFallbackHoursPatch(true, input.fallbackHours)
+        : null,
+    };
+  }
+  return {
+    send_mode: "remind",
+    fallback_hours: parseManualFallbackHours(input.defaultFallbackHours),
+  };
+}
+
+/** New LinkedIn messages match All-steps Manual, and copy the campaign fallback default. */
+export function campaignNewStepSendFields(
+  type: string,
+  allMessageMode: CampaignSendMode | "mixed" | null | undefined,
+  defaultFallbackHours?: number | null
+): {
+  send_mode: CampaignSendMode;
+  fallback_hours: number | null;
+  fallback_body: null;
+} {
+  if (!campaignStepHasSendMode(type) || allMessageMode !== "remind") {
+    return { send_mode: "auto", fallback_hours: null, fallback_body: null };
+  }
+  const patch = campaignSendModePatch("remind", { defaultFallbackHours });
+  return {
+    send_mode: patch.send_mode,
+    fallback_hours: patch.fallback_hours,
+    fallback_body: null,
+  };
+}
+
+/** Manual steps auto-send after this window. Null / off means they stay in the coach queue. */
+export function campaignFallbackEnabled(
+  fallbackHours: number | null | undefined
+): boolean {
+  return fallbackHours != null && Number(fallbackHours) > 0;
+}
+
+export function campaignFallbackHoursPatch(
+  enabled: false,
+  previousHours?: number | null
+): null;
+export function campaignFallbackHoursPatch(
+  enabled: true,
+  previousHours?: number | null
+): number;
+export function campaignFallbackHoursPatch(
+  enabled: boolean,
+  previousHours?: number | null
+): number | null;
+export function campaignFallbackHoursPatch(
+  enabled: boolean,
+  previousHours?: number | null
+): number | null {
+  if (!enabled) return null;
+  const hours = previousHours != null ? Number(previousHours) : NaN;
+  if (Number.isFinite(hours) && hours > 0) {
+    return Math.max(1, Math.min(720, hours));
+  }
+  return DEFAULT_MANUAL_FALLBACK_HOURS;
 }
 
 export function sequenceMessageSendMode(

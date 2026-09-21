@@ -3,6 +3,8 @@
  * Auth: X-API-KEY from env. Base URL from UNIPILE_DSN.
  */
 
+import { namedFileFromBlob } from "@/lib/messaging/messageAttachments";
+
 export type UnipileResult<T> = {
   ok: boolean;
   status: number;
@@ -363,19 +365,29 @@ export async function sendUnipileChatMessage(input: {
   if (text) form.append("text", text);
   if (input.account_id) form.append("account_id", input.account_id);
   for (const file of input.attachments ?? []) {
-    form.append("attachments", file.blob, file.filename);
+    form.append(
+      "attachments",
+      namedFileFromBlob(file.blob, file.filename),
+      file.filename
+    );
   }
   if (input.voice_message) {
     form.append(
       "voice_message",
-      input.voice_message.blob,
+      namedFileFromBlob(
+        input.voice_message.blob,
+        input.voice_message.filename
+      ),
       input.voice_message.filename
     );
   }
   if (input.video_message) {
     form.append(
       "video_message",
-      input.video_message.blob,
+      namedFileFromBlob(
+        input.video_message.blob,
+        input.video_message.filename
+      ),
       input.video_message.filename
     );
   }
@@ -675,6 +687,47 @@ export async function listUnipileUserPosts(input: {
   );
 }
 
+/**
+ * Unipile LinkedIn search request. `url` overrides the entire JSON body, so a
+ * follow-up page must send `cursor` without `url` or Unipile restarts at page 1.
+ * Long Sales Nav cursors go in the body (query strings get truncated).
+ */
+export function unipileLinkedInSearchRequest(input: {
+  account_id: string;
+  cursor?: string | null;
+  url?: string | null;
+  limit?: number;
+  extra?: Record<string, unknown>;
+}): { path: string; body: Record<string, unknown> } {
+  const qs = new URLSearchParams({ account_id: input.account_id });
+  if (typeof input.limit === "number" && Number.isFinite(input.limit)) {
+    qs.set("limit", String(Math.min(100, Math.max(1, Math.floor(input.limit)))));
+  }
+  const extra = { ...(input.extra ?? {}) };
+  delete extra.account_id;
+  delete extra.cursor;
+  delete extra.url;
+  delete extra.limit;
+  delete extra.timeoutMs;
+  const cursor = input.cursor?.trim() || "";
+  const url = input.url?.trim() || "";
+  const body: Record<string, unknown> = { ...extra };
+  if (cursor) {
+    body.cursor = cursor;
+    // Short cursors also go on the query string (Unipile’s documented param).
+    // Long URL-search cursors stay body-only so the query is not truncated.
+    if (cursor.length <= 1500) {
+      qs.set("cursor", cursor);
+    }
+  } else if (url) {
+    body.url = url;
+  }
+  return {
+    path: `/api/v1/linkedin/search?${qs.toString()}`,
+    body,
+  };
+}
+
 export async function linkedInSearch(input: {
   account_id: string;
   cursor?: string | null;
@@ -686,17 +739,14 @@ export async function linkedInSearch(input: {
   timeoutMs?: number;
   [key: string]: unknown;
 }) {
-  const { account_id, cursor, limit, timeoutMs, ...rest } = input;
-  const qs = new URLSearchParams({ account_id });
-  if (cursor) qs.set("cursor", String(cursor));
-  if (typeof limit === "number" && Number.isFinite(limit)) {
-    qs.set("limit", String(Math.min(100, Math.max(1, Math.floor(limit)))));
-  }
-  const body: Record<string, unknown> = { ...rest };
-  delete body.account_id;
-  delete body.cursor;
-  delete body.limit;
-  delete body.timeoutMs;
+  const { account_id, cursor, limit, timeoutMs, url, ...rest } = input;
+  const { path, body } = unipileLinkedInSearchRequest({
+    account_id,
+    cursor,
+    url,
+    limit,
+    extra: rest,
+  });
   return unipileFetch<{
     object?: string;
     items?: Array<Record<string, unknown>>;
@@ -708,7 +758,7 @@ export async function linkedInSearch(input: {
       page_count?: number;
       total_count?: number | null;
     };
-  }>("POST", `/api/v1/linkedin/search?${qs.toString()}`, body, {
+  }>("POST", path, body, {
     timeoutMs: typeof timeoutMs === "number" ? timeoutMs : 45_000,
   });
 }

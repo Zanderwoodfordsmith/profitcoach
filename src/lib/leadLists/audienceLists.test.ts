@@ -7,6 +7,7 @@ import {
   mapAudiencePeopleInput,
   MAX_POOL_ITEMS_TOTAL,
   parsePastedAudienceLines,
+  planNamedListMembership,
   sortAudienceLists,
   splitPersonName,
   uniqueAudienceListCopyName,
@@ -89,6 +90,38 @@ describe("audience lists", () => {
     assert.equal(listItemCapForKind("audience"), MAX_POOL_ITEMS_TOTAL);
     assert.equal(listItemCapForKind("blacklist"), MAX_POOL_ITEMS_TOTAL);
     assert.equal(listItemCapForKind("pool"), MAX_POOL_ITEMS_TOTAL);
+  });
+
+  it("puts people already in the pool onto a new list instead of skipping them", () => {
+    const ada = { linkedin_url: "https://www.linkedin.com/in/ada/" };
+    const grace = { linkedin_url: "https://www.linkedin.com/in/grace/" };
+    const alreadyOnList = { linkedin_url: "https://www.linkedin.com/in/on-list/" };
+    const blocked = { linkedin_url: "https://www.linkedin.com/in/blocked/" };
+    const plan = planNamedListMembership({
+      people: [ada, alreadyOnList, grace, blocked],
+      urlsOnTarget: new Set([alreadyOnList.linkedin_url]),
+      urlsInPool: new Set([ada.linkedin_url, alreadyOnList.linkedin_url]),
+      blacklistedUrls: new Set([blocked.linkedin_url]),
+      room: 10,
+    });
+    assert.deepEqual(plan.copyUrls, [ada.linkedin_url]);
+    assert.deepEqual(plan.insertPeople, [grace]);
+    assert.equal(plan.skipped, 1);
+    assert.equal(plan.blacklisted, 1);
+  });
+
+  it("does not skip pool people when the new list still has room", () => {
+    const ada = { linkedin_url: "https://www.linkedin.com/in/ada/" };
+    const plan = planNamedListMembership({
+      people: [ada],
+      urlsOnTarget: new Set(),
+      urlsInPool: new Set([ada.linkedin_url]),
+      blacklistedUrls: new Set(),
+      room: 1,
+    });
+    assert.deepEqual(plan.copyUrls, [ada.linkedin_url]);
+    assert.equal(plan.insertPeople.length, 0);
+    assert.equal(plan.skipped, 0);
   });
 
   it("labels sources and names for the table", () => {

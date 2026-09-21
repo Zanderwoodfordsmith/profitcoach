@@ -11,6 +11,7 @@ import {
   type PoolColumnVisibility,
   type PoolContactFilter,
   type PoolDateAddedFilter,
+  type PoolLinkedInFilter,
   type PoolGroupField,
   type PoolGroupOrder,
   type PoolSortField,
@@ -39,6 +40,7 @@ export type PoolTableViewSettings = {
   sourceFilter: string;
   campaignFilter: PoolCampaignFilter;
   contactFilter: PoolContactFilter;
+  linkedinFilter: PoolLinkedInFilter;
   dateAddedFilter: PoolDateAddedFilter;
   tagFilter: PoolTagFilter;
   sortField: PoolSortField;
@@ -150,6 +152,7 @@ export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
     sourceFilter: "all",
     campaignFilter: "all",
     contactFilter: "all",
+    linkedinFilter: "all",
     dateAddedFilter: "all",
     tagFilter: "all",
     sortField: "name",
@@ -169,6 +172,10 @@ function isPoolContactFilter(value: unknown): value is PoolContactFilter {
     value === "both" ||
     value === "none"
   );
+}
+
+function isPoolLinkedInFilter(value: unknown): value is PoolLinkedInFilter {
+  return value === "all" || value === "has" || value === "none";
 }
 
 function isPoolDateAddedFilter(value: unknown): value is PoolDateAddedFilter {
@@ -208,6 +215,9 @@ export function normalizePoolTableViewSettings(
     contactFilter: isPoolContactFilter(source.contactFilter)
       ? source.contactFilter
       : defaults.contactFilter,
+    linkedinFilter: isPoolLinkedInFilter(source.linkedinFilter)
+      ? source.linkedinFilter
+      : defaults.linkedinFilter,
     dateAddedFilter: isPoolDateAddedFilter(source.dateAddedFilter)
       ? source.dateAddedFilter
       : defaults.dateAddedFilter,

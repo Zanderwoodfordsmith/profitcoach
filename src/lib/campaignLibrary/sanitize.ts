@@ -5,6 +5,7 @@ import {
   defaultStepConfig,
   isCampaignStepType,
   keepAbPair,
+  parseManualFallbackHours,
   sanitizeMessageMediaPatch,
   sanitizeStepConfig,
   type CampaignStepType,
@@ -27,6 +28,7 @@ import {
   type CampaignLibraryKind,
   type CampaignLibraryStatus,
   type CampaignLibraryTemplateSettings,
+  type CampaignLibraryItemSettings,
 } from "@/lib/campaignLibrary/types";
 
 export function blankLibraryMessageStep(): CampaignStepInput {
@@ -51,18 +53,26 @@ export function defaultLibraryTemplateSettings(): CampaignLibraryTemplateSetting
     daily_react_limit: 20,
     timezone: "Europe/London",
     send_rules: DEFAULT_CAMPAIGN_SEND_RULES.map((row) => ({ ...row })),
+    manual_fallback_hours: null,
   };
 }
 
 export function sanitizeLibraryItemSettings(
   itemType: CampaignLibraryItemType,
   raw: unknown
-): CampaignLibraryTemplateSettings | Record<string, never> {
-  if (itemType !== "template") return {};
+): CampaignLibraryItemSettings {
   const source =
     raw && typeof raw === "object" && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)
       : {};
+  const manualFallbackHours = parseManualFallbackHours(
+    source.manual_fallback_hours
+  );
+  if (itemType !== "template") {
+    return manualFallbackHours == null
+      ? {}
+      : { manual_fallback_hours: manualFallbackHours };
+  }
   const defaults = defaultLibraryTemplateSettings();
   const timezone =
     typeof source.timezone === "string" && source.timezone.trim()
@@ -87,6 +97,7 @@ export function sanitizeLibraryItemSettings(
     ),
     timezone,
     send_rules: parseCampaignSendRules(source.send_rules),
+    manual_fallback_hours: manualFallbackHours,
   };
 }
 

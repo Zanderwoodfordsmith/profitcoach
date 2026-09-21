@@ -63,13 +63,17 @@ export function shouldFinishUnipileSegment(opts: {
   stalledCursor: boolean;
   itemsLength: number;
   newUniqueCount: number;
+  duplicatePages?: number;
 }): boolean {
   if (opts.scrapedCount >= opts.scrapedCap) return true;
-  if (!opts.nextCursor || opts.stalledCursor || opts.itemsLength === 0) {
-    return true;
-  }
-  // Unipile/LinkedIn often keep issuing cursors after the unique set is
-  // exhausted — paging those duplicates toward 2,500 is what hung imports.
-  if (opts.itemsLength > 0 && opts.newUniqueCount === 0) return true;
+  // Empty page = LinkedIn has nothing more, even if total_count is larger.
+  if (opts.itemsLength === 0) return true;
+  const duplicatePages =
+    opts.duplicatePages ?? (opts.newUniqueCount === 0 ? 1 : 0);
+  // One overlapping page is common when a cursor restarts; two in a row
+  // means the unique set is exhausted.
+  if (duplicatePages >= 2) return true;
+  if (opts.stalledCursor && opts.newUniqueCount === 0) return true;
+  if (!opts.nextCursor && opts.newUniqueCount === 0) return true;
   return false;
 }

@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  campaignFallbackEnabled,
+  campaignFallbackHoursPatch,
+  campaignNewStepSendFields,
   campaignSendModePatch,
+  parseManualFallbackHours,
   campaignStepDisplayLabel,
   campaignStepHasSendMode,
   campaignStepIncompleteHint,
@@ -172,19 +176,68 @@ describe("campaign send mode", () => {
     assert.equal(campaignStepSendMode("remind"), "remind");
   });
 
-  it("clears fallback when switching to auto and defaults 24h for manual", () => {
-    assert.deepEqual(campaignSendModePatch("auto", 48), {
+  it("clears fallback when switching to auto and copies the campaign default onto new manual steps", () => {
+    assert.deepEqual(campaignSendModePatch("auto", { fallbackHours: 48 }), {
       send_mode: "auto",
       fallback_hours: null,
       fallback_body: null,
     });
-    assert.deepEqual(campaignSendModePatch("remind", null), {
+    assert.deepEqual(campaignSendModePatch("remind"), {
+      send_mode: "remind",
+      fallback_hours: null,
+    });
+    assert.deepEqual(
+      campaignSendModePatch("remind", { defaultFallbackHours: 24 }),
+      { send_mode: "remind", fallback_hours: 24 }
+    );
+    assert.deepEqual(
+      campaignSendModePatch("remind", {
+        fromMode: "remind",
+        fallbackHours: 72,
+      }),
+      { send_mode: "remind", fallback_hours: 72 }
+    );
+    assert.deepEqual(
+      campaignSendModePatch("remind", {
+        fromMode: "remind",
+        fallbackHours: null,
+        defaultFallbackHours: 24,
+      }),
+      { send_mode: "remind", fallback_hours: null }
+    );
+  });
+
+  it("lets a manual step turn fallback off and back on", () => {
+    assert.equal(campaignFallbackEnabled(24), true);
+    assert.equal(campaignFallbackEnabled(null), false);
+    assert.equal(campaignFallbackHoursPatch(false, 72), null);
+    assert.equal(campaignFallbackHoursPatch(true, null), 24);
+    assert.equal(campaignFallbackHoursPatch(true, 72), 72);
+  });
+
+  it("parses the campaign fallback default and copies it onto new manual messages only", () => {
+    assert.equal(parseManualFallbackHours(null), null);
+    assert.equal(parseManualFallbackHours(true), 24);
+    assert.equal(parseManualFallbackHours(24), 24);
+    assert.deepEqual(campaignNewStepSendFields("message", "auto", 24), {
+      send_mode: "auto",
+      fallback_hours: null,
+      fallback_body: null,
+    });
+    assert.deepEqual(campaignNewStepSendFields("message", "remind", null), {
+      send_mode: "remind",
+      fallback_hours: null,
+      fallback_body: null,
+    });
+    assert.deepEqual(campaignNewStepSendFields("message", "remind", 24), {
       send_mode: "remind",
       fallback_hours: 24,
+      fallback_body: null,
     });
-    assert.deepEqual(campaignSendModePatch("remind", 72), {
-      send_mode: "remind",
-      fallback_hours: 72,
+    assert.deepEqual(campaignNewStepSendFields("wait", "remind", 24), {
+      send_mode: "auto",
+      fallback_hours: null,
+      fallback_body: null,
     });
   });
 

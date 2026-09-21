@@ -81,6 +81,10 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
   try {
     if (Array.isArray(body.steps)) {
+      const owned = await campaignOwnedByCoach(auth.coachId, id);
+      if (!owned) {
+        return NextResponse.json({ error: "Not found." }, { status: 404 });
+      }
       const releaseWaitPosition =
         typeof body.release_wait_position === "number" &&
         Number.isInteger(body.release_wait_position) &&

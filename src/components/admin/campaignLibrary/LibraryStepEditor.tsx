@@ -23,6 +23,7 @@ import {
   defaultStepConfig,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
+import { mergeFieldPickerForLibraryKind } from "@/lib/unipile/mergeFields";
 
 const STEP_TYPES = CAMPAIGN_STEP_TYPES.filter(
   (type) => type !== "add_to_campaign"
@@ -288,6 +289,7 @@ export function LibraryStepEditor({ itemId }: { itemId: string }) {
           libraryMode
           abStats={null}
           campaigns={[]}
+          mergeFields={mergeFieldPickerForLibraryKind(item.kind)}
           onChange={(patch) => {
             const next = { ...stepRef.current, ...patch };
             stepRef.current = next;

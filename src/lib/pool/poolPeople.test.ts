@@ -6,6 +6,7 @@ import {
   poolRowFitsCampaignChannel,
   poolRowMatchesContactFilter,
   poolRowMatchesDateAddedFilter,
+  poolRowMatchesLinkedInFilter,
   poolRowMatchesTagFilter,
   type PoolPerson,
 } from "./poolPeople";
@@ -120,5 +121,19 @@ describe("pool filters", () => {
     assert.equal(poolRowMatchesTagFilter(tagged, "missing"), false);
     assert.equal(poolRowMatchesTagFilter(empty, "none"), true);
     assert.equal(poolRowMatchesTagFilter(tagged, "none"), false);
+  });
+
+  it("matches LinkedIn profile presence", () => {
+    const hasUrl = person({});
+    const missing = person({ linkedin_url: null });
+    const blank = person({ linkedin_url: "   " });
+    assert.equal(poolRowMatchesLinkedInFilter(hasUrl, "all"), true);
+    assert.equal(poolRowMatchesLinkedInFilter(missing, "all"), true);
+    assert.equal(poolRowMatchesLinkedInFilter(hasUrl, "has"), true);
+    assert.equal(poolRowMatchesLinkedInFilter(missing, "has"), false);
+    assert.equal(poolRowMatchesLinkedInFilter(blank, "has"), false);
+    assert.equal(poolRowMatchesLinkedInFilter(missing, "none"), true);
+    assert.equal(poolRowMatchesLinkedInFilter(blank, "none"), true);
+    assert.equal(poolRowMatchesLinkedInFilter(hasUrl, "none"), false);
   });
 });

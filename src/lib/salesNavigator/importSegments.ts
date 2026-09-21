@@ -42,6 +42,8 @@ export type SalesNavImportSegmentPlan = {
   errorMessage: string | null;
   /** Unipile paging.total_count once known — clamps progress UI. */
   searchTotalCount?: number | null;
+  /** Consecutive pages that added no new unique people. */
+  zeroUniquePages?: number;
 };
 
 type SalesNavImportSegmentDraft = Omit<

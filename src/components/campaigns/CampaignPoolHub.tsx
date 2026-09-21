@@ -78,12 +78,14 @@ import {
   POOL_CONTACT_FILTER_OPTIONS,
   POOL_DATE_ADDED_FILTER_OPTIONS,
   POOL_GROUP_FIELDS,
+  POOL_LINKEDIN_FILTER_OPTIONS,
   POOL_TABLE_COLUMN_OPTIONS,
   poolDisplayName,
   poolLeadCompany,
   poolRowFitsCampaignChannel,
   poolRowMatchesContactFilter,
   poolRowMatchesDateAddedFilter,
+  poolRowMatchesLinkedInFilter,
   poolRowMatchesTagFilter,
   poolSourceLabel,
   poolWebsiteHref,
@@ -91,6 +93,7 @@ import {
   type PoolColumnVisibility,
   type PoolContactFilter,
   type PoolDateAddedFilter,
+  type PoolLinkedInFilter,
   type PoolGroupField,
   type PoolGroupOrder,
   type PoolPerson,
@@ -370,6 +373,8 @@ export function CampaignPoolHub({
     "all" | "in_campaign" | "not_in_campaign"
   >("all");
   const [contactFilter, setContactFilter] = useState<PoolContactFilter>("all");
+  const [linkedinFilter, setLinkedinFilter] =
+    useState<PoolLinkedInFilter>("all");
   const [dateAddedFilter, setDateAddedFilter] =
     useState<PoolDateAddedFilter>("all");
   const [tagFilter, setTagFilter] = useState<PoolTagFilter>("all");
@@ -458,6 +463,7 @@ export function CampaignPoolHub({
     setSourceFilter(next.sourceFilter);
     setCampaignFilter(next.campaignFilter);
     setContactFilter(next.contactFilter);
+    setLinkedinFilter(next.linkedinFilter);
     setDateAddedFilter(next.dateAddedFilter);
     setTagFilter(next.tagFilter);
     setSortField(next.sortField);
@@ -473,6 +479,7 @@ export function CampaignPoolHub({
         sourceFilter,
         campaignFilter,
         contactFilter,
+        linkedinFilter,
         dateAddedFilter,
         tagFilter,
         sortField,
@@ -489,6 +496,7 @@ export function CampaignPoolHub({
       contactFilter,
       dateAddedFilter,
       grouping,
+      linkedinFilter,
       sortField,
       sortOrder,
       sourceFilter,
@@ -813,6 +821,7 @@ export function CampaignPoolHub({
       if (campaignFilter === "in_campaign" && !row.in_campaign) return false;
       if (campaignFilter === "not_in_campaign" && row.in_campaign) return false;
       if (!poolRowMatchesContactFilter(row, contactFilter)) return false;
+      if (!poolRowMatchesLinkedInFilter(row, linkedinFilter)) return false;
       if (!poolRowMatchesDateAddedFilter(row, dateAddedFilter)) return false;
       if (!poolRowMatchesTagFilter(row, tagFilter)) return false;
       if (!q) return true;
@@ -838,6 +847,7 @@ export function CampaignPoolHub({
     campaignFilter,
     contactFilter,
     dateAddedFilter,
+    linkedinFilter,
     people,
     query,
     sortField,
@@ -938,6 +948,7 @@ export function CampaignPoolHub({
     (sourceFilter !== "all" ? 1 : 0) +
     (campaignFilter !== "all" ? 1 : 0) +
     (contactFilter !== "all" ? 1 : 0) +
+    (linkedinFilter !== "all" ? 1 : 0) +
     (dateAddedFilter !== "all" ? 1 : 0) +
     (tagFilter !== "all" ? 1 : 0);
   const sortActive = sortField !== "name" || sortOrder !== "asc";
@@ -1088,7 +1099,7 @@ export function CampaignPoolHub({
 
   useEffect(() => {
     setPage(1);
-  }, [query, sourceFilter, campaignFilter, contactFilter, dateAddedFilter, tagFilter, sortField, sortOrder, grouping.field]);
+  }, [query, sourceFilter, campaignFilter, contactFilter, linkedinFilter, dateAddedFilter, tagFilter, sortField, sortOrder, grouping.field]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -2073,6 +2084,22 @@ export function CampaignPoolHub({
                   }
                 >
                   {POOL_CONTACT_FILTER_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="mt-3 block text-xs font-medium text-slate-600">
+                LinkedIn profile
+                <select
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  value={linkedinFilter}
+                  onChange={(e) =>
+                    setLinkedinFilter(e.target.value as PoolLinkedInFilter)
+                  }
+                >
+                  {POOL_LINKEDIN_FILTER_OPTIONS.map((option) => (
                     <option key={option.key} value={option.key}>
                       {option.label}
                     </option>

@@ -31,8 +31,11 @@ import {
 } from "@/lib/getClients/hubFetchers";
 import type { AbVariantStats } from "@/lib/unipile/abMetrics";
 import {
+  campaignNewStepSendFields,
   campaignStepHasCopy,
   defaultStepConfig,
+  parseManualFallbackHours,
+  sequenceMessageSendMode,
   type CampaignStepMediaKind,
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
@@ -52,6 +55,7 @@ import {
   type InviteFunnelSlice,
 } from "@/lib/unipile/campaignLeadActivity";
 import { magnetForPlaybookId } from "@/lib/leadMagnets/catalog";
+import { mergeFieldPickerForPlaybook } from "@/lib/unipile/mergeFields";
 import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
 import { CampaignTemplatePickerModal } from "@/components/campaigns/CampaignTemplatePicker";
 import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
@@ -100,6 +104,7 @@ type Campaign = {
   timezone?: string | null;
   send_rules?: unknown;
   stop_on_reply?: boolean | null;
+  manual_fallback_hours?: number | null;
 };
 
 type Step = {
@@ -201,6 +206,7 @@ function asCampaign(row: unknown): Campaign | null {
     timezone: typeof c.timezone === "string" ? c.timezone : null,
     send_rules: c.send_rules,
     stop_on_reply: typeof c.stop_on_reply === "boolean" ? c.stop_on_reply : null,
+    manual_fallback_hours: parseManualFallbackHours(c.manual_fallback_hours),
   };
 }
 
@@ -511,37 +517,53 @@ export function LinkedInCampaignEditor() {
     }
   }
 
+  const saveStepsInFlight = useRef(false);
+  const saveStepsPending = useRef<{
+    steps: Step[];
+    options?: { releaseWaitPosition?: number };
+  } | null>(null);
+
   async function saveSteps(
     nextSteps?: Step[],
     options?: { releaseWaitPosition?: number }
   ) {
     if (!campaignId) return;
-    const payload = nextSteps ?? steps;
+    saveStepsPending.current = {
+      steps: nextSteps ?? stepsRef.current,
+      options,
+    };
+    if (saveStepsInFlight.current) return;
+    saveStepsInFlight.current = true;
     setBusy(true);
     setError(null);
     try {
-      const headers = await authHeaders(impersonatingCoachId);
-      if (!headers) throw new Error("Sign in required.");
-      const res = await fetch(
-        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-        {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({
-            steps: payload,
-            ...(options?.releaseWaitPosition != null
-              ? { release_wait_position: options.releaseWaitPosition }
-              : {}),
-          }),
-        }
-      );
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Save failed.");
-      setSteps(body.steps ?? payload);
-      if (options?.releaseWaitPosition != null) await load();
+      while (saveStepsPending.current) {
+        const job = saveStepsPending.current;
+        saveStepsPending.current = null;
+        const headers = await authHeaders(impersonatingCoachId);
+        if (!headers) throw new Error("Sign in required.");
+        const res = await fetch(
+          `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+          {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({
+              steps: job.steps,
+              ...(job.options?.releaseWaitPosition != null
+                ? { release_wait_position: job.options.releaseWaitPosition }
+                : {}),
+            }),
+          }
+        );
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || "Save failed.");
+        setSteps(body.steps ?? job.steps);
+        if (job.options?.releaseWaitPosition != null) await load();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed.");
     } finally {
+      saveStepsInFlight.current = false;
       setBusy(false);
     }
   }
@@ -661,9 +683,11 @@ export function LinkedInCampaignEditor() {
       step_type: type,
       body: campaignStepHasCopy(type) ? "" : null,
       wait_hours: type === "wait" ? 24 : null,
-      send_mode: type === "message" ? "auto" : "auto",
-      fallback_hours: null,
-      fallback_body: null,
+      ...campaignNewStepSendFields(
+        type,
+        sequenceMessageSendMode(steps),
+        campaign?.manual_fallback_hours
+      ),
       config: {
         ...defaultStepConfig(type),
         ...(mediaKind ? { media_kind: mediaKind } : {}),
@@ -1071,6 +1095,12 @@ export function LinkedInCampaignEditor() {
             names: stagingLeads.slice(0, 4).map(leadName),
           }}
           onChooseTemplate={() => setTemplatePickerOpen(true)}
+          mergeFields={mergeFieldPickerForPlaybook(campaign.source_playbook_id)}
+          manualFallbackHours={campaign.manual_fallback_hours ?? null}
+          onManualFallbackHoursChange={(hours) => {
+            setCampaign({ ...campaign, manual_fallback_hours: hours });
+            void saveSettings({ manual_fallback_hours: hours });
+          }}
         />
       ) : null}
 

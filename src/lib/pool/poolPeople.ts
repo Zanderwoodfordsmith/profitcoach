@@ -104,6 +104,7 @@ export type PoolContactFilter =
   | "phone"
   | "both"
   | "none";
+export type PoolLinkedInFilter = "all" | "has" | "none";
 export type PoolDateAddedFilter =
   | "all"
   | "today"
@@ -150,6 +151,15 @@ export const POOL_CONTACT_FILTER_OPTIONS: Array<{
   { key: "none", label: "No email or phone" },
 ];
 
+export const POOL_LINKEDIN_FILTER_OPTIONS: Array<{
+  key: PoolLinkedInFilter;
+  label: string;
+}> = [
+  { key: "all", label: "All" },
+  { key: "has", label: "Has LinkedIn" },
+  { key: "none", label: "No LinkedIn" },
+];
+
 export const POOL_DATE_ADDED_FILTER_OPTIONS: Array<{
   key: PoolDateAddedFilter;
   label: string;
@@ -176,6 +186,16 @@ export function poolRowMatchesContactFilter(
   if (filter === "phone") return hasPhone;
   if (filter === "both") return hasEmail && hasPhone;
   return !hasEmail && !hasPhone;
+}
+
+export function poolRowMatchesLinkedInFilter(
+  row: Pick<PoolPerson, "linkedin_url">,
+  filter: PoolLinkedInFilter
+): boolean {
+  if (filter === "all") return true;
+  const hasLinkedIn = Boolean(row.linkedin_url?.trim());
+  if (filter === "has") return hasLinkedIn;
+  return !hasLinkedIn;
 }
 
 export function poolRowMatchesDateAddedFilter(
