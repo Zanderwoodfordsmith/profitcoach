@@ -1175,7 +1175,8 @@ export function CampaignPoolHub({
         `Added ${added} to campaign${skipped ? ` · ${skipped} skipped` : ""}.`
       );
       if (!personIds?.length) setSelectedIds([]);
-      await reloadPeople();
+      // Don't block the UI on list refresh — basket write already succeeded.
+      void reloadPeople();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add to campaign.");
     } finally {
@@ -1660,7 +1661,7 @@ export function CampaignPoolHub({
     }
   }
 
-  function handleExport(mode: "shown" | "all", _scope: CsvExportScope) {
+  function handleExport(mode: "shown" | "all", scope: CsvExportScope) {
     const keys =
       mode === "shown"
         ? shownColumnOptions.map((option) => option.key)
@@ -1678,7 +1679,11 @@ export function CampaignPoolHub({
       const option = POOL_TABLE_COLUMN_OPTIONS.find((item) => item.key === key);
       return option?.label ?? key;
     })];
-    const rows = filtered.map((row) => {
+    const exportRows =
+      scope === "selected" && selectedPeople.length > 0
+        ? selectedPeople
+        : filtered;
+    const rows = exportRows.map((row) => {
       const cells = [poolDisplayName(row) || row.full_name];
       for (const key of exportKeys) {
         if (key === "title") cells.push(row.job_title ?? "");
@@ -1697,7 +1702,15 @@ export function CampaignPoolHub({
       }
       return cells;
     });
-    downloadCsv("pool.csv", [header, ...rows]);
+    const listName =
+      activeViewId === "pool"
+        ? "Pool"
+        : importLists.find((list) => list.id === activeViewId)?.name?.trim() ||
+          "Pool";
+    const safeName =
+      listName.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() ||
+      "Pool";
+    downloadCsv(`${safeName}.csv`, [header, ...rows]);
   }
 
   function rememberPoolContact(itemId: string, contactId: string) {
@@ -2280,6 +2293,7 @@ export function CampaignPoolHub({
             />
           }
           exportDisabled={loading || filtered.length === 0}
+          exportSelectedCount={selectedCount}
           exportMatchingCount={filtered.length}
           onExportShown={(scope) => handleExport("shown", scope)}
           onExportAll={(scope) => handleExport("all", scope)}

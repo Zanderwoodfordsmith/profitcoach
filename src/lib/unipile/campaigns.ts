@@ -37,6 +37,8 @@ import {
   classifyLeadReply,
   emptyReplyCounts,
 } from "@/lib/unipile/interest";
+import { parseLinkedInIdentity } from "@/lib/contacts/linkedinIdentity";
+import { normalizePoolEmail, normalizePoolPhone } from "@/lib/pool/identity";
 
 const CONTACT_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -719,6 +721,33 @@ export async function addCampaignLeadsFromContacts(
   };
 }
 
+type LeadInsertRow = {
+  campaign_id: string;
+  coach_id: string;
+  contact_id: string | null;
+  linkedin_url: string | null;
+  linkedin_provider_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+  title: string | null;
+  status: "queued";
+  current_step_position: number;
+  next_action_at: string;
+  metadata: Record<string, unknown>;
+};
+
+type PreparedLead = {
+  insert: LeadInsertRow;
+  email: string | null;
+  needsContact: boolean;
+};
+
+/**
+ * Enroll leads into a campaign basket. Fast path only: normalize what we
+ * already have, dedupe in memory, batch-insert. No Unipile calls — the send
+ * worker resolves provider IDs / vanity URLs lazily when a lead is due.
+ */
 export async function addCampaignLeads(
   coachId: string,
   campaignId: string,
@@ -726,7 +755,7 @@ export async function addCampaignLeads(
 ) {
   const { data: campaign } = await supabaseAdmin
     .from("linkedin_campaigns")
-    .select("id, outreach_account_id, channel")
+    .select("id, channel, status")
     .eq("id", campaignId)
     .eq("coach_id", coachId)
     .maybeSingle();
@@ -734,40 +763,6 @@ export async function addCampaignLeads(
 
   const campaignChannel =
     (campaign.channel as string | undefined) === "email" ? "email" : "linkedin";
-
-  let unipileAccountId: string | null = null;
-  if (campaign.outreach_account_id) {
-    const { data: account } = await supabaseAdmin
-      .from("linkedin_outreach_accounts")
-      .select("unipile_account_id")
-      .eq("id", campaign.outreach_account_id)
-      .maybeSingle();
-    unipileAccountId = (account?.unipile_account_id as string | null) ?? null;
-  }
-  if (!unipileAccountId) {
-    const { data: fallback } = await supabaseAdmin
-      .from("linkedin_outreach_accounts")
-      .select("unipile_account_id")
-      .eq("coach_id", coachId)
-      .eq("status", "OK")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    unipileAccountId = (fallback?.unipile_account_id as string | null) ?? null;
-  }
-
-  const {
-    linkedInIdentityIncomplete,
-    parseLinkedInIdentity,
-    preferLinkedInUrl,
-    resolveLinkedInIdentityPair,
-  } = await import("@/lib/contacts/linkedinIdentity");
-  const { resolveOrCreateContact } = await import(
-    "@/lib/contacts/resolveOrCreateContact"
-  );
-  const { normalizePoolEmail, normalizePoolPhone } = await import(
-    "@/lib/pool/identity"
-  );
 
   const ownedContacts = await loadOwnedContactsForImport(
     coachId,
@@ -779,203 +774,105 @@ export async function addCampaignLeads(
   const { loadBlacklistedEmails, loadBlacklistedLinkedInUrls } = await import(
     "@/lib/leadLists/audienceLists"
   );
-  const [blacklistedUrls, blacklistedEmails] = await Promise.all([
-    loadBlacklistedLinkedInUrls(coachId),
-    loadBlacklistedEmails(coachId),
-  ]);
 
-  let added = 0;
+  const limited = rows.slice(0, 500);
+
+  // Collect identity keys from the incoming batch so we only fetch matching
+  // existing leads (not the whole campaign).
+  const incomingUrls: string[] = [];
+  const incomingProviders: string[] = [];
+  const incomingContactIds: string[] = [];
+  for (const row of limited) {
+    const owned = row.contact_id ? ownedContacts.get(row.contact_id) : null;
+    if (owned?.id) incomingContactIds.push(owned.id);
+    const url = normalizeLinkedInProfileUrl(
+      row.linkedin_url || owned?.linkedin_url || ""
+    );
+    if (url) incomingUrls.push(url);
+    const provider =
+      row.linkedin_provider_id || owned?.linkedin_provider_id || null;
+    if (provider) incomingProviders.push(provider);
+  }
+
+  const uniqueUrls = [...new Set(incomingUrls)];
+  const uniqueProviders = [...new Set(incomingProviders)];
+  const uniqueContactIds = [...new Set(incomingContactIds)];
+
+  const [blacklistedUrls, blacklistedEmails, existingByUrl, existingByProvider, existingByContact] =
+    await Promise.all([
+      loadBlacklistedLinkedInUrls(coachId),
+      loadBlacklistedEmails(coachId),
+      uniqueUrls.length
+        ? supabaseAdmin
+            .from("linkedin_campaign_leads")
+            .select("linkedin_url")
+            .eq("campaign_id", campaignId)
+            .in("linkedin_url", uniqueUrls)
+        : Promise.resolve({ data: [] as { linkedin_url: string | null }[], error: null }),
+      uniqueProviders.length
+        ? supabaseAdmin
+            .from("linkedin_campaign_leads")
+            .select("linkedin_provider_id")
+            .eq("campaign_id", campaignId)
+            .in("linkedin_provider_id", uniqueProviders)
+        : Promise.resolve({
+            data: [] as { linkedin_provider_id: string | null }[],
+            error: null,
+          }),
+      uniqueContactIds.length
+        ? supabaseAdmin
+            .from("linkedin_campaign_leads")
+            .select("contact_id")
+            .eq("campaign_id", campaignId)
+            .in("contact_id", uniqueContactIds)
+        : Promise.resolve({
+            data: [] as { contact_id: string | null }[],
+            error: null,
+          }),
+    ]);
+
+  if (existingByUrl.error) throw new Error(existingByUrl.error.message);
+  if (existingByProvider.error) {
+    throw new Error(existingByProvider.error.message);
+  }
+  if (existingByContact.error) {
+    throw new Error(existingByContact.error.message);
+  }
+
+  const existingUrls = new Set<string>();
+  const existingProviders = new Set<string>();
+  const existingContactIds = new Set<string>();
+  for (const row of existingByUrl.data ?? []) {
+    const url = normalizeLinkedInProfileUrl(String(row.linkedin_url ?? ""));
+    if (url) existingUrls.add(url);
+  }
+  for (const row of existingByProvider.data ?? []) {
+    if (row.linkedin_provider_id) {
+      existingProviders.add(String(row.linkedin_provider_id));
+    }
+  }
+  for (const row of existingByContact.data ?? []) {
+    if (row.contact_id) existingContactIds.add(String(row.contact_id));
+  }
+
+  const nowIso = new Date().toISOString();
+  const prepared: PreparedLead[] = [];
   let skipped = 0;
   let blacklisted = 0;
-  for (const row of rows.slice(0, 500)) {
+
+  for (const row of limited) {
     const owned = row.contact_id ? ownedContacts.get(row.contact_id) : null;
     if (row.contact_id && !owned) {
       skipped += 1;
       continue;
     }
-
-    if (owned) {
-      const { data: existingByContact } = await supabaseAdmin
-        .from("linkedin_campaign_leads")
-        .select("id")
-        .eq("campaign_id", campaignId)
-        .eq("contact_id", owned.id)
-        .maybeSingle();
-      if (existingByContact?.id) {
-        skipped += 1;
-        continue;
-      }
+    if (owned && existingContactIds.has(owned.id)) {
+      skipped += 1;
+      continue;
     }
 
     const email = normalizePoolEmail(row.email || owned?.email || "");
     const phone = normalizePoolPhone(row.phone || owned?.phone || "");
-
-    if (campaignChannel === "email") {
-      if (!email) {
-        skipped += 1;
-        continue;
-      }
-      if (blacklistedEmails.has(email)) {
-        skipped += 1;
-        blacklisted += 1;
-        continue;
-      }
-
-      let contactId: string | null = owned?.id ?? null;
-      if (!contactId) {
-        const resolved = await resolveOrCreateContact({
-          coachId,
-          email,
-          phone,
-          linkedinUrl: row.linkedin_url || null,
-          linkedinProviderId: row.linkedin_provider_id || null,
-          firstName: row.first_name,
-          lastName: row.last_name,
-          fullName:
-            [row.first_name, row.last_name].filter(Boolean).join(" ") || null,
-          businessName: row.company,
-          jobTitle: row.title,
-          type: "prospect",
-          prospectSource: "campaign_import",
-          unipileAccountId,
-        });
-        contactId = resolved.contactId;
-      }
-
-      const { data: existingByContact } = await supabaseAdmin
-        .from("linkedin_campaign_leads")
-        .select("id")
-        .eq("campaign_id", campaignId)
-        .eq("contact_id", contactId)
-        .maybeSingle();
-      if (existingByContact?.id) {
-        skipped += 1;
-        continue;
-      }
-
-      const url = normalizeLinkedInProfileUrl(
-        row.linkedin_url || owned?.linkedin_url || ""
-      );
-      if (url && blacklistedUrls.has(url)) {
-        skipped += 1;
-        blacklisted += 1;
-        continue;
-      }
-
-      const socials = mergeSocialUrls(
-        {
-          instagram_url: normalizeInstagramProfileUrl(
-            row.instagram_url || owned?.instagram_url
-          ),
-          facebook_url: normalizeFacebookProfileUrl(
-            row.facebook_url || owned?.facebook_url
-          ),
-        },
-        socialUrlsFromUnknown(row.raw)
-      );
-
-      const { error } = await supabaseAdmin.from("linkedin_campaign_leads").insert({
-        campaign_id: campaignId,
-        coach_id: coachId,
-        contact_id: contactId,
-        linkedin_url: url,
-        linkedin_provider_id:
-          row.linkedin_provider_id || owned?.linkedin_provider_id || null,
-        first_name: row.first_name ?? null,
-        last_name: row.last_name ?? null,
-        company: row.company ?? null,
-        title: row.title ?? null,
-        status: "queued",
-        current_step_position: 0,
-        next_action_at: new Date().toISOString(),
-        metadata: {
-          email,
-          ...(phone ? { phone } : {}),
-          ...(socials.instagram_url
-            ? { instagram_url: socials.instagram_url }
-            : {}),
-          ...(socials.facebook_url
-            ? { facebook_url: socials.facebook_url }
-            : {}),
-        },
-      });
-      if (error) {
-        skipped += 1;
-        continue;
-      }
-      added += 1;
-      continue;
-    }
-
-    const url = normalizeLinkedInProfileUrl(
-      row.linkedin_url || owned?.linkedin_url || ""
-    );
-    const incomingProvider =
-      row.linkedin_provider_id || owned?.linkedin_provider_id || null;
-    if (!url && !incomingProvider) {
-      skipped += 1;
-      continue;
-    }
-
-    let pair = parseLinkedInIdentity({
-      linkedinUrl: url,
-      providerId: incomingProvider,
-    });
-    if (
-      linkedInIdentityIncomplete(pair) &&
-      unipileAccountId &&
-      (pair.providerId || pair.linkedinUrl)
-    ) {
-      pair = await resolveLinkedInIdentityPair({
-        linkedinUrl: pair.linkedinUrl,
-        providerId: pair.providerId,
-        publicIdentifier: pair.publicIdentifier,
-        unipileAccountId,
-      });
-    }
-
-    const resolvedUrl =
-      preferLinkedInUrl(url, pair.linkedinUrl) || pair.linkedinUrl || url;
-    if (!resolvedUrl) {
-      skipped += 1;
-      continue;
-    }
-    const blockedUrl = normalizeLinkedInProfileUrl(resolvedUrl) || resolvedUrl;
-    if (blacklistedUrls.has(blockedUrl)) {
-      skipped += 1;
-      blacklisted += 1;
-      continue;
-    }
-    const providerId = pair.providerId || incomingProvider || null;
-    const providerHint =
-      pair.publicIdentifier || linkedInPublicIdentifier(resolvedUrl);
-
-    // Skip if this campaign already has the same person (URL or provider id).
-    if (providerId) {
-      const { data: existingByProvider } = await supabaseAdmin
-        .from("linkedin_campaign_leads")
-        .select("id")
-        .eq("campaign_id", campaignId)
-        .eq("linkedin_provider_id", providerId)
-        .maybeSingle();
-      if (existingByProvider?.id) {
-        skipped += 1;
-        continue;
-      }
-    }
-    {
-      const { data: existingByUrl } = await supabaseAdmin
-        .from("linkedin_campaign_leads")
-        .select("id")
-        .eq("campaign_id", campaignId)
-        .eq("linkedin_url", resolvedUrl)
-        .maybeSingle();
-      if (existingByUrl?.id) {
-        skipped += 1;
-        continue;
-      }
-    }
-
     const socials = mergeSocialUrls(
       {
         instagram_url: normalizeInstagramProfileUrl(
@@ -988,67 +885,287 @@ export async function addCampaignLeads(
       socialUrlsFromUnknown(row.raw)
     );
 
-    let contactId: string | null = owned?.id ?? null;
-    // Link or create a contact when email is present so hybrid email steps work.
-    if (!contactId && email) {
-      try {
-        const resolved = await resolveOrCreateContact({
-          coachId,
-          email,
-          phone,
-          linkedinUrl: resolvedUrl,
-          linkedinProviderId: providerId,
-          firstName: row.first_name,
-          lastName: row.last_name,
-          fullName:
-            [row.first_name, row.last_name].filter(Boolean).join(" ") || null,
-          businessName: row.company,
-          jobTitle: row.title,
-          type: "prospect",
-          prospectSource: "campaign_import",
-          unipileAccountId,
-        });
-        contactId = resolved.contactId;
-      } catch {
-        // LinkedIn enrollment should not fail if CRM write fails.
+    if (campaignChannel === "email") {
+      if (!email) {
+        skipped += 1;
+        continue;
       }
-    }
+      if (blacklistedEmails.has(email)) {
+        skipped += 1;
+        blacklisted += 1;
+        continue;
+      }
 
-    const { error } = await supabaseAdmin.from("linkedin_campaign_leads").insert({
-      campaign_id: campaignId,
-      coach_id: coachId,
-      contact_id: contactId,
-      linkedin_url: resolvedUrl,
-      linkedin_provider_id: providerId,
-      first_name: row.first_name ?? null,
-      last_name: row.last_name ?? null,
-      company: row.company ?? null,
-      title: row.title ?? null,
-      status: "queued",
-      current_step_position: 0,
-      next_action_at: new Date().toISOString(),
-      metadata: {
-        ...(providerHint ? { public_identifier: providerHint } : {}),
-        ...(email ? { email } : {}),
-        ...(socials.instagram_url ? { instagram_url: socials.instagram_url } : {}),
-        ...(socials.facebook_url ? { facebook_url: socials.facebook_url } : {}),
-      },
-    });
-    if (error) {
-      if (error.code === "23505") skipped += 1;
-      else skipped += 1;
+      const url = normalizeLinkedInProfileUrl(
+        row.linkedin_url || owned?.linkedin_url || ""
+      );
+      if (url && blacklistedUrls.has(url)) {
+        skipped += 1;
+        blacklisted += 1;
+        continue;
+      }
+      if (url && existingUrls.has(url)) {
+        skipped += 1;
+        continue;
+      }
+      if (url) existingUrls.add(url);
+
+      const providerId =
+        row.linkedin_provider_id || owned?.linkedin_provider_id || null;
+      if (providerId && existingProviders.has(providerId)) {
+        skipped += 1;
+        continue;
+      }
+      if (providerId) existingProviders.add(providerId);
+
+      prepared.push({
+        email,
+        needsContact: !owned?.id,
+        insert: {
+          campaign_id: campaignId,
+          coach_id: coachId,
+          contact_id: owned?.id ?? null,
+          linkedin_url: url,
+          linkedin_provider_id: providerId,
+          first_name: row.first_name ?? null,
+          last_name: row.last_name ?? null,
+          company: row.company ?? null,
+          title: row.title ?? null,
+          status: "queued",
+          current_step_position: 0,
+          next_action_at: nowIso,
+          metadata: {
+            email,
+            ...(phone ? { phone } : {}),
+            ...(socials.instagram_url
+              ? { instagram_url: socials.instagram_url }
+              : {}),
+            ...(socials.facebook_url
+              ? { facebook_url: socials.facebook_url }
+              : {}),
+          },
+        },
+      });
       continue;
     }
-    added += 1;
+
+    const url = normalizeLinkedInProfileUrl(
+      row.linkedin_url || owned?.linkedin_url || ""
+    );
+    const incomingProvider =
+      row.linkedin_provider_id || owned?.linkedin_provider_id || null;
+    const pair = parseLinkedInIdentity({
+      linkedinUrl: url,
+      providerId: incomingProvider,
+    });
+    const providerId = pair.providerId || incomingProvider || null;
+    const resolvedUrl = pair.linkedinUrl || url || null;
+    if (!resolvedUrl && !providerId) {
+      skipped += 1;
+      continue;
+    }
+
+    if (resolvedUrl) {
+      const blockedUrl =
+        normalizeLinkedInProfileUrl(resolvedUrl) || resolvedUrl;
+      if (blacklistedUrls.has(blockedUrl)) {
+        skipped += 1;
+        blacklisted += 1;
+        continue;
+      }
+      if (existingUrls.has(resolvedUrl)) {
+        skipped += 1;
+        continue;
+      }
+    }
+    if (providerId && existingProviders.has(providerId)) {
+      skipped += 1;
+      continue;
+    }
+
+    if (resolvedUrl) existingUrls.add(resolvedUrl);
+    if (providerId) existingProviders.add(providerId);
+
+    const providerHint =
+      pair.publicIdentifier ||
+      (resolvedUrl ? linkedInPublicIdentifier(resolvedUrl) : null);
+
+    prepared.push({
+      email,
+      // Link existing CRM rows when we already have an email; create only for
+      // email-channel campaigns. Hybrid LinkedIn→email can attach contacts later.
+      needsContact: false,
+      insert: {
+        campaign_id: campaignId,
+        coach_id: coachId,
+        contact_id: owned?.id ?? null,
+        linkedin_url: resolvedUrl,
+        linkedin_provider_id: providerId,
+        first_name: row.first_name ?? null,
+        last_name: row.last_name ?? null,
+        company: row.company ?? null,
+        title: row.title ?? null,
+        status: "queued",
+        current_step_position: 0,
+        next_action_at: nowIso,
+        metadata: {
+          ...(providerHint ? { public_identifier: providerHint } : {}),
+          ...(email ? { email } : {}),
+          ...(socials.instagram_url
+            ? { instagram_url: socials.instagram_url }
+            : {}),
+          ...(socials.facebook_url
+            ? { facebook_url: socials.facebook_url }
+            : {}),
+        },
+      },
+    });
   }
 
-  const { data: campaignRow } = await supabaseAdmin
-    .from("linkedin_campaigns")
-    .select("status")
-    .eq("id", campaignId)
-    .maybeSingle();
-  if (campaignRow?.status === "running" && added > 0) {
-    await enqueuePendingJobsForCampaign(coachId, campaignId);
+  // Attach existing contacts by email (one query). Create missing contacts only
+  // for email campaigns — LinkedIn basket enrollment should not block on CRM.
+  const emailsNeedingContact = [
+    ...new Set(
+      prepared
+        .filter((row) => row.needsContact && row.email && !row.insert.contact_id)
+        .map((row) => row.email as string)
+    ),
+  ];
+  const emailsToLink = [
+    ...new Set(
+      prepared
+        .filter((row) => !row.insert.contact_id && row.email)
+        .map((row) => row.email as string)
+    ),
+  ];
+
+  const contactByEmail = new Map<string, string>();
+  if (emailsToLink.length) {
+    const { data: existingContacts, error: contactLookupError } =
+      await supabaseAdmin
+        .from("contacts")
+        .select("id, email")
+        .eq("coach_id", coachId)
+        .in("email", emailsToLink);
+    if (contactLookupError) throw new Error(contactLookupError.message);
+    for (const contact of existingContacts ?? []) {
+      const normalized = normalizePoolEmail(
+        typeof contact.email === "string" ? contact.email : null
+      );
+      if (normalized && contact.id) contactByEmail.set(normalized, contact.id);
+    }
+  }
+
+  const toCreate = emailsNeedingContact.filter(
+    (email) => !contactByEmail.has(email)
+  );
+  if (toCreate.length) {
+    const byEmail = new Map<string, PreparedLead>();
+    for (const row of prepared) {
+      if (row.email && toCreate.includes(row.email) && !byEmail.has(row.email)) {
+        byEmail.set(row.email, row);
+      }
+    }
+    const payloads = [...byEmail.entries()].map(([email, row]) => ({
+      coach_id: coachId,
+      type: "prospect" as const,
+      prospect_source: "campaign_import",
+      prospect_status: "leads",
+      email,
+      full_name:
+        [row.insert.first_name, row.insert.last_name].filter(Boolean).join(" ") ||
+        email,
+      first_name: row.insert.first_name,
+      last_name: row.insert.last_name,
+      business_name: row.insert.company,
+      job_title: row.insert.title,
+      linkedin_url: row.insert.linkedin_url,
+      linkedin_provider_id: row.insert.linkedin_provider_id,
+    }));
+
+    for (let i = 0; i < payloads.length; i += 100) {
+      const chunk = payloads.slice(i, i + 100);
+      const { data: created, error: createError } = await supabaseAdmin
+        .from("contacts")
+        .insert(chunk)
+        .select("id, email");
+      if (createError) {
+        // Fall back to per-row insert so one bad row doesn't block the batch.
+        for (const payload of chunk) {
+          const { data: one, error: oneError } = await supabaseAdmin
+            .from("contacts")
+            .insert(payload)
+            .select("id, email")
+            .maybeSingle();
+          if (oneError || !one?.id) continue;
+          const normalized = normalizePoolEmail(
+            typeof one.email === "string" ? one.email : payload.email
+          );
+          if (normalized) contactByEmail.set(normalized, one.id);
+        }
+        continue;
+      }
+      for (const contact of created ?? []) {
+        const normalized = normalizePoolEmail(
+          typeof contact.email === "string" ? contact.email : null
+        );
+        if (normalized && contact.id) contactByEmail.set(normalized, contact.id);
+      }
+    }
+  }
+
+  const inserts: LeadInsertRow[] = [];
+  for (const row of prepared) {
+    if (!row.insert.contact_id && row.email) {
+      const linked = contactByEmail.get(row.email);
+      if (linked) {
+        if (existingContactIds.has(linked)) {
+          skipped += 1;
+          continue;
+        }
+        row.insert.contact_id = linked;
+        existingContactIds.add(linked);
+      }
+    }
+    if (campaignChannel === "email" && !row.insert.contact_id) {
+      skipped += 1;
+      continue;
+    }
+    inserts.push(row.insert);
+  }
+
+  let added = 0;
+  const addedIds: string[] = [];
+  for (let i = 0; i < inserts.length; i += 100) {
+    const chunk = inserts.slice(i, i + 100);
+    const { data, error } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .insert(chunk)
+      .select("id");
+    if (error) {
+      // Unique races / partial failures: try one-by-one so good rows still land.
+      for (const lead of chunk) {
+        const { data: one, error: oneError } = await supabaseAdmin
+          .from("linkedin_campaign_leads")
+          .insert(lead)
+          .select("id")
+          .maybeSingle();
+        if (oneError || !one?.id) skipped += 1;
+        else {
+          added += 1;
+          addedIds.push(one.id);
+        }
+      }
+      continue;
+    }
+    added += data?.length ?? chunk.length;
+    for (const row of data ?? []) {
+      if (row.id) addedIds.push(row.id);
+    }
+  }
+
+  if (campaign.status === "running" && addedIds.length > 0) {
+    await enqueuePendingJobsForCampaign(coachId, campaignId, addedIds);
   }
 
   return { added, skipped, blacklisted };
@@ -1308,7 +1425,9 @@ export async function setCampaignStatus(
 
 export async function enqueuePendingJobsForCampaign(
   coachId: string,
-  campaignId: string
+  campaignId: string,
+  /** When set, only enqueue for these leads (e.g. freshly added). */
+  leadIds?: string[]
 ) {
   const { jobStatusForStep } = await import("@/lib/unipile/remindQueue");
   const { data: steps } = await supabaseAdmin
@@ -1318,12 +1437,16 @@ export async function enqueuePendingJobsForCampaign(
     .order("position", { ascending: true });
   if (!steps?.length) return { enqueued: 0 };
 
-  const { data: leads } = await supabaseAdmin
+  let leadsQuery = supabaseAdmin
     .from("linkedin_campaign_leads")
     .select("*")
     .eq("campaign_id", campaignId)
     .eq("coach_id", coachId)
     .in("status", ["queued", "invited", "connected", "in_sequence"]);
+  if (leadIds?.length) {
+    leadsQuery = leadsQuery.in("id", leadIds.slice(0, 500));
+  }
+  const { data: leads } = await leadsQuery;
 
   const { data: campaign } = await supabaseAdmin
     .from("linkedin_campaigns")
