@@ -18,7 +18,10 @@ import {
 } from "@/lib/unipile/campaignStepTypes";
 import { cleanCampaignStepsForSave } from "@/lib/unipile/campaignStepReplace";
 import { patchesAfterDeletedWait } from "@/lib/unipile/campaignLeadActivity";
-import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
+import {
+  fetchAllSupabasePages,
+  selectContactsWithOptionalPhone,
+} from "@/lib/contactsSchemaSafeSelect";
 import { splitFullName } from "@/lib/splitFullName";
 import { mergeSocialUrls, socialUrlsFromUnknown } from "@/lib/unipile/socialUrls";
 import { normalizeFacebookProfileUrl } from "@/lib/unipile/facebookIdentity";
@@ -114,14 +117,23 @@ async function withCampaignListCounts(campaigns: CampaignListRow[]) {
 
   return Promise.all(
     campaigns.map(async (c) => {
-      const { data: leadRows } = await supabaseAdmin
-        .from("linkedin_campaign_leads")
-        .select("status, interest_outcome")
-        .eq("campaign_id", c.id);
+      // PostgREST caps a single response at ~1000 rows — page through.
+      const { data: leadRows, error: leadsError } = await fetchAllSupabasePages<{
+        status: string | null;
+        interest_outcome: string | null;
+      }>(async (from, to) =>
+        supabaseAdmin
+          .from("linkedin_campaign_leads")
+          .select("status, interest_outcome")
+          .eq("campaign_id", c.id)
+          .order("created_at", { ascending: true })
+          .range(from, to)
+      );
+      if (leadsError) throw new Error(leadsError.message ?? "Unable to load leads.");
 
       const status_counts: Record<string, number> = {};
       const replies = emptyReplyCounts();
-      for (const row of leadRows ?? []) {
+      for (const row of leadRows) {
         const s = (row.status as string) || "queued";
         status_counts[s] = (status_counts[s] || 0) + 1;
         const sentiment = classifyLeadReply(
@@ -130,7 +142,7 @@ async function withCampaignListCounts(campaigns: CampaignListRow[]) {
         );
         if (sentiment) replies[sentiment] += 1;
       }
-      const lead_count = leadRows?.length ?? 0;
+      const lead_count = leadRows.length;
       const replied = status_counts.replied || 0;
       const interested =
         (status_counts.interested || 0) +
@@ -263,14 +275,20 @@ export async function getCampaign(
   // Older enrollments stamped every lead "due now". Re-pace once when the
   // queue is clearly over today's invite capacity.
   {
-    const { data: queuedProbe } = await supabaseAdmin
-      .from("linkedin_campaign_leads")
-      .select("id, next_action_at")
-      .eq("campaign_id", campaignId)
-      .eq("coach_id", coachId)
-      .eq("status", "queued")
-      .limit(2500);
-    const dueBunch = (queuedProbe ?? []).filter((row) => {
+    const { data: queuedProbe } = await fetchAllSupabasePages<{
+      id: string;
+      next_action_at: string | null;
+    }>(async (from, to) =>
+      supabaseAdmin
+        .from("linkedin_campaign_leads")
+        .select("id, next_action_at")
+        .eq("campaign_id", campaignId)
+        .eq("coach_id", coachId)
+        .eq("status", "queued")
+        .order("created_at", { ascending: true })
+        .range(from, to)
+    );
+    const dueBunch = queuedProbe.filter((row) => {
       if (!row.next_action_at) return true;
       return (
         new Date(String(row.next_action_at)).getTime() <=
@@ -286,13 +304,8 @@ export async function getCampaign(
     }
   }
 
-  const [{ data: steps, error: stepsError }, { data: leads, error: leadsError }, jobs] =
-    await Promise.all([
-      supabaseAdmin
-        .from("linkedin_campaign_steps")
-        .select("*")
-        .eq("campaign_id", campaignId)
-        .order("position", { ascending: true }),
+  const leadsPage = await fetchAllSupabasePages<Record<string, unknown>>(
+    async (from, to) =>
       supabaseAdmin
         .from("linkedin_campaign_leads")
         .select(
@@ -300,12 +313,23 @@ export async function getCampaign(
         )
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false })
-        .limit(2500),
-      includeJobs ? getCampaignJobs(campaignId) : Promise.resolve([]),
-    ]);
+        .range(from, to)
+  );
+
+  const [{ data: steps, error: stepsError }, jobs] = await Promise.all([
+    supabaseAdmin
+      .from("linkedin_campaign_steps")
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .order("position", { ascending: true }),
+    includeJobs ? getCampaignJobs(campaignId) : Promise.resolve([]),
+  ]);
 
   if (stepsError) throw new Error(stepsError.message);
-  if (leadsError) throw new Error(leadsError.message);
+  if (leadsPage.error) {
+    throw new Error(leadsPage.error.message ?? "Unable to load leads.");
+  }
+  const leads = leadsPage.data;
 
   const { signCampaignStepMedia, mediaFromStepConfig } = await import(
     "@/lib/unipile/campaignStepMedia"
@@ -328,7 +352,7 @@ export async function getCampaign(
   return {
     campaign,
     steps: signedSteps,
-    leads: leads ?? [],
+    leads,
     jobs,
   };
 }
@@ -1230,15 +1254,19 @@ async function restaggerQueuedLeadTimes(
     sendRules: unknown;
   }
 ) {
-  const { data: queued, error } = await supabaseAdmin
-    .from("linkedin_campaign_leads")
-    .select("id")
-    .eq("campaign_id", campaignId)
-    .eq("coach_id", coachId)
-    .eq("status", "queued")
-    .order("created_at", { ascending: true });
-  if (error) throw new Error(error.message);
-  if (!queued?.length) return;
+  const { data: queued, error } = await fetchAllSupabasePages<{ id: string }>(
+    async (from, to) =>
+      supabaseAdmin
+        .from("linkedin_campaign_leads")
+        .select("id")
+        .eq("campaign_id", campaignId)
+        .eq("coach_id", coachId)
+        .eq("status", "queued")
+        .order("created_at", { ascending: true })
+        .range(from, to)
+  );
+  if (error) throw new Error(error.message ?? "Unable to load queued leads.");
+  if (!queued.length) return;
 
   const times = staggerInviteActionTimes({
     count: queued.length,
@@ -1473,10 +1501,28 @@ export async function moveCampaignLeads(
  * oracle. Steps, leads, and send jobs cascade in the DB; conversations and
  * contacts are not campaign-owned and stay. Cancel open jobs first so the
  * worker cannot pick a row mid-delete.
+ *
+ * Starter playbooks (Connector, etc.) are remembered as dismissed so
+ * listCampaigns → ensureDefaultCampaigns does not recreate them.
  */
 export async function deleteCampaign(coachId: string, campaignId: string) {
-  const owned = await campaignOwnedByCoach(coachId, campaignId);
+  const { data: owned, error: ownedError } = await supabaseAdmin
+    .from("linkedin_campaigns")
+    .select("id, source_playbook_id")
+    .eq("id", campaignId)
+    .eq("coach_id", coachId)
+    .maybeSingle();
+  if (ownedError) throw new Error(ownedError.message);
   if (!owned) return false;
+
+  const playbookId =
+    typeof owned.source_playbook_id === "string" &&
+    owned.source_playbook_id.trim()
+      ? owned.source_playbook_id.trim()
+      : null;
+  if (playbookId) {
+    await dismissCampaignPlaybook(coachId, playbookId);
+  }
 
   const { cancelOpenSendJobsForCampaign } = await import(
     "@/lib/unipile/remindQueue"
@@ -1490,6 +1536,34 @@ export async function deleteCampaign(coachId: string, campaignId: string) {
     .eq("coach_id", coachId);
   if (error) throw new Error(error.message);
   return (count ?? 0) > 0;
+}
+
+async function dismissCampaignPlaybook(coachId: string, playbookId: string) {
+  const { data: coach, error } = await supabaseAdmin
+    .from("coaches")
+    .select("dismissed_campaign_playbooks")
+    .eq("id", coachId)
+    .maybeSingle();
+  if (error) {
+    // Column may not exist yet on older DBs — don't block delete.
+    console.error("dismissCampaignPlaybook load:", error);
+    return;
+  }
+  const existing = Array.isArray(coach?.dismissed_campaign_playbooks)
+    ? (coach.dismissed_campaign_playbooks as unknown[]).filter(
+        (id): id is string => typeof id === "string" && id.trim().length > 0
+      )
+    : [];
+  if (existing.includes(playbookId)) return;
+  const { error: updateError } = await supabaseAdmin
+    .from("coaches")
+    .update({
+      dismissed_campaign_playbooks: [...existing, playbookId],
+    })
+    .eq("id", coachId);
+  if (updateError) {
+    console.error("dismissCampaignPlaybook save:", updateError);
+  }
 }
 
 export async function setCampaignStatus(

@@ -4,19 +4,39 @@ import { DEFAULT_ACCOUNT_PLAYBOOKS } from "@/lib/unipile/playbooks";
 
 /**
  * Insert missing starter campaigns for a coach. Idempotent on source_playbook_id.
- * Archived or edited rows still count, so we never recreate a deleted default.
+ * Archived rows still count. Hard-deleted playbooks are remembered on the coach
+ * row so we never resurrect Connector (etc.) after the coach removed them.
  */
 export async function ensureDefaultCampaigns(coachId: string): Promise<void> {
-  const { data: existing, error } = await supabaseAdmin
-    .from("linkedin_campaigns")
-    .select("id, name, status, source_playbook_id")
-    .eq("coach_id", coachId)
-    .not("source_playbook_id", "is", null);
+  const [{ data: existing, error }, { data: coachRow, error: coachError }] =
+    await Promise.all([
+      supabaseAdmin
+        .from("linkedin_campaigns")
+        .select("id, name, status, source_playbook_id")
+        .eq("coach_id", coachId)
+        .not("source_playbook_id", "is", null),
+      supabaseAdmin
+        .from("coaches")
+        .select("dismissed_campaign_playbooks")
+        .eq("id", coachId)
+        .maybeSingle(),
+    ]);
 
   if (error) {
     console.error("ensureDefaultCampaigns list:", error);
     return;
   }
+  if (coachError) {
+    console.error("ensureDefaultCampaigns coach:", coachError);
+  }
+
+  const dismissed = new Set(
+    Array.isArray(coachRow?.dismissed_campaign_playbooks)
+      ? (coachRow.dismissed_campaign_playbooks as unknown[])
+          .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+          .map((id) => id.trim())
+      : []
+  );
 
   const have = new Set(
     (existing ?? [])
@@ -45,7 +65,7 @@ export async function ensureDefaultCampaigns(coachId: string): Promise<void> {
   }
 
   for (const playbook of DEFAULT_ACCOUNT_PLAYBOOKS) {
-    if (have.has(playbook.id)) continue;
+    if (have.has(playbook.id) || dismissed.has(playbook.id)) continue;
 
     const { data, error: insertError } = await supabaseAdmin
       .from("linkedin_campaigns")
