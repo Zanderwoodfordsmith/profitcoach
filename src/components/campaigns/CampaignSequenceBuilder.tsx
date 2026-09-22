@@ -952,44 +952,89 @@ function QueueRow({
 }) {
   const empty = count <= 0;
   const nameLine = funnelNameLine(count, names);
-  const label = empty
-    ? "None set to send"
-    : count === 1
-      ? "1 set to send"
-      : `${count} set to send`;
   return (
     <div className="flex items-center gap-2 px-2">
       <span className="h-px min-w-4 flex-1 bg-slate-200" aria-hidden />
-      <button
-        type="button"
-        onClick={onOpenLeads}
-        aria-label={
-          empty
-            ? "Nobody is set to receive a connection request yet"
-            : `${label}. Open the queue.`
-        }
-        className="group/queue relative inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-[#0c5290] shadow-sm hover:border-[#0c5290] hover:bg-sky-50"
-      >
-        <UserRoundPlus className="h-4 w-4" aria-hidden />
-        {label}
-        <span
-          role="tooltip"
-          className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/queue:block"
-        >
-          <span className="block">
-            {empty
-              ? "Add prospects and they wait here until a connection request goes out"
-              : "Waiting for a connection request"}
-          </span>
-          {nameLine ? (
-            <span className="mt-0.5 block font-normal text-white/80">
-              {nameLine}
-            </span>
-          ) : null}
+      <div className="relative flex items-center">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm">
+          <UserRoundPlus className="h-4 w-4 text-[#0c5290]" aria-hidden />
+          Send
         </span>
-      </button>
+        <button
+          type="button"
+          onClick={onOpenLeads}
+          aria-label={
+            empty
+              ? "Nobody is waiting to receive a connection request"
+              : `${count} waiting to receive a connection request. Open the queue.`
+          }
+          className="group/queue relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-semibold tabular-nums text-slate-600 hover:text-slate-800"
+        >
+          <User className="h-3.5 w-3.5" aria-hidden />
+          {count}
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/queue:block"
+          >
+            <span className="block">
+              {empty
+                ? "Add prospects and they wait here until a connection request goes out"
+                : `${count} waiting for a connection request`}
+            </span>
+            {nameLine ? (
+              <span className="mt-0.5 block font-normal text-white/80">
+                {nameLine}
+              </span>
+            ) : null}
+          </span>
+        </button>
+      </div>
       <span className="h-px min-w-4 flex-[0.8] bg-slate-200" aria-hidden />
     </div>
+  );
+}
+
+/** People who got a connection request and have not accepted yet. */
+function InviteWaitingChip({
+  count,
+  names,
+  onOpen,
+}: {
+  count: number;
+  names: string[];
+  onOpen: () => void;
+}) {
+  const empty = count <= 0;
+  const nameLine = funnelNameLine(count, names);
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={
+        empty
+          ? "No connection requests waiting for a response"
+          : `${count} connection request${count === 1 ? "" : "s"} waiting for a response`
+      }
+      className="group/invwait relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-semibold tabular-nums text-amber-800 hover:text-amber-950"
+    >
+      <UserPlus className="h-3.5 w-3.5" aria-hidden />
+      {count}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/invwait:block"
+      >
+        <span className="block">
+          {empty
+            ? "No pending connection requests"
+            : `${count} waiting for them to accept`}
+        </span>
+        {nameLine ? (
+          <span className="mt-0.5 block font-normal text-white/80">
+            {nameLine}
+          </span>
+        ) : null}
+      </span>
+    </button>
   );
 }
 
@@ -2423,6 +2468,25 @@ export function CampaignSequenceBuilder({
                               ) : null}
                             </p>
                             <div className="flex shrink-0 items-center gap-1.5">
+                              {step.step_type === "invite" &&
+                              people.invite &&
+                              !library ? (
+                                <InviteWaitingChip
+                                  count={people.invite.waiting}
+                                  names={people.invite.names.waiting}
+                                  onOpen={() =>
+                                    onOpenLeads({
+                                      kind: "invite",
+                                      slice: "waiting",
+                                      position: stepPosition,
+                                      title:
+                                        people.invite!.waiting === 1
+                                          ? "1 waiting for accept"
+                                          : `${people.invite!.waiting} waiting for accept`,
+                                    })
+                                  }
+                                />
+                              ) : null}
                               {step.step_type === "invite" &&
                               inviteNoConnectFrom(step.config)
                                 .on_no_connect === "other_campaign" ? (

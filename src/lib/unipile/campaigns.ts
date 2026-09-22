@@ -32,6 +32,7 @@ import {
   DEFAULT_CAMPAIGN_SEND_RULES,
   nextCampaignSendAt,
   parseCampaignSendRules,
+  staggerInviteActionTimes,
 } from "@/lib/unipile/campaignSendWindow";
 import {
   classifyLeadReply,
@@ -254,6 +255,37 @@ export async function getCampaign(
   if (error) throw new Error(error.message);
   if (!campaign) return null;
 
+  const dailyLimit =
+    typeof campaign.daily_invite_limit === "number"
+      ? campaign.daily_invite_limit
+      : 20;
+
+  // Older enrollments stamped every lead "due now". Re-pace once when the
+  // queue is clearly over today's invite capacity.
+  {
+    const { data: queuedProbe } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("id, next_action_at")
+      .eq("campaign_id", campaignId)
+      .eq("coach_id", coachId)
+      .eq("status", "queued")
+      .limit(2500);
+    const dueBunch = (queuedProbe ?? []).filter((row) => {
+      if (!row.next_action_at) return true;
+      return (
+        new Date(String(row.next_action_at)).getTime() <=
+        Date.now() + 12 * 3600 * 1000
+      );
+    }).length;
+    if (dueBunch > dailyLimit) {
+      await restaggerQueuedLeadTimes(coachId, campaignId, {
+        dailyInviteLimit: dailyLimit,
+        timezone: (campaign.timezone as string | null) ?? null,
+        sendRules: campaign.send_rules,
+      });
+    }
+  }
+
   const [{ data: steps, error: stepsError }, { data: leads, error: leadsError }, jobs] =
     await Promise.all([
       supabaseAdmin
@@ -268,7 +300,7 @@ export async function getCampaign(
         )
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false })
-        .limit(500),
+        .limit(2500),
       includeJobs ? getCampaignJobs(campaignId) : Promise.resolve([]),
     ]);
 
@@ -634,7 +666,7 @@ async function loadOwnedContactsForImport(
     ...new Set(
       contactIds.filter((id) => typeof id === "string" && CONTACT_ID_RE.test(id))
     ),
-  ].slice(0, 500);
+  ].slice(0, 2500);
   const byId = new Map<string, OwnedContact>();
   if (!unique.length) return byId;
 
@@ -685,7 +717,7 @@ export async function addCampaignLeadsFromContacts(
 ) {
   const ids = contactIds
     .filter((id): id is string => typeof id === "string" && CONTACT_ID_RE.test(id))
-    .slice(0, 500);
+    .slice(0, 2500);
   if (!ids.length) return { added: 0, skipped: 0 };
 
   const owned = await loadOwnedContactsForImport(coachId, ids);
@@ -755,7 +787,7 @@ export async function addCampaignLeads(
 ) {
   const { data: campaign } = await supabaseAdmin
     .from("linkedin_campaigns")
-    .select("id, channel, status")
+    .select("id, channel, status, daily_invite_limit, timezone, send_rules")
     .eq("id", campaignId)
     .eq("coach_id", coachId)
     .maybeSingle();
@@ -775,7 +807,8 @@ export async function addCampaignLeads(
     "@/lib/leadLists/audienceLists"
   );
 
-  const limited = rows.slice(0, 500);
+  // Match pool import ceiling — never silently drop half a list.
+  const limited = rows.slice(0, 2500);
 
   // Collect identity keys from the incoming batch so we only fetch matching
   // existing leads (not the whole campaign).
@@ -1164,11 +1197,71 @@ export async function addCampaignLeads(
     }
   }
 
+  // Pace queued leads across send days at the daily invite limit so the UI
+  // does not show every connection request as "Due now".
+  if (added > 0) {
+    await restaggerQueuedLeadTimes(coachId, campaignId, {
+      dailyInviteLimit:
+        typeof campaign.daily_invite_limit === "number"
+          ? campaign.daily_invite_limit
+          : 20,
+      timezone: (campaign.timezone as string | null) ?? null,
+      sendRules: campaign.send_rules,
+    });
+  }
+
   if (campaign.status === "running" && addedIds.length > 0) {
     await enqueuePendingJobsForCampaign(coachId, campaignId, addedIds);
   }
 
   return { added, skipped, blacklisted };
+}
+
+/**
+ * Assign next_action_at for all queued leads using the campaign daily limit
+ * (Mon–Fri send window). Keeps the prospects table / sequence hopper honest.
+ */
+async function restaggerQueuedLeadTimes(
+  coachId: string,
+  campaignId: string,
+  opts: {
+    dailyInviteLimit: number;
+    timezone: string | null;
+    sendRules: unknown;
+  }
+) {
+  const { data: queued, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .eq("coach_id", coachId)
+    .eq("status", "queued")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  if (!queued?.length) return;
+
+  const times = staggerInviteActionTimes({
+    count: queued.length,
+    dailyLimit: opts.dailyInviteLimit,
+    timezone: opts.timezone,
+    sendRules: opts.sendRules,
+    usedToday: 0,
+  });
+
+  for (let i = 0; i < queued.length; i += 50) {
+    const slice = queued.slice(i, i + 50);
+    await Promise.all(
+      slice.map((lead, offset) => {
+        const at = times[i + offset];
+        if (!lead.id || !at) return Promise.resolve();
+        return supabaseAdmin
+          .from("linkedin_campaign_leads")
+          .update({ next_action_at: at.toISOString() })
+          .eq("id", lead.id)
+          .eq("campaign_id", campaignId);
+      })
+    );
+  }
 }
 
 export async function deleteCampaignLead(
@@ -1429,6 +1522,23 @@ export async function enqueuePendingJobsForCampaign(
   /** When set, only enqueue for these leads (e.g. freshly added). */
   leadIds?: string[]
 ) {
+  const { data: campaign } = await supabaseAdmin
+    .from("linkedin_campaigns")
+    .select("timezone, send_rules, daily_invite_limit")
+    .eq("id", campaignId)
+    .eq("coach_id", coachId)
+    .maybeSingle();
+
+  // Re-pace any queued leads that were enrolled before stagger existed.
+  await restaggerQueuedLeadTimes(coachId, campaignId, {
+    dailyInviteLimit:
+      typeof campaign?.daily_invite_limit === "number"
+        ? campaign.daily_invite_limit
+        : 20,
+    timezone: (campaign?.timezone as string | null) ?? null,
+    sendRules: campaign?.send_rules,
+  });
+
   const { jobStatusForStep } = await import("@/lib/unipile/remindQueue");
   const { data: steps } = await supabaseAdmin
     .from("linkedin_campaign_steps")
@@ -1444,16 +1554,10 @@ export async function enqueuePendingJobsForCampaign(
     .eq("coach_id", coachId)
     .in("status", ["queued", "invited", "connected", "in_sequence"]);
   if (leadIds?.length) {
-    leadsQuery = leadsQuery.in("id", leadIds.slice(0, 500));
+    leadsQuery = leadsQuery.in("id", leadIds.slice(0, 2500));
   }
   const { data: leads } = await leadsQuery;
 
-  const { data: campaign } = await supabaseAdmin
-    .from("linkedin_campaigns")
-    .select("timezone, send_rules")
-    .eq("id", campaignId)
-    .eq("coach_id", coachId)
-    .maybeSingle();
   const sendRules = parseCampaignSendRules(campaign?.send_rules);
   const timezone =
     (campaign?.timezone as string | null)?.trim() || "Europe/London";

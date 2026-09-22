@@ -502,7 +502,7 @@ export function CampaignAddProspectsModal({
     [filteredProspects, existingContactSet, existingUrlSet, campaignChannel]
   );
   const eligibleIds = useMemo(
-    () => eligibleAllIds.slice(0, 500),
+    () => eligibleAllIds.slice(0, 2500),
     [eligibleAllIds]
   );
 
@@ -540,21 +540,26 @@ export function CampaignAddProspectsModal({
     try {
       const headers = await authHeaders();
       if (!headers) throw new Error("Sign in required.");
-      const res = await fetch(
-        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-        {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({
-            action: "add_from_contacts",
-            contact_ids: selectedEligible,
-          }),
-        }
-      );
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Import failed.");
-      const added = Number(body.added ?? 0);
-      const skipped = Number(body.skipped ?? 0);
+      let added = 0;
+      let skipped = 0;
+      for (let i = 0; i < selectedEligible.length; i += 250) {
+        const chunk = selectedEligible.slice(i, i + 250);
+        const res = await fetch(
+          `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+          {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({
+              action: "add_from_contacts",
+              contact_ids: chunk,
+            }),
+          }
+        );
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || "Import failed.");
+        added += Number(body.added ?? 0);
+        skipped += Number(body.skipped ?? 0);
+      }
       if (added === 0) {
         setNotice(
           skipped
@@ -614,22 +619,29 @@ export function CampaignAddProspectsModal({
     try {
       const headers = await authHeaders();
       if (!headers) throw new Error("Sign in required.");
-      const res = await fetch(
-        `/api/coach/lead-lists/${encodeURIComponent(namedListId)}/add-to-campaign`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            campaign_id: campaignId,
-            item_ids: namedItemIds,
-          }),
-        }
-      );
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Could not add list.");
-      const added = Number(body.added ?? 0);
-      const skipped = Number(body.skipped ?? 0);
-      const blocked = Number(body.blacklisted ?? 0);
+      let added = 0;
+      let skipped = 0;
+      let blocked = 0;
+      const ids = namedItemIds.slice(0, 2500);
+      for (let i = 0; i < ids.length; i += 250) {
+        const chunk = ids.slice(i, i + 250);
+        const res = await fetch(
+          `/api/coach/lead-lists/${encodeURIComponent(namedListId)}/add-to-campaign`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              campaign_id: campaignId,
+              item_ids: chunk,
+            }),
+          }
+        );
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || "Could not add list.");
+        added += Number(body.added ?? 0);
+        skipped += Number(body.skipped ?? 0);
+        blocked += Number(body.blacklisted ?? 0);
+      }
       if (added === 0) {
         setNotice(
           blocked
@@ -1185,7 +1197,7 @@ export function CampaignAddProspectsModal({
                   <span className="text-xs font-medium text-slate-600">
                     {eligibleAllIds.length} of {filteredProspects.length} can be
                     added
-                    {eligibleAllIds.length > 500 ? " · first 500" : ""}
+                    {eligibleAllIds.length > 2500 ? " · first 2500" : ""}
                   </span>
                 </div>
                 <ul className="max-h-[22rem] overflow-y-auto">

@@ -2,6 +2,7 @@ import {
   addDaysYmd,
   parseTimeToMinutes,
   utcToZonedParts,
+  ymdInTimeZone,
   zonedLocalToUtc,
 } from "@/lib/booking/bookingTime";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
@@ -136,4 +137,73 @@ export function nextCampaignSendAt(input: {
   }
 
   return new Date(now.getTime() + 24 * 3600 * 1000);
+}
+
+function sendWeekdays(rules: AvailabilityRuleRow[]): Set<number> {
+  const days = new Set(rules.map((r) => r.weekday));
+  return days.size > 0 ? days : new Set([1, 2, 3, 4, 5]);
+}
+
+function actionTimeOnYmd(
+  ymd: string,
+  timezone: string,
+  rules: AvailabilityRuleRow[],
+  now: Date
+): Date {
+  const todayYmd = ymdInTimeZone(now, timezone);
+  if (ymd === todayYmd) {
+    return nextCampaignSendAt({ now, timezone, rules });
+  }
+  const [year, month, day] = ymd.split("-").map(Number);
+  const startOfDay = zonedLocalToUtc({
+    year: year || 1970,
+    month: month || 1,
+    day: day || 1,
+    hour: 0,
+    minute: 0,
+    timeZone: timezone,
+  });
+  return nextCampaignSendAt({ now: startOfDay, timezone, rules });
+}
+
+/**
+ * Spread invite (or first-step) due times across send days at the daily limit
+ * so the queue shows real pacing instead of everything "Due now".
+ */
+export function staggerInviteActionTimes(input: {
+  count: number;
+  dailyLimit: number;
+  timezone?: string | null;
+  sendRules: unknown;
+  /** Slots already filled on the local today (queued for today + already sent). */
+  usedToday?: number;
+  now?: Date;
+}): Date[] {
+  const count = Math.max(0, Math.floor(input.count));
+  if (count === 0) return [];
+
+  const timezone = input.timezone?.trim() || "Europe/London";
+  const rules = parseCampaignSendRules(input.sendRules);
+  const weekdays = sendWeekdays(rules);
+  const limit = Math.max(DAILY_LIMIT_MIN, Math.floor(input.dailyLimit) || 1);
+  const now = input.now ?? new Date();
+  let ymd = ymdInTimeZone(now, timezone);
+  let used = Math.max(0, Math.floor(input.usedToday ?? 0));
+  const times: Date[] = [];
+
+  for (let i = 0; i < count; i += 1) {
+    for (let guard = 0; guard < 400; guard += 1) {
+      const [year, month, day] = ymd.split("-").map(Number);
+      const weekday = localDateParts(year!, month!, day!, timezone).weekday;
+      if (!weekdays.has(weekday) || used >= limit) {
+        ymd = addDaysYmd(ymd, 1);
+        used = 0;
+        continue;
+      }
+      times.push(actionTimeOnYmd(ymd, timezone, rules, now));
+      used += 1;
+      break;
+    }
+  }
+  return times;
 }
