@@ -394,12 +394,10 @@ export function isInactiveSupportMailboxEmail(item: {
     return true;
   }
 
-  // Gmail "important" / category-only labels without INBOX → already filed away.
-  if (
-    (role === "important" || role === "starred" || role === "all") &&
-    folders.length > 0 &&
-    !folders.some((f) => f === "inbox" || f === "inb")
-  ) {
+  // Gmail keeps archived mail with category-only labels (and sometimes
+  // role=unknown) — anything with labels but no INBOX is already filed away.
+  // Only role=unknown mail with an empty folders list stays processable.
+  if (folders.length > 0 && !folders.some((f) => f === "inbox" || f === "inb")) {
     return true;
   }
 
@@ -510,6 +508,17 @@ export async function handleSupportMailReceived(
   const threadId = String(body.thread_id || "").trim() || null;
   const emailDate = parseUnipileEmailDate(body);
 
+  // Gmail emoji reactions ("👍 … reacted via Gmail") arrive as real emails.
+  // They are not support requests — archive and ignore so they never open
+  // tickets, reopen threads, or badge the inbox.
+  if (
+    details.includes("emojireactionemail") ||
+    /reacted via gmail/i.test(details)
+  ) {
+    await tidySupportMailboxEmail({ emailId, accountId }).catch(() => null);
+    return "reaction_ignored";
+  }
+
   const ingested = await ingestSupportEmailAttachments({
     emailId,
     accountId,
@@ -528,20 +537,46 @@ export async function handleSupportMailReceived(
   const appendReplyToTicket = async (
     ticket: { id: string; status: string | null },
     options?: { linkThreadId?: string | null }
-  ): Promise<"thread_reply"> => {
+  ): Promise<"thread_reply" | "duplicate"> => {
+    // This email was already ingested as a reply (mailbox sync re-scans mail
+    // Gmail/Unipile leave in ambiguous states) → tidy again and stop. Without
+    // this, every sync pass appended another copy of the same message.
+    const { data: existingReply } = await supabaseAdmin
+      .from("community_feedback_replies")
+      .select("id")
+      .eq("unipile_email_id", emailId)
+      .maybeSingle();
+    if (existingReply?.id) {
+      await tidySupportMailboxEmail({ emailId, accountId }).catch((err) => {
+        console.warn("support mail tidy (duplicate reply):", err);
+      });
+      return "duplicate";
+    }
+
     const coachId = await findCoachProfileIdByEmail(contactEmail);
     const replyAuthor =
       coachId || (await findSystemReplyAuthor(account.connected_by));
 
     if (replyAuthor) {
-      await supabaseAdmin.from("community_feedback_replies").insert({
-        report_id: ticket.id,
-        created_by: replyAuthor,
-        body: detailsWithFiles,
-        via_email: true,
-        media: mailMedia,
-        ...(emailDate ? { created_at: emailDate } : {}),
-      });
+      const { error: replyError } = await supabaseAdmin
+        .from("community_feedback_replies")
+        .insert({
+          report_id: ticket.id,
+          created_by: replyAuthor,
+          body: detailsWithFiles,
+          via_email: true,
+          media: mailMedia,
+          unipile_email_id: emailId,
+          ...(emailDate ? { created_at: emailDate } : {}),
+        });
+      if (replyError) {
+        // 23505 = unique violation on unipile_email_id (concurrent sync).
+        if (replyError.code === "23505") {
+          await tidySupportMailboxEmail({ emailId, accountId }).catch(() => null);
+          return "duplicate";
+        }
+        console.error("support mail reply insert:", replyError.message);
+      }
     }
 
     void maybeFillProfilePhoneFromEmailBody(coachId, details).catch(() => null);
@@ -561,7 +596,9 @@ export async function handleSupportMailReceived(
         .eq("id", ticket.id);
     }
 
-    await tidySupportMailboxEmail({ emailId, accountId }).catch(() => null);
+    await tidySupportMailboxEmail({ emailId, accountId }).catch((err) => {
+      console.warn("support mail tidy (reply):", err);
+    });
     return "thread_reply";
   };
 
