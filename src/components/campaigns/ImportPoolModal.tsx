@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { MAX_POOL_ITEMS_PER_REQUEST } from "@/lib/leadLists/audienceLists";
-import { parseProspectsCsv } from "@/lib/prospects/parseProspectsCsv";
+import type { ParsedProspectCsvRow } from "@/lib/prospects/parseProspectsCsv";
+import { CsvUploadDropzone } from "@/components/prospects/CsvUploadDropzone";
 import { splitPersonName } from "@/lib/leadLists/audienceLists";
 import { poolIdentityKey } from "@/lib/pool/identity";
 import {
@@ -193,7 +194,7 @@ const OPTIONS: Array<{
   {
     id: "csv",
     title: "Upload CSV",
-    body: "Name, company, email, phone, or LinkedIn.",
+    body: "Drag in a file or start from our template. Name plus email, phone, or LinkedIn.",
     icon: FileSpreadsheet,
   },
 ];
@@ -205,7 +206,6 @@ export function ImportPoolModal({
   onImportStarted,
 }: Props) {
   const pathname = usePathname();
-  const fileRef = useRef<HTMLInputElement | null>(null);
   const onImportedRef = useRef(onImported);
   onImportedRef.current = onImported;
   const onImportStartedRef = useRef(onImportStarted);
@@ -418,7 +418,6 @@ export function ImportPoolModal({
     setOneCompany("");
     setOneEmail("");
     setOnePhone("");
-    if (fileRef.current) fileRef.current.value = "";
   }
 
   function close() {
@@ -640,42 +639,26 @@ export function ImportPoolModal({
     }
   }
 
-  function onCsvFile(file: File | undefined) {
+  function onCsvRows(rows: ParsedProspectCsvRow[]) {
     setError(null);
     setNotice(null);
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      setError("Please choose a .csv file.");
+    const people = rows.map((row) => {
+      const { first_name, last_name } = splitPersonName(row.fullName);
+      return {
+        linkedin_url: row.linkedinUrl,
+        first_name,
+        last_name,
+        company: row.businessName,
+        title: row.jobTitle,
+        email: row.email,
+        phone: row.phone,
+      };
+    });
+    if (!people.length) {
+      setError("That CSV has no people to add.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const rows = parseProspectsCsv(String(reader.result ?? ""), {
-          maxRows: MAX_POOL_ITEMS_PER_REQUEST,
-        });
-        const people = rows.map((row) => {
-          const { first_name, last_name } = splitPersonName(row.fullName);
-          return {
-            linkedin_url: row.linkedinUrl,
-            first_name,
-            last_name,
-            company: row.businessName,
-            title: row.jobTitle,
-            email: row.email,
-            phone: row.phone,
-          };
-        });
-        if (!people.length) {
-          setError("That CSV has no people to add.");
-          return;
-        }
-        void importPeople({ people, source: "manual" });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not read CSV.");
-      }
-    };
-    reader.readAsText(file);
+    void importPeople({ people, source: "manual" });
   }
 
   const oneReady =
@@ -1234,19 +1217,11 @@ export function ImportPoolModal({
           ) : null}
 
           {mode === "csv" ? (
-            <div className="space-y-3">
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".csv,text/csv"
-                className="block w-full text-sm text-slate-700"
-                onChange={(e) => onCsvFile(e.target.files?.[0])}
-              />
-              <p className="text-xs text-slate-600">
-                Needs a Name column. Rows need an email, phone, or LinkedIn URL
-                so we can keep one row per person.
-              </p>
-            </div>
+            <CsvUploadDropzone
+              disabled={busy}
+              maxRows={MAX_POOL_ITEMS_PER_REQUEST}
+              onRows={onCsvRows}
+            />
           ) : null}
 
           {mode === "one" ? (

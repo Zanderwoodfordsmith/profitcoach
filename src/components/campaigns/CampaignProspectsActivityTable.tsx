@@ -183,7 +183,8 @@ function ProgressRail({ dots }: { dots: LeadProgressDot[] }) {
 }
 
 function whenSortValue(when: string): number {
-  if (when === "Needs you" || when === "Due now") return 0;
+  if (when === "Needs you" || when === "Today" || when === "Due now") return 0;
+  if (when === "Tomorrow") return 1;
   if (when === "Waiting for accept") return 2;
   if (when === "Not started" || when === "Paused") return 8;
   if (when === "—" || when.startsWith("Failed")) return 9;

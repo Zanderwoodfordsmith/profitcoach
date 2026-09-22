@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  FileSpreadsheet,
   Link2,
   ListOrdered,
   Search,
@@ -38,6 +39,12 @@ export const CAMPAIGN_ADD_PROSPECT_METHODS: Array<{
     label: "Paste profile URLs",
     hint: "One LinkedIn URL per line",
     icon: Link2,
+  },
+  {
+    id: "csv",
+    label: "Upload a CSV",
+    hint: "Drag in a file or use our template",
+    icon: FileSpreadsheet,
   },
 ];
 

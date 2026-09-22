@@ -4,7 +4,7 @@ import {
   campaignStepTypeLabel,
 } from "@/lib/unipile/campaignStepTypes";
 import {
-  formatDayLabel,
+  formatUpcomingDayLabel,
   formatShortDateTime,
   formatShortTime,
 } from "@/lib/formatShortDate";
@@ -416,25 +416,19 @@ export function leadProgressDots(
   });
 }
 
+/**
+ * Day-only due label for campaign pacing.
+ * Stored next_action_at is usually the send-window open (e.g. 8am), not a
+ * clock time the person will actually be messaged — sends are paced across
+ * the day — so we never show a specific time here.
+ */
 export function formatUpcomingWhen(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return null;
-  if (date.getTime() < Date.now() - 60_000) return "Due now";
-  const day = formatDayLabel(iso);
-  if (day === "Today") return `Today, ${formatShortTime(iso)}`;
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const startTomorrow = new Date(
-    tomorrow.getFullYear(),
-    tomorrow.getMonth(),
-    tomorrow.getDate()
-  );
-  const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  if (startDate.getTime() === startTomorrow.getTime()) {
-    return `Tomorrow, ${formatShortTime(iso)}`;
-  }
-  return formatShortDateTime(iso);
+  // Overdue / due in the next minute → in today's send hopper.
+  if (date.getTime() < Date.now() + 60_000) return "Today";
+  return formatUpcomingDayLabel(iso);
 }
 
 export function leadWhenLabel(input: {
@@ -453,6 +447,144 @@ export function leadWhenLabel(input: {
   if (isTerminalLeadStatus(lead.status)) return "—";
   if (campaignStatus !== "running" && lead.status === "queued") return "Not started";
   return formatUpcomingWhen(lead.next_action_at) ?? "—";
+}
+
+const DRAWER_STATUS_SECTION_ORDER: Record<string, number> = {
+  "Needs you": 0,
+  "Waiting for accept": 1,
+  Paused: 2,
+  "Not started": 3,
+  Failed: 4,
+  "—": 5,
+};
+
+export type DrawerLeadSection = {
+  key: string;
+  label: string;
+  /** True when this section is a calendar day (vs status). */
+  isDay: boolean;
+  leads: CampaignActivityLead[];
+};
+
+/**
+ * Group leads for the campaign people drawer: non-date status buckets first,
+ * then planned-send days (Today → Tomorrow → weekday → date), earliest first.
+ */
+export function groupLeadsForDrawer(input: {
+  leads: CampaignActivityLead[];
+  steps: CampaignActivityStep[];
+  jobs: CampaignActivityJob[];
+  campaignStatus: string;
+}): DrawerLeadSection[] {
+  const { leads, steps, jobs, campaignStatus } = input;
+  type Bucket = {
+    key: string;
+    label: string;
+    isDay: boolean;
+    sort: number;
+    dayMs: number;
+    items: Array<{ lead: CampaignActivityLead; atMs: number }>;
+  };
+  const map = new Map<string, Bucket>();
+
+  for (const lead of leads) {
+    const leadJobs = jobs.filter((job) => job.lead_id === lead.id);
+    const when = leadWhenLabel({
+      lead,
+      steps,
+      jobs: leadJobs,
+      campaignStatus,
+    });
+    const statusOrder = DRAWER_STATUS_SECTION_ORDER[when];
+    let key: string;
+    let label: string;
+    let isDay: boolean;
+    let sort: number;
+    let dayMs = 0;
+    let atMs = Number.POSITIVE_INFINITY;
+
+    if (statusOrder != null) {
+      key = `status:${when}`;
+      label = when;
+      isDay = false;
+      sort = statusOrder;
+    } else if (lead.next_action_at) {
+      const at = new Date(lead.next_action_at);
+      atMs = Number.isNaN(at.getTime()) ? Number.POSITIVE_INFINITY : at.getTime();
+      const dayStart = Number.isNaN(at.getTime())
+        ? 0
+        : new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime();
+      label = formatUpcomingWhen(lead.next_action_at) ?? when;
+      key = `day:${label}:${dayStart}`;
+      isDay = true;
+      sort = 100;
+      dayMs = dayStart;
+    } else {
+      key = `status:${when}`;
+      label = when;
+      isDay = false;
+      sort = DRAWER_STATUS_SECTION_ORDER[when] ?? 50;
+    }
+
+    let bucket = map.get(key);
+    if (!bucket) {
+      bucket = { key, label, isDay, sort, dayMs, items: [] };
+      map.set(key, bucket);
+    }
+    bucket.items.push({ lead, atMs });
+  }
+
+  const sections = [...map.values()].sort((a, b) => {
+    if (a.sort !== b.sort) return a.sort - b.sort;
+    if (a.isDay && b.isDay && a.dayMs !== b.dayMs) return a.dayMs - b.dayMs;
+    return a.label.localeCompare(b.label);
+  });
+
+  return sections.map((section) => {
+    const items = [...section.items].sort((a, b) => {
+      if (a.atMs !== b.atMs) return a.atMs - b.atMs;
+      const an = [a.lead.first_name, a.lead.last_name].filter(Boolean).join(" ");
+      const bn = [b.lead.first_name, b.lead.last_name].filter(Boolean).join(" ");
+      return an.localeCompare(bn);
+    });
+    return {
+      key: section.key,
+      label: section.label,
+      isDay: section.isDay,
+      leads: items.map((item) => item.lead),
+    };
+  });
+}
+
+/**
+ * Compact cadence line for invite/wait drawers, e.g.
+ * `Next sends: Today 18 · Tomorrow 22 · later 460`.
+ */
+export function drawerTimingSummary(sections: DrawerLeadSection[]): string | null {
+  const daySections = sections.filter((s) => s.isDay && s.leads.length > 0);
+  if (daySections.length === 0) return null;
+
+  const parts: string[] = [];
+  let later = 0;
+  for (let i = 0; i < daySections.length; i++) {
+    const section = daySections[i]!;
+    if (i < 2) {
+      parts.push(`${section.label} ${section.leads.length}`);
+    } else {
+      later += section.leads.length;
+    }
+  }
+  if (later > 0) parts.push(`later ${later}`);
+  if (parts.length === 0) return null;
+  return `Next sends: ${parts.join(" · ")}`;
+}
+
+/** Clock time for a drawer row inside a day section (planned window open). */
+export function drawerLeadRowTime(lead: CampaignActivityLead): string | null {
+  if (!lead.next_action_at) return null;
+  const date = new Date(lead.next_action_at);
+  if (Number.isNaN(date.getTime())) return null;
+  return formatShortTime(lead.next_action_at);
 }
 
 export type ActivityFilterId =

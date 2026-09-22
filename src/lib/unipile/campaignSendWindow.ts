@@ -168,7 +168,7 @@ function actionTimeOnYmd(
 
 /**
  * Spread invite (or first-step) due times across send days at the daily limit
- * so the queue shows real pacing instead of everything "Due now".
+ * so the queue shows real day pacing instead of everything "Today".
  */
 export function staggerInviteActionTimes(input: {
   count: number;

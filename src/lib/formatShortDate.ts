@@ -77,22 +77,56 @@ export function formatRelativeAgo(iso: string, now = Date.now()): string {
   }
 }
 
+const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;
+
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
 /** Day chip: Today / Yesterday / `10 Aug` (year only if needed). */
 export function formatDayLabel(iso: string): string {
   try {
     const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
     const today = new Date();
-    const startToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    const startMsg = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const startToday = startOfLocalDay(today);
+    const startMsg = startOfLocalDay(d);
     const diffDays = Math.round(
       (startToday.getTime() - startMsg.getTime()) / 86_400_000
     );
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";
+    return formatShortDate(iso);
+  } catch {
+    return iso;
+  }
+}
+
+/**
+ * Forward-looking day chip for planned sends:
+ * Today / Tomorrow / weekday within the next week / `10 Aug`.
+ * Past or overdue timestamps count as Today.
+ */
+export function formatUpcomingDayLabel(iso: string, now = new Date()): string {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const startToday = startOfLocalDay(now);
+    const startDay = startOfLocalDay(d);
+    const diffDays = Math.round(
+      (startDay.getTime() - startToday.getTime()) / 86_400_000
+    );
+    if (diffDays <= 0) return "Today";
+    if (diffDays === 1) return "Tomorrow";
+    if (diffDays < 7) return WEEKDAYS[d.getDay()] ?? formatShortDate(iso);
     return formatShortDate(iso);
   } catch {
     return iso;

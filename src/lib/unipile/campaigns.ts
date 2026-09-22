@@ -1222,7 +1222,7 @@ export async function addCampaignLeads(
   }
 
   // Pace queued leads across send days at the daily invite limit so the UI
-  // does not show every connection request as "Due now".
+  // does not show every connection request as due today.
   if (added > 0) {
     await restaggerQueuedLeadTimes(coachId, campaignId, {
       dailyInviteLimit:
@@ -1574,9 +1574,9 @@ export async function setCampaignStatus(
   const data = await updateCampaign(coachId, campaignId, { status });
   if (!data) throw new Error("Campaign not found.");
 
-  if (status === "running") {
-    await enqueuePendingJobsForCampaign(coachId, campaignId);
-  }
+  // Do not await enqueue here — large campaigns (1000+ leads) would hang the
+  // On toggle for tens of seconds. Callers schedule enqueuePendingJobsForCampaign
+  // after the HTTP response (e.g. next/server `after`).
   if (status === "paused" || status === "archived") {
     const { cancelOpenSendJobsForCampaign } = await import(
       "@/lib/unipile/remindQueue"
@@ -1603,16 +1603,6 @@ export async function enqueuePendingJobsForCampaign(
     .eq("coach_id", coachId)
     .maybeSingle();
 
-  // Re-pace any queued leads that were enrolled before stagger existed.
-  await restaggerQueuedLeadTimes(coachId, campaignId, {
-    dailyInviteLimit:
-      typeof campaign?.daily_invite_limit === "number"
-        ? campaign.daily_invite_limit
-        : 20,
-    timezone: (campaign?.timezone as string | null) ?? null,
-    sendRules: campaign?.send_rules,
-  });
-
   const { jobStatusForStep } = await import("@/lib/unipile/remindQueue");
   const { data: steps } = await supabaseAdmin
     .from("linkedin_campaign_steps")
@@ -1621,27 +1611,63 @@ export async function enqueuePendingJobsForCampaign(
     .order("position", { ascending: true });
   if (!steps?.length) return { enqueued: 0 };
 
-  let leadsQuery = supabaseAdmin
-    .from("linkedin_campaign_leads")
-    .select("*")
-    .eq("campaign_id", campaignId)
-    .eq("coach_id", coachId)
-    .in("status", ["queued", "invited", "connected", "in_sequence"]);
-  if (leadIds?.length) {
-    leadsQuery = leadsQuery.in("id", leadIds.slice(0, 2500));
-  }
-  const { data: leads } = await leadsQuery;
-
   const sendRules = parseCampaignSendRules(campaign?.send_rules);
   const timezone =
     (campaign?.timezone as string | null)?.trim() || "Europe/London";
+
+  const { data: leads, error: leadsError } = await fetchAllSupabasePages<{
+    id: string;
+    status: string | null;
+    current_step_position: number | null;
+    next_action_at: string | null;
+  }>(async (from, to) => {
+    let q = supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("id, status, current_step_position, next_action_at")
+      .eq("campaign_id", campaignId)
+      .eq("coach_id", coachId)
+      .in("status", ["queued", "invited", "connected", "in_sequence"])
+      .order("created_at", { ascending: true })
+      .range(from, to);
+    if (leadIds?.length) {
+      q = q.in("id", leadIds.slice(0, 2500));
+    }
+    return q;
+  });
+  if (leadsError) throw new Error(leadsError.message ?? "Unable to load leads.");
+  if (!leads.length) return { enqueued: 0 };
+
+  const { data: existingJobs } = await fetchAllSupabasePages<{
+    lead_id: string;
+    step_id: string;
+  }>(async (from, to) =>
+    supabaseAdmin
+      .from("linkedin_send_jobs")
+      .select("lead_id, step_id")
+      .eq("campaign_id", campaignId)
+      .in("status", ["pending", "running", "awaiting_coach"])
+      .order("created_at", { ascending: true })
+      .range(from, to)
+  );
+  const openJobKeys = new Set(
+    (existingJobs ?? []).map((j) => `${j.lead_id}:${j.step_id}`)
+  );
 
   const { consumeNonOutboundSteps } = await import(
     "@/lib/unipile/sequenceAdvance"
   );
 
-  let enqueued = 0;
-  for (const lead of leads ?? []) {
+  type JobInsert = {
+    coach_id: string;
+    campaign_id: string;
+    lead_id: string;
+    step_id: string;
+    scheduled_for: string;
+    status: string;
+  };
+  const toInsert: JobInsert[] = [];
+
+  for (const lead of leads) {
     let position = Number(lead.current_step_position ?? 0);
     let desired =
       lead.next_action_at && new Date(lead.next_action_at) > new Date()
@@ -1685,14 +1711,7 @@ export async function enqueuePendingJobsForCampaign(
         continue;
     }
 
-    const { data: existing } = await supabaseAdmin
-      .from("linkedin_send_jobs")
-      .select("id")
-      .eq("lead_id", lead.id)
-      .eq("step_id", step.id)
-      .in("status", ["pending", "running", "awaiting_coach"])
-      .maybeSingle();
-    if (existing) continue;
+    if (openJobKeys.has(`${lead.id}:${step.id}`)) continue;
 
     const scheduled = nextCampaignSendAt({
       now: desired,
@@ -1705,7 +1724,7 @@ export async function enqueuePendingJobsForCampaign(
       String(step.step_type)
     );
 
-    const { error } = await supabaseAdmin.from("linkedin_send_jobs").insert({
+    toInsert.push({
       coach_id: coachId,
       campaign_id: campaignId,
       lead_id: lead.id,
@@ -1713,7 +1732,26 @@ export async function enqueuePendingJobsForCampaign(
       scheduled_for: scheduled,
       status,
     });
-    if (!error) enqueued += 1;
+    openJobKeys.add(`${lead.id}:${step.id}`);
+  }
+
+  let enqueued = 0;
+  for (let i = 0; i < toInsert.length; i += 100) {
+    const chunk = toInsert.slice(i, i + 100);
+    const { data, error } = await supabaseAdmin
+      .from("linkedin_send_jobs")
+      .insert(chunk)
+      .select("id");
+    if (error) {
+      for (const row of chunk) {
+        const { error: oneError } = await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .insert(row);
+        if (!oneError) enqueued += 1;
+      }
+      continue;
+    }
+    enqueued += data?.length ?? chunk.length;
   }
   return { enqueued };
 }

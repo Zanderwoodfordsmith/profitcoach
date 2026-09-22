@@ -14,9 +14,12 @@ import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import {
   audienceItemSourceLabel,
   displayListPersonName,
+  splitPersonName,
   type AudienceListSummary,
 } from "@/lib/leadLists/audienceLists";
 import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
+import type { ParsedProspectCsvRow } from "@/lib/prospects/parseProspectsCsv";
+import { CsvUploadDropzone } from "@/components/prospects/CsvUploadDropzone";
 
 export type { CampaignAddProspectsMode };
 
@@ -48,6 +51,7 @@ const TAB_ITEMS: Array<{ id: AudienceMode; label: string }> = [
   { id: "list", label: "Prospects" },
   { id: "search", label: "Search" },
   { id: "urls", label: "Paste URLs" },
+  { id: "csv", label: "Upload CSV" },
 ];
 
 type ListMenu = "filter" | "sort" | null;
@@ -102,6 +106,8 @@ export function CampaignAddProspectsModal({
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
   const [searchCursor, setSearchCursor] = useState<string | null>(null);
   const [importText, setImportText] = useState("");
+  const [csvRows, setCsvRows] = useState<ParsedProspectCsvRow[]>([]);
+  const [csvFileName, setCsvFileName] = useState<string | null>(null);
   const [namedLists, setNamedLists] = useState<AudienceListSummary[]>([]);
   const [poolListId, setPoolListId] = useState<string>("");
   const [namedListId, setNamedListId] = useState<string>("");
@@ -172,6 +178,8 @@ export function CampaignAddProspectsModal({
     setSearchHits([]);
     setSearchCursor(null);
     setImportText("");
+    setCsvRows([]);
+    setCsvFileName(null);
     setNamedLists([]);
     setPoolListId("");
     setNamedListId("");
@@ -659,6 +667,33 @@ export function CampaignAddProspectsModal({
     } finally {
       setBusy(false);
     }
+  }
+
+  const csvEligibleCount = useMemo(
+    () =>
+      csvRows.filter((row) =>
+        campaignChannel === "email"
+          ? Boolean(row.email)
+          : Boolean(row.linkedinUrl)
+      ).length,
+    [csvRows, campaignChannel]
+  );
+
+  async function addFromCsv() {
+    if (!csvRows.length) return;
+    const leadsPayload = csvRows.map((row) => {
+      const { first_name, last_name } = splitPersonName(row.fullName);
+      return {
+        linkedin_url: row.linkedinUrl,
+        first_name,
+        last_name,
+        company: row.businessName,
+        title: row.jobTitle,
+        email: row.email,
+        phone: row.phone,
+      };
+    });
+    await importLeadsFromPayload(leadsPayload);
   }
 
   async function importLeads() {
@@ -1372,6 +1407,67 @@ export function CampaignAddProspectsModal({
                   ))}
                 </ul>
               ) : null}
+            </div>
+          ) : mode === "csv" ? (
+            <div className="space-y-3">
+              <CsvUploadDropzone
+                disabled={busy}
+                maxRows={2500}
+                requirementNote={
+                  campaignChannel === "email"
+                    ? "This campaign sends email, so rows without an email address will be skipped."
+                    : "This campaign sends on LinkedIn, so rows without a LinkedIn URL will be skipped."
+                }
+                onRows={(rows, fileName) => {
+                  setError(null);
+                  setNotice(null);
+                  setCsvRows(rows);
+                  setCsvFileName(fileName);
+                }}
+              />
+              {csvRows.length ? (
+                <div className="rounded-lg border border-slate-200 bg-white px-3.5 py-3">
+                  <p className="text-sm font-medium text-slate-900">
+                    {csvFileName}: {csvRows.length}{" "}
+                    {csvRows.length === 1 ? "person" : "people"} found
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-600">
+                    {csvEligibleCount} can join this campaign
+                    {csvEligibleCount < csvRows.length
+                      ? ` · ${csvRows.length - csvEligibleCount} will be skipped (missing ${
+                          campaignChannel === "email"
+                            ? "an email"
+                            : "a LinkedIn URL"
+                        })`
+                      : ""}
+                  </p>
+                </div>
+              ) : null}
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || csvEligibleCount === 0}
+                  onClick={() => void addFromCsv()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {busy ? (
+                    "Adding…"
+                  ) : (
+                    <>
+                      <Check className="h-3.5 w-3.5" aria-hidden />
+                      Add {csvEligibleCount || ""}
+                      {csvEligibleCount ? " to campaign" : ""}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">

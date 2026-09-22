@@ -1,1 +1,1 @@
-export type CampaignAddProspectsMode = "list" | "named" | "search" | "urls";
+export type CampaignAddProspectsMode = "list" | "named" | "search" | "urls" | "csv";

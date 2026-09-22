@@ -519,26 +519,20 @@ export type CampaignFuel = {
 
 const BATCH_BAR_FILL =
   "linear-gradient(90deg, #0c5290 0%, #2b8fd6 70%, #5eb4f4 100%)";
-const BATCH_BAR_FOLLOW = "#7ec8f5";
 
 function CampaignBatchBar({
-  queued,
-  inFollowUp,
+  sent,
   total,
   size = "full",
   label,
 }: {
-  queued: number;
-  inFollowUp: number;
+  sent: number;
   total: number;
   size?: "compact" | "full" | "row";
   label: string;
 }) {
-  const started = total > 0 ? Math.max(0, total - queued) : 0;
-  const follow = Math.min(Math.max(0, inFollowUp), started);
-  const done = Math.max(0, started - follow);
-  const donePct = total > 0 ? (done / total) * 100 : 0;
-  const followPct = total > 0 ? (follow / total) * 100 : 0;
+  const filled = Math.min(Math.max(0, sent), Math.max(0, total));
+  const pct = total > 0 ? (filled / total) * 100 : 0;
   const barH =
     size === "full" ? "h-2.5" : size === "row" ? "h-2" : "h-1.5";
   const barW =
@@ -554,23 +548,15 @@ function CampaignBatchBar({
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={Math.max(total, 1)}
-      aria-valuenow={started}
+      aria-valuenow={filled}
       aria-label={label}
     >
-      <div className="flex h-full w-full">
-        {donePct > 0 ? (
-          <div
-            className="h-full min-w-0"
-            style={{ width: `${donePct}%`, background: BATCH_BAR_FILL }}
-          />
-        ) : null}
-        {followPct > 0 ? (
-          <div
-            className="h-full min-w-0"
-            style={{ width: `${followPct}%`, background: BATCH_BAR_FOLLOW }}
-          />
-        ) : null}
-      </div>
+      {pct > 0 ? (
+        <div
+          className="h-full min-w-0"
+          style={{ width: `${pct}%`, background: BATCH_BAR_FILL }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -896,29 +882,40 @@ export function CampaignFuelPanel({
 }
 
 export function CampaignQueueCell({
-  queued,
+  sent,
   total,
-  inFollowUp = 0,
+  failed = 0,
+  queued,
   dailyLimit,
   running,
   hasInviteStep = true,
   layout = "stack",
 }: {
-  queued: number;
+  /** Invites/messages actually started — excludes failed/skipped. */
+  sent: number;
   total: number;
-  inFollowUp?: number;
+  failed?: number;
+  queued: number;
   dailyLimit: number;
   running: boolean;
   hasInviteStep?: boolean;
   layout?: "stack" | "row";
 }) {
-  const warn = running && queued === 0 && total > 0;
+  // Failed/skipped are not progress and not remaining fuel.
+  const pool = Math.max(0, total - Math.max(0, failed));
+  const sentClamped = Math.min(Math.max(0, sent), pool || total);
+  const pct = pool > 0 ? Math.round((sentClamped / pool) * 100) : 0;
+  const warn = running && queued === 0 && pool > 0;
   const runway = campaignRunwayLabel(queued, dailyLimit);
-  const leftWord = hasInviteStep ? "left to invite" : "left to start";
+  const verb = hasInviteStep ? "sent" : "started";
   const label =
-    total === 0 ? "No contacts yet" : `${queued} ${leftWord} of ${total}`;
-  const remainingText =
-    total === 0 ? "—" : `${queued} / ${total}`;
+    pool === 0 && total === 0
+      ? "No contacts yet"
+      : `${sentClamped.toLocaleString()} ${verb} of ${pool.toLocaleString()}`;
+  const countText =
+    pool === 0 && total === 0
+      ? "—"
+      : `${sentClamped.toLocaleString()} / ${pool.toLocaleString()}`;
 
   return (
     <div
@@ -927,12 +924,11 @@ export function CampaignQueueCell({
           ? "flex w-full min-w-0 items-center gap-2"
           : "flex flex-col items-center gap-1.5"
       }
-      title={runway ?? label}
+      title={runway ? `${label}. ${runway}` : label}
     >
       <CampaignBatchBar
-        queued={queued}
-        inFollowUp={inFollowUp}
-        total={total}
+        sent={sentClamped}
+        total={pool}
         size={layout === "row" ? "row" : "compact"}
         label={runway ? `${label}. ${runway}` : label}
       />
@@ -941,7 +937,10 @@ export function CampaignQueueCell({
           warn ? "text-amber-800" : "text-slate-600"
         }`}
       >
-        {remainingText}
+        {countText}
+        {pool > 0 ? (
+          <span className="font-normal text-slate-400"> ({pct}%)</span>
+        ) : null}
       </span>
     </div>
   );

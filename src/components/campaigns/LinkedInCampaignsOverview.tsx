@@ -411,9 +411,10 @@ function CampaignTableRow({
         </div>
         <div className="mt-1 max-w-[14rem]">
           <CampaignQueueCell
-            queued={progress.queued}
+            sent={progress.sent}
             total={contacts}
-            inFollowUp={progress.in_followup ?? 0}
+            failed={progress.failed}
+            queued={progress.queued}
             dailyLimit={c.daily_invite_limit}
             running={isRunning}
             hasInviteStep={hasInvite}
@@ -489,6 +490,12 @@ export function LinkedInCampaignsOverview() {
   const [showSending, setShowSending] = useState(false);
   const [configured, setConfigured] = useState(() => cached?.configured ?? true);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  // In-app confirmation. window.confirm is unreliable (embedded browsers can
+  // suppress it or not implement it), which made Delete look like a no-op.
+  const [confirmRequest, setConfirmRequest] = useState<{
+    kind: "archive" | "delete";
+    campaign: Campaign;
+  } | null>(null);
   const [coachSlug, setCoachSlug] = useState<string | null>(
     () => cached?.coachSlug ?? null
   );
@@ -669,19 +676,26 @@ export function LinkedInCampaignsOverview() {
 
   async function quickToggle(campaign: Campaign) {
     if (isDemoPreviewId(campaign.id) || campaign.status === "completed") return;
-    setBusy(true);
+    const next = campaign.status === "running" ? "paused" : "running";
+    if (next === "running" && campaign.channel === "email") {
+      if (!mailingAccount) {
+        setError("Connect Gmail or Outlook before starting an email campaign.");
+        return;
+      }
+    } else if (next === "running" && !primaryAccount) {
+      setError("Connect LinkedIn before starting a campaign.");
+      return;
+    }
+    const prevStatus = campaign.status;
+    setCampaigns((rows) =>
+      rows.map((row) =>
+        row.id === campaign.id ? { ...row, status: next } : row
+      )
+    );
     setError(null);
     try {
       const headers = await authHeaders();
       if (!headers) throw new Error("Sign in required.");
-      const next = campaign.status === "running" ? "paused" : "running";
-      if (next === "running" && campaign.channel === "email") {
-        if (!mailingAccount) {
-          throw new Error("Connect Gmail or Outlook before starting an email campaign.");
-        }
-      } else if (next === "running" && !primaryAccount) {
-        throw new Error("Connect LinkedIn before starting a campaign.");
-      }
       const res = await fetch(
         `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaign.id)}`,
         {
@@ -695,11 +709,15 @@ export function LinkedInCampaignsOverview() {
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Update failed.");
-      await load(true);
+      // Soft refresh in background; toggle already flipped.
+      void load(true);
     } catch (err) {
+      setCampaigns((rows) =>
+        rows.map((row) =>
+          row.id === campaign.id ? { ...row, status: prevStatus } : row
+        )
+      );
       setError(err instanceof Error ? err.message : "Update failed.");
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -733,10 +751,6 @@ export function LinkedInCampaignsOverview() {
 
   async function archiveCampaign(campaign: Campaign) {
     if (isDemoPreviewId(campaign.id)) return;
-    const ok = window.confirm(
-      `Archive “${campaign.name}”? You can restore it later from Archived.`
-    );
-    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
@@ -763,10 +777,6 @@ export function LinkedInCampaignsOverview() {
 
   async function deleteCampaign(campaign: Campaign) {
     if (isDemoPreviewId(campaign.id)) return;
-    const ok = window.confirm(
-      `Delete “${campaign.name}”? This removes the campaign, its steps, and everyone in its queue. Conversations and prospect records stay. This cannot be undone.`
-    );
-    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
@@ -1025,8 +1035,18 @@ export function LinkedInCampaignsOverview() {
                                     }
                                   }}
                                   onDuplicate={() => void duplicateCampaign(c)}
-                                  onArchive={() => void archiveCampaign(c)}
-                                  onDelete={() => void deleteCampaign(c)}
+                                  onArchive={() =>
+                                    setConfirmRequest({
+                                      kind: "archive",
+                                      campaign: c,
+                                    })
+                                  }
+                                  onDelete={() =>
+                                    setConfirmRequest({
+                                      kind: "delete",
+                                      campaign: c,
+                                    })
+                                  }
                                 />
                               );
                             })
@@ -1097,7 +1117,12 @@ export function LinkedInCampaignsOverview() {
                                       onUnarchive={() =>
                                         void unarchiveCampaign(c)
                                       }
-                                      onDelete={() => void deleteCampaign(c)}
+                                      onDelete={() =>
+                                        setConfirmRequest({
+                                          kind: "delete",
+                                          campaign: c,
+                                        })
+                                      }
                                     />
                                   ))
                                 : null}
@@ -1127,6 +1152,73 @@ export function LinkedInCampaignsOverview() {
                 }
               />
             </aside>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmRequest ? (
+        <div className="fixed inset-0 z-[230] flex items-center justify-center bg-slate-900/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="campaign-confirm-title"
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+          >
+            <h2
+              id="campaign-confirm-title"
+              className="text-base font-semibold text-slate-900"
+            >
+              {confirmRequest.kind === "delete"
+                ? "Delete campaign?"
+                : "Archive campaign?"}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              {confirmRequest.kind === "delete" ? (
+                <>
+                  <span className="font-medium text-slate-900">
+                    “{confirmRequest.campaign.name}”
+                  </span>{" "}
+                  will be removed along with its steps and everyone in its
+                  queue. Conversations and prospect records stay. This cannot
+                  be undone.
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-slate-900">
+                    “{confirmRequest.campaign.name}”
+                  </span>{" "}
+                  will stop sending and move to Archived. You can restore it
+                  later.
+                </>
+              )}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmRequest(null)}
+                className="rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const { kind, campaign } = confirmRequest;
+                  setConfirmRequest(null);
+                  if (kind === "delete") void deleteCampaign(campaign);
+                  else void archiveCampaign(campaign);
+                }}
+                className={`rounded-lg px-3 py-2 text-xs font-semibold text-white ${
+                  confirmRequest.kind === "delete"
+                    ? "bg-rose-600 hover:bg-rose-700"
+                    : "bg-[#0c5290] hover:bg-[#0a457a]"
+                }`}
+              >
+                {confirmRequest.kind === "delete"
+                  ? "Delete campaign"
+                  : "Archive campaign"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

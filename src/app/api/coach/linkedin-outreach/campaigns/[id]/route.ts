@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import { applyLibraryTemplateToCampaign } from "@/lib/campaignLibrary/instantiate";
 import {
@@ -10,6 +10,7 @@ import {
   deleteCampaignLead,
   deleteCampaignLeads,
   duplicateCampaign,
+  enqueuePendingJobsForCampaign,
   getCampaign,
   getCampaignJobs,
   moveCampaignLeads,
@@ -100,11 +101,22 @@ export async function PATCH(request: Request, ctx: Ctx) {
     }
 
     if (typeof body.status === "string") {
-      const campaign = await setCampaignStatus(
-        auth.coachId,
-        id,
-        body.status as CampaignStatus
-      );
+      const nextStatus = body.status as CampaignStatus;
+      if ("outreach_account_id" in body) {
+        await updateCampaign(auth.coachId, id, {
+          outreach_account_id: body.outreach_account_id,
+        });
+      }
+      const campaign = await setCampaignStatus(auth.coachId, id, nextStatus);
+      // Enqueue after the response so turning On stays snappy on large pools.
+      if (nextStatus === "running" && auth.coachId) {
+        const coachId = auth.coachId;
+        after(() => {
+          void enqueuePendingJobsForCampaign(coachId, id).catch((err) => {
+            console.error("enqueuePendingJobsForCampaign after turn-on:", err);
+          });
+        });
+      }
       return NextResponse.json({ campaign });
     }
 

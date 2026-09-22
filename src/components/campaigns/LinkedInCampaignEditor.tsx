@@ -51,6 +51,9 @@ import {
   leadIsHeldByWait,
   formatUpcomingWhen,
   leadStatusLabel as activityLeadStatusLabel,
+  groupLeadsForDrawer,
+  drawerTimingSummary,
+  drawerLeadRowTime,
   type CampaignActivityJob,
   type InviteFunnelSlice,
 } from "@/lib/unipile/campaignLeadActivity";
@@ -495,9 +498,37 @@ export function LinkedInCampaignEditor() {
     );
   }, [leadDrawer, leads, stagingLeads, activeLeads, steps]);
 
+  const drawerSections = useMemo(
+    () =>
+      groupLeadsForDrawer({
+        leads: drawerLeads,
+        steps,
+        jobs,
+        campaignStatus: campaign?.status ?? "draft",
+      }),
+    [drawerLeads, steps, jobs, campaign?.status]
+  );
+
+  const drawerSummary = useMemo(() => {
+    if (!leadDrawer) return null;
+    if (leadDrawer.kind === "wait") return drawerTimingSummary(drawerSections);
+    if (leadDrawer.kind === "invite" && leadDrawer.slice === "remaining") {
+      return drawerTimingSummary(drawerSections);
+    }
+    if (leadDrawer.kind === "step") return drawerTimingSummary(drawerSections);
+    return null;
+  }, [leadDrawer, drawerSections]);
+
   async function saveSettings(patch: Record<string, unknown>) {
     if (!campaignId) return;
-    setBusy(true);
+    const prev = campaign;
+    const isStatusToggle = typeof patch.status === "string";
+    // Flip On/Off immediately — do not wait on job enqueue for large pools.
+    if (isStatusToggle && campaign) {
+      setCampaign({ ...campaign, status: patch.status as Campaign["status"] });
+    }
+    // Status toggles skip busy so the switch is not greyed out mid-request.
+    if (!isStatusToggle) setBusy(true);
     setError(null);
     try {
       const headers = await authHeaders(impersonatingCoachId);
@@ -509,11 +540,12 @@ export function LinkedInCampaignEditor() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Update failed.");
       if (body.campaign) setCampaign(body.campaign);
-      else await load();
+      else if (!isStatusToggle) await load();
     } catch (err) {
+      if (prev) setCampaign(prev);
       setError(err instanceof Error ? err.message : "Update failed.");
     } finally {
-      setBusy(false);
+      if (!isStatusToggle) setBusy(false);
     }
   }
 
@@ -1196,8 +1228,14 @@ export function LinkedInCampaignEditor() {
                   {leadDrawer.title}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  {drawerLeads.length} people
+                  {drawerLeads.length}{" "}
+                  {drawerLeads.length === 1 ? "person" : "people"}
                 </p>
+                {drawerSummary ? (
+                  <p className="mt-1 text-[11px] leading-snug text-slate-500">
+                    {drawerSummary}
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -1207,59 +1245,78 @@ export function LinkedInCampaignEditor() {
                 Close
               </button>
             </div>
-            <ul className="flex-1 divide-y divide-slate-100 overflow-y-auto">
+            <ul className="flex-1 overflow-y-auto">
               {drawerLeads.length === 0 ? (
                 <li className="px-5 py-12 text-center text-sm text-slate-500">
                   Nobody here yet
                 </li>
               ) : (
-                drawerLeads.map((lead) => {
-                  const href = prospectDetailHref(
-                    lead.contact_id,
-                    prefix === "/admin"
-                  );
-                  const name = leadName(lead);
-                  const body = (
-                    <>
-                      <div className="min-w-0 flex-1">
-                        <div
-                          className={`truncate text-sm font-medium ${
-                            href ? "text-[#0c5290]" : "text-slate-900"
-                          }`}
-                        >
-                          {name}
-                        </div>
-                        <div className="truncate text-xs text-slate-500">
-                          {activityLeadStatusLabel(lead.status)}
-                          {lead.company ? ` · ${lead.company}` : ""}
-                        </div>
-                      </div>
-                      {href ? (
-                        <ChevronRight
-                          className="h-4 w-4 shrink-0 text-slate-400"
-                          aria-hidden
-                        />
-                      ) : null}
-                    </>
-                  );
-                  return (
-                    <li key={lead.id}>
-                      {href ? (
-                        <Link
-                          href={href}
-                          aria-label={`Open ${name}`}
-                          className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50"
-                        >
-                          {body}
-                        </Link>
-                      ) : (
-                        <div className="flex items-center gap-3 px-5 py-3">
-                          {body}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })
+                drawerSections.map((section) => (
+                  <li key={section.key}>
+                    <div className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 px-5 py-1.5 text-xs font-semibold text-slate-600 backdrop-blur-sm">
+                      {section.label}
+                      <span className="ml-1.5 font-normal tabular-nums text-slate-400">
+                        {section.leads.length}
+                      </span>
+                    </div>
+                    <ul className="divide-y divide-slate-100">
+                      {section.leads.map((lead) => {
+                        const href = prospectDetailHref(
+                          lead.contact_id,
+                          prefix === "/admin"
+                        );
+                        const name = leadName(lead);
+                        const rowTime = section.isDay
+                          ? drawerLeadRowTime(lead)
+                          : null;
+                        const subtitleParts = [
+                          activityLeadStatusLabel(lead.status),
+                          lead.company,
+                          rowTime,
+                        ].filter(Boolean);
+                        const body = (
+                          <>
+                            <div className="min-w-0 flex-1">
+                              <div
+                                className={`truncate text-sm font-medium ${
+                                  href ? "text-[#0c5290]" : "text-slate-900"
+                                }`}
+                              >
+                                {name}
+                              </div>
+                              <div className="truncate text-xs text-slate-500">
+                                {subtitleParts.join(" · ")}
+                              </div>
+                            </div>
+                            {href ? (
+                              <ChevronRight
+                                className="h-4 w-4 shrink-0 text-slate-400"
+                                aria-hidden
+                              />
+                            ) : null}
+                          </>
+                        );
+                        return (
+                          <li key={lead.id}>
+                            {href ? (
+                              <Link
+                                href={href}
+                                aria-label={`Open ${name}`}
+                                className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50"
+                              >
+                                {body}
+                              </Link>
+                            ) : (
+                              <div className="flex items-center gap-3 px-5 py-3">
+                                {body}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                ))
               )}
             </ul>
           </aside>

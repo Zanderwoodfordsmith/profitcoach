@@ -9,6 +9,8 @@ import {
   patchesAfterDeletedWait,
   nextActionStep,
   nextStepLabel,
+  groupLeadsForDrawer,
+  drawerTimingSummary,
   type CampaignActivityJob,
   type CampaignActivityLead,
   type CampaignActivityStep,
@@ -272,5 +274,89 @@ describe("leadStartedAt", () => {
       ]),
       "2026-09-21T09:00:00.000Z"
     );
+  });
+});
+
+describe("groupLeadsForDrawer", () => {
+  const steps = [step(0, "invite"), step(1, "wait"), step(2, "message")];
+
+  it("puts status buckets before day sections and sorts days", () => {
+    const today = new Date();
+    today.setHours(10, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const fridayOffset = ((5 - today.getDay() + 7) % 7) || 7;
+    const friday = new Date(today);
+    friday.setDate(friday.getDate() + fridayOffset);
+
+    const sections = groupLeadsForDrawer({
+      leads: [
+        lead({
+          id: "day-fri",
+          status: "queued",
+          next_action_at: friday.toISOString(),
+        }),
+        lead({
+          id: "waiting",
+          status: "invited",
+          next_action_at: today.toISOString(),
+        }),
+        lead({
+          id: "day-tom",
+          status: "queued",
+          next_action_at: tomorrow.toISOString(),
+        }),
+        lead({
+          id: "day-today",
+          status: "queued",
+          next_action_at: today.toISOString(),
+        }),
+      ],
+      steps,
+      jobs: [],
+      campaignStatus: "running",
+    });
+
+    assert.equal(sections[0]?.label, "Waiting for accept");
+    assert.equal(sections[0]?.isDay, false);
+    assert.equal(sections[1]?.label, "Today");
+    assert.equal(sections[1]?.isDay, true);
+    assert.equal(sections[1]?.leads.map((l) => l.id).join(), "day-today");
+    assert.equal(sections[2]?.label, "Tomorrow");
+    assert.ok(sections.some((s) => s.isDay && s.label !== "Today" && s.label !== "Tomorrow"));
+  });
+
+  it("builds a compact next-sends summary", () => {
+    const summary = drawerTimingSummary([
+      {
+        key: "day:Today:1",
+        label: "Today",
+        isDay: true,
+        leads: [lead({ id: "1", status: "queued" }), lead({ id: "2", status: "queued" })],
+      },
+      {
+        key: "day:Tomorrow:2",
+        label: "Tomorrow",
+        isDay: true,
+        leads: [lead({ id: "3", status: "queued" })],
+      },
+      {
+        key: "day:Friday:3",
+        label: "Friday",
+        isDay: true,
+        leads: [
+          lead({ id: "4", status: "queued" }),
+          lead({ id: "5", status: "queued" }),
+          lead({ id: "6", status: "queued" }),
+        ],
+      },
+      {
+        key: "status:Waiting",
+        label: "Waiting for accept",
+        isDay: false,
+        leads: [lead({ id: "7", status: "invited" })],
+      },
+    ]);
+    assert.equal(summary, "Next sends: Today 2 · Tomorrow 1 · later 3");
   });
 });
