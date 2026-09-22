@@ -818,8 +818,8 @@ export function CampaignFuelPanel({
             <div className="flex shrink-0 items-center justify-center">
               <CampaignStatusDonut rows={rows} total={total} />
             </div>
-            <div className="flex w-full min-w-0 flex-1 flex-col">
-              <ul className="w-max min-w-[10.5rem] max-w-full">
+            <div className="flex min-w-0 flex-1 flex-col sm:items-start">
+              <ul className="w-max max-w-full">
                 {rows.map((row) => {
                   const rowInner = (
                     <>
@@ -831,7 +831,7 @@ export function CampaignFuelPanel({
                         />
                         <span className="truncate">{row.label}</span>
                       </span>
-                      <span className="tabular-nums font-semibold text-slate-900">
+                      <span className="text-base tabular-nums font-semibold text-slate-900">
                         {row.count}
                       </span>
                     </>
@@ -842,12 +842,12 @@ export function CampaignFuelPanel({
                         <button
                           type="button"
                           onClick={() => onOpenStatus(row.status)}
-                          className="flex w-full items-center justify-between gap-5 rounded-md px-1 py-1 text-left text-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                          className="flex w-full items-center gap-3 rounded-md px-1 py-1 text-left text-[15px] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
                         >
                           {rowInner}
                         </button>
                       ) : (
-                        <div className="flex items-center justify-between gap-5 px-1 py-1 text-sm">
+                        <div className="flex items-center gap-3 px-1 py-1 text-[15px]">
                           {rowInner}
                         </div>
                       )}

@@ -7,7 +7,10 @@ import {
   clampGoogleMapsMaxPlaces,
   GOOGLE_MAPS_FIND_PERSON_MAX,
 } from "@/lib/googleMaps/cost";
-import { expandGoogleMapsLocationAliases } from "@/lib/googleMaps/location";
+import {
+  expandGoogleMapsLocationAliases,
+  googleMapsApifyCountryCode,
+} from "@/lib/googleMaps/location";
 import { mapGoogleMapsDatasetItems } from "@/lib/googleMaps/mapPlaceToPool";
 import {
   googleMapsPlacesPerSearch,
@@ -103,12 +106,11 @@ export async function startGoogleMapsSearch(
   const token = requireApifyToken();
   const { searchTerms, location, maxPlaces } = requireSearchInput(input);
   const client = new ApifyClient({ token });
+  const countryCode = googleMapsApifyCountryCode(input.countryCode);
   const runInput: Record<string, unknown> = {
     searchStringsArray: searchTerms,
     locationQuery: location,
-    ...(input.countryCode?.trim()
-      ? { countryCode: input.countryCode.trim().toUpperCase() }
-      : {}),
+    ...(countryCode ? { countryCode } : {}),
     ...(input.state?.trim() ? { state: input.state.trim() } : {}),
     maxCrawledPlacesPerSearch: googleMapsPlacesPerSearch(
       maxPlaces,

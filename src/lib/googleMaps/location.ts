@@ -229,3 +229,17 @@ export function resolveGoogleMapsLocation(
 export function formatGoogleMapsLocationHint(locationQuery: string): string {
   return `We’ll search ${locationQuery}.`;
 }
+
+/**
+ * Apify compass/crawler-google-places only accepts lowercase ISO 3166-1
+ * alpha-2 codes (e.g. "gb"). Uppercase "GB" is rejected as invalid input.
+ */
+export function googleMapsApifyCountryCode(
+  code: string | null | undefined
+): string | undefined {
+  const trimmed = code?.trim();
+  if (!trimmed || trimmed.toUpperCase() === GOOGLE_MAPS_COUNTRY_OTHER) {
+    return undefined;
+  }
+  return trimmed.toLowerCase();
+}

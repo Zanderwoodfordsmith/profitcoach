@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   expandGoogleMapsLocationAliases,
+  googleMapsApifyCountryCode,
   resolveGoogleMapsLocation,
 } from "./location";
 
@@ -107,5 +108,17 @@ describe("resolve Google Maps location", () => {
       stateCode: "TX",
       stateLabel: "Texas",
     });
+  });
+});
+
+describe("googleMapsApifyCountryCode", () => {
+  it("lowercases ISO codes for the Apify actor", () => {
+    assert.equal(googleMapsApifyCountryCode("GB"), "gb");
+    assert.equal(googleMapsApifyCountryCode("us"), "us");
+  });
+
+  it("omits empty and Other values", () => {
+    assert.equal(googleMapsApifyCountryCode(null), undefined);
+    assert.equal(googleMapsApifyCountryCode("OTHER"), undefined);
   });
 });
