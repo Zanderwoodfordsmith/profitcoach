@@ -12,6 +12,7 @@ import {
   Clock,
   Eye,
   Inbox,
+  Link2,
   ListFilter,
   Loader2,
   Mail,
@@ -122,7 +123,11 @@ import { inferReplyDisposition } from "@/lib/prospects/replyDisposition";
 import { ProspectContactFields } from "@/components/prospects/ProspectContactFields";
 import { ProspectDetailsHeader } from "@/components/prospects/ProspectDetailsHeader";
 import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDuplicates";
+import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
+import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
+import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import {
   PROSPECT_STATUS_OPTIONS,
@@ -284,6 +289,7 @@ type ProspectDetails = {
   prospect_status: string | null;
   boss_score: number | null;
   boss_score_at: string | null;
+  boss_score_report_token?: string | null;
   boss_score_premium: number | null;
   boss_score_premium_at: string | null;
   boss_level: string | null;
@@ -1101,6 +1107,8 @@ export type MessagingInboxProps = {
   journeyPane?: ReactNode;
   /** Prospect already loaded by the workspace — paint the real name immediately. */
   initialProspect?: ProspectDetails | null;
+  /** Coach public slug for Boss Score report links (from prospect contact payload). */
+  initialCoachSlug?: string | null;
   /** Replaces the Details heading with a back link (prospect page). */
   detailsBackHref?: string;
   /** Label for that back link. Defaults to Prospects. */
@@ -1116,6 +1124,7 @@ export function MessagingInbox({
   detailsBackHref,
   detailsBackLabel = "Prospects",
   initialProspect = null,
+  initialCoachSlug = null,
 }: MessagingInboxProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
@@ -1288,6 +1297,20 @@ export function MessagingInbox({
   const [personalisedAssessmentUrl, setPersonalisedAssessmentUrl] = useState<
     string | null
   >(null);
+  const [coachSlug, setCoachSlug] = useState<string | null>(
+    () => initialCoachSlug?.trim() || null
+  );
+  const [scorecardModalContactId, setScorecardModalContactId] = useState<
+    string | null
+  >(null);
+  const [copiedBossReportLink, setCopiedBossReportLink] = useState(false);
+  const [copyFailedBossReportLink, setCopyFailedBossReportLink] =
+    useState(false);
+  const [copiedBossProDashboardLink, setCopiedBossProDashboardLink] =
+    useState(false);
+  const [copyFailedBossProDashboardLink, setCopyFailedBossProDashboardLink] =
+    useState(false);
+  const [sharingBossProDashboard, setSharingBossProDashboard] = useState(false);
   const [scheduledMessages, setScheduledMessages] = useState<
     ScheduledThreadMessage[]
   >([]);
@@ -1760,6 +1783,7 @@ export function MessagingInbox({
           booking?: BookingDetails | null;
           activity?: ActivityEvent[];
           coachTags?: string[];
+          coach_slug?: string | null;
           assessment_url?: string | null;
           personalised_assessment_url?: string | null;
         };
@@ -1769,6 +1793,9 @@ export function MessagingInbox({
           setOpenSideId(id);
         }
         if (!stillOpen()) return;
+        if (typeof body.coach_slug === "string" && body.coach_slug.trim()) {
+          setCoachSlug(body.coach_slug.trim());
+        }
         if (body.booking !== undefined) {
           setBookingDetails(body.booking ?? null);
         }
@@ -2926,6 +2953,11 @@ export function MessagingInbox({
   }, [initialProspect]);
 
   useEffect(() => {
+    const slug = initialCoachSlug?.trim();
+    if (slug) setCoachSlug(slug);
+  }, [initialCoachSlug]);
+
+  useEffect(() => {
     if (!contactId) return;
     let cancelled = false;
     async function bootProspect() {
@@ -3255,9 +3287,106 @@ export function MessagingInbox({
   const threadScheduled =
     openThreadId === selectedId ? scheduledMessages : [];
   const threadProspect =
-    openSideId === selectedId && prospectFitsConversation(prospectDetails, selected)
+    prospectMode && contactId && prospectDetails?.id === contactId
       ? prospectDetails
-      : null;
+      : openSideId === selectedId &&
+          prospectFitsConversation(prospectDetails, selected)
+        ? prospectDetails
+        : null;
+
+  const isAdminPath = Boolean(pathname?.startsWith("/admin"));
+  const bossProHref = threadProspect?.id
+    ? bossProHubPath(threadProspect.id, { admin: isAdminPath })
+    : null;
+
+  function getBossReportPath(prospect: ProspectDetails): string | null {
+    const token = prospect.boss_score_report_token?.trim();
+    const slug = coachSlug?.trim();
+    if (!token || !slug) return null;
+    return `/assessment/${encodeURIComponent(slug)}/report?token=${encodeURIComponent(token)}`;
+  }
+
+  function getBossReportUrl(prospect: ProspectDetails): string | null {
+    const path = getBossReportPath(prospect);
+    if (!path) return null;
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}${path}`;
+    }
+    const token = prospect.boss_score_report_token?.trim();
+    const slug = coachSlug?.trim();
+    if (!token || !slug) return null;
+    return buildScorecardReportUrl(slug, token);
+  }
+
+  async function copyBossReportLink(prospect: ProspectDetails) {
+    setCopyFailedBossReportLink(false);
+    const link = getBossReportUrl(prospect);
+    if (!link) {
+      setCopyFailedBossReportLink(true);
+      window.setTimeout(() => setCopyFailedBossReportLink(false), 2500);
+      return;
+    }
+    const ok = await copyTextToClipboard(link);
+    if (!ok) {
+      window.prompt("Copy this Boss report link:", link);
+      setCopyFailedBossReportLink(true);
+      window.setTimeout(() => setCopyFailedBossReportLink(false), 2500);
+      return;
+    }
+    setCopiedBossReportLink(true);
+    window.setTimeout(() => setCopiedBossReportLink(false), 2000);
+  }
+
+  async function copyBossProDashboardLink(prospect: ProspectDetails) {
+    setCopyFailedBossProDashboardLink(false);
+    setSharingBossProDashboard(true);
+    try {
+      const headers = await authHeaders();
+      if (!headers) {
+        setCopyFailedBossProDashboardLink(true);
+        window.setTimeout(() => setCopyFailedBossProDashboardLink(false), 2500);
+        return;
+      }
+      const res = await fetch(
+        `/api/coach/contacts/${encodeURIComponent(prospect.id)}/dashboard-share-link`,
+        { headers, cache: "no-store" }
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        url?: string;
+      };
+      if (!res.ok || !body.url) {
+        setCopyFailedBossProDashboardLink(true);
+        window.setTimeout(() => setCopyFailedBossProDashboardLink(false), 2500);
+        return;
+      }
+      let link = body.url;
+      try {
+        const parsed = new URL(body.url);
+        link = `${window.location.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
+      } catch {
+        /* keep absolute url from API */
+      }
+      const ok = await copyTextToClipboard(link);
+      if (!ok) {
+        window.prompt("Copy this Boss Pro dashboard link:", link);
+        setCopyFailedBossProDashboardLink(true);
+        window.setTimeout(() => setCopyFailedBossProDashboardLink(false), 2500);
+        return;
+      }
+      setCopiedBossProDashboardLink(true);
+      window.setTimeout(() => setCopiedBossProDashboardLink(false), 2000);
+    } catch {
+      setCopyFailedBossProDashboardLink(true);
+      window.setTimeout(() => setCopyFailedBossProDashboardLink(false), 2500);
+    } finally {
+      setSharingBossProDashboard(false);
+    }
+  }
+
+  const bossReportPath = threadProspect
+    ? getBossReportPath(threadProspect)
+    : null;
 
   const feedByDay = useMemo(() => {
     const optimisticForThread = selectedId
@@ -4655,17 +4784,40 @@ export function MessagingInbox({
                     if (item.kind === "activity") {
                       const a = item.activity;
                       const icon = activityGlyph(a.type);
+                      const href =
+                        a.type === "boss_pro_completed" &&
+                        (threadProspect?.id || selected?.contact_id)
+                          ? bossProHubPath(
+                              threadProspect?.id || selected?.contact_id,
+                              { admin: isAdminPath }
+                            )
+                          : a.href?.trim() || null;
+                      const linked = Boolean(href);
                       const body = (
                         <>
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200/80 text-[10px] font-semibold text-slate-600">
+                          <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
+                              linked
+                                ? "bg-sky-100 text-sky-700"
+                                : "bg-slate-200/80 text-slate-600"
+                            }`}
+                          >
                             {icon}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="font-medium text-slate-700">
+                            <span
+                              className={`font-medium ${
+                                linked ? "text-sky-700" : "text-slate-700"
+                              }`}
+                            >
                               {a.title}
                             </span>
                             {a.detail ? (
-                              <span className="text-slate-500">
+                              <span
+                                className={
+                                  linked ? "text-sky-600/80" : "text-slate-500"
+                                }
+                              >
                                 {" "}
                                 · {a.detail}
                               </span>
@@ -4678,18 +4830,29 @@ export function MessagingInbox({
                       );
                       return (
                         <div key={a.id} className="flex justify-center px-2">
-                          {a.href ? (
+                          {href ? (
                             <a
-                              href={a.href}
+                              href={href}
                               target={
-                                a.href.startsWith("http") ? "_blank" : undefined
-                              }
-                              rel={
-                                a.href.startsWith("http")
-                                  ? "noreferrer"
+                                href.startsWith("http") ||
+                                href.startsWith("/assessment/")
+                                  ? "_blank"
                                   : undefined
                               }
-                              className="flex w-full max-w-[min(84%,36rem)] items-center gap-2 rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-left text-xs text-slate-600 shadow-sm hover:border-sky-200 hover:bg-white"
+                              rel={
+                                href.startsWith("http") ||
+                                href.startsWith("/assessment/")
+                                  ? "noopener noreferrer"
+                                  : undefined
+                              }
+                              className="flex w-full max-w-[min(84%,36rem)] items-center gap-2 rounded-lg border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-left text-xs text-sky-800 shadow-sm hover:border-sky-300 hover:bg-sky-50"
+                              title={
+                                a.type === "boss_score_completed"
+                                  ? "Open Boss score report"
+                                  : a.type === "boss_pro_completed"
+                                    ? "Open Boss Pro"
+                                    : undefined
+                              }
                             >
                               {body}
                             </a>
@@ -5841,33 +6004,128 @@ export function MessagingInbox({
                   <dl className="space-y-2.5">
                     <DetailRow label="Boss Score">
                       {threadProspect?.boss_score != null ? (
-                        <>
-                          {`${Math.round(threadProspect.boss_score)}%`}
-                          {threadProspect.boss_score_at ? (
-                            <span className="text-slate-500">
-                              {" "}
-                              · {formatShortDate(threadProspect.boss_score_at)}
-                            </span>
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          {bossReportPath ? (
+                            <a
+                              href={bossReportPath}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-fit font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                              title="Open Boss score report"
+                            >
+                              {`${Math.round(threadProspect.boss_score)}%`}
+                              {threadProspect.boss_score_at ? (
+                                <span className="font-normal text-slate-500">
+                                  {" "}
+                                  ·{" "}
+                                  {formatShortDate(threadProspect.boss_score_at)}
+                                </span>
+                              ) : null}
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setScorecardModalContactId(threadProspect.id)
+                              }
+                              className="w-fit text-left font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                              title="View Boss scorecard"
+                            >
+                              {`${Math.round(threadProspect.boss_score)}%`}
+                              {threadProspect.boss_score_at ? (
+                                <span className="font-normal text-slate-500">
+                                  {" "}
+                                  ·{" "}
+                                  {formatShortDate(threadProspect.boss_score_at)}
+                                </span>
+                              ) : null}
+                            </button>
+                          )}
+                          {bossReportPath ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void copyBossReportLink(threadProspect)
+                              }
+                              className="inline-flex w-fit items-center gap-1 text-left text-[12px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                              title="Copy shareable Boss report link for the client"
+                            >
+                              {copiedBossReportLink ? (
+                                "Copied!"
+                              ) : copyFailedBossReportLink ? (
+                                "Couldn't copy"
+                              ) : (
+                                <>
+                                  <Link2
+                                    className="h-3 w-3 shrink-0"
+                                    aria-hidden
+                                  />
+                                  Report link
+                                </>
+                              )}
+                            </button>
                           ) : null}
-                        </>
+                        </div>
                       ) : (
                         <DetailEmpty />
                       )}
                     </DetailRow>
                     <DetailRow label="Boss Pro">
-                      {threadProspect?.boss_score_premium != null ? (
-                        <>
-                          {Math.round(threadProspect.boss_score_premium)}
-                          {threadProspect.boss_score_premium_at ? (
-                            <span className="text-slate-500">
-                              {" "}
-                              ·{" "}
-                              {formatShortDate(
-                                threadProspect.boss_score_premium_at
-                              )}
-                            </span>
-                          ) : null}
-                        </>
+                      {threadProspect?.boss_score_premium != null && bossProHref ? (
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <Link
+                            href={bossProHref}
+                            className="w-fit font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                            title="Open Boss Pro"
+                          >
+                            {Math.round(threadProspect.boss_score_premium)}
+                            {threadProspect.boss_score_premium_at ? (
+                              <span className="font-normal text-slate-500">
+                                {" "}
+                                ·{" "}
+                                {formatShortDate(
+                                  threadProspect.boss_score_premium_at
+                                )}
+                              </span>
+                            ) : null}
+                          </Link>
+                          <button
+                            type="button"
+                            disabled={sharingBossProDashboard}
+                            onClick={() =>
+                              void copyBossProDashboardLink(threadProspect)
+                            }
+                            className="inline-flex w-fit items-center gap-1 text-left text-[12px] font-medium text-slate-400 hover:text-slate-600 hover:underline disabled:opacity-60"
+                            title="Copy public Boss Pro dashboard link for the client"
+                          >
+                            {sharingBossProDashboard ? (
+                              <>
+                                <Loader2
+                                  className="h-3 w-3 shrink-0 animate-spin"
+                                  aria-hidden
+                                />
+                                Sharing…
+                              </>
+                            ) : copiedBossProDashboardLink ? (
+                              "Copied!"
+                            ) : copyFailedBossProDashboardLink ? (
+                              "Couldn't copy"
+                            ) : (
+                              <>
+                                <Link2 className="h-3 w-3 shrink-0" aria-hidden />
+                                Client link
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ) : bossProHref && threadProspect ? (
+                        <Link
+                          href={bossProHref}
+                          className="text-[12px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                          title="Open Boss Pro for this prospect"
+                        >
+                          Open Boss Pro
+                        </Link>
                       ) : (
                         <DetailEmpty />
                       )}
@@ -6061,6 +6319,10 @@ export function MessagingInbox({
         ) : null}
         </div>
       </div>
+      <ScorecardGlanceModal
+        contactId={scorecardModalContactId}
+        onClose={() => setScorecardModalContactId(null)}
+      />
     </div>
   );
 }

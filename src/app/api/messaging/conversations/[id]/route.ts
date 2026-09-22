@@ -215,12 +215,14 @@ export async function GET(
   }
 
   let prospect = null;
+  let coachSlug: string | null = null;
   let activity: Awaited<ReturnType<typeof loadProspectActivity>> = [];
   if (contactId) {
     const loaded = await loadEnrichedProspectById(contactId, {
       coachId: access.coachId,
     });
     prospect = loaded?.prospect ?? null;
+    coachSlug = loaded?.coachSlug ?? null;
     activity = await loadProspectActivity(contactId, {
       coachId: access.coachId,
     });
@@ -323,6 +325,7 @@ export async function GET(
     booking,
     activity,
     coachTags,
+    coach_slug: coachSlug,
     assessment_url: assessmentUrl,
     personalised_assessment_url: personalisedAssessmentUrl,
   });

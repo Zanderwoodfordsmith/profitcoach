@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import {
   ClipboardList,
   Gauge,
@@ -33,6 +34,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import type { ProspectNextCall } from "@/lib/prospectNextCall";
 import type { ProspectRow } from "@/lib/prospectRow";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
 type PaneTab = "activity" | "calls" | "notes";
 
@@ -154,6 +156,26 @@ function callStatusLabel(status: string | null): string {
   return s.replace(/_/g, " ");
 }
 
+function resolveActivityHref(
+  event: ActivityEvent,
+  contactId: string,
+  admin: boolean
+): string | null {
+  if (event.type === "boss_pro_completed") {
+    return bossProHubPath(contactId, { admin });
+  }
+  const href = event.href?.trim() || null;
+  if (!href) return null;
+  if (admin && href.startsWith("/coach/boss-pro")) {
+    return href.replace("/coach/boss-pro", "/admin/boss-pro");
+  }
+  return href;
+}
+
+function activityOpensInNewTab(href: string): boolean {
+  return href.startsWith("http") || href.startsWith("/assessment/");
+}
+
 function PaneSkeleton() {
   return (
     <div className="space-y-4" aria-hidden>
@@ -176,6 +198,8 @@ export function ProspectJourneyPane({
   prospect = null,
   onProspectBooked,
 }: Props) {
+  const pathname = usePathname() ?? "";
+  const isAdmin = pathname.startsWith("/admin");
   const tabId = useId();
   const [tab, setTab] = useState<PaneTab>("activity");
   const [loading, setLoading] = useState(true);
@@ -603,10 +627,24 @@ export function ProspectJourneyPane({
                         const isLast =
                           groupIndex === activityGroups.length - 1 &&
                           itemIndex === group.items.length - 1;
+                        const href = resolveActivityHref(
+                          event,
+                          contactId,
+                          isAdmin
+                        );
+                        const isAssessmentLink =
+                          event.type === "boss_score_completed" ||
+                          event.type === "boss_pro_completed";
                         const row = (
                           <>
                             <span className="flex w-6 shrink-0 flex-col items-center">
-                              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
+                              <span
+                                className={`flex h-6 w-6 items-center justify-center rounded-full border bg-white ${
+                                  href && isAssessmentLink
+                                    ? "border-sky-200 text-sky-600"
+                                    : "border-slate-200 text-slate-500"
+                                }`}
+                              >
                                 {eventIcon(event.type)}
                               </span>
                               {!isLast ? (
@@ -620,7 +658,13 @@ export function ProspectJourneyPane({
                               className={`min-w-0 flex-1 ${isLast ? "pb-0" : "pb-5"}`}
                             >
                               <span className="flex items-start justify-between gap-2">
-                                <span className="min-w-0 pt-0.5 text-sm font-medium leading-5 text-slate-800">
+                                <span
+                                  className={`min-w-0 pt-0.5 text-sm font-medium leading-5 ${
+                                    href
+                                      ? "text-sky-700 group-hover:text-sky-900 group-hover:underline"
+                                      : "text-slate-800"
+                                  }`}
+                                >
                                   {event.title}
                                 </span>
                                 <span className="shrink-0 pt-0.5 text-[11px] tabular-nums text-slate-400">
@@ -628,7 +672,13 @@ export function ProspectJourneyPane({
                                 </span>
                               </span>
                               {event.detail ? (
-                                <span className="mt-0.5 block text-xs text-slate-500">
+                                <span
+                                  className={`mt-0.5 block text-xs ${
+                                    href
+                                      ? "text-sky-600/80 group-hover:text-sky-800"
+                                      : "text-slate-500"
+                                  }`}
+                                >
                                   {event.detail}
                                 </span>
                               ) : null}
@@ -637,20 +687,27 @@ export function ProspectJourneyPane({
                         );
                         return (
                           <li key={event.id} className="flex">
-                            {event.href ? (
+                            {href ? (
                               <a
-                                href={event.href}
+                                href={href}
                                 target={
-                                  event.href.startsWith("http")
+                                  activityOpensInNewTab(href)
                                     ? "_blank"
                                     : undefined
                                 }
                                 rel={
-                                  event.href.startsWith("http")
-                                    ? "noreferrer"
+                                  activityOpensInNewTab(href)
+                                    ? "noopener noreferrer"
                                     : undefined
                                 }
-                                className="flex min-w-0 flex-1 gap-3 rounded-md hover:text-sky-800"
+                                className="group flex min-w-0 flex-1 gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                                title={
+                                  event.type === "boss_score_completed"
+                                    ? "Open Boss score report"
+                                    : event.type === "boss_pro_completed"
+                                      ? "Open Boss Pro"
+                                      : undefined
+                                }
                               >
                                 {row}
                               </a>

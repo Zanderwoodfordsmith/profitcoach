@@ -99,7 +99,7 @@ export async function loadProspectRecord(
 
   let contactQuery = supabaseAdmin
     .from("contacts")
-    .select("id, created_at, full_name, type, prospect_source")
+    .select("id, created_at, full_name, type, prospect_source, coach_id")
     .eq("id", id)
     .in("type", ["prospect", "client"])
     .limit(1);
@@ -114,9 +114,23 @@ export async function loadProspectRecord(
         full_name: string | null;
         type: string | null;
         prospect_source: string | null;
+        coach_id: string | null;
       }
     | undefined;
   if (!contact) return { activity: [], campaigns: [], calls: [] };
+
+  const coachId = options?.coachId || contact.coach_id;
+  let coachSlug: string | null = null;
+  if (coachId) {
+    const { data: coachRow } = await supabaseAdmin
+      .from("coaches")
+      .select("slug")
+      .eq("id", coachId)
+      .maybeSingle();
+    coachSlug =
+      ((coachRow as { slug?: string | null } | null)?.slug as string | null)?.trim() ||
+      null;
+  }
 
   const isClient = contact.type === "client";
 
@@ -225,6 +239,7 @@ export async function loadProspectRecord(
     const score =
       typeof row.total_score === "number" ? Math.round(row.total_score) : null;
     if (row.assessment_type === "boss_scorecard") {
+      const token = (row.report_token as string | null)?.trim() || "";
       events.push({
         id: `assessment-${row.id}`,
         type: "boss_score_completed",
@@ -234,9 +249,10 @@ export async function loadProspectRecord(
           score != null
             ? `${score}%${row.boss_level ? ` · ${row.boss_level}` : ""}`
             : row.boss_level || null,
-        href: row.report_token
-          ? `/scorecard/report/${row.report_token}`
-          : null,
+        href:
+          token && coachSlug
+            ? `/assessment/${encodeURIComponent(coachSlug)}/report?token=${encodeURIComponent(token)}`
+            : null,
       });
     } else if (row.assessment_type === "diagnostic_50") {
       events.push({
@@ -245,6 +261,7 @@ export async function loadProspectRecord(
         at: completedAt,
         title: "Completed Boss Pro",
         detail: score != null ? `Score ${score}` : null,
+        href: `/coach/boss-pro?contact=${encodeURIComponent(id)}`,
       });
     }
   }

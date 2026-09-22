@@ -41,6 +41,9 @@ export function ProspectWorkspace({ contactId }: Props) {
   const [prospect, setProspect] = useState<ProspectRow | null>(
     () => cached?.prospect ?? null
   );
+  const [coachSlug, setCoachSlug] = useState<string | null>(
+    () => cached?.coachSlug ?? null
+  );
 
   const fromConversations = searchParams.get("from") === "conversations";
   const fromPool = searchParams.get("from") === "pool";
@@ -63,6 +66,7 @@ export function ProspectWorkspace({ contactId }: Props) {
         loadProspectContactPayload(contactId, isAdmin, impersonatingCoachId)
       );
       setProspect(payload.prospect);
+      setCoachSlug(payload.coachSlug ?? null);
       if (isAdmin && payload.prospect.coach_id) {
         setImpersonatingCoachId(payload.prospect.coach_id);
         setExpectedCoachId(payload.prospect.coach_id);
@@ -92,6 +96,7 @@ export function ProspectWorkspace({ contactId }: Props) {
     const hit = peekHubQuery<ProspectContactPayload>(cacheKey);
     if (hit?.prospect) {
       setProspect(hit.prospect);
+      setCoachSlug(hit.coachSlug ?? null);
       if (isAdmin && hit.prospect.coach_id) {
         setImpersonatingCoachId(hit.prospect.coach_id);
         setExpectedCoachId(hit.prospect.coach_id);
@@ -142,6 +147,7 @@ export function ProspectWorkspace({ contactId }: Props) {
           key={contactId}
           contactId={contactId}
           initialProspect={prospect}
+          initialCoachSlug={coachSlug}
           detailsSide="left"
           hideConversationList
           hideProspectLink
