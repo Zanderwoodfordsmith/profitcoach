@@ -28,6 +28,7 @@ export type AccountSendSettings = {
   coach_id: string;
   unipile_account_id: string;
   status: string;
+  provider?: string | null;
   weekly_invite_target: number;
   daily_message_target: number;
   daily_react_target: number;
@@ -44,7 +45,7 @@ export type AccountSendSettings = {
 };
 
 const ACCOUNT_SELECT =
-  "id, coach_id, unipile_account_id, status, weekly_invite_target, daily_message_target, daily_react_target, min_action_delay_seconds, max_action_delay_seconds, timezone, send_rules, warmup_started_at, warmup_enabled, invite_paused_until, rate_limited_until, daily_send_plan, ssi_score";
+  "id, coach_id, unipile_account_id, status, provider, weekly_invite_target, daily_message_target, daily_react_target, min_action_delay_seconds, max_action_delay_seconds, timezone, send_rules, warmup_started_at, warmup_enabled, invite_paused_until, rate_limited_until, daily_send_plan, ssi_score";
 
 export async function loadAccountSendSettings(
   accountId: string

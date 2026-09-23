@@ -1571,6 +1571,44 @@ export async function setCampaignStatus(
   campaignId: string,
   status: CampaignStatus
 ) {
+  // LinkedIn campaigns must use a LinkedIn Unipile account — Gmail/Outlook
+  // rows make every invite fail with "Could not resolve LinkedIn provider id."
+  if (status === "running") {
+    const { data: row } = await supabaseAdmin
+      .from("linkedin_campaigns")
+      .select("channel, outreach_account_id")
+      .eq("id", campaignId)
+      .eq("coach_id", coachId)
+      .maybeSingle();
+    const channel = (row?.channel as string | null) || "linkedin";
+    if (channel !== "email") {
+      const { loadCoachLinkedInSendSettings, loadAccountSendSettings } =
+        await import("@/lib/unipile/accountSendPlan");
+      const { normalizeUnipileProvider } = await import(
+        "@/lib/unipile/providers"
+      );
+      let accountId = (row?.outreach_account_id as string | null) ?? null;
+      if (accountId) {
+        const existing = await loadAccountSendSettings(accountId);
+        if (
+          !existing ||
+          normalizeUnipileProvider(existing.provider) !== "LINKEDIN"
+        ) {
+          accountId = null;
+        }
+      }
+      if (!accountId) {
+        const linkedIn = await loadCoachLinkedInSendSettings(coachId);
+        if (linkedIn) accountId = linkedIn.id;
+      }
+      if (accountId && accountId !== row?.outreach_account_id) {
+        await updateCampaign(coachId, campaignId, {
+          outreach_account_id: accountId,
+        });
+      }
+    }
+  }
+
   const data = await updateCampaign(coachId, campaignId, { status });
   if (!data) throw new Error("Campaign not found.");
 

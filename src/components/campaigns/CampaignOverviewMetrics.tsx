@@ -244,20 +244,23 @@ export function CampaignMetricDial(props: CampaignDialMetric) {
 const CONNECT_LEGEND = {
   invites: "#2b8fd6",
   accepted: "#0c5290",
-  remaining: "#cbd5e1",
+  queued: "#cbd5e1",
 } as const;
 
-/** Row dial: % in the centre plus Invites / Accepted / Remaining. */
+/** Row dial: % in the centre plus Invites / Accepted / Queued. */
 export function CampaignCompactDial({
   label,
   numerator,
   denominator,
+  /** Leads still waiting to receive a connection request. */
+  queued,
   muted = false,
   size = "default",
 }: {
   label: string;
   numerator: number;
   denominator: number;
+  queued: number;
   /** Grey out when the metric does not apply (e.g. no invite step). */
   muted?: boolean;
   size?: "default" | "sm";
@@ -271,7 +274,7 @@ export function CampaignCompactDial({
     denominator > 0
       ? Math.min(100, Math.round((numerator / denominator) * 100))
       : 0;
-  const remaining = Math.max(0, denominator - numerator);
+  const waiting = Math.max(0, queued);
   const stops = COMPACT_DIAL_STOPS;
   const dialClass = size === "sm" ? "h-9 w-9" : "h-12 w-12";
   const gapClass = size === "sm" ? "gap-2.5" : "gap-3.5";
@@ -286,12 +289,12 @@ export function CampaignCompactDial({
       aria-label={
         muted
           ? `${label}: not applicable`
-          : `${label} ${pct} percent: ${denominator} invites, ${numerator} accepted, ${remaining} remaining`
+          : `${label} ${pct} percent: ${denominator} invites, ${numerator} accepted, ${waiting} queued`
       }
       title={
         muted
           ? `${label}: n/a`
-          : `${label}: ${pct}% · ${denominator} invited, ${numerator} accepted, ${remaining} remaining`
+          : `${label}: ${pct}% · ${denominator} invited, ${numerator} accepted, ${waiting} waiting to send`
       }
     >
       <div className={`relative shrink-0 ${dialClass}`}>
@@ -336,7 +339,7 @@ export function CampaignCompactDial({
         {[
           { label: "Invites", value: denominator, color: CONNECT_LEGEND.invites },
           { label: "Accepted", value: numerator, color: CONNECT_LEGEND.accepted },
-          { label: "Remaining", value: remaining, color: CONNECT_LEGEND.remaining },
+          { label: "Queued", value: waiting, color: CONNECT_LEGEND.queued },
         ].map((row) => (
           <li
             key={row.label}

@@ -841,6 +841,7 @@ export function CampaignOverviewHero({
               label="Connect"
               numerator={connectRate.numerator}
               denominator={connectRate.denominator}
+              queued={data?.plannedRemaining ?? 0}
               muted={connectRate.denominator <= 0}
               size="sm"
             />

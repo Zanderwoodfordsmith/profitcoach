@@ -42,6 +42,7 @@ import {
 import { duplicateCampaignStep } from "@/lib/unipile/campaignStepDuplicate";
 import {
   isMailingProvider,
+  normalizeUnipileProvider,
   type UnipileConnectProvider,
 } from "@/lib/unipile/providers";
 import {
@@ -332,7 +333,12 @@ export function LinkedInCampaignEditor() {
     );
   }, []);
 
-  const primaryAccount = accounts[0] ?? null;
+  const primaryAccount =
+    accounts.find(
+      (account) =>
+        account.status === "OK" &&
+        normalizeUnipileProvider(account.provider) === "LINKEDIN"
+    ) ?? null;
   const mailingAccount =
     accounts.find(
       (account) =>

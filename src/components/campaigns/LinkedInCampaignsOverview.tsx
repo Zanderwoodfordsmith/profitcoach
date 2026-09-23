@@ -436,6 +436,7 @@ function CampaignTableRow({
           label="Connect"
           numerator={progress.connected}
           denominator={progress.sent}
+          queued={progress.queued}
           muted={!hasInvite}
         />
       </td>
@@ -654,7 +655,7 @@ export function LinkedInCampaignsOverview() {
         headers,
         body: JSON.stringify({
           name: input.name.trim(),
-          outreach_account_id: primaryAccount?.id ?? null,
+          outreach_account_id: okLinkedInAccount?.id ?? null,
           ...(input.libraryTemplateId
             ? { library_template_id: input.libraryTemplateId }
             : {}),
@@ -682,7 +683,7 @@ export function LinkedInCampaignsOverview() {
         setError("Connect Gmail or Outlook before starting an email campaign.");
         return;
       }
-    } else if (next === "running" && !primaryAccount) {
+    } else if (next === "running" && !okLinkedInAccount) {
       setError("Connect LinkedIn before starting a campaign.");
       return;
     }
@@ -703,7 +704,10 @@ export function LinkedInCampaignsOverview() {
           headers,
           body: JSON.stringify({
             status: next,
-            outreach_account_id: primaryAccount?.id ?? null,
+            outreach_account_id:
+              campaign.channel === "email"
+                ? mailingAccount?.id ?? null
+                : okLinkedInAccount?.id ?? null,
           }),
         }
       );
@@ -1007,7 +1011,7 @@ export function LinkedInCampaignsOverview() {
                                 (isRunning ||
                                   (isEmail
                                     ? Boolean(mailingAccount)
-                                    : Boolean(primaryAccount)));
+                                    : Boolean(okLinkedInAccount)));
                               return (
                                 <CampaignTableRow
                                   key={c.id}
@@ -1260,7 +1264,7 @@ export function LinkedInCampaignsOverview() {
               if (full) void quickToggle(full);
             }}
             toggleBusy={busy}
-            linkedInConnected={Boolean(primaryAccount)}
+            linkedInConnected={Boolean(okLinkedInAccount)}
             emailConnected={Boolean(mailingAccount)}
           />
         </div>

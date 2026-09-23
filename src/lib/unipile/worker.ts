@@ -39,6 +39,7 @@ import {
 } from "@/lib/unipile/profileVars";
 import {
   loadAccountSendSettings,
+  loadCoachLinkedInSendSettings,
   pauseInvitesUntil,
   setRateLimitedUntil,
   type AccountSendSettings,
@@ -49,6 +50,7 @@ import {
   recordSuccessfulOutreachSend,
   sendKindFromStepType,
 } from "@/lib/unipile/outreachSendSafety";
+import { normalizeUnipileProvider } from "@/lib/unipile/providers";
 
 /** Global jobs claimed per cron tick (across coaches). */
 const MAX_JOBS_PER_TICK = 8;
@@ -387,7 +389,7 @@ export async function processOutreachJobsTick(): Promise<{
       const { data: campaign } = await supabaseAdmin
         .from("linkedin_campaigns")
         .select(
-          "*, linkedin_outreach_accounts(id, unipile_account_id, status, timezone, send_rules, weekly_invite_target, daily_message_target, daily_react_target, min_action_delay_seconds, max_action_delay_seconds, warmup_started_at, invite_paused_until, rate_limited_until, daily_send_plan, ssi_score, coach_id)"
+          "*, linkedin_outreach_accounts(id, unipile_account_id, status, provider, timezone, send_rules, weekly_invite_target, daily_message_target, daily_react_target, min_action_delay_seconds, max_action_delay_seconds, warmup_started_at, invite_paused_until, rate_limited_until, daily_send_plan, ssi_score, coach_id)"
         )
         .eq("id", job.campaign_id)
         .maybeSingle();
@@ -484,13 +486,41 @@ export async function processOutreachJobsTick(): Promise<{
 
       const linkedInAccountId = sendAccount?.unipile_account_id;
       const needsLinkedIn = isLinkedInOutreachStep(stepType);
+
+      // Campaigns sometimes get a Gmail/Outlook row as outreach_account_id
+      // (accounts list order). Unipile user resolve then fails forever — swap
+      // to the coach's LinkedIn account before burning leads.
+      if (needsLinkedIn) {
+        const provider = normalizeUnipileProvider(sendAccount?.provider);
+        if (!sendAccount || provider !== "LINKEDIN") {
+          const linkedIn = await loadCoachLinkedInSendSettings(job.coach_id);
+          if (linkedIn) {
+            sendAccount = linkedIn;
+            if (campaign.outreach_account_id !== linkedIn.id) {
+              await supabaseAdmin
+                .from("linkedin_campaigns")
+                .update({ outreach_account_id: linkedIn.id })
+                .eq("id", campaign.id);
+            }
+          }
+        }
+      }
+
       if (
         needsLinkedIn &&
-        (!linkedInAccountId || sendAccount?.status === "CREDENTIALS")
+        (!sendAccount?.unipile_account_id || sendAccount?.status === "CREDENTIALS")
       ) {
-        throw new Error("LinkedIn account missing or disconnected.");
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "pending",
+            scheduled_for: new Date(Date.now() + 30 * 60_000).toISOString(),
+            last_error: "LinkedIn account missing or disconnected.",
+          })
+          .eq("id", job.id);
+        continue;
       }
-      const accountId = linkedInAccountId ?? "";
+      const accountId = sendAccount?.unipile_account_id ?? "";
 
       if (
         [
@@ -532,7 +562,23 @@ export async function processOutreachJobsTick(): Promise<{
           accountId
         );
         providerId = resolved.providerId;
-        if (!providerId) throw new Error("Could not resolve LinkedIn provider id.");
+        if (!providerId) {
+          // Soft-fail: keep the lead queued and try someone else next tick.
+          // Hard-failing here burned whole lists when the wrong account was wired.
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "pending",
+              scheduled_for: new Date(Date.now() + 6 * 3600_000).toISOString(),
+              last_error: "Could not resolve LinkedIn provider id.",
+            })
+            .eq("id", job.id);
+          await supabaseAdmin
+            .from("linkedin_campaign_leads")
+            .update({ last_error: "Could not resolve LinkedIn provider id." })
+            .eq("id", lead.id);
+          continue;
+        }
         leadForMessage = { ...lead, ...resolved.lead };
       }
 
