@@ -75,6 +75,7 @@ export async function resolveUnipileAccountIdForUser(
     .select("unipile_account_id")
     .eq("coach_id", userId)
     .eq("status", "OK")
+    .ilike("provider", "linkedin")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

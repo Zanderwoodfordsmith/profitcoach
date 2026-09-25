@@ -75,7 +75,8 @@ async function requireAccount(coachId: string, outreachAccountId?: string | null
     .from("linkedin_outreach_accounts")
     .select(ACCOUNT_SELECT)
     .eq("coach_id", coachId)
-    .eq("status", "OK");
+    .eq("status", "OK")
+    .ilike("provider", "linkedin");
   if (outreachAccountId) q = q.eq("id", outreachAccountId);
   const { data, error } = await q.order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (error) throw new Error(error.message);
@@ -197,6 +198,7 @@ export async function getInviteWithdrawPolicy(
     .select(ACCOUNT_SELECT)
     .eq("coach_id", coachId)
     .eq("status", "OK")
+    .ilike("provider", "linkedin")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -417,6 +419,7 @@ export async function processDueInviteWithdrawals(options?: {
     .from("linkedin_outreach_accounts")
     .select(`${ACCOUNT_SELECT}, coach_id`)
     .eq("status", "OK")
+    .ilike("provider", "linkedin")
     .neq("invite_withdraw_mode", "off");
   if (error) throw new Error(error.message);
 

@@ -12,7 +12,7 @@ import {
 
 import {
   PROGRAMME_JOIN_OFFERS,
-  type ProgrammeJoinOffer,
+  type CheckoutOfferDisplay,
 } from "@/config/programmeJoinOffers";
 import { BCA_BUSINESS_CONTACT } from "@/config/businessContact";
 import { JoinPriceCheckDot } from "@/components/join/JoinPriceCheckDot";
@@ -129,7 +129,7 @@ function TrustMarks({ tone }: { tone: "light" | "dark" }) {
   );
 }
 
-function OrderSummaryPanel({ offer }: { offer: ProgrammeJoinOffer }) {
+function OrderSummaryPanel({ offer }: { offer: CheckoutOfferDisplay }) {
   const hasFuture = Boolean(offer.futurePaymentsDetail);
 
   return (
@@ -177,7 +177,9 @@ function OrderSummaryPanel({ offer }: { offer: ProgrammeJoinOffer }) {
           ) : null}
 
           <div className="flex items-start justify-between gap-4 border-t border-white/15 pt-4">
-            <p className="font-medium text-white">Total</p>
+            <p className="font-medium text-white">
+              {offer.totalRowLabel ?? "Total"}
+            </p>
             <p className="shrink-0 text-lg font-semibold tabular-nums">
               {offer.totalAmountLabel}
             </p>
@@ -227,7 +229,7 @@ function OrderSummaryPanel({ offer }: { offer: ProgrammeJoinOffer }) {
   );
 }
 
-function MobileOrderSummary({ offer }: { offer: ProgrammeJoinOffer }) {
+function MobileOrderSummary({ offer }: { offer: CheckoutOfferDisplay }) {
   return (
     <div className={`rounded-2xl px-6 py-4 ${summaryPanelClassName} lg:hidden`}>
       <div className="flex items-start justify-between gap-4">
@@ -252,7 +254,7 @@ function MobileOrderSummary({ offer }: { offer: ProgrammeJoinOffer }) {
         </div>
       ) : null}
       <div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3">
-        <p className="text-sm font-medium">Total</p>
+        <p className="text-sm font-medium">{offer.totalRowLabel ?? "Total"}</p>
         <p className="text-sm font-semibold tabular-nums">
           {offer.totalAmountLabel}
         </p>
@@ -266,7 +268,7 @@ function CheckoutForm({
   contact,
   setContact,
 }: {
-  offer: ProgrammeJoinOffer;
+  offer: CheckoutOfferDisplay;
   contact: Contact;
   setContact: React.Dispatch<React.SetStateAction<Contact>>;
 }) {
@@ -620,9 +622,12 @@ function CheckoutForm({
 export function JoinCheckoutElementsPage({
   offer,
   publishableKey,
+  checkoutPath = "/api/join/checkout/elements",
 }: {
-  offer: ProgrammeJoinOffer;
+  offer: CheckoutOfferDisplay;
   publishableKey: string;
+  /** POST { offer: slug } → { clientSecret, priceId, priceNickname }. */
+  checkoutPath?: string;
 }) {
   const [contact, setContact] = useState<Contact>({
     firstName: "",
@@ -653,7 +658,7 @@ export function JoinCheckoutElementsPage({
 
     (async () => {
       try {
-        const res = await fetch("/api/join/checkout/elements", {
+        const res = await fetch(checkoutPath, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offer: offer.slug }),
@@ -684,7 +689,7 @@ export function JoinCheckoutElementsPage({
     return () => {
       cancelled = true;
     };
-  }, [offer.slug, publishableKey]);
+  }, [checkoutPath, offer.slug, publishableKey]);
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] lg:grid lg:min-h-screen lg:grid-cols-[minmax(300px,0.9fr)_minmax(0,1.05fr)]">

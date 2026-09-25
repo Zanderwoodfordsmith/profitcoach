@@ -94,6 +94,15 @@
         "value": "private",
         "createdAt": "2026-09-08T06:41:26.870Z",
         "reason": "False positive: unselected state is slate on white; selected uses amber-950 on amber-400"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/membership/MembershipPageClient.tsx"
+        ],
+        "createdAt": "2026-09-25T07:44:26.292Z",
+        "reason": "agent: flagged lines are pre-existing CSS triangle tooltip arrows (transparent top/bottom borders), not side-tab card accents"
       }
     ]
   }

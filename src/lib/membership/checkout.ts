@@ -119,6 +119,40 @@ export async function createGuestMembershipCheckoutSession(input: {
 }
 
 /**
+ * Rolling membership subscription on our custom Elements form (/membership/495 etc.).
+ * Returns to /membership/thank-you — no programme onboarding.
+ * Do not set customer_email — the client passes it to checkout.confirm().
+ */
+export async function createGuestMembershipElementsCheckoutSession(input: {
+  priceId: string;
+  planKey: MembershipPlanKey;
+  offerSlug: string;
+  request: Request;
+}): Promise<{ clientSecret: string; sessionId: string }> {
+  const baseUrl = getAppBaseUrl(input.request);
+  const metadata = {
+    plan_key: input.planKey,
+    membership_offer: input.offerSlug,
+  };
+
+  const session = await stripeServer.checkout.sessions.create({
+    mode: "subscription",
+    ui_mode: "elements",
+    line_items: [{ price: input.priceId, quantity: 1 }],
+    return_url: `${baseUrl}/membership/thank-you?session_id={CHECKOUT_SESSION_ID}`,
+    billing_address_collection: "auto",
+    metadata,
+    subscription_data: { metadata },
+  });
+
+  if (!session.client_secret) {
+    throw new Error("Checkout session missing client_secret.");
+  }
+
+  return { clientSecret: session.client_secret, sessionId: session.id };
+}
+
+/**
  * Programme join Checkout (one-time or limited recurring e.g. 2 × £1).
  * Success returns to /welcome so we can provision + sign them in.
  *

@@ -41,6 +41,7 @@ import {
   type MembershipInterval,
   type MembershipPlanKey,
 } from "@/config/membershipPlans";
+import { membershipCartHref } from "@/config/membershipOffers";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   marketingAssetPublicUrl,
@@ -738,6 +739,12 @@ export function MembershipPageClient() {
   const statusOverlap =
     !loading && data && (hasSubscription || legacyRecurring);
 
+  /** Existing subscribers swap plan in place; everyone else gets the cart page. */
+  function planHref(plan: MembershipPlanKey, interval: MembershipInterval) {
+    if (hasSubscription) return membershipCheckoutHref(plan, interval);
+    return membershipCartHref(plan, interval) ?? membershipCheckoutHref(plan, interval);
+  }
+
   return (
     <div
       className={isEmbedded ? "w-full" : "min-h-screen w-full"}
@@ -1145,15 +1152,25 @@ export function MembershipPageClient() {
                           Save 2 months
                         </span>
                       </div>
-                      <p className="mt-1.5 text-[12px] leading-snug text-slate-400">
-                        Annual option at checkout
+                      <p className="mt-1.5 flex flex-col gap-0.5 text-[12px] leading-snug text-slate-400">
+                        {(["core", "premium"] as const).map((key) => (
+                          <a
+                            key={key}
+                            href={planHref(key, "year")}
+                            target="_top"
+                            className="font-medium underline-offset-2 hover:text-slate-600 hover:underline"
+                          >
+                            {copy.tiers[key].name}{" "}
+                            {formatMembershipPrice(MEMBERSHIP_PLANS[key].annualPriceGbp)}/yr
+                          </a>
+                        ))}
                       </p>
                     </td>
                     {tierCards.map((key, i) => {
                       const isPremiumCol = i + 1 === HIGHLIGHT_COLUMN;
                       const tierCopy = copy.tiers[key];
                       const plan = MEMBERSHIP_PLANS[key];
-                      const checkoutHref = membershipCheckoutHref(key, "month");
+                      const checkoutHref = planHref(key, "month");
 
                       const ctaClass = `inline-flex w-full max-w-[180px] flex-col items-center justify-center gap-0.5 rounded-full px-4 py-3 transition ${
                         isPremiumCol ? "text-white hover:brightness-110" : "hover:shadow-sm"

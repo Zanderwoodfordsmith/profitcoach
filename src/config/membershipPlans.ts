@@ -15,9 +15,9 @@ export type MembershipPlanConfig = {
   description: string;
 };
 
-function priceId(envKey: string): string | null {
+function priceId(envKey: string, fallback?: string): string | null {
   const value = process.env[envKey]?.trim();
-  return value || null;
+  return value || fallback || null;
 }
 
 export const MEMBERSHIP_PLANS: Record<MembershipPlanKey, MembershipPlanConfig> = {
@@ -27,8 +27,14 @@ export const MEMBERSHIP_PLANS: Record<MembershipPlanKey, MembershipPlanConfig> =
     label: "Core",
     monthlyPriceGbp: 195,
     annualPriceGbp: 1950,
-    monthlyPriceId: priceId("STRIPE_PRICE_CORE_MONTHLY"),
-    annualPriceId: priceId("STRIPE_PRICE_CORE_ANNUAL"),
+    monthlyPriceId: priceId(
+      "STRIPE_PRICE_CORE_MONTHLY",
+      "price_1ToR9ZEz5QxIrr4nfHJQ0n7t"
+    ),
+    annualPriceId: priceId(
+      "STRIPE_PRICE_CORE_ANNUAL",
+      "price_1TohtPEz5QxIrr4nhuU6q5Zt"
+    ),
     description: "Keep everything switched on. Maintain and grow steadily.",
   },
   premium: {
@@ -37,8 +43,14 @@ export const MEMBERSHIP_PLANS: Record<MembershipPlanKey, MembershipPlanConfig> =
     label: "Premium",
     monthlyPriceGbp: 495,
     annualPriceGbp: 4950,
-    monthlyPriceId: priceId("STRIPE_PRICE_PREMIUM_MONTHLY"),
-    annualPriceId: priceId("STRIPE_PRICE_PREMIUM_ANNUAL"),
+    monthlyPriceId: priceId(
+      "STRIPE_PRICE_PREMIUM_MONTHLY",
+      "price_1RXGziEz5QxIrr4nRLYHZLil"
+    ),
+    annualPriceId: priceId(
+      "STRIPE_PRICE_PREMIUM_ANNUAL",
+      "price_1TohynEz5QxIrr4nZ9rBjgoo"
+    ),
     description: "Weekly support to grow your book.",
   },
   vip: {

@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     .select("unipile_account_id, status, display_name, last_synced_at")
     .eq("coach_id", auth.userId)
     .eq("status", "OK")
+    .ilike("provider", "linkedin")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -134,6 +135,7 @@ export async function PATCH(request: Request) {
     .select("id")
     .eq("coach_id", auth.userId)
     .eq("status", "OK")
+    .ilike("provider", "linkedin")
     .limit(1)
     .maybeSingle();
 

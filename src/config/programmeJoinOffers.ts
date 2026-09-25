@@ -94,6 +94,8 @@ export type ProgrammeJoinOffer = {
   futureAmountLabel: string | null;
   /** Grand total on the right, e.g. "£9,900". */
   totalAmountLabel: string;
+  /** Left-hand label for the grand total row. Defaults to "Total". */
+  totalRowLabel?: string;
   totalLabel: string;
   /** Total number of charges (1 = pay in full). */
   paymentCount: number;
@@ -111,6 +113,11 @@ export type ProgrammeJoinOffer = {
   checkoutSubmitMessage: string;
   /** Prefills the checkout country selector. */
   defaultCountry?: "GB" | "US";
+};
+
+/** Display shape shared by join and membership checkout pages. */
+export type CheckoutOfferDisplay = Omit<ProgrammeJoinOffer, "slug"> & {
+  slug: string;
 };
 
 const COUNT_WORDS: Record<number, string> = {
