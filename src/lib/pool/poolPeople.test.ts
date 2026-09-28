@@ -4,10 +4,16 @@ import {
   poolDisplayName,
   poolLeadCompany,
   poolRowFitsCampaignChannel,
+  poolPlaceFields,
+  poolRowMatchesCityFilter,
   poolRowMatchesContactFilter,
   poolRowMatchesDateAddedFilter,
+  poolRowMatchesHeadcountFilter,
+  poolRowMatchesIndustryFilter,
   poolRowMatchesLinkedInFilter,
+  poolRowMatchesPostcodeFilter,
   poolRowMatchesTagFilter,
+  ukPostcodeMatches,
   type PoolPerson,
 } from "./poolPeople";
 
@@ -24,6 +30,11 @@ function person(partial: Partial<PoolPerson>): PoolPerson {
     phone: "447700900000",
     website: "https://acme.test",
     address: null,
+    location: null,
+    city: null,
+    postcode: null,
+    team_size: null,
+    industry: null,
     place_id: null,
     source: "manual",
     created_at: null,
@@ -121,6 +132,60 @@ describe("pool filters", () => {
     assert.equal(poolRowMatchesTagFilter(tagged, "missing"), false);
     assert.equal(poolRowMatchesTagFilter(empty, "none"), true);
     assert.equal(poolRowMatchesTagFilter(tagged, "none"), false);
+  });
+
+  it("parses city and postcode from a Maps address and a Sales Nav location", () => {
+    assert.deepEqual(
+      poolPlaceFields({
+        address: "12 High Street, Manchester M1 1AA, United Kingdom",
+      }),
+      { city: "Manchester", postcode: "M1 1AA" }
+    );
+    assert.deepEqual(
+      poolPlaceFields({
+        address: "1-3 High St, York YO1 7HH, United Kingdom",
+      }),
+      { city: "York", postcode: "YO1 7HH" }
+    );
+    assert.deepEqual(
+      poolPlaceFields({
+        location: "Greater London, England, United Kingdom",
+      }),
+      { city: "Greater London", postcode: null }
+    );
+  });
+
+  it("matches a postcode district without swallowing the next district", () => {
+    assert.equal(ukPostcodeMatches("M1 1AA", "M1"), true);
+    assert.equal(ukPostcodeMatches("M1A 1AA", "m1"), true);
+    assert.equal(ukPostcodeMatches("M14 5AB", "M1"), false);
+    assert.equal(ukPostcodeMatches("SW1A 1AA", "SW1"), true);
+    assert.equal(ukPostcodeMatches("SW2 1AA", "SW1"), false);
+    assert.equal(ukPostcodeMatches("M1 1AA", "M1 1"), true);
+  });
+
+  it("matches headcount, city, postcode, and industry", () => {
+    const row = person({
+      team_size: "11-50",
+      location: "Greater London, England, United Kingdom",
+      city: "Greater London",
+      address: "1 High St, York YO1 7HH, United Kingdom",
+      postcode: "YO1 7HH",
+      industry: "Plumber",
+    });
+    assert.equal(poolRowMatchesHeadcountFilter(row, []), true);
+    assert.equal(poolRowMatchesHeadcountFilter(row, ["11-50"]), true);
+    assert.equal(poolRowMatchesHeadcountFilter(row, ["1-10"]), false);
+    assert.equal(poolRowMatchesHeadcountFilter(person({}), ["unknown"]), true);
+    assert.equal(poolRowMatchesHeadcountFilter(row, ["unknown"]), false);
+    assert.equal(poolRowMatchesCityFilter(row, "london"), true);
+    assert.equal(poolRowMatchesCityFilter(row, "york"), true);
+    assert.equal(poolRowMatchesCityFilter(row, "leeds"), false);
+    assert.equal(poolRowMatchesPostcodeFilter(row, "YO1"), true);
+    assert.equal(poolRowMatchesPostcodeFilter(row, "M1"), false);
+    assert.equal(poolRowMatchesPostcodeFilter(person({}), "YO1"), false);
+    assert.equal(poolRowMatchesIndustryFilter(row, "plumb"), true);
+    assert.equal(poolRowMatchesIndustryFilter(row, "electric"), false);
   });
 
   it("matches LinkedIn profile presence", () => {

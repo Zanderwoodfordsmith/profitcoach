@@ -20,11 +20,17 @@ import { normalizePoolEmail, poolIdentityKey } from "@/lib/pool/identity";
 import { mapPoolPeopleInput } from "@/lib/pool/mapPoolPeopleInput";
 import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { poolAddressFromRaw, type PoolPerson, type PoolStats } from "@/lib/pool/poolPeople";
+import {
+  poolAddressFromRaw,
+  poolIndustryFromSources,
+  poolPlaceFields,
+  type PoolPerson,
+  type PoolStats,
+} from "@/lib/pool/poolPeople";
 import { normalizeProspectTags } from "@/lib/prospects/tags";
 
 const POOL_ITEM_SELECT =
-  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id";
+  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id, team_size, industry, location";
 
 const POOL_PREVIEW_MAX = 50;
 
@@ -45,6 +51,16 @@ function mapPoolItem(
       : null;
   const linkedinCampaignable = Boolean(url);
   const emailCampaignable = Boolean(email);
+  const address = poolAddressFromRaw(item.raw);
+  const location =
+    typeof item.location === "string" && item.location.trim()
+      ? item.location.trim()
+      : null;
+  const place = poolPlaceFields({ address, location });
+  const teamSize =
+    typeof item.team_size === "string" && item.team_size.trim()
+      ? item.team_size.trim()
+      : null;
   return {
     id: item.id as string,
     full_name: displayListPersonName(item),
@@ -56,7 +72,15 @@ function mapPoolItem(
     email,
     phone: (item.phone as string | null) ?? null,
     website: (item.website as string | null) ?? null,
-    address: poolAddressFromRaw(item.raw),
+    address,
+    location,
+    city: place.city,
+    postcode: place.postcode,
+    team_size: teamSize,
+    industry: poolIndustryFromSources(
+      typeof item.industry === "string" ? item.industry : null,
+      item.raw
+    ),
     place_id: placeId,
     source: String(item.source ?? "manual"),
     created_at: (item.created_at as string | null) ?? null,

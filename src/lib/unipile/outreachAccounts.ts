@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   deleteUnipileAccount,
   getUnipileAccount,
+  isUnipileAccountNotFound,
   isUnipileWorkspaceApiKeyError,
   listUnipileAccounts,
   UNIPILE_WORKSPACE_API_KEY_ERROR,
@@ -275,11 +276,14 @@ export async function upsertOutreachAccountFromNotify(input: {
   }
 
   const got = await getUnipileAccount(input.unipileAccountId);
+  // Reconnects can notify for a session Unipile then merges away. Storing it
+  // as OK makes it the "newest LinkedIn" that outreach and SSI pick.
+  if (isUnipileAccountNotFound(got)) return;
   const raw = (got.data ?? { id: input.unipileAccountId }) as Record<
     string,
     unknown
   >;
-  const status = mapAccountStatus(raw);
+  const status = got.ok ? mapAccountStatus(raw) : "CONNECTING";
   const provider = normalizeUnipileProvider(
     String(raw.type || raw.provider || "LINKEDIN")
   );

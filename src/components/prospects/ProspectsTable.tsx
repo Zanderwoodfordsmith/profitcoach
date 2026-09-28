@@ -56,6 +56,7 @@ import {
 import type { ProspectRow } from "@/lib/prospectRow";
 import { ProspectLeadSubtitle } from "@/components/prospects/ProspectLeadSubtitle";
 import { ProspectContactEditModal } from "@/components/prospects/ProspectContactEditModal";
+import { DeleteProspectsDialog } from "@/components/prospects/DeleteProspectsDialog";
 import { ProspectNextActionCell } from "@/components/prospects/ProspectNextActionCell";
 import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
 import { ProspectStatusCell } from "@/components/prospects/ProspectStatusCell";
@@ -128,6 +129,8 @@ type Props = {
     row: ProspectRow,
     options?: { skipConfirm?: boolean }
   ) => void | Promise<void>;
+  /** Bulk delete in one request; resolves to the ids removed. */
+  onDeleteMany?: (rows: ProspectRow[]) => Promise<string[]>;
   deletingId?: string | null;
   /** Persists column visibility and order to localStorage. */
   settingsStorageKey?: string;
@@ -417,6 +420,7 @@ export function ProspectsTable({
   coachFilter: controlledCoachFilter,
   onCoachFilterChange,
   onDelete,
+  onDeleteMany,
   deletingId = null,
   settingsStorageKey = PROSPECTS_TABLE_SETTINGS_STORAGE_KEY,
   editable = false,
@@ -999,14 +1003,23 @@ export function ProspectsTable({
     let lastError: string | null = null;
 
     try {
-      for (const row of rowsToDelete) {
+      if (onDeleteMany && rowsToDelete.length > 1) {
         try {
-          await onDelete(row, { skipConfirm: true });
-          deletedIds.push(row.id);
+          deletedIds.push(...(await onDeleteMany(rowsToDelete)));
         } catch (err: unknown) {
           lastError =
-            err instanceof Error ? err.message : "Unable to delete prospect.";
-          break;
+            err instanceof Error ? err.message : "Unable to delete prospects.";
+        }
+      } else {
+        for (const row of rowsToDelete) {
+          try {
+            await onDelete(row, { skipConfirm: true });
+            deletedIds.push(row.id);
+          } catch (err: unknown) {
+            lastError =
+              err instanceof Error ? err.message : "Unable to delete prospect.";
+            break;
+          }
         }
       }
 
@@ -2853,68 +2866,12 @@ export function ProspectsTable({
       />
 
       {pendingDelete ? (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 p-4"
-          role="presentation"
-          onClick={() => setPendingDelete(null)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="prospect-delete-dialog-title"
-            className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2
-              id="prospect-delete-dialog-title"
-              className="text-lg font-semibold text-slate-900"
-            >
-              Delete prospect{pendingDelete.length === 1 ? "" : "s"}?
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              {pendingDelete.length === 1 ? (
-                <>
-                  Delete <span className="font-medium">{pendingDelete[0].full_name}</span>? This
-                  cannot be undone.
-                </>
-              ) : (
-                <>
-                  Delete {pendingDelete.length} selected prospects? This cannot be undone.
-                </>
-              )}
-            </p>
-            {pendingDelete.length > 1 ? (
-              <ul className="mt-3 max-h-40 space-y-1 overflow-y-auto text-sm text-slate-500">
-                {pendingDelete.map((row) => (
-                  <li key={row.id}>
-                    {row.full_name}
-                    {row.email ? ` · ${row.email}` : ""}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setPendingDelete(null)}
-                className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void executePendingDelete()}
-                disabled={bulkDeleting}
-                className="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {bulkDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : null}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteProspectsDialog
+          rows={pendingDelete}
+          busy={bulkDeleting}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => void executePendingDelete()}
+        />
       ) : null}
 
       <ScorecardGlanceModal

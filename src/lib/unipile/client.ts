@@ -860,6 +860,8 @@ export async function getUnipileEmail(
     thread_id?: string | null;
     provider_id?: string | null;
     subject?: string | null;
+    body?: string | null;
+    body_plain?: string | null;
     attachments?: UnipileEmailAttachment[];
     has_attachments?: boolean;
   }>

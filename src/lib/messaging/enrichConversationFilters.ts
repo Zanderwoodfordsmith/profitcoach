@@ -1,5 +1,7 @@
+import { normalizePoolEmail } from "@/lib/pool/identity";
 import { parseProspectTags } from "@/lib/prospects/tags";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 
 const ACTIVE_CAMPAIGN_STATUSES = [
   "queued",
@@ -14,13 +16,104 @@ export type ConversationFilterRow = {
   id: string;
   contact_id?: string | null;
   unipile_chat_id?: string | null;
+  prospect_email?: string | null;
+  prospect_linkedin_url?: string | null;
   prospect_tags?: string[];
   in_campaign?: boolean;
   campaign_ids?: string[];
+  in_pool?: boolean;
+  contact_type?: string | null;
 };
 
+const IN_CHUNK = 150;
+
+function chunks<T>(items: T[]): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += IN_CHUNK) {
+    out.push(items.slice(i, i + IN_CHUNK));
+  }
+  return out;
+}
+
+type PoolMatches = {
+  contactIds: Set<string>;
+  emails: Set<string>;
+  linkedinUrls: Set<string>;
+};
+
+async function loadPoolMatches(
+  coachId: string,
+  input: { contactIds: string[]; emails: string[]; linkedinUrls: string[] }
+): Promise<PoolMatches> {
+  const matches: PoolMatches = {
+    contactIds: new Set(),
+    emails: new Set(),
+    linkedinUrls: new Set(),
+  };
+  const { data: pool } = await supabaseAdmin
+    .from("coach_lead_lists")
+    .select("id")
+    .eq("coach_id", coachId)
+    .eq("kind", "pool")
+    .maybeSingle();
+  const poolId = (pool?.id as string | undefined) ?? null;
+  if (!poolId) return matches;
+
+  const lookups: Array<{
+    column: "contact_id" | "email" | "linkedin_url";
+    values: string[];
+    into: Set<string>;
+    normalize: (value: string) => string | null;
+  }> = [
+    {
+      column: "contact_id",
+      values: input.contactIds,
+      into: matches.contactIds,
+      normalize: (v) => v,
+    },
+    {
+      column: "email",
+      values: input.emails,
+      into: matches.emails,
+      normalize: normalizePoolEmail,
+    },
+    {
+      column: "linkedin_url",
+      values: input.linkedinUrls,
+      into: matches.linkedinUrls,
+      normalize: normalizeLinkedInProfileUrl,
+    },
+  ];
+
+  await Promise.all(
+    lookups.flatMap((lookup) =>
+      chunks(lookup.values).map(async (chunk) => {
+        const { data, error } = await supabaseAdmin
+          .from("coach_lead_list_items")
+          .select(lookup.column)
+          .eq("list_id", poolId)
+          .in(lookup.column, chunk);
+        if (error) {
+          console.error(
+            `enrichConversationFilters pool (${lookup.column}):`,
+            error
+          );
+          return;
+        }
+        for (const row of (data ?? []) as Array<Record<string, unknown>>) {
+          const value = row[lookup.column];
+          const key =
+            typeof value === "string" ? lookup.normalize(value) : null;
+          if (key) lookup.into.add(key);
+        }
+      })
+    )
+  );
+  return matches;
+}
+
 /**
- * Attach prospect tags + campaign membership for inbox filters.
+ * Attach prospect tags, contact type, campaign and Pool membership for inbox filters.
  */
 export async function enrichConversationFilters<T extends ConversationFilterRow>(
   rows: T[],
@@ -42,12 +135,28 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
         .filter((id): id is string => Boolean(id))
     ),
   ];
+  const emails = [
+    ...new Set(
+      rows
+        .map((row) => normalizePoolEmail(row.prospect_email))
+        .filter((email): email is string => Boolean(email))
+    ),
+  ];
+  const linkedinUrls = [
+    ...new Set(
+      rows
+        .map((row) => normalizeLinkedInProfileUrl(row.prospect_linkedin_url ?? ""))
+        .filter((url): url is string => Boolean(url))
+    ),
+  ];
 
   const tagsByContact = new Map<string, string[]>();
-  if (contactIds.length) {
+  const typeByContact = new Map<string, string>();
+  const loadContacts = async () => {
+    if (!contactIds.length) return;
     let q = supabaseAdmin
       .from("contacts")
-      .select("id, prospect_tags")
+      .select("id, type, prospect_tags")
       .in("id", contactIds);
     if (coachId) q = q.eq("coach_id", coachId);
     const { data, error } = await q;
@@ -55,15 +164,29 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
       if (error.code !== "42703" && error.code !== "PGRST204") {
         console.error("enrichConversationFilters tags:", error);
       }
-    } else {
-      for (const row of data ?? []) {
-        tagsByContact.set(
-          row.id as string,
-          parseProspectTags(row.prospect_tags)
-        );
+      return;
+    }
+    for (const row of data ?? []) {
+      tagsByContact.set(row.id as string, parseProspectTags(row.prospect_tags));
+      if (typeof row.type === "string") {
+        typeByContact.set(row.id as string, row.type);
       }
     }
-  }
+  };
+
+  let poolMatches: PoolMatches = {
+    contactIds: new Set(),
+    emails: new Set(),
+    linkedinUrls: new Set(),
+  };
+  const loadPool = async () => {
+    if (!coachId) return;
+    poolMatches = await loadPoolMatches(coachId, {
+      contactIds,
+      emails,
+      linkedinUrls,
+    });
+  };
 
   const campaignIdsByContact = new Map<string, Set<string>>();
   const campaignIdsByChat = new Map<string, Set<string>>();
@@ -105,6 +228,8 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
   }
 
   await Promise.all([
+    loadContacts(),
+    loadPool(),
     loadCampaignMatches("contact_id", contactIds),
     loadCampaignMatches("unipile_chat_id", chatIds),
   ]);
@@ -120,11 +245,21 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
       for (const id of campaignIdsByChat.get(chatId) ?? []) ids.add(id);
     }
     const campaignIds = [...ids];
+    const email = normalizePoolEmail(row.prospect_email);
+    const linkedinUrl = normalizeLinkedInProfileUrl(
+      row.prospect_linkedin_url ?? ""
+    );
+    const inPool =
+      (contactId ? poolMatches.contactIds.has(contactId) : false) ||
+      (email ? poolMatches.emails.has(email) : false) ||
+      (linkedinUrl ? poolMatches.linkedinUrls.has(linkedinUrl) : false);
     return {
       ...row,
       prospect_tags: contactId ? tagsByContact.get(contactId) ?? [] : [],
+      contact_type: contactId ? typeByContact.get(contactId) ?? null : null,
       in_campaign: campaignIds.length > 0,
       campaign_ids: campaignIds,
+      in_pool: inPool,
     };
   });
 }

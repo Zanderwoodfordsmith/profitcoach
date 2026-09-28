@@ -93,7 +93,9 @@ import {
   EMPTY_INBOX_FILTERS,
   conversationMatchesFilters,
   inboxFiltersActive,
+  isOtherEmailConversation,
   isOtherLinkedInConversation,
+  toggleExcludedTag,
   toggleInboxFlag,
   type InboxChannelFilter,
   type InboxFilters,
@@ -123,6 +125,7 @@ import { inferReplyDisposition } from "@/lib/prospects/replyDisposition";
 import { ProspectContactFields } from "@/components/prospects/ProspectContactFields";
 import { ProspectDetailsHeader } from "@/components/prospects/ProspectDetailsHeader";
 import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDuplicates";
+import { DeleteProspectsDialog } from "@/components/prospects/DeleteProspectsDialog";
 import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
@@ -167,6 +170,8 @@ type ConversationRow = {
   prospect_tags?: string[];
   in_campaign?: boolean;
   campaign_ids?: string[];
+  in_pool?: boolean;
+  contact_type?: string | null;
   reply_channels?: string[];
   unipile_chat_id?: string | null;
   /** How many channel threads were collapsed into this inbox row. */
@@ -299,6 +304,8 @@ type ProspectDetails = {
   has_whatsapp?: boolean;
   whatsapp_on?: boolean | null;
   reply_disposition?: string | null;
+  /** contacts.type — "prospect" or "client". */
+  type?: string;
 };
 
 type BookingDetails = {
@@ -977,26 +984,40 @@ function inboxEmptyCopy(
   tab: InboxTab,
   filters: InboxFilters,
   searching: boolean,
-  otherLinkedInCount: number
+  otherLinkedInCount: number,
+  otherEmailCount: number
 ): string {
   if (searching) return "No conversations match that search.";
   if (filters.otherLinkedIn) {
     return filters.needsReply ||
       filters.hasBooking ||
       filters.channel !== "all" ||
-      Boolean(filters.tag)
+      Boolean(filters.tag) ||
+      filters.excludeTags.length > 0
       ? "No other LinkedIn chats match these filters."
       : "No other LinkedIn chats.";
+  }
+  if (filters.otherEmail) {
+    return filters.needsReply ||
+      filters.hasBooking ||
+      filters.channel !== "all" ||
+      Boolean(filters.tag) ||
+      filters.excludeTags.length > 0
+      ? "No other emails match these filters."
+      : "No other emails.";
   }
   if (inboxFiltersActive(filters)) {
     return "No conversations match these filters.";
   }
+  const hints: string[] = [];
+  if (otherLinkedInCount === 1) hints.push("1 other LinkedIn chat");
+  else if (otherLinkedInCount > 1) {
+    hints.push(`${otherLinkedInCount} other LinkedIn chats`);
+  }
+  if (otherEmailCount === 1) hints.push("1 other email");
+  else if (otherEmailCount > 1) hints.push(`${otherEmailCount} other emails`);
   const otherHint =
-    otherLinkedInCount === 1
-      ? "Open Filters for 1 other LinkedIn chat."
-      : otherLinkedInCount > 1
-        ? `Open Filters for ${otherLinkedInCount} other LinkedIn chats.`
-        : null;
+    hints.length > 0 ? `Open Filters for ${hints.join(" and ")}.` : null;
   if (tab === "unread") {
     return otherHint
       ? `No unread work conversations. ${otherHint}`
@@ -1455,6 +1476,7 @@ export function MessagingInbox({
         ...prev,
         campaignId: campaignQuery,
         otherLinkedIn: campaignQuery ? false : prev.otherLinkedIn,
+        otherEmail: campaignQuery ? false : prev.otherEmail,
       };
     });
   }, [campaignQuery]);
@@ -1511,6 +1533,10 @@ export function MessagingInbox({
 
   const otherLinkedInCount = useMemo(
     () => conversations.filter((c) => isOtherLinkedInConversation(c)).length,
+    [conversations]
+  );
+  const otherEmailCount = useMemo(
+    () => conversations.filter((c) => isOtherEmailConversation(c)).length,
     [conversations]
   );
 
@@ -3804,6 +3830,57 @@ export function MessagingInbox({
     [patchProspectContact]
   );
 
+  const [deleteProspectOpen, setDeleteProspectOpen] = useState(false);
+  const [deletingProspect, setDeletingProspect] = useState(false);
+  const [deleteProspectError, setDeleteProspectError] = useState<string | null>(
+    null
+  );
+  const canDeleteThreadProspect =
+    Boolean(threadProspect?.id) && threadProspect?.type === "prospect";
+
+  const deleteThreadProspect = useCallback(async () => {
+    const deletedId = threadProspect?.id;
+    if (!deletedId) return;
+    setDeletingProspect(true);
+    setDeleteProspectError(null);
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Please sign in again.");
+      const url = pathname?.startsWith("/admin")
+        ? `/api/admin/contacts/${encodeURIComponent(deletedId)}`
+        : `/api/coach/contacts/${encodeURIComponent(deletedId)}`;
+      const res = await fetch(url, { method: "DELETE", headers });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? "Unable to delete prospect.");
+      setDeleteProspectOpen(false);
+      if (prospectMode && detailsBackHref) {
+        router.push(detailsBackHref);
+        return;
+      }
+      setProspectDetails(null);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.contact_id === deletedId ? { ...c, contact_id: null } : c
+        )
+      );
+      void loadList({ silent: true });
+    } catch (err) {
+      setDeleteProspectError(
+        err instanceof Error ? err.message : "Unable to delete prospect."
+      );
+    } finally {
+      setDeletingProspect(false);
+    }
+  }, [
+    authHeaders,
+    detailsBackHref,
+    loadList,
+    pathname,
+    prospectMode,
+    router,
+    threadProspect?.id,
+  ]);
+
   const prospectHref =
     hideProspectLink || !selected?.contact_id
       ? null
@@ -3987,7 +4064,7 @@ export function MessagingInbox({
                   <div
                     role="dialog"
                     aria-label="Inbox filters"
-                    className="absolute right-0 z-20 mt-1 w-64 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg shadow-slate-900/10"
+                    className="absolute right-0 z-20 mt-1 max-h-[min(80vh,40rem)] w-64 overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg shadow-slate-900/10"
                   >
                     <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
                       <p className="text-[13px] font-semibold text-slate-900">
@@ -4022,12 +4099,30 @@ export function MessagingInbox({
                             hint: "Active LinkedIn outreach",
                           },
                           {
+                            key: "inPool" as const,
+                            label: "In Pool",
+                            hint: "Person is in your Campaigns pool",
+                          },
+                          {
+                            key: "isProspect" as const,
+                            label: "Prospects",
+                            hint: "Linked to a prospect, not a client",
+                          },
+                          {
                             key: "otherLinkedIn" as const,
                             label: "Other LinkedIn",
                             hint:
                               otherLinkedInCount > 0
                                 ? `Not in CRM or a campaign · ${otherLinkedInCount}`
                                 : "Not in CRM or a campaign",
+                          },
+                          {
+                            key: "otherEmail" as const,
+                            label: "Other email",
+                            hint:
+                              otherEmailCount > 0
+                                ? `Not a prospect or in the pool · ${otherEmailCount}`
+                                : "Not a prospect or in the pool",
                           },
                         ] as const
                       ).map((item) => {
@@ -4039,8 +4134,10 @@ export function MessagingInbox({
                             aria-pressed={active}
                             onClick={() => {
                               const turningOnOther =
-                                item.key === "otherLinkedIn" &&
-                                !inboxFilters.otherLinkedIn;
+                                (item.key === "otherLinkedIn" &&
+                                  !inboxFilters.otherLinkedIn) ||
+                                (item.key === "otherEmail" &&
+                                  !inboxFilters.otherEmail);
                               setInboxFilters((prev) =>
                                 toggleInboxFlag(prev, item.key)
                               );
@@ -4148,6 +4245,13 @@ export function MessagingInbox({
                                   setInboxFilters((prev) => ({
                                     ...prev,
                                     tag: active ? null : tag,
+                                    excludeTags: active
+                                      ? prev.excludeTags
+                                      : prev.excludeTags.filter(
+                                          (t) =>
+                                            t.toLowerCase() !==
+                                            tag.toLowerCase()
+                                        ),
                                   }))
                                 }
                                 className={`rounded-md px-2 py-1 text-[12px] ${
@@ -4163,6 +4267,40 @@ export function MessagingInbox({
                         </div>
                       )}
                     </div>
+                    {availableTags.length > 0 ? (
+                      <div className="border-t border-slate-100 px-3 py-2">
+                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                          Exclude tags
+                        </p>
+                        <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto">
+                          {availableTags.map((tag) => {
+                            const excluded = inboxFilters.excludeTags.some(
+                              (t) => t.toLowerCase() === tag.toLowerCase()
+                            );
+                            return (
+                              <button
+                                key={tag}
+                                type="button"
+                                aria-pressed={excluded}
+                                aria-label={`${excluded ? "Stop excluding" : "Exclude"} ${tag}`}
+                                onClick={() =>
+                                  setInboxFilters((prev) =>
+                                    toggleExcludedTag(prev, tag)
+                                  )
+                                }
+                                className={`rounded-md px-2 py-1 text-[12px] ${
+                                  excluded
+                                    ? "bg-rose-50 font-medium text-rose-800 line-through decoration-rose-400 ring-1 ring-rose-200"
+                                    : "text-slate-600 hover:bg-slate-50"
+                                }`}
+                              >
+                                {tag}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -4350,6 +4488,24 @@ export function MessagingInbox({
                   </button>
                 </span>
               ) : null}
+              {inboxFilters.otherEmail ? (
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
+                  <span className="truncate">Other email</span>
+                  <button
+                    type="button"
+                    aria-label="Clear other email filter"
+                    onClick={() =>
+                      setInboxFilters((prev) => ({
+                        ...prev,
+                        otherEmail: false,
+                      }))
+                    }
+                    className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"
+                  >
+                    <X className="h-3 w-3" strokeWidth={2} />
+                  </button>
+                </span>
+              ) : null}
             </div>
           ) : null}
 
@@ -4442,7 +4598,8 @@ export function MessagingInbox({
                   tab,
                   inboxFilters,
                   Boolean(searchQuery.trim()),
-                  otherLinkedInCount
+                  otherLinkedInCount,
+                  otherEmailCount
                 )}
               </li>
             ) : null}
@@ -5705,7 +5862,7 @@ export function MessagingInbox({
               : "hidden border-t xl:flex xl:border-l xl:border-t-0"
           }`}
         >
-          <div className="shrink-0 border-b border-slate-100 px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
             {detailsBackHref ? (
               <Link
                 href={detailsBackHref}
@@ -5717,7 +5874,29 @@ export function MessagingInbox({
             ) : (
               <h2 className="text-sm font-semibold text-slate-900">Details</h2>
             )}
+            {selected && canDeleteThreadProspect ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteProspectError(null);
+                  setDeleteProspectOpen(true);
+                }}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-700"
+              >
+                <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                Delete prospect
+              </button>
+            ) : null}
           </div>
+          {deleteProspectOpen && threadProspect ? (
+            <DeleteProspectsDialog
+              rows={[threadProspect]}
+              busy={deletingProspect}
+              error={deleteProspectError}
+              onCancel={() => setDeleteProspectOpen(false)}
+              onConfirm={() => void deleteThreadProspect()}
+            />
+          ) : null}
 
           {!selected ? (
             <div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm text-slate-400">

@@ -35,6 +35,8 @@ export type ProspectCallFilter = "all" | "has_call" | "no_call";
 export type ProspectTableViewSettings = {
   statusFilter: string;
   tagFilter: string;
+  /** Hide prospects carrying any of these tags (case-insensitive). */
+  excludeTags: string[];
   coachFilter: string;
   assessedFilter: ProspectAssessedFilter;
   callFilter: ProspectCallFilter;
@@ -136,6 +138,7 @@ export function createDefaultProspectTableViewSettings(): ProspectTableViewSetti
   return {
     statusFilter: "all",
     tagFilter: "all",
+    excludeTags: [],
     coachFilter: "",
     assessedFilter: "all",
     callFilter: "all",
@@ -205,6 +208,21 @@ function asNonEmptyString(value: unknown, fallback: string): string {
   if (typeof value !== "string") return fallback;
   const trimmed = value.trim();
   return trimmed || fallback;
+}
+
+function normalizeExcludeTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of value) {
+    if (typeof raw !== "string") continue;
+    const tag = raw.trim();
+    const key = tag.toLowerCase();
+    if (!tag || seen.has(key)) continue;
+    seen.add(key);
+    out.push(tag);
+  }
+  return out;
 }
 
 function normalizeGrouping(raw: unknown): PersistedProspectGrouping {
@@ -299,6 +317,7 @@ export function normalizeProspectTableViewSettings(
   return {
     statusFilter: asNonEmptyString(source.statusFilter, defaults.statusFilter),
     tagFilter: asNonEmptyString(source.tagFilter, defaults.tagFilter),
+    excludeTags: normalizeExcludeTags(source.excludeTags),
     coachFilter:
       typeof source.coachFilter === "string" ? source.coachFilter : "",
     assessedFilter,

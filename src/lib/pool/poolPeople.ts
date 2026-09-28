@@ -4,6 +4,7 @@ import {
   formatBusinessLabel,
   formatProspectPersonName,
 } from "@/lib/prospectDisplayFormat";
+import { SALES_NAV_HEADCOUNT_BANDS } from "@/lib/salesNavigator/headcountBands";
 
 export type PoolPerson = {
   id: string;
@@ -17,6 +18,16 @@ export type PoolPerson = {
   phone: string | null;
   website: string | null;
   address: string | null;
+  /** Sales Nav location, e.g. "Manchester, England, United Kingdom". */
+  location: string | null;
+  /** Town or city parsed from the address or location. */
+  city: string | null;
+  /** UK postcode parsed from the address, when present. */
+  postcode: string | null;
+  /** Company headcount band, e.g. "11-50". */
+  team_size: string | null;
+  /** Lead industry, or the Google Maps category when industry is blank. */
+  industry: string | null;
   place_id: string | null;
   source: string;
   created_at: string | null;
@@ -49,6 +60,10 @@ export type PoolColumnKey =
   | "created_at"
   | "linkedin"
   | "address"
+  | "headcount"
+  | "city"
+  | "postcode"
+  | "industry"
   | "tags";
 
 export type PoolColumnVisibility = Record<PoolColumnKey, boolean>;
@@ -66,6 +81,10 @@ export const POOL_TABLE_COLUMN_OPTIONS: Array<{
   { key: "created_at", label: "Date added" },
   { key: "linkedin", label: "LinkedIn" },
   { key: "address", label: "Address" },
+  { key: "headcount", label: "Headcount" },
+  { key: "city", label: "City" },
+  { key: "postcode", label: "Postcode" },
+  { key: "industry", label: "Industry" },
   { key: "tags", label: "Tags" },
 ];
 
@@ -79,6 +98,10 @@ export const DEFAULT_POOL_COLUMN_VISIBILITY: PoolColumnVisibility = {
   created_at: true,
   linkedin: true,
   address: false,
+  headcount: false,
+  city: false,
+  postcode: false,
+  industry: false,
   tags: true,
 };
 
@@ -113,6 +136,21 @@ export type PoolDateAddedFilter =
   | "older_than_30d";
 /** "all" | "none" | a specific tag name */
 export type PoolTagFilter = string;
+/** Empty means every headcount. "unknown" means no headcount on the row. */
+export type PoolHeadcountFilter = string[];
+
+export const POOL_HEADCOUNT_UNKNOWN = "unknown";
+
+export const POOL_HEADCOUNT_FILTER_OPTIONS: Array<{
+  key: string;
+  label: string;
+}> = [
+  ...SALES_NAV_HEADCOUNT_BANDS.map((band) => ({
+    key: band.label,
+    label: band.label,
+  })),
+  { key: POOL_HEADCOUNT_UNKNOWN, label: "No headcount" },
+];
 
 export type PoolSortField = "name" | "company" | "created_at" | "source";
 export type PoolSortOrder = "asc" | "desc";
@@ -215,6 +253,51 @@ export function poolRowMatchesDateAddedFilter(
   return ageMs > 30 * 24 * 60 * 60 * 1000;
 }
 
+export function poolRowMatchesHeadcountFilter(
+  row: Pick<PoolPerson, "team_size">,
+  selected: PoolHeadcountFilter
+): boolean {
+  if (!selected.length) return true;
+  const size = row.team_size?.trim() ?? "";
+  if (!size) {
+    return selected.some((value) => value.toLowerCase() === POOL_HEADCOUNT_UNKNOWN);
+  }
+  const folded = size.toLowerCase();
+  return selected.some((value) => value.toLowerCase() === folded);
+}
+
+export function poolRowMatchesCityFilter(
+  row: Pick<PoolPerson, "city" | "location" | "address">,
+  query: string
+): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  const hay = [row.city, row.location, row.address]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(" ")
+    .toLowerCase();
+  return hay.includes(needle);
+}
+
+export function poolRowMatchesPostcodeFilter(
+  row: Pick<PoolPerson, "postcode">,
+  query: string
+): boolean {
+  const needle = query.trim();
+  if (!needle) return true;
+  if (!row.postcode) return false;
+  return ukPostcodeMatches(row.postcode, needle);
+}
+
+export function poolRowMatchesIndustryFilter(
+  row: Pick<PoolPerson, "industry">,
+  query: string
+): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return (row.industry ?? "").toLowerCase().includes(needle);
+}
+
 export function poolRowMatchesTagFilter(
   row: Pick<PoolPerson, "tags">,
   filter: PoolTagFilter
@@ -225,6 +308,16 @@ export function poolRowMatchesTagFilter(
   const key = filter.trim().toLowerCase();
   if (!key) return true;
   return tags.some((tag) => tag.toLowerCase() === key);
+}
+
+/** False when the row carries any excluded tag (case-insensitive). */
+export function poolRowPassesExcludedTags(
+  row: Pick<PoolPerson, "tags">,
+  excludeTags: string[]
+): boolean {
+  if (!excludeTags.length) return true;
+  const excluded = new Set(excludeTags.map((tag) => tag.toLowerCase()));
+  return !(row.tags ?? []).some((tag) => excluded.has(tag.toLowerCase()));
 }
 
 export type PoolGroupSection = {
@@ -245,6 +338,93 @@ export function poolAddressFromRaw(raw: unknown): string | null {
   if (typeof address !== "string") return null;
   const trimmed = address.trim();
   return trimmed || null;
+}
+
+export function poolIndustryFromSources(
+  industry: string | null | undefined,
+  raw: unknown
+): string | null {
+  const direct = industry?.trim();
+  if (direct) return direct;
+  if (!raw || typeof raw !== "object") return null;
+  const maps = (raw as { google_maps?: unknown }).google_maps;
+  if (!maps || typeof maps !== "object") return null;
+  const category = (maps as { category?: unknown }).category;
+  if (typeof category !== "string") return null;
+  const trimmed = category.trim();
+  return trimmed || null;
+}
+
+const UK_POSTCODE_RE = /\b([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})\b/i;
+
+export function formatUkPostcode(raw: string): string {
+  const compact = raw.replace(/\s+/g, "").toUpperCase();
+  if (compact.length <= 3) return compact;
+  return `${compact.slice(0, -3)} ${compact.slice(-3)}`;
+}
+
+export function extractUkPostcode(text: string | null | undefined): string | null {
+  const match = text?.match(UK_POSTCODE_RE);
+  if (!match?.[1]) return null;
+  return formatUkPostcode(match[1]);
+}
+
+/**
+ * Outward-code match: "M1" hits M1 1AA and M1A, and misses M14.
+ * "SW1" hits SW1A. A longer query matches the compact postcode prefix.
+ */
+export function ukPostcodeMatches(stored: string, query: string): boolean {
+  const storedFull = stored.replace(/\s+/g, "").toUpperCase();
+  const needle = query.replace(/\s+/g, "").toUpperCase();
+  if (!needle || !storedFull) return false;
+  const storedOut = storedFull.length > 3 ? storedFull.slice(0, -3) : storedFull;
+  if (needle.length > storedOut.length) return storedFull.startsWith(needle);
+  if (storedOut === needle) return true;
+  if (!storedOut.startsWith(needle)) return false;
+  return /^[A-Z]+$/.test(storedOut.slice(needle.length));
+}
+
+function cityBesidePostcode(address: string): string | null {
+  const parts = address
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const index = parts.findIndex((part) => UK_POSTCODE_RE.test(part));
+  if (index < 0) return null;
+  const remainder = parts[index]!
+    .replace(UK_POSTCODE_RE, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (remainder && !/^\d+$/.test(remainder)) return remainder;
+  for (let i = index - 1; i >= 0; i -= 1) {
+    const prev = parts[i]!;
+    if (/^\d/.test(prev)) continue;
+    if (UK_POSTCODE_RE.test(prev)) continue;
+    return prev;
+  }
+  return null;
+}
+
+function cityFromLocation(location: string | null | undefined): string | null {
+  const first = location?.split(",")[0]?.trim() ?? "";
+  if (!first) return null;
+  const withoutPostcode = first
+    .replace(UK_POSTCODE_RE, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return withoutPostcode || null;
+}
+
+export function poolPlaceFields(input: {
+  address?: string | null;
+  location?: string | null;
+}): { city: string | null; postcode: string | null } {
+  const address = input.address?.trim() || "";
+  const location = input.location?.trim() || "";
+  const postcode = extractUkPostcode(address) ?? extractUkPostcode(location);
+  const city =
+    (address ? cityBesidePostcode(address) : null) ?? cityFromLocation(location);
+  return { city, postcode };
 }
 
 export function poolWebsiteHref(raw: string | null | undefined): string | null {

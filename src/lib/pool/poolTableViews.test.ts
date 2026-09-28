@@ -22,6 +22,10 @@ describe("pool table views", () => {
     assert.equal(settings.linkedinFilter, "all");
     assert.equal(settings.dateAddedFilter, "all");
     assert.equal(settings.tagFilter, "all");
+    assert.deepEqual(settings.headcountFilter, []);
+    assert.equal(settings.cityFilter, "");
+    assert.equal(settings.postcodeFilter, "");
+    assert.equal(settings.industryFilter, "");
     assert.equal(settings.sortField, "company");
     assert.equal(settings.sortOrder, "desc");
     assert.equal(settings.grouping.field, null);
@@ -41,6 +45,27 @@ describe("pool table views", () => {
     assert.equal(settings.tagFilter, "Hot");
     assert.equal(settings.grouping.field, "tags");
     assert.equal(settings.columnVisibility.tags, true);
+  });
+
+  it("normalizes excluded tags and defaults old views to none", () => {
+    assert.deepEqual(normalizePoolTableViewSettings({}).excludeTags, []);
+    const settings = normalizePoolTableViewSettings({
+      excludeTags: [" Personal ", "personal", 3, "", "Cold"],
+    });
+    assert.deepEqual(settings.excludeTags, ["Personal", "Cold"]);
+  });
+
+  it("keeps headcount, city, postcode, and industry filters", () => {
+    const settings = normalizePoolTableViewSettings({
+      headcountFilter: ["11-50", "unknown", "11-50", ""],
+      cityFilter: "  Manchester ",
+      postcodeFilter: "M1",
+      industryFilter: "Plumber",
+    });
+    assert.deepEqual(settings.headcountFilter, ["11-50", "unknown"]);
+    assert.equal(settings.cityFilter, "Manchester");
+    assert.equal(settings.postcodeFilter, "M1");
+    assert.equal(settings.industryFilter, "Plumber");
   });
 
   it("folds title company website into the name cell and keeps Contact Info", () => {

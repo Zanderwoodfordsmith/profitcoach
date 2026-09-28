@@ -42,20 +42,77 @@ export function phoneMatchKey(raw: string | null | undefined): string | null {
 export type KnownContactIndex = {
   byEmail: Map<string, KnownContactMatch>;
   byPhone: Map<string, KnownContactMatch>;
+  /** Pool (and similar) emails that may ingest even without a contacts row. */
+  extraEmails: Set<string>;
 };
+
+export function emptyKnownContactIndex(): KnownContactIndex {
+  return {
+    byEmail: new Map(),
+    byPhone: new Map(),
+    extraEmails: new Set(),
+  };
+}
+
+/** CRM contact or a pool/campaign email the coach already collected. */
+export function allowlistedEmail(
+  index: KnownContactIndex,
+  email?: string | null
+): boolean {
+  if (matchKnownContact(index, { email })) return true;
+  const key = normalizeEmail(email);
+  return Boolean(key && index.extraEmails.has(key));
+}
+
+async function loadPoolEmails(coachId: string): Promise<Set<string>> {
+  const extra = new Set<string>();
+  const { data: pool } = await supabaseAdmin
+    .from("coach_lead_lists")
+    .select("id")
+    .eq("coach_id", coachId)
+    .eq("kind", "pool")
+    .maybeSingle();
+  const poolId = (pool?.id as string | undefined) ?? null;
+  if (!poolId) return extra;
+
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabaseAdmin
+      .from("coach_lead_list_items")
+      .select("email")
+      .eq("list_id", poolId)
+      .not("email", "is", null)
+      .range(from, from + 999);
+    if (error) {
+      console.error("known contacts pool emails:", error.message);
+      break;
+    }
+    for (const row of data ?? []) {
+      const email = normalizeEmail(
+        typeof row.email === "string" ? row.email : null
+      );
+      if (email) extra.add(email);
+    }
+    if (!data || data.length < 1000) break;
+  }
+  return extra;
+}
 
 export async function loadKnownContactIndex(
   coachId: string
 ): Promise<KnownContactIndex> {
-  const { data, error } = await selectContactsWithOptionalPhone<ContactRow>(
-    async (columns) =>
-      supabaseAdmin.from("contacts").select(columns).eq("coach_id", coachId),
-    "id, full_name, email",
-    []
-  );
+  const empty = emptyKnownContactIndex();
+  const [{ data, error }, extraEmails] = await Promise.all([
+    selectContactsWithOptionalPhone<ContactRow>(
+      async (columns) =>
+        supabaseAdmin.from("contacts").select(columns).eq("coach_id", coachId),
+      "id, full_name, email",
+      []
+    ),
+    loadPoolEmails(coachId),
+  ]);
   if (error) {
     console.error("known contacts load:", error.message);
-    return { byEmail: new Map(), byPhone: new Map() };
+    return { ...empty, extraEmails };
   }
 
   const byEmail = new Map<string, KnownContactMatch>();
@@ -72,7 +129,7 @@ export async function loadKnownContactIndex(
     const phone = phoneMatchKey(row.phone);
     if (phone && !byPhone.has(phone)) byPhone.set(phone, match);
   }
-  return { byEmail, byPhone };
+  return { byEmail, byPhone, extraEmails };
 }
 
 export function matchKnownContact(
@@ -151,5 +208,30 @@ export async function allowPersonalChannelIngest(input: {
     email: input.email,
     phone: input.phone,
   });
-  return { allowed: Boolean(contact), contact };
+  if (contact) return { allowed: true, contact };
+
+  const email = normalizeEmail(input.email);
+  if (email && (await poolHasEmail(input.coachId, email))) {
+    return { allowed: true, contact: null };
+  }
+  return { allowed: false, contact: null };
+}
+
+async function poolHasEmail(coachId: string, email: string): Promise<boolean> {
+  const { data: pool } = await supabaseAdmin
+    .from("coach_lead_lists")
+    .select("id")
+    .eq("coach_id", coachId)
+    .eq("kind", "pool")
+    .maybeSingle();
+  const poolId = (pool?.id as string | undefined) ?? null;
+  if (!poolId) return false;
+  const { data } = await supabaseAdmin
+    .from("coach_lead_list_items")
+    .select("id")
+    .eq("list_id", poolId)
+    .ilike("email", email)
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data?.id);
 }

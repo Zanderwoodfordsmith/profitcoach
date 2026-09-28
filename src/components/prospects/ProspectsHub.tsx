@@ -92,6 +92,7 @@ type Props = {
     row: ProspectRow,
     options?: { skipConfirm?: boolean }
   ) => void | Promise<void>;
+  onDeleteMany?: (rows: ProspectRow[]) => Promise<string[]>;
   deletingId?: string | null;
   coachSlug?: string | null;
   coachSlugByCoachId?: Record<string, string>;
@@ -161,6 +162,7 @@ export function ProspectsHub({
   onUpdateProspect,
   onProspectBooked,
   onDelete,
+  onDeleteMany,
   deletingId,
   coachSlug,
   coachSlugByCoachId,
@@ -177,6 +179,7 @@ export function ProspectsHub({
   const [coachFilter, setCoachFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
+  const [excludeTags, setExcludeTags] = useState<string[]>([]);
   const [assessedFilter, setAssessedFilter] = useState<
     "all" | "assessed" | "not_assessed"
   >("all");
@@ -257,6 +260,7 @@ export function ProspectsHub({
     const next = normalizeProspectTableViewSettings(settings);
     setStatusFilter(next.statusFilter);
     setTagFilter(next.tagFilter);
+    setExcludeTags(next.excludeTags);
     setCoachFilter(next.coachFilter);
     setAssessedFilter(next.assessedFilter);
     setCallFilter(next.callFilter);
@@ -272,6 +276,7 @@ export function ProspectsHub({
       normalizeProspectTableViewSettings({
         statusFilter,
         tagFilter,
+        excludeTags,
         coachFilter,
         assessedFilter,
         callFilter,
@@ -287,6 +292,7 @@ export function ProspectsHub({
       coachFilter,
       columnOrder,
       columnVisibility,
+      excludeTags,
       grouping,
       sortField,
       sortOrder,
@@ -357,6 +363,7 @@ export function ProspectsHub({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const tagKey = tagFilter.toLowerCase();
+    const excluded = new Set(excludeTags.map((tag) => tag.toLowerCase()));
     const rows = prospects.filter((p) => {
       if (statusFilter !== "all" && p.status.value !== statusFilter) {
         return false;
@@ -366,6 +373,12 @@ export function ProspectsHub({
         tagFilter !== "all" &&
         tagFilter !== "none" &&
         !(p.tags ?? []).some((tag) => tag.toLowerCase() === tagKey)
+      ) {
+        return false;
+      }
+      if (
+        excluded.size &&
+        (p.tags ?? []).some((tag) => excluded.has(tag.toLowerCase()))
       ) {
         return false;
       }
@@ -390,6 +403,7 @@ export function ProspectsHub({
     prospects,
     statusFilter,
     tagFilter,
+    excludeTags,
     showCoachColumn,
     coachFilter,
     assessedFilter,
@@ -412,6 +426,7 @@ export function ProspectsHub({
   const filterCount =
     (statusFilter !== "all" ? 1 : 0) +
     (tagFilter !== "all" ? 1 : 0) +
+    (excludeTags.length ? 1 : 0) +
     (coachFilter ? 1 : 0) +
     (assessedFilter !== "all" ? 1 : 0) +
     (callFilter !== "all" ? 1 : 0);
@@ -476,6 +491,45 @@ export function ProspectsHub({
                     ))}
                   </select>
                 </label>
+                {tagOptions.length > 0 ? (
+                  <fieldset className="mt-3">
+                    <legend className="text-xs font-medium text-slate-600">
+                      Exclude tags
+                    </legend>
+                    <div className="mt-1 max-h-32 space-y-0.5 overflow-y-auto rounded-md border border-slate-200 px-2 py-1.5">
+                      {tagOptions.map((tag) => {
+                        const checked = excludeTags.some(
+                          (t) => t.toLowerCase() === tag.toLowerCase()
+                        );
+                        return (
+                          <label
+                            key={tag}
+                            className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() =>
+                                setExcludeTags((prev) =>
+                                  checked
+                                    ? prev.filter(
+                                        (t) =>
+                                          t.toLowerCase() !== tag.toLowerCase()
+                                      )
+                                    : [...prev, tag]
+                                )
+                              }
+                              className="h-3.5 w-3.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+                            />
+                            <span className={checked ? "text-rose-700" : undefined}>
+                              {tag}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                ) : null}
                 {showCoachColumn && (coachFilterOptions?.length ?? 0) > 0 ? (
                   <label className="mt-3 block text-xs font-medium text-slate-600">
                     Coach
@@ -717,6 +771,8 @@ export function ProspectsHub({
           onCardClick={onProspectClick}
           onUpdateProspect={onUpdateProspect}
           onProspectBooked={onProspectBooked}
+          onDelete={onDelete}
+          deletingId={deletingId}
         />
       ) : (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -762,6 +818,7 @@ export function ProspectsHub({
           editable
           onUpdateProspect={onUpdateProspect}
           onDelete={onDelete}
+          onDeleteMany={onDeleteMany}
           deletingId={deletingId}
           coachSlug={coachSlug}
           coachSlugByCoachId={coachSlugByCoachId}

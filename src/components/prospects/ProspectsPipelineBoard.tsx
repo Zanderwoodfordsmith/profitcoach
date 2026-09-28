@@ -17,14 +17,17 @@ import {
   Inbox,
   Magnet,
   MessageCircle,
+  MoreHorizontal,
   Phone,
   RotateCcw,
   Send,
   StickyNote,
   Tags,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { BookProspectModal } from "@/components/prospects/BookProspectModal";
+import { DeleteProspectsDialog } from "@/components/prospects/DeleteProspectsDialog";
 import { ProspectTagChip } from "@/components/prospects/ProspectTagChip";
 import { ProspectTagsPopover } from "@/components/prospects/ProspectTagsPopover";
 import { normalizeProspectTag } from "@/lib/prospects/tags";
@@ -69,6 +72,11 @@ type Props = {
     patch: ProspectFieldPatch
   ) => void | Promise<void>;
   onProspectBooked?: (row: ProspectRow, nextCall: ProspectNextCall) => void;
+  onDelete?: (
+    row: ProspectRow,
+    options?: { skipConfirm?: boolean }
+  ) => void | Promise<void>;
+  deletingId?: string | null;
 };
 
 const DRAG_TYPE = "application/x-pipeline-prospect-id";
@@ -152,6 +160,8 @@ export function ProspectsPipelineBoard({
   onCardClick,
   onUpdateProspect,
   onProspectBooked,
+  onDelete,
+  deletingId,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
@@ -166,6 +176,10 @@ export function ProspectsPipelineBoard({
   );
   const [tagPickerId, setTagPickerId] = useState<string | null>(null);
   const [tagSavingId, setTagSavingId] = useState<string | null>(null);
+  const [cardMenuId, setCardMenuId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ProspectRow | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const tagCatalog = useMemo(() => {
     const seen = new Set<string>();
@@ -195,8 +209,9 @@ export function ProspectsPipelineBoard({
       setDidDrag(false);
       return;
     }
-    if (tagPickerId) {
+    if (tagPickerId || cardMenuId) {
       setTagPickerId(null);
+      setCardMenuId(null);
       return;
     }
     if (onCardClick) {
@@ -269,6 +284,7 @@ export function ProspectsPipelineBoard({
     onDragStart: (id: string) => {
       setDidDrag(true);
       setTagPickerId(null);
+      setCardMenuId(null);
       setDraggingId(id);
     },
     onDragEnd: () => {
@@ -316,6 +332,7 @@ export function ProspectsPipelineBoard({
                 onCardClick={openProspect}
                 onBook={(row) => {
                   setTagPickerId(null);
+                  setCardMenuId(null);
                   setBookingProspect(row);
                 }}
                 cardHandlers={cardHandlers}
@@ -327,6 +344,23 @@ export function ProspectsPipelineBoard({
                 }
                 onCloseTags={() => setTagPickerId(null)}
                 onSaveTags={onUpdateProspect ? saveProspectTags : undefined}
+                cardMenuId={cardMenuId}
+                onToggleMenu={
+                  onDelete
+                    ? (row) =>
+                        setCardMenuId((cur) => (cur === row.id ? null : row.id))
+                    : undefined
+                }
+                onDelete={
+                  onDelete
+                    ? (row) => {
+                        setCardMenuId(null);
+                        setDeleteError(null);
+                        setPendingDelete(row);
+                      }
+                    : undefined
+                }
+                deletingId={deletingId}
               />
             )
           )}
@@ -340,6 +374,38 @@ export function ProspectsPipelineBoard({
           onProspectBooked?.(row, nextCall);
         }}
       />
+
+      {pendingDelete ? (
+        <DeleteProspectsDialog
+          rows={[pendingDelete]}
+          busy={deleteBusy}
+          error={deleteError}
+          onCancel={() => {
+            if (deleteBusy) return;
+            setPendingDelete(null);
+            setDeleteError(null);
+          }}
+          onConfirm={() => {
+            if (!onDelete || !pendingDelete) return;
+            setDeleteBusy(true);
+            setDeleteError(null);
+            void Promise.resolve(onDelete(pendingDelete, { skipConfirm: true }))
+              .then(() => {
+                setPendingDelete(null);
+              })
+              .catch((err: unknown) => {
+                setDeleteError(
+                  err instanceof Error
+                    ? err.message
+                    : "Unable to delete prospect."
+                );
+              })
+              .finally(() => {
+                setDeleteBusy(false);
+              });
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -409,6 +475,10 @@ function PipelineColumn({
   onToggleTags,
   onCloseTags,
   onSaveTags,
+  cardMenuId,
+  onToggleMenu,
+  onDelete,
+  deletingId,
 }: {
   col: PipelineBoardColumn;
   avgDeal: number;
@@ -436,6 +506,10 @@ function PipelineColumn({
   onToggleTags: (row: ProspectRow) => void;
   onCloseTags: () => void;
   onSaveTags?: (row: ProspectRow, tags: string[]) => Promise<void>;
+  cardMenuId: string | null;
+  onToggleMenu?: (row: ProspectRow) => void;
+  onDelete?: (row: ProspectRow) => void;
+  deletingId?: string | null;
 }) {
   const colDrop: DropTarget = { columnId: col.id };
   const colActive = sameDrop(dropTarget, colDrop);
@@ -515,7 +589,11 @@ function PipelineColumn({
                       fields={cardFields}
                       dragging={draggingId === row.id}
                       saving={savingId === row.id}
-                      draggable={draggable && tagPickerId !== row.id}
+                      draggable={
+                        draggable &&
+                        tagPickerId !== row.id &&
+                        cardMenuId !== row.id
+                      }
                       isAdmin={isAdmin}
                       canBook={col.id !== "closed"}
                       tagCatalog={tagCatalog}
@@ -532,6 +610,12 @@ function PipelineColumn({
                       onDragEnd={cardHandlers.onDragEnd}
                       onClick={() => onCardClick(row)}
                       onBook={() => onBook(row)}
+                      menuOpen={cardMenuId === row.id}
+                      onToggleMenu={
+                        onToggleMenu ? () => onToggleMenu(row) : undefined
+                      }
+                      onDelete={onDelete ? () => onDelete(row) : undefined}
+                      deleting={deletingId === row.id}
                     />
                   ))}
                 </div>
@@ -550,7 +634,11 @@ function PipelineColumn({
                   fields={cardFields}
                   dragging={draggingId === row.id}
                   saving={savingId === row.id}
-                  draggable={draggable && tagPickerId !== row.id}
+                  draggable={
+                    draggable &&
+                    tagPickerId !== row.id &&
+                    cardMenuId !== row.id
+                  }
                   isAdmin={isAdmin}
                   canBook={col.id !== "closed"}
                   tagCatalog={tagCatalog}
@@ -565,6 +653,12 @@ function PipelineColumn({
                   onDragEnd={cardHandlers.onDragEnd}
                   onClick={() => onCardClick(row)}
                   onBook={() => onBook(row)}
+                  menuOpen={cardMenuId === row.id}
+                  onToggleMenu={
+                    onToggleMenu ? () => onToggleMenu(row) : undefined
+                  }
+                  onDelete={onDelete ? () => onDelete(row) : undefined}
+                  deleting={deletingId === row.id}
                 />
               ))}
       </div>
@@ -627,6 +721,10 @@ function PipelineCard({
   onDragEnd,
   onClick,
   onBook,
+  menuOpen,
+  onToggleMenu,
+  onDelete,
+  deleting,
 }: {
   row: ProspectRow;
   fields: PipelineCardFields;
@@ -645,6 +743,10 @@ function PipelineCard({
   onDragEnd: () => void;
   onClick?: () => void;
   onBook?: () => void;
+  menuOpen?: boolean;
+  onToggleMenu?: () => void;
+  onDelete?: () => void;
+  deleting?: boolean;
 }) {
   const name = formatProspectPersonName(row.full_name) || row.full_name;
   const company = row.business_name?.trim() || row.job_title?.trim() || "";
@@ -679,7 +781,7 @@ function PipelineCard({
       }}
       className={`w-full rounded-xl border border-slate-200/80 bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition hover:border-slate-300 hover:shadow-[0_6px_14px_rgba(15,23,42,0.07)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
         dragging ? "opacity-50" : ""
-      } ${saving ? "pointer-events-none opacity-70" : ""} ${
+      } ${saving || deleting ? "pointer-events-none opacity-70" : ""} ${
         draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       }`}
     >
@@ -687,13 +789,58 @@ function PipelineCard({
         <p className="min-w-0 text-sm font-semibold leading-snug text-slate-900">
           {name}
         </p>
-        {fields.pill ? (
-          <span
-            className={`mt-0.5 inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium leading-none ${prospectStatusBadgeClass(row.status.value)}`}
-          >
-            {pill}
-          </span>
-        ) : null}
+        <div className="flex shrink-0 items-start gap-1">
+          {fields.pill ? (
+            <span
+              className={`mt-0.5 inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium leading-none ${prospectStatusBadgeClass(row.status.value)}`}
+            >
+              {pill}
+            </span>
+          ) : null}
+          {onToggleMenu ? (
+            <div className="relative">
+              <button
+                type="button"
+                title="Prospect actions"
+                aria-label={`Actions for ${name}`}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={(e) => {
+                  stopCardAction(e);
+                  onToggleMenu();
+                }}
+                onPointerDown={stopCardAction}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition ${
+                  menuOpen
+                    ? "bg-slate-100 text-slate-700"
+                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                }`}
+              >
+                <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              </button>
+              {menuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-[100] mt-1 w-40 rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                  onClick={stopCardAction}
+                  onPointerDown={stopCardAction}
+                >
+                  {onDelete ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-rose-600 hover:bg-rose-50"
+                      onClick={onDelete}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                      Delete
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
       {fields.company && company ? (
         <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{company}</p>

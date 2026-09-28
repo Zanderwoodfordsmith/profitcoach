@@ -78,15 +78,21 @@ import {
   POOL_CONTACT_FILTER_OPTIONS,
   POOL_DATE_ADDED_FILTER_OPTIONS,
   POOL_GROUP_FIELDS,
+  POOL_HEADCOUNT_FILTER_OPTIONS,
   POOL_LINKEDIN_FILTER_OPTIONS,
   POOL_TABLE_COLUMN_OPTIONS,
   poolDisplayName,
   poolLeadCompany,
   poolRowFitsCampaignChannel,
+  poolRowMatchesCityFilter,
   poolRowMatchesContactFilter,
   poolRowMatchesDateAddedFilter,
+  poolRowMatchesHeadcountFilter,
+  poolRowMatchesIndustryFilter,
   poolRowMatchesLinkedInFilter,
+  poolRowMatchesPostcodeFilter,
   poolRowMatchesTagFilter,
+  poolRowPassesExcludedTags,
   poolSourceLabel,
   poolWebsiteHref,
   type PoolColumnKey,
@@ -137,6 +143,8 @@ type Props = {
 
 const DROPDOWN =
   "absolute left-0 z-[90] mt-1 w-56 rounded-md border border-slate-200 bg-white p-3 shadow-lg";
+const FILTER_DROPDOWN =
+  "absolute left-0 z-[90] mt-1 max-h-[min(32rem,70vh)] w-72 overflow-y-auto rounded-md border border-slate-200 bg-white p-3 shadow-lg";
 
 const CAMPAIGN_PICKER_WIDTH = 288;
 
@@ -305,6 +313,14 @@ function getPoolColumnWidth(key: PoolColumnKey): number {
       return 72;
     case "address":
       return 180;
+    case "headcount":
+      return 112;
+    case "city":
+      return 140;
+    case "postcode":
+      return 96;
+    case "industry":
+      return 140;
     case "tags":
       return 168;
     default:
@@ -377,7 +393,12 @@ export function CampaignPoolHub({
     useState<PoolLinkedInFilter>("all");
   const [dateAddedFilter, setDateAddedFilter] =
     useState<PoolDateAddedFilter>("all");
+  const [headcountFilter, setHeadcountFilter] = useState<string[]>([]);
+  const [cityFilter, setCityFilter] = useState("");
+  const [postcodeFilter, setPostcodeFilter] = useState("");
+  const [industryFilter, setIndustryFilter] = useState("");
   const [tagFilter, setTagFilter] = useState<PoolTagFilter>("all");
+  const [excludeTags, setExcludeTags] = useState<string[]>([]);
   const [sortField, setSortField] = useState<PoolTableViewSettings["sortField"]>("name");
   const [sortOrder, setSortOrder] = useState<PoolTableViewSettings["sortOrder"]>("asc");
   const [grouping, setGrouping] = useState<PersistedPoolGrouping>({
@@ -465,7 +486,12 @@ export function CampaignPoolHub({
     setContactFilter(next.contactFilter);
     setLinkedinFilter(next.linkedinFilter);
     setDateAddedFilter(next.dateAddedFilter);
+    setHeadcountFilter(next.headcountFilter);
+    setCityFilter(next.cityFilter);
+    setPostcodeFilter(next.postcodeFilter);
+    setIndustryFilter(next.industryFilter);
     setTagFilter(next.tagFilter);
+    setExcludeTags(next.excludeTags);
     setSortField(next.sortField);
     setSortOrder(next.sortOrder);
     setGrouping(next.grouping);
@@ -481,7 +507,12 @@ export function CampaignPoolHub({
         contactFilter,
         linkedinFilter,
         dateAddedFilter,
+        headcountFilter,
+        cityFilter,
+        postcodeFilter,
+        industryFilter,
         tagFilter,
+        excludeTags,
         sortField,
         sortOrder,
         grouping,
@@ -495,6 +526,11 @@ export function CampaignPoolHub({
       columnVisibility,
       contactFilter,
       dateAddedFilter,
+      excludeTags,
+      headcountFilter,
+      cityFilter,
+      postcodeFilter,
+      industryFilter,
       grouping,
       linkedinFilter,
       sortField,
@@ -823,7 +859,12 @@ export function CampaignPoolHub({
       if (!poolRowMatchesContactFilter(row, contactFilter)) return false;
       if (!poolRowMatchesLinkedInFilter(row, linkedinFilter)) return false;
       if (!poolRowMatchesDateAddedFilter(row, dateAddedFilter)) return false;
+      if (!poolRowMatchesHeadcountFilter(row, headcountFilter)) return false;
+      if (!poolRowMatchesCityFilter(row, cityFilter)) return false;
+      if (!poolRowMatchesPostcodeFilter(row, postcodeFilter)) return false;
+      if (!poolRowMatchesIndustryFilter(row, industryFilter)) return false;
       if (!poolRowMatchesTagFilter(row, tagFilter)) return false;
+      if (!poolRowPassesExcludedTags(row, excludeTags)) return false;
       if (!q) return true;
       const hay = [
         row.full_name,
@@ -833,6 +874,11 @@ export function CampaignPoolHub({
         row.phone,
         row.website,
         row.address,
+        row.location,
+        row.city,
+        row.postcode,
+        row.team_size,
+        row.industry,
         ...(row.tags ?? []),
       ]
         .filter(Boolean)
@@ -847,7 +893,12 @@ export function CampaignPoolHub({
     campaignFilter,
     contactFilter,
     dateAddedFilter,
+    excludeTags,
+    headcountFilter,
+    cityFilter,
+    industryFilter,
     linkedinFilter,
+    postcodeFilter,
     people,
     query,
     sortField,
@@ -950,7 +1001,12 @@ export function CampaignPoolHub({
     (contactFilter !== "all" ? 1 : 0) +
     (linkedinFilter !== "all" ? 1 : 0) +
     (dateAddedFilter !== "all" ? 1 : 0) +
-    (tagFilter !== "all" ? 1 : 0);
+    (headcountFilter.length > 0 ? 1 : 0) +
+    (cityFilter.trim() ? 1 : 0) +
+    (postcodeFilter.trim() ? 1 : 0) +
+    (industryFilter.trim() ? 1 : 0) +
+    (tagFilter !== "all" ? 1 : 0) +
+    (excludeTags.length > 0 ? 1 : 0);
   const sortActive = sortField !== "name" || sortOrder !== "asc";
   const activeCampaigns = campaigns.filter(
     (campaign) =>
@@ -1099,7 +1155,7 @@ export function CampaignPoolHub({
 
   useEffect(() => {
     setPage(1);
-  }, [query, sourceFilter, campaignFilter, contactFilter, linkedinFilter, dateAddedFilter, tagFilter, sortField, sortOrder, grouping.field]);
+  }, [query, sourceFilter, campaignFilter, contactFilter, linkedinFilter, dateAddedFilter, headcountFilter, cityFilter, postcodeFilter, industryFilter, tagFilter, excludeTags, sortField, sortOrder, grouping.field]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -1698,6 +1754,10 @@ export function CampaignPoolHub({
         else if (key === "phone") cells.push(row.phone ?? "");
         else if (key === "website") cells.push(row.website ?? "");
         else if (key === "address") cells.push(row.address ?? "");
+        else if (key === "headcount") cells.push(row.team_size ?? "");
+        else if (key === "city") cells.push(row.city ?? "");
+        else if (key === "postcode") cells.push(row.postcode ?? "");
+        else if (key === "industry") cells.push(row.industry ?? "");
         else if (key === "tags") cells.push((row.tags ?? []).join("; "));
       }
       return cells;
@@ -1972,6 +2032,26 @@ export function CampaignPoolHub({
               ) : (
                 "—"
               )
+            ) : option.key === "headcount" ? (
+              row.team_size || "—"
+            ) : option.key === "city" ? (
+              row.city ? (
+                <span className="block max-w-[10rem] truncate" title={row.location ?? row.city}>
+                  {row.city}
+                </span>
+              ) : (
+                "—"
+              )
+            ) : option.key === "postcode" ? (
+              row.postcode || "—"
+            ) : option.key === "industry" ? (
+              row.industry ? (
+                <span className="block max-w-[10rem] truncate" title={row.industry}>
+                  {row.industry}
+                </span>
+              ) : (
+                "—"
+              )
             ) : option.key === "linkedin" ? (
               row.linkedin_url ? (
                 <a
@@ -2055,7 +2135,7 @@ export function CampaignPoolHub({
           onMenuChange={setMenu}
           filterCount={filterCount}
           filterMenu={
-            <div role="menu" className={DROPDOWN}>
+            <div role="menu" className={FILTER_DROPDOWN}>
               <label className="block text-xs font-medium text-slate-600">
                 Source
                 <select
@@ -2086,6 +2166,72 @@ export function CampaignPoolHub({
                   <option value="not_in_campaign">Not in a campaign</option>
                   <option value="in_campaign">In a campaign</option>
                 </select>
+              </label>
+              <fieldset className="mt-3">
+                <legend className="text-xs font-medium text-slate-600">
+                  Headcount
+                </legend>
+                <p className="mt-0.5 text-[11px] font-normal text-slate-500">
+                  Leave clear to include every size.
+                </p>
+                <div className="mt-1 max-h-32 space-y-1 overflow-y-auto pr-1">
+                  {POOL_HEADCOUNT_FILTER_OPTIONS.map((option) => {
+                    const checked = headcountFilter.some(
+                      (value) => value.toLowerCase() === option.key.toLowerCase()
+                    );
+                    return (
+                      <label
+                        key={option.key}
+                        className="flex items-center gap-2 text-sm text-slate-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setHeadcountFilter((prev) =>
+                              checked
+                                ? prev.filter(
+                                    (value) =>
+                                      value.toLowerCase() !==
+                                      option.key.toLowerCase()
+                                  )
+                                : [...prev, option.key]
+                            )
+                          }
+                          className="rounded border-slate-300 text-[#0c5290]"
+                        />
+                        {option.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+              <label className="mt-3 block text-xs font-medium text-slate-600">
+                City or area
+                <input
+                  value={cityFilter}
+                  onChange={(e) => setCityFilter(e.target.value)}
+                  placeholder="e.g. Manchester"
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                />
+              </label>
+              <label className="mt-3 block text-xs font-medium text-slate-600">
+                Postcode
+                <input
+                  value={postcodeFilter}
+                  onChange={(e) => setPostcodeFilter(e.target.value)}
+                  placeholder="e.g. M1 or SW1A"
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                />
+              </label>
+              <label className="mt-3 block text-xs font-medium text-slate-600">
+                Industry
+                <input
+                  value={industryFilter}
+                  onChange={(e) => setIndustryFilter(e.target.value)}
+                  placeholder="e.g. plumber"
+                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                />
               </label>
               <label className="mt-3 block text-xs font-medium text-slate-600">
                 Contact info
@@ -2180,6 +2326,45 @@ export function CampaignPoolHub({
                   ))}
                 </select>
               </div>
+              {tagFilterOptions.length > 0 ? (
+                <fieldset className="mt-3">
+                  <legend className="text-xs font-medium text-slate-600">
+                    Exclude tags
+                  </legend>
+                  <div className="mt-1 max-h-32 space-y-0.5 overflow-y-auto rounded-md border border-slate-200 px-2 py-1.5">
+                    {tagFilterOptions.map((tag) => {
+                      const checked = excludeTags.some(
+                        (t) => t.toLowerCase() === tag.toLowerCase()
+                      );
+                      return (
+                        <label
+                          key={tag}
+                          className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              setExcludeTags((prev) =>
+                                checked
+                                  ? prev.filter(
+                                      (t) =>
+                                        t.toLowerCase() !== tag.toLowerCase()
+                                    )
+                                  : [...prev, tag]
+                              )
+                            }
+                            className="h-3.5 w-3.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+                          />
+                          <span className={checked ? "text-rose-700" : undefined}>
+                            {tag}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              ) : null}
             </div>
           }
           sortActive={sortActive}

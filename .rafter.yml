@@ -5,7 +5,7 @@ version: "1"
 risk_level: moderate
 
 command_policy:
-  mode: approve-dangerous
+  mode: deny-list
 
 scan:
   plus_requires_approval: false

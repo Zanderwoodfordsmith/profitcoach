@@ -66,6 +66,7 @@ export default function CoachProspectsPage() {
         onUpdateProspect={page.handleUpdateProspect}
         onProspectBooked={page.handleProspectBooked}
         onDelete={page.handleDeleteProspect}
+        onDeleteMany={page.handleDeleteProspects}
         deletingId={page.deletingId}
         coachSlug={page.coachSlug}
         onVisibleIdsChange={page.enrichVisibleIds}

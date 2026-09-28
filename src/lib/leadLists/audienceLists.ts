@@ -48,6 +48,10 @@ export type AudienceListPerson = {
   linkedin_provider_id: string | null;
   email?: string | null;
   phone?: string | null;
+  team_size?: string | null;
+  industry?: string | null;
+  revenue_range?: string | null;
+  location?: string | null;
   source: AudienceItemSource;
 };
 
@@ -204,6 +208,16 @@ export function mapAudiencePeopleInput(
         typeof row.email === "string" ? row.email.trim() || null : null,
       phone:
         typeof row.phone === "string" ? row.phone.trim() || null : null,
+      team_size:
+        typeof row.team_size === "string" ? row.team_size.trim() || null : null,
+      industry:
+        typeof row.industry === "string" ? row.industry.trim() || null : null,
+      revenue_range:
+        typeof row.revenue_range === "string"
+          ? row.revenue_range.trim() || null
+          : null,
+      location:
+        typeof row.location === "string" ? row.location.trim() || null : null,
     });
   }
   return people.slice(0, max);
@@ -293,6 +307,7 @@ const LEAD_LIST_ITEM_COPY_FIELDS = [
   "team_size",
   "revenue_range",
   "industry",
+  "location",
   "match_reason",
   "raw",
   "place_id",
@@ -772,6 +787,10 @@ export async function insertPeopleOnList(opts: {
     linkedin_url: person.linkedin_url,
     email: person.email ?? null,
     phone: person.phone ?? null,
+    team_size: person.team_size?.trim() || null,
+    industry: person.industry?.trim() || null,
+    revenue_range: person.revenue_range?.trim() || null,
+    location: person.location?.trim() || null,
     identity_key: `li:${person.linkedin_url}`,
     match_reason:
       person.source === "search" ? "LinkedIn search" : "Added to pool",

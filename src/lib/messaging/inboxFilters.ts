@@ -16,31 +16,54 @@ export type InboxFilterConversation = {
   campaign_ids?: string[];
   prospect_tags?: string[];
   reply_channels?: string[];
+  /** Person is in the coach's Campaigns Pool (by contact, email, or LinkedIn). */
+  in_pool?: boolean;
+  /** contacts.type of the linked contact — "prospect" | "client". */
+  contact_type?: string | null;
 };
 
 export type InboxFilters = {
   needsReply: boolean;
   hasBooking: boolean;
   inCampaign: boolean;
+  inPool: boolean;
+  isProspect: boolean;
   otherLinkedIn: boolean;
+  otherEmail: boolean;
   campaignId: string | null;
   channel: InboxChannelFilter;
   tag: string | null;
+  excludeTags: string[];
 };
 
 export const EMPTY_INBOX_FILTERS: InboxFilters = {
   needsReply: false,
   hasBooking: false,
   inCampaign: false,
+  inPool: false,
+  isProspect: false,
   otherLinkedIn: false,
+  otherEmail: false,
   campaignId: null,
   channel: "all",
   tag: null,
+  excludeTags: [],
 };
 
-export type InboxFlagFilter = "needsReply" | "hasBooking" | "inCampaign" | "otherLinkedIn";
+export type InboxFlagFilter =
+  | "needsReply"
+  | "hasBooking"
+  | "inCampaign"
+  | "inPool"
+  | "isProspect"
+  | "otherLinkedIn"
+  | "otherEmail";
 
-/** LinkedIn thread that is not a CRM contact, campaign lead, or booking. */
+/** Flags that require a known person — never true for an "other" thread. */
+const WORK_PERSON_FLAGS = ["inCampaign", "inPool", "isProspect"] as const;
+const OTHER_BUCKET_FLAGS = ["otherLinkedIn", "otherEmail"] as const;
+
+/** LinkedIn thread that is not a CRM contact, campaign lead, pool person, or booking. */
 export function isOtherLinkedInConversation(
   conversation: InboxFilterConversation
 ): boolean {
@@ -52,6 +75,22 @@ export function isOtherLinkedInConversation(
   if (!isLinkedIn) return false;
   if (conversation.contact_id?.trim()) return false;
   if (conversation.in_campaign) return false;
+  if (conversation.in_pool) return false;
+  if (conversation.booking_id?.trim()) return false;
+  return true;
+}
+
+/** Email thread that is not a prospect, pool person, campaign lead, or booking. */
+export function isOtherEmailConversation(
+  conversation: InboxFilterConversation
+): boolean {
+  const last = (conversation.last_channel || "").toLowerCase();
+  if (last !== "email") return false;
+  if ((conversation.contact_type || "").toLowerCase() === "prospect") {
+    return false;
+  }
+  if (conversation.in_campaign) return false;
+  if (conversation.in_pool) return false;
   if (conversation.booking_id?.trim()) return false;
   return true;
 }
@@ -69,10 +108,14 @@ export function inboxFiltersActive(filters: InboxFilters): boolean {
     filters.needsReply ||
     filters.hasBooking ||
     filters.inCampaign ||
+    filters.inPool ||
+    filters.isProspect ||
     filters.otherLinkedIn ||
+    filters.otherEmail ||
     Boolean(filters.campaignId) ||
     filters.channel !== "all" ||
-    Boolean(filters.tag)
+    Boolean(filters.tag) ||
+    filters.excludeTags.length > 0
   );
 }
 
@@ -81,22 +124,40 @@ export function toggleInboxFlag(
   key: InboxFlagFilter
 ): InboxFilters {
   const next = !prev[key];
-  if (key === "otherLinkedIn") {
+  if ((OTHER_BUCKET_FLAGS as readonly string[]).includes(key)) {
     return {
       ...prev,
-      otherLinkedIn: next,
+      [key]: next,
       inCampaign: next ? false : prev.inCampaign,
+      inPool: next ? false : prev.inPool,
+      isProspect: next ? false : prev.isProspect,
       campaignId: next ? null : prev.campaignId,
     };
   }
-  if (key === "inCampaign") {
+  if ((WORK_PERSON_FLAGS as readonly string[]).includes(key)) {
     return {
       ...prev,
-      inCampaign: next,
+      [key]: next,
       otherLinkedIn: next ? false : prev.otherLinkedIn,
+      otherEmail: next ? false : prev.otherEmail,
     };
   }
   return { ...prev, [key]: next };
+}
+
+/** Case-insensitive toggle of one tag in the exclude list. */
+export function toggleExcludedTag(prev: InboxFilters, tag: string): InboxFilters {
+  const key = tag.toLowerCase();
+  const has = prev.excludeTags.some((t) => t.toLowerCase() === key);
+  const excludeTags = has
+    ? prev.excludeTags.filter((t) => t.toLowerCase() !== key)
+    : [...prev.excludeTags, tag];
+  return {
+    ...prev,
+    excludeTags,
+    // Including and excluding the same tag would match nothing.
+    tag: !has && prev.tag?.toLowerCase() === key ? null : prev.tag,
+  };
 }
 
 export function conversationMatchesFilters(
@@ -104,10 +165,15 @@ export function conversationMatchesFilters(
   filters: InboxFilters,
   options?: { searching?: boolean }
 ): boolean {
-  const other = isOtherLinkedInConversation(conversation);
-  if (filters.otherLinkedIn) {
-    if (!other) return false;
-  } else if (other && !options?.searching) {
+  const otherLinkedIn = isOtherLinkedInConversation(conversation);
+  const otherEmail = isOtherEmailConversation(conversation);
+  const otherOn = filters.otherLinkedIn || filters.otherEmail;
+  if (otherOn) {
+    const inBucket =
+      (filters.otherLinkedIn && otherLinkedIn) ||
+      (filters.otherEmail && otherEmail);
+    if (!inBucket) return false;
+  } else if ((otherLinkedIn || otherEmail) && !options?.searching) {
     return false;
   }
   if (!conversationMatchesChannel(conversation, filters.channel)) return false;
@@ -116,14 +182,23 @@ export function conversationMatchesFilters(
   }
   if (filters.hasBooking && !conversation.booking_id) return false;
   if (filters.inCampaign && !conversation.in_campaign) return false;
+  if (filters.inPool && !conversation.in_pool) return false;
+  if (filters.isProspect && conversation.contact_type !== "prospect") {
+    return false;
+  }
   if (filters.campaignId) {
     const ids = conversation.campaign_ids || [];
     if (!ids.includes(filters.campaignId)) return false;
   }
-  if (filters.tag) {
-    const needle = filters.tag.toLowerCase();
-    const tags = conversation.prospect_tags || [];
-    if (!tags.some((tag) => tag.toLowerCase() === needle)) return false;
+  const tags = (conversation.prospect_tags || []).map((tag) =>
+    tag.toLowerCase()
+  );
+  if (filters.tag && !tags.includes(filters.tag.toLowerCase())) return false;
+  if (
+    filters.excludeTags.length &&
+    filters.excludeTags.some((tag) => tags.includes(tag.toLowerCase()))
+  ) {
+    return false;
   }
   return true;
 }

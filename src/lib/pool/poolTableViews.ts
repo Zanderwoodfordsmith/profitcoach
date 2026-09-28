@@ -11,6 +11,7 @@ import {
   type PoolColumnVisibility,
   type PoolContactFilter,
   type PoolDateAddedFilter,
+  type PoolHeadcountFilter,
   type PoolLinkedInFilter,
   type PoolGroupField,
   type PoolGroupOrder,
@@ -42,7 +43,13 @@ export type PoolTableViewSettings = {
   contactFilter: PoolContactFilter;
   linkedinFilter: PoolLinkedInFilter;
   dateAddedFilter: PoolDateAddedFilter;
+  headcountFilter: PoolHeadcountFilter;
+  cityFilter: string;
+  postcodeFilter: string;
+  industryFilter: string;
   tagFilter: PoolTagFilter;
+  /** Hide people carrying any of these tags (case-insensitive). */
+  excludeTags: string[];
   sortField: PoolSortField;
   sortOrder: PoolSortOrder;
   grouping: PersistedPoolGrouping;
@@ -154,7 +161,12 @@ export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
     contactFilter: "all",
     linkedinFilter: "all",
     dateAddedFilter: "all",
+    headcountFilter: [],
+    cityFilter: "",
+    postcodeFilter: "",
+    industryFilter: "",
     tagFilter: "all",
+    excludeTags: [],
     sortField: "name",
     sortOrder: "asc",
     grouping: defaultPoolGrouping(),
@@ -176,6 +188,43 @@ function isPoolContactFilter(value: unknown): value is PoolContactFilter {
 
 function isPoolLinkedInFilter(value: unknown): value is PoolLinkedInFilter {
   return value === "all" || value === "has" || value === "none";
+}
+
+function normalizeHeadcountFilter(value: unknown): PoolHeadcountFilter {
+  if (!Array.isArray(value)) return [];
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const trimmed = item.trim().slice(0, 40);
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase() === "unknown" ? "unknown" : trimmed;
+    if (out.some((existing) => existing.toLowerCase() === key.toLowerCase())) {
+      continue;
+    }
+    out.push(key);
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+function normalizeExcludeTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const tag = item.trim();
+    if (!tag) continue;
+    if (out.some((existing) => existing.toLowerCase() === tag.toLowerCase())) {
+      continue;
+    }
+    out.push(tag);
+  }
+  return out;
+}
+
+function normalizePlaceQuery(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, 80);
 }
 
 function isPoolDateAddedFilter(value: unknown): value is PoolDateAddedFilter {
@@ -221,7 +270,12 @@ export function normalizePoolTableViewSettings(
     dateAddedFilter: isPoolDateAddedFilter(source.dateAddedFilter)
       ? source.dateAddedFilter
       : defaults.dateAddedFilter,
+    headcountFilter: normalizeHeadcountFilter(source.headcountFilter),
+    cityFilter: normalizePlaceQuery(source.cityFilter),
+    postcodeFilter: normalizePlaceQuery(source.postcodeFilter),
+    industryFilter: normalizePlaceQuery(source.industryFilter),
     tagFilter,
+    excludeTags: normalizeExcludeTags(source.excludeTags),
     sortField: isPoolSortField(source.sortField)
       ? source.sortField
       : defaults.sortField,

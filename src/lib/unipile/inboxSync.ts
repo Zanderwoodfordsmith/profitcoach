@@ -21,11 +21,16 @@ import {
   startFirstUnipileMessage,
 } from "@/lib/messaging/startConversation";
 import {
+  allowlistedEmail,
   channelRequiresKnownContact,
   loadKnownContactIndex,
   matchKnownContact,
 } from "@/lib/messaging/knownContacts";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
+import {
+  isPlaceholderEmailBody,
+  unipileEmailBodyText,
+} from "@/lib/messaging/emailBody";
 import { prioritizeUnipileChats } from "@/lib/messaging/threadWindow";
 import {
   applyReactionToParentMessage,
@@ -52,6 +57,8 @@ import {
   listUnipileAttendees,
   listUnipileChatAttendees,
   listUnipileChatMessages,
+  getUnipileEmail,
+  isUnipileAccountNotFound,
   listUnipileChats,
   listUnipileEmails,
   sendUnipileChatMessage,
@@ -67,6 +74,14 @@ import {
 
 /** Cap Unipile profile lookups per soft sync to stay under provider limits. */
 const MAX_LINKEDIN_PAIR_RESOLVES_PER_SYNC = 12;
+const MAX_EMAIL_BODY_FETCHES_PER_SYNC = 25;
+const MAX_EMPTY_THREAD_PULLS_PER_SOFT_SYNC = 10;
+const EMAIL_PAGE_SIZE = 50;
+const EMAIL_SOFT_PAGES = 3;
+const EMAIL_FORCE_PAGES = 12;
+const CHAT_PAGE_SIZE = 80;
+const CHAT_SOFT_PAGES = 1;
+const CHAT_FORCE_PAGES = 2;
 
 function previewOf(text: string | null | undefined) {
   const t = (text || "").replace(/\s+/g, " ").trim();
@@ -79,11 +94,86 @@ function emailThreadKey(threadId: string | null | undefined, emailId: string) {
   return `email:${emailId}`;
 }
 
+async function listUnipileEmailsPaged(input: {
+  accountId: string;
+  metaOnly: boolean;
+  maxPages: number;
+  deadlineAt?: number;
+}): Promise<{
+  ok: boolean;
+  items: Array<Record<string, unknown>>;
+  accountMissing?: boolean;
+}> {
+  const items: Array<Record<string, unknown>> = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < input.maxPages; page += 1) {
+    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
+    const listed = await listUnipileEmails({
+      account_id: input.accountId,
+      limit: EMAIL_PAGE_SIZE,
+      meta_only: input.metaOnly,
+      cursor,
+    });
+    if (!listed.ok) {
+      return {
+        ok: false,
+        items,
+        accountMissing: isUnipileAccountNotFound(listed),
+      };
+    }
+    const pageItems = listed.data?.items ?? [];
+    items.push(...pageItems);
+    cursor = listed.data?.cursor ?? null;
+    if (!cursor || pageItems.length === 0) break;
+  }
+  return { ok: true, items };
+}
+
+async function listUnipileChatsPaged(input: {
+  accountId: string;
+  maxPages: number;
+  deadlineAt?: number;
+}): Promise<{
+  ok: boolean;
+  items: Array<Record<string, unknown>>;
+  accountMissing?: boolean;
+}> {
+  const items: Array<Record<string, unknown>> = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < input.maxPages; page += 1) {
+    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
+    const listed = await listUnipileChats({
+      account_id: input.accountId,
+      limit: CHAT_PAGE_SIZE,
+      cursor,
+    });
+    if (!listed.ok) {
+      return {
+        ok: false,
+        items,
+        accountMissing: isUnipileAccountNotFound(listed),
+      };
+    }
+    const pageItems = listed.data?.items ?? [];
+    items.push(...pageItems);
+    cursor = listed.data?.cursor ?? null;
+    if (!cursor || pageItems.length === 0) break;
+  }
+  return { ok: true, items };
+}
+
 /** Soft syncs (inbox open) skip if last run was within this window. Cron/force bypass. */
 export const LINKEDIN_INBOX_SOFT_SYNC_MS = 2 * 60 * 60 * 1000;
 export const UNIPILE_INBOX_SOFT_SYNC_MS = LINKEDIN_INBOX_SOFT_SYNC_MS;
 
-async function upsertChatMessage(input: {
+type AccountSyncResult = {
+  chats: number;
+  messages: number;
+  /** Unipile 404 — the session was deleted or merged on their side. */
+  accountMissing?: boolean;
+};
+
+type ChatMessageInput = {
   conversationId: string;
   coachId: string;
   channel: UnipileAppChannel;
@@ -92,7 +182,34 @@ async function upsertChatMessage(input: {
   direction: "inbound" | "outbound";
   createdAt: string;
   metadata?: Record<string, unknown>;
-}) {
+};
+
+/** One round-trip per chat; per-row fallback keeps a bad row from dropping the rest. */
+async function upsertChatMessages(rows: ChatMessageInput[]): Promise<number> {
+  if (!rows.length) return 0;
+  const { error } = await supabaseAdmin.from("messaging_messages").upsert(
+    rows.map((row) => ({
+      conversation_id: row.conversationId,
+      coach_id: row.coachId,
+      channel: row.channel,
+      direction: row.direction,
+      status: "delivered",
+      body_text: row.text,
+      unipile_message_id: row.messageId,
+      metadata: row.metadata ?? {},
+      created_at: row.createdAt,
+    })),
+    { onConflict: "unipile_message_id", ignoreDuplicates: true }
+  );
+  if (!error) return rows.length;
+  let ok = 0;
+  for (const row of rows) {
+    if (await upsertChatMessage(row)) ok += 1;
+  }
+  return ok;
+}
+
+async function upsertChatMessage(input: ChatMessageInput) {
   const { error } = await supabaseAdmin.from("messaging_messages").upsert(
     {
       conversation_id: input.conversationId,
@@ -287,16 +404,23 @@ async function syncMessagingAccount(input: {
   maxLinkedInPairResolves?: number;
   /** Open inbox thread(s) — pull these chats first. */
   priorityChatIds?: string[];
-}): Promise<{ chats: number; messages: number }> {
+  /** Epoch ms — stop between chats so a serverless run ends cleanly. */
+  deadlineAt?: number;
+  /** Extra chat list pages beyond the first 80. Soft = 1, force = more. */
+  maxPages?: number;
+}): Promise<AccountSyncResult> {
   let chats = 0;
   let messages = 0;
-  const listed = await listUnipileChats({
-    account_id: input.unipileAccountId,
-    limit: 80,
+  const listed = await listUnipileChatsPaged({
+    accountId: input.unipileAccountId,
+    maxPages: input.maxPages ?? CHAT_SOFT_PAGES,
+    deadlineAt: input.deadlineAt,
   });
-  if (!listed.ok) return { chats, messages };
+  if (!listed.ok) {
+    return { chats, messages, accountMissing: listed.accountMissing };
+  }
   const items = prioritizeUnipileChats(
-    listed.data?.items ?? [],
+    listed.items,
     (chat) => String(chat.id || chat.chat_id || ""),
     input.priorityChatIds ?? []
   );
@@ -318,8 +442,10 @@ async function syncMessagingAccount(input: {
       ? MAX_LINKEDIN_PAIR_RESOLVES_PER_SYNC
       : 0);
   let linkedInPairResolves = 0;
+  let emptyThreadPulls = 0;
 
   for (const chat of items) {
+    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
     const chatId = String(chat.id || chat.chat_id || "");
     if (!chatId) continue;
 
@@ -638,6 +764,22 @@ async function syncMessagingAccount(input: {
           (Number.isFinite(remoteAt) && remoteAt > localAt + 1000) ||
           remoteUnread > localUnread ||
           !(existingConv.last_preview as string | null)?.trim();
+        // A webhook can bump last_message_at without storing the message;
+        // the timestamps then look current while the thread is empty.
+        if (
+          !shouldPullMessages &&
+          emptyThreadPulls < MAX_EMPTY_THREAD_PULLS_PER_SOFT_SYNC
+        ) {
+          const { data: anyStored } = await supabaseAdmin
+            .from("messaging_messages")
+            .select("id")
+            .eq("conversation_id", existingConv.id)
+            .limit(1);
+          if (!anyStored?.length) {
+            emptyThreadPulls += 1;
+            shouldPullMessages = true;
+          }
+        }
       }
     }
 
@@ -650,6 +792,21 @@ async function syncMessagingAccount(input: {
     let latestPreview: string | null = null;
     let latestDirection: "inbound" | "outbound" | null = null;
     let inboundSeen = false;
+
+    const plainMessages: ChatMessageInput[] = [];
+    const reactionPatches: Array<{
+      unipileMessageId: string;
+      reactions: ReturnType<typeof parseUnipileMessageFlags>["reactions"];
+    }> = [];
+    const reactionEvents: Array<{
+      messageId: string;
+      emoji: string;
+      parentId: string | null;
+      eventType: number | null;
+      isSender: boolean;
+      direction: "inbound" | "outbound";
+      createdAt: string;
+    }> = [];
 
     for (const msg of msgs.data?.items ?? []) {
       const messageId = String(msg.id || msg.message_id || "");
@@ -669,40 +826,15 @@ async function syncMessagingAccount(input: {
 
       if (isUnipileReactionEvent(flags)) {
         const emoji = extractReactionEmoji(text);
-        let attached = false;
-        if (flags.parentId) {
-          attached = await applyReactionToParentMessage({
-            conversationId,
-            parentUnipileMessageId: flags.parentId,
-            reaction: {
-              value: emoji,
-              is_sender: isSender,
-            },
-          });
-        }
-        if (!attached) {
-          // Keep a lightweight row so coaches still see engagement if parent
-          // isn't in the last-N sync window — UI renders this as a system line.
-          const ok = await upsertChatMessage({
-            conversationId,
-            coachId: input.coachId,
-            channel: input.channel,
-            messageId,
-            text: formatReactionPreview(emoji, { isSender }),
-            direction,
-            createdAt,
-            metadata: {
-              chat_id: chatId,
-              kind: "reaction_event",
-              is_event: true,
-              event_type: flags.eventType,
-              parent_unipile_message_id: flags.parentId,
-              reaction: emoji,
-              hidden: true,
-            },
-          });
-          if (ok) messages += 1;
-        }
+        reactionEvents.push({
+          messageId,
+          emoji,
+          parentId: flags.parentId,
+          eventType: flags.eventType,
+          isSender,
+          direction,
+          createdAt,
+        });
         if (!latestAt || new Date(createdAt) >= new Date(latestAt)) {
           latestAt = createdAt;
           latestPreview = formatReactionPreview(emoji, { isSender });
@@ -711,7 +843,7 @@ async function syncMessagingAccount(input: {
         continue;
       }
 
-      const ok = await upsertChatMessage({
+      plainMessages.push({
         conversationId,
         coachId: input.coachId,
         channel: input.channel,
@@ -724,10 +856,8 @@ async function syncMessagingAccount(input: {
           ...(flags.reactions.length ? { reactions: flags.reactions } : {}),
         },
       });
-      if (ok) messages += 1;
       if (flags.reactions.length) {
-        await patchMessageReactionsByUnipileId({
-          conversationId,
+        reactionPatches.push({
           unipileMessageId: messageId,
           reactions: flags.reactions,
         });
@@ -739,6 +869,51 @@ async function syncMessagingAccount(input: {
         latestDirection = direction;
       }
       if (direction === "inbound") inboundSeen = true;
+    }
+
+    // Parents must exist before reactions attach to them.
+    messages += await upsertChatMessages(plainMessages);
+    for (const patch of reactionPatches) {
+      await patchMessageReactionsByUnipileId({
+        conversationId,
+        unipileMessageId: patch.unipileMessageId,
+        reactions: patch.reactions,
+      });
+    }
+    for (const event of reactionEvents) {
+      let attached = false;
+      if (event.parentId) {
+        attached = await applyReactionToParentMessage({
+          conversationId,
+          parentUnipileMessageId: event.parentId,
+          reaction: {
+            value: event.emoji,
+            is_sender: event.isSender,
+          },
+        });
+      }
+      if (attached) continue;
+      // Keep a lightweight row so coaches still see engagement if parent
+      // isn't in the last-N sync window — UI renders this as a system line.
+      const ok = await upsertChatMessage({
+        conversationId,
+        coachId: input.coachId,
+        channel: input.channel,
+        messageId: event.messageId,
+        text: formatReactionPreview(event.emoji, { isSender: event.isSender }),
+        direction: event.direction,
+        createdAt: event.createdAt,
+        metadata: {
+          chat_id: chatId,
+          kind: "reaction_event",
+          is_event: true,
+          event_type: event.eventType,
+          parent_unipile_message_id: event.parentId,
+          reaction: event.emoji,
+          hidden: true,
+        },
+      });
+      if (ok) messages += 1;
     }
 
     if (latestAt) {
@@ -810,20 +985,26 @@ async function syncMailingAccount(input: {
   unipileAccountId: string;
   /** Soft visit: list headers only when the API supports it. */
   metaOnly?: boolean;
-}): Promise<{ chats: number; messages: number }> {
+  /** Epoch ms — stop between threads so a serverless run ends cleanly. */
+  deadlineAt?: number;
+  maxPages?: number;
+}): Promise<AccountSyncResult> {
   let chats = 0;
   let messages = 0;
-  const listed = await listUnipileEmails({
-    account_id: input.unipileAccountId,
-    limit: input.metaOnly ? 30 : 50,
-    meta_only: Boolean(input.metaOnly),
+  const listed = await listUnipileEmailsPaged({
+    accountId: input.unipileAccountId,
+    metaOnly: Boolean(input.metaOnly),
+    maxPages: input.maxPages ?? EMAIL_SOFT_PAGES,
+    deadlineAt: input.deadlineAt,
   });
-  if (!listed.ok) return { chats, messages };
+  if (!listed.ok) {
+    return { chats, messages, accountMissing: listed.accountMissing };
+  }
 
   const knownContacts = await loadKnownContactIndex(input.coachId);
 
   const byThread = new Map<string, Array<Record<string, unknown>>>();
-  for (const email of listed.data?.items ?? []) {
+  for (const email of listed.items) {
     const id = String(email.id || "");
     if (!id) continue;
     const role = String(email.role || "").toLowerCase();
@@ -837,7 +1018,42 @@ async function syncMailingAccount(input: {
     byThread.set(key, list);
   }
 
+  const listedIds = [...byThread.values()]
+    .flat()
+    .map((email) => String(email.id || ""))
+    .filter(Boolean);
+  const storedById = new Map<string, { id: string; body_text: string | null }>();
+  if (listedIds.length) {
+    const { data: storedRows } = await supabaseAdmin
+      .from("messaging_messages")
+      .select("id, unipile_message_id, body_text")
+      .eq("coach_id", input.coachId)
+      .in("unipile_message_id", listedIds);
+    for (const row of storedRows ?? []) {
+      storedById.set(String(row.unipile_message_id), {
+        id: row.id as string,
+        body_text: (row.body_text as string | null) ?? null,
+      });
+    }
+  }
+
+  // meta_only lists return empty bodies — fetch the full email for new or
+  // subject-only rows so Conversations shows the message, not its subject.
+  let bodyFetches = 0;
+  const emailBody = async (email: Record<string, unknown>) => {
+    const direct = unipileEmailBodyText(email);
+    if (direct) return direct;
+    if (bodyFetches >= MAX_EMAIL_BODY_FETCHES_PER_SYNC) return "";
+    bodyFetches += 1;
+    const full = await getUnipileEmail(
+      String(email.id || ""),
+      input.unipileAccountId
+    );
+    return full.ok && full.data ? unipileEmailBodyText(full.data) : "";
+  };
+
   for (const [threadKey, emails] of byThread) {
+    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
     emails.sort((a, b) => {
       const da = new Date(String(a.date || 0)).getTime();
       const db = new Date(String(b.date || 0)).getTime();
@@ -869,8 +1085,8 @@ async function syncMailingAccount(input: {
     const known = matchKnownContact(knownContacts, { email: prospectEmail });
     const linkedContactId =
       (existingConv?.contact_id as string | null) || known?.id || null;
-    if (!linkedContactId) {
-      // Only sync mail with known CRM contacts.
+    if (!linkedContactId && !allowlistedEmail(knownContacts, prospectEmail)) {
+      // Only sync mail with CRM contacts or people already in the pool.
       continue;
     }
 
@@ -921,10 +1137,14 @@ async function syncMailingAccount(input: {
     for (const email of emails) {
       const messageId = String(email.id || "");
       if (!messageId) continue;
-      const text =
-        (email.body_plain as string) ||
-        String(email.subject || "") ||
-        "";
+      const subjectLine = String(email.subject || "").trim();
+      const stored = storedById.get(messageId);
+      const needsBody =
+        !stored || isPlaceholderEmailBody(stored.body_text, subjectLine);
+      const body = needsBody
+        ? await emailBody(email)
+        : (stored?.body_text ?? "");
+      const text = body || subjectLine;
       const emailRole = String(email.role || "").toLowerCase();
       const direction =
         emailRole === "sent" || Boolean(email.is_sender)
@@ -933,21 +1153,28 @@ async function syncMailingAccount(input: {
       const createdAt =
         (email.date as string) || new Date().toISOString();
 
-      const ok = await upsertChatMessage({
-        conversationId,
-        coachId: input.coachId,
-        channel: "email",
-        messageId,
-        text,
-        direction,
-        createdAt,
-        metadata: {
-          thread_id: email.thread_id,
-          provider_id: email.provider_id,
-          subject: email.subject,
-        },
-      });
-      if (ok) messages += 1;
+      if (!stored) {
+        const ok = await upsertChatMessage({
+          conversationId,
+          coachId: input.coachId,
+          channel: "email",
+          messageId,
+          text,
+          direction,
+          createdAt,
+          metadata: {
+            thread_id: email.thread_id,
+            provider_id: email.provider_id,
+            subject: email.subject,
+          },
+        });
+        if (ok) messages += 1;
+      } else if (needsBody && body) {
+        await supabaseAdmin
+          .from("messaging_messages")
+          .update({ body_text: body })
+          .eq("id", stored.id);
+      }
       if (direction === "inbound") inboundSeen = true;
 
       if (!latestAt || new Date(createdAt) >= new Date(latestAt)) {
@@ -995,6 +1222,7 @@ export async function syncUnipileInboxForCoach(
     force?: boolean;
     minIntervalMs?: number;
     priorityChatIds?: string[];
+    deadlineAt?: number;
   }
 ): Promise<{
   chats: number;
@@ -1083,27 +1311,51 @@ export async function syncUnipileInboxForCoach(
   const softVisit = !force;
 
   for (const account of accounts) {
+    if (options?.deadlineAt && Date.now() > options.deadlineAt) break;
     const provider = normalizeUnipileProvider(account.provider as string);
-    let result = { chats: 0, messages: 0 };
-    if (isMailingProvider(provider)) {
-      result = await syncMailingAccount({
+    let result: AccountSyncResult = { chats: 0, messages: 0 };
+    try {
+      if (isMailingProvider(provider)) {
+        result = await syncMailingAccount({
+          coachId,
+          unipileAccountId: account.unipile_account_id as string,
+          metaOnly: softVisit,
+          deadlineAt: options?.deadlineAt,
+          maxPages: force ? EMAIL_FORCE_PAGES : EMAIL_SOFT_PAGES,
+        });
+      } else if (isMessagingProvider(provider)) {
+        result = await syncMessagingAccount({
+          coachId,
+          unipileAccountId: account.unipile_account_id as string,
+          channel: providerToAppChannel(provider),
+          includeMessages: true,
+          messagesOnlyIfStale: softVisit,
+          maxLinkedInPairResolves: softVisit ? 3 : undefined,
+          priorityChatIds: options?.priorityChatIds,
+          deadlineAt: options?.deadlineAt,
+          maxPages: force ? CHAT_FORCE_PAGES : CHAT_SOFT_PAGES,
+        });
+      }
+    } catch (err) {
+      console.error("unipile inbox sync account failed:", {
         coachId,
-        unipileAccountId: account.unipile_account_id as string,
-        metaOnly: softVisit,
-      });
-    } else if (isMessagingProvider(provider)) {
-      result = await syncMessagingAccount({
-        coachId,
-        unipileAccountId: account.unipile_account_id as string,
-        channel: providerToAppChannel(provider),
-        includeMessages: true,
-        messagesOnlyIfStale: softVisit,
-        maxLinkedInPairResolves: softVisit ? 3 : undefined,
-        priorityChatIds: options?.priorityChatIds,
+        accountId: account.id,
+        error: err instanceof Error ? err.message : String(err),
       });
     }
     chats += result.chats;
     messages += result.messages;
+
+    if (result.accountMissing) {
+      const { handleUnipileAccountStatusEvent } = await import(
+        "@/lib/unipile/webhookHandlers"
+      );
+      await handleUnipileAccountStatusEvent({
+        account_id: account.unipile_account_id,
+        event: "DELETED",
+      });
+      continue;
+    }
 
     await supabaseAdmin
       .from("linkedin_outreach_accounts")
@@ -1117,11 +1369,7 @@ export async function syncUnipileInboxForCoach(
 /** @deprecated Alias — multi-channel sync. */
 export async function syncLinkedInInboxForCoach(
   coachId: string,
-  options?: {
-    force?: boolean;
-    minIntervalMs?: number;
-    priorityChatIds?: string[];
-  }
+  options?: Parameters<typeof syncUnipileInboxForCoach>[1]
 ) {
   return syncUnipileInboxForCoach(coachId, options);
 }

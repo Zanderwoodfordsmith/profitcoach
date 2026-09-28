@@ -245,6 +245,47 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
     [authHeaders, contactUrl]
   );
 
+  /** Returns ids actually deleted; throws after removing any that did go. */
+  const handleDeleteProspects = useCallback(
+    async (rows: ProspectRow[]): Promise<string[]> => {
+      if (scope === "admin") {
+        const deleted: string[] = [];
+        for (const row of rows) {
+          await handleDeleteProspect(row, { skipConfirm: true });
+          deleted.push(row.id);
+        }
+        return deleted;
+      }
+      const headers = await authHeaders();
+      if (!headers) {
+        const message = "You must be signed in to delete prospects.";
+        setError(message);
+        throw new Error(message);
+      }
+      const res = await fetch("/api/coach/contacts/bulk-delete", {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: rows.map((row) => row.id) }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        deleted?: string[];
+        error?: string;
+      };
+      const deleted = Array.isArray(body.deleted) ? body.deleted : [];
+      if (deleted.length) {
+        const gone = new Set(deleted);
+        setProspects((prev) => prev.filter((p) => !gone.has(p.id)));
+      }
+      if (!res.ok) {
+        const message = body.error ?? "Unable to delete prospects.";
+        setError(message);
+        throw new Error(message);
+      }
+      return deleted;
+    },
+    [authHeaders, handleDeleteProspect, scope]
+  );
+
   const handleUpdateProspect = useCallback(
     async (row: ProspectRow, patch: ProspectFieldPatch) => {
       const {
@@ -548,6 +589,7 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
     pageHeaderHeight,
     handleCreateProspect,
     handleDeleteProspect,
+    handleDeleteProspects,
     handleUpdateProspect,
     handleProspectBooked,
     openAddProspect,

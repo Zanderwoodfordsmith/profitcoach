@@ -20,6 +20,14 @@ describe("prospect table view settings", () => {
     assert.deepEqual(normalized, createDefaultProspectTableViewSettings());
   });
 
+  it("normalizes excluded tags and defaults old views to none", () => {
+    assert.deepEqual(normalizeProspectTableViewSettings({}).excludeTags, []);
+    const normalized = normalizeProspectTableViewSettings({
+      excludeTags: [" Personal ", "PERSONAL", null, "Cold"],
+    });
+    assert.deepEqual(normalized.excludeTags, ["Personal", "Cold"]);
+  });
+
   it("keeps a valid custom setup", () => {
     const normalized = normalizeProspectTableViewSettings({
       statusFilter: "lead",

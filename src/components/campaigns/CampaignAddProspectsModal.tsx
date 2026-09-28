@@ -94,6 +94,7 @@ export function CampaignAddProspectsModal({
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [excludeTags, setExcludeTags] = useState<string[]>([]);
   const [listMenu, setListMenu] = useState<ListMenu>(null);
   const [sortField, setSortField] = useState<ListSortField>("name");
   const [sortOrder, setSortOrder] = useState<ListSortOrder>("asc");
@@ -171,6 +172,7 @@ export function CampaignAddProspectsModal({
     setStatusFilter("all");
     setSourceFilter("all");
     setSelectedTags([]);
+    setExcludeTags([]);
     setListMenu(null);
     setSortField("name");
     setSortOrder("asc");
@@ -425,6 +427,7 @@ export function CampaignAddProspectsModal({
   const filteredProspects = useMemo(() => {
     const term = listQuery.trim().toLowerCase();
     const tagKeys = selectedTags.map((tag) => tag.toLowerCase());
+    const excluded = new Set(excludeTags.map((tag) => tag.toLowerCase()));
     return prospects.filter((row) => {
       if (term) {
         const hay = [row.full_name, row.business_name, row.job_title, row.email]
@@ -442,13 +445,14 @@ export function CampaignAddProspectsModal({
         ).toLowerCase();
         if (key !== sourceFilter) return false;
       }
-      if (tagKeys.length) {
-        const have = new Set((row.tags ?? []).map((tag) => tag.toLowerCase()));
-        if (!tagKeys.some((tag) => have.has(tag))) return false;
+      const have = new Set((row.tags ?? []).map((tag) => tag.toLowerCase()));
+      if (tagKeys.length && !tagKeys.some((tag) => have.has(tag))) return false;
+      if (excluded.size && [...excluded].some((tag) => have.has(tag))) {
+        return false;
       }
       return true;
     });
-  }, [prospects, listQuery, statusFilter, sourceFilter, selectedTags]);
+  }, [prospects, listQuery, statusFilter, sourceFilter, selectedTags, excludeTags]);
 
   const sortedProspects = useMemo(() => {
     const rows = [...filteredProspects];
@@ -483,7 +487,8 @@ export function CampaignAddProspectsModal({
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) +
     (sourceFilter !== "all" ? 1 : 0) +
-    (selectedTags.length ? 1 : 0);
+    (selectedTags.length ? 1 : 0) +
+    (excludeTags.length ? 1 : 0);
   const hasActiveSort = sortField !== "name" || sortOrder !== "asc";
 
   function prospectState(
@@ -537,6 +542,9 @@ export function CampaignAddProspectsModal({
   function toggleTag(tag: string) {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]
+    );
+    setExcludeTags((prev) =>
+      prev.filter((item) => item.toLowerCase() !== tag.toLowerCase())
     );
   }
 
@@ -1088,6 +1096,60 @@ export function CampaignAddProspectsModal({
                               </p>
                             )}
                           </div>
+                          {tagOptions.length ? (
+                            <div>
+                              <p className="mb-1 text-xs font-medium text-slate-600">
+                                Exclude tags
+                              </p>
+                              <div className="max-h-40 overflow-y-auto rounded-md border border-slate-200">
+                                {tagOptions.map((tag) => {
+                                  const on = excludeTags.some(
+                                    (item) =>
+                                      item.toLowerCase() === tag.toLowerCase()
+                                  );
+                                  return (
+                                    <label
+                                      key={tag}
+                                      className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={on}
+                                        onChange={() => {
+                                          setExcludeTags((prev) =>
+                                            on
+                                              ? prev.filter(
+                                                  (item) =>
+                                                    item.toLowerCase() !==
+                                                    tag.toLowerCase()
+                                                )
+                                              : [...prev, tag]
+                                          );
+                                          if (!on) {
+                                            setSelectedTags((prev) =>
+                                              prev.filter(
+                                                (item) =>
+                                                  item.toLowerCase() !==
+                                                  tag.toLowerCase()
+                                              )
+                                            );
+                                          }
+                                        }}
+                                        className="rounded border-slate-300 text-rose-600"
+                                      />
+                                      <span
+                                        className={`truncate ${
+                                          on ? "text-rose-700" : ""
+                                        }`}
+                                      >
+                                        {tag}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
                           {sourceOptions.length > 1 ? (
                             <div>
                               <label
@@ -1123,6 +1185,7 @@ export function CampaignAddProspectsModal({
                                 setStatusFilter("all");
                                 setSourceFilter("all");
                                 setSelectedTags([]);
+                                setExcludeTags([]);
                               }}
                               className="text-xs font-medium text-slate-500 hover:text-slate-800"
                             >

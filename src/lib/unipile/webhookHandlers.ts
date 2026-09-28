@@ -1,4 +1,5 @@
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
+import { unipileEmailBodyText } from "@/lib/messaging/emailBody";
 import {
   applyReactionToParentMessage,
   extractReactionEmoji,
@@ -29,6 +30,18 @@ import { markContactRepliedOnInbound } from "@/lib/prospects/markContactReplied"
 function previewOf(text: string | null | undefined) {
   const t = (text || "").replace(/\s+/g, " ").trim();
   return t.slice(0, 160);
+}
+
+/**
+ * Throw before the conversation's last_message_at is bumped: a fresh-looking
+ * thread with no stored message makes soft sync skip the pull that would fix it.
+ * The webhook route returns 500 so Unipile retries.
+ */
+function throwIfMessageInsertFailed(
+  error: { code?: string; message: string } | null
+) {
+  if (!error || error.code === "23505") return;
+  throw new Error(`messaging_messages insert failed: ${error.message}`);
 }
 
 async function findExistingMailConversation(opts: {
@@ -328,28 +341,31 @@ export async function handleUnipileMessageReceived(
     }
 
     if (!attached && eventMessageId) {
-      await supabaseAdmin.from("messaging_messages").upsert(
-        {
-          conversation_id: conversationId,
-          coach_id: coachId,
-          channel,
-          direction: isSender ? "outbound" : "inbound",
-          status: "delivered",
-          body_text: formatReactionPreview(emoji, { isSender }),
-          unipile_message_id: eventMessageId,
-          metadata: {
-            chat_id: chatId,
-            webhook: true,
-            kind: "reaction_event",
-            is_event: true,
-            event_type: flags.eventType,
-            parent_unipile_message_id: parentId,
-            reaction: emoji,
-            hidden: true,
+      const { error: reactionInsertError } = await supabaseAdmin
+        .from("messaging_messages")
+        .upsert(
+          {
+            conversation_id: conversationId,
+            coach_id: coachId,
+            channel,
+            direction: isSender ? "outbound" : "inbound",
+            status: "delivered",
+            body_text: formatReactionPreview(emoji, { isSender }),
+            unipile_message_id: eventMessageId,
+            metadata: {
+              chat_id: chatId,
+              webhook: true,
+              kind: "reaction_event",
+              is_event: true,
+              event_type: flags.eventType,
+              parent_unipile_message_id: parentId,
+              reaction: emoji,
+              hidden: true,
+            },
           },
-        },
-        { onConflict: "unipile_message_id", ignoreDuplicates: true }
-      );
+          { onConflict: "unipile_message_id", ignoreDuplicates: true }
+        );
+      throwIfMessageInsertFailed(reactionInsertError);
     }
 
     const identityUpdate: Record<string, unknown> = {
@@ -385,23 +401,26 @@ export async function handleUnipileMessageReceived(
   );
 
   if (messageId) {
-    await supabaseAdmin.from("messaging_messages").upsert(
-      {
-        conversation_id: conversationId,
-        coach_id: coachId,
-        channel,
-        direction: isSender ? "outbound" : "inbound",
-        status: "delivered",
-        body_text: text,
-        unipile_message_id: messageId,
-        metadata: {
-          chat_id: chatId,
-          webhook: true,
-          ...(inboundReactions.length ? { reactions: inboundReactions } : {}),
+    const { error: messageInsertError } = await supabaseAdmin
+      .from("messaging_messages")
+      .upsert(
+        {
+          conversation_id: conversationId,
+          coach_id: coachId,
+          channel,
+          direction: isSender ? "outbound" : "inbound",
+          status: "delivered",
+          body_text: text,
+          unipile_message_id: messageId,
+          metadata: {
+            chat_id: chatId,
+            webhook: true,
+            ...(inboundReactions.length ? { reactions: inboundReactions } : {}),
+          },
         },
-      },
-      { onConflict: "unipile_message_id", ignoreDuplicates: true }
-    );
+        { onConflict: "unipile_message_id", ignoreDuplicates: true }
+      );
+    throwIfMessageInsertFailed(messageInsertError);
   }
 
   const identityUpdate: Record<string, unknown> = {
@@ -553,8 +572,7 @@ export async function handleUnipileMailReceived(
   const role = String(body.role || "").toLowerCase();
   const isSent = role === "sent" || String(body.origin || "") === "unipile";
   const text =
-    String(body.body_plain || "").trim() ||
-    String(body.subject || "").trim();
+    unipileEmailBodyText(body) || String(body.subject || "").trim();
   const subject = String(body.subject || "Email").slice(0, 200);
   const prospectEmail = isSent
     ? to0?.identifier || null
@@ -617,24 +635,27 @@ export async function handleUnipileMailReceived(
       .eq("id", conversationId);
   }
 
-  await supabaseAdmin.from("messaging_messages").upsert(
-    {
-      conversation_id: conversationId,
-      coach_id: coachId,
-      channel: "email",
-      direction: isSent ? "outbound" : "inbound",
-      status: "delivered",
-      body_text: text,
-      subject,
-      unipile_message_id: emailId,
-      metadata: {
-        thread_id: body.thread_id,
-        provider_id: body.provider_id,
-        webhook: true,
+  const { error: mailInsertError } = await supabaseAdmin
+    .from("messaging_messages")
+    .upsert(
+      {
+        conversation_id: conversationId,
+        coach_id: coachId,
+        channel: "email",
+        direction: isSent ? "outbound" : "inbound",
+        status: "delivered",
+        body_text: text,
+        subject,
+        unipile_message_id: emailId,
+        metadata: {
+          thread_id: body.thread_id,
+          provider_id: body.provider_id,
+          webhook: true,
+        },
       },
-    },
-    { onConflict: "unipile_message_id", ignoreDuplicates: true }
-  );
+      { onConflict: "unipile_message_id", ignoreDuplicates: true }
+    );
+  throwIfMessageInsertFailed(mailInsertError);
 
   await supabaseAdmin
     .from("messaging_conversations")
