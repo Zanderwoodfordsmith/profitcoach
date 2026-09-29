@@ -151,7 +151,7 @@ export function PracticeShell({
   const [navWidth, setNavWidth] = useState(NAV_WIDTH_DEFAULT);
   const page = BLUEPRINT_PAGES.find((item) => href(item.href) === pathname) ?? null;
   const group = BLUEPRINT_GROUPS.find((item) => item.pages.some((entry) => href(entry.href) === pathname)) ?? null;
-  const canApprove = Boolean(page && !guidePage(page.slug));
+  const canApprove = Boolean(page && !guidePage(page.slug) && page.slug !== "command" && page.slug !== "blueprint");
   const pageApproved = Boolean(page && payload?.review.approved_pages?.value?.[page.slug]);
   const noteCount = page
     ? (payload?.review.notes?.value ?? []).filter((note) => note.page === page.slug).length

@@ -15,6 +15,7 @@ import { readyForRecommendation } from "@/lib/practiceKnowledge/brief";
 import { mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
 import {
   buildPracticeSection,
+  sendBlueprintCampaign,
   generatePracticeReport,
   loadInterview,
   loadPractice,
@@ -63,6 +64,7 @@ type PracticeContextValue = {
   buildAll: (opts?: { onlyMissing?: boolean }) => void;
   stopBuild: () => void;
   saveField: (field: FieldSpec, value: unknown) => void;
+  sendCampaign: (variant: "connector" | "conversation") => Promise<{ campaignId?: string; error?: string }>;
   /** Right-hand assistant panel. */
   assistantOpen: boolean;
   setAssistantOpen: (open: boolean) => void;
@@ -348,6 +350,10 @@ export function PracticeProvider({
       draftRef.current = next;
       setDraft(next);
       void persist(next);
+    },
+    sendCampaign: async (variant) => {
+      const res = await sendBlueprintCampaign(variant, coachId);
+      return res.ok && res.data ? { campaignId: res.data.campaign_id } : { error: res.error || "Could not create the campaign." };
     },
     assistantOpen,
     setAssistantOpen,

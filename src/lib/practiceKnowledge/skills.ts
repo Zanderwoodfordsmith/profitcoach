@@ -143,7 +143,7 @@ Blocks, in this order:
 1. lede: how to handle replies in one sentence.
 2. heading "When they reply", then for each common reply a message block whose label is the prospect's reply (for example "They say: How much is it?") and whose body is what to send back. Cover: yes interested, what is it exactly, how much is it, not right now, we are doing fine, who are you, a neutral one-liner, send me some info.
 3. heading "Avoid", then bullets (the reply mistakes, short).
-4. heading "VIP nurture: top 100", then a message block (label "INSIGHT message") written for the avatar, and a callout (tone "tip") on who goes on the top 100 list.
+4. heading "VIP nurture: top 100", then a callout (tone "tip") on who goes on the top 100 list and the rhythm (every two weeks), then three message blocks, each giving away one BCA tool that fits the avatar's pains (for example "Profit Maximiser", "Cashflow Forecaster", "Time Value Tracker"), personalised first line as a {personalisation} placeholder, three emoji-numbered benefits, and a [link] placeholder.
 5. heading "Nurture rhythm", then a timeline for people who said not now (for example Week 2, Week 5, Week 8, Day 90).`,
   },
   "offer:direction": {
@@ -171,15 +171,16 @@ Blocks, in this order:
   },
   "sales:value": {
     file: "sales.md",
-    maxTokens: 6000,
-    task: `Design this coach's value session: the free, pitch-free session built around their superpower and the avatar's main pain.
+    maxTokens: 8000,
+    task: `Design this coach's value session and its launch kit: the free, pitch-free session built around their superpower and the avatar's main pain.
 Blocks, in this order:
 1. lede: the name of the session and what the owner walks away with.
 2. pairs: Name, Length, Who it is for, What they get, The promise.
-3. heading "The invitation", then a message block (label "Invitation") with three bullets that move away from a pain and towards a gain, "no strings, no pitch", and how to book.
-4. heading "The questions", then a table with columns Area, Question, Red looks like, Green looks like (eight to ten rows).
-5. heading "The transition", then a message block with the words to move from value to working together.
-6. heading "If they say not now", then a paragraph.`,
+3. heading "The questions", then a table with columns Area, Question, Red looks like, Green looks like (eight to ten rows, built on the coach's superpower and the avatar's pains).
+4. heading "Your opening questions", then numbered: the four questions (challenge, 12 months from now, why it matters personally, what they have tried) reworded for this avatar.
+5. heading "The magic question", then a message block with the magic question and the bridge into the offer (three things tied to pain, goal and personal driver).
+6. heading "The launch kit", then message blocks: "Launch email" (subject line on the first line), "Nudge email", "LinkedIn DM invite", "LinkedIn DM nudge", "LinkedIn Featured description", "Calendar page description".
+7. heading "If they say not now", then a paragraph.`,
   },
   "sales:script": {
     file: "sales.md",

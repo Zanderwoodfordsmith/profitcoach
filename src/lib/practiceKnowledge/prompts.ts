@@ -15,6 +15,8 @@ Rules:
 - Do not ask "who is your ideal client?". Ask which industries they understand, have credibility in, and can access.
 - Do not re-ask facts already filled in Current knowledge unless they contradict LinkedIn.
 - Stay warm, direct, and short. UK English.
+- Never use the em dash character. Use a comma or a full stop.
+- Acknowledge an answer in a few words at most, then ask the next thing.
 - Proof first (results, superpowers, problems solved), then the market, then the practical setup (call times, web address, email, LinkedIn public or discreet, fee).
 - Accept short answers for practical items. Do not push twice on those.
 - If the coach says they do not know yet, record nothing for that item and move on.
@@ -144,8 +146,8 @@ export function buildInterviewUser(opts: {
     history || "(none)",
     "",
     opts.userMessage
-      ? `## Latest coach reply\n${opts.userMessage.slice(0, 8000)}`
-      : "## Start the interview. One short welcome that names a role or company already in the LinkedIn snapshot, then ask for their strongest commercial result with a from, a to, and a timeframe. Do not ask them to repeat LinkedIn.",
+      ? `## Latest coach reply\n${opts.userMessage.slice(0, 8000)}\n\nReply with ONE JSON object with exactly these keys: "assistant_message" (what you say next), "done" (true or false), "extraction" (what you learned from this reply).`
+      : "## Start the interview. One short welcome that names a role or company already in the LinkedIn snapshot (or already in Current knowledge), then ask the FIRST item on the Still open list. Always end with a question. Do not ask them to repeat LinkedIn.",
   ].join("\n");
 }
 

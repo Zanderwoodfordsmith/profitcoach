@@ -1,9 +1,10 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { PageHeaderDescriptionInfo } from "@/components/layout/PageHeaderDescriptionInfo";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import {
   BLUEPRINT_GROUPS,
   BLUEPRINT_PAGES,
@@ -23,10 +24,12 @@ const SOURCE_CLASS: Record<SectionSource, string> = {
 
 const PAGE_NOTES: Record<string, string> = {
   command: "Reads from every page and picks the one next action.",
-  blueprint: "Collects every Imported and From you section into one document the coach reviews.",
+  blueprint: "The whole document: every chapter below, with a cover, contents, downloads and print to PDF.",
 };
 
 /** Sticks under the Blueprint page header (height set by the layout). */
+type Coverage = { coach_id: string; name: string; states: Record<string, string> };
+
 const STICKY_TH =
   "sticky top-[var(--blueprint-header-h,0px)] z-10 border-y border-slate-200 bg-slate-50 px-4 py-2 font-medium";
 
@@ -49,6 +52,26 @@ function SourceTag({ source }: { source: SectionSource }) {
 export function AdminBlueprintMap() {
   const [filter, setFilter] = useState<SectionSource | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [coverage, setCoverage] = useState<Coverage[] | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const headers = await getCoachAuthHeaders(null);
+      if (!headers) return;
+      // Coverage is admin data: never send a "View as" coach header with it.
+      delete headers["x-impersonate-coach-id"];
+      const res = await fetch("/api/admin/practice/coverage", { headers });
+      const body = (await res.json().catch(() => null)) as { coaches?: Coverage[] } | null;
+      if (res.ok) setCoverage(body?.coaches ?? []);
+    })();
+  }, []);
+
+  function coverageFor(key: string, source: SectionSource) {
+    if (!coverage || source === "standard" || source === "live") return null;
+    const done = coverage.filter((c) => c.states[key] === "ready");
+    return { done, total: coverage.length };
+  }
 
   function toggleGroup(label: string) {
     setCollapsed((prev) => {
@@ -101,8 +124,9 @@ export function AdminBlueprintMap() {
             <tr>
               <th className={`${STICKY_TH} ${EDGE_L} w-[30%] rounded-tl-xl`}>Section</th>
               <th className={`${STICKY_TH} w-[11%]`}>Type</th>
-              <th className={`${STICKY_TH} w-[32%]`}>Built from</th>
-              <th className={`${STICKY_TH} ${EDGE_R} rounded-tr-xl`}>Goes to</th>
+              <th className={`${STICKY_TH} w-[28%]`}>Built from</th>
+              <th className={`${STICKY_TH}`}>Goes to</th>
+              <th className={`${STICKY_TH} ${EDGE_R} w-[9rem] rounded-tr-xl`}>Coaches</th>
             </tr>
           </thead>
           <tbody>
@@ -120,11 +144,11 @@ export function AdminBlueprintMap() {
                 <Fragment key={group.label}>
                   {index > 0 ? (
                     <tr aria-hidden>
-                      <td colSpan={4} className="h-8 bg-transparent" />
+                      <td colSpan={5} className="h-8 bg-transparent" />
                     </tr>
                   ) : null}
                   <tr>
-                    <td colSpan={4} className={`border-y border-slate-200 bg-slate-100 p-0 ${EDGES}`}>
+                    <td colSpan={5} className={`border-y border-slate-200 bg-slate-100 p-0 ${EDGES}`}>
                       <button
                         type="button"
                         aria-expanded={open}
@@ -146,7 +170,7 @@ export function AdminBlueprintMap() {
                   {open && pages.map(({ page, sections }) => (
                     <Fragment key={page.slug}>
                       <tr>
-                        <td colSpan={4} className={`border-b border-slate-100 bg-white px-4 pb-1.5 pt-3 ${EDGES}`}>
+                        <td colSpan={5} className={`border-b border-slate-100 bg-white px-4 pb-1.5 pt-3 ${EDGES}`}>
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-slate-900">{page.title}</span>
                             <PageHeaderDescriptionInfo>{page.summary}</PageHeaderDescriptionInfo>
@@ -156,8 +180,13 @@ export function AdminBlueprintMap() {
                           </div>
                         </td>
                       </tr>
-                      {sections.map((section) => (
-                        <tr key={section.id} className="align-top">
+                      {sections.map((section) => {
+                        const key = `${page.slug}:${section.id}`;
+                        const cov = coverageFor(key, section.source);
+                        const isOpen = expanded === key;
+                        return (
+                        <Fragment key={section.id}>
+                        <tr className="align-top">
                           <td className={`border-b border-slate-100 bg-white py-2 pl-8 pr-4 text-slate-800 ${EDGE_L}`}>{section.title}</td>
                           <td className="border-b border-slate-100 bg-white px-4 py-2">
                             <SourceTag source={section.source} />
@@ -165,9 +194,50 @@ export function AdminBlueprintMap() {
                           <td className="border-b border-slate-100 bg-white px-4 py-2 text-slate-600">
                             {section.from?.join(" · ") || "—"}
                           </td>
-                          <td className={`border-b border-slate-100 bg-white px-4 py-2 text-slate-600 ${EDGE_R}`}>{section.feeds || "—"}</td>
+                          <td className="border-b border-slate-100 bg-white px-4 py-2 text-slate-600">{section.feeds || "—"}</td>
+                          <td className={`border-b border-slate-100 bg-white px-4 py-2 ${EDGE_R}`}>
+                            {cov ? (
+                              <button
+                                type="button"
+                                aria-expanded={isOpen}
+                                onClick={() => setExpanded(isOpen ? null : key)}
+                                className="tabular-nums text-left text-slate-700 hover:text-sky-800"
+                              >
+                                <span className="font-semibold">{cov.done.length}</span>
+                                <span className="text-slate-500"> of {cov.total} {section.source === "we_build" ? "written" : "filled"}</span>
+                              </button>
+                            ) : (
+                              <span className="text-slate-400">{coverage ? "—" : "…"}</span>
+                            )}
+                          </td>
                         </tr>
-                      ))}
+                        {isOpen && coverage ? (
+                          <tr>
+                            <td colSpan={5} className={`border-b border-slate-100 bg-slate-50 px-8 py-3 ${EDGES}`}>
+                              <ul className="flex flex-wrap gap-2">
+                                {coverage.map((c) => {
+                                  const ready = c.states[key] === "ready";
+                                  return (
+                                    <li key={c.coach_id}>
+                                      <a
+                                        href={`/admin/blueprint/records/${c.coach_id}`}
+                                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
+                                          ready ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-white text-slate-600 ring-slate-200"
+                                        }`}
+                                      >
+                                        <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${ready ? "bg-emerald-500" : "bg-amber-400"}`} />
+                                        {c.name}
+                                      </a>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </td>
+                          </tr>
+                        ) : null}
+                        </Fragment>
+                        );
+                      })}
                     </Fragment>
                   ))}
                 </Fragment>

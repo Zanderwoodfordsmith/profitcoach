@@ -31,7 +31,16 @@ type InterviewModelOut = {
   assistant_message?: string;
   done?: boolean;
   extraction?: Partial<PracticeKnowledgePayload>;
+  /** Keys the model sometimes uses instead of assistant_message. */
+  question?: string;
+  message?: string;
+  reply?: string;
 };
+
+function spoken(out: InterviewModelOut | null): string {
+  const text = out?.assistant_message || out?.question || out?.message || out?.reply || "";
+  return typeof text === "string" ? text.trim() : "";
+}
 
 export async function GET(request: Request) {
   const check = await requireCoachRequest(request, { allowAdminSelf: true });
@@ -88,17 +97,24 @@ export async function POST(request: Request) {
     }
 
     const { summary } = await loadCoachLinkedInSummary(check.userId);
-    const { data, error } = await generateCampaignJson<InterviewModelOut>({
-      system: PRACTICE_INTERVIEW_SYSTEM,
-      user: buildInterviewUser({
-        linkedinSummary: summary,
-        knowledge: knowledge.payload,
-        turns,
-        userMessage: starting ? null : userText,
-        stillOpen: openQuestions(knowledge),
-      }),
-      maxTokens: 2048,
-    });
+    const ask = () =>
+      generateCampaignJson<InterviewModelOut>({
+        system: PRACTICE_INTERVIEW_SYSTEM,
+        user: buildInterviewUser({
+          linkedinSummary: summary,
+          knowledge: knowledge.payload,
+          turns,
+          userMessage: starting ? null : userText,
+          stillOpen: openQuestions(knowledge),
+        }),
+        maxTokens: 3000,
+      });
+    // One retry: a busy model occasionally returns nothing usable.
+    let { data, error } = await ask();
+    if (!spoken(data)) ({ data, error } = await ask());
+    if (data && spoken(data)) {
+      data.assistant_message = spoken(data).replace(/\s*\u2014\s*/g, ", ");
+    }
 
     if (!data?.assistant_message) {
       return NextResponse.json(

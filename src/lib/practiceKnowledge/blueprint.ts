@@ -714,10 +714,17 @@ export function stillNeeded(row: PracticeKnowledgeRow): SectionRef[] {
   );
 }
 
+/** Conversation order: proof first, then the market, the offer, and the practical setup last. */
+const ASK_ORDER = ["story", "market", "offer", "linkedin", "voice", "setup"];
+
 /** Open fields with the question to ask, for the AI conversation agenda. */
 export function openQuestions(row: PracticeKnowledgeRow): { path: string; label: string; ask: string }[] {
   const out: { path: string; label: string; ask: string }[] = [];
-  for (const ref of BLUEPRINT_SECTIONS) {
+  const ordered = [...BLUEPRINT_SECTIONS].sort(
+    (a, b) =>
+      (ASK_ORDER.indexOf(a.page.slug) + 1 || 99) - (ASK_ORDER.indexOf(b.page.slug) + 1 || 99)
+  );
+  for (const ref of ordered) {
     for (const field of ref.section.fields ?? []) {
       if (!field.ask || fieldFilled(row.payload, field)) continue;
       out.push({ path: field.path, label: `${ref.section.title}: ${field.label}`, ask: field.ask });
@@ -758,23 +765,23 @@ export function commandCenter(row: PracticeKnowledgeRow): CommandCenterModel {
   if (proofOpen) {
     lead = "You are capturing the proof behind your practice.";
     detail = "Your next step is one commercial result with a from, a to, and a timeframe.";
-    action = { label: "Add the result in your blueprint", href: "/coach/practice/blueprint#brief-experience" };
+    action = { label: "Add the result in your blueprint", href: "/coach/practice/story#s-story-results" };
     milestone = "One precise result";
   } else if (askedOpen) {
     lead = "You are turning experience into a position.";
     detail = "Your next step is the problems people already ask you to solve.";
-    action = { label: "Continue the blueprint", href: "/coach/practice/blueprint#brief-experience" };
+    action = { label: "Continue the blueprint", href: "/coach/practice/story#s-story-results" };
     milestone = "Problems you already solve";
   } else if (!report) {
     lead = "You have enough for a first recommendation.";
     detail = "BCA is ready to draft the market options and the campaign angle.";
-    action = { label: "Read your Practice Blueprint", href: "/coach/practice/blueprint#brief-priorities" };
+    action = { label: "Read your Practice Blueprint", href: "/coach/practice/market#s-market-options" };
     building = "Writing the recommendation from the brief.";
     milestone = "Recommendation drafted";
   } else if (!row.coach_reviewed_at) {
     lead = "You are preparing the Decision Call.";
     detail = "BCA has drafted your market options and a campaign angle. Your next step is to read them and note what feels off.";
-    action = { label: "Review the recommendation", href: "/coach/practice/blueprint#brief-priorities" };
+    action = { label: "Review the recommendation", href: "/coach/practice/market#s-market-options" };
     building = "Market options and a campaign angle are drafted. The Decision Call locks them.";
     milestone = "You review the recommendation";
   } else if (row.status === "ready_to_build" || row.status === "building") {
@@ -789,7 +796,7 @@ export function commandCenter(row: PracticeKnowledgeRow): CommandCenterModel {
       ? "Your call is booked. Read the recommendation before you join."
       : "Your next step is to book the Decision Call.";
     action = booked
-      ? { label: "Read the recommendation", href: "/coach/practice/blueprint#brief-priorities" }
+      ? { label: "Read the recommendation", href: "/coach/practice/market#s-market-options" }
       : { label: "Book the Decision Call", href: "/welcome" };
     building = "Holding the recommendation until the call locks one market, one offer, and one angle.";
     milestone = "Decision Call";

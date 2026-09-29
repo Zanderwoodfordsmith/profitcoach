@@ -83,14 +83,15 @@ export const STANDARD_SECTIONS: Record<string, BlueprintBlock[]> = {
     {
       type: "steps",
       items: [
-        { title: "Build rapport (2 minutes)", detail: "Keep it short. Ask what made them book the session. That answer is the thread for the whole call." },
-        { title: "Set the goal (5 minutes)", detail: "Ask where they want the business to be in a year. If they drift into the past, bring them back to the future." },
-        { title: "Find the challenges (5 minutes)", detail: "Ask for the biggest challenge, what they tried, and the one thing that would make the biggest difference. Repeat it back." },
-        { title: "Run the audit (15 minutes)", detail: "Ask your questions and score each area red, amber or green. Coach, do not just ask. Give them one or two things they can act on." },
-        { title: "Reframe the red", detail: "If there is a lot of red, say it is good news: look how far they got without these fixed." },
-        { title: "Transition", detail: "\"If we did this together, we would focus on {biggest pain} and take you from {now} to {goal}. Does that sound like something you would want help with?\"" },
-        { title: "If yes, pitch", detail: "\"Let me walk you through how I work with clients to make this happen.\" Tailor every part to their pains." },
-        { title: "If not now, stop", detail: "No objection handling. You promised no pitch. Send a short report and book a follow-up within a week." },
+        { title: "Warm rapport (2 to 3 minutes)", detail: "\"Great to meet you, thanks for making the time. I'd love to understand where you're at right now and where you'd like to go.\" Ask what made them book." },
+        { title: "The current challenge", detail: "\"What's the biggest challenge or opportunity you're facing right now that's stopping your business from being where you want it to be?\"" },
+        { title: "The desired future", detail: "\"If we were having this same conversation 12 months from now, what would need to have changed for you to feel genuinely happy with your progress?\" This creates the gap." },
+        { title: "The personal driver", detail: "\"Why is solving this important to you personally, beyond just the numbers?\" Family, freedom, pride, legacy." },
+        { title: "What they have tried", detail: "\"What have you tried so far, and how has that worked out?\" Respect the effort. Repeat it back." },
+        { title: "Deliver the value (15 minutes)", detail: "Ask your audit questions and score each area red, amber or green. Coach, do not just ask. Give one or two things they can act on this week. If there is a lot of red, reframe it: look how far they got without these fixed." },
+        { title: "The magic question", detail: "\"Would you like to see how I help my clients solve exactly this and get results faster?\" Wait for the yes." },
+        { title: "Bridge into the offer", detail: "\"Based on what you told me about {their challenge} and your vision for {their outcome}, here is how I work with clients in your situation.\" Three things, tied to their pain, their goal and their personal driver. Add proof. Then: \"Does that sound like the support that would make a real difference?\"" },
+        { title: "If not now, stop", detail: "No objection handling. You promised no pitch. \"The important thing is you've got clarity on your next steps.\" Send a short report and offer a check-in in two weeks." },
       ],
     },
     {

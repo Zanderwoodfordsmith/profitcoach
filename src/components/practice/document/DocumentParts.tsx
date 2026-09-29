@@ -35,7 +35,9 @@ export function useBlueprintProgress() {
   const written = build.filter((k) => knowledge.built_sections[k]).length;
   const needed = stillNeeded(row);
   const approvals = payload.review.approved_sections?.value ?? {};
-  const reviewable = BLUEPRINT_SECTIONS.filter((r) => r.section.source !== "live" && sectionState(r, row) === "ready");
+  const reviewable = BLUEPRINT_SECTIONS.filter(
+    (r) => r.section.source !== "live" && r.section.source !== "standard" && sectionState(r, row) === "ready"
+  );
   const approved = reviewable.filter((r) => approvals[r.key]).length;
   return { written, toWrite: build.length, needed, approved, reviewable: reviewable.length };
 }

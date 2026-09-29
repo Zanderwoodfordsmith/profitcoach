@@ -187,6 +187,54 @@ function WriteButton({ refKey, label }: { refKey: string; label: string }) {
   );
 }
 
+function SendToCampaigns() {
+  const { sendCampaign, href } = usePractice();
+  const [state, setState] = useState<{ busy?: string; done?: { id: string; label: string }; error?: string }>({});
+
+  async function send(variant: "connector" | "conversation", label: string) {
+    setState({ busy: variant });
+    const res = await sendCampaign(variant);
+    setState(res.campaignId ? { done: { id: res.campaignId, label } } : { error: res.error });
+  }
+
+  return (
+    <div className="bp-no-print bp-tinted mt-8 rounded-2xl bg-[var(--bp-tint)] px-5 py-4">
+      <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">Send to Get Clients</p>
+      <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">
+        Creates a draft campaign with these messages and the timings above. Nothing sends until prospects are added and the campaign is started.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={Boolean(state.busy)}
+          onClick={() => void send("connector", "Connector campaign")}
+          className="rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
+        >
+          {state.busy === "connector" ? "Creating…" : "Connector campaign"}
+        </button>
+        <button
+          type="button"
+          disabled={Boolean(state.busy)}
+          onClick={() => void send("conversation", "Scorecard conversation")}
+          className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-[var(--bp-ink)] ring-1 ring-[var(--bp-rule)] hover:ring-[var(--bp-sky)] disabled:opacity-50"
+        >
+          {state.busy === "conversation" ? "Creating…" : "Scorecard conversation"}
+        </button>
+        {state.done ? (
+          <Link
+            href={href(`/coach/campaigns/${state.done.id}`)}
+            className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline"
+          >
+            {state.done.label} created. Open it
+            <ArrowUpRight className="h-4 w-4" aria-hidden />
+          </Link>
+        ) : null}
+        {state.error ? <span className="text-sm text-[#9b1c1c]">{state.error}</span> : null}
+      </div>
+    </div>
+  );
+}
+
 function Built({ refKey }: { refKey: string }) {
   const { knowledge, building, build } = usePractice();
   const ref = sectionByKey(refKey);
@@ -236,6 +284,7 @@ function Built({ refKey }: { refKey: string }) {
   return (
     <div className="bp-written">
       <Blocks blocks={built.blocks} />
+      {refKey === "campaigns:messaging" ? <SendToCampaigns /> : null}
       <div className="bp-no-print mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--bp-rule)] pt-3 text-xs text-[var(--bp-faint)]">
         <span>Written by BCA {formatDate(built.generated_at)}</span>
         <button
@@ -266,7 +315,7 @@ export function SectionView({ sectionRef }: { sectionRef: SectionRef }) {
   const row = { ...knowledge, payload };
   const state = sectionState(sectionRef, row);
   const approved = Boolean(payload.review.approved_sections?.value?.[key]);
-  const canApprove = section.source !== "live" && state === "ready";
+  const canApprove = section.source !== "live" && section.source !== "standard" && state === "ready";
 
   const stateLabel =
     state === "open"

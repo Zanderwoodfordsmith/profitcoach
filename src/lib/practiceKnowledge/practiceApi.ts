@@ -112,6 +112,15 @@ export function buildPracticeSection(section: string, coachId?: PracticeCoachId,
   );
 }
 
+/** Create a draft Get Clients campaign from the blueprint's campaign messaging. */
+export function sendBlueprintCampaign(variant: "connector" | "conversation", coachId?: PracticeCoachId) {
+  return post<{ campaign_id: string; name: string; steps: number }>(
+    "/api/coach/practice/send-campaign",
+    coachId,
+    { variant }
+  );
+}
+
 export function generatePracticeReport(coachId?: PracticeCoachId) {
   return post<{
     report: PracticeReportPayload | null;

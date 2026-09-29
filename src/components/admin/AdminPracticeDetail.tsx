@@ -150,7 +150,23 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
         <Link href="/admin/blueprint/records" className="text-xs font-medium text-sky-600">
           ← Coach records
         </Link>
-        <h2 className="mt-1 text-xl font-semibold text-slate-900">{name}</h2>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold text-slate-900">{name}</h2>
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                window.sessionStorage.setItem("blueprint-preview-coach", coachId);
+              } catch {
+                // The picker on the next page still works without it.
+              }
+              window.location.assign("/admin/blueprint/coach/blueprint");
+            }}
+            className="rounded-full bg-[#051e36] px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-[#0c5290]"
+          >
+            Open their blueprint
+          </button>
+        </div>
         <p className="text-sm text-slate-600">
           The same brief the coach sees. Lock the Decision Record after the call.
         </p>
