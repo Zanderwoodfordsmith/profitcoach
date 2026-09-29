@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Check, Copy, Info, Lightbulb } from "lucide-react";
+import { AlertTriangle, Check, Copy, Info, Lightbulb, Pencil } from "lucide-react";
 
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 
@@ -24,8 +24,17 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   );
 }
 
-function MessageBlock({ block }: { block: Extract<BlueprintBlock, { type: "message" }> }) {
-  const chars = block.body.length;
+function MessageBlock({
+  block,
+  onSave,
+}: {
+  block: Extract<BlueprintBlock, { type: "message" }>;
+  onSave?: (body: string) => Promise<boolean>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(block.body);
+  const [saving, setSaving] = useState(false);
+  const chars = editing ? draft.length : block.body.length;
   return (
     <figure className="bp-keep overflow-hidden rounded-2xl border border-[var(--bp-rule)] bg-white shadow-[0_10px_30px_-22px_rgba(5,30,54,0.45)]">
       <figcaption className="flex items-center justify-between gap-3 border-b border-[var(--bp-rule)] bg-[var(--bp-tint)] px-4 py-2">
@@ -34,12 +43,58 @@ function MessageBlock({ block }: { block: Extract<BlueprintBlock, { type: "messa
         </span>
         <span className="flex shrink-0 items-center gap-2">
           <span className="bp-num text-xs text-[var(--bp-faint)]">{chars} characters</span>
-          <CopyButton text={block.body} />
+          {onSave && !editing ? (
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(block.body);
+                setEditing(true);
+              }}
+              className="bp-no-print inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--bp-muted)] transition-colors hover:bg-[var(--bp-tint-strong)] hover:text-[var(--bp-blue)]"
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+              Edit
+            </button>
+          ) : null}
+          <CopyButton text={editing ? draft : block.body} />
         </span>
       </figcaption>
-      <p className="whitespace-pre-wrap px-4 py-3.5 text-[0.9375rem] leading-[1.65] text-[var(--bp-body)]">
-        {block.body}
-      </p>
+      {editing ? (
+        <div className="px-4 py-3.5">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={Math.min(18, Math.max(4, draft.split("\n").length + 1))}
+            className="block w-full resize-y rounded-lg border border-[var(--bp-rule)] px-3 py-2 text-[0.9375rem] leading-[1.65] text-[var(--bp-body)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]"
+          />
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              disabled={saving || !draft.trim()}
+              onClick={async () => {
+                setSaving(true);
+                const ok = await onSave!(draft.trim());
+                setSaving(false);
+                if (ok) setEditing(false);
+              }}
+              className="rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--bp-muted)] hover:bg-[var(--bp-tint)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="whitespace-pre-wrap px-4 py-3.5 text-[0.9375rem] leading-[1.65] text-[var(--bp-body)]">
+          {block.body}
+        </p>
+      )}
       {block.note ? (
         <p className="border-t border-dashed border-[var(--bp-rule)] px-4 py-2 text-xs leading-5 text-[var(--bp-muted)]">
           {block.note}
@@ -103,7 +158,14 @@ function Timeline({ block }: { block: Extract<BlueprintBlock, { type: "timeline"
   );
 }
 
-export function Blocks({ blocks }: { blocks: BlueprintBlock[] }) {
+export function Blocks({
+  blocks,
+  onSaveMessage,
+}: {
+  blocks: BlueprintBlock[];
+  /** When set, message blocks get an Edit button that saves through this. */
+  onSaveMessage?: (index: number, body: string) => Promise<boolean>;
+}) {
   return (
     <div className="space-y-5">
       {blocks.map((block, i) => {
@@ -231,7 +293,13 @@ export function Blocks({ blocks }: { blocks: BlueprintBlock[] }) {
               </div>
             );
           case "message":
-            return <MessageBlock key={key} block={block} />;
+            return (
+              <MessageBlock
+                key={`${key}-${block.body.length}`}
+                block={block}
+                onSave={onSaveMessage ? (body) => onSaveMessage(i, body) : undefined}
+              />
+            );
           case "callout": {
             const tone = CALLOUT[block.tone];
             const Icon = tone.icon;

@@ -15,6 +15,7 @@ import { readyForRecommendation } from "@/lib/practiceKnowledge/brief";
 import { mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
 import {
   buildPracticeSection,
+  saveBuiltBlocks,
   sendBlueprintCampaign,
   generatePracticeReport,
   loadInterview,
@@ -65,6 +66,8 @@ type PracticeContextValue = {
   stopBuild: () => void;
   saveField: (field: FieldSpec, value: unknown) => void;
   sendCampaign: (variant: "connector" | "conversation") => Promise<{ campaignId?: string; error?: string }>;
+  /** Replace the body of one message block in a written section. */
+  editMessage: (key: string, index: number, body: string) => Promise<boolean>;
   /** Right-hand assistant panel. */
   assistantOpen: boolean;
   setAssistantOpen: (open: boolean) => void;
@@ -334,7 +337,8 @@ export function PracticeProvider({
     buildAll: (opts) => {
       if (building.active.length) return;
       const built = knowledge?.built_sections ?? {};
-      const keys = buildOrder().filter((k) => !opts?.onlyMissing || !built[k]);
+      // "Rewrite everything" never overwrites a section the coach edited by hand.
+      const keys = buildOrder().filter((k) => (opts?.onlyMissing ? !built[k] : !built[k]?.edited_at));
       void runBuilds(keys);
     },
     stopBuild: () => {
@@ -350,6 +354,19 @@ export function PracticeProvider({
       draftRef.current = next;
       setDraft(next);
       void persist(next);
+    },
+    editMessage: async (key, index, body) => {
+      const built = knowledge?.built_sections[key];
+      const block = built?.blocks[index];
+      if (!built || !block || block.type !== "message") return false;
+      const blocks = built.blocks.map((b, i) => (i === index && b.type === "message" ? { ...b, body } : b));
+      const res = await saveBuiltBlocks(key, blocks, coachId);
+      if (!res.ok || !res.data) {
+        setError(res.error || "Could not save your edit.");
+        return false;
+      }
+      setKnowledge(res.data.knowledge);
+      return true;
     },
     sendCampaign: async (variant) => {
       const res = await sendBlueprintCampaign(variant, coachId);

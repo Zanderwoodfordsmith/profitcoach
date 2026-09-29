@@ -3,6 +3,7 @@
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { ApiResult } from "@/lib/firstCampaign/wizardApi";
 import type {
+  BlueprintBlock,
   DecisionRecordRow,
   IntakeAssetRow,
   IntakeSessionRow,
@@ -110,6 +111,11 @@ export function buildPracticeSection(section: string, coachId?: PracticeCoachId,
     coachId,
     clear ? { section, clear: true } : { section }
   );
+}
+
+/** Save edited blocks for a section BCA wrote. */
+export function saveBuiltBlocks(section: string, blocks: BlueprintBlock[], coachId?: PracticeCoachId) {
+  return post<{ knowledge: PracticeKnowledgeRow }>("/api/coach/practice/build", coachId, { section, blocks });
 }
 
 /** Create a draft Get Clients campaign from the blueprint's campaign messaging. */

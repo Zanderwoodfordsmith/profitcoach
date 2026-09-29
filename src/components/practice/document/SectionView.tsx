@@ -236,7 +236,7 @@ function SendToCampaigns() {
 }
 
 function Built({ refKey }: { refKey: string }) {
-  const { knowledge, building, build } = usePractice();
+  const { knowledge, building, build, editMessage } = usePractice();
   const ref = sectionByKey(refKey);
   const built = knowledge?.built_sections[refKey];
   const writing = building.active.includes(refKey);
@@ -283,14 +283,20 @@ function Built({ refKey }: { refKey: string }) {
 
   return (
     <div className="bp-written">
-      <Blocks blocks={built.blocks} />
+      <Blocks blocks={built.blocks} onSaveMessage={(index, body) => editMessage(refKey, index, body)} />
       {refKey === "campaigns:messaging" ? <SendToCampaigns /> : null}
       <div className="bp-no-print mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--bp-rule)] pt-3 text-xs text-[var(--bp-faint)]">
-        <span>Written by BCA {formatDate(built.generated_at)}</span>
+        <span>
+          Written by BCA {formatDate(built.generated_at)}
+          {built.edited_at ? `, edited ${formatDate(built.edited_at)}` : ""}
+        </span>
         <button
           type="button"
           disabled={building.active.length > 0}
-          onClick={() => build(refKey)}
+          onClick={() => {
+            if (built.edited_at && !window.confirm("Rewriting replaces your edits to this section. Carry on?")) return;
+            build(refKey);
+          }}
           className="inline-flex items-center gap-1 font-semibold text-[var(--bp-muted)] hover:text-[var(--bp-blue)] disabled:opacity-40"
         >
           <RotateCw className="h-3.5 w-3.5" aria-hidden />

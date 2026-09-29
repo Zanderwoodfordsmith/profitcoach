@@ -361,7 +361,7 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
     `${prefix}/share`,
   ];
   if (prefix === "/coach") {
-    paths.push("/coach/links", "/coach/practice");
+    paths.push("/coach/links");
   }
   if (prefix === "/admin") {
     paths.push(
@@ -393,7 +393,6 @@ export function isGetClientsCreatePath(pathname: string | null): boolean {
     pathMatches(pathname, "/admin/first-campaign") ||
     pathMatches(pathname, "/coach/ideal-client") ||
     pathMatches(pathname, "/admin/ideal-client") ||
-    pathMatches(pathname, "/coach/practice") ||
     pathMatches(pathname, "/coach/linkedin-profile") ||
     pathMatches(pathname, "/admin/linkedin-profile") ||
     pathMatches(pathname, "/admin/lead-finder")

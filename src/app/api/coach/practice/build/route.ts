@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { buildSection, isBuildableSection } from "@/lib/practiceKnowledge/buildSection";
-import { saveBuiltSection } from "@/lib/practiceKnowledge/store";
+import { sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
+import { ensurePracticeKnowledge, saveBuiltSection } from "@/lib/practiceKnowledge/store";
 
 /**
  * Writes one "We build" section of the Practice Blueprint for the coach.
@@ -17,9 +18,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: check.error ?? "Unauthorized" }, { status: 401 });
   }
 
-  let body: { section?: string; clear?: boolean } = {};
+  let body: { section?: string; clear?: boolean; blocks?: unknown } = {};
   try {
-    body = (await request.json()) as { section?: string; clear?: boolean };
+    body = (await request.json()) as { section?: string; clear?: boolean; blocks?: unknown };
   } catch {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
@@ -29,6 +30,20 @@ export async function POST(request: Request) {
   }
 
   try {
+    // The coach edited the text: keep it, and remember it was edited.
+    if (body.blocks !== undefined) {
+      const blocks = sanitizeBlocks(body.blocks);
+      const current = (await ensurePracticeKnowledge(check.userId)).built_sections[key];
+      if (!blocks.length || !current) {
+        return NextResponse.json({ error: "Nothing to save." }, { status: 400 });
+      }
+      const knowledge = await saveBuiltSection({
+        coachId: check.userId,
+        key,
+        section: { ...current, blocks, edited_at: new Date().toISOString() },
+      });
+      return NextResponse.json({ knowledge });
+    }
     const knowledge =
       body.clear === true
         ? await saveBuiltSection({ coachId: check.userId, key, section: null })
