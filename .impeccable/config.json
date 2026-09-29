@@ -103,6 +103,15 @@
         ],
         "createdAt": "2026-09-25T07:44:26.292Z",
         "reason": "agent: flagged lines are pre-existing CSS triangle tooltip arrows (transparent top/bottom borders), not side-tab card accents"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "src/components/practice/document/blueprint.css"
+        ],
+        "createdAt": "2026-09-29T21:36:11.292Z",
+        "reason": "Claude's call, not user-confirmed: the hairline grid is only on the cover of a document literally titled The Practice Blueprint (a blueprint surface, which the rule itself exempts), echoing the brochure references Zander saved on 29 Sept"
       }
     ]
   }
