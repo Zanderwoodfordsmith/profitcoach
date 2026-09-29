@@ -1,0 +1,165 @@
+/* The Practice Blueprint: a printed-quality document inside the app. */
+
+.bp-doc {
+  --bp-ink: #0b1b2e;
+  --bp-body: #1f2d3d;
+  --bp-muted: #55657a;
+  --bp-faint: #8595a8;
+  --bp-rule: #dde5ee;
+  --bp-navy: #051e36;
+  --bp-blue: #0c5290;
+  --bp-sky: #1a8fd4;
+  --bp-tint: #f2f7fc;
+  --bp-tint-strong: #e3eef8;
+  --bp-gradient: linear-gradient(165deg, #051e36 0%, #0c5290 48%, #1a8fd4 100%);
+  --bp-rule-gradient: linear-gradient(90deg, #0c5290 0%, #1a8fd4 45%, rgba(26, 143, 212, 0) 100%);
+  color: var(--bp-body);
+  font-feature-settings: "ss01", "cv11";
+}
+
+.bp-doc ::selection {
+  background: #cfe6f8;
+  color: var(--bp-ink);
+}
+
+.bp-display {
+  font-family: var(--font-blueprint-display), Georgia, "Times New Roman", serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+.bp-num {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* The thin gradient rule under chapter and section titles. */
+.bp-rule {
+  height: 2px;
+  background: var(--bp-rule-gradient);
+  border-radius: 999px;
+}
+
+.bp-rule-short {
+  width: 3rem;
+  height: 2px;
+  background: linear-gradient(90deg, #0c5290, #1a8fd4);
+  border-radius: 999px;
+}
+
+.bp-cover {
+  background: var(--bp-gradient);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Fine hairline grid on the cover, fading out: the printed-brochure texture. */
+.bp-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(120deg, transparent 20%, #000 75%);
+}
+
+.bp-cover::after {
+  content: "";
+  position: absolute;
+  right: -12%;
+  top: -40%;
+  width: 60%;
+  aspect-ratio: 1;
+  z-index: -1;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(66, 161, 238, 0.45), rgba(66, 161, 238, 0));
+  filter: blur(8px);
+}
+
+.bp-table th {
+  background: var(--bp-tint-strong);
+  color: var(--bp-blue);
+}
+
+.bp-table tbody tr + tr td {
+  border-top: 1px solid var(--bp-rule);
+}
+
+.bp-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #c8d6e4 transparent;
+}
+
+.bp-doc a:not([class]) {
+  text-underline-offset: 3px;
+}
+
+.bp-doc :focus-visible {
+  outline: 2px solid var(--bp-sky);
+  outline-offset: 2px;
+}
+
+@keyframes bp-write-in {
+  from {
+    opacity: 0.35;
+    filter: blur(3px);
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* One authored moment: a section settles into place when BCA finishes writing it. */
+.bp-written {
+  animation: bp-write-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-written {
+    animation: none;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  .bp-no-print,
+  header[role="banner"],
+  nav,
+  aside {
+    display: none !important;
+  }
+  .bp-doc {
+    font-size: 10.5pt;
+  }
+  .bp-cover {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    min-height: 250mm;
+    break-after: page;
+    border-radius: 0 !important;
+  }
+  .bp-chapter {
+    break-before: page;
+  }
+  .bp-section,
+  .bp-keep {
+    break-inside: avoid;
+  }
+  .bp-table th,
+  .bp-tinted {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

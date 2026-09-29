@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { MessageSquare, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { MessageCircle, MessageSquare, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
-import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES } from "@/lib/practiceKnowledge/blueprint";
+import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES, stillNeeded } from "@/lib/practiceKnowledge/blueprint";
 import { guidePage } from "@/lib/practiceKnowledge/clientSessions";
 
+import { BlueprintAssistant } from "./BlueprintAssistant";
+import { DownloadMenu } from "./document/DocumentParts";
+import { blueprintDisplay } from "./document/fonts";
 import { PracticeComments } from "./PracticeComments";
 import { usePractice } from "./PracticeProvider";
+import "./document/blueprint.css";
 
 const NAV_KEY = "practice-nav-open";
 const NAV_WIDTH_KEY = "practice-nav-width";
@@ -17,6 +21,21 @@ const NAV_WIDTH_KEY = "practice-nav-width";
 const NAV_WIDTH_DEFAULT = 277;
 const NAV_WIDTH_MIN = 200;
 const NAV_WIDTH_MAX = 480;
+
+const WIDE_QUERY = "(min-width: 1600px)";
+
+/** True on screens wide enough for the nav, the document and the assistant side by side. */
+function useWideScreen() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(WIDE_QUERY);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(WIDE_QUERY).matches,
+    () => true
+  );
+}
 
 function clampNavWidth(value: number) {
   return Math.round(Math.min(NAV_WIDTH_MAX, Math.max(NAV_WIDTH_MIN, value)));
@@ -125,9 +144,10 @@ export function PracticeShell({
   embedded?: boolean;
 }) {
   const pathname = usePathname();
-  const { loading, error, knowledge, payload, approvePage, href } = usePractice();
+  const { loading, error, knowledge, payload, approvePage, href, assistantOpen, setAssistantOpen } = usePractice();
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(true);
+  const wide = useWideScreen();
   const [navWidth, setNavWidth] = useState(NAV_WIDTH_DEFAULT);
   const page = BLUEPRINT_PAGES.find((item) => href(item.href) === pathname) ?? null;
   const group = BLUEPRINT_GROUPS.find((item) => item.pages.some((entry) => href(entry.href) === pathname)) ?? null;
@@ -137,6 +157,12 @@ export function PracticeShell({
     ? (payload?.review.notes?.value ?? []).filter((note) => note.page === page.slug).length
     : 0;
   const ready = !loading && payload && knowledge;
+  const isDocument = page?.slug === "blueprint";
+  // With the assistant open on a normal laptop, fold the contents to a rail so the document keeps its width.
+  const showNav = navOpen && (wide || !assistantOpen || !ready);
+  const openPages = new Set(
+    ready ? stillNeeded({ ...knowledge, payload }).map((ref) => ref.page.slug) : []
+  );
 
   useEffect(() => {
     setNavOpen(window.localStorage.getItem(NAV_KEY) !== "0");
@@ -145,6 +171,10 @@ export function PracticeShell({
   }, []);
 
   function toggleNav() {
+    if (navOpen && !showNav) {
+      setAssistantOpen(false);
+      return;
+    }
     setNavOpen((open) => {
       const next = !open;
       window.localStorage.setItem(NAV_KEY, next ? "1" : "0");
@@ -175,6 +205,12 @@ export function PracticeShell({
                   >
                     <DocIcon />
                     <span className="min-w-0 flex-1">{item.title}</span>
+                    {openPages.has(item.slug) ? (
+                      <span
+                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#d99a2b]"
+                        title="Needs something from you"
+                      />
+                    ) : null}
                   </Link>
                 </li>
               );
@@ -187,40 +223,60 @@ export function PracticeShell({
 
   return (
     <div
-      className={
+      className={`bp-doc ${blueprintDisplay.variable} ${
         embedded
-          ? "flex min-h-[70vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white lg:flex-row lg:items-stretch"
+          ? "flex min-h-[70vh] flex-col overflow-clip rounded-2xl border border-slate-200 bg-white lg:flex-row lg:items-stretch"
           : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col bg-white md:-mx-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px+28rem)] lg:flex-row lg:items-stretch"
-      }
+      }`}
       style={{ "--practice-nav-w": `${navWidth}px` } as CSSProperties}
     >
       <aside
         className={`relative shrink-0 border-slate-200/70 bg-[#f8fafc] lg:border-r ${
-          embedded ? "" : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"
+          embedded
+            ? "lg:sticky lg:top-[var(--blueprint-header-h,0px)] lg:h-[calc(100dvh-var(--blueprint-header-h,0px))]"
+            : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"
         } ${
-          navOpen ? "w-full border-b lg:w-[var(--practice-nav-w)] lg:border-b-0" : "w-14 border-b lg:border-b-0"
+          showNav ? "w-full border-b lg:w-[var(--practice-nav-w)] lg:border-b-0" : "w-14 border-b lg:border-b-0"
         }`}
       >
         <div className="lg:h-full lg:overflow-y-auto">
-        <div className={`flex items-center gap-2 border-b border-slate-200/70 px-3 py-3 ${navOpen ? "justify-between" : "justify-center"}`}>
-          {navOpen ? <p className="text-[0.8125rem] font-semibold text-[#0f172a]">Blueprint</p> : null}
+        <div className={`flex items-center gap-2 border-b border-slate-200/70 px-3 py-3 ${showNav ? "justify-between" : "justify-center"}`}>
+          {showNav ? <p className="text-[0.8125rem] font-semibold text-[#0f172a]">Blueprint</p> : null}
           <button
             type="button"
             onClick={toggleNav}
-            aria-expanded={navOpen}
-            aria-label={navOpen ? "Collapse blueprint" : "Expand blueprint"}
+            aria-expanded={showNav}
+            aria-label={showNav ? "Collapse blueprint" : "Expand blueprint"}
             className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
           >
-            {navOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+            {showNav ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
           </button>
         </div>
-        {navOpen ? <div className="px-3 py-4">{nav}</div> : null}
+        {showNav ? <div className="px-3 py-4">{nav}</div> : null}
         </div>
-        {navOpen ? <NavResizer width={navWidth} onChange={setNavWidth} /> : null}
+        {showNav ? <NavResizer width={navWidth} onChange={setNavWidth} /> : null}
       </aside>
 
       <section className="min-w-0 flex-1 bg-white">
-        <div className="mx-auto w-full max-w-[47.08rem] px-5 py-8 md:px-10 md:py-10">
+        <div className="@container mx-auto w-full max-w-[54rem] px-5 py-8 md:px-10 md:py-10">
+        {isDocument ? (
+          <div className="bp-no-print mb-5 flex flex-wrap items-center justify-end gap-2">
+            {ready ? <DownloadMenu /> : null}
+            {ready && !assistantOpen ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setCommentsOpen(false);
+                  setAssistantOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                Talk it through
+              </button>
+            ) : null}
+          </div>
+        ) : (
         <header className="border-b border-slate-200/70 pb-6">
           {group ? (
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-[#0369a1]">
@@ -247,10 +303,27 @@ export function PracticeShell({
                 {pageApproved ? "Page approved" : "Approve page"}
               </button>
               ) : null}
+              <DownloadMenu pageSlug={page.slug === "command" ? undefined : page.slug} />
+              {assistantOpen ? null : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCommentsOpen(false);
+                    setAssistantOpen(true);
+                  }}
+                  className="bp-no-print inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden />
+                  Talk it through
+                </button>
+              )}
               {commentsOpen ? null : (
                 <button
                   type="button"
-                  onClick={() => setCommentsOpen(true)}
+                  onClick={() => {
+                    setAssistantOpen(false);
+                    setCommentsOpen(true);
+                  }}
                   className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 ring-1 ring-slate-300"
                 >
                   <MessageSquare className="h-4 w-4" aria-hidden />
@@ -264,7 +337,8 @@ export function PracticeShell({
             <p className="mt-2.5 text-lg leading-[1.55] text-[#475569]">{page.summary}</p>
           ) : null}
         </header>
-        <div className="pt-8">
+        )}
+        <div className={isDocument ? "" : "pt-8"}>
           {ready ? (
             children
           ) : (
@@ -280,6 +354,40 @@ export function PracticeShell({
           notes={payload.review.notes?.value ?? []}
           onClose={() => setCommentsOpen(false)}
         />
+      ) : null}
+
+      {ready && assistantOpen && !commentsOpen ? (
+        <>
+          <aside
+            aria-label="Talk it through"
+            className={`bp-no-print hidden w-[23rem] shrink-0 border-l border-slate-200 lg:block ${
+              embedded
+                ? "lg:sticky lg:top-[var(--blueprint-header-h,0px)] lg:h-[calc(100dvh-var(--blueprint-header-h,0px))]"
+                : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"
+            }`}
+          >
+            <BlueprintAssistant onClose={() => setAssistantOpen(false)} />
+          </aside>
+          <div className="bp-no-print fixed inset-0 z-50 flex flex-col justify-end bg-[#051e36]/35 lg:hidden">
+            <div className="h-[85dvh] overflow-hidden rounded-t-3xl shadow-[0_-20px_50px_-20px_rgba(5,30,54,0.6)]">
+              <BlueprintAssistant onClose={() => setAssistantOpen(false)} />
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {ready && !assistantOpen ? (
+        <button
+          type="button"
+          onClick={() => {
+            setCommentsOpen(false);
+            setAssistantOpen(true);
+          }}
+          className="bp-no-print fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-[var(--bp-navy)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_-12px_rgba(5,30,54,0.7)] lg:hidden"
+        >
+          <MessageCircle className="h-4 w-4" aria-hidden />
+          Talk it through
+        </button>
       ) : null}
     </div>
   );

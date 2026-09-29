@@ -1,42 +1,30 @@
 "use client";
 
-import { PracticeBrief } from "./PracticeBrief";
+import { BlueprintCover, BuildBar, ChapterView, Contents, DOCUMENT_GROUPS, StillNeeded } from "./document/DocumentParts";
 import { usePractice } from "./PracticeProvider";
 
+/** The whole Practice Blueprint as one document: cover, contents, then every chapter. */
 export function BlueprintDocument() {
-  const practice = usePractice();
-  const { knowledge, payload, session } = practice;
+  const { knowledge, payload } = usePractice();
   if (!knowledge || !payload) return null;
-  const lastQuestion = [...(session?.turns ?? [])].reverse().find((turn) => turn.role === "assistant");
 
   return (
-    <PracticeBrief
-      showOutline={false}
-      title="The operating blueprint for your client practice"
-      lede="One document. LinkedIn and the conversation write it. Every other page reads from here."
-      payload={payload}
-      report={knowledge.report_payload}
-      turns={session?.turns ?? []}
-      question={session?.status === "completed" ? null : (lastQuestion?.content ?? null)}
-      interviewDone={session?.status === "completed" || Boolean(knowledge.interview_completed_at)}
-      busy={practice.busy}
-      error={practice.error}
-      ttsOn={practice.ttsOn}
-      assets={practice.assets}
-      comments={payload.review.report_comments?.value ?? ""}
-      onComments={practice.setComments}
-      onPatch={practice.patch}
-      onCommit={practice.commit}
-      onStart={practice.start}
-      onReply={practice.reply}
-      onSpeak={practice.speak}
-      onTranscribe={practice.transcribe}
-      onPullLinkedIn={practice.pullLinkedIn}
-      onUpload={practice.upload}
-      hideComposer
-      hideHeader
-      approvedSections={payload.review.approved_sections?.value ?? {}}
-      onApproveSection={practice.approveSection}
-    />
+    <article>
+      <BlueprintCover />
+      <div className="mt-8 space-y-4">
+        <StillNeeded />
+        <BuildBar />
+      </div>
+      <div className="mt-14">
+        <Contents />
+      </div>
+      {DOCUMENT_GROUPS.map((group, i) => (
+        <ChapterView key={group.label} group={group} index={i} />
+      ))}
+      <footer className="mt-24 border-t border-[var(--bp-rule)] pt-6 text-sm text-[var(--bp-muted)]">
+        Prepared by Business Coach Academy. Written from what you told us and what you have done. Nothing in this
+        document is invented: where a number is missing, we say so.
+      </footer>
+    </article>
   );
 }

@@ -25,7 +25,7 @@ export async function hydratePracticeFromProfile(
   const [profile, coach, linkedin, booked] = await Promise.all([
     supabaseAdmin
       .from("profiles")
-      .select("linkedin_url, location")
+      .select("linkedin_url, location, phone")
       .eq("id", coachId)
       .maybeSingle(),
     supabaseAdmin
@@ -57,12 +57,14 @@ export async function hydratePracticeFromProfile(
     (hoursEmpty && Boolean(welcomePatch.working_times?.hours_per_week)) ||
     (urlEmpty && Boolean(welcomePatch.identity?.linkedin_url));
   const shouldSeedLi = Boolean(linkedin.snapshot) && !knowledge.linkedin_seeded_at;
+  const profilePhone = String((profile.data as { phone?: string | null } | null)?.phone ?? "").trim();
+  const shouldPhone = Boolean(profilePhone) && !isFilledSourced(knowledge.payload.identity.phone);
   const bookedAt = booked.get(coachId);
   const shouldBooked =
     Boolean(bookedAt) &&
     !isFilledSourced(knowledge.payload.review.decision_call_booked_at);
 
-  if (!shouldWelcome && !shouldSeedLi && !shouldBooked) return knowledge;
+  if (!shouldWelcome && !shouldSeedLi && !shouldBooked && !shouldPhone) return knowledge;
 
   return patchPracticeKnowledge({
     coachId,
@@ -71,14 +73,19 @@ export async function hydratePracticeFromProfile(
         mergePracticePayload(emptyPracticePayload(), welcomePatch),
         linkedinPatch
       ),
-      shouldBooked && bookedAt
-        ? {
-            review: {
-              ...emptyPracticePayload().review,
-              decision_call_booked_at: sourced(bookedAt, "form"),
-            },
-          }
-        : {}
+      {
+        ...(shouldBooked && bookedAt
+          ? {
+              review: {
+                ...emptyPracticePayload().review,
+                decision_call_booked_at: sourced(bookedAt, "form"),
+              },
+            }
+          : {}),
+        ...(shouldPhone
+          ? { identity: { ...emptyPracticePayload().identity, phone: sourced(profilePhone, "form") } }
+          : {}),
+      }
     ),
     linkedinSeeded: shouldSeedLi,
   });

@@ -64,6 +64,9 @@ export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 export const GEOGRAPHY_PREFS = ["local", "national", "international"] as const;
 export type GeographyPref = (typeof GEOGRAPHY_PREFS)[number];
 
+export const LINKEDIN_VISIBILITIES = ["public", "discreet"] as const;
+export type LinkedInVisibility = (typeof LINKEDIN_VISIBILITIES)[number];
+
 export const PROOF_TYPES = ["career", "client"] as const;
 export type ProofType = (typeof PROOF_TYPES)[number];
 
@@ -101,6 +104,12 @@ export type PracticeKnowledgePayload = {
     timezone: Sourced<string> | null;
     location: Sourced<string> | null;
     linkedin_url: Sourced<string> | null;
+    /** Own domain, or a Profit Coach page at their name. */
+    web_address: Sourced<string> | null;
+    /** Keep their own address, or have a practice email set up. */
+    practice_email: Sourced<string> | null;
+    /** Public about coaching on LinkedIn, or discreet (still employed, non-compete). */
+    linkedin_visibility: Sourced<LinkedInVisibility> | null;
   };
   working_times: {
     hours_per_week: Sourced<string> | null;
@@ -191,6 +200,33 @@ export type DecisionRecordPayload = {
   next_milestone: string;
 };
 
+/**
+ * One piece of a Blueprint section BCA writes. The page renders these, and the
+ * Markdown export is built from the same blocks, so both always match.
+ */
+export type BlueprintBlock =
+  | { type: "lede"; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "heading"; text: string }
+  | { type: "bullets"; items: string[] }
+  | { type: "numbered"; items: string[] }
+  | { type: "quote"; text: string; cite?: string }
+  | { type: "stats"; items: { value: string; label: string }[] }
+  | { type: "pairs"; items: { label: string; value: string }[] }
+  | { type: "table"; columns: string[]; rows: string[][] }
+  | { type: "message"; label: string; body: string; note?: string }
+  | { type: "callout"; tone: "tip" | "warning" | "note"; title?: string; text: string }
+  | { type: "steps"; items: { title: string; detail: string }[] }
+  | { type: "timeline"; items: { when: string; title: string; detail?: string }[] };
+
+export type BuiltSection = {
+  blocks: BlueprintBlock[];
+  generated_at: string;
+  model: string;
+  /** Set when the coach or an admin changed the text after it was written. */
+  edited_at?: string | null;
+};
+
 export type PracticeKnowledgeRow = {
   coach_id: string;
   status: PracticeStatus;
@@ -204,6 +240,8 @@ export type PracticeKnowledgeRow = {
   missing_fields: string[];
   report_payload: PracticeReportPayload | null;
   report_generated_at: string | null;
+  /** Sections BCA wrote, keyed "page:section" (for example "market:avatar"). */
+  built_sections: Record<string, BuiltSection>;
   created_at: string;
   updated_at: string;
 };

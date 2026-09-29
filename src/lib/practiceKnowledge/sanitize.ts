@@ -20,6 +20,7 @@ import {
   DELIVERY_FORMATS,
   DELIVERY_MODELS,
   GEOGRAPHY_PREFS,
+  LINKEDIN_VISIBILITIES,
   NOTIFICATION_CHANNELS,
   PRACTICE_KNOWLEDGE_SOURCES,
   PRACTICE_STATUSES,
@@ -182,6 +183,13 @@ export function sanitizePayloadPatch(
       linkedin_url: asSourced(
         identity.linkedin_url,
         (v) => clip(v, 400) || null,
+        fallback
+      ),
+      web_address: asSourced(identity.web_address, (v) => clip(v, SHORT) || null, fallback),
+      practice_email: asSourced(identity.practice_email, (v) => clip(v, SHORT) || null, fallback),
+      linkedin_visibility: asSourced(
+        identity.linkedin_visibility,
+        (v) => pickEnum(v, LINKEDIN_VISIBILITIES),
         fallback
       ),
     };

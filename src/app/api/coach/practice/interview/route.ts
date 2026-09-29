@@ -15,6 +15,7 @@ import {
   buildInterviewUser,
   PRACTICE_INTERVIEW_SYSTEM,
 } from "@/lib/practiceKnowledge/prompts";
+import { openQuestions } from "@/lib/practiceKnowledge/blueprint";
 import { sanitizePayloadPatch } from "@/lib/practiceKnowledge/sanitize";
 import type {
   InterviewTurn,
@@ -94,6 +95,7 @@ export async function POST(request: Request) {
         knowledge: knowledge.payload,
         turns,
         userMessage: starting ? null : userText,
+        stillOpen: openQuestions(knowledge),
       }),
       maxTokens: 2048,
     });

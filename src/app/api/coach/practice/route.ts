@@ -7,6 +7,7 @@ import {
   sanitizeStatus,
 } from "@/lib/practiceKnowledge/sanitize";
 import { hydratePracticeFromProfile } from "@/lib/practiceKnowledge/hydrate";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   getLatestDecisionRecord,
   listIntakeAssets,
@@ -26,12 +27,14 @@ export async function GET(request: Request) {
   const a = await auth(request);
   if ("error" in a) return a.error;
   try {
-    const [knowledge, assets, decision] = await Promise.all([
+    const [knowledge, assets, decision, profile] = await Promise.all([
       hydratePracticeFromProfile(a.coachId),
       listIntakeAssets(a.coachId),
       getLatestDecisionRecord(a.coachId),
+      supabaseAdmin.from("profiles").select("full_name").eq("id", a.coachId).maybeSingle(),
     ]);
-    return NextResponse.json({ knowledge, assets, decision });
+    const coach_name = (profile.data?.full_name as string | null)?.trim() || "";
+    return NextResponse.json({ knowledge, assets, decision, coach_name });
   } catch (err) {
     console.error("practice GET:", err instanceof Error ? err.message : "failed");
     return NextResponse.json({ error: "Could not load practice knowledge." }, { status: 500 });

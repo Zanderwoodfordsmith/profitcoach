@@ -16,6 +16,7 @@ export type PracticeLoad = {
   knowledge: PracticeKnowledgeRow;
   assets: Array<IntakeAssetRow & { signed_url?: string | null }>;
   decision: DecisionRecordRow | null;
+  coach_name?: string;
 };
 
 export type InterviewResponse = {
@@ -100,6 +101,15 @@ export function loadInterview(coachId?: PracticeCoachId) {
 
 export function sendInterviewTurn(body: { message?: string; start?: boolean }, coachId?: PracticeCoachId) {
   return post<InterviewResponse>("/api/coach/practice/interview", coachId, body);
+}
+
+/** Write (or with clear, remove) one "We build" section. Takes up to a minute or two. */
+export function buildPracticeSection(section: string, coachId?: PracticeCoachId, clear = false) {
+  return post<{ knowledge: PracticeKnowledgeRow }>(
+    "/api/coach/practice/build",
+    coachId,
+    clear ? { section, clear: true } : { section }
+  );
 }
 
 export function generatePracticeReport(coachId?: PracticeCoachId) {

@@ -3,7 +3,9 @@ import { listValue, textValue } from "./sourced";
 
 export const PRACTICE_INTERVIEW_SYSTEM = `You are the Practice Installation interviewer for Business Coach Academy / Profit Coach.
 
-Your job is a 20-minute (or less) conversation that extracts facts we need to install a coach's practice: LinkedIn profile, campaigns, follow-ups, and nurture. You are not teaching. You are collecting proof.
+Your job is a short conversation (20 minutes or less) that fills the coach's Practice Blueprint: the facts we need to write their avatar, pain points, LinkedIn profile, campaigns, follow-ups, newsletters and sales script. You are not teaching. You are collecting proof and decisions.
+
+You get a list called "Still open". Work through it in order. It is the agenda.
 
 Rules:
 - Ask ONE question at a time.
@@ -13,8 +15,10 @@ Rules:
 - Do not ask "who is your ideal client?". Ask which industries they understand, have credibility in, and can access.
 - Do not re-ask facts already filled in Current knowledge unless they contradict LinkedIn.
 - Stay warm, direct, and short. UK English.
-- Also capture, if still blank: hours they can work, when they will take prospect calls, coaching vs consulting vs advisory, minimum fee, and who they will not work with. One question at a time, after the proof.
-- After enough proof (at least one precise result, superpowers or uniqueness, and problems they solve) plus a first pass at hours and who they will not work with, set done=true. Do not drag it out.
+- Proof first (results, superpowers, problems solved), then the market, then the practical setup (call times, web address, email, LinkedIn public or discreet, fee).
+- Accept short answers for practical items. Do not push twice on those.
+- If the coach says they do not know yet, record nothing for that item and move on.
+- When "Still open" is empty, or the coach wants to stop, thank them, tell them what we will now write for them, and set done=true. Do not drag it out.
 
 Return ONLY JSON:
 {
@@ -26,6 +30,7 @@ Return ONLY JSON:
       "superpowers": { "value": "", "source": "interview", "updated_at": "ISO" },
       "uniqueness": { "value": "", "source": "interview", "updated_at": "ISO" },
       "problems_asked": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "client_results": { "value": [{ "id": "c1", "title": "short name", "story": "what changed, with numbers" }], "source": "interview", "updated_at": "ISO" },
       "proudest": { "value": [], "source": "interview", "updated_at": "ISO" }
     },
     "market": {
@@ -33,11 +38,19 @@ Return ONLY JSON:
       "industries_credibility": { "value": [], "source": "interview", "updated_at": "ISO" },
       "industries_access": { "value": [], "source": "interview", "updated_at": "ISO" },
       "avoid": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "buyer_roles": { "value": [], "source": "interview", "updated_at": "ISO" },
       "geography_pref": { "value": "national", "source": "interview", "updated_at": "ISO" }
     },
     "working_times": {
       "hours_per_week": { "value": "5_10_hours_week", "source": "interview", "updated_at": "ISO" },
+      "preferred_hours": { "value": "client session days and times", "source": "interview", "updated_at": "ISO" },
       "prospect_call_hours": { "value": "", "source": "interview", "updated_at": "ISO" }
+    },
+    "identity": {
+      "phone": { "value": "", "source": "interview", "updated_at": "ISO" },
+      "web_address": { "value": "own domain: example.com | Profit Coach page", "source": "interview", "updated_at": "ISO" },
+      "practice_email": { "value": "own address: name@example.com | set one up", "source": "interview", "updated_at": "ISO" },
+      "linkedin_visibility": { "value": "public", "source": "interview", "updated_at": "ISO" }
     },
     "practice": {
       "delivery_model": { "value": "coaching", "source": "interview", "updated_at": "ISO" },
@@ -50,41 +63,56 @@ Return ONLY JSON:
 Only include extraction keys you actually learned this turn. Omit empty groups.
 hours_per_week must be one of: under_2_hours, 2_5_hours_week, 5_10_hours_week, 10_15_hours_week, 15_plus_hours_week.
 delivery_model must be coaching, consulting, advisory, or hybrid.
-geography_pref must be local, national, or international.`;
+geography_pref must be local, national, or international.
+linkedin_visibility must be public or discreet.`;
 
 export function summarizeKnowledgeForPrompt(
   payload: PracticeKnowledgePayload
 ): string {
   const lines: string[] = [];
-  const li = textValue(payload.identity.linkedin_url);
-  if (li) lines.push(`LinkedIn: ${li}`);
-  const loc = textValue(payload.identity.location);
-  if (loc) lines.push(`Location: ${loc}`);
-  const hours = textValue(payload.working_times.hours_per_week);
-  if (hours) lines.push(`Hours/week: ${hours}`);
-  const model = payload.practice.delivery_model?.value;
-  if (model) lines.push(`Delivery model: ${model}`);
-  const worked = listValue(payload.market.industries_worked);
-  if (worked.length) lines.push(`Industries worked: ${worked.join(", ")}`);
-  const roles = listValue(payload.market.roles_held);
-  if (roles.length) lines.push(`Roles: ${roles.join(", ")}`);
-  const avoid = listValue(payload.market.avoid);
-  if (avoid.length) lines.push(`Avoid: ${avoid.join(", ")}`);
+  const push = (label: string, value: string) => {
+    if (value) lines.push(`${label}: ${value}`);
+  };
+  push("LinkedIn", textValue(payload.identity.linkedin_url));
+  push("Location", textValue(payload.identity.location));
+  push("Phone", textValue(payload.identity.phone) ? "on file" : "");
+  push("Current website", textValue(payload.identity.website));
+  push("Web address choice", textValue(payload.identity.web_address));
+  push("Practice email choice", textValue(payload.identity.practice_email));
+  push("LinkedIn visibility", payload.identity.linkedin_visibility?.value ?? "");
+  push("Hours/week", textValue(payload.working_times.hours_per_week));
+  push("Client call times", textValue(payload.working_times.preferred_hours));
+  push("Prospect call times", textValue(payload.working_times.prospect_call_hours));
+  push("Delivery model", payload.practice.delivery_model?.value ?? "");
+  push("Minimum fee", textValue(payload.practice.min_fee));
+  push("Capacity", textValue(payload.practice.capacity));
+  push("Roles", listValue(payload.market.roles_held).join(", "));
+  push("Industries worked", listValue(payload.market.industries_worked).join(", "));
+  push("Credibility in", listValue(payload.market.industries_credibility).join(", "));
+  push("Understands", listValue(payload.market.industries_understand).join(", "));
+  push("Can access", listValue(payload.market.industries_access).join(", "));
+  push("Who signs off", listValue(payload.market.buyer_roles).join(", "));
+  push("Will not take", listValue(payload.market.avoid).join(", "));
+  push("Geography", payload.market.geography_pref?.value ?? "");
   const results = payload.proof.career_results?.value ?? [];
   if (results.length) {
     lines.push("Career results:");
     for (const r of results) {
       lines.push(
-        `- ${r.company} ${r.role}: ${r.metric_from} → ${r.metric_to} in ${r.timeframe} (${r.precise ? "precise" : "vague"})`
+        `- ${[r.role, r.company].filter(Boolean).join(" at ")}: ${r.metric_from || "?"} to ${r.metric_to || "?"} in ${r.timeframe || "?"}${r.mechanism ? ` by ${r.mechanism}` : ""} (${r.precise ? "precise" : "needs a number"})`
       );
     }
   }
-  const superpowers = textValue(payload.proof.superpowers);
-  if (superpowers) lines.push(`Superpowers: ${superpowers}`);
-  const uniqueness = textValue(payload.proof.uniqueness);
-  if (uniqueness) lines.push(`Uniqueness: ${uniqueness}`);
-  const problems = listValue(payload.proof.problems_asked);
-  if (problems.length) lines.push(`Problems asked: ${problems.join("; ")}`);
+  const stories = payload.proof.client_results?.value ?? [];
+  if (stories.length) {
+    lines.push("Client stories:");
+    for (const c of stories) lines.push(`- ${c.title}: ${c.story}`);
+  }
+  push("Superpowers", textValue(payload.proof.superpowers));
+  push("Uniqueness", textValue(payload.proof.uniqueness));
+  push("Problems asked", listValue(payload.proof.problems_asked).join("; "));
+  push("Proudest", listValue(payload.proof.proudest).join("; "));
+  push("Evidence notes", textValue(payload.proof.evidence_notes));
   return lines.join("\n") || "(empty)";
 }
 
@@ -93,6 +121,8 @@ export function buildInterviewUser(opts: {
   knowledge: PracticeKnowledgePayload;
   turns: InterviewTurn[];
   userMessage: string | null;
+  /** Open blueprint fields, in document order, with how to ask each one. */
+  stillOpen?: { label: string; ask: string }[];
 }): string {
   const history = opts.turns
     .slice(-16)
@@ -104,6 +134,11 @@ export function buildInterviewUser(opts: {
     "",
     "## Current knowledge",
     summarizeKnowledgeForPrompt(opts.knowledge),
+    "",
+    "## Still open (the agenda, in order)",
+    opts.stillOpen?.length
+      ? opts.stillOpen.map((q, i) => `${i + 1}. ${q.label}. Ask: ${q.ask}`).join("\n")
+      : "(nothing left: wrap up and set done=true)",
     "",
     "## Conversation so far",
     history || "(none)",

@@ -1,11 +1,13 @@
-import { hoursLabel } from "./brief";
 import { guidePage } from "./clientSessions";
 import { labelMissingField } from "./completeness";
-import type { PracticeKnowledgeRow, PracticeReportPayload } from "./types";
+import { isFilledSourced } from "./sourced";
+import type { PracticeKnowledgePayload, PracticeKnowledgeRow, Sourced } from "./types";
 
 /**
- * Where a section's content comes from. The sidebar is organised by business
- * area; this tag lives on each section inside a page.
+ * The Practice Blueprint map: one document, grouped by business area.
+ * Chapters (groups) hold pages; pages hold sections. The sidebar is its table
+ * of contents, the admin map lists it, the AI conversation asks for its open
+ * "From you" fields, and the Markdown export walks it in order.
  */
 export const SECTION_SOURCES = {
   imported: {
@@ -32,6 +34,22 @@ export const SECTION_SOURCES = {
 
 export type SectionSource = keyof typeof SECTION_SOURCES;
 
+type Group = Exclude<keyof PracticeKnowledgePayload, "review">;
+
+export type FieldKind = "text" | "list" | "results" | "stories" | "enum";
+
+/** One captured fact inside a section, stored at payload[group][key]. */
+export type FieldSpec = {
+  path: `${Group}.${string}`;
+  label: string;
+  kind: FieldKind;
+  /** The section counts as open until every required field is filled. */
+  required?: boolean;
+  /** How the AI conversation asks for it. */
+  ask?: string;
+  options?: { value: string; label: string }[];
+};
+
 export type BlueprintSection = {
   id: string;
   title: string;
@@ -40,10 +58,18 @@ export type BlueprintSection = {
   from?: string[];
   /** Where the section is used once it is ready. Shown on the admin map. */
   feeds?: string;
+  /** Imported and From you sections: the facts they hold. */
+  fields?: FieldSpec[];
+  /** We build sections: other sections ("page:id") that should exist first. */
+  needs?: string[];
+  /** Live sections: where the real numbers live today. */
+  link?: { href: string; label: string };
 };
 
 export type BlueprintGroup = {
   label: string;
+  /** Short line under the chapter title in the document. */
+  intro: string;
   pages: BlueprintLink[];
 };
 
@@ -55,6 +81,14 @@ export type BlueprintLink = {
   summary: string;
   sections: BlueprintSection[];
 };
+
+const HOURS_OPTIONS = [
+  { value: "under_2_hours", label: "Under 2 hours a week" },
+  { value: "2_5_hours_week", label: "2 to 5 hours a week" },
+  { value: "5_10_hours_week", label: "5 to 10 hours a week" },
+  { value: "10_15_hours_week", label: "10 to 15 hours a week" },
+  { value: "15_plus_hours_week", label: "15 or more hours a week" },
+];
 
 function guideSections(slug: string): BlueprintSection[] {
   return (guidePage(slug)?.cards ?? []).map((card) => ({
@@ -68,6 +102,7 @@ function guideSections(slug: string): BlueprintSection[] {
 export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
   {
     label: "Start here",
+    intro: "Where you are, and the whole blueprint in one place.",
     pages: [
       {
         slug: "command",
@@ -81,14 +116,15 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
         slug: "blueprint",
         title: "Your Practice Blueprint",
         href: "/coach/practice/blueprint",
-        heading: "The operating blueprint for your client practice",
-        summary: "One document. LinkedIn and the conversation write it. Everything else reads from it.",
+        heading: "The Practice Blueprint",
+        summary: "Everything about your practice in one document. Read it, approve it, download it.",
         sections: [],
       },
     ],
   },
   {
     label: "Foundation",
+    intro: "Who you are, what you have done, and how you sound.",
     pages: [
       {
         slug: "setup",
@@ -101,8 +137,14 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             id: "contact",
             title: "Phone and contact details",
             source: "imported",
-            from: ["Sign-up form: phone, WhatsApp", "LinkedIn: location", "Conversation, if missing"],
+            from: ["Sign-up form: phone", "LinkedIn: location", "Conversation, if missing"],
             feeds: "Booking page, reminders, BCA team",
+            fields: [
+              { path: "identity.phone", label: "Phone", kind: "text", required: true, ask: "What is the best mobile number for us and for booking reminders?" },
+              { path: "identity.whatsapp", label: "WhatsApp", kind: "text" },
+              { path: "identity.location", label: "Location", kind: "text" },
+              { path: "identity.timezone", label: "Time zone", kind: "text" },
+            ],
           },
           {
             id: "calls",
@@ -110,6 +152,11 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "from_you",
             from: ["Conversation: client call times, prospect call times, hours a week"],
             feeds: "Booking page calendar",
+            fields: [
+              { path: "working_times.preferred_hours", label: "Client calls", kind: "text", required: true, ask: "Which days and times do you want to run client sessions?" },
+              { path: "working_times.prospect_call_hours", label: "Prospect calls", kind: "text", required: true, ask: "When can you take calls with new prospects?" },
+              { path: "working_times.hours_per_week", label: "Time on the practice", kind: "enum", options: HOURS_OPTIONS, ask: "How many hours a week can you give the practice right now?" },
+            ],
           },
           {
             id: "domain",
@@ -117,6 +164,10 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "from_you",
             from: ["Conversation: your own domain, or a Profit Coach page at your name"],
             feeds: "Coach page, booking link, campaign links",
+            fields: [
+              { path: "identity.web_address", label: "Web address", kind: "text", required: true, ask: "Do you want your own domain for your practice site, or a Profit Coach page at your name? If your own, what is the domain?" },
+              { path: "identity.website", label: "Current site", kind: "text" },
+            ],
           },
           {
             id: "email",
@@ -124,6 +175,9 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "from_you",
             from: ["Conversation: keep your own address, or have one set up"],
             feeds: "Campaign sending, client emails",
+            fields: [
+              { path: "identity.practice_email", label: "Practice email", kind: "text", required: true, ask: "Do you want to use your own email address for the practice, or have us set one up?" },
+            ],
           },
         ],
       },
@@ -132,13 +186,17 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
         title: "Your Story and Proof",
         href: "/coach/practice/story",
         heading: "Turn your experience into commercial credibility",
-        summary: "Here is the evidence we are using to position you.",
+        summary: "The evidence we use to position you, and the documents that carry it.",
         sections: [
           {
             id: "experience",
             title: "Experience",
             source: "imported",
             from: ["LinkedIn: roles held", "LinkedIn: industries and companies"],
+            fields: [
+              { path: "market.roles_held", label: "Roles", kind: "list", required: true },
+              { path: "market.industries_worked", label: "Industries and companies", kind: "list", required: true },
+            ],
           },
           {
             id: "results",
@@ -146,6 +204,10 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "from_you",
             from: ["Conversation: career results with a from, a to, and a timeframe"],
             feeds: "LinkedIn rewrite, campaign messaging, call script",
+            fields: [
+              { path: "proof.career_results", label: "Results", kind: "results", required: true, ask: "What is your strongest commercial result? I need a from, a to, and a timeframe." },
+              { path: "proof.client_results", label: "Client stories", kind: "stories" },
+            ],
           },
           {
             id: "superpowers",
@@ -153,6 +215,11 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "from_you",
             from: ["Conversation: superpowers", "Conversation: what makes you different"],
             feeds: "Your offer, LinkedIn rewrite",
+            fields: [
+              { path: "proof.superpowers", label: "Superpowers", kind: "text", required: true, ask: "What do people come to you for that others cannot do as well?" },
+              { path: "proof.uniqueness", label: "What makes you different", kind: "text", ask: "What makes the way you work different from other advisers?" },
+              { path: "proof.proudest", label: "Proudest moments", kind: "list" },
+            ],
           },
           {
             id: "problems",
@@ -160,6 +227,9 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "from_you",
             from: ["Conversation: problems people ask you to solve"],
             feeds: "Pain points, campaign messaging",
+            fields: [
+              { path: "proof.problems_asked", label: "Problems", kind: "list", required: true, ask: "What problems do owners and colleagues keep asking you to help with?" },
+            ],
           },
           {
             id: "bio",
@@ -167,6 +237,15 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "we_build",
             from: ["Story and proof sections above"],
             feeds: "LinkedIn About, introductions, newsletter sign-off",
+            needs: [],
+          },
+          {
+            id: "onepager",
+            title: "Your one-page profile",
+            source: "we_build",
+            from: ["Proof summary", "Your avatar", "Your offer"],
+            feeds: "Partners, recruiters, accountants, banks, events",
+            needs: ["story:bio", "market:avatar"],
           },
         ],
       },
@@ -181,8 +260,9 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             id: "sound",
             title: "How you sound",
             source: "we_build",
-            from: ["Conversation transcript", "One-to-one call transcripts", "LinkedIn posts"],
+            from: ["Conversation transcript", "LinkedIn About and posts"],
             feeds: "LinkedIn rewrite, campaign messaging, newsletters",
+            needs: [],
           },
           {
             id: "rules",
@@ -197,40 +277,50 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
   },
   {
     label: "Get calls",
+    intro: "Who you help, what hurts, and how we start the conversation.",
     pages: [
       {
         slug: "market",
         title: "Avatar and Pain Points",
         href: "/coach/practice/market",
         heading: "Know exactly who you are built to help",
-        summary: "The market is the group. The buyer is the person who decides. The pain is why they call.",
+        summary: "The market is the group. The avatar is the person. The pain is why they call.",
         sections: [
           {
             id: "credibility",
             title: "Where you already have credibility",
             source: "from_you",
             from: ["LinkedIn: industries worked", "Conversation: industries you understand and can access"],
+            fields: [
+              { path: "market.industries_credibility", label: "Credibility in", kind: "list", required: true, ask: "Which industries would be most impressed by your results?" },
+              { path: "market.industries_understand", label: "Understand from the inside", kind: "list" },
+              { path: "market.industries_access", label: "Can reach easily", kind: "list" },
+              { path: "market.buyer_roles", label: "Who signs off", kind: "list", ask: "In those businesses, who signs off on hiring someone like you?" },
+            ],
           },
           {
             id: "options",
             title: "Market options",
             source: "we_build",
             from: ["Story and proof", "Where you already have credibility"],
-            feeds: "Decision Call",
+            feeds: "Decision Call, your avatar",
+            needs: [],
           },
           {
             id: "avatar",
             title: "Your avatar",
             source: "we_build",
-            from: ["Market options", "Conversation: who signs off on the work", "One-to-one call transcripts"],
+            from: ["Market options", "Industry library", "One-to-one call transcripts"],
             feeds: "Everything below, then campaign messaging",
+            needs: ["market:options"],
           },
           {
             id: "pains",
             title: "Pain points",
             source: "we_build",
-            from: ["Your avatar", "Conversation", "One-to-one call transcripts"],
+            from: ["Your avatar", "Industry library", "One-to-one call transcripts"],
             feeds: "Campaign messaging, newsletters, call script",
+            needs: ["market:avatar"],
           },
           {
             id: "avoid",
@@ -238,6 +328,9 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "from_you",
             from: ["Conversation: clients to avoid"],
             feeds: "Prospect criteria",
+            fields: [
+              { path: "market.avoid", label: "Will not take", kind: "list", required: true, ask: "Who will you not work with, whatever they pay?" },
+            ],
           },
           {
             id: "criteria",
@@ -245,6 +338,7 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "we_build",
             from: ["Your avatar", "Who you will not take"],
             feeds: "Get Clients prospect pool",
+            needs: ["market:avatar"],
           },
         ],
       },
@@ -253,13 +347,36 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
         title: "LinkedIn Profile",
         href: "/coach/practice/linkedin",
         heading: "Look credible before someone replies",
-        summary: "The profile they read, and the rewrite once the direction is locked.",
+        summary: "The profile they read, and the rewrite that carries your proof.",
         sections: [
           {
             id: "profile",
             title: "Current profile",
             source: "imported",
             from: ["LinkedIn import"],
+            fields: [
+              { path: "identity.linkedin_url", label: "LinkedIn", kind: "text", required: true },
+            ],
+          },
+          {
+            id: "visibility",
+            title: "Public or discreet",
+            source: "from_you",
+            from: ["Conversation: can you say you are a business coach yet?"],
+            feeds: "Profile rewrite",
+            fields: [
+              {
+                path: "identity.linkedin_visibility",
+                label: "On LinkedIn",
+                kind: "enum",
+                required: true,
+                ask: "Can your LinkedIn say you are a business coach, or do you need to stay discreet for now (still employed, or a non-compete)?",
+                options: [
+                  { value: "public", label: "Public: I can say I coach" },
+                  { value: "discreet", label: "Discreet for now" },
+                ],
+              },
+            ],
           },
           {
             id: "rewrite",
@@ -267,6 +384,7 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "we_build",
             from: ["Story and proof", "Avatar and pain points", "Your offer", "Your voice"],
             feeds: "The coach's LinkedIn profile",
+            needs: ["story:bio", "market:pains", "voice:sound"],
           },
         ],
       },
@@ -283,12 +401,14 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "we_build",
             from: ["Pain points", "Commercial achievements", "Your voice"],
             feeds: "Get Clients campaign builder",
+            needs: ["market:pains", "voice:sound"],
           },
           {
             id: "live",
             title: "Live campaigns",
             source: "live",
             from: ["Get Clients campaigns"],
+            link: { href: "/coach/campaigns", label: "Open Campaigns" },
           },
         ],
       },
@@ -297,20 +417,22 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
         title: "Conversations and Follow-Up",
         href: "/coach/practice/conversations",
         heading: "Turn interest into booked calls",
-        summary: "Replies, follow-up, and the next message.",
+        summary: "Replies, follow-up, and nurture for the people who say not yet.",
         sections: [
           {
             id: "followup",
-            title: "Follow-up and nurture",
+            title: "Replies and nurture",
             source: "we_build",
-            from: ["Campaign messaging", "Your voice"],
-            feeds: "Get Clients sequences",
+            from: ["Campaign messaging", "Pain points", "Your voice"],
+            feeds: "Get Clients sequences, reply co-pilot",
+            needs: ["campaigns:messaging"],
           },
           {
             id: "inbox",
             title: "Conversations in progress",
             source: "live",
             from: ["LinkedIn inbox", "Get Clients replies"],
+            link: { href: "/coach/conversations", label: "Open Conversations" },
           },
         ],
       },
@@ -318,6 +440,7 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
   },
   {
     label: "Win clients",
+    intro: "What you sell, how you price it, and what you say on the call.",
     pages: [
       {
         slug: "offer",
@@ -338,6 +461,21 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             title: "Fee and capacity",
             source: "from_you",
             from: ["Conversation: minimum fee, how many clients you want"],
+            fields: [
+              { path: "practice.min_fee", label: "Minimum monthly fee", kind: "text", required: true, ask: "What is the least you would take per client per month?" },
+              { path: "practice.capacity", label: "Clients you want", kind: "text", ask: "How many clients do you want at once?" },
+              {
+                path: "practice.delivery_model",
+                label: "How you like to work",
+                kind: "enum",
+                options: [
+                  { value: "coaching", label: "Coaching" },
+                  { value: "consulting", label: "Consulting" },
+                  { value: "advisory", label: "Advisory" },
+                  { value: "hybrid", label: "A mix" },
+                ],
+              },
+            ],
           },
           {
             id: "direction",
@@ -345,13 +483,15 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "we_build",
             from: ["Story and proof", "Avatar and pain points", "Fee and capacity"],
             feeds: "Decision Call, call script, LinkedIn rewrite",
+            needs: ["market:pains", "story:bio"],
           },
           {
             id: "payment",
             title: "Proposal and payment",
             source: "we_build",
-            from: ["Decision Call", "Recommended format", "Fee and capacity"],
+            from: ["Offer and positioning", "Recommended format", "Fee and capacity"],
             feeds: "Proposal and payment link",
+            needs: ["offer:direction"],
           },
         ],
       },
@@ -360,26 +500,36 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
         title: "Your Sales Conversation",
         href: "/coach/practice/sales",
         heading: "Know exactly what to say when a prospect is interested",
-        summary: "A call script built around your avatar's pain, and what each call teaches us.",
+        summary: "A value session that earns the call, and a script built around your avatar's pain.",
         sections: [
+          {
+            id: "howto",
+            title: "How a value session runs",
+            source: "standard",
+            from: ["Classroom: win clients, value sessions"],
+            feeds: "Your value session",
+          },
           {
             id: "value",
             title: "Your value session",
-            source: "standard",
-            from: ["Classroom: win clients, value sessions"],
-            feeds: "Booking messages, sales calls",
+            source: "we_build",
+            from: ["Superpowers", "Pain points", "Your voice"],
+            feeds: "Booking messages, newsletter sign-off, LinkedIn",
+            needs: ["market:pains", "voice:sound"],
           },
           {
             id: "script",
             title: "Your call script",
             source: "we_build",
             from: ["BCA sales conversation", "Your avatar", "Pain points", "Your offer"],
+            needs: ["offer:direction", "market:pains"],
           },
           {
             id: "reviews",
             title: "Call reviews",
             source: "live",
             from: ["Recorded sales calls"],
+            link: { href: "/coach/calls", label: "Open Calls" },
           },
         ],
       },
@@ -387,6 +537,7 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
   },
   {
     label: "Serve clients",
+    intro: "How every client starts, and how every session runs.",
     pages: [
       {
         slug: "start",
@@ -416,28 +567,8 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
   },
   {
     label: "Grow your practice",
+    intro: "Visible trust, the numbers, and the next quarter.",
     pages: [
-      {
-        slug: "scorecard",
-        title: "Practice Scorecard",
-        href: "/coach/practice/scorecard",
-        heading: "Know what is working and what needs attention",
-        summary: "Pipeline, clients, and revenue. The numbers that show the constraint.",
-        sections: [
-          {
-            id: "numbers",
-            title: "Practice numbers",
-            source: "live",
-            from: ["Get Clients pipeline", "Payments"],
-          },
-          {
-            id: "clients",
-            title: "Active clients",
-            source: "live",
-            from: ["Client portfolio"],
-          },
-        ],
-      },
       {
         slug: "content",
         title: "Content and Newsletters",
@@ -451,13 +582,38 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
             source: "we_build",
             from: ["Story and proof", "Pain points", "Your voice"],
             feeds: "LinkedIn posts",
+            needs: ["market:pains", "voice:sound"],
           },
           {
             id: "newsletter",
             title: "Newsletter",
             source: "we_build",
-            from: ["Pain points", "Commercial achievements", "Your voice"],
+            from: ["Pain points", "Commercial achievements", "Your voice", "Your value session"],
             feeds: "Newsletter tool",
+            needs: ["market:pains", "voice:sound"],
+          },
+        ],
+      },
+      {
+        slug: "scorecard",
+        title: "Practice Scorecard",
+        href: "/coach/practice/scorecard",
+        heading: "Know what is working and what needs attention",
+        summary: "Pipeline, clients, and revenue. The numbers that show the constraint.",
+        sections: [
+          {
+            id: "numbers",
+            title: "Practice numbers",
+            source: "live",
+            from: ["Get Clients pipeline", "Payments"],
+            link: { href: "/coach/campaigns", label: "Open Get Clients" },
+          },
+          {
+            id: "clients",
+            title: "Active clients",
+            source: "live",
+            from: ["Client portfolio"],
+            link: { href: "/coach/clients", label: "Open Clients" },
           },
         ],
       },
@@ -466,13 +622,14 @@ export const BLUEPRINT_GROUPS: BlueprintGroup[] = [
         title: "Next 90 Days",
         href: "/coach/practice/ninety",
         heading: "Know exactly what happens next",
-        summary: "The objective, the constraint, and this month.",
+        summary: "The objective, the weekly numbers, and this week.",
         sections: [
           {
             id: "quarter",
-            title: "This quarter",
+            title: "Your 90-day launch plan",
             source: "we_build",
-            from: ["Decision Call"],
+            from: ["Your offer", "Fee and capacity", "When you take calls"],
+            needs: ["offer:direction"],
           },
         ],
       },
@@ -484,6 +641,89 @@ export const BLUEPRINT_PAGES = BLUEPRINT_GROUPS.flatMap((group) => group.pages);
 
 export function blueprintPage(slug: string): BlueprintLink | null {
   return BLUEPRINT_PAGES.find((page) => page.slug === slug) ?? null;
+}
+
+export type SectionRef = { group: BlueprintGroup; page: BlueprintLink; section: BlueprintSection; key: string };
+
+/** Every section in document order, with its "page:id" key. */
+export const BLUEPRINT_SECTIONS: SectionRef[] = BLUEPRINT_GROUPS.flatMap((group) =>
+  group.pages.flatMap((page) =>
+    page.sections.map((section) => ({ group, page, section, key: `${page.slug}:${section.id}` }))
+  )
+);
+
+export function sectionByKey(key: string): SectionRef | null {
+  return BLUEPRINT_SECTIONS.find((ref) => ref.key === key) ?? null;
+}
+
+/** We build sections in an order where every section comes after what it needs. */
+export function buildOrder(): string[] {
+  const keys = BLUEPRINT_SECTIONS.filter((r) => r.section.source === "we_build").map((r) => r.key);
+  const done = new Set<string>();
+  const out: string[] = [];
+  const visit = (key: string, depth = 0) => {
+    if (done.has(key) || depth > 20) return;
+    for (const need of sectionByKey(key)?.section.needs ?? []) visit(need, depth + 1);
+    done.add(key);
+    out.push(key);
+  };
+  keys.forEach((k) => visit(k));
+  return out;
+}
+
+export function fieldValue(
+  payload: PracticeKnowledgePayload,
+  path: FieldSpec["path"]
+): Sourced<unknown> | null {
+  const [group, key] = path.split(".") as [Group, string];
+  const bucket = payload[group] as Record<string, Sourced<unknown> | null> | undefined;
+  return bucket?.[key] ?? null;
+}
+
+export function fieldFilled(payload: PracticeKnowledgePayload, field: FieldSpec): boolean {
+  return isFilledSourced(fieldValue(payload, field.path));
+}
+
+export type SectionState = "ready" | "open" | "building" | "live";
+
+/** Where a section stands for one coach. Drives the chips, the "still needed" list, and the admin map. */
+export function sectionState(ref: SectionRef, row: PracticeKnowledgeRow): SectionState {
+  const { section, key } = ref;
+  switch (section.source) {
+    case "imported":
+    case "from_you": {
+      const required = (section.fields ?? []).filter((f) => f.required);
+      const check = required.length ? required : section.fields ?? [];
+      return check.every((f) => fieldFilled(row.payload, f)) ? "ready" : "open";
+    }
+    case "we_build":
+      return row.built_sections[key] ? "ready" : "building";
+    case "standard":
+      return "ready";
+    case "live":
+      return "live";
+  }
+}
+
+/** Imported and From you sections that still need something from the coach. */
+export function stillNeeded(row: PracticeKnowledgeRow): SectionRef[] {
+  return BLUEPRINT_SECTIONS.filter(
+    (ref) =>
+      (ref.section.source === "from_you" || ref.section.source === "imported") &&
+      sectionState(ref, row) === "open"
+  );
+}
+
+/** Open fields with the question to ask, for the AI conversation agenda. */
+export function openQuestions(row: PracticeKnowledgeRow): { path: string; label: string; ask: string }[] {
+  const out: { path: string; label: string; ask: string }[] = [];
+  for (const ref of BLUEPRINT_SECTIONS) {
+    for (const field of ref.section.fields ?? []) {
+      if (!field.ask || fieldFilled(row.payload, field)) continue;
+      out.push({ path: field.path, label: `${ref.section.title}: ${field.label}`, ask: field.ask });
+    }
+  }
+  return out;
 }
 
 export type CommandCenterModel = {
@@ -578,203 +818,3 @@ export function commandCenter(row: PracticeKnowledgeRow): CommandCenterModel {
   };
 }
 
-export type TopicCard = {
-  title: string;
-  source: SectionSource;
-  status: "Ready" | "Open" | "Building";
-  lines: string[];
-};
-
-type CardBody = Pick<TopicCard, "status" | "lines">;
-
-const DEFAULT_BODY: Record<SectionSource, CardBody> = {
-  imported: { status: "Open", lines: ["Not imported yet."] },
-  from_you: { status: "Open", lines: ["Still open in the conversation."] },
-  we_build: { status: "Building", lines: ["BCA writes this from your blueprint."] },
-  standard: { status: "Ready", lines: ["The BCA standard."] },
-  live: { status: "Building", lines: ["This fills once it is live. Nothing here is invented."] },
-};
-
-function sectionBody(key: string, row: PracticeKnowledgeRow): CardBody | null {
-  const payload = row.payload;
-  const report: PracticeReportPayload | null = row.report_payload;
-  const roles = payload.market.roles_held?.value ?? [];
-  const worked = payload.market.industries_worked?.value ?? [];
-  const problems = payload.proof.problems_asked?.value ?? [];
-  const career = payload.proof.career_results?.value ?? [];
-  const buyers = payload.market.buyer_roles?.value ?? [];
-  const avoid = payload.market.avoid?.value ?? [];
-
-  const wt = payload.working_times;
-  const id = payload.identity;
-
-  switch (key) {
-    case "setup:contact": {
-      const lines = [
-        id.phone?.value ? `Phone: ${id.phone.value}` : "",
-        id.whatsapp?.value ? `WhatsApp: ${id.whatsapp.value}` : "",
-        id.location?.value ? `Location: ${id.location.value}` : "",
-        id.timezone?.value ? `Time zone: ${id.timezone.value}` : "",
-      ].filter(Boolean);
-      return {
-        status: id.phone?.value ? "Ready" : "Open",
-        lines: id.phone?.value ? lines : [...lines, "Phone number is still missing."],
-      };
-    }
-    case "setup:calls": {
-      const lines = [
-        wt.preferred_hours?.value ? `Client calls: ${wt.preferred_hours.value}` : "",
-        wt.prospect_call_hours?.value ? `Prospect calls: ${wt.prospect_call_hours.value}` : "",
-        wt.hours_per_week?.value ? `Time on the practice: ${hoursLabel(wt.hours_per_week.value)}` : "",
-      ].filter(Boolean);
-      return lines.length ? { status: "Ready", lines } : null;
-    }
-    case "setup:domain":
-      return {
-        status: "Open",
-        lines: [
-          id.website?.value ? `Current site: ${id.website.value}` : "No site on file.",
-          "Own domain, or a Profit Coach page at your name, is still to decide.",
-        ],
-      };
-    case "setup:email":
-      return { status: "Open", lines: ["Keep your own address, or have a practice email set up. Still to decide."] };
-    case "story:experience":
-      return {
-        status: roles.length || worked.length ? "Ready" : "Open",
-        lines: [
-          roles.length ? `Roles: ${roles.join(", ")}` : "Roles are still open.",
-          worked.length ? `Industries and companies: ${worked.join(", ")}` : "Industries are still open.",
-        ],
-      };
-    case "story:results":
-      return {
-        status: career.length ? "Ready" : "Open",
-        lines: career.length
-          ? career.map((r) =>
-              [r.role, r.company, r.metric_from && r.metric_to ? `${r.metric_from} to ${r.metric_to}` : "", r.timeframe]
-                .filter(Boolean)
-                .join(", ")
-            )
-          : ["One result with a from, a to, and a timeframe still needs to be said."],
-      };
-    case "story:superpowers": {
-      const lines = [payload.proof.superpowers?.value, payload.proof.uniqueness?.value].filter(
-        (line): line is string => Boolean(line)
-      );
-      return lines.length
-        ? { status: "Ready", lines }
-        : { status: "Open", lines: ["Drawn out in the conversation, not invented."] };
-    }
-    case "story:problems":
-      return {
-        status: problems.length ? "Ready" : "Open",
-        lines: problems.length ? problems : ["This is extracted from the conversation, not invented as a superpower."],
-      };
-    case "story:bio":
-      return report?.proof_inventory || report?.experience_summary
-        ? { status: "Ready", lines: [report.proof_inventory || report.experience_summary] }
-        : null;
-    case "market:credibility":
-      return {
-        status: worked.length ? "Ready" : "Open",
-        lines: worked.length ? worked : ["LinkedIn has not filled this yet."],
-      };
-    case "market:options":
-      return report?.market_hypotheses?.length
-        ? {
-            status: "Ready",
-            lines: report.market_hypotheses.map(
-              (h) => `${h.industry}${h.buyer ? ` · ${h.buyer}` : ""}. ${h.problem}`
-            ),
-          }
-        : { status: "Building", lines: ["Drafted once the blueprint has proof."] };
-    case "market:avatar":
-      return buyers.length ? { status: "Open", lines: [`Who signs off: ${buyers.join(", ")}`, "Locked on the Decision Call."] } : null;
-    case "market:pains": {
-      const pains = (report?.market_hypotheses ?? []).map((h) => h.problem).filter(Boolean);
-      return pains.length ? { status: "Ready", lines: pains } : null;
-    }
-    case "market:avoid":
-      return avoid.length ? { status: "Ready", lines: avoid } : null;
-    case "offer:format":
-      return {
-        status: "Ready",
-        lines: payload.practice.delivery_model?.value
-          ? [
-              `You described your work as ${payload.practice.delivery_model.value}.`,
-              "BCA recommends the format. You can adjust it on the Decision Call.",
-            ]
-          : ["BCA recommends the format. You can adjust it on the Decision Call."],
-      };
-    case "offer:fee": {
-      const lines = [
-        payload.practice.min_fee?.value ? `Minimum fee: ${payload.practice.min_fee.value}` : "",
-        payload.practice.capacity?.value ? `Capacity: ${payload.practice.capacity.value}` : "",
-      ].filter(Boolean);
-      return lines.length ? { status: "Ready", lines } : null;
-    }
-    case "offer:direction":
-      return report?.offer_direction
-        ? { status: "Ready", lines: [report.offer_direction, report.positioning].filter(Boolean) }
-        : { status: "Building", lines: ["Written from the blueprint, then locked on the Decision Call."] };
-    case "voice:rules":
-      return { status: "Ready", lines: ["Everything BCA writes for you follows the BCA writing rules."] };
-    case "linkedin:profile":
-      return {
-        status: payload.identity.linkedin_url?.value ? "Ready" : "Open",
-        lines: [
-          payload.identity.linkedin_url?.value || "LinkedIn URL is still open.",
-          payload.identity.location?.value || "Location is still open.",
-        ],
-      };
-    case "linkedin:rewrite":
-      return { status: "Building", lines: ["The LinkedIn rewrite is built after the Decision Record is locked."] };
-    case "market:criteria":
-      return {
-        status: report ? "Building" : "Open",
-        lines: report
-          ? ["Criteria are set on the Decision Call from the market options."]
-          : ["Needs the market section of the blueprint first."],
-      };
-    case "campaigns:messaging":
-      return report?.campaign_angle
-        ? { status: "Ready", lines: [report.campaign_angle] }
-        : { status: "Building", lines: ["Drafted from the blueprint. Not a live campaign yet."] };
-    case "campaigns:live":
-      return { status: "Building", lines: ["The first campaign is queued once the practice is ready to build."] };
-    case "conversations:followup":
-      return {
-        status: "Building",
-        lines: ["Reply handling and sequences are written with the first campaign, not before the angle is chosen."],
-      };
-    case "sales:script":
-    case "offer:payment":
-      return {
-        status: "Building",
-        lines: ["This is written from the locked Decision Record. It is one guide, not a pile of frameworks."],
-      };
-    case "content:posts":
-    case "content:newsletter":
-      return report ? null : { status: "Open", lines: ["Needs the recommendation first."] };
-    case "ninety:quarter":
-      return {
-        status: report ? "Building" : "Open",
-        lines: report?.decision_questions?.length
-          ? report.decision_questions
-          : ["The 90-day plan is set on the Decision Call."],
-      };
-    default:
-      return null;
-  }
-}
-
-export function topicCards(slug: string, row: PracticeKnowledgeRow): TopicCard[] {
-  const page = blueprintPage(slug);
-  if (!page) return [];
-  return page.sections.map((section) => ({
-    title: section.title,
-    source: section.source,
-    ...(sectionBody(`${slug}:${section.id}`, row) ?? DEFAULT_BODY[section.source]),
-  }));
-}

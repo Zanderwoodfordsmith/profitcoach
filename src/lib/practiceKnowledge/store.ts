@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContext";
+import { sanitizeBuiltSections } from "./blocks";
 import { computeCompleteness } from "./completeness";
 import {
   emptyPracticePayload,
@@ -8,6 +9,7 @@ import {
 } from "./sourced";
 import { mergePracticeIntoBrain } from "./syncBrain";
 import type {
+  BuiltSection,
   DecisionRecordPayload,
   DecisionRecordRow,
   IntakeAssetRow,
@@ -43,6 +45,7 @@ function mapKnowledgeRow(raw: Record<string, unknown>): PracticeKnowledgeRow {
       : [],
     report_payload: (raw.report_payload as PracticeReportPayload | null) ?? null,
     report_generated_at: (raw.report_generated_at as string | null) ?? null,
+    built_sections: sanitizeBuiltSections(raw.built_sections),
     created_at: String(raw.created_at ?? ""),
     updated_at: String(raw.updated_at ?? ""),
   };
@@ -132,6 +135,31 @@ export async function patchPracticeKnowledge(opts: {
 
   if (error || !data) {
     throw new Error(error?.message ?? "Could not update practice knowledge.");
+  }
+  return mapKnowledgeRow(data as Record<string, unknown>);
+}
+
+/**
+ * Save one section BCA wrote. Reads the latest row first so sections built
+ * one after another never overwrite each other. Pass null to remove it.
+ */
+export async function saveBuiltSection(opts: {
+  coachId: string;
+  key: string;
+  section: BuiltSection | null;
+}): Promise<PracticeKnowledgeRow> {
+  const current = await ensurePracticeKnowledge(opts.coachId);
+  const next = { ...current.built_sections };
+  if (opts.section) next[opts.key] = opts.section;
+  else delete next[opts.key];
+  const { data, error } = await supabaseAdmin
+    .from("coach_practice_knowledge")
+    .update({ built_sections: sanitizeBuiltSections(next), updated_at: new Date().toISOString() })
+    .eq("coach_id", opts.coachId)
+    .select("*")
+    .single();
+  if (error || !data) {
+    throw new Error(error?.message ?? "Could not save the section.");
   }
   return mapKnowledgeRow(data as Record<string, unknown>);
 }

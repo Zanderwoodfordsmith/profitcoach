@@ -10,9 +10,11 @@ import {
   type ReactNode,
 } from "react";
 
+import { buildOrder, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
 import { readyForRecommendation } from "@/lib/practiceKnowledge/brief";
 import { mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
 import {
+  buildPracticeSection,
   generatePracticeReport,
   loadInterview,
   loadPractice,
@@ -54,7 +56,28 @@ type PracticeContextValue = {
   addNote: (body: string, page: string) => void;
   /** Maps a /coach/practice href onto wherever these pages are mounted. */
   href: (path: string) => string;
+  coachName: string;
+  /** Sections being written right now, and progress for "write everything". */
+  building: BuildState;
+  build: (key: string) => void;
+  buildAll: (opts?: { onlyMissing?: boolean }) => void;
+  stopBuild: () => void;
+  saveField: (field: FieldSpec, value: unknown) => void;
+  /** Right-hand assistant panel. */
+  assistantOpen: boolean;
+  setAssistantOpen: (open: boolean) => void;
 };
+
+export type BuildState = {
+  active: string[];
+  queue: string[];
+  done: number;
+  total: number;
+  failed: string[];
+};
+
+const IDLE_BUILD: BuildState = { active: [], queue: [], done: 0, total: 0, failed: [] };
+const ASSISTANT_KEY = "practice-assistant-open";
 
 export const PRACTICE_BASE = "/coach/practice";
 
@@ -88,6 +111,10 @@ export function PracticeProvider({
   const [error, setError] = useState<string | null>(null);
   const [ttsOn, setTtsOn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [coachName, setCoachName] = useState("");
+  const [building, setBuilding] = useState<BuildState>(IDLE_BUILD);
+  const stopRef = useRef(false);
+  const [assistantOpen, setAssistantOpenState] = useState(false);
   const reportAttempted = useRef(false);
   const draftRef = useRef<PracticeKnowledgePayload | null>(null);
   const persistGen = useRef(0);
@@ -106,6 +133,7 @@ export function PracticeProvider({
     setKnowledge(res.data.knowledge);
     setDraft(res.data.knowledge.payload);
     setAssets(res.data.assets);
+    setCoachName(res.data.coach_name ?? "");
     const interview = await loadInterview(coachId);
     if (interview.ok && interview.data?.session) setSession(interview.data.session);
     setLoading(false);
@@ -115,6 +143,44 @@ export function PracticeProvider({
     void load();
     void ttsAvailable(coachId).then(setTtsOn);
   }, [load, coachId]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(ASSISTANT_KEY);
+      // Open by default on wide screens the first time.
+      setAssistantOpenState(stored ? stored === "1" : window.innerWidth >= 1280);
+    } catch {
+      setAssistantOpenState(false);
+    }
+  }, []);
+
+  function setAssistantOpen(open: boolean) {
+    setAssistantOpenState(open);
+    try {
+      window.localStorage.setItem(ASSISTANT_KEY, open ? "1" : "0");
+    } catch {
+      // Remembering the panel is a convenience only.
+    }
+  }
+
+  async function runBuilds(keys: string[]) {
+    if (!keys.length) return;
+    stopRef.current = false;
+    setBuilding({ active: [], queue: keys, done: 0, total: keys.length, failed: [] });
+    for (const key of keys) {
+      if (stopRef.current) break;
+      setBuilding((b) => ({ ...b, active: [key], queue: b.queue.filter((k) => k !== key) }));
+      const res = await buildPracticeSection(key, coachId);
+      if (res.ok && res.data) {
+        setKnowledge(res.data.knowledge);
+        setBuilding((b) => ({ ...b, done: b.done + 1 }));
+      } else {
+        setBuilding((b) => ({ ...b, done: b.done + 1, failed: [...b.failed, key] }));
+        setError(res.error || "A section could not be written. Try it again.");
+      }
+    }
+    setBuilding((b) => ({ ...b, active: [], queue: [] }));
+  }
 
   const persist = useCallback(async (next: PracticeKnowledgePayload) => {
     const gen = ++persistGen.current;
@@ -257,6 +323,34 @@ export function PracticeProvider({
       });
     },
     transcribe,
+    coachName,
+    building,
+    build: (key) => {
+      if (building.active.length) return;
+      void runBuilds([key]);
+    },
+    buildAll: (opts) => {
+      if (building.active.length) return;
+      const built = knowledge?.built_sections ?? {};
+      const keys = buildOrder().filter((k) => !opts?.onlyMissing || !built[k]);
+      void runBuilds(keys);
+    },
+    stopBuild: () => {
+      stopRef.current = true;
+    },
+    saveField: (field, value) => {
+      const base = draftRef.current;
+      if (!base) return;
+      const [group, key] = field.path.split(".") as [keyof PracticeKnowledgePayload, string];
+      const next = mergePracticePayload(base, {
+        [group]: { [key]: sourced(value, "coach_edit") },
+      } as Partial<PracticeKnowledgePayload>);
+      draftRef.current = next;
+      setDraft(next);
+      void persist(next);
+    },
+    assistantOpen,
+    setAssistantOpen,
     href: (path) =>
       path === PRACTICE_BASE || path.startsWith(`${PRACTICE_BASE}/`) || path.startsWith(`${PRACTICE_BASE}#`)
         ? `${basePath}${path.slice(PRACTICE_BASE.length)}`

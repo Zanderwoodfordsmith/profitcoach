@@ -13,6 +13,9 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       timezone: null,
       location: null,
       linkedin_url: null,
+      web_address: null,
+      practice_email: null,
+      linkedin_visibility: null,
     },
     working_times: {
       hours_per_week: null,
