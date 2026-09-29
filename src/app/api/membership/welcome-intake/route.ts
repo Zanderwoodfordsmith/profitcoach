@@ -6,6 +6,9 @@ import {
   PROGRAMME_INTAKE_TIME_COMMITMENTS,
   type ProgrammeIntakeGoal,
 } from "@/config/programmeIntake";
+import { seedPracticeFromLinkedIn } from "@/lib/practiceKnowledge/ingestLinkedIn";
+import { payloadFromWelcomeIntake } from "@/lib/practiceKnowledge/ingestWelcome";
+import { patchPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -102,6 +105,29 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+
+  void (async () => {
+    try {
+      await patchPracticeKnowledge({
+        coachId: user.id,
+        payloadPatch: payloadFromWelcomeIntake({
+          linkedinUrl,
+          timeCommitment,
+        }),
+      });
+      if (linkedinUrl) {
+        await seedPracticeFromLinkedIn(user.id, {
+          scrape: true,
+          linkedinUrl,
+        });
+      }
+    } catch (err) {
+      console.error(
+        "welcome practice seed:",
+        err instanceof Error ? err.message : "failed"
+      );
+    }
+  })();
 
   return NextResponse.json({ ok: true });
 }

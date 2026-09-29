@@ -34,6 +34,17 @@ export type StudioHubCard = {
  */
 export const STUDIO_HUB_CARDS: StudioHubCard[] = [
   {
+    id: "practice-setup",
+    eyebrow: "Onboarding",
+    title: "Practice setup",
+    description:
+      "One brief. LinkedIn writes what it can. You speak the rest.",
+    accentClassName: "bg-gradient-to-br from-[#0c5290] via-[#0e6aad] to-[#42a1ee]",
+    eyebrowClassName: "text-[#0c5290]",
+    outputId: null,
+    dedicatedPath: "/practice",
+  },
+  {
     id: "ideal-client",
     eyebrow: "Target",
     title: "Ideal Client Selector",

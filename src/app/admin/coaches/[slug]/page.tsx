@@ -112,7 +112,7 @@ type CoachPayment = {
   billing_kind_override: PaymentBillingKind | null;
 };
 
-type TabId = "overview" | "linkedin" | "payments";
+type TabId = "overview" | "linkedin" | "practice" | "payments";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
 
@@ -213,7 +213,7 @@ export default function AdminCoachDetailPage({
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "payments" || tab === "linkedin") {
+    if (tab === "payments" || tab === "linkedin" || tab === "practice") {
       setActiveTab(tab);
     } else if (!tab) {
       setActiveTab("overview");
@@ -495,6 +495,7 @@ export default function AdminCoachDetailPage({
             <nav className="-mb-px flex flex-wrap gap-x-8 gap-y-1" aria-label="Coach sections">
               {tabButton("overview", "Overview")}
               {tabButton("linkedin", "LinkedIn")}
+              {tabButton("practice", "Practice")}
               {tabButton("payments", `Payments (${paymentSummary.succeededCount})`)}
             </nav>
           </div>
@@ -823,6 +824,21 @@ export default function AdminCoachDetailPage({
                 );
               }}
             />
+          ) : null}
+
+          {activeTab === "practice" ? (
+            <SectionCard
+              title="Practice Installation"
+              description="Knowledge capture, interview, Decision Call report, and Decision Record."
+            >
+              <Link
+                href={`/admin/practice/${coach.id}`}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0a4478]"
+              >
+                Open practice record
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </SectionCard>
           ) : null}
 
           {activeTab === "payments" ? (
