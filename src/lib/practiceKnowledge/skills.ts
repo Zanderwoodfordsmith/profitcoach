@@ -296,10 +296,15 @@ export function skillUserPrompt(opts: {
   const ref = sectionByKey(opts.key);
   const report = opts.row.report_payload;
   const visibility = opts.row.payload.identity.linkedin_visibility?.value ?? "unknown";
+  // Tenure is the number models most like to invent. Only LinkedIn durations count.
+  const tenureKnown = /\b\d+\s*(yrs?|years?)\b/i.test(opts.linkedinSummary);
+  const tenureLine = tenureKnown
+    ? "Years of experience: use only the durations shown in the LinkedIn section."
+    : "Years of experience: NOT STATED. Do not give a number of years anywhere (not in stats, bios or messages). Hours a week are not years.";
   return [
     `# Task: ${ref?.section.title ?? opts.key}`,
     skill?.task ?? "",
-    `# Coach\n\nName: ${opts.coachName}\nLinkedIn visibility: ${visibility}`,
+    `# Coach\n\nName: ${opts.coachName}\nLinkedIn visibility: ${visibility}\n${tenureLine}`,
     `## What they told us and what we imported\n\n${summarizeKnowledgeForPrompt(opts.row.payload)}`,
     `## LinkedIn\n\n${opts.linkedinSummary.slice(0, 6000) || "(not imported)"}`,
     report
