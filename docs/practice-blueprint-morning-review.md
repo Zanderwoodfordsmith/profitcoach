@@ -89,6 +89,8 @@ Build order follows dependencies: market options, then the avatar, then pain poi
 - The document UI: `src/components/practice/document/*`, `BlueprintAssistant.tsx`, `CommandCenter.tsx`, `PracticeShell.tsx`
 - Admin: `AdminBlueprintMap.tsx` (coverage), `api/admin/practice/coverage`
 
-To write any coach's blueprint from the terminal: `npx tsx scripts/build-practice-blueprint.mts <coachId>` (all sections), or pass section keys such as `market:avatar`.
+To write any coach's blueprint from the terminal: `npx tsx scripts/build-practice-blueprint.mts <coachId>` (all sections), pass section keys such as `market:avatar`, or add `--fresh` to clear the written sections first.
 
-Checks: `tsc` is clean, and the 18 practice tests pass (`npx tsx --test src/lib/practiceKnowledge/*.test.ts`).
+Checks: `tsc` is clean for `src`, and the 18 practice tests pass (`npx tsx --test src/lib/practiceKnowledge/*.test.ts`). Everything was checked in the running dev server, with screenshots at desktop and phone sizes and in print mode.
+
+**Local production build:** `next build` fails on this machine, but not because of this branch. Turbopack fails to resolve the existing JetBrains Mono Google font ("next/font/google queries have exactly one entry"), and the webpack build fails on the existing `node:crypto` import in `revolutDirectPaymentsCsvImport.ts` (already on `main`). Worth a look before the next deploy, but it's separate from the Blueprint work.
