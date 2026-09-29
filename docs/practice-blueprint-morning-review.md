@@ -26,6 +26,8 @@ Built overnight on 29 to 30 September 2026, on the branch `practice-blueprint`. 
 
 **Downloads.** There's one Markdown file for the whole blueprint ("Paste it into ChatGPT, Claude or any assistant"), one per page, and "Save as PDF" through print. The print styles give a full-page gradient cover and start each chapter on a new page.
 
+**Edit in place.** Every written message (connection requests, emails, the About section, headlines) has an Edit button. Edits save to the section and are marked "edited". Rewriting an edited section asks first, and "Rewrite everything" skips edited sections.
+
 **Send to Get Clients.** On Campaign messaging, one click creates a draft campaign in Get Clients: an invite, then waits and messages, with the messages on "remind" so the coach approves each one. Two variants are available: the classic Connector sequence, and the softer conversation into the BOSS Scorecard (the style of Pam's live Electrical campaign). Nothing sends until prospects are added and the campaign is started.
 
 ## The written sections (17 AI skills)
@@ -62,12 +64,19 @@ Build order follows dependencies: market options, then the avatar, then pain poi
 | Zander Demo | Simulated interview (fictional), all 17 sections written |
 | Zander Demo, Get Clients | Two **draft** campaigns from the Send to Get Clients test ("Blueprint · Connector campaign", "Blueprint · Conversation into the scorecard"). Safe to delete. |
 
+## Quality fixes found by testing tonight
+
+- The interviewer sometimes answered with the wrong JSON key once conversations got long. It now gets a key reminder every turn, the route accepts the alternatives, and it retries once.
+- The interviewer asked for the phone number straight after the first result. The agenda now goes proof, then market, then offer and LinkedIn, then setup.
+- The AI turned "15 or more hours a week" into "fifteen years in building services". The prompt now labels hours in plain words, and a rule bans deriving tenure from other numbers. The demo was rebuilt after the fix.
+- An early campaign invented an anecdote for Pam ("I know what a 6am plant breakdown feels like"). A new rule bans inventing the coach's experiences, and Pam's sections were rebuilt.
+
 ## Known gaps and next steps
 
 - **One-to-one call transcripts** are listed as a source for the avatar, pain points and voice, but nothing loads them yet. That's the next big quality jump: upload the Happy Scribe transcripts and feed them into the skills.
 - **Coach-edited copies of Standard sections** ("Make it mine") aren't built yet. The data shape leaves room for it.
-- **Editing written sections.** Coaches can rewrite a section and copy it, but can't edit its text inline yet. Captured fields can be edited inline.
-- **Coaches can still open `/coach/practice`** (your welcome screen links to it). It's the same new document. Say if you want it admin-only until launch.
+- **Editing written sections.** Message cards are editable in place. Tables and paragraphs aren't yet (rewrite the section, or edit the captured facts and rewrite).
+- **Coaches can still open `/coach/practice`** (your welcome screen links to it). It's the same new document. I took it out of the Get Clients hub, so the sidebar no longer highlights Get Clients on these pages. Say if you want it admin-only until launch.
 - **Website** stays a separate project, as discussed.
 - **The old `PracticeBrief`** component is still used on the admin coach record page. The coach-facing pages no longer use it.
 
@@ -79,5 +88,7 @@ Build order follows dependencies: market options, then the avatar, then pain poi
 - Blocks and export: `blocks.ts`, `exportMarkdown.ts`, `standard.ts`
 - The document UI: `src/components/practice/document/*`, `BlueprintAssistant.tsx`, `CommandCenter.tsx`, `PracticeShell.tsx`
 - Admin: `AdminBlueprintMap.tsx` (coverage), `api/admin/practice/coverage`
+
+To write any coach's blueprint from the terminal: `npx tsx scripts/build-practice-blueprint.mts <coachId>` (all sections), or pass section keys such as `market:avatar`.
 
 Checks: `tsc` is clean, and the 18 practice tests pass (`npx tsx --test src/lib/practiceKnowledge/*.test.ts`).

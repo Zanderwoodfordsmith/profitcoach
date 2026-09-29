@@ -1,4 +1,5 @@
 import type { InterviewTurn, PracticeKnowledgePayload } from "./types";
+import { hoursLabel } from "./brief";
 import { listValue, textValue } from "./sourced";
 
 export const PRACTICE_INTERVIEW_SYSTEM = `You are the Practice Installation interviewer for Business Coach Academy / Profit Coach.
@@ -82,7 +83,8 @@ export function summarizeKnowledgeForPrompt(
   push("Web address choice", textValue(payload.identity.web_address));
   push("Practice email choice", textValue(payload.identity.practice_email));
   push("LinkedIn visibility", payload.identity.linkedin_visibility?.value ?? "");
-  push("Hours/week", textValue(payload.working_times.hours_per_week));
+  const hours = textValue(payload.working_times.hours_per_week);
+  push("Time available for the practice (not years of experience)", hours ? hoursLabel(hours) : "");
   push("Client call times", textValue(payload.working_times.preferred_hours));
   push("Prospect call times", textValue(payload.working_times.prospect_call_hours));
   push("Delivery model", payload.practice.delivery_model?.value ?? "");
