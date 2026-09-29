@@ -3,6 +3,7 @@
  *
  *   npx tsx scripts/build-practice-blueprint.mts <coachId>            # every "We build" section, in build order
  *   npx tsx scripts/build-practice-blueprint.mts <coachId> market:avatar market:pains
+ *   npx tsx scripts/build-practice-blueprint.mts <coachId> --fresh    # clear written sections first
  *
  * Hydrates the practice record first (LinkedIn, sign-up), then calls the same
  * buildSection() the app uses. Prints each section as Markdown. Uses .env.local.
@@ -19,7 +20,9 @@ for (const line of readFileSync(".env.local", "utf8").split("\n")) {
   process.env[t.slice(0, i).trim()] ??= v;
 }
 
-const [coachId, ...keys] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const fresh = args.includes("--fresh");
+const [coachId, ...keys] = args.filter((a) => a !== "--fresh");
 if (!coachId) {
   console.error("Usage: npx tsx scripts/build-practice-blueprint.mts <coachId> [section keys...]");
   process.exit(1);
@@ -31,6 +34,10 @@ const { buildOrder } = await import("@/lib/practiceKnowledge/blueprint");
 const { blocksToMarkdown } = await import("@/lib/practiceKnowledge/blocks");
 
 await hydratePracticeFromProfile(coachId);
+if (fresh) {
+  const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
+  await supabaseAdmin.from("coach_practice_knowledge").update({ built_sections: {} }).eq("coach_id", coachId);
+}
 const order = keys.length && keys[0] !== "all" ? keys : buildOrder();
 let failed = 0;
 for (const key of order) {

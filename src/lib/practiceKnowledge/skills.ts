@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { blocksToMarkdown, BLOCKS_SCHEMA_PROMPT } from "./blocks";
-import { sectionByKey } from "./blueprint";
+import { buildOrder, sectionByKey } from "./blueprint";
 import { summarizeKnowledgeForPrompt } from "./prompts";
 import type { InterviewTurn, PracticeKnowledgeRow } from "./types";
 
@@ -270,9 +270,12 @@ function upstreamText(key: string, row: PracticeKnowledgeRow): string {
   for (const need of [...wanted]) {
     for (const deeper of sectionByKey(need)?.section.needs ?? []) wanted.add(deeper);
   }
-  // Always useful when present.
+  // Always useful when present, but only sections that come earlier in the
+  // build order, so a full rewrite never feeds on stale later sections.
+  const order = buildOrder();
+  const position = order.indexOf(key);
   for (const extra of ["story:bio", "voice:sound", "market:avatar", "market:pains", "offer:direction"]) {
-    if (extra !== key && row.built_sections[extra]) wanted.add(extra);
+    if (extra !== key && row.built_sections[extra] && order.indexOf(extra) < position) wanted.add(extra);
   }
   const parts: string[] = [];
   for (const need of wanted) {
