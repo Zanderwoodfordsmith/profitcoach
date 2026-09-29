@@ -114,8 +114,8 @@ Blocks, in this order:
     task: `Rewrite the coach's LinkedIn profile. Respect whether they are public or discreet about coaching. If unknown, write the public version and add a callout (tone "note") saying a discreet version is available on request.
 Blocks, in this order:
 1. lede: what the rewrite changes, in one sentence.
-2. heading "Headline", then a message block (label "Headline") under 220 characters.
-3. heading "About", then a message block (label "About section") with the full About text in their voice, line breaks included.
+2. heading "Headline", then three message blocks (labels "Headline option 1" to "Headline option 3"), each under 220 characters and each using a different formula; put the formula name and the recommendation in each note.
+3. heading "About", then a message block (label "About section") with the full About text in their voice, 1,500 to 2,000 characters, short paragraphs, the hook in the first two lines.
 4. heading "Core skills", then a table with columns Skill, What it means for the owner (four rows).
 5. heading "Key milestones", then bullets (three or four, only from their record).
 6. heading "Banner", then a message block (label "Banner line").

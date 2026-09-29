@@ -131,8 +131,29 @@
     size: A4;
     margin: 16mm 14mm;
   }
+  html,
   body {
     background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  /* Print only the document column: the app around it disappears. */
+  body * {
+    visibility: hidden;
+  }
+  .bp-print-root,
+  .bp-print-root * {
+    visibility: visible;
+  }
+  .bp-print-root {
+    position: absolute;
+    inset: 0 0 auto 0;
+    width: 100%;
+    margin: 0;
+  }
+  .bp-print-root > div {
+    max-width: none !important;
+    padding: 0 !important;
   }
   .bp-no-print,
   header[role="banner"],

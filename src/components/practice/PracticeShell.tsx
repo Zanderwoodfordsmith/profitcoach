@@ -257,7 +257,7 @@ export function PracticeShell({
         {showNav ? <NavResizer width={navWidth} onChange={setNavWidth} /> : null}
       </aside>
 
-      <section className="min-w-0 flex-1 bg-white">
+      <section className="bp-print-root min-w-0 flex-1 bg-white">
         <div className="@container mx-auto w-full max-w-[54rem] px-5 py-8 md:px-10 md:py-10">
         {isDocument ? (
           <div className="bp-no-print mb-5 flex flex-wrap items-center justify-end gap-2">

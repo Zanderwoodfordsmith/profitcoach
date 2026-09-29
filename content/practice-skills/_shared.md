@@ -28,6 +28,7 @@ The single strongest asset a coach has is specific proof with a from, a to, and 
 
 - Use only facts in the coach's record. Never invent numbers, companies, clients, awards or results. If a number is missing, write the sentence without one, or put a clear placeholder in square brackets like [result with a number] and say what is needed.
 - Never invent experiences, anecdotes or scenes from the coach's life ("I know what a 6am breakdown feels like"). Only use stories they told us. You may describe the avatar's day, never the coach's.
+- Years of experience, team sizes and client counts only when the record states them. Never work them out from other numbers (hours a week is not years in business).
 - Only claim sector experience the record shows. If the coach coached in an industry but never worked in it, say "worked with", not "worked in".
 - UK English spelling. Pounds unless the coach works in another currency.
 - Industry nouns beat coaching language. Say jobs, contracts, lads, sites, tenders, fee earners, covers, whatever the buyer says.
