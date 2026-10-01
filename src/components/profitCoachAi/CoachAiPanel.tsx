@@ -11,6 +11,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowUp,
+  Bot,
   Brain,
   Check,
   History,
@@ -24,6 +25,8 @@ import {
   X,
 } from "lucide-react";
 
+import { AgentChat } from "@/components/agent/AgentChat";
+import type { AgentCoach, AgentMode } from "@/lib/agent/types";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -130,6 +133,8 @@ type CoachAiPanelProps = {
   sidebarVisible?: boolean;
   /** Icon-rail width instead of full labels. */
   sidebarCollapsed?: boolean;
+  /** Coaches with the agent switched on: the Agent view only. */
+  agentOnly?: boolean;
 };
 
 export function CoachAiPanel({
@@ -139,6 +144,7 @@ export function CoachAiPanel({
   createHubHref,
   sidebarVisible = true,
   sidebarCollapsed = false,
+  agentOnly = false,
 }: CoachAiPanelProps) {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
@@ -157,9 +163,14 @@ export function CoachAiPanel({
   const followRouteRef = useRef(true);
 
   /** "brain" = editable what-the-AI-knows view; "history" = saved chats. */
-  const [view, setView] = useState<"chat" | "brain" | "history" | "create">(
-    "chat"
-  );
+  const [view, setView] = useState<
+    "chat" | "brain" | "history" | "create" | "agent"
+  >(agentOnly ? "agent" : "chat");
+  /** The AI Agent (does the work). Admins always; coaches when switched on. */
+  const [agent, setAgent] = useState<{
+    mode: AgentMode;
+    coach: AgentCoach | null;
+  } | null>(null);
   const [brainContext, setBrainContext] = useState<CoachAiContext | null>(null);
   const [brainLoading, setBrainLoading] = useState(false);
   const [brainLoadError, setBrainLoadError] = useState<string | null>(null);
@@ -197,7 +208,7 @@ export function CoachAiPanel({
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
-      if (view !== "chat") setView("chat");
+      if (view !== "chat" && view !== "agent") setView("chat");
       else if (fullscreen) onToggleFullscreen();
       else onClose();
     }
@@ -222,6 +233,39 @@ export function CoachAiPanel({
     }
     return h;
   }, [impersonatingCoachId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const headers = await authHeaders();
+      if (!headers) return;
+      const res = await fetch("/api/agent/status", { headers }).catch(() => null);
+      const body = res?.ok
+        ? ((await res.json().catch(() => null)) as {
+            enabled?: boolean;
+            mode?: AgentMode;
+            coach?: AgentCoach | null;
+          } | null)
+        : null;
+      if (cancelled) return;
+      setAgent(
+        body?.enabled && body.mode
+          ? { mode: body.mode, coach: body.coach ?? null }
+          : null
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeaders]);
+
+  useEffect(() => {
+    if (agentOnly) {
+      if (view !== "agent") setView("agent");
+    } else if (!agent && view === "agent") {
+      setView("chat");
+    }
+  }, [agent, agentOnly, view]);
 
   /**
    * Voice input: record with MediaRecorder, transcribe server-side (Whisper).
@@ -712,7 +756,7 @@ export function CoachAiPanel({
           bleedInset="px-4 md:px-[60px]"
           showChrome={false}
           tabs={
-            <PageHeaderUnderlineTabs
+            agentOnly ? undefined : <PageHeaderUnderlineTabs
               ariaLabel="Profit Coach AI sections"
               items={[
                 {
@@ -722,6 +766,17 @@ export function CoachAiPanel({
                   active: view === "chat",
                   onClick: () => setView("chat"),
                 },
+                ...(agent
+                  ? [
+                      {
+                        kind: "button" as const,
+                        id: "agent",
+                        label: "Agent",
+                        active: view === "agent",
+                        onClick: () => setView("agent"),
+                      },
+                    ]
+                  : []),
                 {
                   kind: "button",
                   id: "history",
@@ -760,7 +815,9 @@ export function CoachAiPanel({
             <p className="truncate text-xs text-slate-500">
               {view === "brain"
                 ? "Your brain — what I know about you"
-                : view === "history"
+                : view === "agent"
+                  ? "Agent"
+                  : view === "history"
                   ? "Chat history"
                   : view === "create"
                     ? "Create tools"
@@ -777,51 +834,70 @@ export function CoachAiPanel({
               <Wrench className="h-4 w-4" />
             </Link>
           ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              if (view === "brain") setView("chat");
-              else void openBrain();
-            }}
-            aria-label={
-              view === "brain"
-                ? "Back to chat"
-                : "Open your brain — what the AI knows about you"
-            }
-            title={view === "brain" ? "Back to chat" : "Your brain"}
-            className={`rounded-full p-2 transition ${
-              view === "brain"
-                ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
-                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-            }`}
-          >
-            <Brain className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (view === "history") setView("chat");
-              else void openHistory();
-            }}
-            aria-label={view === "history" ? "Back to chat" : "Chat history"}
-            title={view === "history" ? "Back to chat" : "Chat history"}
-            className={`rounded-full p-2 transition ${
-              view === "history"
-                ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
-                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-            }`}
-          >
-            <History className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={startNewChat}
-            aria-label="New chat"
-            title="New chat"
-            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+          {agentOnly ? null : (
+            <>
+              {agent ? (
+                <button
+                  type="button"
+                  onClick={() => setView(view === "agent" ? "chat" : "agent")}
+                  aria-label={view === "agent" ? "Back to chat" : "Agent: let the AI do the work"}
+                  title={view === "agent" ? "Back to chat" : "Agent"}
+                  className={`rounded-full p-2 transition ${
+                    view === "agent"
+                      ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
+                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  }`}
+                >
+                  <Bot className="h-4 w-4" />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  if (view === "brain") setView("chat");
+                  else void openBrain();
+                }}
+                aria-label={
+                  view === "brain"
+                    ? "Back to chat"
+                    : "Open your brain — what the AI knows about you"
+                }
+                title={view === "brain" ? "Back to chat" : "Your brain"}
+                className={`rounded-full p-2 transition ${
+                  view === "brain"
+                    ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                }`}
+              >
+                <Brain className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (view === "history") setView("chat");
+                  else void openHistory();
+                }}
+                aria-label={view === "history" ? "Back to chat" : "Chat history"}
+                title={view === "history" ? "Back to chat" : "Chat history"}
+                className={`rounded-full p-2 transition ${
+                  view === "history"
+                    ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                }`}
+              >
+                <History className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={startNewChat}
+                aria-label="New chat"
+                title="New chat"
+                className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={onToggleFullscreen}
@@ -844,7 +920,20 @@ export function CoachAiPanel({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col">
-      {view === "brain" ? (
+      {agentOnly && !agent ? (
+        <p className={`flex items-center gap-2 py-8 text-sm text-slate-500 ${mainContentPad}`}>
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+        </p>
+      ) : view === "agent" && agent ? (
+        <AgentChat
+          fullscreen={fullscreen}
+          padClass={mainContentPad}
+          mode={agent.mode}
+          defaultCoach={agent.coach}
+          authHeaders={authHeaders}
+          onNavigate={fullscreen ? onToggleFullscreen : undefined}
+        />
+      ) : view === "brain" ? (
         /* Brain — what the AI knows about you; saved to profiles.ai_context */
         <div
           className={`flex min-h-0 flex-1 flex-col overflow-y-auto py-4 ${

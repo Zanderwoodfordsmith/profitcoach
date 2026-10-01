@@ -112,6 +112,15 @@
         ],
         "createdAt": "2026-09-29T21:36:11.292Z",
         "reason": "Claude's call, not user-confirmed: the hairline grid is only on the cover of a document literally titled The Practice Blueprint (a blueprint surface, which the rule itself exempts), echoing the brochure references Zander saved on 29 Sept"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/agent/AgentChat.tsx"
+        ],
+        "createdAt": "2026-10-01T21:31:52.264Z",
+        "reason": "Claude triage (not user-confirmed): variant classes only. Starter buttons swap to text-sky-900 on hover:bg-sky-50 (same classes as CoachAiPanel starters); send button's disabled state pairs text-slate-400 with bg-slate-200. Gray text never renders on the sky background."
       }
     ]
   }

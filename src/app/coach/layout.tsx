@@ -12,6 +12,7 @@ import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { CoachAiPanel } from "@/components/profitCoachAi/CoachAiPanel";
+import { useCoachAgentAccess } from "@/components/agent/useAgentAccess";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
@@ -200,8 +201,10 @@ export default function CoachLayout({
    */
   const { profile: viewerProfile, profileLoading } = useDashboardProfile();
   /** Admin-only docked panel — hidden while impersonating so "View as coach" matches members. */
-  const aiPanelAvailable =
-    viewerProfile?.role === "admin" && !impersonatingCoachId;
+  const adminAiPanel = viewerProfile?.role === "admin" && !impersonatingCoachId;
+  /** Coaches get the panel, Agent only, once an admin switches the agent on for them. */
+  const coachAgentPanel = useCoachAgentAccess(viewerProfile?.role === "coach");
+  const aiPanelAvailable = adminAiPanel || coachAgentPanel;
   const showAiSparkles = aiPanelAvailable;
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiPanelFullscreen, setAiPanelFullscreen] = useState(false);
@@ -395,6 +398,7 @@ export default function CoachLayout({
           createHubHref="/coach/message-generator"
           sidebarVisible={sidebarMounted}
           sidebarCollapsed={sidebarCollapsed}
+          agentOnly={!adminAiPanel}
         />
       ) : null}
     </div>
