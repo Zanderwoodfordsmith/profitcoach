@@ -35,15 +35,19 @@ function messagesUnder(blocks: BlueprintBlock[], match: (heading: string) => boo
 const CONNECTOR_WAITS = [1, 24, 48, 96, 336];
 const CONVERSATION_WAITS = [1, 72, 96, 120];
 
+/** The written messages for one variant, in order, untrimmed. */
+export function campaignMessagesFromSection(section: BuiltSection, variant: HandoffVariant): string[] {
+  const blocks = section.blocks;
+  return variant === "connector"
+    ? messagesUnder(blocks, (h) => h.includes("connector") || h.includes("campaign a"))
+    : messagesUnder(blocks, (h) => h.includes("scorecard") || h.includes("campaign b") || h.includes("conversation"));
+}
+
 export function campaignStepsFromSection(
   section: BuiltSection,
   variant: HandoffVariant
 ): { name: string; steps: Step[] } | null {
-  const blocks = section.blocks;
-  const messages =
-    variant === "connector"
-      ? messagesUnder(blocks, (h) => h.includes("connector") || h.includes("campaign a"))
-      : messagesUnder(blocks, (h) => h.includes("scorecard") || h.includes("campaign b") || h.includes("conversation"));
+  const messages = campaignMessagesFromSection(section, variant);
   if (!messages.length) return null;
 
   const steps: Step[] = [];
