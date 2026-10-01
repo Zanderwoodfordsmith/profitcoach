@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
 import type { AgentMode, AgentToolDef } from "../types";
+import { blueprintTools } from "./blueprint";
 import { campaignPeopleTools } from "./campaignPeople";
 import { campaignTools } from "./campaigns";
 import { coreTools } from "./core";
@@ -17,6 +18,7 @@ export const AGENT_TOOLS: AgentToolDef[] = [
   ...campaignTools,
   ...campaignPeopleTools,
   ...messagingTools,
+  ...blueprintTools,
   ...guideTools,
 ];
 

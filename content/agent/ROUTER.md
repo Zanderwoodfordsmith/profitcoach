@@ -11,6 +11,7 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 | Create a campaign, see campaigns, turn one on or off, change volume or priority | `campaigns` | `campaign-messaging` to write it |
 | Add a list or people to a campaign, remove, pause or move people | `campaign-people` | `lists`, `campaigns` |
 | Write or rewrite campaign messages, use the blueprint's messaging | `campaign-messaging` | `campaigns` |
+| Admin only: research the avatar or pain points, rewrite the LinkedIn profile or headlines, write a blueprint section | `blueprint-writing` | `campaign-messaging` to use the result |
 | "How do I…", "where is…", "show me", a walkthrough | `guide` | |
 | Admin only: give a coach access to this agent | `coach-access` | |
 
@@ -20,4 +21,4 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 
 ## Capability ids
 
-`find-prospects`, `sales-navigator-import`, `google-maps-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `guide`, `coach-access`.
+`find-prospects`, `sales-navigator-import`, `google-maps-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `blueprint-writing`, `guide`, `coach-access`.
