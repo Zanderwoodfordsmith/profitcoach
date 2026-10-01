@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  // The AI agent reads its context (content/agent and the canon it references) at runtime.
+  outputFileTracingIncludes: {
+    "/api/agent/**": [
+      "./content/agent/**/*",
+      "./content/ai-knowledge/**/*",
+      "./content/practice-skills/**/*",
+    ],
+  },
   async redirects() {
     return [
       {
