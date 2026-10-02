@@ -1,6 +1,7 @@
 "use client";
 
 import { Paperclip, X } from "lucide-react";
+import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import {
   COMMUNITY_COMMENT_MEDIA_MAX,
   validateCommunityCommentImageFile,
@@ -111,11 +112,10 @@ export function CommentImagePreviews({
     <ul className="flex flex-wrap gap-2">
       {pending.map((p) => (
         <li key={p.key} className="relative inline-block">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={p.previewUrl}
-            alt=""
-            className="h-14 w-14 rounded-lg object-cover ring-1 ring-slate-200"
+          <PreviewableMedia
+            url={p.previewUrl}
+            kind="image"
+            mediaClassName="h-14 w-14 rounded-lg object-cover ring-1 ring-slate-200"
           />
           <button
             type="button"

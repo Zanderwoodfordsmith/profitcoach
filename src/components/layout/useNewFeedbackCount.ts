@@ -56,7 +56,10 @@ export function useNewFeedbackCount(enabled: boolean) {
   return count;
 }
 
-export function useCoachUnreadSupportCount(enabled: boolean) {
+export function useCoachUnreadSupportCount(
+  enabled: boolean,
+  coachId: string | null = null
+) {
   const [count, setCount] = useState(0);
 
   const loadCount = useCallback(async () => {
@@ -66,7 +69,8 @@ export function useCoachUnreadSupportCount(enabled: boolean) {
     }
 
     const { data, error } = await supabaseClient.rpc(
-      "coach_unread_support_reply_count"
+      "coach_unread_support_reply_count",
+      coachId ? { p_coach_id: coachId } : {}
     );
 
     if (error) {
@@ -75,7 +79,7 @@ export function useCoachUnreadSupportCount(enabled: boolean) {
     }
 
     setCount(typeof data === "number" ? data : Number(data ?? 0));
-  }, [enabled]);
+  }, [enabled, coachId]);
 
   useEffect(() => {
     void loadCount();

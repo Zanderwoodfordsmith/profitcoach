@@ -18,6 +18,7 @@ describe("pool table views", () => {
     });
     assert.equal(settings.sourceFilter, "sales_nav");
     assert.equal(settings.campaignFilter, "not_in_campaign");
+    assert.equal(settings.campaignIdFilter, "");
     assert.equal(settings.contactFilter, "all");
     assert.equal(settings.linkedinFilter, "all");
     assert.equal(settings.dateAddedFilter, "all");

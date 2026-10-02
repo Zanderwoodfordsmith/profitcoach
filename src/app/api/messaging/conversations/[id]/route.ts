@@ -131,45 +131,44 @@ export async function GET(
       console.error("messaging messages list:", page.error);
       return NextResponse.json({ error: "Could not load messages." }, { status: 500 });
     }
-    await hydratePlaceholderEmailBodies({
+    const hydratePromise = hydratePlaceholderEmailBodies({
       conversationId: id,
       messages: page.messages,
     }).catch((err) => {
       console.error("hydrate email bodies:", err);
     });
-    const enrichedMessages = await signThreadMessages(page.messages);
     if (isOlderPage) {
+      await hydratePromise;
+      const enrichedMessages = await signThreadMessages(page.messages);
       return noStoreJson({
         messages: enrichedMessages,
         has_older: page.hasOlder,
       });
     }
 
-    const [enrichedConversation] = await enrichMessagingConversationPeople([
-      conversation,
-    ]);
-    const linkedInUrl = await resolveConversationLinkedInUrl({
-      conversationId: id,
-      contactId: (conversation.contact_id as string | null) ?? null,
-      unipileChatId: (conversation.unipile_chat_id as string | null) ?? null,
-      existing:
-        (enrichedConversation?.prospect_linkedin_url as string | null) ??
-        (conversation.prospect_linkedin_url as string | null) ??
-        null,
-      fetchAttendees: false,
-    });
-    if (enrichedConversation && linkedInUrl) {
-      enrichedConversation.prospect_linkedin_url = linkedInUrl;
-    }
-
-    let scheduled: Awaited<ReturnType<typeof listScheduledForConversation>> = [];
-    try {
-      scheduled = await listScheduledForConversation({
+    const sidePromise = Promise.all([
+      enrichMessagingConversationPeople([conversation]),
+      resolveConversationLinkedInUrl({
+        conversationId: id,
+        contactId: (conversation.contact_id as string | null) ?? null,
+        unipileChatId: (conversation.unipile_chat_id as string | null) ?? null,
+        existing: (conversation.prospect_linkedin_url as string | null) ?? null,
+        fetchAttendees: false,
+      }),
+      listScheduledForConversation({
         conversationId: id,
         coachId: access.coachId,
-      });
-    } catch (err) {
-      console.error("messaging scheduled list:", err);
+      }).catch((err) => {
+        console.error("messaging scheduled list:", err);
+        return [] as Awaited<ReturnType<typeof listScheduledForConversation>>;
+      }),
+    ]);
+    await hydratePromise;
+    const enrichedMessages = await signThreadMessages(page.messages);
+    const [enrichedList, linkedInUrl, scheduled] = await sidePromise;
+    const enrichedConversation = enrichedList[0];
+    if (enrichedConversation && linkedInUrl) {
+      enrichedConversation.prospect_linkedin_url = linkedInUrl;
     }
 
     return noStoreJson({

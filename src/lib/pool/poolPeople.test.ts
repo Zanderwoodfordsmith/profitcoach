@@ -40,10 +40,12 @@ function person(partial: Partial<PoolPerson>): PoolPerson {
     created_at: null,
     tags: [],
     in_campaign: false,
+    campaign_ids: [],
     blacklisted: false,
     campaignable: true,
     linkedinCampaignable: true,
     emailCampaignable: true,
+    whatsappCampaignable: true,
     canFindPerson: false,
     contact_id: null,
     ...partial,
@@ -94,6 +96,17 @@ describe("poolRowFitsCampaignChannel", () => {
     assert.equal(poolRowFitsCampaignChannel(emailOnly, "email"), true);
     assert.equal(poolRowFitsCampaignChannel(liOnly, "linkedin"), true);
     assert.equal(poolRowFitsCampaignChannel(liOnly, "email"), false);
+    const phoneOnly = person({
+      linkedin_url: null,
+      email: null,
+      linkedinCampaignable: false,
+      emailCampaignable: false,
+      whatsappCampaignable: true,
+      campaignable: true,
+    });
+    assert.equal(poolRowFitsCampaignChannel(phoneOnly, "whatsapp"), true);
+    assert.equal(poolRowFitsCampaignChannel(phoneOnly, "linkedin"), false);
+    assert.equal(poolRowFitsCampaignChannel(emailOnly, "whatsapp"), true);
   });
 });
 

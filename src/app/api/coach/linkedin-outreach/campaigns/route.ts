@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import { createCampaignFromLibraryTemplate } from "@/lib/campaignLibrary/instantiate";
 import {
+  campaignChannelFrom,
   createCampaign,
   listArchivedCampaigns,
   listCampaigns,
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     name?: string;
     outreach_account_id?: string | null;
-    channel?: "linkedin" | "email";
+    channel?: "linkedin" | "email" | "whatsapp";
     library_template_id?: string;
   };
   try {
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     const campaign = await createCampaign(auth.coachId, {
       name: typeof body.name === "string" ? body.name : "",
       outreach_account_id: body.outreach_account_id ?? null,
-      channel: body.channel === "email" ? "email" : "linkedin",
+      channel: campaignChannelFrom(body.channel),
     });
     return NextResponse.json({ campaign });
   } catch (err) {

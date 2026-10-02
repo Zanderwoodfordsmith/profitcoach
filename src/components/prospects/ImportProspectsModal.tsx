@@ -3,8 +3,14 @@
 import { useRef, useState } from "react";
 import { Loader2, Upload, X } from "lucide-react";
 import { MAX_PROSPECT_IMPORT_ROWS } from "@/lib/prospects/importLimits";
+import { CsvColumnMatch } from "@/components/prospects/CsvColumnMatch";
 import {
-  parseProspectsCsv,
+  applyCsvColumnMap,
+  guessCsvColumnMap,
+  readCsvForMatching,
+  type CsvColumnMapping,
+} from "@/lib/prospects/csvColumnMatch";
+import {
   PROSPECTS_CSV_TEMPLATE,
   type ParsedProspectCsvRow,
 } from "@/lib/prospects/parseProspectsCsv";
@@ -44,6 +50,10 @@ export function ImportProspectsModal({
   const [coachId, setCoachId] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<ParsedProspectCsvRow[] | null>(null);
+  const [csvText, setCsvText] = useState<string | null>(null);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvSamples, setCsvSamples] = useState<string[][]>([]);
+  const [csvMap, setCsvMap] = useState<CsvColumnMapping>([]);
   const [parseError, setParseError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -54,6 +64,10 @@ export function ImportProspectsModal({
     setCoachId("");
     setFileName(null);
     setRows(null);
+    setCsvText(null);
+    setCsvHeaders([]);
+    setCsvSamples([]);
+    setCsvMap([]);
     setParseError(null);
     setImporting(false);
     setResult(null);
@@ -79,9 +93,13 @@ export function ImportProspectsModal({
     reader.onload = () => {
       try {
         const text = typeof reader.result === "string" ? reader.result : "";
-        const parsed = parseProspectsCsv(text);
+        const preview = readCsvForMatching(text);
         setFileName(file.name);
-        setRows(parsed);
+        setCsvText(text);
+        setCsvHeaders(preview.headers);
+        setCsvSamples(preview.samples);
+        setCsvMap(guessCsvColumnMap(preview.headers));
+        setRows(null);
       } catch (err) {
         setParseError(err instanceof Error ? err.message : "Unable to read that CSV.");
       }
@@ -90,8 +108,20 @@ export function ImportProspectsModal({
     reader.readAsText(file);
   }
 
+  function rowsFromMap(): ParsedProspectCsvRow[] | null {
+    if (!csvText) return rows;
+    return applyCsvColumnMap(csvText, csvMap);
+  }
+
   async function runImport() {
-    if (!rows?.length) return;
+    let nextRows = rows;
+    try {
+      nextRows = rowsFromMap();
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : "Unable to read that CSV.");
+      return;
+    }
+    if (!nextRows?.length) return;
     if (requireCoach && !coachId) {
       setParseError("Please select a coach for this import.");
       return;
@@ -113,7 +143,7 @@ export function ImportProspectsModal({
         body: JSON.stringify({
           ...extraBody,
           ...(requireCoach ? { coachId } : {}),
-          rows,
+          rows: nextRows,
         }),
       });
       const body = (await res.json().catch(() => ({}))) as ImportResult & {
@@ -152,7 +182,9 @@ export function ImportProspectsModal({
       <div
         role="dialog"
         aria-labelledby="import-prospects-title"
-        className="relative z-[81] w-full max-w-lg rounded-xl border border-slate-200 bg-white p-5 shadow-xl"
+        className={`relative z-[81] w-full rounded-xl border border-slate-200 bg-white p-5 shadow-xl ${
+          csvHeaders.length ? "max-w-3xl" : "max-w-lg"
+        }`}
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -160,7 +192,7 @@ export function ImportProspectsModal({
               Import prospects
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Upload a CSV with Name, Email, Phone, Business, Title, and LinkedIn.
+              Upload your file. We match the columns, and you can change any of them.
               Up to {MAX_PROSPECT_IMPORT_ROWS} rows.
             </p>
           </div>
@@ -216,10 +248,18 @@ export function ImportProspectsModal({
           </button>
         </div>
 
-        {fileName && rows ? (
-          <p className="mt-3 text-sm text-slate-600">
-            {fileName}: {rows.length} prospect{rows.length === 1 ? "" : "s"} ready.
-          </p>
+        {fileName && csvHeaders.length ? (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm text-slate-600">
+              {fileName}. Change a match if we guessed wrong.
+            </p>
+            <CsvColumnMatch
+              headers={csvHeaders}
+              samples={csvSamples}
+              mapping={csvMap}
+              onChange={setCsvMap}
+            />
+          </div>
         ) : null}
         {parseError ? <p className="mt-3 text-sm text-rose-600">{parseError}</p> : null}
 
@@ -244,7 +284,7 @@ export function ImportProspectsModal({
           {!result ? (
             <button
               type="button"
-              disabled={!rows?.length || importing || (requireCoach && !coachId)}
+              disabled={!csvText || importing || (requireCoach && !coachId)}
               onClick={() => void runImport()}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
             >

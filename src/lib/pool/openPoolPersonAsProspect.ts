@@ -5,6 +5,7 @@
  */
 
 import { resolveOrCreateContact } from "@/lib/contacts/resolveOrCreateContact";
+import { findOrCreateConversationForContact } from "@/lib/messaging/startConversation";
 import { displayListPersonName } from "@/lib/leadLists/audienceLists";
 import {
   prospectWorkspacePath,
@@ -20,6 +21,7 @@ export type OpenPoolPersonResult = {
   contactId: string;
   created: boolean;
   href: string;
+  conversation: { id: string } | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -85,6 +87,20 @@ function workspaceHref(contactId: string, admin?: boolean): string {
   return `${prospectWorkspacePath(contactId, { admin })}?from=pool`;
 }
 
+async function conversationForOpen(coachId: string, contactId: string) {
+  try {
+    const found = await findOrCreateConversationForContact(coachId, contactId, {
+      enrich: false,
+    });
+    const id = found.conversation?.id;
+    if (!id) return null;
+    return found.conversation;
+  } catch (err) {
+    console.error("open pool conversation:", err);
+    return null;
+  }
+}
+
 export async function openPoolPersonAsProspect(opts: {
   coachId: string;
   itemId: string;
@@ -108,6 +124,7 @@ export async function openPoolPersonAsProspect(opts: {
       contactId: existingContactId,
       created: false,
       href: workspaceHref(existingContactId, opts.admin),
+      conversation: await conversationForOpen(opts.coachId, existingContactId),
     };
   }
 
@@ -181,32 +198,40 @@ export async function openPoolPersonAsProspect(opts: {
     (item as { tags?: unknown }).tags
   );
 
-  if (poolTags.length) {
-    const [{ data: contact }] = await Promise.all([
-      supabaseAdmin
+  const persist = (async () => {
+    if (poolTags.length) {
+      const [{ data: contact }] = await Promise.all([
+        supabaseAdmin
+          .from("contacts")
+          .select("prospect_tags")
+          .eq("id", resolved.contactId)
+          .eq("coach_id", opts.coachId)
+          .maybeSingle(),
+        persistContact,
+      ]);
+      const merged = normalizeProspectTags([
+        ...normalizeProspectTags(contact?.prospect_tags),
+        ...poolTags,
+      ]);
+      await supabaseAdmin
         .from("contacts")
-        .select("prospect_tags")
+        .update({ prospect_tags: merged })
         .eq("id", resolved.contactId)
-        .eq("coach_id", opts.coachId)
-        .maybeSingle(),
-      persistContact,
-    ]);
-    const merged = normalizeProspectTags([
-      ...normalizeProspectTags(contact?.prospect_tags),
-      ...poolTags,
-    ]);
-    await supabaseAdmin
-      .from("contacts")
-      .update({ prospect_tags: merged })
-      .eq("id", resolved.contactId)
-      .eq("coach_id", opts.coachId);
-  } else {
+        .eq("coach_id", opts.coachId);
+      return;
+    }
     await persistContact;
-  }
+  })();
+
+  const [, conversation] = await Promise.all([
+    persist,
+    conversationForOpen(opts.coachId, resolved.contactId),
+  ]);
 
   return {
     contactId: resolved.contactId,
     created: resolved.created,
     href: workspaceHref(resolved.contactId, opts.admin),
+    conversation,
   };
 }

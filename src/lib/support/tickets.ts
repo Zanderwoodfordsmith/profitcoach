@@ -378,16 +378,16 @@ export function normalizeSupportTicketType(raw: string): SupportTicketType {
 /** True when the ticket has staff replies the coach has not opened since. */
 export function ticketHasUnreadStaffReply(
   ticket: Pick<SupportTicket, "coach_last_read_at">,
-  replies: SupportReply[],
+  replies: Pick<SupportReply, "created_by" | "created_at">[],
   viewerId: string
 ): boolean {
   return unreadStaffReplyCount(ticket, replies, viewerId) > 0;
 }
 
-/** Count of staff replies newer than the coach's last read. */
+/** Count of staff replies newer than the coach's last read. Resolved tickets still count. */
 export function unreadStaffReplyCount(
   ticket: Pick<SupportTicket, "coach_last_read_at">,
-  replies: SupportReply[],
+  replies: Pick<SupportReply, "created_by" | "created_at">[],
   viewerId: string
 ): number {
   const staffReplies = replies.filter((reply) => reply.created_by !== viewerId);
@@ -397,4 +397,95 @@ export function unreadStaffReplyCount(
   return staffReplies.filter(
     (reply) => new Date(reply.created_at).getTime() > lastRead
   ).length;
+}
+
+/** Latest message the list row should preview: last reply, else the opening note. */
+export function supportTicketListPreview(
+  ticket: Pick<SupportTicket, "details">,
+  replies: Pick<SupportReply, "body">[]
+): string {
+  for (let i = replies.length - 1; i >= 0; i -= 1) {
+    const body = replies[i]?.body?.trim();
+    if (body) return collapseSupportPreview(body);
+  }
+  return collapseSupportPreview(ticket.details);
+}
+
+function collapseSupportPreview(text: string): string {
+  return text
+    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+    .replace(/[*_`>#]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function supportTicketActivityAt(
+  ticket: Pick<SupportTicket, "created_at">,
+  replies: Pick<SupportReply, "created_at">[]
+): string {
+  const last = replies[replies.length - 1]?.created_at;
+  if (!last) return ticket.created_at;
+  return last > ticket.created_at ? last : ticket.created_at;
+}
+
+export type MemberSupportStatusTone = "open" | "waiting" | "resolved";
+
+/** Member-facing status. Unread replies use a count, not a different status. */
+export function memberSupportStatusPresentation(
+  status: SupportTicketStatus
+): { label: string; tone: MemberSupportStatusTone } {
+  if (status === "resolved") {
+    return { label: SUPPORT_STATUS_USER_LABELS.resolved, tone: "resolved" };
+  }
+  if (status === "waiting_reply") {
+    return { label: SUPPORT_STATUS_USER_LABELS.waiting_reply, tone: "waiting" };
+  }
+  return { label: SUPPORT_STATUS_USER_LABELS.open, tone: "open" };
+}
+
+/** Nav hint for unread staff replies. A count, never "Daniel has 5 replies to read". */
+export function supportUnreadNavLabel(input: {
+  replyCount: number;
+}): string | null {
+  const count = input.replyCount;
+  if (!Number.isFinite(count) || count <= 0) return null;
+  const replies = count === 1 ? "reply" : "replies";
+  return `${count} ${replies} to read`;
+}
+
+export type CoachSupportListSection =
+  | "new"
+  | "your_reply"
+  | "submitted"
+  | "replied"
+  | "resolved";
+
+export const COACH_SUPPORT_LIST_SECTIONS: {
+  id: CoachSupportListSection;
+  label: string;
+}[] = [
+  { id: "new", label: "New replies" },
+  { id: "your_reply", label: "Your reply needed" },
+  { id: "submitted", label: "Submitted" },
+  { id: "replied", label: "Replied" },
+  { id: "resolved", label: "Resolved" },
+];
+
+/**
+ * One home per ticket. Unread staff replies win, even on a resolved ticket,
+ * so a new reply is never buried under Resolved.
+ */
+export function coachSupportListSection(
+  ticket: Pick<SupportTicket, "status" | "coach_last_read_at">,
+  replies: Pick<SupportReply, "created_by" | "created_at">[],
+  viewerId: string
+): CoachSupportListSection {
+  if (ticketHasUnreadStaffReply(ticket, replies, viewerId)) return "new";
+  if (ticket.status === "waiting_reply") return "your_reply";
+  if (ticket.status === "resolved") return "resolved";
+  const last = replies[replies.length - 1];
+  const staffHasReplied = replies.some((reply) => reply.created_by !== viewerId);
+  if (!staffHasReplied || last?.created_by === viewerId) return "submitted";
+  return "replied";
 }

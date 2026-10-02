@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, ImagePlus, Video, X } from "lucide-react";
+import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   SupportVoiceRecorder,
@@ -416,22 +417,33 @@ export function SupportCreateTicketComposer({
   }
 
   return (
-    <div className="w-full rounded-2xl border border-dashed border-slate-300 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-slate-900">
-          {isAdminCreate ? "Create ticket for coach" : "New ticket"}
-        </h2>
+    <div className="relative w-full rounded-2xl border border-dashed border-slate-300 bg-white p-5 shadow-sm sm:p-6">
+      {isAdminCreate ? (
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-slate-900">
+            Create ticket for coach
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+          className="absolute -right-3 -top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md hover:bg-slate-50 hover:text-slate-800"
           aria-label="Close"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
         </button>
-      </div>
+      )}
 
-      <div className="mt-4 space-y-4">
+      <div className="space-y-4">
         {isAdminCreate ? (
           <div>
             <span className="text-sm font-medium text-slate-700">Coach</span>
@@ -544,10 +556,10 @@ export function SupportCreateTicketComposer({
             {pendingPreviews.map((p) => (
               <li key={p.key} className="relative">
                 {p.kind === "video" ? (
-                  <video
-                    src={p.previewUrl}
-                    muted
-                    className="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
+                  <PreviewableMedia
+                    url={p.previewUrl}
+                    kind="video"
+                    mediaClassName="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
                   />
                 ) : p.kind === "audio" ? (
                   <div className="flex h-16 w-44 flex-col justify-center gap-0.5 rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
@@ -557,11 +569,10 @@ export function SupportCreateTicketComposer({
                     <audio controls src={p.previewUrl} className="h-8 w-full" />
                   </div>
                 ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={p.previewUrl}
-                    alt=""
-                    className="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
+                  <PreviewableMedia
+                    url={p.previewUrl}
+                    kind="image"
+                    mediaClassName="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
                   />
                 )}
                 <button

@@ -7,6 +7,8 @@ export type BossScorePremiumSource = "diagnostic" | "coach_review";
 export type ProspectRow = {
   id: string;
   full_name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   job_title: string | null;
   email: string | null;
   business_name: string | null;

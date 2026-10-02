@@ -52,6 +52,54 @@ const CONNECTED_LEAD_STATUSES = new Set([
 
 const LEFT_LEAD_STATUSES = new Set(["skipped", "failed"]);
 
+type CampaignLeadRow = {
+  id: string;
+  campaign_id: string;
+  status: string | null;
+  created_at: string;
+  updated_at: string | null;
+  linkedin_campaigns?:
+    | { id?: string | null; name?: string | null }
+    | { id?: string | null; name?: string | null }[]
+    | null;
+};
+
+function membershipFromLead(row: CampaignLeadRow): ProspectCampaignMembership {
+  const campaign = Array.isArray(row.linkedin_campaigns)
+    ? row.linkedin_campaigns[0]
+    : row.linkedin_campaigns;
+  const name = campaign?.name?.trim() || "Campaign";
+  const campaignId = campaign?.id || row.campaign_id;
+  const status = (row.status || "queued").toLowerCase();
+  return {
+    id: row.id,
+    campaignId,
+    name,
+    leadStatus: status,
+    addedAt: row.created_at,
+  };
+}
+
+/** Campaign chips for the prospect pane. Skips the activity timeline. */
+export async function loadProspectCampaignMemberships(
+  contactId: string
+): Promise<ProspectCampaignMembership[]> {
+  const id = contactId.trim();
+  if (!id) return [];
+  const { data, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select(
+      "id, campaign_id, status, created_at, updated_at, linkedin_campaigns(id, name)"
+    )
+    .eq("contact_id", id)
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.error("prospect campaigns:", error);
+    return [];
+  }
+  return ((data as CampaignLeadRow[] | null) ?? []).map(membershipFromLead);
+}
+
 function calendarLabel(
   slugOrKind: string | null | undefined,
   name?: string | null
@@ -319,35 +367,14 @@ export async function loadProspectRecord(
     }
   }
 
-  type CampaignLeadRow = {
-    id: string;
-    campaign_id: string;
-    status: string | null;
-    created_at: string;
-    updated_at: string | null;
-    linkedin_campaigns?:
-      | { id?: string | null; name?: string | null }
-      | { id?: string | null; name?: string | null }[]
-      | null;
-  };
-
   const campaignRows = (campaignsRes.data as CampaignLeadRow[] | null) ?? [];
   const campaigns: ProspectCampaignMembership[] = [];
 
   for (const row of campaignRows) {
-    const campaign = Array.isArray(row.linkedin_campaigns)
-      ? row.linkedin_campaigns[0]
-      : row.linkedin_campaigns;
-    const name = campaign?.name?.trim() || "Campaign";
-    const campaignId = campaign?.id || row.campaign_id;
-    const status = (row.status || "queued").toLowerCase();
-    campaigns.push({
-      id: row.id,
-      campaignId,
-      name,
-      leadStatus: status,
-      addedAt: row.created_at,
-    });
+    const membership = membershipFromLead(row);
+    const name = membership.name;
+    const status = membership.leadStatus;
+    campaigns.push(membership);
     events.push({
       id: `campaign-added-${row.id}`,
       type: "campaign_added",

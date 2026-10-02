@@ -29,9 +29,27 @@ type ContactRow = {
   facebook_url?: string | null;
 };
 
-export async function findOrCreateConversationForContact(
+/** Latest visible thread for this contact. Does not create or unhide. */
+export async function findVisibleConversationForContact(
   coachId: string,
   contactId: string
+) {
+  const { data, error } = await supabaseAdmin
+    .from("messaging_conversations")
+    .select(CONVERSATION_SELECT)
+    .eq("coach_id", coachId)
+    .eq("contact_id", contactId)
+    .is("hidden_at", null)
+    .order("last_message_at", { ascending: false })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return data?.[0] ?? null;
+}
+
+export async function findOrCreateConversationForContact(
+  coachId: string,
+  contactId: string,
+  opts?: { enrich?: boolean }
 ) {
   const { data: contacts, error: contactError } =
     await selectContactsWithOptionalPhone<ContactRow>(
@@ -66,6 +84,9 @@ export async function findOrCreateConversationForContact(
         .eq("id", existing.id);
       existing.hidden_at = null;
     }
+    if (opts?.enrich === false) {
+      return { conversation: existing, created: false };
+    }
     const [enriched] = await enrichMessagingConversationPeople([existing]);
     return { conversation: enriched, created: false };
   }
@@ -99,6 +120,9 @@ export async function findOrCreateConversationForContact(
     throw new Error(insertError?.message || "Could not start conversation.");
   }
 
+  if (opts?.enrich === false) {
+    return { conversation: created, created: true };
+  }
   const [enriched] = await enrichMessagingConversationPeople([created]);
   return { conversation: enriched, created: true };
 }

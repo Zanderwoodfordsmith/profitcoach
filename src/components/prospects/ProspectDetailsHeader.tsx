@@ -2,6 +2,10 @@
 
 import type { ReactNode } from "react";
 import { ChevronRight, Mail, Phone } from "lucide-react";
+import {
+  EditPersonNameButton,
+  EditPersonPhotoButton,
+} from "@/components/contacts/EditPersonIdentityButtons";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { ProspectHeaderTags } from "@/components/prospects/ProspectHeaderTags";
 import { phoneToTelHref } from "@/lib/formatPhoneDisplay";
@@ -19,6 +23,8 @@ type Props = {
   prospectHref?: string | null;
   /** Open the full prospect profile in place (conversation stays mounted). */
   onOpenProfile?: () => void;
+  /** Edit first name, last name, business, and photo on this profile. */
+  onEditIdentity?: () => void;
   tags: string[];
   tagCatalog?: string[];
   tagsSaving?: boolean;
@@ -86,6 +92,7 @@ export function ProspectDetailsHeader({
   linkedIn,
   prospectHref,
   onOpenProfile,
+  onEditIdentity,
   tags,
   tagCatalog = [],
   tagsSaving = false,
@@ -97,22 +104,37 @@ export function ProspectDetailsHeader({
   const linkedInHref = linkedIn?.trim() || null;
   const title = jobTitle?.trim() || null;
 
+  const avatarNode = onEditIdentity ? (
+    <EditPersonPhotoButton
+      onClick={onEditIdentity}
+      label={`Change photo for ${displayName}`}
+    >
+      {avatar}
+    </EditPersonPhotoButton>
+  ) : onOpenProfile ? (
+    <button
+      type="button"
+      onClick={onOpenProfile}
+      className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+      aria-label={`Open ${displayName} profile`}
+    >
+      {avatar}
+    </button>
+  ) : (
+    avatar
+  );
+
   return (
     <div className="flex items-start gap-3">
-      {onOpenProfile ? (
-        <button
-          type="button"
-          onClick={onOpenProfile}
-          className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-          aria-label={`Open ${displayName} profile`}
-        >
-          {avatar}
-        </button>
-      ) : (
-        avatar
-      )}
+      {avatarNode}
       <div className="min-w-0 flex-1">
-        {onOpenProfile ? (
+        {onEditIdentity ? (
+          <EditPersonNameButton
+            name={displayName}
+            onClick={onEditIdentity}
+            nameClassName="text-lg font-semibold leading-none tracking-tight text-slate-900"
+          />
+        ) : onOpenProfile ? (
           <button
             type="button"
             onClick={onOpenProfile}

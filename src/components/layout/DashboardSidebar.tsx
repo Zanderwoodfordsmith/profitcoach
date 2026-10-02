@@ -32,6 +32,7 @@ import { membershipSidebarPromoEnabled } from "@/lib/membership/preview";
 import { MembershipSidebarPromo } from "@/components/membership/MembershipSidebarPromo";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { DemoCoachToggle } from "@/components/layout/DemoCoachToggle";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { prefetchGetClientsHref } from "@/lib/getClients/hubFetchers";
@@ -216,10 +217,26 @@ export function DashboardSidebar({
       ? coachHasFeature
       : () => true;
 
-  const { profileLoading, avatarLabel, avatarImageUrl } =
+  const { profile, profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
+  const { impersonatingCoachId } = useImpersonation();
+  const viewingMemberId =
+    variant === "coach" && profile?.role === "admin"
+      ? impersonatingCoachId
+      : null;
   const newFeedbackCount = useNewFeedbackCount(variant === "admin");
-  const coachUnreadSupportCount = useCoachUnreadSupportCount(variant === "coach");
+  const coachUnreadSupportCount = useCoachUnreadSupportCount(
+    variant === "coach",
+    viewingMemberId
+  );
+  const supportAriaLabel =
+    coachUnreadSupportCount > 0
+      ? `Support, ${coachUnreadSupportCount} ${
+          coachUnreadSupportCount === 1 ? "reply" : "replies"
+        } to read`
+      : newFeedbackCount > 0
+        ? `Support, ${newFeedbackCount} new`
+        : "Support";
 
   // Soft-gate model: gated items stay visible with a lock badge; clicking
   // through shows the upgrade gate on the page itself.
@@ -580,6 +597,7 @@ export function DashboardSidebar({
           <Link
             href={supportHref}
             title={collapsed ? "Support" : undefined}
+            aria-label={supportAriaLabel}
             onClick={() => markPending(supportHref)}
             className={`mb-1 ${navLinkClass(supportActive)}`}
           >
@@ -874,6 +892,7 @@ export function DashboardSidebar({
               </p>
               <Link
                 href={supportHref}
+                aria-label={supportAriaLabel}
                 onClick={closeMobileSheets}
                 className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
                   supportActive
@@ -882,7 +901,7 @@ export function DashboardSidebar({
                 }`}
               >
                 <CircleHelp className="h-5 w-5 shrink-0 opacity-95" />
-                Support
+                <span className="min-w-0 flex-1">Support</span>
                 {renderSupportBadge()}
               </Link>
               <Link

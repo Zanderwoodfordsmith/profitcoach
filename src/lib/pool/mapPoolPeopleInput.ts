@@ -5,6 +5,7 @@ import {
   splitPersonName,
   type AudienceItemSource,
 } from "@/lib/leadLists/audienceLists";
+import { composeImportedPlace } from "@/lib/pool/importedPlace";
 import { poolIdentityKey, type PoolRecordInput } from "@/lib/pool/identity";
 
 function asTrimmed(value: unknown): string | null {
@@ -30,6 +31,12 @@ export function mapPoolPeopleInput(
     const split = !first && !last ? splitPersonName(full) : null;
     const first_name = first ?? split?.first_name ?? null;
     const last_name = last ?? split?.last_name ?? null;
+    const place = composeImportedPlace({
+      location: asTrimmed(row.location),
+      city: asTrimmed(row.city),
+      postcode: asTrimmed(row.postcode),
+      address: asTrimmed(row.address),
+    });
     const record: PoolRecordInput = {
       source: isAudienceItemSource(String(row.source ?? ""))
         ? (row.source as AudienceItemSource)
@@ -48,6 +55,10 @@ export function mapPoolPeopleInput(
       phone: asTrimmed(row.phone),
       website: asTrimmed(row.website),
       place_id: asTrimmed(row.place_id),
+      location: place.location,
+      raw: place.address
+        ? { google_maps: { address: place.address } }
+        : undefined,
     };
     const key = poolIdentityKey(record);
     if (key) {

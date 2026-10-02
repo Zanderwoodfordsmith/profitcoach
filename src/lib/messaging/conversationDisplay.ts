@@ -1,3 +1,5 @@
+import { personNameWithoutNote } from "@/lib/prospectDisplayFormat";
+
 /** Channel labels that used to be stored as the conversation title. */
 const GENERIC_TITLES = new Set([
   "linkedin",
@@ -57,6 +59,7 @@ export function splitLinkedInAtCompanyName(
 export function looksLikePersonName(name: string | null | undefined): boolean {
   const n = (name || "").trim();
   if (!n || isGenericConversationName(n)) return false;
+  if (n.includes("@") || n.includes("(")) return false;
   if (splitLinkedInAtCompanyName(n)) return false;
   if (n.length > 80) return false;
   if (/[?!]/.test(n) || /https?:\/\//i.test(n)) return false;
@@ -83,7 +86,8 @@ export function conversationPersonName(input: {
     input.prospectName,
     input.prospectEmail,
   ]) {
-    const value = (candidate || "").trim();
+    const raw = (candidate || "").trim();
+    const value = personNameWithoutNote(raw);
     if (value && looksLikePersonName(value)) {
       return value;
     }

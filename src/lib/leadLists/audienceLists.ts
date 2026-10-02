@@ -908,7 +908,7 @@ export async function copyLeadListItems(opts: {
   }
   const itemIds = [...new Set(opts.itemIds.filter(isLeadListUuid))].slice(
     0,
-    MAX_LIST_ITEMS_PER_REQUEST
+    MAX_LIST_ITEMS_TOTAL
   );
   if (!itemIds.length) throw new Error("Select people to add.");
 
@@ -947,44 +947,55 @@ export async function copyLeadListItems(opts: {
       .filter((key): key is string => Boolean(key))
   );
 
-  const { data: itemsRaw, error: itemsError } = await supabaseAdmin
-    .from("coach_lead_list_items")
-    .select(LEAD_LIST_ITEM_COPY_FIELDS.join(", "))
-    .eq("coach_id", opts.coachId)
-    .eq("list_id", opts.sourceListId)
-    .in("id", itemIds);
-  if (itemsError) throw new Error(itemsError.message);
-
-  const items = (itemsRaw ?? []) as unknown as Array<Record<string, unknown>>;
   let skipped = 0;
-  const rows: Record<string, unknown>[] = [];
-  for (const item of items) {
-    const identityKey =
-      typeof item.identity_key === "string" && item.identity_key
-        ? item.identity_key
-        : null;
-    if (identityKey && usedKeys.has(identityKey)) {
-      skipped += 1;
+  let added = 0;
+  let roomLeft = room;
+  for (const chunk of toChunks(itemIds, MAX_LIST_ITEMS_PER_REQUEST)) {
+    if (roomLeft === 0) {
+      skipped += chunk.length;
       continue;
     }
-    if (rows.length >= room) {
-      skipped += 1;
-      continue;
-    }
-    if (identityKey) usedKeys.add(identityKey);
-    rows.push({
-      ...item,
-      list_id: opts.targetListId,
-      coach_id: opts.coachId,
-    });
-  }
-  skipped += Math.max(0, itemIds.length - items.length);
+    const { data: itemsRaw, error: itemsError } = await supabaseAdmin
+      .from("coach_lead_list_items")
+      .select(LEAD_LIST_ITEM_COPY_FIELDS.join(", "))
+      .eq("coach_id", opts.coachId)
+      .eq("list_id", opts.sourceListId)
+      .in("id", chunk);
+    if (itemsError) throw new Error(itemsError.message);
 
-  const inserted = await insertLeadListItemRows(rows);
-  skipped += inserted.skipped;
+    const items = (itemsRaw ?? []) as unknown as Array<Record<string, unknown>>;
+    const rows: Record<string, unknown>[] = [];
+    for (const item of items) {
+      const identityKey =
+        typeof item.identity_key === "string" && item.identity_key
+          ? item.identity_key
+          : null;
+      if (identityKey && usedKeys.has(identityKey)) {
+        skipped += 1;
+        continue;
+      }
+      if (rows.length >= roomLeft) {
+        skipped += 1;
+        continue;
+      }
+      if (identityKey) usedKeys.add(identityKey);
+      rows.push({
+        ...item,
+        list_id: opts.targetListId,
+        coach_id: opts.coachId,
+      });
+    }
+    skipped += Math.max(0, chunk.length - items.length);
+
+    if (!rows.length) continue;
+    const inserted = await insertLeadListItemRows(rows);
+    added += inserted.inserted;
+    skipped += inserted.skipped;
+    roomLeft -= inserted.inserted;
+  }
 
   const itemCount = await recountLeadListItems(opts.targetListId);
-  return { added: inserted.inserted, skipped, itemCount };
+  return { added, skipped, itemCount };
 }
 
 /**

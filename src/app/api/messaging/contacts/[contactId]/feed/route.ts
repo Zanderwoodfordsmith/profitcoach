@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { loadProspectRecord } from "@/lib/messaging/loadProspectActivity";
+import {
+  loadProspectCampaignMemberships,
+  loadProspectRecord,
+} from "@/lib/messaging/loadProspectActivity";
 import { resolveMessagingAccess } from "@/lib/messaging/resolveMessagingAccess";
 import { THREAD_MESSAGE_MAX_LIMIT } from "@/lib/messaging/threadWindow";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -33,6 +36,12 @@ export async function GET(
   const contact = contacts?.[0];
   if (!contact) {
     return NextResponse.json({ error: "Contact not found." }, { status: 404 });
+  }
+
+  const part = new URL(request.url).searchParams.get("part")?.trim().toLowerCase();
+  if (part === "campaigns") {
+    const campaigns = await loadProspectCampaignMemberships(contactId);
+    return NextResponse.json({ campaigns });
   }
 
   const { data: conversations } = await supabaseAdmin

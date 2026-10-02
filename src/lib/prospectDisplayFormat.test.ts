@@ -25,4 +25,19 @@ describe("formatBusinessLabel", () => {
     assert.equal(formatProspectPersonName("jane smith"), "Jane Smith");
     assert.equal(formatBusinessLabel("Jane Smith"), "Jane Smith");
   });
+
+  it("drops a trailing parenthetical note from a person name", () => {
+    assert.equal(
+      formatProspectPersonName(
+        "Zahid (fixing meeting after your chat with Mohsin on LinkedIn)"
+      ),
+      "Zahid"
+    );
+    assert.equal(
+      formatProspectPersonName(
+        "Farah Zahid (fixing meeting after your chat with Mohsin on LinkedIn)"
+      ),
+      "Farah Zahid"
+    );
+  });
 });

@@ -75,6 +75,13 @@ import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { PROSPECT_INTERNAL_NOTE_EVENT } from "@/lib/messaging/internalNoteEvent";
 import {
+  clearProspectOpenCaches,
+  fetchThreadPage,
+  peekProspectConversation,
+  rememberProspectConversation,
+  type PrefetchedConversation,
+} from "@/lib/messaging/prefetchProspectOpen";
+import {
   clearThreadCache,
   readThreadCache,
   writeThreadCache,
@@ -122,6 +129,13 @@ import {
 } from "@/components/messaging/ScheduledMessageCard";
 import type { ReplyDisposition } from "@/lib/prospects/replyDisposition";
 import { inferReplyDisposition } from "@/lib/prospects/replyDisposition";
+import {
+  EditPersonNameButton,
+  EditPersonPhotoButton,
+} from "@/components/contacts/EditPersonIdentityButtons";
+import { PersonIdentityDialog } from "@/components/contacts/PersonIdentityDialog";
+import { savePersonIdentity } from "@/lib/contacts/savePersonIdentity";
+import { suggestContactIdentity } from "@/lib/contacts/suggestContactIdentity";
 import { ProspectContactFields } from "@/components/prospects/ProspectContactFields";
 import { ProspectDetailsHeader } from "@/components/prospects/ProspectDetailsHeader";
 import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDuplicates";
@@ -243,6 +257,26 @@ function conversationForContact(
   return match ? (match as ConversationRow) : null;
 }
 
+function asConversationRow(row: PrefetchedConversation): ConversationRow {
+  return {
+    id: row.id,
+    subject: row.subject ?? null,
+    prospect_name: row.prospect_name ?? null,
+    prospect_email: row.prospect_email ?? null,
+    prospect_phone: row.prospect_phone ?? null,
+    prospect_avatar_url: row.prospect_avatar_url ?? null,
+    prospect_linkedin_url: row.prospect_linkedin_url ?? null,
+    prospect_business_name: row.prospect_business_name ?? null,
+    last_message_at: row.last_message_at || new Date().toISOString(),
+    contact_id: row.contact_id ?? null,
+    starred: Boolean(row.starred),
+    unread_count: row.unread_count ?? 0,
+    last_preview: row.last_preview ?? null,
+    last_channel: row.last_channel ?? null,
+    last_direction: row.last_direction ?? null,
+  };
+}
+
 type MessageAttachment = {
   path?: string;
   mime: string;
@@ -281,6 +315,8 @@ function isOptimisticId(id: string) {
 type ProspectDetails = {
   id: string;
   full_name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   job_title: string | null;
   email: string | null;
   business_name: string | null;
@@ -1149,11 +1185,20 @@ export function MessagingInbox({
     cachedConversations?.conversations,
     contactId
   );
+  const warmedConversation = contactId
+    ? peekProspectConversation(contactId, impersonatingCoachId)
+    : null;
+  const warmedRow = warmedConversation
+    ? asConversationRow(warmedConversation)
+    : cachedProspectConversation;
+  const warmedThread = warmedRow
+    ? readThreadCache<MessageRow>(warmedRow.id)
+    : null;
   const prospectMode = Boolean(contactId) || hideConversationList;
   const [loading, setLoading] = useState(
     () =>
       Boolean(contactId)
-        ? !cachedProspectConversation
+        ? !warmedRow
         : !cachedConversations
   );
   const [campaignFilterLabel, setCampaignFilterLabel] = useState<string | null>(
@@ -1219,20 +1264,22 @@ export function MessagingInbox({
   const [error, setError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationRow[]>(
     () =>
-      cachedProspectConversation
-        ? [cachedProspectConversation]
+      warmedRow
+        ? [warmedRow]
         : contactId
           ? []
           : (cachedConversations?.conversations as unknown as ConversationRow[]) ??
             []
   );
   const [selectedId, setSelectedId] = useState<string | null>(
-    () => cachedProspectConversation?.id ?? null
+    () => warmedRow?.id ?? null
   );
-  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [messages, setMessages] = useState<MessageRow[]>(
+    () => (warmedThread?.messages as MessageRow[] | undefined) ?? []
+  );
   /** Conversation whose messages are currently in `messages`. Blocks stale paints. */
   const [openThreadId, setOpenThreadId] = useState<string | null>(
-    () => cachedProspectConversation?.id ?? null
+    () => warmedRow?.id ?? null
   );
   /** Conversation whose side-panel prospect is currently in `prospectDetails`. */
   const [openSideId, setOpenSideId] = useState<string | null>(
@@ -1248,8 +1295,10 @@ export function MessagingInbox({
     null
   );
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
-  const [loadingThread, setLoadingThread] = useState(false);
-  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingThread, setLoadingThread] = useState(
+    () => Boolean(contactId && warmedRow && !warmedThread)
+  );
+  const [hasOlder, setHasOlder] = useState(() => warmedThread?.hasOlder ?? false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [tab, setTab] = useState<InboxTab>("all");
@@ -1447,8 +1496,12 @@ export function MessagingInbox({
     scheduleOpen ||
     scheduleSending;
 
+  const seenImpersonationRef = useRef(impersonatingCoachId);
   useEffect(() => {
+    if (seenImpersonationRef.current === impersonatingCoachId) return;
+    seenImpersonationRef.current = impersonatingCoachId;
     clearThreadCache();
+    clearProspectOpenCaches();
     warmupDoneRef.current = false;
     liSoftSyncAttempted.current = false;
     threadInflightRef.current.clear();
@@ -1632,6 +1685,8 @@ export function MessagingInbox({
   }, [checkedCount, allVisibleChecked]);
 
   const listLoadGenerationRef = useRef(0);
+  const appliedIdentityRef = useRef("");
+  const dismissedBusinessRef = useRef<Set<string>>(new Set());
   const authHeaders = useCallback(async () => {
     return getCoachAuthHeaders(impersonatingCoachId);
   }, [impersonatingCoachId]);
@@ -1982,20 +2037,19 @@ export function MessagingInbox({
           const headers = await authHeaders();
           if (!headers) return;
           if (!prefetch && isActive()) void loadThreadSide(id);
-          const res = await fetch(
-            `/api/messaging/conversations/${encodeURIComponent(id)}?limit=${THREAD_MESSAGE_PAGE_SIZE}`,
-            { headers }
-          );
-        const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          conversation?: ConversationRow;
-          messages?: MessageRow[];
-          has_older?: boolean;
-          scheduled?: ScheduledThreadMessage[];
-        };
-          if (!res.ok) {
+          const page = await fetchThreadPage(id, headers, { fresh: silent });
+          const body = {
+            error: page.error,
+            conversation: page.conversation
+              ? asConversationRow(page.conversation)
+              : undefined,
+            messages: page.messages as MessageRow[],
+            has_older: page.has_older,
+            scheduled: page.scheduled as ScheduledThreadMessage[],
+          };
+          if (!page.ok) {
             if (!silent && !prefetch && isActive()) {
-              setError(body.error || `Thread failed (${res.status}).`);
+              setError(body.error || `Thread failed (${page.status}).`);
               if (!cached) {
                 setMessages([]);
                 setHasOlder(false);
@@ -2966,20 +3020,27 @@ export function MessagingInbox({
 
   useEffect(() => {
     if (!contactId) return;
+    const openedContactId = contactId;
     let cancelled = false;
     async function bootProspect() {
-      const cachedMatch = conversationForContact(
-        peekHubQuery<ConversationsHubPayload>(conversationsCacheKey)
-          ?.conversations,
-        contactId
+      const prefetched = peekProspectConversation(
+        openedContactId,
+        impersonatingCoachId
       );
-      if (cachedMatch) {
-        setConversations([cachedMatch]);
-        openConversation(cachedMatch.id, { keepProspect: true });
+      const cachedRow = prefetched
+        ? asConversationRow(prefetched)
+        : conversationForContact(
+            peekHubQuery<ConversationsHubPayload>(conversationsCacheKey)
+              ?.conversations,
+            openedContactId
+          );
+      if (cachedRow) {
+        setConversations([cachedRow]);
+        openConversation(cachedRow.id, { keepProspect: true });
         setLoading(false);
-      } else {
-        setLoading(true);
+        return;
       }
+      setLoading(true);
       setError(null);
       const headers = await authHeaders();
       if (!headers) {
@@ -2993,7 +3054,7 @@ export function MessagingInbox({
         const res = await fetch("/api/messaging/conversations", {
           method: "POST",
           headers,
-          body: JSON.stringify({ contact_id: contactId }),
+          body: JSON.stringify({ contact_id: openedContactId, lite: true }),
         });
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
@@ -3001,17 +3062,22 @@ export function MessagingInbox({
         };
         if (cancelled) return;
         if (!res.ok || !body.conversation?.id) {
-          if (!cachedMatch) {
+          if (!cancelled) {
             setError(body.error || "Could not open this conversation.");
             setConversations([]);
             openConversation(null, { keepProspect: true });
           }
           return;
         }
+        rememberProspectConversation(
+          openedContactId,
+          body.conversation,
+          impersonatingCoachId
+        );
         setConversations([body.conversation]);
         openConversation(body.conversation.id, { keepProspect: true });
       } catch (err) {
-        if (!cancelled && !cachedMatch) {
+        if (!cancelled) {
           setError(err instanceof Error ? err.message : "Load failed.");
         }
       } finally {
@@ -3022,7 +3088,13 @@ export function MessagingInbox({
     return () => {
       cancelled = true;
     };
-  }, [authHeaders, contactId, conversationsCacheKey, openConversation]);
+  }, [
+    authHeaders,
+    contactId,
+    conversationsCacheKey,
+    impersonatingCoachId,
+    openConversation,
+  ]);
 
   const campaignLoadGen = useRef(0);
   const loadProspectCampaigns = useCallback(async () => {
@@ -3036,7 +3108,7 @@ export function MessagingInbox({
     if (!headers || gen !== campaignLoadGen.current) return;
     try {
       const res = await fetch(
-        `/api/messaging/contacts/${encodeURIComponent(campaignContactId)}/feed`,
+        `/api/messaging/contacts/${encodeURIComponent(campaignContactId)}/feed?part=campaigns`,
         { headers, cache: "no-store" }
       );
       const body = (await res.json().catch(() => ({}))) as {
@@ -3628,14 +3700,37 @@ export function MessagingInbox({
     []
   );
 
-  const displayName = conversationPersonName({
-    prospectFullName: looksLikePersonName(selected?.prospect_name)
-      ? selected?.prospect_name
-      : threadProspect?.full_name,
-    prospectName: selected?.prospect_name,
-    prospectEmail: selected?.prospect_email,
-    channel: selected?.last_channel,
-  });
+  const identitySuggestion = useMemo(
+    () =>
+      suggestContactIdentity({
+        fullName: threadProspect?.full_name || selected?.prospect_name,
+        firstName: threadProspect?.first_name,
+        lastName: threadProspect?.last_name,
+        email: threadProspect?.email || selected?.prospect_email,
+        businessName:
+          threadProspect?.business_name ?? selected?.prospect_business_name,
+      }),
+    [
+      threadProspect?.full_name,
+      threadProspect?.first_name,
+      threadProspect?.last_name,
+      threadProspect?.email,
+      threadProspect?.business_name,
+      selected?.prospect_name,
+      selected?.prospect_email,
+      selected?.prospect_business_name,
+    ]
+  );
+  const displayName =
+    identitySuggestion.displayName ||
+    conversationPersonName({
+      prospectFullName: looksLikePersonName(selected?.prospect_name)
+        ? selected?.prospect_name
+        : threadProspect?.full_name,
+      prospectName: selected?.prospect_name,
+      prospectEmail: selected?.prospect_email,
+      channel: selected?.last_channel,
+    });
   const prospectAvatarUrl =
     selected?.prospect_avatar_url || threadProspect?.photo_url || null;
   const replyChannels = useMemo(() => {
@@ -3646,10 +3741,18 @@ export function MessagingInbox({
     return inboundReplyChannels([], selected?.last_channel);
   }, [threadMessages, selected]);
 
-  const subtitle =
+  const storedBusiness =
     threadProspect?.business_name?.trim() ||
     selected?.prospect_business_name?.trim() ||
-    null;
+    "";
+  const identityKey =
+    threadProspect?.id || selected?.contact_id || contactId || "";
+  const subtitle =
+    storedBusiness ||
+    (identitySuggestion.persistBusiness &&
+    !dismissedBusinessRef.current.has(identityKey)
+      ? identitySuggestion.shownBusiness
+      : null);
 
   const email =
     threadProspect?.email || selected?.prospect_email || null;
@@ -3735,6 +3838,9 @@ export function MessagingInbox({
       selected.prospect_business_name?.trim() ||
       null;
     if (next === current) return;
+    if (!next && identityKey) {
+      dismissedBusinessRef.current.add(identityKey);
+    }
     setProspectDetails((prev) =>
       prev ? { ...prev, business_name: next } : prev
     );
@@ -3747,6 +3853,7 @@ export function MessagingInbox({
   }, [
     selected?.id,
     selected?.prospect_business_name,
+    identityKey,
     businessDraft,
     threadProspect?.business_name,
     patchConversation,
@@ -3770,6 +3877,9 @@ export function MessagingInbox({
       });
       const body = (await res.json().catch(() => ({}))) as {
         full_name?: string;
+        first_name?: string | null;
+        last_name?: string | null;
+        photo_url?: string | null;
         email?: string | null;
         phone?: string | null;
         job_title?: string | null;
@@ -3788,6 +3898,13 @@ export function MessagingInbox({
         prev
           ? {
               ...prev,
+              full_name: body.full_name ?? prev.full_name,
+              first_name:
+                body.first_name !== undefined ? body.first_name : prev.first_name,
+              last_name:
+                body.last_name !== undefined ? body.last_name : prev.last_name,
+              photo_url:
+                body.photo_url !== undefined ? body.photo_url : prev.photo_url,
               email: body.email !== undefined ? body.email : prev.email,
               phone: body.phone !== undefined ? body.phone : prev.phone,
               job_title:
@@ -3823,6 +3940,10 @@ export function MessagingInbox({
               ? {
                   ...c,
                   prospect_name: body.full_name ?? c.prospect_name,
+                  prospect_avatar_url:
+                    body.photo_url !== undefined
+                      ? body.photo_url
+                      : c.prospect_avatar_url,
                   prospect_email:
                     body.email !== undefined ? body.email : c.prospect_email,
                   prospect_phone:
@@ -3881,6 +4002,8 @@ export function MessagingInbox({
     [patchProspectContact]
   );
 
+  const [identityEditorOpen, setIdentityEditorOpen] = useState(false);
+  const [identitySaving, setIdentitySaving] = useState(false);
   const [deleteProspectOpen, setDeleteProspectOpen] = useState(false);
   const [deletingProspect, setDeletingProspect] = useState(false);
   const [deleteProspectError, setDeleteProspectError] = useState<string | null>(
@@ -3888,6 +4011,101 @@ export function MessagingInbox({
   );
   const canDeleteThreadProspect =
     Boolean(threadProspect?.id) && threadProspect?.type === "prospect";
+  const identityContactId =
+    threadProspect?.id || selected?.contact_id || contactId || null;
+  const canEditIdentity = Boolean(prospectMode && identityContactId);
+
+  const savePersonIdentityFields = useCallback(
+    async (input: {
+      firstName: string;
+      lastName: string;
+      businessName: string;
+      photoFile: File | null;
+      removePhoto: boolean;
+    }) => {
+      if (!identityContactId) {
+        throw new Error("This person is not linked yet.");
+      }
+      setIdentitySaving(true);
+      try {
+        const headers = await authHeaders();
+        if (!headers) throw new Error("Please sign in again.");
+        const updated = await savePersonIdentity({
+          contactId: identityContactId,
+          headers,
+          admin: Boolean(pathname?.startsWith("/admin")),
+          input,
+        });
+        setProspectDetails((prev) =>
+          prev
+            ? {
+                ...prev,
+                full_name: updated.full_name,
+                first_name: updated.first_name,
+                last_name: updated.last_name,
+                business_name: updated.business_name,
+                photo_url: updated.photo_url,
+              }
+            : prev
+        );
+        setBusinessDraft(updated.business_name ?? "");
+        if (selected?.id) {
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === selected.id
+                ? {
+                    ...c,
+                    prospect_name: updated.full_name,
+                    prospect_business_name: updated.business_name,
+                    prospect_avatar_url: updated.photo_url,
+                  }
+                : c
+            )
+          );
+        }
+        if (!input.businessName.trim()) {
+          dismissedBusinessRef.current.add(identityContactId);
+        }
+        setIdentityEditorOpen(false);
+      } finally {
+        setIdentitySaving(false);
+      }
+    },
+    [authHeaders, identityContactId, pathname, selected?.id]
+  );
+
+  useEffect(() => {
+    if (!identityContactId) return;
+    if (!(threadProspect?.id || selected?.contact_id)) return;
+    const persistBusiness =
+      identitySuggestion.persistBusiness &&
+      !dismissedBusinessRef.current.has(identityContactId);
+    if (!identitySuggestion.persistName && !persistBusiness) return;
+    const token = [
+      identityContactId,
+      identitySuggestion.persistName ? identitySuggestion.displayName : "",
+      persistBusiness ? identitySuggestion.shownBusiness : "",
+    ].join("|");
+    if (appliedIdentityRef.current === token) return;
+    appliedIdentityRef.current = token;
+    void patchProspectContact({
+      ...(identitySuggestion.persistName
+        ? {
+            first_name: identitySuggestion.firstName,
+            last_name: identitySuggestion.lastName,
+          }
+        : {}),
+      ...(persistBusiness
+        ? { business_name: identitySuggestion.shownBusiness }
+        : {}),
+    }).catch(() => {});
+  }, [
+    identityContactId,
+    identitySuggestion,
+    patchProspectContact,
+    selected?.contact_id,
+    threadProspect?.id,
+  ]);
 
   const deleteThreadProspect = useCallback(async () => {
     const deletedId = threadProspect?.id;
@@ -4829,17 +5047,40 @@ export function MessagingInbox({
                   </button>
                 ) : (
                   <div className="flex min-w-0 items-center gap-3">
-                    <AvatarWithChannels
-                      key={`${selected.id}:${prospectAvatarUrl || ""}`}
-                      name={displayName}
-                      url={prospectAvatarUrl}
-                      size="md"
-                      channels={replyChannels}
-                    />
+                    {canEditIdentity ? (
+                      <EditPersonPhotoButton
+                        onClick={() => setIdentityEditorOpen(true)}
+                        label={`Change photo for ${displayName}`}
+                      >
+                        <AvatarWithChannels
+                          key={`${selected.id}:${prospectAvatarUrl || ""}`}
+                          name={displayName}
+                          url={prospectAvatarUrl}
+                          size="md"
+                          channels={replyChannels}
+                        />
+                      </EditPersonPhotoButton>
+                    ) : (
+                      <AvatarWithChannels
+                        key={`${selected.id}:${prospectAvatarUrl || ""}`}
+                        name={displayName}
+                        url={prospectAvatarUrl}
+                        size="md"
+                        channels={replyChannels}
+                      />
+                    )}
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-slate-900">
-                        {displayName}
-                      </div>
+                      {canEditIdentity ? (
+                        <EditPersonNameButton
+                          name={displayName}
+                          onClick={() => setIdentityEditorOpen(true)}
+                          nameClassName="text-sm font-semibold leading-tight text-slate-900"
+                        />
+                      ) : (
+                        <div className="truncate text-sm font-semibold text-slate-900">
+                          {displayName}
+                        </div>
+                      )}
                       {subtitle ? (
                         <div className="truncate text-[13px] text-slate-700">
                           {subtitle}
@@ -5966,6 +6207,11 @@ export function MessagingInbox({
                   onOpenProfile={
                     canOpenProspectProfile ? openProspectProfile : undefined
                   }
+                  onEditIdentity={
+                    canEditIdentity
+                      ? () => setIdentityEditorOpen(true)
+                      : undefined
+                  }
                   tags={threadProspect?.tags ?? []}
                   tagCatalog={coachTags}
                   tagsSaving={savingTags}
@@ -6438,6 +6684,9 @@ export function MessagingInbox({
               onOpenProfile={
                 canOpenProspectProfile ? openProspectProfile : undefined
               }
+              onEditIdentity={
+                canEditIdentity ? () => setIdentityEditorOpen(true) : undefined
+              }
               tags={threadProspect?.tags ?? []}
               tagCatalog={coachTags}
               tagsSaving={savingTags}
@@ -6507,6 +6756,20 @@ export function MessagingInbox({
       <ScorecardGlanceModal
         contactId={scorecardModalContactId}
         onClose={() => setScorecardModalContactId(null)}
+      />
+      <PersonIdentityDialog
+        open={identityEditorOpen}
+        saving={identitySaving}
+        fullName={identitySuggestion.displayName || threadProspect?.full_name || displayName}
+        email={email}
+        firstName={identitySuggestion.firstName || threadProspect?.first_name}
+        lastName={identitySuggestion.lastName || threadProspect?.last_name}
+        businessName={subtitle}
+        photoUrl={prospectAvatarUrl}
+        onClose={() => {
+          if (!identitySaving) setIdentityEditorOpen(false);
+        }}
+        onSave={savePersonIdentityFields}
       />
     </div>
   );

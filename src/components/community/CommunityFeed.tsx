@@ -1286,6 +1286,16 @@ export function CommunityFeed() {
   }, [pathname, router, searchParams]);
 
   useEffect(() => {
+    if (searchParams.get("compose") !== "1") return;
+    if (visibleCategories.length === 0) return;
+    setComposeOpen(true);
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.delete("compose");
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams, visibleCategories.length]);
+
+  useEffect(() => {
     if (!readFilterMenuOpen) return;
     const onDoc = (e: MouseEvent) => {
       const el = readFilterMenuRef.current;

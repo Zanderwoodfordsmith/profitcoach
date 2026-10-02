@@ -21,7 +21,9 @@ export function downloadProspectsCsvTemplate() {
 }
 
 type Props = {
-  onRows: (rows: ParsedProspectCsvRow[], fileName: string) => void;
+  onRows?: (rows: ParsedProspectCsvRow[], fileName: string) => void;
+  /** Hand the raw file to a column-match step instead of parsing immediately. */
+  onText?: (text: string, fileName: string) => void;
   maxRows?: number;
   disabled?: boolean;
   /** Channel-specific requirement, shown under the shared column guidance. */
@@ -35,6 +37,7 @@ type Props = {
  */
 export function CsvUploadDropzone({
   onRows,
+  onText,
   maxRows,
   disabled = false,
   requirementNote,
@@ -54,11 +57,16 @@ export function CsvUploadDropzone({
     const reader = new FileReader();
     reader.onload = () => {
       try {
+        const text = String(reader.result ?? "");
+        if (onText) {
+          onText(text, file.name);
+          return;
+        }
         const rows = parseProspectsCsv(
-          String(reader.result ?? ""),
+          text,
           maxRows ? { maxRows } : undefined
         );
-        onRows(rows, file.name);
+        onRows?.(rows, file.name);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Could not read that CSV."

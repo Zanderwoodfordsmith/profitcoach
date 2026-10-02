@@ -493,13 +493,18 @@ export function CampaignAddProspectsModal({
 
   function prospectState(
     row: ProspectRow
-  ): "ok" | "in_campaign" | "no_linkedin" | "no_email" {
+  ): "ok" | "in_campaign" | "no_linkedin" | "no_email" | "no_phone" {
     if (existingContactSet.has(row.id)) return "in_campaign";
     const url = normalizeUrl(row.linkedin_url ?? null);
     if (url && existingUrlSet.has(url)) return "in_campaign";
     if (campaignChannel === "email") {
       const email = row.email?.trim();
       if (!email) return "no_email";
+      return "ok";
+    }
+    if (campaignChannel === "whatsapp") {
+      const phone = row.phone?.trim();
+      if (!phone) return "no_phone";
       return "ok";
     }
     if (!url) return "no_linkedin";
@@ -682,7 +687,9 @@ export function CampaignAddProspectsModal({
       csvRows.filter((row) =>
         campaignChannel === "email"
           ? Boolean(row.email)
-          : Boolean(row.linkedinUrl)
+          : campaignChannel === "whatsapp"
+            ? Boolean(row.phone)
+            : Boolean(row.linkedinUrl)
       ).length,
     [csvRows, campaignChannel]
   );
@@ -1357,6 +1364,10 @@ export function CampaignAddProspectsModal({
                                 <span className="text-[11px] text-amber-700">
                                   No email
                                 </span>
+                              ) : state === "no_phone" ? (
+                                <span className="text-[11px] text-amber-700">
+                                  No phone
+                                </span>
                               ) : row.tags?.length ? (
                                 <span className="max-w-[9rem] truncate text-[11px] text-slate-400">
                                   {row.tags.join(", ")}
@@ -1479,7 +1490,9 @@ export function CampaignAddProspectsModal({
                 requirementNote={
                   campaignChannel === "email"
                     ? "This campaign sends email, so rows without an email address will be skipped."
-                    : "This campaign sends on LinkedIn, so rows without a LinkedIn URL will be skipped."
+                    : campaignChannel === "whatsapp"
+                      ? "This campaign sends WhatsApp, so rows without a phone number will be skipped."
+                      : "This campaign sends on LinkedIn, so rows without a LinkedIn URL will be skipped."
                 }
                 onRows={(rows, fileName) => {
                   setError(null);
@@ -1500,7 +1513,9 @@ export function CampaignAddProspectsModal({
                       ? ` · ${csvRows.length - csvEligibleCount} will be skipped (missing ${
                           campaignChannel === "email"
                             ? "an email"
-                            : "a LinkedIn URL"
+                            : campaignChannel === "whatsapp"
+                              ? "a phone number"
+                              : "a LinkedIn URL"
                         })`
                       : ""}
                   </p>

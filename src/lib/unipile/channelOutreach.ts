@@ -429,34 +429,41 @@ export async function sendCampaignWhatsApp(input: {
     if (!sent.ok) throw new Error(sent.error || "WhatsApp send failed");
     return { chatId: storedChat, messageId: sent.data?.message_id ?? null };
   }
-  if (!input.lead.contact_id) {
+  const metaPhone = asString(input.lead.metadata?.phone);
+  if (!input.lead.contact_id && !metaPhone) {
     throw new MissingChannelContactError(
       "whatsapp",
       "This person needs a phone number on their prospect record."
     );
   }
-  const { data } = await selectContactsWithOptionalPhone<{
-    phone: string | null;
-  }>(
-    async (columns) =>
-      supabaseAdmin
-        .from("contacts")
-        .select(columns)
-        .eq("id", input.lead.contact_id)
-        .eq("coach_id", input.coachId),
-    "id",
-    ["phone"]
-  );
-  const phone = asString(data[0]?.phone);
+  let phone = metaPhone;
+  if (input.lead.contact_id) {
+    const { data } = await selectContactsWithOptionalPhone<{
+      phone: string | null;
+    }>(
+      async (columns) =>
+        supabaseAdmin
+          .from("contacts")
+          .select(columns)
+          .eq("id", input.lead.contact_id)
+          .eq("coach_id", input.coachId),
+      "id",
+      ["phone"]
+    );
+    phone = asString(data[0]?.phone) || metaPhone;
+  }
   if (!phone) {
     throw new MissingChannelContactError(
       "whatsapp",
       "This person needs a phone number."
     );
   }
+  const attendee = phone.startsWith("+")
+    ? phone
+    : `+${phone.replace(/\D/g, "")}`;
   const started = await startUnipileChat({
     account_id: accountId,
-    attendees_ids: [phone],
+    attendees_ids: [attendee],
     text,
   });
   if (!started.ok) throw new Error(started.error || "WhatsApp send failed");

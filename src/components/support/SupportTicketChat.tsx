@@ -1,12 +1,13 @@
 "use client";
 
 import { Bold, ImagePlus, Link as LinkIcon, Minus, Send, Video, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   CommentImagePreviews,
   clearPendingCommentImages,
   type PendingCommentImage,
 } from "@/components/community/CommentImageComposer";
+import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import { SupportChatThread } from "@/components/support/SupportChatBubbles";
 import {
   SupportVoiceRecorder,
@@ -42,6 +43,8 @@ type Props = {
   viewer: SupportTicketAuthor | null;
   viewerId: string;
   onTicketChange: (next: TicketWithReplies) => void;
+  /** Opening message, rendered above replies inside the scroll area. */
+  preamble?: ReactNode;
 };
 
 export function SupportTicketChat({
@@ -49,6 +52,7 @@ export function SupportTicketChat({
   viewer,
   viewerId,
   onTicketChange,
+  preamble = null,
 }: Props) {
   const [draft, setDraft] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingCommentImage[]>([]);
@@ -274,19 +278,20 @@ export function SupportTicketChat({
   }
 
   return (
-    <div className="border-t border-slate-100 bg-[#f7f8fa]">
-      <div className="max-h-[min(28rem,50vh)] space-y-3 overflow-y-auto px-5 py-4 sm:px-6">
+    <div className="flex min-h-0 flex-1 flex-col bg-[#f7f8fa]">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4 sm:px-6">
+        {preamble}
         <SupportChatThread
           replies={ticket.replies}
           viewerId={viewerId}
           perspective="member"
-          emptyLabel="We'll reply here."
+          emptyLabel={preamble ? undefined : "We'll reply here."}
         />
         <div ref={bottomRef} />
       </div>
 
       <form
-        className="border-t border-slate-200 bg-white"
+        className="shrink-0 border-t border-slate-200 bg-white"
         onSubmit={(e) => void sendReply(e)}
       >
         {resolved && composerOpen ? (
@@ -339,10 +344,10 @@ export function SupportTicketChat({
             ) : null}
             {pendingVideo ? (
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
-                <video
-                  src={pendingVideo.url}
-                  className="h-14 w-20 rounded object-cover"
-                  muted
+                <PreviewableMedia
+                  url={pendingVideo.url}
+                  kind="video"
+                  mediaClassName="h-14 w-20 rounded object-cover"
                 />
                 <span className="min-w-0 flex-1 truncate text-xs text-slate-700">
                   {pendingVideo.file.name}

@@ -1,3 +1,4 @@
+import { phoneMatchKey } from "@/lib/messaging/knownContacts";
 import { normalizePoolEmail } from "@/lib/pool/identity";
 import { parseProspectTags } from "@/lib/prospects/tags";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -17,6 +18,7 @@ export type ConversationFilterRow = {
   contact_id?: string | null;
   unipile_chat_id?: string | null;
   prospect_email?: string | null;
+  prospect_phone?: string | null;
   prospect_linkedin_url?: string | null;
   prospect_tags?: string[];
   in_campaign?: boolean;
@@ -39,16 +41,46 @@ type PoolMatches = {
   contactIds: Set<string>;
   emails: Set<string>;
   linkedinUrls: Set<string>;
+  phones: Set<string>;
 };
+
+async function loadPoolPhoneKeys(
+  poolId: string,
+  wanted: Set<string>
+): Promise<Set<string>> {
+  const found = new Set<string>();
+  if (!wanted.size) return found;
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabaseAdmin
+      .from("coach_lead_list_items")
+      .select("phone")
+      .eq("list_id", poolId)
+      .not("phone", "is", null)
+      .range(from, from + 999);
+    if (error || !data?.length) break;
+    for (const row of data) {
+      const key = phoneMatchKey(typeof row.phone === "string" ? row.phone : null);
+      if (key && wanted.has(key)) found.add(key);
+    }
+    if (found.size === wanted.size || data.length < 1000) break;
+  }
+  return found;
+}
 
 async function loadPoolMatches(
   coachId: string,
-  input: { contactIds: string[]; emails: string[]; linkedinUrls: string[] }
+  input: {
+    contactIds: string[];
+    emails: string[];
+    linkedinUrls: string[];
+    phones: string[];
+  }
 ): Promise<PoolMatches> {
   const matches: PoolMatches = {
     contactIds: new Set(),
     emails: new Set(),
     linkedinUrls: new Set(),
+    phones: new Set(),
   };
   const { data: pool } = await supabaseAdmin
     .from("coach_lead_lists")
@@ -109,17 +141,28 @@ async function loadPoolMatches(
       })
     )
   );
+  if (input.phones.length && poolId) {
+    matches.phones = await loadPoolPhoneKeys(poolId, new Set(input.phones));
+  }
   return matches;
 }
 
 /**
  * Attach prospect tags, contact type, campaign and Pool membership for inbox filters.
  */
+export type EnrichedConversationFilterRow<T> = T & {
+  prospect_tags: string[];
+  contact_type: string | null;
+  in_campaign: boolean;
+  campaign_ids: string[];
+  in_pool: boolean;
+};
+
 export async function enrichConversationFilters<T extends ConversationFilterRow>(
   rows: T[],
   coachId: string | null
-): Promise<T[]> {
-  if (!rows.length) return rows;
+): Promise<Array<EnrichedConversationFilterRow<T>>> {
+  if (!rows.length) return rows as Array<EnrichedConversationFilterRow<T>>;
 
   const contactIds = [
     ...new Set(
@@ -174,10 +217,19 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
     }
   };
 
+  const phones = [
+    ...new Set(
+      rows
+        .map((row) => phoneMatchKey(row.prospect_phone))
+        .filter((phone): phone is string => Boolean(phone))
+    ),
+  ];
+
   let poolMatches: PoolMatches = {
     contactIds: new Set(),
     emails: new Set(),
     linkedinUrls: new Set(),
+    phones: new Set(),
   };
   const loadPool = async () => {
     if (!coachId) return;
@@ -185,6 +237,7 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
       contactIds,
       emails,
       linkedinUrls,
+      phones,
     });
   };
 
@@ -249,10 +302,12 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
     const linkedinUrl = normalizeLinkedInProfileUrl(
       row.prospect_linkedin_url ?? ""
     );
+    const phone = phoneMatchKey(row.prospect_phone);
     const inPool =
       (contactId ? poolMatches.contactIds.has(contactId) : false) ||
       (email ? poolMatches.emails.has(email) : false) ||
-      (linkedinUrl ? poolMatches.linkedinUrls.has(linkedinUrl) : false);
+      (linkedinUrl ? poolMatches.linkedinUrls.has(linkedinUrl) : false) ||
+      (phone ? poolMatches.phones.has(phone) : false);
     return {
       ...row,
       prospect_tags: contactId ? tagsByContact.get(contactId) ?? [] : [],

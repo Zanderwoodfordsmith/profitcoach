@@ -40,6 +40,8 @@ export {
 export type PoolTableViewSettings = {
   sourceFilter: string;
   campaignFilter: PoolCampaignFilter;
+  /** A specific campaign. Empty means the status filter above applies. */
+  campaignIdFilter: string;
   contactFilter: PoolContactFilter;
   linkedinFilter: PoolLinkedInFilter;
   dateAddedFilter: PoolDateAddedFilter;
@@ -158,6 +160,7 @@ export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
   return {
     sourceFilter: "all",
     campaignFilter: "all",
+    campaignIdFilter: "",
     contactFilter: "all",
     linkedinFilter: "all",
     dateAddedFilter: "all",
@@ -261,6 +264,10 @@ export function normalizePoolTableViewSettings(
         ? source.sourceFilter
         : defaults.sourceFilter,
     campaignFilter,
+    campaignIdFilter:
+      typeof source.campaignIdFilter === "string"
+        ? source.campaignIdFilter.trim().slice(0, 80)
+        : "",
     contactFilter: isPoolContactFilter(source.contactFilter)
       ? source.contactFilter
       : defaults.contactFilter,

@@ -1,4 +1,5 @@
 import { recountLeadListItems } from "@/lib/leadLists/audienceLists";
+import { syncPersonAcrossLists } from "@/lib/leadLists/syncPersonAcrossLists";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { MappedGoogleMapsPlace } from "@/lib/googleMaps/mapPlaceToPool";
 import {
@@ -78,6 +79,15 @@ export async function applyGoogleMapsFindPersonResults(opts: {
     if (updateError) {
       if (updateError.code === "23505") continue;
       throw new Error(updateError.message);
+    }
+    const previousKey =
+      typeof item.identity_key === "string" ? item.identity_key : "";
+    if (previousKey) {
+      await syncPersonAcrossLists({
+        coachId: opts.coachId,
+        identityKey: previousKey,
+        fields: next,
+      });
     }
     updated += 1;
   }

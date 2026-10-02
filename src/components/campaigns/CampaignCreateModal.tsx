@@ -9,6 +9,7 @@ import {
   usePublishedCampaignTemplates,
 } from "@/components/campaigns/CampaignTemplatePicker";
 import type { CoachCampaignTemplate } from "@/lib/campaignLibrary/types";
+import type { CampaignChannel } from "@/lib/unipile/campaigns";
 
 type Screen = "choose" | "templates";
 
@@ -24,10 +25,11 @@ export function CampaignCreateModal({
   busy: boolean;
   error: string | null;
   onClose: () => void;
-  onCreateBlank: (name: string) => void;
+  onCreateBlank: (name: string, channel: CampaignChannel) => void;
   onCreateFromTemplate: (name: string, template: CoachCampaignTemplate) => void;
 }) {
   const [name, setName] = useState("");
+  const [channel, setChannel] = useState<CampaignChannel>("linkedin");
   const [screen, setScreen] = useState<Screen>("choose");
   const { templates, loading, error: templatesError } =
     usePublishedCampaignTemplates(open && screen === "templates");
@@ -35,6 +37,7 @@ export function CampaignCreateModal({
   useEffect(() => {
     if (!open) {
       setName("");
+      setChannel("linkedin");
       setScreen("choose");
     }
   }, [open]);
@@ -83,11 +86,45 @@ export function CampaignCreateModal({
               />
             </label>
 
+            <div className="mt-4">
+              <p className="text-sm font-medium text-slate-800">Channel</p>
+              <div className="mt-1.5 grid grid-cols-3 gap-2">
+                {(
+                  [
+                    ["linkedin", "LinkedIn"],
+                    ["email", "Email"],
+                    ["whatsapp", "WhatsApp"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setChannel(id)}
+                    className={`rounded-xl border px-2 py-2 text-sm font-semibold ${
+                      channel === id
+                        ? "border-[#0c5290] bg-sky-50 text-[#0c5290]"
+                        : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-xs text-slate-500">
+                {channel === "whatsapp"
+                  ? "People need a phone number. LinkedIn is not required."
+                  : channel === "email"
+                    ? "People need an email address."
+                    : "People need a LinkedIn profile."}
+              </p>
+            </div>
+
             <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => onCreateBlank(name)}
+                onClick={() => onCreateBlank(name, channel)}
                 className="flex min-h-[7.5rem] flex-col items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-[#0c5290]">
@@ -104,7 +141,7 @@ export function CampaignCreateModal({
               </button>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || channel !== "linkedin"}
                 onClick={() => setScreen("templates")}
                 className="flex min-h-[7.5rem] flex-col items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
               >
@@ -120,7 +157,9 @@ export function CampaignCreateModal({
                     Templates
                   </span>
                   <span className="mt-0.5 block text-sm leading-snug text-slate-600">
-                    Start from a sequence that is already written.
+                    {channel === "linkedin"
+                      ? "Start from a sequence that is already written."
+                      : "Templates are LinkedIn sequences."}
                   </span>
                 </span>
               </button>

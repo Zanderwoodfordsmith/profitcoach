@@ -265,7 +265,7 @@ export const campaignTools: AgentToolDef[] = [
       properties: {
         name: { type: "string" },
         template_id: { type: "string", description: "From list_campaign_templates. Leave out for a blank campaign" },
-        channel: { type: "string", enum: ["linkedin", "email"], description: "Blank campaigns only. Default linkedin" },
+        channel: { type: "string", enum: ["linkedin", "email", "whatsapp"], description: "Blank campaigns only. Default linkedin" },
       },
       required: ["name"],
     },
@@ -277,7 +277,12 @@ export const campaignTools: AgentToolDef[] = [
         ? await createCampaignFromLibraryTemplate(coach.id, { name, templateId })
         : await createCampaign(coach.id, {
             name,
-            channel: str(input, "channel") === "email" ? "email" : "linkedin",
+            channel:
+              str(input, "channel") === "email"
+                ? "email"
+                : str(input, "channel") === "whatsapp"
+                  ? "whatsapp"
+                  : "linkedin",
           });
       const { count } = await supabaseAdmin
         .from("linkedin_campaign_steps")

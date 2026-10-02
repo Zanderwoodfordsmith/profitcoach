@@ -344,10 +344,18 @@ export function LinkedInCampaignEditor() {
       (account) =>
         account.status === "OK" && isMailingProvider(account.provider ?? "")
     ) ?? null;
+  const whatsappAccount =
+    accounts.find(
+      (account) =>
+        account.status === "OK" &&
+        normalizeUnipileProvider(account.provider ?? "") === "WHATSAPP"
+    ) ?? null;
   const canStart =
     campaign?.channel === "email"
       ? Boolean(mailingAccount)
-      : Boolean(primaryAccount);
+      : campaign?.channel === "whatsapp"
+        ? Boolean(whatsappAccount)
+        : Boolean(primaryAccount);
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
 
@@ -934,7 +942,9 @@ export function LinkedInCampaignEditor() {
       outreach_account_id:
         activeCampaign.channel === "email"
           ? activeCampaign.outreach_account_id || mailingAccount?.id || null
-          : activeCampaign.outreach_account_id || primaryAccount?.id || null,
+          : activeCampaign.channel === "whatsapp"
+            ? activeCampaign.outreach_account_id || whatsappAccount?.id || null
+            : activeCampaign.outreach_account_id || primaryAccount?.id || null,
     });
   }
 

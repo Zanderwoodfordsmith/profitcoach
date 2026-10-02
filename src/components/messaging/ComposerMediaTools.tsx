@@ -13,6 +13,7 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 
 const EmojiPicker = dynamic(
   () => import("emoji-picker-react").then((m) => m.default),
@@ -618,11 +619,10 @@ export function ChatComposerTools({
               className="relative flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5"
             >
               {p.previewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.previewUrl}
-                  alt=""
-                  className="h-10 w-10 rounded object-cover"
+                <PreviewableMedia
+                  url={p.previewUrl}
+                  kind="image"
+                  mediaClassName="h-10 w-10 rounded object-cover"
                 />
               ) : (
                 <Paperclip className="h-4 w-4 text-slate-500" />
@@ -663,10 +663,10 @@ export function ChatComposerTools({
 
       {pendingVideo ? (
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
-          <video
-            src={pendingVideo.url}
-            className="h-14 w-20 rounded object-cover"
-            muted
+          <PreviewableMedia
+            url={pendingVideo.url}
+            kind="video"
+            mediaClassName="h-14 w-20 rounded object-cover"
           />
           <span className="min-w-0 flex-1 truncate text-xs text-slate-700">
             {pendingVideo.file.name}

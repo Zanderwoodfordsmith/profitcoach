@@ -90,6 +90,8 @@ export type CoachingPlanDocument = {
 export type ClientWorkspaceContact = {
   id: string;
   fullName: string;
+  firstName?: string | null;
+  lastName?: string | null;
   email: string | null;
   phone: string | null;
   businessName: string | null;

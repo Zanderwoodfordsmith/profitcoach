@@ -20,6 +20,7 @@ import {
   UserSearch,
 } from "lucide-react";
 import { ImportPoolModal } from "@/components/campaigns/ImportPoolModal";
+import { PoolFilterMenu } from "@/components/campaigns/PoolFilterMenu";
 import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { googleMapsImportProgressPercent } from "@/lib/googleMaps/cost";
@@ -75,11 +76,7 @@ import {
   DEFAULT_POOL_COLUMN_VISIBILITY,
   groupPoolRows,
   POOL_COLUMN_LAYOUT_VERSION,
-  POOL_CONTACT_FILTER_OPTIONS,
-  POOL_DATE_ADDED_FILTER_OPTIONS,
   POOL_GROUP_FIELDS,
-  POOL_HEADCOUNT_FILTER_OPTIONS,
-  POOL_LINKEDIN_FILTER_OPTIONS,
   POOL_TABLE_COLUMN_OPTIONS,
   poolDisplayName,
   poolLeadCompany,
@@ -117,8 +114,17 @@ import {
   prefetchProspectContact,
   seedProspectContactCache,
 } from "@/lib/getClients/hubFetchers";
-import type { ProspectRow } from "@/lib/prospectRow";
-import { resolveProspectStatus } from "@/lib/prospectStatus";
+import {
+  prefetchProspectOpen,
+  schedulePrefetchProspectOpen,
+} from "@/lib/messaging/prefetchProspectOpen";
+import {
+  liteProspectFromPool,
+  poolOpenHref,
+  poolPersonHref,
+  requestPoolPersonOpen,
+  stashPendingPoolPerson,
+} from "@/lib/pool/pendingPoolOpen";
 
 type CampaignOption = {
   id: string;
@@ -139,58 +145,13 @@ type Props = {
   toggleBusy?: boolean;
   linkedInConnected?: boolean;
   emailConnected?: boolean;
+  whatsappConnected?: boolean;
 };
 
 const DROPDOWN =
   "absolute left-0 z-[90] mt-1 w-56 rounded-md border border-slate-200 bg-white p-3 shadow-lg";
-const FILTER_DROPDOWN =
-  "absolute left-0 z-[90] mt-1 max-h-[min(32rem,70vh)] w-72 overflow-y-auto rounded-md border border-slate-200 bg-white p-3 shadow-lg";
 
 const CAMPAIGN_PICKER_WIDTH = 288;
-
-function poolPersonHref(contactId: string, isAdmin: boolean): string {
-  const base = isAdmin
-    ? `/admin/prospects/${encodeURIComponent(contactId)}`
-    : `/coach/prospects/${encodeURIComponent(contactId)}`;
-  return `${base}?from=pool`;
-}
-
-function liteProspectFromPool(row: PoolPerson, contactId: string): ProspectRow {
-  return {
-    id: contactId,
-    full_name: row.full_name,
-    job_title: row.job_title,
-    email: row.email,
-    business_name: row.company,
-    linkedin_url: row.linkedin_url,
-    company_website: row.website,
-    phone: row.phone,
-    type: "prospect",
-    prospect_status: "leads",
-    status: resolveProspectStatus({
-      prospect_status: "leads",
-      last_completed_at: null,
-      next_call: null,
-      last_past_call_status: null,
-      next_action: null,
-    }),
-    boss_score: null,
-    boss_score_at: null,
-    boss_score_report_token: null,
-    boss_score_premium: null,
-    boss_score_premium_at: null,
-    boss_score_premium_source: null,
-    last_assessed_at: null,
-    revenue: null,
-    team_size: null,
-    years_in_business: null,
-    outcome: null,
-    obstacles: null,
-    preferred_support: null,
-    boss_level: null,
-    tags: row.tags,
-  };
-}
 
 function warmPoolPerson(
   row: PoolPerson,
@@ -198,7 +159,14 @@ function warmPoolPerson(
   prefetchHref: (href: string) => void,
   impersonatingCoachId?: string | null
 ) {
-  if (!row.contact_id) return;
+  if (!row.contact_id) {
+    try {
+      prefetchHref(poolOpenHref(row.id, isAdmin));
+    } catch {
+      /* prefetch is best-effort */
+    }
+    return;
+  }
   seedProspectContactCache(
     row.contact_id,
     isAdmin,
@@ -206,6 +174,7 @@ function warmPoolPerson(
     impersonatingCoachId
   );
   prefetchProspectContact(row.contact_id, isAdmin, impersonatingCoachId);
+  schedulePrefetchProspectOpen(row.contact_id, impersonatingCoachId);
   try {
     prefetchHref(poolPersonHref(row.contact_id, isAdmin));
   } catch {
@@ -220,6 +189,7 @@ function PoolCampaignPickerList({
   actionBusy,
   linkedInConnected,
   emailConnected,
+  whatsappConnected,
   onToggleCampaign,
   onPick,
 }: {
@@ -229,6 +199,7 @@ function PoolCampaignPickerList({
   actionBusy: boolean;
   linkedInConnected: boolean;
   emailConnected: boolean;
+  whatsappConnected: boolean;
   onToggleCampaign?: (campaign: CampaignOption) => void;
   onPick: (campaignId: string) => void;
 }) {
@@ -248,9 +219,15 @@ function PoolCampaignPickerList({
         ).length;
         const isRunning = campaign.status === "running";
         const isEmail = campaign.channel === "email";
+        const isWhatsApp = campaign.channel === "whatsapp";
         const canToggle =
           campaign.status !== "completed" &&
-          (isRunning || (isEmail ? emailConnected : linkedInConnected));
+          (isRunning ||
+            (isEmail
+              ? emailConnected
+              : isWhatsApp
+                ? whatsappConnected
+                : linkedInConnected));
         return (
           <div
             key={campaign.id}
@@ -368,6 +345,7 @@ export function CampaignPoolHub({
   toggleBusy = false,
   linkedInConnected = false,
   emailConnected = false,
+  whatsappConnected = false,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
@@ -382,12 +360,13 @@ export function CampaignPoolHub({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [openingId, setOpeningId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [campaignFilter, setCampaignFilter] = useState<
     "all" | "in_campaign" | "not_in_campaign"
   >("all");
+  const [campaignIdFilter, setCampaignIdFilter] = useState("");
+  const [matchMenuOpen, setMatchMenuOpen] = useState(false);
   const [contactFilter, setContactFilter] = useState<PoolContactFilter>("all");
   const [linkedinFilter, setLinkedinFilter] =
     useState<PoolLinkedInFilter>("all");
@@ -451,6 +430,7 @@ export function CampaignPoolHub({
     null
   );
   const [newListName, setNewListName] = useState("");
+  const [matchListName, setMatchListName] = useState("");
   const [extraTagCatalog, setExtraTagCatalog] = useState<string[]>([]);
   const [newTagDraft, setNewTagDraft] = useState("");
   const [findPersonJobId, setFindPersonJobId] = useState<string | null>(null);
@@ -483,6 +463,7 @@ export function CampaignPoolHub({
     const next = normalizePoolTableViewSettings(settings);
     setSourceFilter(next.sourceFilter);
     setCampaignFilter(next.campaignFilter);
+    setCampaignIdFilter(next.campaignIdFilter);
     setContactFilter(next.contactFilter);
     setLinkedinFilter(next.linkedinFilter);
     setDateAddedFilter(next.dateAddedFilter);
@@ -504,6 +485,7 @@ export function CampaignPoolHub({
       normalizePoolTableViewSettings({
         sourceFilter,
         campaignFilter,
+        campaignIdFilter,
         contactFilter,
         linkedinFilter,
         dateAddedFilter,
@@ -522,6 +504,7 @@ export function CampaignPoolHub({
       }),
     [
       campaignFilter,
+      campaignIdFilter,
       columnOrder,
       columnVisibility,
       contactFilter,
@@ -827,7 +810,7 @@ export function CampaignPoolHub({
   }, [watchedImports, getAuthHeaders, reloadPeople, loadImportLists]);
 
   useEffect(() => {
-    if (!menu && !campaignMenu && !listMenuOpen) return;
+    if (!menu && !campaignMenu && !listMenuOpen && !matchMenuOpen) return;
     function handlePointerDown(e: MouseEvent) {
       const target = e.target as Node;
       if (toolbarRef.current?.contains(target)) return;
@@ -840,10 +823,15 @@ export function CampaignPoolHub({
       setMenu(null);
       setCampaignMenu(null);
       setListMenuOpen(null);
+      setMatchMenuOpen(false);
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [campaignMenu, listMenuOpen, menu]);
+  }, [campaignMenu, listMenuOpen, matchMenuOpen, menu]);
+
+  useEffect(() => {
+    if (menu) setMatchMenuOpen(false);
+  }, [menu]);
 
   const sourceOptions = useMemo(() => {
     const values = [...new Set(people.map((row) => row.source).filter(Boolean))];
@@ -854,8 +842,13 @@ export function CampaignPoolHub({
     const q = query.trim().toLowerCase();
     const rows = people.filter((row) => {
       if (sourceFilter !== "all" && row.source !== sourceFilter) return false;
-      if (campaignFilter === "in_campaign" && !row.in_campaign) return false;
-      if (campaignFilter === "not_in_campaign" && row.in_campaign) return false;
+      if (campaignIdFilter) {
+        if (!(row.campaign_ids ?? []).includes(campaignIdFilter)) return false;
+      } else if (campaignFilter === "in_campaign" && !row.in_campaign) {
+        return false;
+      } else if (campaignFilter === "not_in_campaign" && row.in_campaign) {
+        return false;
+      }
       if (!poolRowMatchesContactFilter(row, contactFilter)) return false;
       if (!poolRowMatchesLinkedInFilter(row, linkedinFilter)) return false;
       if (!poolRowMatchesDateAddedFilter(row, dateAddedFilter)) return false;
@@ -891,6 +884,7 @@ export function CampaignPoolHub({
       .sort((a, b) => comparePoolPeople(a, b, sortField, sortOrder));
   }, [
     campaignFilter,
+    campaignIdFilter,
     contactFilter,
     dateAddedFilter,
     excludeTags,
@@ -955,6 +949,18 @@ export function CampaignPoolHub({
     return displayPeople.slice(start, start + pageSize);
   }, [displayPeople, page, pageSize, paginatedGroupedItems]);
 
+  useEffect(() => {
+    const ids = pagedPeople
+      .map((row) => row.contact_id)
+      .filter((id): id is string => Boolean(id))
+      .slice(0, 4);
+    if (!ids.length) return;
+    const timer = window.setTimeout(() => {
+      for (const id of ids) prefetchProspectOpen(id, impersonatingCoachId);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [impersonatingCoachId, pagedPeople]);
+
   const pageNumbers = useMemo(
     () => paginationItems(page, totalPages),
     [page, totalPages]
@@ -997,7 +1003,7 @@ export function CampaignPoolHub({
 
   const filterCount =
     (sourceFilter !== "all" ? 1 : 0) +
-    (campaignFilter !== "all" ? 1 : 0) +
+    (campaignIdFilter || campaignFilter !== "all" ? 1 : 0) +
     (contactFilter !== "all" ? 1 : 0) +
     (linkedinFilter !== "all" ? 1 : 0) +
     (dateAddedFilter !== "all" ? 1 : 0) +
@@ -1048,7 +1054,7 @@ export function CampaignPoolHub({
     if (hasEmailCampaign && !hasLinkedInCampaign) {
       return "Email campaigns need an email address on the lead.";
     }
-    return "Pick people with a LinkedIn profile or email, then choose a matching campaign.";
+    return "Pick people with a LinkedIn profile, email, or phone, then choose a matching campaign.";
   }, [
     campaignableSelected.length,
     hasEmailCampaign,
@@ -1101,7 +1107,7 @@ export function CampaignPoolHub({
     findPersonSelected.length
   );
   const findPersonBusy = Boolean(findPersonJobId);
-  const actionBusy = busy || findPersonBusy || Boolean(openingId);
+  const actionBusy = busy || findPersonBusy;
 
   const campaignMenuPeople = useMemo(() => {
     if (!campaignMenu) return [];
@@ -1155,7 +1161,7 @@ export function CampaignPoolHub({
 
   useEffect(() => {
     setPage(1);
-  }, [query, sourceFilter, campaignFilter, contactFilter, linkedinFilter, dateAddedFilter, headcountFilter, cityFilter, postcodeFilter, industryFilter, tagFilter, excludeTags, sortField, sortOrder, grouping.field]);
+  }, [query, sourceFilter, campaignFilter, campaignIdFilter, contactFilter, linkedinFilter, dateAddedFilter, headcountFilter, cityFilter, postcodeFilter, industryFilter, tagFilter, excludeTags, sortField, sortOrder, grouping.field]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -1501,6 +1507,71 @@ export function CampaignPoolHub({
     }
   }
 
+  async function addMatchingToList(opts: {
+    targetListId?: string;
+    name?: string;
+  }) {
+    if (!listId || loadingMore) return;
+    const itemIds = filtered.map((row) => row.id);
+    if (!itemIds.length) return;
+    setBusy(true);
+    setError(null);
+    let added = 0;
+    let skipped = 0;
+    let targetListId = opts.targetListId;
+    let createdName: string | null = null;
+    try {
+      const headers = await getAuthHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const batchSize = 2_000;
+      for (let i = 0; i < itemIds.length; i += batchSize) {
+        const res = await fetch(
+          `/api/coach/lead-lists/${encodeURIComponent(listId)}/items`,
+          {
+            method: "POST",
+            headers: { ...headers, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "copy_to_list",
+              item_ids: itemIds.slice(i, i + batchSize),
+              target_list_id: targetListId,
+              name: targetListId ? undefined : opts.name,
+            }),
+          }
+        );
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          added?: number;
+          skipped?: number;
+          leadList?: AudienceListSummary;
+          targetListId?: string;
+        };
+        if (!res.ok) throw new Error(body.error || "Could not add to list.");
+        added += body.added ?? 0;
+        skipped += body.skipped ?? 0;
+        if (body.targetListId) targetListId = body.targetListId;
+        if (body.leadList?.name) createdName = body.leadList.name;
+      }
+      const targetName =
+        createdName ||
+        importLists.find((list) => list.id === targetListId)?.name ||
+        "list";
+      setMatchListName("");
+      setMatchMenuOpen(false);
+      setNotice(
+        skipped > 0
+          ? `Added ${added.toLocaleString()} to “${targetName}” (${skipped.toLocaleString()} already there).`
+          : `Added ${added.toLocaleString()} to “${targetName}”.`
+      );
+      await loadImportLists();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not add to list."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function updatePoolItemTags(
     itemIds: string[],
     add: string[],
@@ -1773,20 +1844,16 @@ export function CampaignPoolHub({
     downloadCsv(`${safeName}.csv`, [header, ...rows]);
   }
 
-  function rememberPoolContact(itemId: string, contactId: string) {
-    const patch = (rows: PoolPerson[]) =>
-      rows.map((row) =>
-        row.id === itemId ? { ...row, contact_id: contactId } : row
-      );
-    setPeople(patch);
-    const cached = peopleCacheRef.current.get(activeViewId);
-    if (cached) peopleCacheRef.current.set(activeViewId, patch(cached));
-  }
-
-  async function openPoolPerson(row: PoolPerson) {
-    if (openingId || busy) return;
+  function openPoolPerson(row: PoolPerson) {
+    if (busy) return;
     if (row.contact_id) {
-      warmPoolPerson(row, isAdmin, (href) => router.prefetch(href), impersonatingCoachId);
+      prefetchProspectOpen(row.contact_id, impersonatingCoachId);
+      warmPoolPerson(
+        row,
+        isAdmin,
+        (href) => router.prefetch(href),
+        impersonatingCoachId
+      );
       router.push(poolPersonHref(row.contact_id, isAdmin));
       return;
     }
@@ -1796,47 +1863,19 @@ export function CampaignPoolHub({
       );
       return;
     }
-    setOpeningId(row.id);
-    setError(null);
-    setNotice(null);
-    try {
-      const headers = await getAuthHeaders();
-      if (!headers) {
-        setError("Sign in again, then retry.");
-        return;
-      }
-      const res = await fetch(
-        `/api/coach/pool/items/${encodeURIComponent(row.id)}/open`,
-        { method: "POST", headers }
-      );
-      const body = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        href?: string;
-        contactId?: string;
-      };
-      if (!res.ok || !body.href) {
-        setError(body.error || "Could not open this person.");
-        return;
-      }
-      if (body.contactId) {
-        rememberPoolContact(row.id, body.contactId);
-        seedProspectContactCache(
-          body.contactId,
-          isAdmin,
-          liteProspectFromPool(row, body.contactId),
-          impersonatingCoachId
-        );
-        prefetchProspectContact(body.contactId, isAdmin, impersonatingCoachId);
-      }
-      const href = isAdmin
-        ? body.href.replace(/^\/coach\//, "/admin/")
-        : body.href;
-      router.push(href);
-    } catch {
-      setError("Could not open this person.");
-    } finally {
-      setOpeningId(null);
-    }
+    stashPendingPoolPerson({
+      id: row.id,
+      full_name: poolDisplayName(row) || row.full_name,
+      job_title: row.job_title,
+      company: row.company,
+      email: row.email,
+      phone: row.phone,
+      linkedin_url: row.linkedin_url,
+      website: row.website,
+      tags: row.tags,
+    });
+    void requestPoolPersonOpen(row.id, impersonatingCoachId);
+    router.push(poolOpenHref(row.id, isAdmin));
   }
 
   const renderRows = (rows: PoolPerson[]) =>
@@ -1847,7 +1886,6 @@ export function CampaignPoolHub({
         : poolLeadCompany(row);
       const website = columnVisibility.website ? null : row.website;
       const canOpen = Boolean(row.linkedin_url || row.email || row.phone);
-      const isOpening = openingId === row.id;
       return (
       <tr
         key={row.id}
@@ -1889,6 +1927,10 @@ export function CampaignPoolHub({
                   prefetch
                   className="block w-full min-w-0 truncate text-left text-sm font-medium text-[#0c5290] hover:underline"
                   title={`Open ${displayName}`}
+                  onPointerDown={() => {
+                    const contactId = row.contact_id;
+                    if (contactId) prefetchProspectOpen(contactId, impersonatingCoachId);
+                  }}
                 >
                   {displayName}
                 </Link>
@@ -1906,17 +1948,9 @@ export function CampaignPoolHub({
                       : "Add LinkedIn, email, or phone to open"
                   }
                   disabled={actionBusy || !canOpen}
-                  aria-busy={isOpening}
-                  onClick={() => void openPoolPerson(row)}
+                  onClick={() => openPoolPerson(row)}
                 >
-                  {isOpening ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Opening…
-                    </span>
-                  ) : (
-                    displayName
-                  )}
+                  {displayName}
                 </button>
               )}
               <ProspectLeadSubtitle
@@ -2135,237 +2169,44 @@ export function CampaignPoolHub({
           onMenuChange={setMenu}
           filterCount={filterCount}
           filterMenu={
-            <div role="menu" className={FILTER_DROPDOWN}>
-              <label className="block text-xs font-medium text-slate-600">
-                Source
-                <select
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                  value={sourceFilter}
-                  onChange={(e) => setSourceFilter(e.target.value)}
-                >
-                  <option value="all">All</option>
-                  {sourceOptions.map((source) => (
-                    <option key={source} value={source}>
-                      {poolSourceLabel(source)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="mt-3 block text-xs font-medium text-slate-600">
-                Campaign
-                <select
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                  value={campaignFilter}
-                  onChange={(e) =>
-                    setCampaignFilter(
-                      e.target.value as typeof campaignFilter
-                    )
-                  }
-                >
-                  <option value="all">All</option>
-                  <option value="not_in_campaign">Not in a campaign</option>
-                  <option value="in_campaign">In a campaign</option>
-                </select>
-              </label>
-              <fieldset className="mt-3">
-                <legend className="text-xs font-medium text-slate-600">
-                  Headcount
-                </legend>
-                <p className="mt-0.5 text-[11px] font-normal text-slate-500">
-                  Leave clear to include every size.
-                </p>
-                <div className="mt-1 max-h-32 space-y-1 overflow-y-auto pr-1">
-                  {POOL_HEADCOUNT_FILTER_OPTIONS.map((option) => {
-                    const checked = headcountFilter.some(
-                      (value) => value.toLowerCase() === option.key.toLowerCase()
-                    );
-                    return (
-                      <label
-                        key={option.key}
-                        className="flex items-center gap-2 text-sm text-slate-700"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() =>
-                            setHeadcountFilter((prev) =>
-                              checked
-                                ? prev.filter(
-                                    (value) =>
-                                      value.toLowerCase() !==
-                                      option.key.toLowerCase()
-                                  )
-                                : [...prev, option.key]
-                            )
-                          }
-                          className="rounded border-slate-300 text-[#0c5290]"
-                        />
-                        {option.label}
-                      </label>
-                    );
-                  })}
-                </div>
-              </fieldset>
-              <label className="mt-3 block text-xs font-medium text-slate-600">
-                City or area
-                <input
-                  value={cityFilter}
-                  onChange={(e) => setCityFilter(e.target.value)}
-                  placeholder="e.g. Manchester"
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                />
-              </label>
-              <label className="mt-3 block text-xs font-medium text-slate-600">
-                Postcode
-                <input
-                  value={postcodeFilter}
-                  onChange={(e) => setPostcodeFilter(e.target.value)}
-                  placeholder="e.g. M1 or SW1A"
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                />
-              </label>
-              <label className="mt-3 block text-xs font-medium text-slate-600">
-                Industry
-                <input
-                  value={industryFilter}
-                  onChange={(e) => setIndustryFilter(e.target.value)}
-                  placeholder="e.g. plumber"
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                />
-              </label>
-              <label className="mt-3 block text-xs font-medium text-slate-600">
-                Contact info
-                <select
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                  value={contactFilter}
-                  onChange={(e) =>
-                    setContactFilter(e.target.value as PoolContactFilter)
-                  }
-                >
-                  {POOL_CONTACT_FILTER_OPTIONS.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="mt-3 block text-xs font-medium text-slate-600">
-                LinkedIn profile
-                <select
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                  value={linkedinFilter}
-                  onChange={(e) =>
-                    setLinkedinFilter(e.target.value as PoolLinkedInFilter)
-                  }
-                >
-                  {POOL_LINKEDIN_FILTER_OPTIONS.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="mt-3 block text-xs font-medium text-slate-600">
-                Date added
-                <select
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                  value={dateAddedFilter}
-                  onChange={(e) =>
-                    setDateAddedFilter(e.target.value as PoolDateAddedFilter)
-                  }
-                >
-                  {POOL_DATE_ADDED_FILTER_OPTIONS.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="mt-3">
-                <p className="text-xs font-medium text-slate-600">Tags</p>
-                <form
-                  className="mt-1 flex gap-1"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void addTagFromFilter();
-                  }}
-                >
-                  <input
-                    value={newTagDraft}
-                    onChange={(e) => setNewTagDraft(e.target.value)}
-                    maxLength={32}
-                    placeholder="Add a tag"
-                    aria-label="Add a tag"
-                    className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                  />
-                  <button
-                    type="submit"
-                    disabled={tagsBusy || !newTagDraft.trim()}
-                    className="shrink-0 rounded-md border border-slate-300 px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                  >
-                    Add
-                  </button>
-                </form>
-                {selectedCount > 0 ? (
-                  <p className="mt-1 text-[11px] font-normal text-slate-500">
-                    Applies to {selectedCount} selected
-                  </p>
-                ) : null}
-                <select
-                  className="mt-1.5 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                  value={tagFilter}
-                  onChange={(e) => setTagFilter(e.target.value)}
-                  aria-label="Filter by tag"
-                >
-                  <option value="all">All</option>
-                  <option value="none">No tags</option>
-                  {tagFilterOptions.map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {tagFilterOptions.length > 0 ? (
-                <fieldset className="mt-3">
-                  <legend className="text-xs font-medium text-slate-600">
-                    Exclude tags
-                  </legend>
-                  <div className="mt-1 max-h-32 space-y-0.5 overflow-y-auto rounded-md border border-slate-200 px-2 py-1.5">
-                    {tagFilterOptions.map((tag) => {
-                      const checked = excludeTags.some(
-                        (t) => t.toLowerCase() === tag.toLowerCase()
-                      );
-                      return (
-                        <label
-                          key={tag}
-                          className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() =>
-                              setExcludeTags((prev) =>
-                                checked
-                                  ? prev.filter(
-                                      (t) =>
-                                        t.toLowerCase() !== tag.toLowerCase()
-                                    )
-                                  : [...prev, tag]
-                              )
-                            }
-                            className="h-3.5 w-3.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
-                          />
-                          <span className={checked ? "text-rose-700" : undefined}>
-                            {tag}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-              ) : null}
-            </div>
+            <PoolFilterMenu
+              sourceFilter={sourceFilter}
+              sourceOptions={sourceOptions}
+              onSourceFilter={setSourceFilter}
+              campaignFilter={campaignFilter}
+              campaignIdFilter={campaignIdFilter}
+              campaigns={activeCampaigns.map((campaign) => ({
+                id: campaign.id,
+                name: campaign.name,
+              }))}
+              onCampaignFilter={(value) => {
+                setCampaignIdFilter("");
+                setCampaignFilter(value);
+              }}
+              onCampaignIdFilter={(value) => {
+                setCampaignIdFilter(value);
+                if (value) setCampaignFilter("all");
+              }}
+              headcountFilter={headcountFilter}
+              onHeadcountFilter={setHeadcountFilter}
+              cityFilter={cityFilter}
+              onCityFilter={setCityFilter}
+              postcodeFilter={postcodeFilter}
+              onPostcodeFilter={setPostcodeFilter}
+              industryFilter={industryFilter}
+              onIndustryFilter={setIndustryFilter}
+              contactFilter={contactFilter}
+              onContactFilter={setContactFilter}
+              linkedinFilter={linkedinFilter}
+              onLinkedinFilter={setLinkedinFilter}
+              dateAddedFilter={dateAddedFilter}
+              onDateAddedFilter={setDateAddedFilter}
+              tagFilter={tagFilter}
+              tagOptions={tagFilterOptions}
+              onTagFilter={setTagFilter}
+              excludeTags={excludeTags}
+              onExcludeTags={setExcludeTags}
+            />
           }
           sortActive={sortActive}
           sortMenu={
@@ -2754,6 +2595,7 @@ export function CampaignPoolHub({
                         actionBusy={actionBusy}
                         linkedInConnected={linkedInConnected}
                         emailConnected={emailConnected}
+                        whatsappConnected={whatsappConnected}
                         onToggleCampaign={onToggleCampaign}
                         onPick={(campaignId) => void addToCampaign(campaignId)}
                       />
@@ -2761,9 +2603,105 @@ export function CampaignPoolHub({
                   ) : null}
                 </div>
               ) : null}
+              {filterCount > 0 || query.trim() ? (
+                <div className="relative" data-pool-match-menu="">
+                  <button
+                    type="button"
+                    disabled={
+                      actionBusy || loadingMore || filtered.length === 0
+                    }
+                    aria-expanded={matchMenuOpen}
+                    aria-haspopup="menu"
+                    onClick={() => {
+                      setMenu(null);
+                      setCampaignMenu(null);
+                      setListMenuOpen(null);
+                      setTagsMenuOpen(false);
+                      setMatchMenuOpen((open) => !open);
+                    }}
+                    className="inline-flex h-10 shrink-0 items-center rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {loadingMore
+                      ? "Add to a list"
+                      : filtered.length === 1
+                        ? "Add 1 to a list"
+                        : `Add ${filtered.length.toLocaleString()} to a list`}
+                  </button>
+                  {matchMenuOpen ? (
+                    <div className="absolute right-0 z-30 mt-1 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white py-2 shadow-lg">
+                      <p className="px-3 pb-1 text-sm font-semibold text-slate-900">
+                        Add these people to a list
+                      </p>
+                      <p className="px-3 pb-2 text-xs text-slate-500">
+                        Anyone already on the list stays put.
+                      </p>
+                      {importLists.some((list) => list.id !== activeViewId) ? (
+                        <div className="max-h-52 overflow-y-auto">
+                          {importLists
+                            .filter((list) => list.id !== activeViewId)
+                            .map((list) => (
+                              <button
+                                key={list.id}
+                                type="button"
+                                disabled={actionBusy}
+                                onClick={() =>
+                                  void addMatchingToList({
+                                    targetListId: list.id,
+                                  })
+                                }
+                                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                <span className="min-w-0 truncate font-medium">
+                                  {list.name}
+                                </span>
+                                {list.item_count > 0 ? (
+                                  <span className="shrink-0 text-xs text-slate-400">
+                                    {list.item_count.toLocaleString()}
+                                  </span>
+                                ) : null}
+                              </button>
+                            ))}
+                        </div>
+                      ) : (
+                        <p className="px-3 py-2 text-sm text-slate-500">
+                          No other lists yet. Name one below.
+                        </p>
+                      )}
+                      <form
+                        className="mt-1 flex items-center gap-1.5 border-t border-slate-100 px-3 py-2"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const name = matchListName.trim();
+                          if (!name) return;
+                          void addMatchingToList({ name });
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={matchListName}
+                          onChange={(e) => setMatchListName(e.target.value)}
+                          placeholder="New list name"
+                          aria-label="New list name"
+                          className="min-w-0 flex-1 rounded-md border border-slate-200 px-2 py-1.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                        />
+                        <button
+                          type="submit"
+                          disabled={actionBusy || !matchListName.trim()}
+                          className="shrink-0 rounded-md bg-[#0c5290] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#0a467c] disabled:opacity-50"
+                        >
+                          Create
+                        </button>
+                      </form>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               <button
                 type="button"
-                onClick={() => setImportOpen(true)}
+                onClick={() => {
+                  setMatchMenuOpen(false);
+                  setImportOpen(true);
+                }}
                 className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 text-sm font-semibold text-white hover:bg-sky-700"
               >
                 <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
@@ -3279,6 +3217,35 @@ export function CampaignPoolHub({
       <ImportPoolModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
+        currentListId={activeViewId === "pool" ? null : activeViewId}
+        currentListName={
+          activeViewId === "pool"
+            ? null
+            : importLists.find((list) => list.id === activeViewId)?.name ?? null
+        }
+        audienceLists={importLists.map((list) => ({
+          id: list.id,
+          name: list.name,
+        }))}
+        onListReady={(list) => {
+          setImportLists((prev) => {
+            if (prev.some((row) => row.id === list.id)) return prev;
+            return [
+              ...prev,
+              {
+                id: list.id,
+                name: list.name,
+                kind: "audience" as const,
+                source: "manual",
+                item_count: 0,
+                updated_at: new Date().toISOString(),
+                created_at: new Date().toISOString(),
+                from_pool_import: true,
+              },
+            ].slice(-12);
+          });
+          setActiveViewId(list.id);
+        }}
         onImported={() => {
           void reloadPeople();
           void loadImportLists();
@@ -3323,6 +3290,7 @@ export function CampaignPoolHub({
                 actionBusy={actionBusy}
                 linkedInConnected={linkedInConnected}
                 emailConnected={emailConnected}
+                whatsappConnected={whatsappConnected}
                 onToggleCampaign={onToggleCampaign}
                 onPick={(campaignId) => {
                   const personId =

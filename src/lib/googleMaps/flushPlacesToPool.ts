@@ -12,6 +12,7 @@ import {
   poolIdentityKey,
   type PoolRecordInput,
 } from "@/lib/pool/identity";
+import { syncPersonAcrossLists } from "@/lib/leadLists/syncPersonAcrossLists";
 import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 import type { MappedGoogleMapsPlace } from "@/lib/googleMaps/mapPlaceToPool";
 
@@ -80,11 +81,33 @@ async function loadPoolDedupe(opts: { coachId: string; listId: string }) {
   return { identityKeys, placeIds, linkedinUrls };
 }
 
+function filledPersonPatch(record: PoolRecordInput): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  const put = (key: string, value: string | null | undefined) => {
+    const next = value?.trim();
+    if (next) patch[key] = next;
+  };
+  put("full_name", record.full_name);
+  put("first_name", record.first_name);
+  put("last_name", record.last_name);
+  put("job_title", record.job_title);
+  put("company", record.company);
+  put("email", record.email);
+  put("phone", record.phone);
+  put("website", record.website);
+  put("location", record.location);
+  const linkedin = normalizeLinkedInProfileUrl(record.linkedin_url ?? "");
+  if (linkedin) patch.linkedin_url = linkedin;
+  return patch;
+}
+
 export async function insertPoolRecords(opts: {
   coachId: string;
   listId: string;
   records: PoolRecordInput[];
   cap: number;
+  /** Write new details onto the person everywhere they already appear. */
+  touchExisting?: boolean;
 }): Promise<{
   added: number;
   skipped: number;
@@ -132,6 +155,8 @@ export async function insertPoolRecords(opts: {
   let invalid = 0;
   let inserted = 0;
   const rows: Record<string, unknown>[] = [];
+  const refreshes: Array<{ identity: string; fields: Record<string, unknown> }> =
+    [];
   for (const record of opts.records) {
     const identity = poolIdentityKey(record);
     if (!identity) {
@@ -149,6 +174,12 @@ export async function insertPoolRecords(opts: {
       (linkedin && existing.linkedinUrls.has(linkedin)) ||
       (placeId && existing.placeIds.has(placeId))
     ) {
+      if (opts.touchExisting) {
+        const fields = filledPersonPatch(record);
+        if (Object.keys(fields).length) {
+          refreshes.push({ identity, fields });
+        }
+      }
       skipped += 1;
       continue;
     }
@@ -177,11 +208,22 @@ export async function insertPoolRecords(opts: {
       email: record.email,
       phone: record.phone,
       website: record.website,
+      location: record.location ?? null,
       place_id: placeId,
       identity_key: identity,
       match_reason: record.match_reason ?? "Added to pool",
       raw: record.raw ?? {},
     });
+  }
+
+  if (opts.touchExisting) {
+    for (const refresh of refreshes) {
+      await syncPersonAcrossLists({
+        coachId: opts.coachId,
+        identityKey: refresh.identity,
+        fields: refresh.fields,
+      });
+    }
   }
 
   for (const chunk of toChunks(rows, 100)) {

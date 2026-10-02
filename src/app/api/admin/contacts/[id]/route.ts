@@ -64,8 +64,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (fetchError) {
     return NextResponse.json({ error: "Unable to load prospect." }, { status: 500 });
   }
-  if (!contact?.coach_id || contact.type !== "prospect") {
-    return NextResponse.json({ error: "Prospect not found." }, { status: 404 });
+  if (
+    !contact?.coach_id ||
+    (contact.type !== "prospect" && contact.type !== "client")
+  ) {
+    return NextResponse.json({ error: "Contact not found." }, { status: 404 });
   }
 
   try {
@@ -77,7 +80,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json(updated);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unable to update prospect.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const status = message === "Contact not found." ? 404 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

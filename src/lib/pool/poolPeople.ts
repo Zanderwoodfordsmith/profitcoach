@@ -33,11 +33,14 @@ export type PoolPerson = {
   created_at: string | null;
   tags: string[];
   in_campaign: boolean;
+  /** Campaigns this person is already enrolled in. */
+  campaign_ids: string[];
   blacklisted: boolean;
-  /** Can enroll in at least one channel (LinkedIn profile and/or email). */
+  /** Can enroll in at least one channel (LinkedIn, email, or WhatsApp). */
   campaignable: boolean;
   linkedinCampaignable: boolean;
   emailCampaignable: boolean;
+  whatsappCampaignable: boolean;
   canFindPerson: boolean;
   /** Prospect contact from a previous open; skip the find-or-create round trip. */
   contact_id: string | null;
@@ -436,10 +439,14 @@ export function poolWebsiteHref(raw: string | null | undefined): string | null {
 
 /** Whether a pool row can enroll in a campaign of the given primary channel. */
 export function poolRowFitsCampaignChannel(
-  row: Pick<PoolPerson, "linkedinCampaignable" | "emailCampaignable">,
+  row: Pick<
+    PoolPerson,
+    "linkedinCampaignable" | "emailCampaignable" | "whatsappCampaignable"
+  >,
   channel: string | null | undefined
 ): boolean {
   if (channel === "email") return row.emailCampaignable;
+  if (channel === "whatsapp") return row.whatsappCampaignable;
   return row.linkedinCampaignable;
 }
 

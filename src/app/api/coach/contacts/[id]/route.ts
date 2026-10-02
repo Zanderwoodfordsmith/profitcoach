@@ -79,7 +79,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json(updated);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unable to update prospect.";
-    const status = message === "Prospect not found." ? 404 : 400;
+    const status =
+      message === "Prospect not found." || message === "Contact not found."
+        ? 404
+        : 400;
     return NextResponse.json({ error: message }, { status });
   }
 }

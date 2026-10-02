@@ -1,4 +1,5 @@
 import { normalizeLinkedInProfileUrl } from "@/lib/linkedin/normalizeProfileUrl";
+import { composeImportedPlace } from "@/lib/pool/importedPlace";
 import { resolveOrCreateContact } from "@/lib/contacts/resolveOrCreateContact";
 import { toLiteProspectRows } from "@/lib/loadProspectTableRows";
 import {
@@ -18,6 +19,11 @@ export type ProspectImportRowInput = {
   businessName?: unknown;
   jobTitle?: unknown;
   linkedinUrl?: unknown;
+  website?: unknown;
+  location?: unknown;
+  city?: unknown;
+  postcode?: unknown;
+  address?: unknown;
 };
 
 export type ProspectImportFailure = {
@@ -35,7 +41,21 @@ function asTrimmed(value: unknown, max = MAX_PROSPECT_IMPORT_FIELD): string | nu
 
 export function sanitizeProspectImportRow(
   raw: unknown
-): { ok: true; row: { fullName: string; email: string | null; phone: string | null; businessName: string | null; jobTitle: string | null; linkedinUrl: string | null } } | { ok: false; error: string } {
+):
+  | {
+      ok: true;
+      row: {
+        fullName: string;
+        email: string | null;
+        phone: string | null;
+        businessName: string | null;
+        jobTitle: string | null;
+        linkedinUrl: string | null;
+        website: string | null;
+        location: string | null;
+      };
+    }
+  | { ok: false; error: string } {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return { ok: false, error: "Invalid row." };
   }
@@ -45,13 +65,15 @@ export function sanitizeProspectImportRow(
     return { ok: false, error: "Name is required." };
   }
   const linkedinRaw = asTrimmed(input.linkedinUrl, 500);
-  let linkedinUrl: string | null = null;
-  if (linkedinRaw) {
-    linkedinUrl = normalizeLinkedInProfileUrl(linkedinRaw);
-    if (!linkedinUrl) {
-      return { ok: false, error: "Invalid LinkedIn profile URL." };
-    }
-  }
+  const linkedinUrl = linkedinRaw
+    ? normalizeLinkedInProfileUrl(linkedinRaw)
+    : null;
+  const place = composeImportedPlace({
+    location: asTrimmed(input.location),
+    city: asTrimmed(input.city),
+    postcode: asTrimmed(input.postcode),
+    address: asTrimmed(input.address),
+  });
   return {
     ok: true,
     row: {
@@ -61,6 +83,8 @@ export function sanitizeProspectImportRow(
       businessName: asTrimmed(input.businessName),
       jobTitle: asTrimmed(input.jobTitle),
       linkedinUrl,
+      website: asTrimmed(input.website, 500),
+      location: place.location,
     },
   };
 }
@@ -109,6 +133,12 @@ export async function importProspectRowsForCoach(input: {
         linkedinUrl: parsed.row.linkedinUrl,
         type: "prospect",
         prospectSource: "manual",
+        extra: {
+          ...(parsed.row.website
+            ? { company_website: parsed.row.website }
+            : {}),
+          ...(parsed.row.location ? { location: parsed.row.location } : {}),
+        },
       });
       contactIds.push(resolved.contactId);
       if (resolved.created) created += 1;

@@ -59,6 +59,7 @@ export type PoolRecordInput = PoolIdentityInput & {
   last_name: string | null;
   job_title: string | null;
   company: string | null;
+  location?: string | null;
   match_reason?: string | null;
   raw?: Record<string, unknown>;
 };

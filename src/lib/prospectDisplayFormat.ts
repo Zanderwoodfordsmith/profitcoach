@@ -34,12 +34,23 @@ function formatWords(text: string): string {
     .join(" ");
 }
 
+/**
+ * Drop a trailing note such as "Zahid (fixing meeting…)".
+ * Notes belong on the activity, not on the person's name.
+ */
+export function personNameWithoutNote(
+  text: string | null | undefined
+): string {
+  return (text ?? "").replace(/\s*\(.*$/, "").replace(/\s+/g, " ").trim();
+}
+
 /** Display / save format for person names (first, last, full). */
 export function formatProspectPersonName(
   text: string | null | undefined
 ): string {
-  if (!text?.trim()) return "";
-  return formatWords(text);
+  const withoutNote = personNameWithoutNote(text);
+  if (!withoutNote) return "";
+  return formatWords(withoutNote);
 }
 
 /** Display / save format for title, business, and similar labels. */

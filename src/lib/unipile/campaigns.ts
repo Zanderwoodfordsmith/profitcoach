@@ -360,16 +360,25 @@ export async function getCampaign(
   };
 }
 
+export type CampaignChannel = "linkedin" | "email" | "whatsapp";
+
+export function campaignChannelFrom(
+  raw: string | null | undefined
+): CampaignChannel {
+  if (raw === "email" || raw === "whatsapp") return raw;
+  return "linkedin";
+}
+
 export async function createCampaign(
   coachId: string,
   input: {
     name: string;
     outreach_account_id?: string | null;
-    channel?: "linkedin" | "email";
+    channel?: CampaignChannel;
   }
 ) {
   const name = input.name.trim() || "Untitled campaign";
-  const channel = input.channel === "email" ? "email" : "linkedin";
+  const channel = campaignChannelFrom(input.channel);
   const priority = campaignPriorityValues("medium");
   const { data, error } = await supabaseAdmin
     .from("linkedin_campaigns")
@@ -396,6 +405,14 @@ export async function createCampaign(
       position: 0,
       step_type: "email",
       body: "Subject: Hello\nPreview: \n\n",
+    });
+  }
+  if (channel === "whatsapp" && data?.id) {
+    await supabaseAdmin.from("linkedin_campaign_steps").insert({
+      campaign_id: data.id,
+      position: 0,
+      step_type: "whatsapp",
+      body: "Hi,",
     });
   }
   return data;
@@ -436,6 +453,9 @@ export async function duplicateCampaign(coachId: string, campaignId: string) {
       coach_id: coachId,
       name: copyName,
       status: "draft",
+      channel: campaignChannelFrom(
+        (detail.campaign as { channel?: string | null }).channel
+      ),
       daily_invite_limit: source.daily_invite_limit ?? 20,
       daily_message_limit: source.daily_message_limit ?? 20,
       daily_react_limit: source.daily_react_limit ?? 20,
@@ -799,6 +819,7 @@ type LeadInsertRow = {
 type PreparedLead = {
   insert: LeadInsertRow;
   email: string | null;
+  phone?: string | null;
   needsContact: boolean;
 };
 
@@ -820,8 +841,9 @@ export async function addCampaignLeads(
     .maybeSingle();
   if (!campaign) throw new Error("Campaign not found.");
 
-  const campaignChannel =
-    (campaign.channel as string | undefined) === "email" ? "email" : "linkedin";
+  const campaignChannel = campaignChannelFrom(
+    campaign.channel as string | undefined
+  );
 
   const ownedContacts = await loadOwnedContactsForImport(
     coachId,
@@ -980,6 +1002,7 @@ export async function addCampaignLeads(
 
       prepared.push({
         email,
+        phone,
         needsContact: !owned?.id,
         insert: {
           campaign_id: campaignId,
@@ -1003,6 +1026,41 @@ export async function addCampaignLeads(
             ...(socials.facebook_url
               ? { facebook_url: socials.facebook_url }
               : {}),
+          },
+        },
+      });
+      continue;
+    }
+
+    if (campaignChannel === "whatsapp") {
+      if (!phone) {
+        skipped += 1;
+        continue;
+      }
+      const url = normalizeLinkedInProfileUrl(
+        row.linkedin_url || owned?.linkedin_url || ""
+      );
+      prepared.push({
+        email,
+        phone,
+        needsContact: !owned?.id,
+        insert: {
+          campaign_id: campaignId,
+          coach_id: coachId,
+          contact_id: owned?.id ?? null,
+          linkedin_url: url,
+          linkedin_provider_id:
+            row.linkedin_provider_id || owned?.linkedin_provider_id || null,
+          first_name: row.first_name ?? null,
+          last_name: row.last_name ?? null,
+          company: row.company ?? null,
+          title: row.title ?? null,
+          status: "queued",
+          current_step_position: 0,
+          next_action_at: nowIso,
+          metadata: {
+            phone,
+            ...(email ? { email } : {}),
           },
         },
       });
@@ -1132,6 +1190,7 @@ export async function addCampaignLeads(
       prospect_source: "campaign_import",
       prospect_status: "leads",
       email,
+      phone: row.phone ?? null,
       full_name:
         [row.insert.first_name, row.insert.last_name].filter(Boolean).join(" ") ||
         email,
@@ -1174,6 +1233,62 @@ export async function addCampaignLeads(
     }
   }
 
+  const contactByPhone = new Map<string, string>();
+  if (campaignChannel === "whatsapp") {
+    const phonesNeeded = [
+      ...new Set(
+        prepared
+          .filter((row) => row.needsContact && row.phone && !row.insert.contact_id)
+          .map((row) => row.phone as string)
+      ),
+    ];
+    if (phonesNeeded.length) {
+      const { data: existingByPhone, error: phoneLookupError } =
+        await supabaseAdmin
+          .from("contacts")
+          .select("id, phone")
+          .eq("coach_id", coachId)
+          .in("phone", phonesNeeded);
+      if (phoneLookupError) throw new Error(phoneLookupError.message);
+      for (const contact of existingByPhone ?? []) {
+        const key = normalizePoolPhone(
+          typeof contact.phone === "string" ? contact.phone : null
+        );
+        if (key && contact.id && !contactByPhone.has(key)) {
+          contactByPhone.set(key, contact.id);
+        }
+      }
+      const missing = phonesNeeded.filter((phone) => !contactByPhone.has(phone));
+      for (const phone of missing) {
+        const row = prepared.find((item) => item.phone === phone);
+        if (!row) continue;
+        const { data: created, error: createError } = await supabaseAdmin
+          .from("contacts")
+          .insert({
+            coach_id: coachId,
+            type: "prospect",
+            prospect_source: "campaign_import",
+            prospect_status: "leads",
+            phone,
+            email: row.email,
+            full_name:
+              [row.insert.first_name, row.insert.last_name]
+                .filter(Boolean)
+                .join(" ") || phone,
+            first_name: row.insert.first_name,
+            last_name: row.insert.last_name,
+            business_name: row.insert.company,
+            job_title: row.insert.title,
+            linkedin_url: row.insert.linkedin_url,
+          })
+          .select("id")
+          .maybeSingle();
+        if (createError || !created?.id) continue;
+        contactByPhone.set(phone, created.id);
+      }
+    }
+  }
+
   const inserts: LeadInsertRow[] = [];
   for (const row of prepared) {
     if (!row.insert.contact_id && row.email) {
@@ -1187,7 +1302,21 @@ export async function addCampaignLeads(
         existingContactIds.add(linked);
       }
     }
-    if (campaignChannel === "email" && !row.insert.contact_id) {
+    if (!row.insert.contact_id && row.phone) {
+      const linked = contactByPhone.get(row.phone);
+      if (linked) {
+        if (existingContactIds.has(linked)) {
+          skipped += 1;
+          continue;
+        }
+        row.insert.contact_id = linked;
+        existingContactIds.add(linked);
+      }
+    }
+    if (
+      (campaignChannel === "email" || campaignChannel === "whatsapp") &&
+      !row.insert.contact_id
+    ) {
       skipped += 1;
       continue;
     }

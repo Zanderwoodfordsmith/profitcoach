@@ -655,7 +655,13 @@ export function campaignChannelsFromSteps(
   }
 
   if (found.size === 0) {
-    found.add(emailPrimary ? "email" : "linkedin");
+    found.add(
+      campaignChannel === "whatsapp"
+        ? "whatsapp"
+        : emailPrimary
+          ? "email"
+          : "linkedin"
+    );
   }
 
   return CAMPAIGN_CHANNELS.filter((channel) => found.has(channel));

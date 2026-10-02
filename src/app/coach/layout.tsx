@@ -181,11 +181,13 @@ export default function CoachLayout({
 
   const membershipPage = pathname === "/coach/membership";
   const conversationsPage = pathname === "/coach/conversations";
+  const supportPage = pathname === "/coach/support";
   const prospectsListPage = pathname === "/coach/prospects";
   const campaignsListPage = pathname === "/coach/campaigns";
   const prospectWorkspacePage = pathname.startsWith("/coach/prospects/");
   const fullHeightPage =
     conversationsPage ||
+    supportPage ||
     prospectsListPage ||
     prospectWorkspacePage ||
     campaignsListPage;
@@ -337,7 +339,13 @@ export default function CoachLayout({
       ) : null}
         <main
           className={`min-w-0 w-full pt-0 ${
-            conversationsPage || prospectWorkspacePage
+            supportPage
+              ? `h-dvh overflow-hidden px-0 ${
+                  sidebarExpanded
+                    ? "pb-0 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
+                    : "pb-0"
+                }`
+              : conversationsPage || prospectWorkspacePage
               ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px]"
               : prospectsListPage || campaignsListPage
               ? `h-dvh overflow-hidden px-4 md:px-[60px] ${
@@ -369,7 +377,13 @@ export default function CoachLayout({
           >
             {chromeEnabled ? (
               <DashboardChromeFallback
-                bleedInset={membershipPage ? "px-4 md:px-[60px]" : undefined}
+                bleedInset={
+                  membershipPage
+                    ? "px-4 md:px-[60px]"
+                    : supportPage
+                      ? "px-4 md:px-6"
+                      : undefined
+                }
               />
             ) : null}
             {/*

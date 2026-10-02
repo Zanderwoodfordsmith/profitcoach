@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { ExternalLink } from "lucide-react";
+import {
+  EditPersonNameButton,
+  EditPersonPhotoButton,
+} from "@/components/contacts/EditPersonIdentityButtons";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { ClientMiniCalendar } from "@/components/clients/ClientMiniCalendar";
 import { ClientSessionsList } from "@/components/clients/ClientSessionsList";
@@ -10,12 +14,14 @@ import { ProspectActivityFeed } from "@/components/prospects/ProspectActivityFee
 import type { ClientSessionRow } from "@/lib/clientCoaching/loadClientSessions";
 import { clientWorkspacePath } from "@/lib/clientCoaching/defaults";
 import type { ClientWorkspaceContact } from "@/lib/clientCoaching/types";
+import { suggestContactIdentity } from "@/lib/contacts/suggestContactIdentity";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
 type Props = {
   contact: ClientWorkspaceContact;
   contactId: string;
   onViewAsClient: () => void;
+  onEditIdentity: () => void;
   impersonateCoachId?: string | null;
   isAdmin?: boolean;
 };
@@ -42,11 +48,21 @@ export function ClientOverviewPanel({
   contact,
   contactId,
   onViewAsClient,
+  onEditIdentity,
   impersonateCoachId = null,
   isAdmin = false,
 }: Props) {
   const [sessionDates, setSessionDates] = useState<string[]>([]);
   const [filterDateKey, setFilterDateKey] = useState<string | null>(null);
+  const suggestion = suggestContactIdentity({
+    fullName: contact.fullName,
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    email: contact.email,
+    businessName: contact.businessName,
+  });
+  const name = suggestion.displayName || contact.fullName;
+  const business = suggestion.shownBusiness ?? "";
   const playbooksHref = `/coach/contacts/${encodeURIComponent(contact.id)}/playbooks`;
   const bossHref = bossProHubPath(contact.id);
   const conversationsHref = isAdmin
@@ -63,24 +79,33 @@ export function ClientOverviewPanel({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.7fr)]">
         <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start gap-4">
-            {contact.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={contact.photoUrl}
-                alt=""
-                className="h-16 w-16 rounded-full object-cover ring-2 ring-slate-100"
-              />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-lg font-semibold text-slate-600">
-                {initials(contact.fullName)}
-              </div>
-            )}
+            <EditPersonPhotoButton
+              onClick={onEditIdentity}
+              label={`Change photo for ${name}`}
+            >
+              {contact.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={contact.photoUrl}
+                  alt=""
+                  className="h-16 w-16 rounded-full object-cover ring-2 ring-slate-100"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-lg font-semibold text-slate-600">
+                  {initials(name)}
+                </div>
+              )}
+            </EditPersonPhotoButton>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-700">
                 Client overview
               </p>
-              <h2 className="mt-0.5 text-xl font-semibold tracking-tight text-slate-900">
-                {contact.fullName}
+              <h2 className="mt-0.5">
+                <EditPersonNameButton
+                  name={name}
+                  onClick={onEditIdentity}
+                  nameClassName="text-xl font-semibold tracking-tight text-slate-900"
+                />
               </h2>
               {contact.headline || contact.jobTitle ? (
                 <p className="mt-0.5 text-sm text-slate-500">
@@ -112,7 +137,7 @@ export function ClientOverviewPanel({
           </div>
 
           <dl className="mt-5 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3 lg:grid-cols-6">
-            <InfoCell label="Business" value={contact.businessName ?? ""} />
+            <InfoCell label="Business" value={business} />
             <InfoCell label="Title" value={contact.jobTitle ?? ""} />
             <InfoCell label="Email" value={contact.email ?? ""} />
             <InfoCell label="Phone" value={contact.phone ?? ""} />

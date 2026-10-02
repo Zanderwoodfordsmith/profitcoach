@@ -149,7 +149,11 @@ export async function addLeadListToCampaign(opts: {
     throw new AddListToCampaignError(campaignError.message, 500);
   }
   if (!campaign) throw new AddListToCampaignError("Campaign not found.", 404);
-  const isEmail = (campaign.channel as string | undefined) === "email";
+  const channel = (campaign.channel as string | undefined) === "email"
+    ? "email"
+    : (campaign.channel as string | undefined) === "whatsapp"
+      ? "whatsapp"
+      : "linkedin";
 
   const itemIds = (opts.itemIds ?? []).filter((value) => isLeadListUuid(value));
   const items = await loadItems({
@@ -162,14 +166,20 @@ export async function addLeadListToCampaign(opts: {
   const leads = items
     .map(toLead)
     .filter((row) =>
-      isEmail ? Boolean(row.email) : Boolean(row.linkedin_url || row.linkedin_provider_id)
+      channel === "email"
+        ? Boolean(row.email)
+        : channel === "whatsapp"
+          ? Boolean(row.phone)
+          : Boolean(row.linkedin_url || row.linkedin_provider_id)
     );
 
   if (!leads.length) {
     throw new AddListToCampaignError(
-      isEmail
+      channel === "email"
         ? "None of those people have an email address to add."
-        : "None of those people have a LinkedIn profile to add.",
+        : channel === "whatsapp"
+          ? "None of those people have a phone number to add."
+          : "None of those people have a LinkedIn profile to add.",
       400
     );
   }

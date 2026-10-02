@@ -28,6 +28,8 @@ export async function loadEnrichedProspectById(
     about: string | null;
     location: string | null;
     photo_url: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
     prospect_status: string | null;
     phone: string | null;
     crm_contact_id: string | null;
@@ -64,6 +66,8 @@ export async function loadEnrichedProspectById(
       "about",
       "location",
       "photo_url",
+      "first_name",
+      "last_name",
     ]
   );
 
@@ -132,6 +136,8 @@ export async function loadEnrichedProspectById(
       about: contact.about ?? null,
       location: contact.location ?? null,
       photo_url: contact.photo_url ?? null,
+      first_name: contact.first_name ?? null,
+      last_name: contact.last_name ?? null,
     },
     coachSlug,
   };

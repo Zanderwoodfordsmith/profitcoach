@@ -35,6 +35,10 @@ import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import type { ProspectNextCall } from "@/lib/prospectNextCall";
 import type { ProspectRow } from "@/lib/prospectRow";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
+import {
+  loadProspectFeed,
+  peekProspectFeed,
+} from "@/lib/messaging/prefetchProspectOpen";
 
 type PaneTab = "activity" | "calls" | "notes";
 
@@ -202,12 +206,24 @@ export function ProspectJourneyPane({
   const isAdmin = pathname.startsWith("/admin");
   const tabId = useId();
   const [tab, setTab] = useState<PaneTab>("activity");
-  const [loading, setLoading] = useState(true);
+  const cachedFeed = peekProspectFeed<{
+    activity?: ActivityEvent[];
+    messages?: MessageRow[];
+    conversations?: ConversationRow[];
+    calls?: CallRow[];
+  }>(contactId, impersonateCoachId);
+  const [loading, setLoading] = useState(!cachedFeed);
   const [error, setError] = useState<string | null>(null);
-  const [events, setEvents] = useState<ActivityEvent[]>([]);
-  const [messages, setMessages] = useState<MessageRow[]>([]);
-  const [conversations, setConversations] = useState<ConversationRow[]>([]);
-  const [calls, setCalls] = useState<CallRow[]>([]);
+  const [events, setEvents] = useState<ActivityEvent[]>(
+    () => cachedFeed?.activity ?? []
+  );
+  const [messages, setMessages] = useState<MessageRow[]>(
+    () => cachedFeed?.messages ?? []
+  );
+  const [conversations, setConversations] = useState<ConversationRow[]>(
+    () => cachedFeed?.conversations ?? []
+  );
+  const [calls, setCalls] = useState<CallRow[]>(() => cachedFeed?.calls ?? []);
   const [noteDraft, setNoteDraft] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
@@ -231,45 +247,35 @@ export function ProspectJourneyPane({
   }, [impersonateCoachId]);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    const hadCache = Boolean(peekProspectFeed(contactId, impersonateCoachId));
+    if (!hadCache) setLoading(true);
     setError(null);
     try {
-      const headers = await authHeaders();
-      if (!headers) {
-        setError("Sign in again, then retry.");
+      const body = await loadProspectFeed(contactId, impersonateCoachId);
+      if (!body) {
+        if (!hadCache) {
+          setError("Could not load this record.");
+          setEvents([]);
+          setMessages([]);
+          setConversations([]);
+          setCalls([]);
+        }
         return;
       }
-      const res = await fetch(
-        `/api/messaging/contacts/${encodeURIComponent(contactId)}/feed`,
-        { headers, cache: "no-store" }
-      );
-      const body = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        activity?: ActivityEvent[];
-        messages?: MessageRow[];
-        conversations?: ConversationRow[];
-        calls?: CallRow[];
-      };
-      if (!res.ok) {
-        setError(body.error || `Failed to load (${res.status}).`);
-        setEvents([]);
-        setMessages([]);
-        setConversations([]);
-        setCalls([]);
-        return;
-      }
-      setEvents(Array.isArray(body.activity) ? body.activity : []);
-      setMessages(Array.isArray(body.messages) ? body.messages : []);
+      setEvents(Array.isArray(body.activity) ? (body.activity as ActivityEvent[]) : []);
+      setMessages(Array.isArray(body.messages) ? (body.messages as MessageRow[]) : []);
       setConversations(
-        Array.isArray(body.conversations) ? body.conversations : []
+        Array.isArray(body.conversations)
+          ? (body.conversations as ConversationRow[])
+          : []
       );
-      setCalls(Array.isArray(body.calls) ? body.calls : []);
+      setCalls(Array.isArray(body.calls) ? (body.calls as CallRow[]) : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Load failed.");
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, contactId]);
+  }, [contactId, impersonateCoachId]);
 
   useEffect(() => {
     void load();

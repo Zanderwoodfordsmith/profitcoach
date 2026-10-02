@@ -25,6 +25,8 @@ import { syncContactWhatsAppStatus } from "@/lib/unipile/checkWhatsAppOn";
 export type ProspectFieldPatch = {
   first_name?: string | null;
   last_name?: string | null;
+  /** Null clears the photo. A URL is ignored — uploads go through the photo route. */
+  photo_url?: string | null;
   email?: string | null;
   phone?: string | null;
   job_title?: string | null;
@@ -39,6 +41,9 @@ export type ProspectFieldPatch = {
 
 export type UpdatedProspectFields = {
   full_name: string;
+  first_name: string | null;
+  last_name: string | null;
+  photo_url: string | null;
   email: string | null;
   phone: string | null;
   job_title: string | null;
@@ -55,10 +60,12 @@ export type UpdatedProspectFields = {
 
 function buildFullName(
   firstName: string | null,
-  lastName: string | null
+  lastName: string | null,
+  existing: string | null
 ): string {
   const full = [firstName, lastName].filter(Boolean).join(" ").trim();
-  return full || "Unknown";
+  if (full) return full;
+  return existing?.trim() || "Unknown";
 }
 
 export async function updateProspectFields(
@@ -96,8 +103,13 @@ export async function updateProspectFields(
       contact = (withLinkedIn.data as Record<string, unknown> | null) ?? null;
     }
   }
-  if (!contact || contact.coach_id !== coachId || contact.type !== "prospect") {
-    throw new Error("Prospect not found.");
+  const contactType = String(contact?.type ?? "");
+  if (
+    !contact ||
+    contact.coach_id !== coachId ||
+    (contactType !== "prospect" && contactType !== "client")
+  ) {
+    throw new Error("Contact not found.");
   }
 
   const contactPatch: Record<string, unknown> = {};
@@ -113,7 +125,15 @@ export async function updateProspectFields(
         : ((contact.last_name as string | null) ?? null);
     contactPatch.first_name = firstName;
     contactPatch.last_name = lastName;
-    contactPatch.full_name = buildFullName(firstName, lastName);
+    contactPatch.full_name = buildFullName(
+      firstName,
+      lastName,
+      (contact.full_name as string | null) ?? null
+    );
+  }
+
+  if (patch.photo_url === null) {
+    contactPatch.photo_url = null;
   }
 
   if (patch.email !== undefined) {
@@ -245,6 +265,9 @@ export async function updateProspectFields(
     if (contactPatch.business_name !== undefined) {
       conversationPatch.prospect_business_name = contactPatch.business_name;
     }
+    if (contactPatch.photo_url !== undefined) {
+      conversationPatch.prospect_avatar_url = contactPatch.photo_url;
+    }
     if (contactPatch.linkedin_url !== undefined) {
       conversationPatch.prospect_linkedin_url = contactPatch.linkedin_url;
     }
@@ -289,7 +312,7 @@ export async function updateProspectFields(
     const withLinkedIn = await supabaseAdmin
       .from("contacts")
       .select(
-        "full_name, email, phone, job_title, business_name, linkedin_url, company_website, prospect_status, crm_contact_id, prospect_tags, prospect_source, prospect_funnel"
+        "full_name, first_name, last_name, photo_url, email, phone, job_title, business_name, linkedin_url, company_website, prospect_status, crm_contact_id, prospect_tags, prospect_source, prospect_funnel"
       )
       .eq("id", contactId)
       .maybeSingle();
@@ -326,6 +349,9 @@ export async function updateProspectFields(
 
   return {
     full_name: (refreshed.full_name as string) ?? "Unknown",
+    first_name: (refreshed.first_name as string | null) ?? null,
+    last_name: (refreshed.last_name as string | null) ?? null,
+    photo_url: (refreshed.photo_url as string | null) ?? null,
     email: (refreshed.email as string | null) ?? null,
     phone: (refreshed.phone as string | null) ?? null,
     job_title: (refreshed.job_title as string | null) ?? null,

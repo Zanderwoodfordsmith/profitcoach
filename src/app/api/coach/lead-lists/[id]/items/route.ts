@@ -9,11 +9,13 @@ import {
   loadOwnedLeadList,
   mapAudiencePeopleInput,
   MAX_LIST_ITEMS_PER_REQUEST,
+  MAX_LIST_ITEMS_TOTAL,
   parsePastedAudienceLines,
   recountLeadListItems,
   removeMatchingLeadListItems,
   type AudienceItemSource,
 } from "@/lib/leadLists/audienceLists";
+import { syncPersonAcrossLists } from "@/lib/leadLists/syncPersonAcrossLists";
 import {
   MAX_PROSPECT_TAGS,
   normalizeProspectTags,
@@ -21,14 +23,17 @@ import {
 
 type Ctx = { params: Promise<{ id: string }> };
 
-function parseItemIds(raw: unknown): string[] {
+function parseItemIds(
+  raw: unknown,
+  cap = MAX_LIST_ITEMS_PER_REQUEST
+): string[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .filter(
       (value): value is string =>
         typeof value === "string" && isLeadListUuid(value)
     )
-    .slice(0, MAX_LIST_ITEMS_PER_REQUEST);
+    .slice(0, cap);
 }
 
 function mergeItemTags(
@@ -95,7 +100,7 @@ export async function POST(request: Request, ctx: Ctx) {
 
     const { data: rows, error: loadError } = await supabaseAdmin
       .from("coach_lead_list_items")
-      .select("id, tags")
+      .select("id, tags, identity_key")
       .eq("coach_id", auth.userId)
       .eq("list_id", id)
       .in("id", itemIds);
@@ -109,6 +114,24 @@ export async function POST(request: Request, ctx: Ctx) {
     }));
 
     for (const update of updates) {
+      const source = (rows ?? []).find((row) => row.id === update.id);
+      const identityKey =
+        typeof source?.identity_key === "string" ? source.identity_key : "";
+      if (identityKey) {
+        try {
+          await syncPersonAcrossLists({
+            coachId: auth.userId,
+            identityKey,
+            fields: { tags: update.tags },
+          });
+        } catch (err) {
+          return NextResponse.json(
+            { error: err instanceof Error ? err.message : "Could not update tags." },
+            { status: 500 }
+          );
+        }
+        continue;
+      }
       const { error } = await supabaseAdmin
         .from("coach_lead_list_items")
         .update({ tags: update.tags })
@@ -128,7 +151,7 @@ export async function POST(request: Request, ctx: Ctx) {
   }
 
   if (body.action === "copy_to_list") {
-    const itemIds = parseItemIds(body.item_ids);
+    const itemIds = parseItemIds(body.item_ids, MAX_LIST_ITEMS_TOTAL);
     if (!itemIds.length) {
       return NextResponse.json(
         { error: "Select people to add." },

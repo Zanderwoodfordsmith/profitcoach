@@ -3,6 +3,7 @@ import { resolveOrCreateContact } from "@/lib/contacts/resolveOrCreateContact";
 import {
   normalizeProspectLabel,
   normalizeProspectPersonName,
+  personNameWithoutNote,
 } from "@/lib/prospectDisplayFormat";
 import { splitFullName } from "@/lib/splitFullName";
 
@@ -65,7 +66,10 @@ export async function upsertProspectFromLinkedIn(
     [normalizeProspectPersonName(firstName), normalizeProspectPersonName(lastName)]
       .filter(Boolean)
       .join(" ")
-      .trim() || fullNameRaw;
+      .trim() || personNameWithoutNote(fullNameRaw);
+  if (!fullName) {
+    throw new Error("Please provide prospect name.");
+  }
 
   let prospectStatus: string | null = null;
   if (input.prospectStatus != null && String(input.prospectStatus).trim()) {

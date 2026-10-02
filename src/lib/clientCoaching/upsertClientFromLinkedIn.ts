@@ -11,6 +11,7 @@ import {
 import {
   normalizeProspectLabel,
   normalizeProspectPersonName,
+  personNameWithoutNote,
 } from "@/lib/prospectDisplayFormat";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -75,7 +76,10 @@ export async function upsertClientFromLinkedIn(
     [normalizeProspectPersonName(firstName), normalizeProspectPersonName(lastName)]
       .filter(Boolean)
       .join(" ")
-      .trim() || fullNameRaw;
+      .trim() || personNameWithoutNote(fullNameRaw);
+  if (!fullName) {
+    throw new Error("LinkedIn profile did not include a name.");
+  }
 
   const jobTitle = resolveJobTitle(snapshot);
   const businessName = resolveBusiness(snapshot);

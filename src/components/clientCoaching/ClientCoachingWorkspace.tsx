@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClientOverviewPanel } from "@/components/clientCoaching/ClientOverviewPanel";
+import { PersonIdentityDialog } from "@/components/contacts/PersonIdentityDialog";
+import { EditPersonNameButton } from "@/components/contacts/EditPersonIdentityButtons";
+import { savePersonIdentity } from "@/lib/contacts/savePersonIdentity";
+import { suggestContactIdentity } from "@/lib/contacts/suggestContactIdentity";
 import { ComingSoonPanel } from "@/components/clientCoaching/ComingSoonPanel";
 import { NinetyDayPlanPanel } from "@/components/clientCoaching/NinetyDayPlanPanel";
 import { ThreeYearPlanPanel } from "@/components/clientCoaching/ThreeYearPlanPanel";
@@ -45,6 +49,10 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
+  const [identityOpen, setIdentityOpen] = useState(false);
+  const [identitySaving, setIdentitySaving] = useState(false);
+  const appliedIdentityRef = useRef("");
+  const dismissedBusinessRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -140,7 +148,122 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
     router.push("/client");
   }
 
-  const title = contact?.fullName ?? (loading ? "Loading…" : "Client");
+  async function saveIdentity(input: {
+    firstName: string;
+    lastName: string;
+    businessName: string;
+    photoFile: File | null;
+    removePhoto: boolean;
+  }) {
+    if (!input.businessName.trim()) dismissedBusinessRef.current = true;
+    setIdentitySaving(true);
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("You must be signed in.");
+      const updated = await savePersonIdentity({
+        contactId,
+        headers,
+        admin: isAdmin,
+        input,
+      });
+      setContact((prev) =>
+        prev
+          ? {
+              ...prev,
+              fullName: updated.full_name,
+              firstName: updated.first_name,
+              lastName: updated.last_name,
+              businessName: updated.business_name,
+              photoUrl: updated.photo_url,
+            }
+          : prev
+      );
+      setIdentityOpen(false);
+    } finally {
+      setIdentitySaving(false);
+    }
+  }
+
+  const identitySuggestion = useMemo(
+    () =>
+      contact
+        ? suggestContactIdentity({
+            fullName: contact.fullName,
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            email: contact.email,
+            businessName: contact.businessName,
+          })
+        : null,
+    [contact]
+  );
+  const shownName =
+    identitySuggestion?.displayName ||
+    contact?.fullName ||
+    (loading ? "Loading…" : "Client");
+  const shownBusiness = dismissedBusinessRef.current
+    ? contact?.businessName?.trim() || null
+    : identitySuggestion?.shownBusiness || null;
+
+  useEffect(() => {
+    if (!contact || !identitySuggestion) return;
+    const persistBusiness =
+      identitySuggestion.persistBusiness && !dismissedBusinessRef.current;
+    if (!identitySuggestion.persistName && !persistBusiness) return;
+    const token = [
+      contact.id,
+      identitySuggestion.persistName ? identitySuggestion.displayName : "",
+      persistBusiness ? identitySuggestion.shownBusiness : "",
+    ].join("|");
+    if (appliedIdentityRef.current === token) return;
+    appliedIdentityRef.current = token;
+    const contactIdAtSave = contact.id;
+    void (async () => {
+      const headers = await authHeaders();
+      if (!headers) return;
+      const url = isAdmin
+        ? `/api/admin/contacts/${encodeURIComponent(contactIdAtSave)}`
+        : `/api/coach/contacts/${encodeURIComponent(contactIdAtSave)}`;
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          ...(identitySuggestion.persistName
+            ? {
+                first_name: identitySuggestion.firstName,
+                last_name: identitySuggestion.lastName,
+              }
+            : {}),
+          ...(persistBusiness
+            ? { business_name: identitySuggestion.shownBusiness }
+            : {}),
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        full_name?: string;
+        first_name?: string | null;
+        last_name?: string | null;
+        business_name?: string | null;
+      };
+      if (!res.ok) return;
+      setContact((prev) =>
+        prev && prev.id === contactIdAtSave
+          ? {
+              ...prev,
+              fullName: body.full_name ?? prev.fullName,
+              firstName: body.first_name ?? prev.firstName,
+              lastName: body.last_name ?? prev.lastName,
+              businessName:
+                body.business_name !== undefined
+                  ? body.business_name
+                  : prev.businessName,
+            }
+          : prev
+      );
+    })();
+  }, [authHeaders, contact, identitySuggestion, isAdmin]);
+
+  const title = shownName;
 
   return (
     <CoachClientHubGate>
@@ -154,13 +277,23 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
               ← Clients
             </Link>
           }
-          title={title}
+          title={
+            contact ? (
+              <EditPersonNameButton
+                name={shownName}
+                onClick={() => setIdentityOpen(true)}
+                nameClassName="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"
+              />
+            ) : (
+              title
+            )
+          }
           description={
-            contact?.businessName
-              ? contact.businessName
+            shownBusiness
+              ? shownBusiness
               : "Coaching workspace — sessions, notes, plans, and activity."
           }
-          descriptionPlacement={contact?.businessName ? "below" : "info"}
+          descriptionPlacement={shownBusiness ? "below" : "info"}
           tabs={
             <PageHeaderUnderlineTabs
               ariaLabel="Client workspace"
@@ -189,6 +322,7 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
                 contact={contact}
                 contactId={contactId}
                 onViewAsClient={handleViewAsClient}
+                onEditIdentity={() => setIdentityOpen(true)}
                 impersonateCoachId={impersonatingCoachId}
                 isAdmin={isAdmin}
               />
@@ -239,6 +373,22 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
               />
             ) : null}
           </div>
+        ) : null}
+        {contact ? (
+          <PersonIdentityDialog
+            open={identityOpen}
+            saving={identitySaving}
+            fullName={shownName}
+            email={contact.email}
+            firstName={identitySuggestion?.firstName || contact.firstName}
+            lastName={identitySuggestion?.lastName || contact.lastName}
+            businessName={shownBusiness}
+            photoUrl={contact.photoUrl}
+            onClose={() => {
+              if (!identitySaving) setIdentityOpen(false);
+            }}
+            onSave={saveIdentity}
+          />
         ) : null}
       </div>
     </CoachClientHubGate>

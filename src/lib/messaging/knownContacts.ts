@@ -183,20 +183,95 @@ export async function findKnownContactForCoach(
   return null;
 }
 
+async function contactIsProspect(contactId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from("contacts")
+    .select("type")
+    .eq("id", contactId)
+    .maybeSingle();
+  return (data?.type as string | undefined) === "prospect";
+}
+
+async function poolHasPhone(coachId: string, phoneKey: string): Promise<boolean> {
+  const { data: pool } = await supabaseAdmin
+    .from("coach_lead_lists")
+    .select("id")
+    .eq("coach_id", coachId)
+    .eq("kind", "pool")
+    .maybeSingle();
+  const poolId = (pool?.id as string | undefined) ?? null;
+  if (!poolId) return false;
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabaseAdmin
+      .from("coach_lead_list_items")
+      .select("phone")
+      .eq("list_id", poolId)
+      .not("phone", "is", null)
+      .range(from, from + 999);
+    if (error || !data?.length) return false;
+    for (const row of data) {
+      if (phoneMatchKey(typeof row.phone === "string" ? row.phone : null) === phoneKey) {
+        return true;
+      }
+    }
+    if (data.length < 1000) return false;
+  }
+}
+
 /**
  * Whether this inbound/sync event may enter Conversations.
- * LinkedIn (and similar outreach) stay open; email/WhatsApp need a CRM contact.
+ * LinkedIn stays open. Email needs a known contact. WhatsApp only stays
+ * when the number is already on the pool or on a prospect.
  */
 export async function allowPersonalChannelIngest(input: {
   coachId: string;
   channel: UnipileAppChannel | string;
   email?: string | null;
   phone?: string | null;
-  /** Existing thread already linked to a contact stays allowed. */
+  /** Existing thread already linked to a contact stays allowed for email. */
   existingContactId?: string | null;
 }): Promise<{ allowed: boolean; contact: KnownContactMatch | null }> {
   if (!channelRequiresKnownContact(input.channel)) {
     return { allowed: true, contact: null };
+  }
+  if ((input.channel || "").toLowerCase() === "whatsapp") {
+    const phoneKey = phoneMatchKey(input.phone);
+    if (phoneKey && (await poolHasPhone(input.coachId, phoneKey))) {
+      const contact = await findKnownContactForCoach(input.coachId, {
+        phone: input.phone,
+      });
+      return {
+        allowed: true,
+        contact:
+          contact ??
+          (input.existingContactId
+            ? {
+                id: input.existingContactId,
+                full_name: null,
+                email: null,
+                phone: input.phone ?? null,
+              }
+            : null),
+      };
+    }
+    if (input.existingContactId && (await contactIsProspect(input.existingContactId))) {
+      return {
+        allowed: true,
+        contact: {
+          id: input.existingContactId,
+          full_name: null,
+          email: null,
+          phone: input.phone ?? null,
+        },
+      };
+    }
+    const contact = await findKnownContactForCoach(input.coachId, {
+      phone: input.phone,
+    });
+    if (contact && (await contactIsProspect(contact.id))) {
+      return { allowed: true, contact };
+    }
+    return { allowed: false, contact: null };
   }
   if (input.existingContactId) {
     return {

@@ -558,6 +558,12 @@ export function LinkedInCampaignsOverview() {
       (account) =>
         account.status === "OK" && isMailingProvider(account.provider ?? "")
     ) ?? null;
+  const whatsappAccount =
+    accounts.find(
+      (account) =>
+        account.status === "OK" &&
+        normalizeUnipileProvider(account.provider ?? "") === "WHATSAPP"
+    ) ?? null;
 
   useEffect(() => {
     setAppOrigin(window.location.origin);
@@ -644,6 +650,7 @@ export function LinkedInCampaignsOverview() {
   async function createCampaign(input: {
     name: string;
     libraryTemplateId?: string;
+    channel?: "linkedin" | "email" | "whatsapp";
   }) {
     setBusy(true);
     setError(null);
@@ -655,7 +662,13 @@ export function LinkedInCampaignsOverview() {
         headers,
         body: JSON.stringify({
           name: input.name.trim(),
-          outreach_account_id: okLinkedInAccount?.id ?? null,
+          channel: input.channel ?? "linkedin",
+          outreach_account_id:
+            input.channel === "email"
+              ? mailingAccount?.id ?? null
+              : input.channel === "whatsapp"
+                ? whatsappAccount?.id ?? null
+                : okLinkedInAccount?.id ?? null,
           ...(input.libraryTemplateId
             ? { library_template_id: input.libraryTemplateId }
             : {}),
@@ -683,6 +696,11 @@ export function LinkedInCampaignsOverview() {
         setError("Connect Gmail or Outlook before starting an email campaign.");
         return;
       }
+    } else if (next === "running" && campaign.channel === "whatsapp") {
+      if (!whatsappAccount) {
+        setError("Connect WhatsApp before starting a WhatsApp campaign.");
+        return;
+      }
     } else if (next === "running" && !okLinkedInAccount) {
       setError("Connect LinkedIn before starting a campaign.");
       return;
@@ -707,7 +725,9 @@ export function LinkedInCampaignsOverview() {
             outreach_account_id:
               campaign.channel === "email"
                 ? mailingAccount?.id ?? null
-                : okLinkedInAccount?.id ?? null,
+                : campaign.channel === "whatsapp"
+                  ? whatsappAccount?.id ?? null
+                  : okLinkedInAccount?.id ?? null,
           }),
         }
       );
@@ -1004,6 +1024,7 @@ export function LinkedInCampaignsOverview() {
                             sorted.map((c) => {
                               const isRunning = c.status === "running";
                               const isEmail = c.channel === "email";
+                              const isWhatsApp = c.channel === "whatsapp";
                               const isDemo = isDemoPreviewId(c.id);
                               const canToggle =
                                 !isDemo &&
@@ -1011,7 +1032,9 @@ export function LinkedInCampaignsOverview() {
                                 (isRunning ||
                                   (isEmail
                                     ? Boolean(mailingAccount)
-                                    : Boolean(okLinkedInAccount)));
+                                    : isWhatsApp
+                                      ? Boolean(whatsappAccount)
+                                      : Boolean(okLinkedInAccount)));
                               return (
                                 <CampaignTableRow
                                   key={c.id}
@@ -1236,7 +1259,9 @@ export function LinkedInCampaignsOverview() {
           setShowCreate(false);
           setError(null);
         }}
-        onCreateBlank={(name) => void createCampaign({ name })}
+        onCreateBlank={(name, channel) =>
+          void createCampaign({ name, channel })
+        }
         onCreateFromTemplate={(name, template) =>
           void createCampaign({ name, libraryTemplateId: template.id })
         }
@@ -1266,6 +1291,7 @@ export function LinkedInCampaignsOverview() {
             toggleBusy={busy}
             linkedInConnected={Boolean(okLinkedInAccount)}
             emailConnected={Boolean(mailingAccount)}
+            whatsappConnected={Boolean(whatsappAccount)}
           />
         </div>
       ) : null}

@@ -23,6 +23,7 @@ import {
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
+import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import {
   CommentAttachButton,
   CommentImagePreviews,
@@ -36,7 +37,7 @@ import {
   SupportViaEmailMark,
   supportAuthorShortName,
 } from "@/components/support/SupportChatBubbles";
-import { SeeMoreText } from "@/components/support/SeeMoreText";
+import { SupportOpeningBody } from "@/components/support/SeeMoreText";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
 import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
 import {
@@ -1409,10 +1410,10 @@ export function AdminTicketReplies({
 
             {composerMode === "reply" && pendingVideo ? (
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
-                <video
-                  src={pendingVideo.url}
-                  className="h-14 w-20 rounded object-cover"
-                  muted
+                <PreviewableMedia
+                  url={pendingVideo.url}
+                  kind="video"
+                  mediaClassName="h-14 w-20 rounded object-cover"
                 />
                 <span className="min-w-0 flex-1 truncate text-xs text-slate-700">
                   {pendingVideo.file.name}
@@ -1968,25 +1969,16 @@ export function AdminTicketReplies({
             <h2 className="mt-3 text-lg font-semibold leading-snug tracking-tight text-slate-900 sm:text-xl">
               {openingMessage.title}
             </h2>
-            {openingBody || openingMedia.length > 0 ? (
-              <div className="mt-1.5 max-h-[min(28vh,12rem)] overflow-y-auto overscroll-contain">
-                {openingBody ? (
-                  <SeeMoreText
-                    key={reportId}
-                    text={openingMessage.body}
-                    variant="feed"
+            <SupportOpeningBody key={reportId} text={openingMessage.body}>
+              {openingMedia.length > 0 ? (
+                <div className={openingBody ? "mt-3" : undefined}>
+                  <CommunityPostMediaGallery
+                    items={openingMedia}
+                    variant="compact"
                   />
-                ) : null}
-                {openingMedia.length > 0 ? (
-                  <div className={openingBody ? "mt-3" : undefined}>
-                    <CommunityPostMediaGallery
-                      items={openingMedia}
-                      variant="compact"
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
+                </div>
+              ) : null}
+            </SupportOpeningBody>
           </div>
         ) : null}
 

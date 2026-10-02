@@ -763,9 +763,17 @@ export function IntegrationsSettingsTab() {
                   <IntegrationRow
                     key={provider}
                     title={rowTitle(provider)}
-                    subtitle={primary?.display_name}
+                    subtitle={
+                      provider === "WHATSAPP" && primary?.display_name
+                        ? `Connected number ${primary.display_name}. To use a different number, disconnect and connect that WhatsApp.`
+                        : primary?.display_name
+                    }
                     info={
-                      provider === "LINKEDIN" ? LINKEDIN_CONNECT_TIP : null
+                      provider === "WHATSAPP"
+                        ? "Messages send from this WhatsApp. Chats stay in the inbox only when that person is already in your pool or on your prospects list."
+                        : provider === "LINKEDIN"
+                          ? LINKEDIN_CONNECT_TIP
+                          : null
                     }
                     last={last}
                     status={

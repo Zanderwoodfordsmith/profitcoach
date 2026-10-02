@@ -14,6 +14,8 @@ async function loadContactForPlan(contactId: string): Promise<{
   contact: {
     id: string;
     full_name: string;
+    first_name: string | null;
+    last_name: string | null;
     email: string | null;
     phone: string | null;
     business_name: string | null;
@@ -30,7 +32,7 @@ async function loadContactForPlan(contactId: string): Promise<{
   error: string | null;
 }> {
   const withPlan =
-    "id, full_name, email, phone, business_name, job_title, linkedin_url, photo_url, headline, location, type, coach_id, coaching_plan";
+    "id, full_name, first_name, last_name, email, phone, business_name, job_title, linkedin_url, photo_url, headline, location, type, coach_id, coaching_plan";
   const withoutPlan =
     "id, full_name, email, business_name, type, coach_id";
 
@@ -46,6 +48,8 @@ async function loadContactForPlan(contactId: string): Promise<{
       contact: {
         id: row.id as string,
         full_name: row.full_name as string,
+        first_name: (row.first_name as string | null) ?? null,
+        last_name: (row.last_name as string | null) ?? null,
         email: (row.email as string | null) ?? null,
         phone: (row.phone as string | null) ?? null,
         business_name: (row.business_name as string | null) ?? null,
@@ -80,6 +84,8 @@ async function loadContactForPlan(contactId: string): Promise<{
       contact: {
         id: row.id as string,
         full_name: row.full_name as string,
+        first_name: null,
+        last_name: null,
         email: (row.email as string | null) ?? null,
         phone: null,
         business_name: (row.business_name as string | null) ?? null,
@@ -137,6 +143,8 @@ export async function GET(request: Request, context: RouteContext) {
     contact: {
       id: contact.id,
       fullName: contact.full_name,
+      firstName: contact.first_name,
+      lastName: contact.last_name,
       email: contact.email,
       phone: contact.phone,
       businessName: contact.business_name,

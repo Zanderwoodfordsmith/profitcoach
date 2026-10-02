@@ -17,7 +17,14 @@ import {
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { MAX_POOL_ITEMS_PER_REQUEST } from "@/lib/leadLists/audienceLists";
 import type { ParsedProspectCsvRow } from "@/lib/prospects/parseProspectsCsv";
+import { CsvColumnMatch } from "@/components/prospects/CsvColumnMatch";
 import { CsvUploadDropzone } from "@/components/prospects/CsvUploadDropzone";
+import {
+  applyCsvColumnMap,
+  guessCsvColumnMap,
+  readCsvForMatching,
+  type CsvColumnMapping,
+} from "@/lib/prospects/csvColumnMatch";
 import { splitPersonName } from "@/lib/leadLists/audienceLists";
 import { poolIdentityKey } from "@/lib/pool/identity";
 import {
@@ -154,10 +161,17 @@ function storeMapsUsState(code: GoogleMapsUsStateCode) {
   }
 }
 
+type CsvListChoice = { id: string; name: string };
+
 type Props = {
   open: boolean;
   onClose: () => void;
   onImported: () => void | Promise<void>;
+  /** List tab this import was opened from. Pool when they are on All. */
+  currentListId?: string | null;
+  currentListName?: string | null;
+  audienceLists?: CsvListChoice[];
+  onListReady?: (list: { id: string; name: string }) => void;
   onImportStarted?: (info: {
     jobId: string;
     saveListId: string;
@@ -194,7 +208,7 @@ const OPTIONS: Array<{
   {
     id: "csv",
     title: "Upload CSV",
-    body: "Drag in a file or start from our template. Name plus email, phone, or LinkedIn.",
+    body: "Choose the list, then match your columns. Name plus email, phone, LinkedIn, or website.",
     icon: FileSpreadsheet,
   },
 ];
@@ -204,6 +218,10 @@ export function ImportPoolModal({
   onClose,
   onImported,
   onImportStarted,
+  currentListId = null,
+  currentListName = null,
+  audienceLists = [],
+  onListReady,
 }: Props) {
   const pathname = usePathname();
   const onImportedRef = useRef(onImported);
@@ -211,6 +229,16 @@ export function ImportPoolModal({
   const onImportStartedRef = useRef(onImportStarted);
   onImportStartedRef.current = onImportStarted;
   const [mode, setMode] = useState<Mode>("pick");
+  const [csvStage, setCsvStage] = useState<"where" | "file" | "match">("where");
+  const [csvDest, setCsvDest] = useState<"current" | "new" | "existing">(
+    "current"
+  );
+  const [csvNewName, setCsvNewName] = useState("");
+  const [csvExistingId, setCsvExistingId] = useState("");
+  const [csvText, setCsvText] = useState<string | null>(null);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvSamples, setCsvSamples] = useState<string[][]>([]);
+  const [csvMap, setCsvMap] = useState<CsvColumnMapping>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -418,6 +446,14 @@ export function ImportPoolModal({
     setOneCompany("");
     setOneEmail("");
     setOnePhone("");
+    setCsvStage("where");
+    setCsvDest("current");
+    setCsvNewName("");
+    setCsvExistingId("");
+    setCsvText(null);
+    setCsvHeaders([]);
+    setCsvSamples([]);
+    setCsvMap([]);
   }
 
   function close() {
@@ -597,6 +633,8 @@ export function ImportPoolModal({
     people?: unknown;
     text?: string;
     source?: string;
+    list_id?: string;
+    list_name?: string;
   }) {
     setBusy(true);
     setError(null);
@@ -615,6 +653,8 @@ export function ImportPoolModal({
         skipped?: number;
         blacklisted?: number;
         invalid?: number;
+        targetListId?: string | null;
+        targetListName?: string | null;
       };
       if (!res.ok) throw new Error(body.error || "Could not import.");
       const added = Number(body.added ?? 0);
@@ -629,8 +669,14 @@ export function ImportPoolModal({
           ? `${invalid} skipped (need email, phone, LinkedIn, or website)`
           : null,
       ].filter(Boolean);
-      setNotice(parts.join(" · ") || "Nothing new to add.");
-      if (added > 0) await onImported();
+      const landed = body.targetListName
+        ? ` · on ${body.targetListName}`
+        : "";
+      setNotice((parts.join(" · ") || "Nothing new to add.") + landed);
+      if (added > 0 || body.targetListId) await onImported();
+      if (body.targetListId && body.targetListName) {
+        onListReady?.({ id: body.targetListId, name: body.targetListName });
+      }
       if (input.text) setPasteText("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not import.");
@@ -639,9 +685,55 @@ export function ImportPoolModal({
     }
   }
 
-  function onCsvRows(rows: ParsedProspectCsvRow[]) {
+  function csvDestination():
+    | { list_id?: string; list_name?: string }
+    | { error: string } {
+    if (csvDest === "new") {
+      const name = csvNewName.trim();
+      if (!name) return { error: "Name the new list first." };
+      return { list_name: name };
+    }
+    if (csvDest === "existing") {
+      if (!csvExistingId) return { error: "Choose a list." };
+      return { list_id: csvExistingId };
+    }
+    if (currentListId) return { list_id: currentListId };
+    return {};
+  }
+
+  function onCsvFile(text: string) {
     setError(null);
     setNotice(null);
+    try {
+      const preview = readCsvForMatching(text, {
+        maxRows: MAX_POOL_ITEMS_PER_REQUEST,
+      });
+      setCsvText(text);
+      setCsvHeaders(preview.headers);
+      setCsvSamples(preview.samples);
+      setCsvMap(guessCsvColumnMap(preview.headers));
+      setCsvStage("match");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read that CSV.");
+    }
+  }
+
+  function importMappedCsv() {
+    if (!csvText) return;
+    const destination = csvDestination();
+    if ("error" in destination) {
+      setError(destination.error);
+      return;
+    }
+    let rows: ParsedProspectCsvRow[];
+    try {
+      rows = applyCsvColumnMap(csvText, csvMap, {
+        maxRows: MAX_POOL_ITEMS_PER_REQUEST,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read that CSV.");
+      return;
+    }
     const people = rows.map((row) => {
       const { first_name, last_name } = splitPersonName(row.fullName);
       return {
@@ -652,13 +744,14 @@ export function ImportPoolModal({
         title: row.jobTitle,
         email: row.email,
         phone: row.phone,
+        website: row.website,
+        location: row.location,
+        city: row.city,
+        postcode: row.postcode,
+        address: row.address,
       };
     });
-    if (!people.length) {
-      setError("That CSV has no people to add.");
-      return;
-    }
-    void importPeople({ people, source: "manual" });
+    void importPeople({ people, source: "manual", ...destination });
   }
 
   const oneReady =
@@ -673,15 +766,27 @@ export function ImportPoolModal({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 pt-16 sm:pt-24">
-      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl">
+      <div
+        className={`w-full rounded-2xl bg-white shadow-2xl ${
+          mode === "csv" && csvStage === "match" ? "max-w-3xl" : "max-w-xl"
+        }`}
+      >
         <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
           <div className="min-w-0">
             {mode !== "pick" ? (
               <button
                 type="button"
                 onClick={() => {
-                  setMode("pick");
                   setError(null);
+                  if (mode === "csv" && csvStage === "match") {
+                    setCsvStage("file");
+                    return;
+                  }
+                  if (mode === "csv" && csvStage === "file") {
+                    setCsvStage("where");
+                    return;
+                  }
+                  setMode("pick");
                   setSalesNavSource(null);
                   setExtraTeamSizes([]);
                 }}
@@ -1217,11 +1322,124 @@ export function ImportPoolModal({
           ) : null}
 
           {mode === "csv" ? (
-            <CsvUploadDropzone
-              disabled={busy}
-              maxRows={MAX_POOL_ITEMS_PER_REQUEST}
-              onRows={onCsvRows}
-            />
+            csvStage === "where" ? (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600">
+                  People always land in the pool. Choose the list they should
+                  also appear on.
+                </p>
+                <label className="flex items-start gap-2 text-sm text-slate-800">
+                  <input
+                    type="radio"
+                    name="csv-dest"
+                    checked={csvDest === "current"}
+                    onChange={() => setCsvDest("current")}
+                    className="mt-1"
+                  />
+                  <span>
+                    <span className="font-medium">
+                      {currentListId ? currentListName || "This list" : "Pool only"}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      {currentListId
+                        ? "The list you have open."
+                        : "No extra list. You can move them later."}
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 text-sm text-slate-800">
+                  <input
+                    type="radio"
+                    name="csv-dest"
+                    checked={csvDest === "new"}
+                    onChange={() => setCsvDest("new")}
+                    className="mt-1"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="font-medium">New list</span>
+                    {csvDest === "new" ? (
+                      <input
+                        value={csvNewName}
+                        onChange={(event) => setCsvNewName(event.target.value)}
+                        placeholder="List name"
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      />
+                    ) : null}
+                  </span>
+                </label>
+                {audienceLists.length > 0 ? (
+                  <label className="flex items-start gap-2 text-sm text-slate-800">
+                    <input
+                      type="radio"
+                      name="csv-dest"
+                      checked={csvDest === "existing"}
+                      onChange={() => setCsvDest("existing")}
+                      className="mt-1"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="font-medium">Existing list</span>
+                      {csvDest === "existing" ? (
+                        <select
+                          value={csvExistingId}
+                          onChange={(event) => setCsvExistingId(event.target.value)}
+                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                        >
+                          <option value="">Choose a list</option>
+                          {audienceLists.map((list) => (
+                            <option key={list.id} value={list.id}>
+                              {list.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
+                    </span>
+                  </label>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={busy || (csvDest === "new" && !csvNewName.trim())}
+                  onClick={() => {
+                    const destination = csvDestination();
+                    if ("error" in destination) {
+                      setError(destination.error);
+                      return;
+                    }
+                    setError(null);
+                    setCsvStage("file");
+                  }}
+                  className="inline-flex items-center rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  Continue
+                </button>
+              </div>
+            ) : csvStage === "file" ? (
+              <CsvUploadDropzone
+                disabled={busy}
+                maxRows={MAX_POOL_ITEMS_PER_REQUEST}
+                onText={onCsvFile}
+              />
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600">
+                  We matched what we could. Change anything that looks wrong,
+                  or skip a column.
+                </p>
+                <CsvColumnMatch
+                  headers={csvHeaders}
+                  samples={csvSamples}
+                  mapping={csvMap}
+                  onChange={setCsvMap}
+                />
+                <button
+                  type="button"
+                  disabled={busy || !csvText}
+                  onClick={importMappedCsv}
+                  className="inline-flex items-center rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {busy ? "Importing…" : "Import"}
+                </button>
+              </div>
+            )
           ) : null}
 
           {mode === "one" ? (

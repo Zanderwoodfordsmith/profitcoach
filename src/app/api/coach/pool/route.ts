@@ -2,21 +2,23 @@ import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { fetchAllSupabasePages } from "@/lib/contactsSchemaSafeSelect";
 import {
+  copyMatchingPoolItemsOntoList,
+  createCoachAudienceList,
   displayListPersonName,
   ensureCoachBlacklist,
   ensureCoachPool,
+  isLeadListUuid,
   listItemCapForKind,
   loadBlacklistedEmails,
   loadBlacklistedLinkedInUrls,
-  loadEnrolledEmails,
-  loadEnrolledLinkedInUrls,
+  loadOwnedLeadList,
   mapLeadListToSummary,
   parsePastedAudienceLines,
   recountLeadListItems,
   type AudienceItemSource,
 } from "@/lib/leadLists/audienceLists";
 import { insertPoolRecords } from "@/lib/googleMaps/flushPlacesToPool";
-import { normalizePoolEmail, poolIdentityKey } from "@/lib/pool/identity";
+import { normalizePoolEmail, normalizePoolPhone, poolIdentityKey } from "@/lib/pool/identity";
 import { mapPoolPeopleInput } from "@/lib/pool/mapPoolPeopleInput";
 import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -34,10 +36,22 @@ const POOL_ITEM_SELECT =
 
 const POOL_PREVIEW_MAX = 50;
 
+function campaignIdsFor(
+  url: string | null,
+  email: string | null,
+  byUrl: Map<string, string[]>,
+  byEmail: Map<string, string[]>
+): string[] {
+  const ids = new Set<string>();
+  if (url) for (const id of byUrl.get(url) ?? []) ids.add(id);
+  if (email) for (const id of byEmail.get(email) ?? []) ids.add(id);
+  return [...ids];
+}
+
 function mapPoolItem(
   item: Record<string, unknown>,
-  enrolled: Set<string>,
-  enrolledEmails: Set<string>,
+  campaignsByUrl: Map<string, string[]>,
+  campaignsByEmail: Map<string, string[]>,
   blacklisted: Set<string>,
   blacklistedEmails: Set<string>
 ): PoolPerson {
@@ -51,6 +65,9 @@ function mapPoolItem(
       : null;
   const linkedinCampaignable = Boolean(url);
   const emailCampaignable = Boolean(email);
+  const whatsappCampaignable = Boolean(
+    normalizePoolPhone(typeof item.phone === "string" ? item.phone : null)
+  );
   const address = poolAddressFromRaw(item.raw);
   const location =
     typeof item.location === "string" && item.location.trim()
@@ -61,6 +78,7 @@ function mapPoolItem(
     typeof item.team_size === "string" && item.team_size.trim()
       ? item.team_size.trim()
       : null;
+  const campaignIds = campaignIdsFor(url, email, campaignsByUrl, campaignsByEmail);
   return {
     id: item.id as string,
     full_name: displayListPersonName(item),
@@ -85,21 +103,100 @@ function mapPoolItem(
     source: String(item.source ?? "manual"),
     created_at: (item.created_at as string | null) ?? null,
     tags: normalizeProspectTags(item.tags),
-    in_campaign:
-      (url ? enrolled.has(url) : false) ||
-      (email ? enrolledEmails.has(email) : false),
+    campaign_ids: campaignIds,
+    in_campaign: campaignIds.length > 0,
     blacklisted:
       (url ? blacklisted.has(url) : false) ||
       (email ? blacklistedEmails.has(email) : false),
-    campaignable: linkedinCampaignable || emailCampaignable,
+    campaignable: linkedinCampaignable || emailCampaignable || whatsappCampaignable,
     linkedinCampaignable,
     emailCampaignable,
+    whatsappCampaignable,
     canFindPerson: Boolean(placeId) && !url,
     contact_id:
       typeof item.contact_id === "string" && item.contact_id
         ? item.contact_id
         : null,
   };
+}
+
+async function loadPoolCampaignMembership(coachId: string): Promise<{
+  byUrl: Map<string, string[]>;
+  byEmail: Map<string, string[]>;
+}> {
+  const page = await fetchAllSupabasePages<{
+    campaign_id: string | null;
+    linkedin_url: string | null;
+    contact_id: string | null;
+    metadata: unknown;
+  }>(async (from, to) =>
+    supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("campaign_id, linkedin_url, contact_id, metadata")
+      .eq("coach_id", coachId)
+      .order("created_at", { ascending: true })
+      .range(from, to)
+  );
+  if (page.error) {
+    throw new Error(page.error.message || "Unable to load campaigns.");
+  }
+
+  const byUrl = new Map<string, Set<string>>();
+  const byEmail = new Map<string, Set<string>>();
+  const contactCampaigns = new Map<string, Set<string>>();
+  const add = (map: Map<string, Set<string>>, key: string, campaignId: string) => {
+    const set = map.get(key) ?? new Set<string>();
+    set.add(campaignId);
+    map.set(key, set);
+  };
+
+  for (const row of page.data) {
+    const campaignId =
+      typeof row.campaign_id === "string" ? row.campaign_id : "";
+    if (!campaignId) continue;
+    const url = normalizeLinkedInProfileUrl(String(row.linkedin_url ?? ""));
+    if (url) add(byUrl, url, campaignId);
+    const meta =
+      row.metadata && typeof row.metadata === "object"
+        ? (row.metadata as Record<string, unknown>)
+        : {};
+    const fromMeta = normalizePoolEmail(
+      typeof meta.email === "string" ? meta.email : null
+    );
+    if (fromMeta) add(byEmail, fromMeta, campaignId);
+    if (typeof row.contact_id === "string" && row.contact_id) {
+      add(contactCampaigns, row.contact_id, campaignId);
+    }
+  }
+
+  const contactIds = [...contactCampaigns.keys()];
+  for (let i = 0; i < contactIds.length; i += 200) {
+    const chunk = contactIds.slice(i, i + 200);
+    const { data, error } = await supabaseAdmin
+      .from("contacts")
+      .select("id, email")
+      .eq("coach_id", coachId)
+      .in("id", chunk);
+    if (error) throw new Error(error.message);
+    for (const contact of data ?? []) {
+      const email = normalizePoolEmail(
+        typeof contact.email === "string" ? contact.email : null
+      );
+      const campaigns =
+        typeof contact.id === "string"
+          ? contactCampaigns.get(contact.id)
+          : undefined;
+      if (!email || !campaigns) continue;
+      for (const campaignId of campaigns) add(byEmail, email, campaignId);
+    }
+  }
+
+  const freeze = (map: Map<string, Set<string>>) => {
+    const out = new Map<string, string[]>();
+    for (const [key, ids] of map) out.set(key, [...ids]);
+    return out;
+  };
+  return { byUrl: freeze(byUrl), byEmail: freeze(byEmail) };
 }
 
 export async function GET(request: Request) {
@@ -154,8 +251,15 @@ export async function GET(request: Request) {
         throw new Error(previewError.message || "Unable to load pool.");
       }
       const empty = new Set<string>();
+      const noCampaigns = new Map<string, string[]>();
       const people = (previewItems ?? []).map((item) =>
-        mapPoolItem(item as Record<string, unknown>, empty, empty, empty, empty)
+        mapPoolItem(
+          item as Record<string, unknown>,
+          noCampaigns,
+          noCampaigns,
+          empty,
+          empty
+        )
       );
       return NextResponse.json({
         list: activeList,
@@ -171,8 +275,7 @@ export async function GET(request: Request) {
 
     const [
       itemsPage,
-      enrolled,
-      enrolledEmails,
+      membership,
       blacklisted,
       blacklistedEmails,
     ] = await Promise.all([
@@ -185,8 +288,7 @@ export async function GET(request: Request) {
           .order("created_at", { ascending: false })
           .range(from, to)
       ),
-      loadEnrolledLinkedInUrls(auth.userId),
-      loadEnrolledEmails(auth.userId),
+      loadPoolCampaignMembership(auth.userId),
       loadBlacklistedLinkedInUrls(auth.userId),
       loadBlacklistedEmails(auth.userId),
     ]);
@@ -199,8 +301,8 @@ export async function GET(request: Request) {
     const people: PoolPerson[] = items.map((item) =>
       mapPoolItem(
         item as Record<string, unknown>,
-        enrolled,
-        enrolledEmails,
+        membership.byUrl,
+        membership.byEmail,
         blacklisted,
         blacklistedEmails
       )
@@ -243,6 +345,8 @@ export async function POST(request: Request) {
     people?: unknown;
     text?: string;
     source?: string;
+    list_id?: unknown;
+    list_name?: unknown;
   };
 
   const source: AudienceItemSource =
@@ -281,12 +385,51 @@ export async function POST(request: Request) {
 
   try {
     const pool = await ensureCoachPool(auth.userId);
+    let targetListId: string | null = null;
+    let targetListName: string | null = null;
+    const requestedName =
+      typeof body.list_name === "string" ? body.list_name.trim() : "";
+    const requestedId =
+      typeof body.list_id === "string" && isLeadListUuid(body.list_id)
+        ? body.list_id
+        : null;
+    if (requestedName) {
+      const created = await createCoachAudienceList({
+        coachId: auth.userId,
+        name: requestedName,
+        source: "manual",
+        filters: { from_pool_import: true },
+      });
+      targetListId = created.id;
+      targetListName = created.name;
+    } else if (requestedId && requestedId !== pool.id) {
+      const owned = await loadOwnedLeadList(auth.userId, requestedId);
+      if (!owned || owned.kind === "blacklist") {
+        return NextResponse.json({ error: "List not found." }, { status: 404 });
+      }
+      targetListId = owned.id;
+      targetListName = owned.name;
+    }
+
     const result = await insertPoolRecords({
       coachId: auth.userId,
       listId: pool.id,
       records: people,
       cap: listItemCapForKind("pool"),
+      touchExisting: true,
     });
+
+    if (targetListId) {
+      const keys = people
+        .map((person) => poolIdentityKey(person))
+        .filter((key): key is string => Boolean(key));
+      await copyMatchingPoolItemsOntoList({
+        coachId: auth.userId,
+        targetListId,
+        identityKeys: keys,
+      });
+    }
+
     const itemCount = await recountLeadListItems(pool.id);
     return NextResponse.json({
       added: result.added,
@@ -295,6 +438,8 @@ export async function POST(request: Request) {
       invalid: result.invalid,
       itemCount,
       listId: pool.id,
+      targetListId,
+      targetListName,
     });
   } catch (err) {
     return NextResponse.json(

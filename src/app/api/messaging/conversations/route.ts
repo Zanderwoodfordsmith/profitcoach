@@ -3,7 +3,10 @@ import { collapseConversationsByContact } from "@/lib/messaging/collapseConversa
 import { enrichConversationFilters } from "@/lib/messaging/enrichConversationFilters";
 import { enrichMessagingConversationPeople } from "@/lib/messaging/enrichConversationPeople";
 import { resolveMessagingAccess } from "@/lib/messaging/resolveMessagingAccess";
-import { findOrCreateConversationForContact } from "@/lib/messaging/startConversation";
+import {
+  findOrCreateConversationForContact,
+  findVisibleConversationForContact,
+} from "@/lib/messaging/startConversation";
 import { clampConversationListLimit } from "@/lib/messaging/threadWindow";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -17,6 +20,33 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
   const coachId = access.coachId;
+
+  const contactId = new URL(request.url).searchParams.get("contact_id")?.trim() ?? "";
+  if (contactId) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        contactId
+      )
+    ) {
+      return NextResponse.json({ error: "contact_id is required." }, { status: 400 });
+    }
+    try {
+      const conversation = await findVisibleConversationForContact(
+        coachId,
+        contactId
+      );
+      if (!conversation?.id) {
+        return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
+      }
+      return NextResponse.json({ conversation });
+    } catch (err) {
+      console.error("messaging conversation lookup:", err);
+      return NextResponse.json(
+        { error: "Could not load conversation." },
+        { status: 500 }
+      );
+    }
+  }
 
   const limit = clampConversationListLimit(
     new URL(request.url).searchParams.get("limit")
@@ -64,7 +94,12 @@ export async function GET(request: Request) {
   });
   // One inbox row per person — LinkedIn + WhatsApp used to look like duplicate "Pams".
   const collapsed = collapseConversationsByContact(withoutShells);
-  const conversations = await enrichConversationFilters(collapsed, coachId);
+  const enrichedFilters = await enrichConversationFilters(collapsed, coachId);
+  const conversations = enrichedFilters.filter((row) => {
+    if ((row.last_channel || "").toLowerCase() !== "whatsapp") return true;
+    if ((row.contact_type || "").toLowerCase() === "prospect") return true;
+    return Boolean(row.in_pool);
+  });
 
   return NextResponse.json({ conversations });
 }
@@ -82,6 +117,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as {
     contact_id?: string;
+    lite?: boolean;
   };
   const contactId = body.contact_id?.trim() || "";
   if (
@@ -93,7 +129,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await findOrCreateConversationForContact(coachId, contactId);
+    const result = await findOrCreateConversationForContact(coachId, contactId, {
+      enrich: body.lite !== true,
+    });
     return NextResponse.json(result);
   } catch (err) {
     const message =
