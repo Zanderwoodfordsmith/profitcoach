@@ -68,7 +68,6 @@ export default function BossProAssessmentPage({
       ? fromLanding
       : null;
   const fromDashboard = searchParams.get("from") === "dashboard";
-  const startTracked = useRef(false);
   const directLeadCaptured = useRef(false);
   const urlContact = useMemo(
     () => parseAssessmentContactParams(searchParams),
@@ -202,10 +201,9 @@ export default function BossProAssessmentPage({
   }, [coachSlug, landingVariant, urlContact.inviteToken]);
 
   useEffect(() => {
-    if (landingVariant || directLeadCaptured.current) return;
+    if (landingVariant) return;
     if (!urlContact.email && !urlContact.inviteToken) return;
 
-    directLeadCaptured.current = true;
     try {
       sessionStorage.setItem(
         LANDING_CONTACT_SESSION_KEY,
@@ -214,29 +212,14 @@ export default function BossProAssessmentPage({
     } catch {
       // ignore
     }
-
-    fetch("/api/leads/capture", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        coachSlug: coachSlug?.trim() || null,
-        assessment_type: "diagnostic_50",
-        invite_token: urlContact.inviteToken,
-        contact: {
-          first_name: urlContact.firstName ?? undefined,
-          last_name: urlContact.lastName ?? undefined,
-          full_name: urlContact.fullName ?? undefined,
-          email: urlContact.email ?? undefined,
-          phone: urlContact.phone ?? undefined,
-          business_name: urlContact.businessName ?? undefined,
-        },
-      }),
-    }).catch(() => {});
-  }, [coachSlug, landingVariant, urlContact]);
+  }, [landingVariant, urlContact]);
 
   function handleStartAssessment() {
     const emailVal = email.trim();
-    if (emailVal) {
+    const canCapture = Boolean(emailVal || urlContact.inviteToken);
+    const alreadyCaptured = !landingVariant && directLeadCaptured.current;
+    if (canCapture && !alreadyCaptured && (landingVariant ? Boolean(emailVal) : true)) {
+      if (!landingVariant) directLeadCaptured.current = true;
       fetch("/api/leads/capture", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -245,24 +228,30 @@ export default function BossProAssessmentPage({
           assessment_type: "diagnostic_50",
           invite_token: urlContact.inviteToken,
           contact: {
-            full_name: fullName.trim() || undefined,
-            email: emailVal,
-            phone: phone.trim() || undefined,
-            business_name: businessName.trim() || undefined,
+            first_name: urlContact.firstName ?? undefined,
+            last_name: urlContact.lastName ?? undefined,
+            full_name: fullName.trim() || urlContact.fullName || undefined,
+            email: emailVal || urlContact.email || undefined,
+            phone: phone.trim() || urlContact.phone || undefined,
+            business_name:
+              businessName.trim() || urlContact.businessName || undefined,
           },
         }),
       }).catch(() => {});
     }
     if (landingVariant && emailVal) {
-      fetch("/api/landing/track", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          variant: landingVariant,
-          coach_slug: coachSlug?.trim() || null,
-          event_type: "opt_in",
-        }),
-      }).catch(() => {});
+      for (const event_type of ["opt_in", "start"] as const) {
+        fetch("/api/landing/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            variant: landingVariant,
+            coach_slug: coachSlug?.trim() || null,
+            event_type,
+            email: emailVal,
+          }),
+        }).catch(() => {});
+      }
     }
     setStep("assessment");
   }
@@ -335,20 +324,6 @@ export default function BossProAssessmentPage({
       cancelled = true;
     };
   }, [landingVariant, fromDashboard, coachSlug, landingUrl, clientDashboardChecked]);
-
-  useEffect(() => {
-    if (!landingVariant || startTracked.current) return;
-    startTracked.current = true;
-    fetch("/api/landing/track", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        variant: landingVariant,
-        coach_slug: coachSlug?.trim() || null,
-        event_type: "start",
-      }),
-    }).catch(() => {});
-  }, [landingVariant, coachSlug]);
 
   useEffect(() => {
     if (!landingVariant) return;

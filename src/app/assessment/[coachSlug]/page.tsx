@@ -251,10 +251,9 @@ export default function ScorecardAssessmentPage({
   }, [coachSlug, isFromLandingFunnel, urlContact.inviteToken]);
 
   useEffect(() => {
-    if (isFromLandingFunnel || directLeadCaptured.current) return;
+    if (isFromLandingFunnel) return;
     if (!urlContact.email && !urlContact.inviteToken) return;
 
-    directLeadCaptured.current = true;
     try {
       sessionStorage.setItem(
         LANDING_CONTACT_SESSION_KEY,
@@ -263,42 +262,7 @@ export default function ScorecardAssessmentPage({
     } catch {
       // ignore
     }
-
-    fetch("/api/leads/capture", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        coachSlug: coachSlug?.trim() || null,
-        assessment_type: "boss_scorecard",
-        invite_token: urlContact.inviteToken,
-        contact: {
-          first_name: urlContact.firstName ?? undefined,
-          last_name: urlContact.lastName ?? undefined,
-          full_name: urlContact.fullName ?? undefined,
-          email: urlContact.email ?? undefined,
-          phone: urlContact.phone ?? undefined,
-          business_name: urlContact.businessName ?? undefined,
-        },
-      }),
-    }).catch(() => {});
-  }, [coachSlug, isFromLandingFunnel, urlContact]);
-
-  useEffect(() => {
-    if (!isFromLandingFunnel || startTracked.current) return;
-    startTracked.current = true;
-    const session = readLandingContactSession();
-    const merged = mergeAssessmentContactWithSession(urlContact, session);
-    fetch("/api/landing/track", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        variant: landingVariant,
-        coach_slug: trackCoachSlug,
-        event_type: "start",
-        email: merged.email,
-      }),
-    }).catch(() => {});
-  }, [isFromLandingFunnel, landingVariant, trackCoachSlug, urlContact]);
+  }, [isFromLandingFunnel, urlContact]);
 
   useEffect(() => {
     if (!isFromLandingFunnel) return;
@@ -368,9 +332,53 @@ export default function ScorecardAssessmentPage({
     }
   }
 
+  function captureAssessmentStart() {
+    if (directLeadCaptured.current) return;
+    const session = isFromLandingFunnel ? readLandingContactSession() : null;
+    const contact = mergeAssessmentContactWithSession(urlContact, session);
+    if (!contact.email && !contact.inviteToken) return;
+
+    directLeadCaptured.current = true;
+    fetch("/api/leads/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coachSlug: coachSlug?.trim() || null,
+        assessment_type: "boss_scorecard",
+        invite_token: contact.inviteToken,
+        contact: {
+          first_name: contact.firstName ?? undefined,
+          last_name: contact.lastName ?? undefined,
+          full_name: contact.fullName ?? undefined,
+          email: contact.email ?? undefined,
+          phone: contact.phone ?? undefined,
+          business_name: contact.businessName ?? undefined,
+        },
+      }),
+    }).catch(() => {});
+
+    if (!isFromLandingFunnel || startTracked.current || !landingVariant) return;
+    startTracked.current = true;
+    fetch("/api/landing/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        variant: landingVariant,
+        coach_slug: trackCoachSlug,
+        event_type: "start",
+        email: contact.email,
+      }),
+    }).catch(() => {});
+  }
+
   function advanceScreen() {
     clearAdvanceTimer();
     setScreenIndex((i) => Math.min(i + 1, SCREENS.length - 1));
+  }
+
+  function handleStartAssessment() {
+    captureAssessmentStart();
+    advanceScreen();
   }
 
   function goBack() {
@@ -701,7 +709,7 @@ export default function ScorecardAssessmentPage({
 
           {currentScreen.kind === "intro" ? (
             <ScorecardAssessmentIntro
-              onStart={advanceScreen}
+              onStart={handleStartAssessment}
               disabled={submitting || isGeneratingReport}
               firstName={prospectFirstName}
             />

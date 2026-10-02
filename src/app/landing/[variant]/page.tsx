@@ -219,7 +219,6 @@ export default function LandingVariantPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         coachSlug: coachSlug || null,
-        assessment_type: "boss_scorecard",
         contact: {
           first_name: first || undefined,
           last_name: last || undefined,
@@ -251,7 +250,6 @@ export default function LandingVariantPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           coachSlug: coachSlug || null,
-          assessment_type: "boss_scorecard",
           contact: {
             first_name: first || undefined,
             last_name: last || undefined,
