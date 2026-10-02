@@ -94,7 +94,6 @@ import {
   conversationMatchesFilters,
   inboxFiltersActive,
   isOtherEmailConversation,
-  isOtherLinkedInConversation,
   toggleExcludedTag,
   toggleInboxFlag,
   type InboxChannelFilter,
@@ -985,19 +984,9 @@ function inboxEmptyCopy(
   tab: InboxTab,
   filters: InboxFilters,
   searching: boolean,
-  otherLinkedInCount: number,
   otherEmailCount: number
 ): string {
   if (searching) return "No conversations match that search.";
-  if (filters.otherLinkedIn) {
-    return filters.needsReply ||
-      filters.hasBooking ||
-      filters.channel !== "all" ||
-      Boolean(filters.tag) ||
-      filters.excludeTags.length > 0
-      ? "No other LinkedIn chats match these filters."
-      : "No other LinkedIn chats.";
-  }
   if (filters.otherEmail) {
     return filters.needsReply ||
       filters.hasBooking ||
@@ -1011,23 +1000,19 @@ function inboxEmptyCopy(
     return "No conversations match these filters.";
   }
   const hints: string[] = [];
-  if (otherLinkedInCount === 1) hints.push("1 other LinkedIn chat");
-  else if (otherLinkedInCount > 1) {
-    hints.push(`${otherLinkedInCount} other LinkedIn chats`);
-  }
   if (otherEmailCount === 1) hints.push("1 other email");
   else if (otherEmailCount > 1) hints.push(`${otherEmailCount} other emails`);
   const otherHint =
     hints.length > 0 ? `Open Filters for ${hints.join(" and ")}.` : null;
   if (tab === "unread") {
     return otherHint
-      ? `No unread work conversations. ${otherHint}`
+      ? `No unread conversations. ${otherHint}`
       : "No unread conversations.";
   }
   if (tab === "starred") return "No starred conversations.";
   if (tab === "recent") return "No recent conversations.";
   return otherHint
-    ? `Work conversations will show here. ${otherHint}`
+    ? `No conversations in this list. ${otherHint}`
     : "No conversations yet. Book a call to create the first thread.";
 }
 
@@ -1476,7 +1461,6 @@ export function MessagingInbox({
       return {
         ...prev,
         campaignId: campaignQuery,
-        otherLinkedIn: campaignQuery ? false : prev.otherLinkedIn,
         otherEmail: campaignQuery ? false : prev.otherEmail,
       };
     });
@@ -1532,10 +1516,6 @@ export function MessagingInbox({
     [conversations, selectedId]
   );
 
-  const otherLinkedInCount = useMemo(
-    () => conversations.filter((c) => isOtherLinkedInConversation(c)).length,
-    [conversations]
-  );
   const otherEmailCount = useMemo(
     () => conversations.filter((c) => isOtherEmailConversation(c)).length,
     [conversations]
@@ -4180,14 +4160,6 @@ export function MessagingInbox({
                             hint: "Linked to a prospect, not a client",
                           },
                           {
-                            key: "otherLinkedIn" as const,
-                            label: "Other LinkedIn",
-                            hint:
-                              otherLinkedInCount > 0
-                                ? `Not in CRM or a campaign · ${otherLinkedInCount}`
-                                : "Not in CRM or a campaign",
-                          },
-                          {
                             key: "otherEmail" as const,
                             label: "Other email",
                             hint:
@@ -4205,10 +4177,8 @@ export function MessagingInbox({
                             aria-pressed={active}
                             onClick={() => {
                               const turningOnOther =
-                                (item.key === "otherLinkedIn" &&
-                                  !inboxFilters.otherLinkedIn) ||
-                                (item.key === "otherEmail" &&
-                                  !inboxFilters.otherEmail);
+                                item.key === "otherEmail" &&
+                                !inboxFilters.otherEmail;
                               setInboxFilters((prev) =>
                                 toggleInboxFlag(prev, item.key)
                               );
@@ -4519,7 +4489,7 @@ export function MessagingInbox({
             })}
           </div>
 
-          {inboxFilters.campaignId || inboxFilters.otherLinkedIn ? (
+          {inboxFilters.campaignId || inboxFilters.otherEmail ? (
             <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-3 py-2">
               {inboxFilters.campaignId ? (
                 <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
@@ -4535,24 +4505,6 @@ export function MessagingInbox({
                       setInboxFilters((prev) => ({ ...prev, campaignId: null }));
                       clearCampaignFilterFromUrl();
                     }}
-                    className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"
-                  >
-                    <X className="h-3 w-3" strokeWidth={2} />
-                  </button>
-                </span>
-              ) : null}
-              {inboxFilters.otherLinkedIn ? (
-                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
-                  <span className="truncate">Other LinkedIn</span>
-                  <button
-                    type="button"
-                    aria-label="Clear other LinkedIn filter"
-                    onClick={() =>
-                      setInboxFilters((prev) => ({
-                        ...prev,
-                        otherLinkedIn: false,
-                      }))
-                    }
                     className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"
                   >
                     <X className="h-3 w-3" strokeWidth={2} />
@@ -4669,7 +4621,6 @@ export function MessagingInbox({
                   tab,
                   inboxFilters,
                   Boolean(searchQuery.trim()),
-                  otherLinkedInCount,
                   otherEmailCount
                 )}
               </li>

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Circle,
+  Clock,
   Eye,
   FileText,
   Hourglass,
@@ -29,6 +30,7 @@ import {
   type PendingCommentImage,
 } from "@/components/community/CommentImageComposer";
 import {
+  ScheduledSupportBubble,
   SupportChatAvatar,
   SupportChatThread,
   SupportViaEmailMark,
@@ -44,6 +46,8 @@ import {
   type PendingSupportVoice,
 } from "@/components/support/SupportVoiceRecorder";
 import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
+import { ScheduleMessageModal } from "@/components/messaging/ComposerMediaTools";
+import { assertFutureSchedule } from "@/lib/support/scheduledReplies";
 import {
   COMMUNITY_COMMENT_MEDIA_MAX,
 } from "@/lib/communityCommentMedia";
@@ -90,15 +94,66 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
+  SUPPORT_AUTHOR_SELECT,
   SUPPORT_REPLY_LIST_SELECT,
   SUPPORT_STATUS_ADMIN_LABELS,
   mapSupportReplyRow,
+  normalizeSupportAuthor,
   supportStatusAfterStaffReply,
   type SupportReply,
+  type SupportTicketAuthor,
   type SupportTicketStatus,
 } from "@/lib/support/tickets";
 
 type ComposerMode = "reply" | "note";
+
+type ScheduledSupportReply = {
+  id: string;
+  created_by: string;
+  body: string;
+  media: unknown;
+  email_notify: boolean;
+  scheduled_for: string;
+  status: string;
+  last_error: string | null;
+  author: SupportTicketAuthor | null;
+};
+
+const SCHEDULED_REPLY_SELECT = `
+  id,
+  created_by,
+  body,
+  media,
+  email_notify,
+  scheduled_for,
+  status,
+  last_error,
+  author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
+`;
+
+function mapScheduledReply(raw: {
+  id: string;
+  created_by: string;
+  body: string;
+  media?: unknown;
+  email_notify?: boolean | null;
+  scheduled_for: string;
+  status: string;
+  last_error?: string | null;
+  author?: SupportTicketAuthor | SupportTicketAuthor[] | null;
+}): ScheduledSupportReply {
+  return {
+    id: raw.id,
+    created_by: raw.created_by,
+    body: raw.body,
+    media: raw.media,
+    email_notify: Boolean(raw.email_notify),
+    scheduled_for: raw.scheduled_for,
+    status: raw.status,
+    last_error: raw.last_error ?? null,
+    author: normalizeSupportAuthor(raw.author),
+  };
+}
 
 const ADMIN_REPLY_DRAFT_DEBOUNCE_MS = 500;
 
@@ -173,7 +228,19 @@ export function AdminTicketReplies({
     file: File;
     url: string;
   } | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busyKind, setBusyKind] = useState<
+    null | "send" | "schedule" | "note"
+  >(null);
+  const busy = busyKind !== null;
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  const [scheduledReplies, setScheduledReplies] = useState<
+    ScheduledSupportReply[]
+  >([]);
+  const [cancellingScheduleId, setCancellingScheduleId] = useState<
+    string | null
+  >(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [sendAsId, setSendAsId] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
@@ -231,35 +298,49 @@ export function AdminTicketReplies({
     setNotifyNote(null);
   }, [reportId, emailNotifyDefault]);
 
-  const loadReplies = useCallback(async () => {
+  const loadReplies = useCallback(async (opts?: { silent?: boolean }) => {
     const generation = ++loadGenerationRef.current;
-    setLoading(true);
-    setError(null);
-    const [repliesResult, notesResult] = await Promise.all([
+    if (!opts?.silent) {
+      setLoading(true);
+      setError(null);
+    }
+    const [repliesResult, notesResult, scheduledResult] = await Promise.all([
       supabaseClient
         .from("community_feedback_replies")
         .select(SUPPORT_REPLY_LIST_SELECT)
         .eq("report_id", reportId)
         .order("created_at", { ascending: true }),
       loadSupportInternalNotes(reportId),
+      supabaseClient
+        .from("support_scheduled_replies")
+        .select(SCHEDULED_REPLY_SELECT)
+        .eq("report_id", reportId)
+        .in("status", ["scheduled", "failed"])
+        .order("scheduled_for", { ascending: true }),
     ]);
     if (generation !== loadGenerationRef.current) return;
 
     if (repliesResult.error) {
       if (isSupabaseAbortError(repliesResult.error)) return;
-      setReplies([]);
-      setInternalNotes([]);
-      setError(repliesResult.error.message);
-      setLoading(false);
+      if (!opts?.silent) {
+        setReplies([]);
+        setInternalNotes([]);
+        setScheduledReplies([]);
+        setError(repliesResult.error.message);
+        setLoading(false);
+      }
       return;
     }
 
     setReplies((repliesResult.data ?? []).map((raw) => mapSupportReplyRow(raw)));
     setInternalNotes(notesResult.notes);
-    if (notesResult.error) {
+    if (!scheduledResult.error) {
+      setScheduledReplies((scheduledResult.data ?? []).map(mapScheduledReply));
+    }
+    if (notesResult.error && !opts?.silent) {
       setError(notesResult.error);
     }
-    setLoading(false);
+    if (!opts?.silent) setLoading(false);
   }, [reportId]);
 
   useEffect(() => {
@@ -268,6 +349,49 @@ export function AdminTicketReplies({
       loadGenerationRef.current += 1;
     };
   }, [loadReplies]);
+
+  useEffect(() => {
+    const pending = scheduledReplies.filter((row) => row.status === "scheduled");
+    if (!pending.length) return;
+
+    let cancelled = false;
+
+    async function tick() {
+      const due = pending.some(
+        (row) => new Date(row.scheduled_for).getTime() <= Date.now() + 1_000
+      );
+      if (due) {
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+        if (cancelled || !session?.access_token) return;
+        await fetch("/api/admin/support/scheduled-replies/flush", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+      }
+      if (!cancelled) void loadReplies({ silent: true });
+    }
+
+    const earliest = Math.min(
+      ...pending.map((row) => new Date(row.scheduled_for).getTime())
+    );
+    const dueTimer = window.setTimeout(
+      () => {
+        void tick();
+      },
+      Math.max(0, earliest - Date.now())
+    );
+    const interval = window.setInterval(() => {
+      void tick();
+    }, 15_000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(dueTimer);
+      window.clearInterval(interval);
+    };
+  }, [loadReplies, scheduledReplies]);
 
   const updateReplyBody = useCallback(
     async (replyId: string, body: string) => {
@@ -374,6 +498,8 @@ export function AdminTicketReplies({
     setComposerExpanded(false);
     setComposerMode("reply");
     setSendAsMenuOpen(false);
+    setScheduleOpen(false);
+    setRescheduleId(null);
     setEmojiOpen(false);
     setTemplatesOpen(false);
     setDraft("");
@@ -607,7 +733,7 @@ export function AdminTicketReplies({
     const hasMedia =
       pendingImages.length > 0 || Boolean(pendingVoice) || Boolean(pendingVideo);
     if ((!body && !hasMedia) || busy || !authorId) return;
-    setBusy(true);
+    setBusyKind("send");
     setError(null);
 
     try {
@@ -739,14 +865,179 @@ export function AdminTicketReplies({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send reply.");
     } finally {
-      setBusy(false);
+      setBusyKind(null);
     }
+  }
+
+  async function scheduleReply(iso: string) {
+    const body = draft.trim();
+    const authorId = sendAsId ?? userId;
+    const hasMedia =
+      pendingImages.length > 0 || Boolean(pendingVoice) || Boolean(pendingVideo);
+    if ((!body && !hasMedia) || busy || !authorId) return;
+
+    let when: Date;
+    try {
+      when = assertFutureSchedule(iso);
+    } catch (err) {
+      setScheduleError(
+        err instanceof Error ? err.message : "Invalid schedule time."
+      );
+      return;
+    }
+    setScheduleError(null);
+
+    setBusyKind("schedule");
+    setError(null);
+    try {
+      const uploaded: CommunityPostMediaItem[] = [];
+      for (const item of pendingImages) {
+        const up = await uploadSupportMediaFile(item.file);
+        if ("error" in up) throw new Error(up.error);
+        uploaded.push(up.media);
+      }
+      if (pendingVoice) {
+        const up = await uploadSupportMediaFile(
+          pendingSupportVoiceToFile(pendingVoice)
+        );
+        if ("error" in up) throw new Error(up.error);
+        uploaded.push(up.media);
+      }
+      if (pendingVideo) {
+        const up = await uploadSupportMediaFile(pendingVideo.file);
+        if ("error" in up) throw new Error(up.error);
+        uploaded.push(up.media);
+      }
+
+      const replyBody = supportComposerFallbackBody({
+        text: body,
+        voice: Boolean(pendingVoice),
+        video: Boolean(pendingVideo),
+        imageCount: pendingImages.length,
+      });
+      const willEmail = Boolean(canEmailNotify && emailNotify && replyBody);
+
+      const { data, error: insertError } = await supabaseClient
+        .from("support_scheduled_replies")
+        .insert({
+          report_id: reportId,
+          created_by: authorId,
+          body: replyBody,
+          media: uploaded.length > 0 ? uploaded : null,
+          email_notify: willEmail,
+          scheduled_for: when.toISOString(),
+          status: "scheduled",
+        })
+        .select(SCHEDULED_REPLY_SELECT)
+        .single();
+
+      if (insertError) throw insertError;
+
+      setScheduledReplies((current) =>
+        [...current, mapScheduledReply(data)].sort((a, b) =>
+          a.scheduled_for.localeCompare(b.scheduled_for)
+        )
+      );
+      setDraft("");
+      void clearAdminReplyDraft(reportId);
+      clearPendingCommentImages(pendingImages);
+      setPendingImages([]);
+      revokePendingSupportVoice(pendingVoice);
+      setPendingVoice(null);
+      if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
+      setPendingVideo(null);
+      setRescheduleId(null);
+      setScheduleOpen(false);
+      setComposerOpen(false);
+      setComposerExpanded(false);
+      setNotifyNote(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Could not schedule the reply.";
+      setScheduleError(message);
+      setError(message);
+    } finally {
+      setBusyKind(null);
+    }
+  }
+
+  async function updateScheduledBody(id: string, body: string) {
+    const { data, error: updateError } = await supabaseClient
+      .from("support_scheduled_replies")
+      .update({ body, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("report_id", reportId)
+      .in("status", ["scheduled", "failed"])
+      .select(SCHEDULED_REPLY_SELECT)
+      .single();
+    if (updateError) throw updateError;
+    const next = mapScheduledReply(data);
+    setScheduledReplies((current) =>
+      current.map((row) => (row.id === id ? next : row))
+    );
+  }
+
+  async function rescheduleReply(id: string, iso: string) {
+    let when: Date;
+    try {
+      when = assertFutureSchedule(iso);
+    } catch (err) {
+      setScheduleError(
+        err instanceof Error ? err.message : "Invalid schedule time."
+      );
+      return;
+    }
+    setScheduleError(null);
+    setBusyKind("schedule");
+    const { data, error: updateError } = await supabaseClient
+      .from("support_scheduled_replies")
+      .update({
+        scheduled_for: when.toISOString(),
+        status: "scheduled",
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("report_id", reportId)
+      .in("status", ["scheduled", "failed"])
+      .select(SCHEDULED_REPLY_SELECT)
+      .single();
+    setBusyKind(null);
+    if (updateError) {
+      setScheduleError(updateError.message);
+      return;
+    }
+    const next = mapScheduledReply(data);
+    setScheduledReplies((current) =>
+      current
+        .map((row) => (row.id === id ? next : row))
+        .sort((a, b) => a.scheduled_for.localeCompare(b.scheduled_for))
+    );
+    setRescheduleId(null);
+    setScheduleOpen(false);
+  }
+
+  async function cancelScheduledReply(id: string) {
+    setCancellingScheduleId(id);
+    setError(null);
+    const { error: updateError } = await supabaseClient
+      .from("support_scheduled_replies")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("report_id", reportId)
+      .in("status", ["scheduled", "failed"]);
+    setCancellingScheduleId(null);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setScheduledReplies((current) => current.filter((row) => row.id !== id));
   }
 
   async function sendInternalNote() {
     const body = noteDraft.trim();
     if (!body || busy || !userId) return;
-    setBusy(true);
+    setBusyKind("note");
     setError(null);
     try {
       const { note, error: insertError } = await insertSupportInternalNote({
@@ -765,7 +1056,7 @@ export function AdminTicketReplies({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save note.");
     } finally {
-      setBusy(false);
+      setBusyKind(null);
     }
   }
 
@@ -1347,14 +1638,33 @@ export function AdminTicketReplies({
 
                   <div className="flex min-w-0 items-center gap-3">
                     {notifyToggle}
-                    <button
-                      type="button"
-                      disabled={busy || !canSend}
-                      onClick={() => void sendReply()}
-                      className="shrink-0 rounded-md bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
-                    >
-                      {busy ? "Sending…" : "Send"}
-                    </button>
+                    <div className="flex shrink-0">
+                      <button
+                        type="button"
+                        disabled={busy || !canSend}
+                        onClick={() => void sendReply()}
+                        className="rounded-l-md bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                      >
+                        {busyKind === "schedule"
+                          ? "Scheduling…"
+                          : busyKind === "send"
+                            ? "Sending…"
+                            : "Send"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy || !canSend}
+                        onClick={() => {
+                          setScheduleError(null);
+                          setScheduleOpen(true);
+                        }}
+                        aria-label="Schedule send"
+                        title="Schedule send"
+                        className="rounded-r-md border-l border-sky-500 bg-sky-600 px-2 py-1.5 text-white hover:bg-sky-700 disabled:opacity-50"
+                      >
+                        <Clock className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1445,15 +1755,30 @@ export function AdminTicketReplies({
               onError={setError}
               size="sm"
             />
-            <button
-              type="button"
-              disabled={busy || !canSend}
-              onClick={() => void sendReply()}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-700 text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-              aria-label="Send reply"
-            >
-              <Send className="h-3.5 w-3.5" aria-hidden />
-            </button>
+            <div className="flex shrink-0">
+              <button
+                type="button"
+                disabled={busy || !canSend}
+                onClick={() => void sendReply()}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-l-lg bg-sky-700 text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                aria-label="Send reply"
+              >
+                <Send className="h-3.5 w-3.5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                disabled={busy || !canSend}
+                onClick={() => {
+                  setScheduleError(null);
+                  setScheduleOpen(true);
+                }}
+                aria-label="Schedule send"
+                title="Schedule send"
+                className="inline-flex h-9 w-8 items-center justify-center rounded-r-lg border-l border-sky-600 bg-sky-700 text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                <Clock className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </div>
           </div>
           {notifyNote ? (
             <p className="text-[11px] text-slate-600">{notifyNote}</p>
@@ -1461,6 +1786,59 @@ export function AdminTicketReplies({
         </>
       )}
     </div>
+  );
+
+  const scheduledBubbles =
+    scheduledReplies.length > 0 ? (
+      <div className="mt-3 space-y-3">
+        {scheduledReplies.map((row) => (
+          <ScheduledSupportBubble
+            key={row.id}
+            id={row.id}
+            body={row.body}
+            media={row.media}
+            scheduledFor={row.scheduled_for}
+            status={row.status}
+            lastError={row.last_error}
+            emailNotify={row.email_notify}
+            author={row.author}
+            busy={cancellingScheduleId === row.id || busyKind === "schedule"}
+            onSaveBody={updateScheduledBody}
+            onReschedule={(id) => {
+              setScheduleError(null);
+              setRescheduleId(id);
+              setScheduleOpen(true);
+            }}
+            onDelete={cancelScheduledReply}
+          />
+        ))}
+      </div>
+    ) : null;
+
+  const scheduleModal = (
+    <ScheduleMessageModal
+      open={scheduleOpen}
+      onClose={() => {
+        if (busyKind === "schedule") return;
+        setScheduleOpen(false);
+        setRescheduleId(null);
+      }}
+      onSchedule={(iso) =>
+        void (rescheduleId
+          ? rescheduleReply(rescheduleId, iso)
+          : scheduleReply(iso))
+      }
+      busy={busyKind === "schedule"}
+      initialIso={
+        rescheduleId
+          ? scheduledReplies.find((row) => row.id === rescheduleId)
+              ?.scheduled_for
+          : null
+      }
+      title={rescheduleId ? "Change send time" : "Schedule this reply"}
+      confirmLabel={rescheduleId ? "Save time" : "Schedule send"}
+      error={scheduleError}
+    />
   );
 
   if (inbox) {
@@ -1504,7 +1882,7 @@ export function AdminTicketReplies({
         {statusMenuOpen ? (
           <div
             role="menu"
-            className="absolute right-0 top-full z-30 mt-1.5 min-w-[10.5rem] overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-900/10"
+            className="absolute right-0 top-full z-30 mt-1.5 w-max min-w-[10.5rem] overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-900/10"
           >
             {(
               Object.keys(SUPPORT_STATUS_ADMIN_LABELS) as SupportTicketStatus[]
@@ -1525,7 +1903,7 @@ export function AdminTicketReplies({
                   }`}
                 >
                   {style.icon}
-                  <span className="min-w-0 flex-1">
+                  <span className="whitespace-nowrap">
                     {SUPPORT_STATUS_ADMIN_LABELS[s]}
                   </span>
                   {active ? (
@@ -1633,10 +2011,12 @@ export function AdminTicketReplies({
                 onDeleteNote={deleteNote}
               />
             )}
+            {scheduledBubbles}
             <div ref={bottomRef} aria-hidden className="h-px w-full shrink-0" />
           </div>
         </div>
         {composer}
+        {scheduleModal}
       </div>
     );
   }
@@ -1663,7 +2043,9 @@ export function AdminTicketReplies({
           />
         </div>
       )}
+      {scheduledBubbles}
       {composer}
+      {scheduleModal}
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
     </div>
   );

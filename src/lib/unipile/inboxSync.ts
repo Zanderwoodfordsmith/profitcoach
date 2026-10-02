@@ -28,7 +28,7 @@ import {
 } from "@/lib/messaging/knownContacts";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import {
-  isPlaceholderEmailBody,
+  emailNeedsBodyFetch,
   unipileEmailBodyText,
 } from "@/lib/messaging/emailBody";
 import { prioritizeUnipileChats } from "@/lib/messaging/threadWindow";
@@ -1022,34 +1022,57 @@ async function syncMailingAccount(input: {
     .flat()
     .map((email) => String(email.id || ""))
     .filter(Boolean);
-  const storedById = new Map<string, { id: string; body_text: string | null }>();
+  const storedById = new Map<
+    string,
+    {
+      id: string;
+      body_text: string | null;
+      metadata: Record<string, unknown> | null;
+    }
+  >();
   if (listedIds.length) {
     const { data: storedRows } = await supabaseAdmin
       .from("messaging_messages")
-      .select("id, unipile_message_id, body_text")
+      .select("id, unipile_message_id, body_text, metadata")
       .eq("coach_id", input.coachId)
       .in("unipile_message_id", listedIds);
     for (const row of storedRows ?? []) {
+      const metadata =
+        row.metadata && typeof row.metadata === "object"
+          ? (row.metadata as Record<string, unknown>)
+          : null;
       storedById.set(String(row.unipile_message_id), {
         id: row.id as string,
         body_text: (row.body_text as string | null) ?? null,
+        metadata,
       });
     }
   }
 
   // meta_only lists return empty bodies — fetch the full email for new or
   // subject-only rows so Conversations shows the message, not its subject.
+  // A confirmed-empty body (calendar RSVP) is marked resolved so it does not
+  // consume this budget on every later sync.
   let bodyFetches = 0;
-  const emailBody = async (email: Record<string, unknown>) => {
+  const emailBody = async (
+    email: Record<string, unknown>
+  ): Promise<{ text: string; confirmedEmpty: boolean }> => {
     const direct = unipileEmailBodyText(email);
-    if (direct) return direct;
-    if (bodyFetches >= MAX_EMAIL_BODY_FETCHES_PER_SYNC) return "";
+    if (direct) return { text: direct, confirmedEmpty: false };
+    if (bodyFetches >= MAX_EMAIL_BODY_FETCHES_PER_SYNC) {
+      return { text: "", confirmedEmpty: false };
+    }
     bodyFetches += 1;
     const full = await getUnipileEmail(
       String(email.id || ""),
       input.unipileAccountId
     );
-    return full.ok && full.data ? unipileEmailBodyText(full.data) : "";
+    if (!full.ok || !full.data) {
+      // Gone from the mailbox. Retrying it forever blocks real bodies.
+      return { text: "", confirmedEmpty: full.status === 404 };
+    }
+    const text = unipileEmailBodyText(full.data);
+    return { text, confirmedEmpty: !text };
   };
 
   for (const [threadKey, emails] of byThread) {
@@ -1139,11 +1162,13 @@ async function syncMailingAccount(input: {
       if (!messageId) continue;
       const subjectLine = String(email.subject || "").trim();
       const stored = storedById.get(messageId);
-      const needsBody =
-        !stored || isPlaceholderEmailBody(stored.body_text, subjectLine);
-      const body = needsBody
-        ? await emailBody(email)
-        : (stored?.body_text ?? "");
+      const needsBody = emailNeedsBodyFetch({
+        bodyText: stored?.body_text,
+        subject: subjectLine,
+        metadata: stored?.metadata,
+      });
+      const fetched = needsBody ? await emailBody(email) : null;
+      const body = fetched?.text || stored?.body_text || "";
       const text = body || subjectLine;
       const emailRole = String(email.role || "").toLowerCase();
       const direction =
@@ -1166,13 +1191,24 @@ async function syncMailingAccount(input: {
             thread_id: email.thread_id,
             provider_id: email.provider_id,
             subject: email.subject,
+            ...(fetched?.confirmedEmpty ? { body_resolved: true } : {}),
           },
         });
         if (ok) messages += 1;
-      } else if (needsBody && body) {
+      } else if (stored && needsBody && fetched?.text) {
         await supabaseAdmin
           .from("messaging_messages")
-          .update({ body_text: body })
+          .update({ body_text: fetched.text })
+          .eq("id", stored.id);
+      } else if (stored && needsBody && fetched?.confirmedEmpty) {
+        await supabaseAdmin
+          .from("messaging_messages")
+          .update({
+            metadata: {
+              ...(stored.metadata ?? {}),
+              body_resolved: true,
+            },
+          })
           .eq("id", stored.id);
       }
       if (direction === "inbound") inboundSeen = true;

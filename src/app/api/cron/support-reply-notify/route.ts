@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { isCronRequest } from "@/lib/cronAuth";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { processDueSupportReplyEmails } from "@/lib/support/notifyCoachOfReply";
+import { processDueScheduledSupportReplies } from "@/lib/support/scheduledReplies";
 
 export const maxDuration = 60;
 
 /**
- * Flush debounced support-reply notification emails.
+ * Send due scheduled support replies, then flush reply notification emails.
  * Auth: Vercel cron / CRON_SECRET, or admin session (local testing).
  */
 export async function GET(request: Request) {
@@ -19,8 +20,24 @@ export async function GET(request: Request) {
   }
 
   try {
+    let scheduled: Awaited<
+      ReturnType<typeof processDueScheduledSupportReplies>
+    > | null = null;
+    let scheduledError: string | null = null;
+    try {
+      scheduled = await processDueScheduledSupportReplies(15, request);
+    } catch (err) {
+      scheduledError =
+        err instanceof Error ? err.message : "Scheduled reply cron failed.";
+      console.error("support scheduled replies:", err);
+    }
     const result = await processDueSupportReplyEmails(25, request);
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({
+      ok: !scheduledError,
+      scheduled,
+      scheduledError,
+      ...result,
+    });
   } catch (err) {
     const message =
       err instanceof Error

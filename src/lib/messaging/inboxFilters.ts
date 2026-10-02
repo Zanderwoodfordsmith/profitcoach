@@ -28,7 +28,6 @@ export type InboxFilters = {
   inCampaign: boolean;
   inPool: boolean;
   isProspect: boolean;
-  otherLinkedIn: boolean;
   otherEmail: boolean;
   campaignId: string | null;
   channel: InboxChannelFilter;
@@ -42,7 +41,6 @@ export const EMPTY_INBOX_FILTERS: InboxFilters = {
   inCampaign: false,
   inPool: false,
   isProspect: false,
-  otherLinkedIn: false,
   otherEmail: false,
   campaignId: null,
   channel: "all",
@@ -56,29 +54,11 @@ export type InboxFlagFilter =
   | "inCampaign"
   | "inPool"
   | "isProspect"
-  | "otherLinkedIn"
   | "otherEmail";
 
-/** Flags that require a known person — never true for an "other" thread. */
+/** Flags that require a known person — never true for an "other" email thread. */
 const WORK_PERSON_FLAGS = ["inCampaign", "inPool", "isProspect"] as const;
-const OTHER_BUCKET_FLAGS = ["otherLinkedIn", "otherEmail"] as const;
-
-/** LinkedIn thread that is not a CRM contact, campaign lead, pool person, or booking. */
-export function isOtherLinkedInConversation(
-  conversation: InboxFilterConversation
-): boolean {
-  const last = (conversation.last_channel || "").toLowerCase();
-  const channels = (conversation.reply_channels || []).map((channel) =>
-    channel.toLowerCase()
-  );
-  const isLinkedIn = last === "linkedin" || channels.includes("linkedin");
-  if (!isLinkedIn) return false;
-  if (conversation.contact_id?.trim()) return false;
-  if (conversation.in_campaign) return false;
-  if (conversation.in_pool) return false;
-  if (conversation.booking_id?.trim()) return false;
-  return true;
-}
+const OTHER_BUCKET_FLAGS = ["otherEmail"] as const;
 
 /** Email thread that is not a prospect, pool person, campaign lead, or booking. */
 export function isOtherEmailConversation(
@@ -110,7 +90,6 @@ export function inboxFiltersActive(filters: InboxFilters): boolean {
     filters.inCampaign ||
     filters.inPool ||
     filters.isProspect ||
-    filters.otherLinkedIn ||
     filters.otherEmail ||
     Boolean(filters.campaignId) ||
     filters.channel !== "all" ||
@@ -138,7 +117,6 @@ export function toggleInboxFlag(
     return {
       ...prev,
       [key]: next,
-      otherLinkedIn: next ? false : prev.otherLinkedIn,
       otherEmail: next ? false : prev.otherEmail,
     };
   }
@@ -165,15 +143,10 @@ export function conversationMatchesFilters(
   filters: InboxFilters,
   options?: { searching?: boolean }
 ): boolean {
-  const otherLinkedIn = isOtherLinkedInConversation(conversation);
   const otherEmail = isOtherEmailConversation(conversation);
-  const otherOn = filters.otherLinkedIn || filters.otherEmail;
-  if (otherOn) {
-    const inBucket =
-      (filters.otherLinkedIn && otherLinkedIn) ||
-      (filters.otherEmail && otherEmail);
-    if (!inBucket) return false;
-  } else if ((otherLinkedIn || otherEmail) && !options?.searching) {
+  if (filters.otherEmail) {
+    if (!otherEmail) return false;
+  } else if (otherEmail && !options?.searching) {
     return false;
   }
   if (!conversationMatchesChannel(conversation, filters.channel)) return false;

@@ -5,7 +5,6 @@ import {
   EMPTY_INBOX_FILTERS,
   inboxFiltersActive,
   isOtherEmailConversation,
-  isOtherLinkedInConversation,
   toggleExcludedTag,
   toggleInboxFlag,
   type InboxFilterConversation,
@@ -21,76 +20,22 @@ function row(
   };
 }
 
-describe("isOtherLinkedInConversation", () => {
-  it("flags unmatched LinkedIn threads", () => {
-    assert.equal(isOtherLinkedInConversation(row()), true);
-    assert.equal(
-      isOtherLinkedInConversation(row({ reply_channels: ["linkedin"] })),
-      true
-    );
-  });
-
-  it("keeps CRM, campaign, and booking threads in the work inbox", () => {
-    assert.equal(
-      isOtherLinkedInConversation(row({ contact_id: "c1" })),
-      false
-    );
-    assert.equal(
-      isOtherLinkedInConversation(row({ in_campaign: true })),
-      false
-    );
-    assert.equal(
-      isOtherLinkedInConversation(row({ booking_id: "b1" })),
-      false
-    );
-    assert.equal(
-      isOtherLinkedInConversation(row({ last_channel: "email" })),
-      false
-    );
-  });
-});
-
 describe("conversationMatchesFilters", () => {
-  it("hides unmatched LinkedIn from the default list", () => {
-    assert.equal(
-      conversationMatchesFilters(row(), EMPTY_INBOX_FILTERS),
-      false
-    );
+  it("shows LinkedIn threads in the default list, linked or not", () => {
+    assert.equal(conversationMatchesFilters(row(), EMPTY_INBOX_FILTERS), true);
     assert.equal(
       conversationMatchesFilters(row({ contact_id: "c1" }), EMPTY_INBOX_FILTERS),
       true
     );
-  });
-
-  it("switches to the other LinkedIn bucket", () => {
-    const filters: InboxFilters = {
-      ...EMPTY_INBOX_FILTERS,
-      otherLinkedIn: true,
-    };
-    assert.equal(conversationMatchesFilters(row(), filters), true);
     assert.equal(
-      conversationMatchesFilters(row({ contact_id: "c1" }), filters),
-      false
-    );
-    assert.equal(
-      conversationMatchesFilters(row({ in_campaign: true }), filters),
-      false
-    );
-  });
-
-  it("lets search find unmatched LinkedIn without opening the filter", () => {
-    assert.equal(
-      conversationMatchesFilters(row(), EMPTY_INBOX_FILTERS, {
-        searching: true,
-      }),
+      conversationMatchesFilters(row({ in_campaign: true }), EMPTY_INBOX_FILTERS),
       true
     );
   });
 
-  it("still applies needs-reply inside the other bucket", () => {
+  it("still applies needs-reply to LinkedIn threads", () => {
     const filters: InboxFilters = {
       ...EMPTY_INBOX_FILTERS,
-      otherLinkedIn: true,
       needsReply: true,
     };
     assert.equal(
@@ -102,49 +47,21 @@ describe("conversationMatchesFilters", () => {
       true
     );
   });
+
+  it("filters LinkedIn by channel without hiding unmatched threads", () => {
+    const filters: InboxFilters = {
+      ...EMPTY_INBOX_FILTERS,
+      channel: "linkedin",
+    };
+    assert.equal(conversationMatchesFilters(row(), filters), true);
+    assert.equal(
+      conversationMatchesFilters(row({ last_channel: "email" }), filters),
+      false
+    );
+  });
 });
 
 describe("toggleInboxFlag", () => {
-  it("makes other LinkedIn and in-campaign exclusive", () => {
-    const otherOn = toggleInboxFlag(EMPTY_INBOX_FILTERS, "otherLinkedIn");
-    assert.equal(otherOn.otherLinkedIn, true);
-    assert.equal(otherOn.inCampaign, false);
-
-    const withCampaign: InboxFilters = {
-      ...EMPTY_INBOX_FILTERS,
-      inCampaign: true,
-      campaignId: "camp-1",
-    };
-    const switched = toggleInboxFlag(withCampaign, "otherLinkedIn");
-    assert.equal(switched.otherLinkedIn, true);
-    assert.equal(switched.inCampaign, false);
-    assert.equal(switched.campaignId, null);
-
-    const backToCampaign = toggleInboxFlag(otherOn, "inCampaign");
-    assert.equal(backToCampaign.inCampaign, true);
-    assert.equal(backToCampaign.otherLinkedIn, false);
-  });
-
-  it("counts other LinkedIn as an active filter", () => {
-    assert.equal(inboxFiltersActive(EMPTY_INBOX_FILTERS), false);
-    assert.equal(
-      inboxFiltersActive({ ...EMPTY_INBOX_FILTERS, otherLinkedIn: true }),
-      true
-    );
-  });
-
-  it("makes other LinkedIn and pool / prospect flags exclusive", () => {
-    const otherOn = toggleInboxFlag(
-      { ...EMPTY_INBOX_FILTERS, inPool: true, isProspect: true },
-      "otherLinkedIn"
-    );
-    assert.equal(otherOn.inPool, false);
-    assert.equal(otherOn.isProspect, false);
-    const poolOn = toggleInboxFlag(otherOn, "inPool");
-    assert.equal(poolOn.inPool, true);
-    assert.equal(poolOn.otherLinkedIn, false);
-  });
-
   it("makes other email and work-person flags exclusive", () => {
     const otherOn = toggleInboxFlag(
       { ...EMPTY_INBOX_FILTERS, isProspect: true },
@@ -198,8 +115,7 @@ describe("isOtherEmailConversation", () => {
 });
 
 describe("pool and prospect filters", () => {
-  it("treats pool people as work conversations, not other LinkedIn", () => {
-    assert.equal(isOtherLinkedInConversation(row({ in_pool: true })), false);
+  it("shows pool LinkedIn threads in the default list", () => {
     assert.equal(
       conversationMatchesFilters(row({ in_pool: true }), EMPTY_INBOX_FILTERS),
       true

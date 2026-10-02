@@ -61,6 +61,7 @@ export function ScheduleMessageModal({
   initialIso,
   title,
   confirmLabel,
+  error,
 }: {
   open: boolean;
   onClose: () => void;
@@ -69,6 +70,7 @@ export function ScheduleMessageModal({
   initialIso?: string | null;
   title?: string;
   confirmLabel?: string;
+  error?: string | null;
 }) {
   const tz = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
@@ -152,6 +154,7 @@ export function ScheduleMessageModal({
             />
           </label>
           <p className="text-[11px] text-slate-500">Timezone: {tz}</p>
+          {error ? <p className="text-xs text-rose-600">{error}</p> : null}
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-100 px-4 py-3">
           <button

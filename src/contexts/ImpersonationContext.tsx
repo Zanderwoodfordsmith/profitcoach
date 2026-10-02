@@ -11,6 +11,9 @@ import {
 
 const COACH_STORAGE_KEY = "boss_impersonate_coach";
 const CONTACT_STORAGE_KEY = "boss_impersonate_contact";
+const IMPERSONATE_QUERY = "impersonate";
+const COACH_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type ImpersonationContextValue = {
   impersonatingCoachId: string | null;
@@ -24,6 +27,28 @@ type ImpersonationContextValue = {
 const ImpersonationContext = createContext<ImpersonationContextValue | null>(
   null
 );
+
+function impersonateIdFromLocation(): string | null {
+  if (typeof window === "undefined") return null;
+  if (!window.location.pathname.startsWith("/coach/")) return null;
+  try {
+    const id = new URLSearchParams(window.location.search)
+      .get(IMPERSONATE_QUERY)
+      ?.trim();
+    return id && COACH_ID_RE.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+function stripImpersonateQuery() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(IMPERSONATE_QUERY)) return;
+  url.searchParams.delete(IMPERSONATE_QUERY);
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(window.history.state, "", next);
+}
 
 function getStoredCoachId(): string | null {
   if (typeof window === "undefined") return null;
@@ -83,6 +108,15 @@ export function ImpersonationProvider({
   // A late useEffect caused Community feed read-state to key off the signed-in user
   // for one frame while sessionStorage still held a coach id (or the reverse).
   useLayoutEffect(() => {
+    const fromUrl = impersonateIdFromLocation();
+    if (fromUrl) {
+      setStoredCoachId(fromUrl);
+      setStoredContactId(null);
+      setCoachState(fromUrl);
+      setContactState(null);
+      stripImpersonateQuery();
+      return;
+    }
     setCoachState(getStoredCoachId());
     setContactState(getStoredContactId());
   }, []);

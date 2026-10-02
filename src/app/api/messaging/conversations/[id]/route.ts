@@ -22,6 +22,7 @@ import { loadEnrichedProspectById } from "@/lib/prospects/loadEnrichedProspect";
 import { listCoachProspectTags } from "@/lib/prospects/tags";
 import { updateProspectFields } from "@/lib/prospects/updateProspectFields";
 import { loadProspectActivity } from "@/lib/messaging/loadProspectActivity";
+import { hydratePlaceholderEmailBodies } from "@/lib/messaging/hydrateEmailBodies";
 import { loadThreadMessagePage } from "@/lib/messaging/loadThreadMessages";
 import {
   clampThreadMessageLimit,
@@ -130,6 +131,12 @@ export async function GET(
       console.error("messaging messages list:", page.error);
       return NextResponse.json({ error: "Could not load messages." }, { status: 500 });
     }
+    await hydratePlaceholderEmailBodies({
+      conversationId: id,
+      messages: page.messages,
+    }).catch((err) => {
+      console.error("hydrate email bodies:", err);
+    });
     const enrichedMessages = await signThreadMessages(page.messages);
     if (isOlderPage) {
       return noStoreJson({

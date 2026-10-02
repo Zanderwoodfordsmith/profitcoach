@@ -7,11 +7,15 @@ import {
   type FormEvent,
   type MouseEvent,
 } from "react";
-import { Eye, Mail, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Clock, Eye, Mail, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import { SupportMessageBody } from "@/components/support/SupportMessageBody";
 import { profileInitialsFromName } from "@/lib/communityProfile";
-import { formatDayLabel, formatShortTime } from "@/lib/formatShortDate";
+import {
+  formatDayLabel,
+  formatShortDateTime,
+  formatShortTime,
+} from "@/lib/formatShortDate";
 import type { SupportInternalNote } from "@/lib/support/internalNotes";
 import { parseSupportReplyMedia } from "@/lib/support/supportTicketMedia";
 import {
@@ -751,6 +755,316 @@ export function SupportChatThread({
           })}
         </div>
       ))}
+    </div>
+  );
+}
+
+function scheduledTimeLabel(iso: string): string {
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return iso;
+  const now = new Date();
+  const sameDay =
+    when.getFullYear() === now.getFullYear() &&
+    when.getMonth() === now.getMonth() &&
+    when.getDate() === now.getDate();
+  return sameDay ? formatShortTime(iso) : formatShortDateTime(iso);
+}
+
+export function ScheduledSupportBubble({
+  id,
+  body,
+  media: mediaRaw,
+  scheduledFor,
+  status,
+  lastError,
+  emailNotify,
+  author,
+  busy = false,
+  onSaveBody,
+  onReschedule,
+  onDelete,
+}: {
+  id: string;
+  body: string;
+  media?: unknown;
+  scheduledFor: string;
+  status: string;
+  lastError?: string | null;
+  emailNotify?: boolean;
+  author?: SupportTicketAuthor | null;
+  busy?: boolean;
+  onSaveBody: (id: string, body: string) => Promise<void>;
+  onReschedule: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const name = authorDisplayName(author) || "Support";
+  const media = parseSupportReplyMedia(mediaRaw);
+  const failed = status === "failed";
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(body);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const locked = busy || saving;
+  const canSave = draft.trim().length > 0 || media.length > 0;
+
+  useEffect(() => {
+    if (!editing) setDraft(body);
+  }, [editing, body]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [editing]);
+
+  async function saveEdit(event?: FormEvent) {
+    event?.preventDefault();
+    if (!canSave || locked) return;
+    if (draft.trim() === body.trim()) {
+      setEditing(false);
+      setError(null);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSaveBody(id, draft);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (locked) return;
+    const confirmed = window.confirm(
+      "Delete this scheduled reply? It will not be sent."
+    );
+    if (!confirmed) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onDelete(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex items-end justify-end gap-2">
+      <div className="min-w-0 max-w-[min(85%,26rem)] rounded-2xl rounded-br-md bg-sky-100/90 px-3.5 py-2.5 text-sm text-sky-950 shadow-sm ring-1 ring-sky-200/70">
+        {editing ? (
+          <form onSubmit={(e) => void saveEdit(e)} className="space-y-2">
+            <textarea
+              ref={textareaRef}
+              rows={3}
+              value={draft}
+              disabled={locked}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setEditing(false);
+                  setError(null);
+                  setDraft(body);
+                }
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  void saveEdit();
+                }
+              }}
+              className="w-full resize-y rounded-lg border border-sky-300 bg-white px-2.5 py-2 text-sm text-sky-950 placeholder:text-sky-800/40 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 disabled:opacity-60"
+              placeholder="Message…"
+            />
+            {media.length > 0 ? (
+              <div className="opacity-90">
+                <CommunityPostMediaGallery items={media} variant="compact" />
+              </div>
+            ) : null}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={locked}
+                onClick={() => {
+                  setEditing(false);
+                  setError(null);
+                  setDraft(body);
+                }}
+                className="rounded-md px-2 py-1 text-[11px] font-medium text-sky-900/75 hover:bg-sky-200/50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={locked || !canSave}
+                className="rounded-md bg-sky-700 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-sky-300"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            {body.trim() ? <SupportMessageBody body={body} /> : null}
+            {media.length > 0 ? (
+              <div className="mt-2">
+                <CommunityPostMediaGallery items={media} variant="compact" />
+              </div>
+            ) : null}
+          </>
+        )}
+        <div className="mt-1.5 flex items-center justify-end gap-1 text-sky-800/55">
+          <span
+            className={`rounded px-1 py-px text-[10px] font-semibold ${
+              failed
+                ? "bg-rose-100 text-rose-800"
+                : "bg-amber-100 text-amber-800"
+            }`}
+          >
+            {failed ? "Failed" : "Scheduled"}
+          </span>
+          <span className="text-[10px] tabular-nums">
+            {scheduledTimeLabel(scheduledFor)}
+          </span>
+          {emailNotify ? (
+            <SupportViaEmailMark
+              className="opacity-80"
+              label="Will also email them"
+            />
+          ) : null}
+          {!editing ? (
+            <ScheduledSupportActionsMenu
+              messageId={id}
+              busy={locked}
+              onEdit={() => {
+                setDraft(body);
+                setError(null);
+                setEditing(true);
+              }}
+              onReschedule={() => onReschedule(id)}
+              onDelete={() => void handleDelete()}
+            />
+          ) : null}
+        </div>
+        {failed && lastError ? (
+          <p className="mt-1 text-[10px] text-rose-800">{lastError}</p>
+        ) : null}
+        {error ? <p className="mt-1 text-[10px] text-rose-800">{error}</p> : null}
+      </div>
+      <SupportChatAvatar name={name} avatarUrl={author?.avatar_url} tone="sky" />
+    </div>
+  );
+}
+
+function ScheduledSupportActionsMenu({
+  messageId,
+  busy,
+  onEdit,
+  onReschedule,
+  onDelete,
+}: {
+  messageId: string;
+  busy: boolean;
+  onEdit: () => void;
+  onReschedule: () => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const menuId = `scheduled-support-actions-${messageId}`;
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  function stop(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        type="button"
+        className={menuTriggerClass(true, open)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={open ? menuId : undefined}
+        aria-label="Scheduled reply actions"
+        disabled={busy}
+        onClick={(event) => {
+          stop(event);
+          setOpen((v) => !v);
+        }}
+      >
+        <MoreVertical className="h-3 w-3" strokeWidth={2} aria-hidden />
+      </button>
+      {open ? (
+        <div
+          id={menuId}
+          role="menu"
+          className="absolute right-0 z-30 mt-0.5 min-w-[9rem] overflow-hidden rounded-lg border border-slate-200 bg-white py-0.5 shadow-[0_8px_24px_-6px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5"
+          onClick={stop}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            onClick={() => {
+              setOpen(false);
+              onEdit();
+            }}
+          >
+            <Pencil className="h-3 w-3 shrink-0 text-slate-400" aria-hidden />
+            Edit
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            onClick={() => {
+              setOpen(false);
+              onReschedule();
+            }}
+          >
+            <Clock className="h-3 w-3 shrink-0 text-slate-400" aria-hidden />
+            Change time
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+            onClick={() => {
+              setOpen(false);
+              onDelete();
+            }}
+          >
+            <Trash2 className="h-3 w-3 shrink-0 text-rose-400" aria-hidden />
+            Delete
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -54,3 +54,19 @@ export function isPlaceholderEmailBody(
   const subj = (subject || "").trim();
   return Boolean(subj) && body === subj;
 }
+
+/** Full fetch already confirmed the provider has no body (calendar RSVPs). */
+export function isResolvedEmailBody(metadata: unknown): boolean {
+  if (!metadata || typeof metadata !== "object") return false;
+  return (metadata as { body_resolved?: unknown }).body_resolved === true;
+}
+
+/** Still need a Unipile body fetch. Confirmed-empty mail must not keep retrying. */
+export function emailNeedsBodyFetch(input: {
+  bodyText: string | null | undefined;
+  subject: string | null | undefined;
+  metadata?: unknown;
+}): boolean {
+  if (isResolvedEmailBody(input.metadata)) return false;
+  return isPlaceholderEmailBody(input.bodyText, input.subject);
+}

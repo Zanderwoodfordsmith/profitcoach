@@ -1,5 +1,6 @@
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import { unipileEmailBodyText } from "@/lib/messaging/emailBody";
+import { getUnipileEmail } from "@/lib/unipile/client";
 import {
   applyReactionToParentMessage,
   extractReactionEmoji,
@@ -571,8 +572,18 @@ export async function handleUnipileMailReceived(
   const to0 = (body.to_attendees as Array<{ identifier?: string }>)?.[0];
   const role = String(body.role || "").toLowerCase();
   const isSent = role === "sent" || String(body.origin || "") === "unipile";
-  const text =
-    unipileEmailBodyText(body) || String(body.subject || "").trim();
+  let text = unipileEmailBodyText(body);
+  let bodyResolved = false;
+  if (!text) {
+    const full = await getUnipileEmail(emailId, accountId);
+    if (full.ok && full.data) {
+      text = unipileEmailBodyText(full.data);
+      bodyResolved = !text;
+    } else if (!full.ok && full.status === 404) {
+      bodyResolved = true;
+    }
+  }
+  if (!text) text = String(body.subject || "").trim();
   const subject = String(body.subject || "Email").slice(0, 200);
   const prospectEmail = isSent
     ? to0?.identifier || null
@@ -651,6 +662,7 @@ export async function handleUnipileMailReceived(
           thread_id: body.thread_id,
           provider_id: body.provider_id,
           webhook: true,
+          ...(bodyResolved ? { body_resolved: true } : {}),
         },
       },
       { onConflict: "unipile_message_id", ignoreDuplicates: true }

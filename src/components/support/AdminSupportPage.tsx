@@ -2,7 +2,9 @@
 
 import {
   ArrowLeft,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   ExternalLink,
   Plus,
   Search,
@@ -36,7 +38,6 @@ import {
   SupportCreateTicketComposer,
 } from "@/components/support/SupportCreateTicketComposer";
 import { SupportMailboxConnect } from "@/components/support/SupportMailboxConnect";
-import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   DEFAULT_SUPPORT_ASSIGNEE_ID,
   assigneeDisplayName,
@@ -97,6 +98,8 @@ type AdminTicketRow = {
   lastUnrepliedMemberAt: string;
   /** Latest ticket or reply activity. */
   lastActivityAt: string;
+  /** Newest reply. Null when the opening message is still the latest. */
+  lastMessage: { firstName: string; body: string } | null;
 };
 
 type CoachOption = {
@@ -127,16 +130,10 @@ const TYPE_STYLES: Record<SupportTicketType, string> = {
   other: "bg-slate-100 text-slate-700 ring-slate-200/80",
 };
 
-const STATUS_DOT: Record<SupportTicketStatus, string> = {
-  open: "bg-sky-500",
-  waiting_reply: "bg-amber-500",
-  resolved: "bg-emerald-500",
-};
-
 const ASSIGNEE_FILTERS: { id: SupportAssigneeFilter; label: string }[] = [
+  { id: "anyone", label: "All" },
   { id: "zander", label: "Zander" },
   { id: "pam", label: "Pam" },
-  { id: "anyone", label: "Anyone" },
 ];
 
 const STATUS_FILTER_OPTIONS: {
@@ -161,6 +158,14 @@ const TYPE_FILTER_OPTIONS: { id: "all" | SupportTicketType; label: string }[] =
 const filterSelectClass =
   "w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20";
 
+function queueSegmentClass(active: boolean) {
+  return `flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
+    active
+      ? "bg-sky-700 text-white shadow-sm"
+      : "text-slate-500 hover:bg-white hover:text-slate-800"
+  }`;
+}
+
 function normalizeProfile(
   row: SupportAssignee | SupportAssignee[] | null
 ): SupportAssignee | null {
@@ -182,6 +187,35 @@ function ticketAuthorLabel(row: AdminTicketRow): string {
   if (row.submitter_name?.trim()) return row.submitter_name.trim();
   if (row.contact_email?.trim()) return row.contact_email.trim();
   return "Unknown";
+}
+
+function firstToken(value: string): string {
+  return value.trim().split(/\s+/).filter(Boolean)[0] || "Unknown";
+}
+
+function ticketAuthorFirstName(row: AdminTicketRow): string {
+  const first = row.author?.first_name?.trim();
+  if (first) return first;
+  return firstToken(ticketAuthorLabel(row));
+}
+
+function replyAuthorFirstName(
+  author: { first_name?: string | null; full_name?: string | null } | null
+): string {
+  const first = author?.first_name?.trim();
+  if (first) return first;
+  const full = author?.full_name?.trim();
+  if (full) return firstToken(full);
+  return "Unknown";
+}
+
+/** Inbox subtitle: first name of whoever sent the latest message, plus that message. */
+function ticketListPreview(row: AdminTicketRow): { name: string; text: string } {
+  const latest = row.lastMessage;
+  if (latest?.body.trim()) {
+    return { name: latest.firstName, text: latest.body };
+  }
+  return { name: ticketAuthorFirstName(row), text: row.details };
 }
 
 function ticketPersonKey(row: AdminTicketRow): string {
@@ -246,9 +280,19 @@ function ListAvatar({
 }
 
 function previewText(value: string, max = 72): string {
-  const cleaned = value.replace(/\s+/g, " ").trim();
+  const cleaned = value
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_~`]/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
   if (cleaned.length <= max) return cleaned;
-  return `${cleaned.slice(0, max - 1)}…`;
+  return `${cleaned.slice(0, max - 1).trimEnd()}…`;
 }
 
 /**
@@ -280,12 +324,12 @@ function inboxAgeBand(iso: string, now = new Date()): string {
   return "Older";
 }
 
-const WAITING_ON_REPLY_BAND = "Waiting on reply";
+const WAITING_ON_REPLY_BAND = "Waiting on member";
 
 /**
  * Open filter sections:
  * - Needs our reply → Today / Yesterday / … by last unreplied member message
- * - We've replied (or marked waiting) → "Waiting on reply" at the bottom
+ * - We've replied (or marked waiting) → "Waiting on member" at the bottom
  */
 function ticketNeedsStaffReply(row: Pick<AdminTicketRow, "status" | "lastUnrepliedMemberAt" | "lastActivityAt">): boolean {
   if (row.status === "waiting_reply") return false;
@@ -322,50 +366,77 @@ function personListBand(
   return inboxAgeBand(group.latestAt);
 }
 
+type ReplyAuthorBits = {
+  role?: string | null;
+  first_name?: string | null;
+  full_name?: string | null;
+};
+
 type ReplyActivityRow = {
   report_id: string;
   created_at: string;
-  author: Pick<SupportTicketAuthor, "role"> | Pick<SupportTicketAuthor, "role">[] | null;
+  body: string;
+  author: ReplyAuthorBits | ReplyAuthorBits[] | null;
 };
 
-function normalizeReplyAuthorRole(
+type ReplyActivityItem = {
+  created_at: string;
+  staff: boolean;
+  /** Set on the newest reply only. */
+  body: string;
+  firstName: string;
+};
+
+function normalizeReplyAuthor(
   author: ReplyActivityRow["author"]
-): string | null {
+): ReplyAuthorBits | null {
   if (!author) return null;
-  const row = Array.isArray(author) ? author[0] : author;
-  return row?.role ?? null;
+  return Array.isArray(author) ? (author[0] ?? null) : author;
 }
 
 /** Newest-first replies → last unreplied member message + last activity. */
 function ticketActivityFromReplies(
   ticketCreatedAt: string,
-  repliesNewestFirst: { created_at: string; staff: boolean }[]
-): { lastUnrepliedMemberAt: string; lastActivityAt: string } {
-  const lastActivityAt = repliesNewestFirst[0]?.created_at ?? ticketCreatedAt;
+  repliesNewestFirst: ReplyActivityItem[]
+): {
+  lastUnrepliedMemberAt: string;
+  lastActivityAt: string;
+  lastMessage: { firstName: string; body: string } | null;
+} {
+  const latest = repliesNewestFirst[0];
+  const lastActivityAt = latest?.created_at ?? ticketCreatedAt;
+  const lastMessage = latest?.body.trim()
+    ? { firstName: latest.firstName || "Unknown", body: latest.body }
+    : null;
 
-  if (repliesNewestFirst.length === 0) {
-    return { lastUnrepliedMemberAt: ticketCreatedAt, lastActivityAt };
+  if (!latest) {
+    return {
+      lastUnrepliedMemberAt: ticketCreatedAt,
+      lastActivityAt,
+      lastMessage: null,
+    };
   }
 
-  const latest = repliesNewestFirst[0];
   if (!latest.staff) {
-    return { lastUnrepliedMemberAt: latest.created_at, lastActivityAt };
+    return {
+      lastUnrepliedMemberAt: latest.created_at,
+      lastActivityAt,
+      lastMessage,
+    };
   }
 
   const lastMember = repliesNewestFirst.find((r) => !r.staff);
   return {
     lastUnrepliedMemberAt: lastMember?.created_at ?? ticketCreatedAt,
     lastActivityAt,
+    lastMessage,
   };
 }
 
 async function loadTicketReplyActivity(
   reportIds: string[]
-): Promise<Map<string, { created_at: string; staff: boolean }[]>> {
-  const byTicket = new Map<
-    string,
-    { created_at: string; staff: boolean }[]
-  >();
+): Promise<Map<string, ReplyActivityItem[]>> {
+  const byTicket = new Map<string, ReplyActivityItem[]>();
   if (reportIds.length === 0) return byTicket;
 
   const chunkSize = 150;
@@ -377,7 +448,8 @@ async function loadTicketReplyActivity(
         `
         report_id,
         created_at,
-        author:profiles!created_by ( role )
+        body,
+        author:profiles!created_by ( role, first_name, full_name )
       `
       )
       .in("report_id", chunk)
@@ -392,9 +464,13 @@ async function loadTicketReplyActivity(
 
     for (const raw of (data ?? []) as ReplyActivityRow[]) {
       const list = byTicket.get(raw.report_id) ?? [];
+      const author = normalizeReplyAuthor(raw.author);
+      const isLatest = list.length === 0;
       list.push({
         created_at: raw.created_at,
-        staff: normalizeReplyAuthorRole(raw.author) === "admin",
+        staff: author?.role === "admin",
+        body: isLatest ? raw.body ?? "" : "",
+        firstName: isLatest ? replyAuthorFirstName(author) : "",
       });
       byTicket.set(raw.report_id, list);
     }
@@ -403,10 +479,48 @@ async function loadTicketReplyActivity(
   return byTicket;
 }
 
+function WaitingSectionHeader({
+  count,
+  open,
+  onToggle,
+}: {
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-1.5 text-left text-slate-500"
+      >
+        <span className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-wide">
+          {WAITING_ON_REPLY_BAND}
+        </span>
+        <span className="text-[11px] font-semibold tabular-nums tracking-wide">
+          {count}
+        </span>
+        {open ? (
+          <ChevronDown
+            className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-400"
+            aria-hidden
+          />
+        ) : (
+          <ChevronUp
+            className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-400"
+            aria-hidden
+          />
+        )}
+      </button>
+    </li>
+  );
+}
+
 export function AdminSupportPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setImpersonatingCoachId } = useImpersonation();
   const topTab =
     searchParams.get("tab") === "settings" ? "settings" : "inbox";
   const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
@@ -417,7 +531,7 @@ export function AdminSupportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] =
-    useState<SupportAssigneeFilter>("zander");
+    useState<SupportAssigneeFilter>("anyone");
   const [statusFilter, setStatusFilter] =
     useState<SupportStatusFilter>("open");
   const [typeFilter, setTypeFilter] = useState<"all" | SupportTicketType>(
@@ -437,6 +551,7 @@ export function AdminSupportPage() {
   const [attentionByTicket, setAttentionByTicket] = useState<SupportAttentionMap>(
     {}
   );
+  const [waitingSectionOpen, setWaitingSectionOpen] = useState(true);
   /** report_id → user ids @mentioned in any internal note */
   const [mentionsByTicket, setMentionsByTicket] = useState<
     Record<string, string[]>
@@ -557,6 +672,7 @@ export function AdminSupportPage() {
         | "assignee"
         | "lastUnrepliedMemberAt"
         | "lastActivityAt"
+        | "lastMessage"
       > & {
         type: string;
         author: SupportAssignee | SupportAssignee[] | null;
@@ -585,6 +701,7 @@ export function AdminSupportPage() {
         ...row,
         lastUnrepliedMemberAt: activity.lastUnrepliedMemberAt,
         lastActivityAt: activity.lastActivityAt,
+        lastMessage: activity.lastMessage,
       };
     });
 
@@ -654,6 +771,8 @@ export function AdminSupportPage() {
         row.details,
         formatSupportTicketId(row.ticket_number),
         ticketAuthorLabel(row),
+        row.lastMessage?.firstName,
+        row.lastMessage?.body,
         row.contact_email,
         SUPPORT_TYPE_LABELS[row.type],
         SUPPORT_SOURCE_LABELS[row.source],
@@ -738,6 +857,18 @@ export function AdminSupportPage() {
       personGroups.find((g) => g.key === selectedPersonKey)?.tickets ?? []
     );
   }, [groupMode, selectedPersonKey, filteredRows, personGroups]);
+
+  const waitingTicketCount = useMemo(() => {
+    if (statusFilter !== "open") return 0;
+    return listTickets.filter((row) => !ticketNeedsStaffReply(row)).length;
+  }, [listTickets, statusFilter]);
+
+  const waitingPersonCount = useMemo(() => {
+    if (statusFilter !== "open") return 0;
+    return personGroups.filter(
+      (group) => !group.tickets.some((ticket) => ticketNeedsStaffReply(ticket))
+    ).length;
+  }, [personGroups, statusFilter]);
 
   const selected = useMemo(
     () => listTickets.find((r) => r.id === selectedId) ?? null,
@@ -932,11 +1063,6 @@ export function AdminSupportPage() {
       )
     : false;
 
-  function openMemberSupport(coachId: string) {
-    setImpersonatingCoachId(coachId);
-    router.push("/coach/support");
-  }
-
   return (
     <DashboardPageSection
       contentMaxWidthClass={topTab === "settings" ? "max-w-6xl" : "max-w-none"}
@@ -945,12 +1071,13 @@ export function AdminSupportPage() {
       contentClassName={
         topTab === "settings"
           ? // Inbox shell is overflow-hidden; settings must scroll inside it.
-            "!mx-0 mr-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain pb-8"
+            "!mx-0 mr-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-[60px]"
           : "min-h-0 flex-1 overflow-hidden"
       }
       header={
         <StickyPageHeader
           className="shrink-0"
+          bleedInset="px-4 md:px-6"
           title="Support"
           description={
             topTab === "settings"
@@ -1059,6 +1186,7 @@ export function AdminSupportPage() {
                     : null,
                   lastUnrepliedMemberAt: created.created_at,
                   lastActivityAt: created.created_at,
+                  lastMessage: null,
                 };
                 setRows((prev) => [row, ...prev]);
                 setSelectedId(row.id);
@@ -1069,48 +1197,43 @@ export function AdminSupportPage() {
         </div>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col py-3 max-lg:min-h-[calc(100dvh-8rem)] max-lg:py-2">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="flex min-h-0 flex-1 flex-col max-lg:min-h-[calc(100dvh-8rem)]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
           <div className="grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(0,28%)_minmax(0,1fr)] xl:grid-cols-[minmax(0,26%)_minmax(0,1fr)_minmax(0,22%)]">
             {/* Left: queue */}
             <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden border-b border-slate-200 max-lg:max-h-[42vh] lg:border-b-0 lg:border-r">
               <div className="shrink-0 space-y-2 border-b border-slate-100 px-3 py-2.5">
-                <div className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                <div className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5">
                   <button
                     type="button"
+                    aria-pressed={groupMode === "tickets"}
                     onClick={() => setGroupMode("tickets")}
-                    className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
-                      groupMode === "tickets"
-                        ? "bg-white text-slate-900 shadow-sm"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={queueSegmentClass(groupMode === "tickets")}
                   >
                     Tickets
                   </button>
                   <button
                     type="button"
+                    aria-pressed={groupMode === "people"}
                     onClick={() => setGroupMode("people")}
-                    className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
-                      groupMode === "people"
-                        ? "bg-white text-slate-900 shadow-sm"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={queueSegmentClass(groupMode === "people")}
                   >
                     By coach
                   </button>
                 </div>
 
-                <div className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                <div
+                  className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5"
+                  role="group"
+                  aria-label="Filter by assignee"
+                >
                   {ASSIGNEE_FILTERS.map((filter) => (
                     <button
                       key={filter.id}
                       type="button"
+                      aria-pressed={assigneeFilter === filter.id}
                       onClick={() => setAssigneeFilter(filter.id)}
-                      className={`flex-1 rounded-md px-2 py-1.5 text-xs font-semibold ${
-                        assigneeFilter === filter.id
-                          ? "bg-white text-slate-900 shadow-sm"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
+                      className={queueSegmentClass(assigneeFilter === filter.id)}
                     >
                       {filter.label}
                     </button>
@@ -1189,23 +1312,42 @@ export function AdminSupportPage() {
                           ? personListBand(personGroups[index - 1], statusFilter)
                           : null;
                       const showBandHeader = ageBand !== prevBand;
+                      const isWaiting = ageBand === WAITING_ON_REPLY_BAND;
+                      if (isWaiting && !waitingSectionOpen && !showBandHeader) {
+                        return null;
+                      }
                       return (
                         <Fragment key={group.key}>
                           {showBandHeader ? (
-                            <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                {ageBand}
-                              </p>
-                            </li>
+                            isWaiting ? (
+                              <WaitingSectionHeader
+                                count={waitingPersonCount}
+                                open={waitingSectionOpen}
+                                onToggle={() =>
+                                  setWaitingSectionOpen((open) => !open)
+                                }
+                              />
+                            ) : (
+                              <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                  {ageBand}
+                                </p>
+                              </li>
+                            )
                           ) : null}
-                          <li className="px-2 py-0.5">
+                          {isWaiting && !waitingSectionOpen ? null : (
+                          <li className={isWaiting ? "bg-slate-50 px-2 py-0.5" : "px-2 py-0.5"}>
                             <button
                               type="button"
                               onClick={() => {
                                 setSelectedPersonKey(group.key);
                                 setSelectedId(group.tickets[0]?.id ?? null);
                               }}
-                              className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
+                              className={`flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left ${
+                                isWaiting
+                                  ? "opacity-60 hover:bg-white/80 hover:opacity-100"
+                                  : "hover:bg-slate-50"
+                              }`}
                             >
                               <ListAvatar
                                 label={group.label}
@@ -1234,6 +1376,7 @@ export function AdminSupportPage() {
                               />
                             </button>
                           </li>
+                          )}
                         </Fragment>
                       );
                     })
@@ -1277,29 +1420,51 @@ export function AdminSupportPage() {
                           ? inboxListBand(listTickets[index - 1], statusFilter)
                           : null;
                       const showBandHeader = ageBand !== prevBand;
+                      const isWaiting = ageBand === WAITING_ON_REPLY_BAND;
+                      const preview = ticketListPreview(row);
                       const listAt =
                         statusFilter === "open"
                           ? ticketNeedsStaffReply(row)
                             ? row.lastUnrepliedMemberAt || row.created_at
                             : row.lastActivityAt || row.created_at
                           : row.created_at;
+                      if (isWaiting && !waitingSectionOpen && !showBandHeader) {
+                        return null;
+                      }
                       return (
                         <Fragment key={row.id}>
                           {showBandHeader ? (
-                            <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                {ageBand}
-                              </p>
-                            </li>
+                            isWaiting ? (
+                              <WaitingSectionHeader
+                                count={waitingTicketCount}
+                                open={waitingSectionOpen}
+                                onToggle={() =>
+                                  setWaitingSectionOpen((open) => !open)
+                                }
+                              />
+                            ) : (
+                              <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                  {ageBand}
+                                </p>
+                              </li>
+                            )
                           ) : null}
-                          <li className="px-2 py-0.5">
+                          {isWaiting && !waitingSectionOpen ? null : (
+                          <li
+                            className={
+                              isWaiting ? "bg-slate-50 px-2 py-0.5" : "px-2 py-0.5"
+                            }
+                          >
                             <button
                               type="button"
                               onClick={() => setSelectedId(row.id)}
                               className={`flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left ${
                                 active
                                   ? "bg-sky-50/80 ring-1 ring-sky-200"
-                                  : "hover:bg-slate-50"
+                                  : isWaiting
+                                    ? "opacity-60 hover:bg-white/80 hover:opacity-100"
+                                    : "hover:bg-slate-50"
                               }`}
                             >
                               <ListAvatar
@@ -1308,12 +1473,6 @@ export function AdminSupportPage() {
                               />
                               <span className="min-w-0 flex-1">
                                 <span className="flex items-center gap-1.5">
-                                  <span
-                                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[row.status]}`}
-                                    title={
-                                      SUPPORT_STATUS_ADMIN_LABELS[row.status]
-                                    }
-                                  />
                                   <span
                                     className={`truncate text-sm ${
                                       isNew
@@ -1338,10 +1497,14 @@ export function AdminSupportPage() {
                                     </span>
                                   ) : null}
                                 </span>
-                                <span className="mt-0.5 block truncate text-xs text-slate-500">
-                                  {ticketAuthorLabel(row)} ·{" "}
-                                  {previewText(row.details, 56) ||
-                                    SUPPORT_TYPE_LABELS[row.type]}
+                                <span className="mt-0.5 flex min-w-0 gap-1.5 text-xs text-slate-500">
+                                  <span className="max-w-[40%] shrink truncate font-medium text-slate-600">
+                                    {preview.name}
+                                  </span>
+                                  <span className="min-w-0 flex-1 truncate">
+                                    {previewText(preview.text, 96) ||
+                                      SUPPORT_TYPE_LABELS[row.type]}
+                                  </span>
                                 </span>
                               </span>
                               <span className="flex shrink-0 flex-col items-end gap-1">
@@ -1356,6 +1519,7 @@ export function AdminSupportPage() {
                               </span>
                             </button>
                           </li>
+                          )}
                         </Fragment>
                       );
                     })
@@ -1380,14 +1544,15 @@ export function AdminSupportPage() {
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                   <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 xl:hidden">
                     {selected.created_by ? (
-                      <button
-                        type="button"
-                        onClick={() => openMemberSupport(selected.created_by!)}
+                      <a
+                        href={`/coach/support?impersonate=${encodeURIComponent(selected.created_by)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:underline"
                       >
                         <ExternalLink className="h-3 w-3" aria-hidden />
                         Open member Support
-                      </button>
+                      </a>
                     ) : (
                       <span />
                     )}
@@ -1647,16 +1812,15 @@ export function AdminSupportPage() {
                       </label>
 
                       {selected.created_by ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            openMemberSupport(selected.created_by!)
-                          }
+                        <a
+                          href={`/coach/support?impersonate=${encodeURIComponent(selected.created_by)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50"
                         >
                           <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                           Open member Support
-                        </button>
+                        </a>
                       ) : null}
                     </div>
 
