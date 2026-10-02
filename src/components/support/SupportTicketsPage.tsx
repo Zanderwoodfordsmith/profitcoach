@@ -781,6 +781,10 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
   ) : null;
 
   function openTicket(ticket: TicketWithReplies) {
+    if (ticket.id === selectedTicketId) {
+      setSelectedTicketId(null);
+      return;
+    }
     setSelectedTicketId(ticket.id);
     if (
       userId &&
@@ -825,9 +829,9 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white max-lg:min-h-[36rem]">
           <div
-            className={`grid h-full min-h-0 min-w-0 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,28%)_minmax(0,1fr)] ${
+            className={`grid h-full min-h-0 min-w-0 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,27%)_minmax(0,1fr)] ${
               selected
-                ? "xl:grid-cols-[minmax(0,26%)_minmax(0,1fr)_minmax(0,22%)]"
+                ? "xl:grid-cols-[minmax(0,27%)_minmax(0,1fr)_minmax(0,22%)]"
                 : ""
             }`}
           >
@@ -1054,13 +1058,13 @@ function TicketListRow({
   const title = displayTicketTitle(ticket.title ?? "");
   const preview = supportTicketListPreview(ticket, ticket.replies);
   return (
-    <li className="px-2 py-0.5">
+    <li className="border-b border-slate-200/80 last:border-b-0">
       <button
         type="button"
         onClick={onOpen}
         aria-current={active ? "true" : undefined}
-        className={`flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 ${
-          active ? "bg-sky-50/80 ring-1 ring-sky-200" : "bg-white hover:bg-slate-50"
+        className={`flex w-full items-start gap-3 px-3.5 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-600 ${
+          active ? "bg-sky-100" : "bg-white hover:bg-slate-50"
         }`}
       >
         <span className="min-w-0 flex-1">
