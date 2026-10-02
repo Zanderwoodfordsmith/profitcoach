@@ -9,12 +9,17 @@ import {
   loadBookingSettingsForCoach,
   loadExistingBookedIntervals,
 } from "@/lib/booking/bookingService";
+import { createGoogleBookingEvent } from "@/lib/booking/googleCalendar";
 import { createUnipileBookingEvent, fetchUnipileBusyIntervals } from "@/lib/booking/unipileCalendar";
 import {
   createZoomBookingMeeting,
   deleteZoomBookingMeeting,
 } from "@/lib/booking/zoomMeetings";
 import { sendBookingConfirmations } from "@/lib/messaging/bookingConfirmations";
+import {
+  SUPPORT_CALL_CALENDAR_SLUG,
+  supportCallEventTitle,
+} from "@/lib/support/supportCallHosts";
 import type { ProspectNextCall } from "@/lib/prospectNextCall";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -175,9 +180,21 @@ export async function createCalendarBooking(
     input.notes?.trim() ? `About:\n${input.notes.trim()}` : null,
   ].filter(Boolean);
 
-  const googleEvent = await createUnipileBookingEvent({
+  let eventTitle = calendar.name;
+  if (calendar.slug === SUPPORT_CALL_CALENDAR_SLUG) {
+    const { data: coachRow } = await supabaseAdmin
+      .from("coaches")
+      .select("slug")
+      .eq("id", coach.id)
+      .maybeSingle();
+    eventTitle =
+      supportCallEventTitle(String(coachRow?.slug ?? ""), guestName) ??
+      calendar.name;
+  }
+
+  const eventInput = {
     coachId: coach.id,
-    title: calendar.name,
+    title: eventTitle,
     description: descriptionParts.join("\n"),
     startsAt: chosen.startsAt,
     endsAt: chosen.endsAt,
@@ -185,13 +202,16 @@ export async function createCalendarBooking(
     guestName,
     timezone: coachSettings.timezone,
     locationMode:
-      calendar.location_mode === "zoom" ? "custom" : calendar.location_mode,
+      calendar.location_mode === "zoom" ? ("custom" as const) : calendar.location_mode,
     locationPhone: calendar.location_phone,
     locationCustom:
       calendar.location_mode === "zoom"
         ? meetingJoinUrl
         : calendar.location_custom,
-  });
+  };
+  const googleEvent =
+    (await createUnipileBookingEvent(eventInput)) ??
+    (await createGoogleBookingEvent(eventInput));
 
   if (googleEvent) {
     googleEventId = googleEvent.eventId;

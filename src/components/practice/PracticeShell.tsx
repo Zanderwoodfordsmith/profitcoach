@@ -10,7 +10,6 @@ import { guidePage } from "@/lib/practiceKnowledge/clientSessions";
 
 import { BlueprintAssistant } from "./BlueprintAssistant";
 import { DownloadMenu } from "./document/DocumentParts";
-import { blueprintDisplay } from "./document/fonts";
 import { PracticeComments } from "./PracticeComments";
 import { usePractice } from "./PracticeProvider";
 import "./document/blueprint.css";
@@ -140,7 +139,7 @@ export function PracticeShell({
   embedded = false,
 }: {
   children: ReactNode;
-  /** Mounted inside an admin page: no full-bleed, no sticky nav. */
+  /** Admin blueprint: fill the page under the header, flush to the app sidebar. */
   embedded?: boolean;
 }) {
   const pathname = usePathname();
@@ -223,9 +222,9 @@ export function PracticeShell({
 
   return (
     <div
-      className={`bp-doc ${blueprintDisplay.variable} ${
+      className={`bp-doc ${
         embedded
-          ? "flex min-h-[70vh] flex-col overflow-clip rounded-2xl border border-slate-200 bg-white lg:flex-row lg:items-stretch"
+          ? "flex h-full min-h-0 flex-col overflow-y-auto bg-white lg:flex-row lg:items-stretch lg:overflow-hidden"
           : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col bg-white md:-mx-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px+28rem)] lg:flex-row lg:items-stretch"
       }`}
       style={{ "--practice-nav-w": `${navWidth}px` } as CSSProperties}
@@ -233,7 +232,7 @@ export function PracticeShell({
       <aside
         className={`relative shrink-0 border-slate-200/70 bg-[#f8fafc] lg:border-r ${
           embedded
-            ? "lg:sticky lg:top-[var(--blueprint-header-h,0px)] lg:h-[calc(100dvh-var(--blueprint-header-h,0px))]"
+            ? "lg:h-full lg:min-h-0 lg:overflow-hidden"
             : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"
         } ${
           showNav ? "w-full border-b lg:w-[var(--practice-nav-w)] lg:border-b-0" : "w-14 border-b lg:border-b-0"
@@ -257,7 +256,7 @@ export function PracticeShell({
         {showNav ? <NavResizer width={navWidth} onChange={setNavWidth} /> : null}
       </aside>
 
-      <section className="bp-print-root min-w-0 flex-1 bg-white">
+      <section className={`bp-print-root min-w-0 flex-1 bg-white ${embedded ? "lg:min-h-0 lg:overflow-y-auto" : ""}`}>
         <div className="@container mx-auto w-full max-w-[54rem] px-5 py-8 md:px-10 md:py-10">
         {isDocument ? (
           <div className="bp-no-print mb-5 flex flex-wrap items-center justify-end gap-2">
@@ -353,6 +352,7 @@ export function PracticeShell({
           page={page.slug}
           notes={payload.review.notes?.value ?? []}
           onClose={() => setCommentsOpen(false)}
+          fill={embedded}
         />
       ) : null}
 
@@ -360,9 +360,9 @@ export function PracticeShell({
         <>
           <aside
             aria-label="Talk it through"
-            className={`bp-no-print hidden w-[23rem] shrink-0 border-l border-slate-200 lg:block ${
+            className={`bp-no-print hidden w-[23rem] shrink-0 flex-col border-l border-slate-200 lg:flex ${
               embedded
-                ? "lg:sticky lg:top-[var(--blueprint-header-h,0px)] lg:h-[calc(100dvh-var(--blueprint-header-h,0px))]"
+                ? "lg:h-full lg:min-h-0"
                 : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"
             }`}
           >

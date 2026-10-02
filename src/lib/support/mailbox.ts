@@ -20,6 +20,12 @@ import {
   formatSkippedEmailAttachmentNote,
   ingestSupportEmailAttachments,
 } from "@/lib/support/ingestEmailAttachments";
+import {
+  inboundMightBeSupportFollowUp,
+  isInactiveSupportMailboxEmail,
+  normalizeSupportEmailSubject,
+  shouldSkipInactiveSupportEmail,
+} from "@/lib/support/inboundEmailMatch";
 import { findCoachProfileIdByEmail } from "@/lib/support/matchCoachByEmail";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
@@ -356,53 +362,7 @@ export async function tidySupportMailboxEmail(input: {
   });
 }
 
-/**
- * True when Unipile says this message is already out of the active inbox
- * (archived, trashed, spam, sent, drafts). Gmail often keeps role=important
- * with only category labels — treat missing INBOX + archive/trash folders
- * as inactive too.
- */
-export function isInactiveSupportMailboxEmail(item: {
-  role?: unknown;
-  folders?: unknown;
-}): boolean {
-  const role = String(item.role || "").toLowerCase();
-  if (
-    role === "sent" ||
-    role === "drafts" ||
-    role === "trash" ||
-    role === "archive" ||
-    role === "spam"
-  ) {
-    return true;
-  }
-
-  const folders = Array.isArray(item.folders)
-    ? item.folders.map((f) => String(f).toLowerCase())
-    : [];
-  if (
-    folders.some(
-      (f) =>
-        f === "trash" ||
-        f === "[gmail]/trash" ||
-        f.includes("trash") ||
-        f === "archive" ||
-        f === "spam" ||
-        f === "[gmail]/spam"
-    )
-  ) {
-    return true;
-  }
-
-  // Gmail keeps archived mail with category-only labels (and sometimes
-  // role=unknown) — anything with labels but no INBOX is already filed away.
-  // Only role=unknown mail with an empty folders list stays processable.
-  if (folders.length > 0 && !folders.some((f) => f === "inbox" || f === "inb")) {
-    return true;
-  }
-
-  return false;
-}
+export { isInactiveSupportMailboxEmail };
 
 /** Move to Trash so mailbox sync / webhooks will not re-ingest it. */
 export async function trashSupportMailboxEmail(input: {
@@ -472,7 +432,12 @@ export async function handleSupportMailReceived(
   const isSent = role === "sent" || String(body.origin || "") === "unipile";
   // Outbound from our mailbox: do not open tickets.
   if (isSent) return "outbound_ignored";
-  if (isInactiveSupportMailboxEmail(body)) return "inactive_folder_ignored";
+  // Filed-away mail that is not a reply stays out. A reply Gmail left as
+  // Important/category-only (no INBOX) still has to be matched below.
+  const filedAway = isInactiveSupportMailboxEmail(body);
+  if (filedAway && !inboundMightBeSupportFollowUp(body)) {
+    return "inactive_folder_ignored";
+  }
 
   const { data: existingByEmail } = await supabaseAdmin
     .from("community_feedback_reports")
@@ -536,7 +501,7 @@ export async function handleSupportMailReceived(
 
   const appendReplyToTicket = async (
     ticket: { id: string; status: string | null },
-    options?: { linkThreadId?: string | null }
+    options?: { linkThreadId?: string | null; adoptInboundEmailId?: boolean }
   ): Promise<"thread_reply" | "duplicate"> => {
     // This email was already ingested as a reply (mailbox sync re-scans mail
     // Gmail/Unipile leave in ambiguous states) → tidy again and stop. Without
@@ -589,6 +554,13 @@ export async function handleSupportMailReceived(
       patch.unipile_thread_id = options.linkThreadId;
       patch.unipile_account_id = accountId;
     }
+    // In-app tickets store Unipile's tracking id, which is not a message id.
+    // Point reply_to at this inbound message so the next staff email stays
+    // in the same Gmail thread.
+    if (options?.adoptInboundEmailId) {
+      patch.unipile_email_id = emailId;
+      patch.unipile_account_id = accountId;
+    }
     if (Object.keys(patch).length) {
       await supabaseAdmin
         .from("community_feedback_reports")
@@ -617,23 +589,52 @@ export async function handleSupportMailReceived(
     }
   }
 
+  const linkOptions = (ticket: {
+    unipile_thread_id?: string | null;
+    source?: string | null;
+  }) => ({
+    linkThreadId: ticket.unipile_thread_id ? null : threadId,
+    adoptInboundEmailId:
+      !ticket.unipile_thread_id && ticket.source !== "email_inbox",
+  });
+
   // Reply to a Bird notify (or any mail) that still carries SUP-#### in the subject
   const ticketNumber = parseSupportTicketNumberFromSubject(subject);
   if (ticketNumber) {
     const { data: numberedTicket } = await supabaseAdmin
       .from("community_feedback_reports")
-      .select("id, status, unipile_thread_id")
+      .select("id, status, source, unipile_thread_id")
       .eq("ticket_number", ticketNumber)
       .maybeSingle();
     if (numberedTicket?.id) {
-      return appendReplyToTicket(numberedTicket, {
-        linkThreadId: numberedTicket.unipile_thread_id ? null : threadId,
-      });
+      return appendReplyToTicket(numberedTicket, linkOptions(numberedTicket));
     }
     // Ticket was deleted — do not spawn "Re: SUP-#### …" zombie tickets.
     await trashSupportMailboxEmail({ emailId, accountId }).catch(() => null);
     return "orphaned_ticket_reply";
   }
+
+  const parentId = parentUnipileEmailId(body);
+  if (parentId && parentId !== emailId) {
+    const parentTicket = await findTicketByParentEmailId(parentId);
+    if (parentTicket?.id) {
+      return appendReplyToTicket(parentTicket, linkOptions(parentTicket));
+    }
+  }
+
+  // In-app tickets email "RE: {title}" with no thread id stored. Match that
+  // title back to the sender so the reply lands on the open ticket.
+  if (inboundMightBeSupportFollowUp(body)) {
+    const subjectTicket = await findTicketBySenderSubject({
+      contactEmail,
+      subject,
+    });
+    if (subjectTicket?.id) {
+      return appendReplyToTicket(subjectTicket, linkOptions(subjectTicket));
+    }
+  }
+
+  if (filedAway) return "inactive_folder_ignored";
 
   const createdBy = await findCoachProfileIdByEmail(contactEmail);
 
@@ -680,6 +681,94 @@ export async function handleSupportMailReceived(
   });
 
   return "ticket_created";
+}
+
+function parentUnipileEmailId(body: Record<string, unknown>): string | null {
+  const parent = body.in_reply_to;
+  if (!parent || typeof parent !== "object") return null;
+  const id = String((parent as { id?: unknown }).id || "").trim();
+  return id || null;
+}
+
+type SupportSubjectTicket = {
+  id: string;
+  status: string | null;
+  source: string | null;
+  title: string | null;
+  unipile_thread_id: string | null;
+  created_at: string;
+};
+
+async function findTicketByParentEmailId(
+  parentId: string
+): Promise<SupportSubjectTicket | null> {
+  const select = "id, status, source, title, unipile_thread_id, created_at";
+  const { data: report } = await supabaseAdmin
+    .from("community_feedback_reports")
+    .select(select)
+    .eq("unipile_email_id", parentId)
+    .maybeSingle();
+  if (report?.id) return report as SupportSubjectTicket;
+
+  const { data: reply } = await supabaseAdmin
+    .from("community_feedback_replies")
+    .select("report_id")
+    .eq("unipile_email_id", parentId)
+    .maybeSingle();
+  if (!reply?.report_id) return null;
+
+  const { data: parentTicket } = await supabaseAdmin
+    .from("community_feedback_reports")
+    .select(select)
+    .eq("id", reply.report_id as string)
+    .maybeSingle();
+  return (parentTicket as SupportSubjectTicket | null) ?? null;
+}
+
+async function findTicketBySenderSubject(input: {
+  contactEmail: string | null;
+  subject: string;
+}): Promise<SupportSubjectTicket | null> {
+  const normalized = normalizeSupportEmailSubject(input.subject);
+  if (normalized.length < 8) return null;
+
+  const coachId = await findCoachProfileIdByEmail(input.contactEmail);
+  const email = input.contactEmail?.trim().toLowerCase() || null;
+  const select = "id, status, source, title, unipile_thread_id, created_at";
+  const rows: SupportSubjectTicket[] = [];
+
+  if (coachId) {
+    const { data } = await supabaseAdmin
+      .from("community_feedback_reports")
+      .select(select)
+      .eq("created_by", coachId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    rows.push(...((data ?? []) as SupportSubjectTicket[]));
+  }
+  if (email) {
+    const { data } = await supabaseAdmin
+      .from("community_feedback_reports")
+      .select(select)
+      .eq("contact_email", email)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    for (const row of (data ?? []) as SupportSubjectTicket[]) {
+      if (!rows.some((existing) => existing.id === row.id)) rows.push(row);
+    }
+  }
+
+  const matches = rows.filter(
+    (row) => normalizeSupportEmailSubject(row.title || "") === normalized
+  );
+  matches.sort((a, b) => {
+    const rank = (status: string | null) =>
+      status === "open" || status === "waiting_reply" ? 0 : 1;
+    const byStatus = rank(a.status) - rank(b.status);
+    if (byStatus) return byStatus;
+    return String(b.created_at).localeCompare(String(a.created_at));
+  });
+  return matches[0] ?? null;
 }
 
 async function findSystemReplyAuthor(
@@ -769,7 +858,7 @@ export async function syncSupportMailboxInbound(limit = 25): Promise<{
       continue;
     }
 
-    if (isInactiveSupportMailboxEmail(item)) {
+    if (shouldSkipInactiveSupportEmail(item)) {
       skipped += 1;
       continue;
     }

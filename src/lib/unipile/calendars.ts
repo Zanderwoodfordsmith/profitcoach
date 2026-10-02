@@ -254,7 +254,10 @@ export async function createUnipileCalendarEvent(input: {
   attendees: { email: string }[];
   notify?: boolean;
   transparency?: "opaque" | "transparent";
-  conference?: { provider: "google_meet" | "teams" };
+  conference?: {
+    provider: "google_meet" | "teams" | "zoom" | "unknown";
+    url?: string;
+  };
 }): Promise<UnipileResult<{ object?: string; event_id: string }>> {
   const qs = new URLSearchParams({ account_id: input.accountId });
   const body: Record<string, unknown> = {
@@ -268,11 +271,28 @@ export async function createUnipileCalendarEvent(input: {
   };
   if (input.body) body.body = input.body;
   if (input.location) body.location = input.location;
-  if (input.conference) body.conference = { provider: input.conference.provider };
+  if (input.conference) {
+    body.conference = {
+      provider: input.conference.provider,
+      ...(input.conference.url ? { url: input.conference.url } : {}),
+    };
+  }
   return unipileFetch<{ object?: string; event_id: string }>(
     "POST",
     `${calendarPath(input.calendarId, "/events")}?${qs.toString()}`,
     body
+  );
+}
+
+export async function deleteUnipileCalendarEvent(input: {
+  accountId: string;
+  calendarId: string;
+  eventId: string;
+}): Promise<UnipileResult<unknown>> {
+  const qs = new URLSearchParams({ account_id: input.accountId });
+  return unipileFetch(
+    "DELETE",
+    `${calendarPath(input.calendarId, `/events/${encodeURIComponent(input.eventId)}`)}?${qs.toString()}`
   );
 }
 
@@ -292,13 +312,17 @@ export async function patchUnipileCalendarEvent(input: {
   accountId: string;
   calendarId: string;
   eventId: string;
+  title?: string;
   body?: string;
   location?: string;
+  notify?: boolean;
 }): Promise<UnipileResult<UnipileCalendarEvent>> {
   const qs = new URLSearchParams({ account_id: input.accountId });
   const patch: Record<string, unknown> = {};
+  if (input.title != null) patch.title = input.title;
   if (input.body != null) patch.body = input.body;
   if (input.location != null) patch.location = input.location;
+  if (input.notify != null) patch.notify = input.notify;
   return unipileFetch<UnipileCalendarEvent>(
     "PATCH",
     `${calendarPath(input.calendarId, `/events/${encodeURIComponent(input.eventId)}`)}?${qs.toString()}`,

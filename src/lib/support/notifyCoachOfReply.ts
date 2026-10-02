@@ -2,6 +2,7 @@ import { getAppBaseUrl } from "@/lib/appBaseUrl";
 import { BCA_SUPPORT_EMAIL } from "@/config/businessContact";
 import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import { getSupportMailboxAccount } from "@/lib/support/mailbox";
+import { formatSupportTicketId } from "@/lib/support/tickets";
 import {
   parseSupportReplyMedia,
   supportEmailAttachmentFilename,
@@ -12,6 +13,7 @@ import type { SupportTicketSource } from "@/lib/support/tickets";
 import {
   getUnipileEmail,
   isUnipileConfigured,
+  listUnipileEmails,
   sendUnipileEmail,
 } from "@/lib/unipile/client";
 
@@ -327,6 +329,7 @@ export async function processDueSupportReplyEmails(
 
     const result = await notifyCoachOfSupportReply({
       ticketId: ticket.id,
+      ticketNumber: ticket.ticket_number,
       title: ticket.title,
       replyBody,
       signatureName: lastStaffSignature(staffReplies),
@@ -373,6 +376,54 @@ export async function processDueSupportReplyEmails(
   return { processed: (due ?? []).length, sent, errors };
 }
 
+/**
+ * Unipile's send response `tracking_id` is not a message id. Gmail's
+ * `provider_id` on that response is the thread id. Resolve the real message
+ * so later replies can be matched.
+ */
+async function resolveOutboundSupportEmail(input: {
+  accountId: string;
+  trackingId?: string | null;
+  providerId?: string | null;
+}): Promise<{ emailId: string | null; threadId: string | null }> {
+  const trackingId = input.trackingId?.trim() || null;
+  const providerId = input.providerId?.trim() || null;
+
+  for (const id of [trackingId, providerId]) {
+    if (!id) continue;
+    const got = await getUnipileEmail(id, input.accountId);
+    if (got.ok && got.data?.id) {
+      return {
+        emailId: got.data.id,
+        threadId: got.data.thread_id?.trim() || null,
+      };
+    }
+  }
+
+  if (providerId) {
+    const listed = await listUnipileEmails({
+      account_id: input.accountId,
+      thread_id: providerId,
+      limit: 20,
+    });
+    const items = listed.ok ? (listed.data?.items ?? []) : [];
+    const hit =
+      items.find(
+        (item) => trackingId && String(item.tracking_id || "") === trackingId
+      ) ||
+      items.find((item) => String(item.role || "").toLowerCase() === "sent") ||
+      null;
+    if (hit && typeof hit.id === "string") {
+      return {
+        emailId: hit.id,
+        threadId: String(hit.thread_id || providerId),
+      };
+    }
+  }
+
+  return { emailId: trackingId, threadId: null };
+}
+
 async function linkTicketToOutboundEmail(input: {
   ticketId: string;
   accountId: string;
@@ -380,25 +431,23 @@ async function linkTicketToOutboundEmail(input: {
   providerId?: string | null;
   existingEmailId?: string | null;
 }): Promise<void> {
-  const lookupId = input.trackingId || input.providerId;
-  let emailId = input.trackingId || null;
-  let threadId: string | null = null;
-
-  if (lookupId) {
-    const got = await getUnipileEmail(lookupId, input.accountId);
-    if (got.ok && got.data) {
-      emailId = got.data.id || emailId;
-      threadId = got.data.thread_id?.trim() || null;
-    }
+  const resolved = await resolveOutboundSupportEmail(input);
+  let replaceEmailId = !input.existingEmailId;
+  if (input.existingEmailId) {
+    const existing = await getUnipileEmail(
+      input.existingEmailId,
+      input.accountId
+    );
+    // A stored tracking id 404s. Replace it with the real sent message.
+    if (!existing.ok || !existing.data?.id) replaceEmailId = true;
   }
 
   const patch: Record<string, unknown> = {
     unipile_account_id: input.accountId,
   };
-  if (threadId) patch.unipile_thread_id = threadId;
-  // Prefer keeping an existing inbound id for reply_to chains; otherwise store outbound.
-  if (!input.existingEmailId && emailId) {
-    patch.unipile_email_id = emailId;
+  if (resolved.threadId) patch.unipile_thread_id = resolved.threadId;
+  if (replaceEmailId && resolved.emailId) {
+    patch.unipile_email_id = resolved.emailId;
   }
 
   await supabaseAdmin
@@ -407,8 +456,27 @@ async function linkTicketToOutboundEmail(input: {
     .eq("id", input.ticketId);
 }
 
+/** Subject members reply to. SUP-#### is how a reply finds this ticket. */
+export function supportReplyEmailSubject(
+  title: string | null | undefined,
+  ticketNumber: number | null | undefined
+): string {
+  const subjectTitle = (title || "").trim() || "your support request";
+  const stripped =
+    subjectTitle.replace(/^(?:\s*(?:re|fw|fwd)\s*:\s*)+/i, "").trim() ||
+    subjectTitle;
+  const withoutTag =
+    stripped.replace(/\s*\(SUP-\d{1,8}\)\s*$/i, "").trim() || stripped;
+  const tag =
+    ticketNumber && ticketNumber > 0
+      ? ` (${formatSupportTicketId(ticketNumber)})`
+      : "";
+  return `RE: ${withoutTag}${tag}`.slice(0, 200);
+}
+
 export async function notifyCoachOfSupportReply(input: {
   ticketId: string;
+  ticketNumber?: number | null;
   title: string | null;
   replyBody: string;
   signatureName: string | null;
@@ -445,11 +513,7 @@ export async function notifyCoachOfSupportReply(input: {
     supportUrl,
   });
 
-  // Always RE: so member inbox shows a reply, not a bare ticket title.
-  const subjectBase = /^(re|RE|Re):\s*/i.test(subjectTitle)
-    ? subjectTitle.replace(/^(re|RE|Re):\s*/i, "").trim() || subjectTitle
-    : subjectTitle;
-  const subject = `RE: ${subjectBase}`.slice(0, 200);
+  const subject = supportReplyEmailSubject(subjectTitle, input.ticketNumber);
 
   const to = [
     {

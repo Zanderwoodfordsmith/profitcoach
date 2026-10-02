@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { PracticeProvider } from "@/components/practice/PracticeProvider";
 import { PracticeShell } from "@/components/practice/PracticeShell";
@@ -15,6 +23,25 @@ type CoachRow = {
   coach_business_name: string | null;
 };
 
+type ToolbarSetter = (node: ReactNode) => void;
+
+const BlueprintToolbarContext = createContext<ToolbarSetter | null>(null);
+
+/** Lets the coach picker sit in the page header so the document sidebars can fill the page. */
+export function BlueprintToolbarProvider({
+  setToolbar,
+  children,
+}: {
+  setToolbar: ToolbarSetter;
+  children: ReactNode;
+}) {
+  return (
+    <BlueprintToolbarContext.Provider value={setToolbar}>
+      {children}
+    </BlueprintToolbarContext.Provider>
+  );
+}
+
 function coachName(c: CoachRow) {
   return c.full_name?.trim() || c.coach_business_name?.trim() || c.slug || "Coach";
 }
@@ -25,6 +52,7 @@ function coachName(c: CoachRow) {
  * "View as coach" setting is never changed.
  */
 export function BlueprintCoachPreview({ children }: { children: ReactNode }) {
+  const setToolbar = useContext(BlueprintToolbarContext);
   const [coaches, setCoaches] = useState<CoachRow[]>([]);
   // Admin pages render only after the session check, so this runs client-side.
   const [coachId, setCoachId] = useState<string | null>(() => {
@@ -59,7 +87,7 @@ export function BlueprintCoachPreview({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  function choose(id: string) {
+  const choose = useCallback((id: string) => {
     const next = id || null;
     setCoachId(next);
     try {
@@ -68,10 +96,11 @@ export function BlueprintCoachPreview({ children }: { children: ReactNode }) {
     } catch {
       // Ignore: selection just will not survive a reload.
     }
-  }
+  }, []);
 
-  return (
-    <div className="flex flex-col gap-4">
+  useLayoutEffect(() => {
+    if (!setToolbar) return;
+    setToolbar(
       <div className="flex flex-wrap items-center gap-3">
         <label htmlFor="blueprint-preview-coach" className="text-sm font-medium text-slate-700">
           Viewing as
@@ -91,13 +120,19 @@ export function BlueprintCoachPreview({ children }: { children: ReactNode }) {
         </select>
         <p className="text-xs text-slate-500">Edits and approvals save to this coach&apos;s blueprint.</p>
       </div>
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+    );
+    return () => setToolbar(null);
+  }, [setToolbar, coachId, coaches, choose]);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {error ? <p className="px-4 py-2 text-sm text-rose-600 md:px-6">{error}</p> : null}
       {coachId ? (
         <PracticeProvider key={coachId} coachId={coachId} basePath="/admin/blueprint/coach">
           <PracticeShell embedded>{children}</PracticeShell>
         </PracticeProvider>
       ) : (
-        <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+        <p className="m-4 rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 md:m-6">
           Choose a coach to see their blueprint the way they see it.
         </p>
       )}

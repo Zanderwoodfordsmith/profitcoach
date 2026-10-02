@@ -156,21 +156,31 @@ export async function PATCH(
   if (status === "cancelled") {
     if (booking.google_event_id && booking.google_calendar_id) {
       try {
-        const { getValidGoogleAccessToken } = await import(
-          "@/lib/booking/googleCalendar"
+        const { deleteUnipileBookingEvent } = await import(
+          "@/lib/booking/unipileCalendar"
         );
-        const token = await getValidGoogleAccessToken(booking.coach_id as string);
-        if (token) {
-          const cal = encodeURIComponent(String(booking.google_calendar_id));
-          const ev = encodeURIComponent(String(booking.google_event_id));
-          await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${cal}/events/${ev}?sendUpdates=all`,
-            {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${token}` },
-              cache: "no-store",
-            }
+        const removed = await deleteUnipileBookingEvent({
+          coachId: booking.coach_id as string,
+          calendarId: String(booking.google_calendar_id),
+          eventId: String(booking.google_event_id),
+        });
+        if (!removed) {
+          const { getValidGoogleAccessToken } = await import(
+            "@/lib/booking/googleCalendar"
           );
+          const token = await getValidGoogleAccessToken(booking.coach_id as string);
+          if (token) {
+            const cal = encodeURIComponent(String(booking.google_calendar_id));
+            const ev = encodeURIComponent(String(booking.google_event_id));
+            await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/${cal}/events/${ev}?sendUpdates=all`,
+              {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+                cache: "no-store",
+              }
+            );
+          }
         }
       } catch (e) {
         console.error("google event cancel:", e);

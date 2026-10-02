@@ -49,6 +49,17 @@ export function supportCallHostPath(slug: string): string | null {
   return hit?.path ?? null;
 }
 
+/** Calendar invite title: "BCA Support Call : Jane Smith & Zander". */
+export function supportCallEventTitle(
+  hostSlug: string,
+  memberName: string
+): string | null {
+  if (!isSupportCallHostSlug(hostSlug)) return null;
+  const member = memberName.trim() || "Member";
+  const host = supportCallHostDisplayName(hostSlug);
+  return `BCA Support Call : ${member} & ${host}`;
+}
+
 /** Location string for support calendars (branded short link, not raw Zoom). */
 export function supportCallMeetingLocationUrl(slug: string): string | null {
   const hit = SUPPORT_CALL_HOSTS.find(

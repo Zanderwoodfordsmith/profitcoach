@@ -8,6 +8,7 @@ import {
   calendarBusyDisplayTitle,
   calendarFeatureErrorMessage,
   createUnipileCalendarEvent,
+  deleteUnipileCalendarEvent,
   eventTimeToIso,
   getUnipileCalendarEvent,
   isOwnedUnipileCalendar,
@@ -530,6 +531,14 @@ export async function fetchUnipileBusyIntervals(input: {
   return loaded.intervals;
 }
 
+/** Branded /zoom-* links and zoom.us join URLs become a Zoom conference on the invite. */
+function zoomConferenceUrl(url: string | null): string | null {
+  const join = url?.trim() ?? "";
+  if (!/^https?:\/\//i.test(join)) return null;
+  if (/zoom\.us\/|\/zoom-/i.test(join)) return join;
+  return null;
+}
+
 function withJoinInDescription(description: string, joinUrl: string | null): string {
   const trimmed = description.trim();
   if (!joinUrl?.trim()) return trimmed;
@@ -568,7 +577,7 @@ export async function createUnipileBookingEvent(
   const ctx = resolved.ctx;
 
   const wantConference = input.locationMode === "google_meet";
-  const conferenceProvider =
+  const conferenceProvider: "google_meet" | "teams" | null =
     wantConference && ctx.provider === "GOOGLE"
       ? "google_meet"
       : wantConference && ctx.provider === "OUTLOOK"
@@ -585,7 +594,15 @@ export async function createUnipileBookingEvent(
   }
 
   const description = withJoinInDescription(input.description, knownJoinUrl);
-  const created = await createUnipileCalendarEvent({
+  const zoomUrl =
+    input.locationMode === "custom" ? zoomConferenceUrl(knownJoinUrl) : null;
+  const conference = zoomUrl
+    ? { provider: "zoom" as const, url: zoomUrl }
+    : conferenceProvider
+      ? { provider: conferenceProvider }
+      : undefined;
+
+  const eventBody = {
     accountId: ctx.account.unipile_account_id,
     calendarId: ctx.eventCalendarId,
     title: input.title,
@@ -597,11 +614,21 @@ export async function createUnipileBookingEvent(
       ? [{ email: input.guestEmail.trim() }]
       : [],
     notify: true,
-    transparency: "opaque",
-    conference: conferenceProvider
-      ? { provider: conferenceProvider }
-      : undefined,
+    transparency: "opaque" as const,
+  };
+
+  let created = await createUnipileCalendarEvent({
+    ...eventBody,
+    conference,
   });
+  if ((!created.ok || !created.data?.event_id) && zoomUrl) {
+    console.error(
+      "unipile create with zoom link failed, retrying without conference:",
+      created.status,
+      created.error
+    );
+    created = await createUnipileCalendarEvent(eventBody);
+  }
 
   if (!created.ok || !created.data?.event_id) {
     console.error(
@@ -652,4 +679,26 @@ export async function createUnipileBookingEvent(
     htmlLink: hangoutLink,
     location: finalLocation,
   };
+}
+
+export async function deleteUnipileBookingEvent(input: {
+  coachId: string;
+  calendarId: string;
+  eventId: string;
+}): Promise<boolean> {
+  const resolved = await resolveCalendarContext(input.coachId);
+  if (!resolved.ok) return false;
+  const deleted = await deleteUnipileCalendarEvent({
+    accountId: resolved.ctx.account.unipile_account_id,
+    calendarId: input.calendarId,
+    eventId: input.eventId,
+  });
+  if (!deleted.ok) {
+    console.error(
+      "unipile delete calendar event failed:",
+      deleted.status,
+      deleted.error
+    );
+  }
+  return deleted.ok;
 }

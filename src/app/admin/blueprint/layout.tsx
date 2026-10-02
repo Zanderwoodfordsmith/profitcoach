@@ -1,32 +1,46 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 import { BlueprintAdminViews } from "@/components/admin/BlueprintAdminViews";
-import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
+import { BlueprintToolbarProvider } from "@/components/admin/BlueprintCoachPreview";
 import { StickyPageHeader } from "@/components/layout";
 
-export default function AdminBlueprintLayout({ children }: { children: ReactNode }) {
-  const headerRef = useRef<HTMLDivElement>(null);
-  const [headerHeight, setHeaderHeight] = useState(0);
+/** Main has no horizontal padding on blueprint routes, so the bar only insets its contents. */
+const HEADER_BLEED = "px-4 md:px-6";
 
-  // Sticky table headers on the map sit just under this header.
-  useEffect(() => {
-    const el = headerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => setHeaderHeight(el.offsetHeight));
-    observer.observe(el);
-    return () => observer.disconnect();
+export default function AdminBlueprintLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const coachView = Boolean(pathname?.startsWith("/admin/blueprint/coach"));
+  const [toolbar, setToolbarNode] = useState<ReactNode>(null);
+  const setToolbar = useCallback((node: ReactNode) => {
+    setToolbarNode(node);
   }, []);
 
   return (
-    <div
-      className="flex flex-col gap-5"
-      style={{ "--blueprint-header-h": `${headerHeight}px` } as CSSProperties}
-    >
-      <StickyPageHeader title="Blueprint" tabs={<CoachesHubTabs />} rootRef={headerRef} />
-      <BlueprintAdminViews />
-      {children}
-    </div>
+    <BlueprintToolbarProvider setToolbar={setToolbar}>
+      <div className="flex h-full min-h-0 flex-col">
+        <StickyPageHeader
+          title="Blueprint"
+          tabs={<BlueprintAdminViews />}
+          below={toolbar}
+          bleedInset={HEADER_BLEED}
+        />
+        <div
+          className={
+            coachView
+              ? "min-h-0 flex-1 overflow-hidden bg-white"
+              : "min-h-0 flex-1 overflow-y-auto"
+          }
+        >
+          {coachView ? (
+            children
+          ) : (
+            <div className="px-4 py-5 md:px-6">{children}</div>
+          )}
+        </div>
+      </div>
+    </BlueprintToolbarProvider>
   );
 }

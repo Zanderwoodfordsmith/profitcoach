@@ -47,17 +47,22 @@ export function ProspectWorkspace({ contactId }: Props) {
 
   const fromConversations = searchParams.get("from") === "conversations";
   const fromPool = searchParams.get("from") === "pool";
+  const fromCampaigns = searchParams.get("from") === "campaigns";
   const hubPrefix = isAdmin ? "/admin" : "/coach";
   const backHref = fromPool
     ? `${hubPrefix}/campaigns?tab=pool`
-    : fromConversations
-      ? `${hubPrefix}/conversations`
-      : `${hubPrefix}/prospects`;
+    : fromCampaigns
+      ? `${hubPrefix}/campaigns`
+      : fromConversations
+        ? `${hubPrefix}/conversations`
+        : `${hubPrefix}/prospects`;
   const backLabel = fromPool
     ? "Pool"
-    : fromConversations
-      ? "Conversations"
-      : "Prospects";
+    : fromCampaigns
+      ? "Campaigns"
+      : fromConversations
+        ? "Conversations"
+        : "Prospects";
 
   const load = useCallback(async () => {
     setError(null);

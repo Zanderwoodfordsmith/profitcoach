@@ -10,12 +10,14 @@ import {
   deleteCampaignLead,
   deleteCampaignLeads,
   duplicateCampaign,
+  enrollContactInCampaign,
   enqueuePendingJobsForCampaign,
   getCampaign,
   getCampaignJobs,
   moveCampaignLeads,
   pauseCampaignLeads,
   replaceCampaignSteps,
+  removeContactFromCampaign,
   resumeCampaignLeads,
   setCampaignStatus,
   updateCampaign,
@@ -167,6 +169,20 @@ export async function PATCH(request: Request, ctx: Ctx) {
         body.contact_ids
       );
       return NextResponse.json(result);
+    }
+
+    if (body.action === "enroll_contact" && typeof body.contact_id === "string") {
+      const result = await enrollContactInCampaign(
+        auth.coachId,
+        id,
+        body.contact_id
+      );
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "remove_contact" && typeof body.contact_id === "string") {
+      await removeContactFromCampaign(auth.coachId, id, body.contact_id);
+      return NextResponse.json({ ok: true });
     }
 
     if (body.action === "delete_lead" && typeof body.lead_id === "string") {

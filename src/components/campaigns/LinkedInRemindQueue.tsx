@@ -14,7 +14,7 @@ import {
   isDemoPreviewId,
 } from "@/lib/campaigns/demoPreview";
 import type { LeadStatusIcon, LeadStatusTone } from "@/lib/unipile/campaignLeadActivity";
-import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
+import { campaignContactHref } from "@/lib/prospects/prospectDetailHref";
 
 type RemindItem = {
   job_id: string;
@@ -234,7 +234,7 @@ export function LinkedInRemindQueue({
                   <ActivityTableRow
                     key={item.job_id}
                     name={leadName(item)}
-                    href={prospectDetailHref(item.contact_id, isAdmin)}
+                    href={campaignContactHref(item.contact_id, isAdmin, item.lead_id)}
                     status={status}
                     next={shortStepLabel(item.step_type || "message")}
                     open={open}

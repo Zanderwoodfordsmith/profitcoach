@@ -39,6 +39,7 @@ export default function AdminLayout({
   }, [pathname]);
 
   const playbooksReader = isPlaybooksReaderPath(pathname);
+  const blueprintPage = pathname.startsWith("/admin/blueprint");
   const conversationsPage = pathname === "/admin/conversations";
   const supportInboxPage = pathname === "/admin/support";
   const prospectsListPage = pathname === "/admin/prospects";
@@ -49,7 +50,8 @@ export default function AdminLayout({
     fullHeightInboxPage ||
     prospectsListPage ||
     prospectWorkspacePage ||
-    campaignsListPage;
+    campaignsListPage ||
+    blueprintPage;
   const sidebarExpanded = sidebarOpen && !playbooksReader;
   const sidebarMounted = !playbooksReader;
   const sidebarCollapsed = sidebarMounted && !sidebarOpen;
@@ -168,6 +170,12 @@ export default function AdminLayout({
                   }`
                 : playbooksReader
                 ? "min-h-screen px-0 pb-10"
+                : blueprintPage
+                ? `h-dvh overflow-hidden px-0 ${
+                    sidebarExpanded
+                      ? "pb-0 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                      : "pb-0"
+                  }`
                 : `min-h-screen px-4 md:px-[60px] ${
                     sidebarExpanded
                       ? "pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
@@ -184,7 +192,11 @@ export default function AdminLayout({
                     : "gap-4"
               }`}
             >
-              {chromeEnabled ? <DashboardChromeFallback /> : null}
+              {chromeEnabled ? (
+                <DashboardChromeFallback
+                  bleedInset={blueprintPage ? "px-4 md:px-6" : undefined}
+                />
+              ) : null}
               {/*
                 Full-height routes need a flex-1 / min-h-0 chain so the body
                 scrolls inside the viewport. Do not put overflow-hidden here —

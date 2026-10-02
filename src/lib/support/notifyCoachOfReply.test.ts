@@ -1,6 +1,25 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildSupportReplyEmailHtml } from "./notifyCoachOfReply";
+import {
+  buildSupportReplyEmailHtml,
+  supportReplyEmailSubject,
+} from "./notifyCoachOfReply";
+
+describe("supportReplyEmailSubject", () => {
+  it("includes the ticket number so a reply can be matched", () => {
+    assert.equal(
+      supportReplyEmailSubject("Incompetence, confusion & ineptitude", 510),
+      "RE: Incompetence, confusion & ineptitude (SUP-0510)"
+    );
+  });
+
+  it("does not stack Re: or a second ticket tag", () => {
+    assert.equal(
+      supportReplyEmailSubject("RE: Calendar (SUP-0445)", 445),
+      "RE: Calendar (SUP-0445)"
+    );
+  });
+});
 
 describe("buildSupportReplyEmailHtml", () => {
   it("uses the staff reply as the email body with a name signature", () => {

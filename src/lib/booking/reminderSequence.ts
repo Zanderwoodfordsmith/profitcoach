@@ -224,7 +224,10 @@ export function sentReminderStepIds(args: {
       if (key.trim()) ids.add(key);
     }
   }
-  if (!args.reminderSentAt) return ids;
+  // Legacy rows only stored reminder_sent_at for the single T-2h ping.
+  // Once reminder_sends lists the steps that actually went out, that flag
+  // must not also mark the 2-hour step as done.
+  if (ids.size > 0 || !args.reminderSentAt) return ids;
 
   const twoHour = args.sequence.find(
     (step) => step.kind === "reminder" && step.minutes_before === 120

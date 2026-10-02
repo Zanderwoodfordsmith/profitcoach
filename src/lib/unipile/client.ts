@@ -793,6 +793,7 @@ export async function listUnipileEmails(input: {
   limit?: number;
   cursor?: string | null;
   meta_only?: boolean;
+  thread_id?: string | null;
 }) {
   const qs = new URLSearchParams({
     account_id: input.account_id,
@@ -800,6 +801,7 @@ export async function listUnipileEmails(input: {
   });
   if (input.cursor) qs.set("cursor", input.cursor);
   if (input.meta_only != null) qs.set("meta_only", String(input.meta_only));
+  if (input.thread_id) qs.set("thread_id", input.thread_id);
   return unipileFetch<{
     object?: string;
     items?: Array<Record<string, unknown>>;

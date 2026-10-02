@@ -14,7 +14,7 @@ import { LinkedInRemindQueue } from "@/components/campaigns/LinkedInRemindQueue"
 import { demoPreviewActivityFeed } from "@/lib/campaigns/demoPreview";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { CampaignFeedItem } from "@/lib/unipile/campaignActivityFeed";
-import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
+import { campaignContactHref } from "@/lib/prospects/prospectDetailHref";
 
 type PaneTab = "due" | "sent" | "planned";
 
@@ -81,7 +81,7 @@ function FeedList({
           <ActivityTableRow
             key={item.id}
             name={personName(item)}
-            href={prospectDetailHref(item.contactId, isAdmin)}
+            href={campaignContactHref(item.contactId, isAdmin, item.leadId)}
             status={leadChip(item.leadStatus)}
             next={shortStepLabel(item.stepType)}
           />

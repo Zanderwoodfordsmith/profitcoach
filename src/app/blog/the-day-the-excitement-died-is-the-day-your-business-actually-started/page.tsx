@@ -13,8 +13,9 @@ export const metadata: Metadata = {
 export default async function DayExcitementDiedBlogPostPage({
   searchParams,
 }: {
-  searchParams?: { coach?: string };
+  searchParams?: Promise<{ coach?: string }>;
 }) {
+  const params = await searchParams;
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-slate-900">
       <ProfitCoachTopMenu />
@@ -26,7 +27,7 @@ export default async function DayExcitementDiedBlogPostPage({
         <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-[-0.025em] md:text-6xl md:leading-[1.04]">
           The Day The Excitement Died Is The Day Your Business Actually Started
         </h1>
-        <BlogAuthorByline readMinutes={8} coachSlug={searchParams?.coach} />
+        <BlogAuthorByline readMinutes={8} coachSlug={params?.coach} />
 
         <div className="mt-12 space-y-8 font-sans text-[1.12rem] leading-[2rem] text-slate-800 md:text-[1.22rem] md:leading-[2.2rem]">
           <p>

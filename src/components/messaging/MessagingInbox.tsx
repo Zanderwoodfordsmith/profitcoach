@@ -100,7 +100,8 @@ import {
   type InboxChannelFilter,
   type InboxFilters,
 } from "@/lib/messaging/inboxFilters";
-import { leadStatusLabel } from "@/lib/unipile/campaignLeadActivity";
+import { isOpenLeadStatus } from "@/lib/unipile/campaignLeadActivity";
+import { ProspectCampaignsPanel } from "@/components/messaging/ProspectCampaignsPanel";
 import { WhatsAppGlyph } from "@/components/icons/WhatsAppGlyph";
 import {
   ChatComposerTools,
@@ -3043,40 +3044,38 @@ export function MessagingInbox({
     };
   }, [authHeaders, contactId, conversationsCacheKey, openConversation]);
 
-  useEffect(() => {
+  const campaignLoadGen = useRef(0);
+  const loadProspectCampaigns = useCallback(async () => {
     const campaignContactId = (contactId || selected?.contact_id || "").trim();
+    const gen = ++campaignLoadGen.current;
     if (!campaignContactId) {
       setProspectCampaigns([]);
       return;
     }
-    let cancelled = false;
-    async function loadCampaigns() {
-      const headers = await authHeaders();
-      if (!headers) return;
-      try {
-        const res = await fetch(
-          `/api/messaging/contacts/${encodeURIComponent(campaignContactId)}/feed`,
-          { headers, cache: "no-store" }
-        );
-        const body = (await res.json().catch(() => ({}))) as {
-          campaigns?: ProspectCampaignMembership[];
-        };
-        if (cancelled || !res.ok) {
-          if (!cancelled) setProspectCampaigns([]);
-          return;
-        }
-        setProspectCampaigns(
-          Array.isArray(body.campaigns) ? body.campaigns : []
-        );
-      } catch {
-        if (!cancelled) setProspectCampaigns([]);
+    const headers = await authHeaders();
+    if (!headers || gen !== campaignLoadGen.current) return;
+    try {
+      const res = await fetch(
+        `/api/messaging/contacts/${encodeURIComponent(campaignContactId)}/feed`,
+        { headers, cache: "no-store" }
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        campaigns?: ProspectCampaignMembership[];
+      };
+      if (gen !== campaignLoadGen.current) return;
+      if (!res.ok) {
+        setProspectCampaigns([]);
+        return;
       }
+      setProspectCampaigns(Array.isArray(body.campaigns) ? body.campaigns : []);
+    } catch {
+      if (gen === campaignLoadGen.current) setProspectCampaigns([]);
     }
-    void loadCampaigns();
-    return () => {
-      cancelled = true;
-    };
   }, [authHeaders, contactId, selected?.contact_id]);
+
+  useEffect(() => {
+    void loadProspectCampaigns();
+  }, [loadProspectCampaigns]);
 
   useEffect(() => {
     void loadInboxAccounts();
@@ -3303,6 +3302,74 @@ export function MessagingInbox({
     }
   }, [prospectMode, replyChannel]);
 
+  const composeAppliedRef = useRef<string | null>(null);
+  const [campaignCompose, setCampaignCompose] = useState<{
+    key: string;
+    body: string;
+    channel: ReplyChannel;
+  } | null>(null);
+
+  useEffect(() => {
+    const leadId = (searchParams.get("composeLead") || "").trim();
+    if (!leadId || !selected?.id) return;
+    const key = `${selected.id}:${leadId}`;
+    if (composeAppliedRef.current === key) return;
+    let cancelled = false;
+    void (async () => {
+      const headers = await authHeaders();
+      if (!headers || cancelled) return;
+      const res = await fetch(
+        `/api/coach/linkedin-outreach/compose-preview?leadId=${encodeURIComponent(leadId)}`,
+        { headers }
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        body?: string;
+        channel?: string;
+      };
+      if (cancelled) return;
+      composeAppliedRef.current = key;
+      const text = typeof body.body === "string" ? body.body.trim() : "";
+      const channel = body.channel;
+      if (
+        res.ok &&
+        text &&
+        (channel === "email" ||
+          channel === "whatsapp" ||
+          channel === "linkedin" ||
+          channel === "instagram" ||
+          channel === "messenger")
+      ) {
+        setCampaignCompose({ key, body: text, channel });
+      }
+      const params = new URLSearchParams(searchParams.toString());
+      if (!params.has("composeLead")) return;
+      params.delete("composeLead");
+      const next = params.toString();
+      router.replace(next ? `${pathname}?${next}` : pathname || "", {
+        scroll: false,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeaders, pathname, router, searchParams, selected?.id]);
+
+  useEffect(() => {
+    if (!campaignCompose || !selected?.id) return;
+    if (!campaignCompose.key.startsWith(`${selected.id}:`)) return;
+    setReplyChannel(campaignCompose.channel);
+    setReplyBody(campaignCompose.body);
+    setComposerOpen(true);
+    if (
+      campaignCompose.channel === "email" &&
+      !replySubjectRef.current.trim() &&
+      selected.subject
+    ) {
+      setReplySubject(autoEmailReplySubject("email", selected.subject));
+    }
+    setCampaignCompose(null);
+  }, [campaignCompose, selected?.id, selected?.subject]);
+
   const threadMessages =
     openThreadId === selectedId
       ? messages.filter(
@@ -3319,6 +3386,10 @@ export function MessagingInbox({
           prospectFitsConversation(prospectDetails, selected)
         ? prospectDetails
         : null;
+  const campaignContactId = (contactId || selected?.contact_id || "").trim();
+  const activeCampaignCount = prospectCampaigns.filter((campaign) =>
+    isOpenLeadStatus(campaign.leadStatus)
+  ).length;
 
   const isAdminPath = Boolean(pathname?.startsWith("/admin"));
   const bossProHref = threadProspect?.id
@@ -6138,39 +6209,23 @@ export function MessagingInbox({
                   onToggle={() => toggleDetailSection("campaigns")}
                   panel
                   badge={
-                    prospectCampaigns.length > 0 ? (
+                    activeCampaignCount > 0 ? (
                       <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
-                        {prospectCampaigns.length}
+                        {activeCampaignCount}
                       </span>
                     ) : null
                   }
                 >
-                  {prospectCampaigns.length === 0 ? (
-                    <p className="text-sm text-slate-500">
+                  {campaignContactId ? (
+                    <ProspectCampaignsPanel
+                      contactId={campaignContactId}
+                      campaigns={prospectCampaigns}
+                      onChanged={() => void loadProspectCampaigns()}
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-600">
                       Not in a campaign yet.
                     </p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {prospectCampaigns.map((campaign) => (
-                        <li key={campaign.id}>
-                          <Link
-                            href={`${
-                              pathname?.startsWith("/admin")
-                                ? "/admin"
-                                : "/coach"
-                            }/campaigns/${encodeURIComponent(campaign.campaignId)}`}
-                            className="block rounded-md hover:text-sky-800"
-                          >
-                            <p className="text-[15px] font-medium leading-snug text-slate-900">
-                              {campaign.name}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {leadStatusLabel(campaign.leadStatus)}
-                            </p>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
                   )}
                 </CollapsibleDetailSection>
 

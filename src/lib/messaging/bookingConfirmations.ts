@@ -440,6 +440,16 @@ function notifyVars(input: BookingNotifyInput): BookingNotifyVars {
   };
 }
 
+function reminderStepDelivered(
+  step: BookingReminderStep,
+  result: BookingNotifyResult
+): boolean {
+  if (!step.enabled || (!step.email && !step.sms)) return false;
+  if (step.email && result.emailOk) return true;
+  if (step.sms && result.smsOk) return true;
+  return false;
+}
+
 function asReminderSendsMap(raw: unknown): Record<string, string> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   const out: Record<string, string> = {};
@@ -551,13 +561,15 @@ export async function sendBookingConfirmations(
     step,
     threadReply: false,
   });
-  try {
-    await markReminderSend({
-      bookingId: input.bookingId,
-      stepId: step.id,
-    });
-  } catch (err) {
-    console.error("markReminderSend confirmation:", err);
+  if (reminderStepDelivered(step, result)) {
+    try {
+      await markReminderSend({
+        bookingId: input.bookingId,
+        stepId: step.id,
+      });
+    } catch (err) {
+      console.error("markReminderSend confirmation:", err);
+    }
   }
   return result;
 }
@@ -650,7 +662,15 @@ export async function processDueBookingReminders(limit = 25): Promise<{
         nowMs: now,
         sentStepIds: sentIds,
       });
-      if (due.length === 0) continue;
+      const confirmation = sequence.find(
+        (step) =>
+          step.kind === "confirmation" &&
+          step.enabled &&
+          (step.email || step.sms) &&
+          !sentIds.has(step.id)
+      );
+      const pending = confirmation ? [confirmation, ...due] : due;
+      if (pending.length === 0) continue;
 
       const { data: profile } = await supabaseAdmin
         .from("profiles")
@@ -704,21 +724,24 @@ export async function processDueBookingReminders(limit = 25): Promise<{
         conversationId: (conv?.id as string | null) ?? null,
       };
 
-      for (const step of due) {
+      for (const step of pending) {
         if (dispatched >= limit) break;
         dispatched += 1;
         const result = await sendBookingSequenceStep({
           input,
           step,
-          threadReply: true,
+          threadReply: step.kind === "reminder",
         });
-        await markReminderSend({
-          bookingId: input.bookingId,
-          stepId: step.id,
-          reminderSentAt: true,
-        });
-        if (result.emailOk || result.smsOk) sent += 1;
-        else errors += 1;
+        if (reminderStepDelivered(step, result)) {
+          await markReminderSend({
+            bookingId: input.bookingId,
+            stepId: step.id,
+            reminderSentAt: step.kind === "reminder",
+          });
+          sent += 1;
+        } else {
+          errors += 1;
+        }
       }
     } catch (err) {
       console.error("reminder for booking", b.id, err);

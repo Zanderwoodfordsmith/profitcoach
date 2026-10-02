@@ -17,7 +17,10 @@ import {
   type CampaignStepType,
 } from "@/lib/unipile/campaignStepTypes";
 import { cleanCampaignStepsForSave } from "@/lib/unipile/campaignStepReplace";
-import { patchesAfterDeletedWait } from "@/lib/unipile/campaignLeadActivity";
+import {
+  isOpenLeadStatus,
+  patchesAfterDeletedWait,
+} from "@/lib/unipile/campaignLeadActivity";
 import {
   fetchAllSupabasePages,
   selectContactsWithOptionalPhone,
@@ -1304,6 +1307,109 @@ export async function deleteCampaignLead(
     .eq("campaign_id", campaignId)
     .eq("coach_id", coachId);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Put a contact on a campaign. Someone already active is left as they are.
+ * A past enrollment is started again from the first step.
+ */
+export async function enrollContactInCampaign(
+  coachId: string,
+  campaignId: string,
+  contactId: string
+) {
+  if (!CONTACT_ID_RE.test(contactId) || !CONTACT_ID_RE.test(campaignId)) {
+    throw new Error("Invalid id.");
+  }
+  const { data: existing, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select("id, status")
+    .eq("coach_id", coachId)
+    .eq("campaign_id", campaignId)
+    .eq("contact_id", contactId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (existing && isOpenLeadStatus(String(existing.status || ""))) {
+    return { added: 0, already: true as const };
+  }
+
+  if (existing?.id) {
+    const { error: updateError } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .update({
+        status: "queued",
+        current_step_position: 0,
+        next_action_at: new Date().toISOString(),
+        last_error: null,
+      })
+      .eq("id", existing.id)
+      .eq("coach_id", coachId)
+      .eq("campaign_id", campaignId);
+    if (updateError) throw new Error(updateError.message);
+
+    const { data: campaign } = await supabaseAdmin
+      .from("linkedin_campaigns")
+      .select("status")
+      .eq("id", campaignId)
+      .eq("coach_id", coachId)
+      .maybeSingle();
+    if (!campaign) throw new Error("Campaign not found.");
+    if (campaign.status === "running") {
+      await enqueuePendingJobsForCampaign(coachId, campaignId, [existing.id]);
+    }
+    return { added: 1, already: false as const };
+  }
+
+  const result = await addCampaignLeadsFromContacts(coachId, campaignId, [
+    contactId,
+  ]);
+  if (result.added === 0) {
+    throw new Error(
+      result.blacklisted
+        ? "They're on the block list."
+        : "Couldn't add them. This campaign needs a LinkedIn profile or email on the contact."
+    );
+  }
+  return { added: result.added, already: false as const };
+}
+
+/** Take someone off an active campaign and keep the row as a past enrollment. */
+export async function removeContactFromCampaign(
+  coachId: string,
+  campaignId: string,
+  contactId: string
+) {
+  if (!CONTACT_ID_RE.test(contactId) || !CONTACT_ID_RE.test(campaignId)) {
+    throw new Error("Invalid id.");
+  }
+  const { data: existing, error } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .select("id, status")
+    .eq("coach_id", coachId)
+    .eq("campaign_id", campaignId)
+    .eq("contact_id", contactId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!existing) throw new Error("They are not in this campaign.");
+  if (!isOpenLeadStatus(String(existing.status || ""))) {
+    throw new Error("They are not active in this campaign.");
+  }
+
+  const { error: jobError } = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .update({ status: "cancelled", last_error: "Removed from campaign" })
+    .eq("lead_id", existing.id)
+    .eq("coach_id", coachId)
+    .in("status", ["pending", "awaiting_coach", "running"]);
+  if (jobError) throw new Error(jobError.message);
+
+  const { error: updateError } = await supabaseAdmin
+    .from("linkedin_campaign_leads")
+    .update({ status: "skipped", next_action_at: null })
+    .eq("id", existing.id)
+    .eq("coach_id", coachId)
+    .eq("campaign_id", campaignId);
+  if (updateError) throw new Error(updateError.message);
 }
 
 const PAUSABLE_LEAD_STATUSES = new Set([

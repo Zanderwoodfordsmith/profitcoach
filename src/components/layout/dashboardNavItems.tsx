@@ -31,6 +31,8 @@ export type AdminSectionNavItem = DashboardNavItem & {
   toolkitHub?: boolean;
   /** Roadmap + lesson import + related product tooling. */
   academyHub?: boolean;
+  /** Practice Blueprint: coach view, records, and the page map. */
+  blueprintHub?: boolean;
 };
 
 function IconBriefcase({ className }: { className?: string }) {
@@ -460,6 +462,12 @@ export function coachClientsTabActive(
 export const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   {
+    href: "/admin/blueprint",
+    label: "Blueprint",
+    icon: IconBookOpen,
+    blueprintHub: true,
+  },
+  {
     href: "/admin/payments",
     label: "Financials",
     icon: IconWallet,
@@ -506,10 +514,15 @@ export function isCoachesHubPath(pathname: string | null): boolean {
     pathname === "/admin/" ||
     pathMatches(pathname, "/admin/coaches") ||
     pathMatches(pathname, "/admin/client-success") ||
-    pathMatches(pathname, "/admin/practice") ||
-    pathMatches(pathname, "/admin/blueprint") ||
     pathMatches(pathname, "/admin/action-plans") ||
     pathMatches(pathname, "/admin/coach-groups")
+  );
+}
+
+export function isBlueprintHubPath(pathname: string | null): boolean {
+  return (
+    pathMatches(pathname, "/admin/blueprint") ||
+    pathMatches(pathname, "/admin/practice")
   );
 }
 
@@ -546,6 +559,7 @@ export function adminSectionNavItemActive(
   item: AdminSectionNavItem
 ): boolean {
   if (item.coachesHub) return isCoachesHubPath(pathname);
+  if (item.blueprintHub) return isBlueprintHubPath(pathname);
   if (item.financialsHub) return isFinancialsHubPath(pathname);
   if (item.toolkitHub) return isToolkitHubPath(pathname);
   if (item.academyHub) return isAcademyHubPath(pathname);

@@ -22,10 +22,13 @@ export function PracticeComments({
   page,
   notes,
   onClose,
+  fill = false,
 }: {
   page: string;
   notes: PracticeNote[];
   onClose: () => void;
+  /** Fill the admin blueprint column instead of sticking to the viewport. */
+  fill?: boolean;
 }) {
   const { addNote } = usePractice();
   const [body, setBody] = useState("");
@@ -39,7 +42,11 @@ export function PracticeComments({
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col border-t border-slate-200 bg-white lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:w-80 lg:border-l lg:border-t-0">
+    <aside
+      className={`flex w-full shrink-0 flex-col border-t border-slate-200 bg-white lg:w-80 lg:border-l lg:border-t-0 ${
+        fill ? "lg:h-full lg:min-h-0" : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"
+      }`}
+    >
       <header className="flex items-center justify-between gap-3 px-4 py-3">
         <h2 className="text-sm font-semibold text-slate-900">Comments</h2>
         <button

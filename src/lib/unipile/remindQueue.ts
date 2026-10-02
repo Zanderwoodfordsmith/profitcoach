@@ -71,7 +71,7 @@ export async function cancelOpenSendJobsForCampaign(
     .in("status", ["pending", "awaiting_coach"]);
 }
 
-async function renderPreviewForJob(input: {
+export async function renderPreviewForJob(input: {
   coachId: string;
   lead: Record<string, unknown>;
   step: Record<string, unknown>;

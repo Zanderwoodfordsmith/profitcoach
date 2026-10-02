@@ -471,7 +471,7 @@ function PriorityCard({
 
 type PillarTabKey = (typeof PILLAR_KEYS)[number];
 
-export type ReportV3Variant = "preview" | "live";
+type ReportV3Variant = "preview" | "live";
 
 type CoachProfile = {
   full_name: string | null;
@@ -499,7 +499,7 @@ function coachInitials(name: string): string {
     .toUpperCase();
 }
 
-export function ReportV3({
+function ReportV3({
   answers,
   totalScore,
   coachSlug = "",

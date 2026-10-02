@@ -132,7 +132,7 @@ export function ActivityTableRow({
   const nameEl = href ? (
     <Link
       href={href}
-      title={name}
+      title={`Open ${name}`}
       className="min-w-0 truncate text-sm font-medium text-[#0c5290] hover:underline"
       onClick={(e) => e.stopPropagation()}
     >
@@ -143,32 +143,42 @@ export function ActivityTableRow({
       {name}
     </span>
   );
-  const main = (
-    <>
-      {nameEl}
-      <span className="min-w-0">
-        <PaneStatusChip {...status} />
-      </span>
-      <span className="truncate text-sm font-medium text-slate-800" title={next}>
-        {next}
-      </span>
-    </>
+  const statusEl = (
+    <span className="min-w-0">
+      <PaneStatusChip {...status} />
+    </span>
+  );
+  const nextEl = (
+    <span className="truncate text-sm font-medium text-slate-800" title={next}>
+      {next}
+    </span>
   );
 
   return (
-    <li className="border-b border-slate-100 last:border-b-0">
-      {onToggle ? (
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={open}
-          className={`${ACTIVITY_ROW_GRID} w-full items-center px-3 py-3 text-left hover:bg-slate-50/80`}
-        >
-          {main}
-        </button>
-      ) : (
-        <div className={`${ACTIVITY_ROW_GRID} items-center px-3 py-3`}>{main}</div>
-      )}
+    <li
+      className={`border-b border-slate-100 last:border-b-0 ${
+        onToggle ? "hover:bg-slate-50/80" : ""
+      }`}
+    >
+      <div className={`${ACTIVITY_ROW_GRID} items-center px-3 py-3`}>
+        {nameEl}
+        {onToggle ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={open}
+            className="col-span-2 grid grid-cols-subgrid items-center text-left"
+          >
+            {statusEl}
+            {nextEl}
+          </button>
+        ) : (
+          <>
+            {statusEl}
+            {nextEl}
+          </>
+        )}
+      </div>
       {open && children ? (
         <div className="border-t border-slate-100 bg-slate-50/70 px-3 py-3">
           {children}

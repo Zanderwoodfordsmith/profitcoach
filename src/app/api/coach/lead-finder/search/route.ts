@@ -6,7 +6,7 @@ import { searchLeadFinder } from "@/lib/leadFinder/searchLeadFinder";
 /** Coach-facing Lead Finder search (First Campaign Setup step 5). Cache/local-DB only — no Apify fills. */
 const COACH_MAX_PAGE_SIZE = 100;
 /** Soft cap: coaches can save at most this many leads into a starter list via search+save. */
-export const COACH_STARTER_LIST_SEARCH_CAP = 100;
+const COACH_STARTER_LIST_SEARCH_CAP = 100;
 
 export async function POST(request: Request) {
   const auth = await requireCoachRequest(request, { allowAdminSelf: true });
