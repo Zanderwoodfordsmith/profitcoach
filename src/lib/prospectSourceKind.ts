@@ -12,6 +12,7 @@ export type ProspectSourceValue = ProspectSourceKind | "ghl" | "linkedin_campaig
 /** Campaign / list imports that belong on Pool, not the Prospects board. */
 export const POOL_IMPORT_SOURCES = new Set([
   "google_maps",
+  "google_search",
   "sales_nav",
   "sales_nav_csv",
   "sales_navigator",

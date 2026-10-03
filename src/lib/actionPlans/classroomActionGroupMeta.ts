@@ -12,7 +12,7 @@ export const CLASSROOM_PATH_CARD_GROUPS = [
   { id: "going-pro", title: "Going Pro" },
   { id: "get-calls", title: "Get Calls" },
   { id: "win-clients", title: "Win Clients" },
-  { id: "coach-clients", title: "Coach Clients" },
+  { id: "coach-clients", title: "Keep Clients" },
   { id: "profit-coach-os", title: "Profit Coach OS" },
 ] as const;
 
@@ -64,11 +64,11 @@ export const TITLE_BY_PROGRAMME_ID: Record<string, string> = {
   "get-calls": "Get Calls",
   "win-clients": "Win Clients",
   "get-clients": "Get Calls",
-  "coach-clients": "Coach Clients",
-  "profit-coach-system": "Coach Clients",
-  "client-delivery": "Coach Clients",
+  "coach-clients": "Keep Clients",
+  "profit-coach-system": "Keep Clients",
+  "client-delivery": "Keep Clients",
   "client-acquisition": "Get Calls",
-  "profit-coach-certification": "Coach Clients",
+  "profit-coach-certification": "Keep Clients",
   "profit-coach-os": "Profit Coach OS",
 };
 

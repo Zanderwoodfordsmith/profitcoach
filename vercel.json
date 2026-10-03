@@ -13,6 +13,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/google-search-import",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/booking-reminders",
       "schedule": "* * * * *"
     },

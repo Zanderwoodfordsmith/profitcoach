@@ -1,3 +1,5 @@
+import { businessNameFromEmail } from "@/lib/contacts/businessNameFromEmail";
+
 /** Strip emoji and other decorative symbols from contact display text. */
 function stripDecorativeChars(text: string): string {
   return text
@@ -104,6 +106,98 @@ export function formatProspectJobTitle(
     out = out.replace(pattern, replacement);
   }
   return out;
+}
+
+const PLACEHOLDER_PERSON_NAME =
+  /^(unknown|n\/a|na|none|null|test|tbc|tba|-+|\.+)$/i;
+
+const EMAIL_ROLE_LOCAL = new Set([
+  "info",
+  "hello",
+  "hi",
+  "admin",
+  "administrator",
+  "sales",
+  "enquiries",
+  "enquiry",
+  "inquiries",
+  "inquiry",
+  "contact",
+  "office",
+  "support",
+  "accounts",
+  "account",
+  "team",
+  "mail",
+  "email",
+  "noreply",
+  "no-reply",
+  "newsletter",
+  "billing",
+  "hr",
+  "jobs",
+  "careers",
+  "reception",
+  "webmaster",
+]);
+
+function usablePersonName(text: string | null | undefined): string {
+  const raw = (text ?? "").trim();
+  if (!raw || raw.includes("@")) return "";
+  const formatted = formatProspectPersonName(raw);
+  if (!formatted || PLACEHOLDER_PERSON_NAME.test(formatted)) return "";
+  return formatted;
+}
+
+function usableBusinessName(text: string | null | undefined): string | null {
+  const formatted = formatBusinessLabel(text);
+  if (!formatted || PLACEHOLDER_PERSON_NAME.test(formatted)) return null;
+  return formatted;
+}
+
+/** jane.smith or jane_smith → Jane Smith. Role inboxes stay unnamed. */
+export function personNameFromEmail(email: string | null | undefined): string | null {
+  const local = (email ?? "").trim().split("@")[0]?.split("+")[0] ?? "";
+  const parts = local.split(/[._-]+/).filter(Boolean);
+  if (parts.length < 1 || parts.length > 3) return null;
+  if (
+    parts.some(
+      (part) =>
+        EMAIL_ROLE_LOCAL.has(part.toLowerCase()) || !/^[a-z]{2,}$/i.test(part)
+    )
+  ) {
+    return null;
+  }
+  if (parts.length === 1 && parts[0].length < 3) return null;
+  return formatProspectPersonName(parts.join(" ")) || null;
+}
+
+/**
+ * Pipeline card title when the contact was saved as Unknown.
+ * A real name wins. Otherwise a name read from the email, then the email itself.
+ */
+export function pipelineCardIdentity(input: {
+  full_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  business_name?: string | null;
+}): { title: string; detail: string | null } {
+  const stored =
+    usablePersonName(input.full_name) ||
+    usablePersonName(
+      [input.first_name, input.last_name].filter(Boolean).join(" ")
+    );
+  if (stored) return { title: stored, detail: null };
+
+  const email = input.email?.trim() || "";
+  const fromEmail = personNameFromEmail(email);
+  if (fromEmail) return { title: fromEmail, detail: null };
+
+  const business =
+    usableBusinessName(input.business_name) || businessNameFromEmail(email);
+  if (email) return { title: email, detail: business };
+  return { title: "Unknown", detail: business };
 }
 
 export function normalizeProspectPersonName(

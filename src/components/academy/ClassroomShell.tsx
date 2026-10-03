@@ -137,7 +137,7 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
       return (
         <span className="text-lg leading-relaxed text-slate-600">
           Start Here, then your Coach Action Plan and Going Pro — followed by the three paths that
-          build your business: Get Calls, Win Clients, and Coach Clients.
+          build your business: Get Calls, Win Clients, and Keep Clients.
         </span>
       );
     }

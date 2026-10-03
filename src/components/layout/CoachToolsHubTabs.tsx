@@ -89,7 +89,7 @@ function CoachClientsTabsNav({
   );
   return (
     <PageHeaderUnderlineTabs
-      ariaLabel="Coach Clients tools"
+      ariaLabel="Keep Clients tools"
       items={items.map((item) => ({
         kind: "link" as const,
         href: item.href,
@@ -196,7 +196,7 @@ function CoachToolsHubTabsInner({ hub }: Props) {
 }
 
 /**
- * Underline tabs for the Tools hubs (Get Clients / Coach Clients).
+ * Underline tabs for the Tools hubs (Get Clients / Keep Clients).
  * Works for both /coach and /admin — former Marketing and Delivery links live here.
  */
 export function CoachToolsHubTabs(props: Props) {
@@ -215,7 +215,7 @@ export function CoachToolsHubTabs(props: Props) {
     );
   }
 
-  // Coach Clients: never flash an empty nav — Suspense fallback still lists every tab.
+  // Keep Clients: never flash an empty nav — Suspense fallback still lists every tab.
   return (
     <Suspense
       fallback={

@@ -498,7 +498,7 @@ const AUTHORITY_ROW: SetupRow = {
 const COACHING_ROW: SetupRow = {
   id: "coach-clients",
   step: 5,
-  title: "Coach Clients",
+  title: "Keep Clients",
   purpose:
     "Most of the business is getting clients in — this is the delivery that keeps them and creates results.",
   cards: [
@@ -736,7 +736,7 @@ const NODES: DiagramNode[] = [
       "YES: take payment, confirm onboarding, and start coaching.",
       "NO: schedule a later follow-up (~90 days) instead of chasing cold.",
       "A clear no is healthier than an endless maybe.",
-      "Won is the bridge into Coach Clients delivery.",
+      "Won is the bridge into Keep Clients delivery.",
     ],
   },
   {
@@ -842,7 +842,7 @@ const NODES: DiagramNode[] = [
       "Take payment, confirm access, and set Session 1 expectations.",
       "Get tools / folder / invite set up the same day if you can.",
       "First weeks: quick wins so belief and momentum stick.",
-      "This is the handoff into Coach Clients (step 5).",
+      "This is the handoff into Keep Clients (step 5).",
     ],
     href: classroomLesson("coach-clients", "coach-clients-client-onboarding-how-to-setup-a-new-client"),
   },

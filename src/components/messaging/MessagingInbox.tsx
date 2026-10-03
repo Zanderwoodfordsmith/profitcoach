@@ -139,6 +139,7 @@ import { suggestContactIdentity } from "@/lib/contacts/suggestContactIdentity";
 import { ProspectContactFields } from "@/components/prospects/ProspectContactFields";
 import { ProspectDetailsHeader } from "@/components/prospects/ProspectDetailsHeader";
 import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDuplicates";
+import { SamePersonMerge } from "@/components/messaging/SamePersonMerge";
 import { DeleteProspectsDialog } from "@/components/prospects/DeleteProspectsDialog";
 import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
@@ -697,17 +698,15 @@ function CollapsibleDetailSection({
   onToggle,
   children,
   badge,
-  panel = false,
 }: {
   title: string;
   open: boolean;
   onToggle: () => void;
   children: ReactNode;
   badge?: ReactNode;
-  panel?: boolean;
 }) {
   return (
-    <section className={panel ? "rounded-lg bg-slate-50 p-3" : undefined}>
+    <section>
       <button
         type="button"
         onClick={onToggle}
@@ -1314,6 +1313,7 @@ export function MessagingInbox({
   const [searchQuery, setSearchQuery] = useState("");
   const [actionsOpen, setActionsOpen] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [whatsAppBlockBusy, setWhatsAppBlockBusy] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
@@ -2510,6 +2510,75 @@ export function MessagingInbox({
       }
     },
     [authHeaders, bulkBusy, checkedIds, openConversation, prospectMode]
+  );
+
+  const blockWhatsAppImport = useCallback(
+    async (ids: string[]) => {
+      const targets = ids.filter((id) => {
+        const row = conversations.find((c) => c.id === id);
+        return (row?.last_channel || "").toLowerCase() === "whatsapp";
+      });
+      if (!targets.length || whatsAppBlockBusy) return;
+      const noun = targets.length === 1 ? "this WhatsApp chat" : `${targets.length} WhatsApp chats`;
+      if (
+        !window.confirm(
+          `Stop importing ${noun}? Messages already stored will be removed. If you message them later, new replies can come back in.`
+        )
+      ) {
+        return;
+      }
+      const headers = await authHeaders();
+      if (!headers) return;
+      setWhatsAppBlockBusy(true);
+      setActionsOpen(false);
+      setError(null);
+      try {
+        const res = await fetch("/api/messaging/whatsapp-import-block", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ conversation_ids: targets }),
+        });
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setError(body.error || "Could not stop importing that chat.");
+          return;
+        }
+        const removed = new Set(targets);
+        setConversations((prev) => {
+          const remaining = prev.filter((c) => !removed.has(c.id));
+          const cur = selectedIdRef.current;
+          const next = cur && removed.has(cur) ? remaining[0]?.id ?? null : cur;
+          if (next !== cur) {
+            openConversation(next, { keepProspect: prospectMode });
+          }
+          return remaining;
+        });
+        setCheckedIds((prev) => {
+          const next = new Set(prev);
+          for (const id of targets) next.delete(id);
+          return next;
+        });
+      } finally {
+        setWhatsAppBlockBusy(false);
+      }
+    },
+    [
+      authHeaders,
+      conversations,
+      openConversation,
+      prospectMode,
+      whatsAppBlockBusy,
+    ]
+  );
+
+  const checkedHasWhatsApp = useMemo(
+    () =>
+      conversations.some(
+        (c) =>
+          checkedIds.has(c.id) &&
+          (c.last_channel || "").toLowerCase() === "whatsapp"
+      ),
+    [checkedIds, conversations]
   );
 
   const mediaComposerEnabled =
@@ -4243,8 +4312,8 @@ export function MessagingInbox({
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col py-3 max-lg:h-auto max-lg:py-2">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white max-lg:min-h-[28rem]">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
         <div className="grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(0,25%)_minmax(0,1fr)] xl:grid-cols-[minmax(0,25%)_minmax(0,50%)_minmax(0,25%)]">
           {/* Left: inbox list (hidden on the prospect page) */}
           {prospectMode ? null : (
@@ -4806,6 +4875,17 @@ export function MessagingInbox({
                         {label}
                       </button>
                     ))}
+                    {checkedHasWhatsApp ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={bulkBusy || whatsAppBlockBusy}
+                        onClick={() => void blockWhatsAppImport([...checkedIds])}
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        Don't import WhatsApp
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -5101,6 +5181,17 @@ export function MessagingInbox({
                   </div>
                 )}
                 <div className="flex shrink-0 items-center gap-1.5">
+                  {(selected.last_channel || "").toLowerCase() === "whatsapp" ? (
+                    <button
+                      type="button"
+                      disabled={whatsAppBlockBusy}
+                      title="Remove this WhatsApp chat and don't import it again"
+                      onClick={() => void blockWhatsAppImport([selected.id])}
+                      className="rounded-full px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+                    >
+                      Don't import
+                    </button>
+                  ) : null}
                   {selected ? (
                     <ReplyDispositionBar
                       value={replyDisposition}
@@ -6232,7 +6323,6 @@ export function MessagingInbox({
                   title="Contact"
                   open={detailSectionsOpen.contact}
                   onToggle={() => toggleDetailSection("contact")}
-                  panel
                 >
                   {threadProspect?.id || selected.contact_id ? (
                     <>
@@ -6365,6 +6455,16 @@ export function MessagingInbox({
                       </p>
                     </>
                   )}
+                  <SamePersonMerge
+                    conversationId={selected.id}
+                    authHeaders={authHeaders}
+                    onMerged={() => {
+                      void loadList({ silent: true });
+                      if (selected?.id) {
+                        void loadThread(selected.id, { silent: true });
+                      }
+                    }}
+                  />
                 </CollapsibleDetailSection>
 
                 {threadProspect?.about?.trim() ||
@@ -6374,7 +6474,6 @@ export function MessagingInbox({
                     title="Profile"
                     open={detailSectionsOpen.profile}
                     onToggle={() => toggleDetailSection("profile")}
-                    panel
                   >
                     <dl className="space-y-2.5">
                       {threadProspect?.headline?.trim() ? (
@@ -6404,7 +6503,6 @@ export function MessagingInbox({
                   title="Campaigns"
                   open={detailSectionsOpen.campaigns}
                   onToggle={() => toggleDetailSection("campaigns")}
-                  panel
                   badge={
                     activeCampaignCount > 0 ? (
                       <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
@@ -6430,7 +6528,6 @@ export function MessagingInbox({
                   title="Assessment"
                   open={detailSectionsOpen.assessment}
                   onToggle={() => toggleDetailSection("assessment")}
-                  panel
                 >
                   <dl className="space-y-2.5">
                     <DetailRow label="Boss Score">

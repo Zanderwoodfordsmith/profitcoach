@@ -286,6 +286,40 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
     [authHeaders, handleDeleteProspect, scope]
   );
 
+  const handleMoveProspectsToPool = useCallback(
+    async (rows: ProspectRow[]) => {
+      const headers = await authHeaders();
+      if (!headers) {
+        const message = "You must be signed in to move prospects.";
+        setError(message);
+        throw new Error(message);
+      }
+      const url =
+        scope === "admin"
+          ? "/api/admin/prospects/move-to-pool"
+          : "/api/coach/prospects/move-to-pool";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: rows.map((row) => row.id) }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        moved?: string[];
+        error?: string;
+      };
+      if (!res.ok) {
+        const message = body.error ?? "Unable to move prospects to Pool.";
+        setError(message);
+        throw new Error(message);
+      }
+      const moved = new Set(Array.isArray(body.moved) ? body.moved : []);
+      if (moved.size) {
+        setProspects((prev) => prev.filter((row) => !moved.has(row.id)));
+      }
+    },
+    [authHeaders, scope]
+  );
+
   const handleUpdateProspect = useCallback(
     async (row: ProspectRow, patch: ProspectFieldPatch) => {
       const {
@@ -590,6 +624,7 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
     handleCreateProspect,
     handleDeleteProspect,
     handleDeleteProspects,
+    handleMoveProspectsToPool,
     handleUpdateProspect,
     handleProspectBooked,
     openAddProspect,

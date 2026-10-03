@@ -14,6 +14,7 @@ export default function CoachConversationsPage() {
       contentClassName="min-h-0 flex-1 overflow-hidden"
       header={
         <StickyPageHeader
+          bleedInset="px-4 md:px-6"
           title="Get Clients"
           description="Inbox for LinkedIn, WhatsApp, email and booked-call messages. Sync pulls new threads from connected channels."
           tabs={<CoachToolsHubTabs hub="get-clients" />}

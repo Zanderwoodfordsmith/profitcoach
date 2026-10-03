@@ -10,6 +10,7 @@ import {
   CalendarPlus,
   CalendarRange,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleDashed,
@@ -28,28 +29,28 @@ import {
 } from "lucide-react";
 import { BookProspectModal } from "@/components/prospects/BookProspectModal";
 import { DeleteProspectsDialog } from "@/components/prospects/DeleteProspectsDialog";
-import { ProspectTagChip } from "@/components/prospects/ProspectTagChip";
 import { ProspectTagsPopover } from "@/components/prospects/ProspectTagsPopover";
 import { normalizeProspectTag } from "@/lib/prospects/tags";
 import {
   buildPipelineBoard,
-  columnDealValue,
-  formatPipelineMoney,
   pipelineCardPillLabel,
   pipelineColumnForProspect,
   pipelineDropStatus,
   type PipelineBoardColumn,
 } from "@/lib/pipelineBoard";
 import {
+  sectionCollapseKey,
   setCollapsed,
+  setSectionCollapsed,
   type PipelineCardFields,
   type PipelineLayout,
 } from "@/lib/pipelineLayout";
+import { canonicalizeProspectStatus } from "@/lib/prospectStatus";
 import {
   formatProspectNextCallChip,
   type ProspectNextCall,
 } from "@/lib/prospectNextCall";
-import { formatProspectPersonName } from "@/lib/prospectDisplayFormat";
+import { pipelineCardIdentity } from "@/lib/prospectDisplayFormat";
 import { phoneToTelHref } from "@/lib/formatPhoneDisplay";
 import { prospectStatusBadgeClass } from "@/lib/prospectStatus";
 import { prospectWorkspacePath } from "@/lib/prospects/loadEnrichedProspect";
@@ -76,24 +77,19 @@ type Props = {
     row: ProspectRow,
     options?: { skipConfirm?: boolean }
   ) => void | Promise<void>;
+  onMoveToPool?: (rows: ProspectRow[]) => Promise<void>;
   deletingId?: string | null;
 };
 
 const DRAG_TYPE = "application/x-pipeline-prospect-id";
-
-function cardScore(row: ProspectRow): string | null {
-  if (row.boss_score_premium != null) return String(Math.round(row.boss_score_premium));
-  if (row.boss_score != null) return String(Math.round(row.boss_score));
-  return null;
-}
 
 function sameDrop(a: DropTarget | null, b: DropTarget): boolean {
   if (!a) return false;
   return a.columnId === b.columnId && a.sectionId === b.sectionId;
 }
 
-function dealsLabel(count: number): string {
-  return `${count} ${count === 1 ? "Deal" : "Deals"}`;
+function peopleLabel(count: number): string {
+  return `${count} ${count === 1 ? "person" : "people"}`;
 }
 
 function sectionIcon(sectionId: string) {
@@ -161,6 +157,7 @@ export function ProspectsPipelineBoard({
   onUpdateProspect,
   onProspectBooked,
   onDelete,
+  onMoveToPool,
   deletingId,
 }: Props) {
   const router = useRouter();
@@ -180,6 +177,8 @@ export function ProspectsPipelineBoard({
   const [pendingDelete, setPendingDelete] = useState<ProspectRow | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [movingToPool, setMovingToPool] = useState(false);
 
   const tagCatalog = useMemo(() => {
     const seen = new Set<string>();
@@ -231,26 +230,51 @@ export function ProspectsPipelineBoard({
     }
   }
 
-  async function moveProspect(
-    row: ProspectRow,
+  async function moveProspects(
+    rows: ProspectRow[],
     columnId: string,
     sectionId?: string
   ) {
-    if (!onUpdateProspect) return;
-    const currentColumn = pipelineColumnForProspect(row, layout);
-    if (!sectionId && currentColumn === columnId) return;
+    if (!onUpdateProspect || rows.length === 0) return;
     const nextStatus = pipelineDropStatus(columnId, sectionId);
-    if (row.status.value === nextStatus) return;
+    const pending = rows.filter(
+      (row) => canonicalizeProspectStatus(row.prospect_status) !== nextStatus
+    );
+    if (pending.length === 0) return;
     setError(null);
-    setSavingId(row.id);
+    setSavingId(pending[0]?.id ?? null);
     try {
-      await onUpdateProspect(row, { prospect_status: nextStatus });
+      for (let i = 0; i < pending.length; i += 8) {
+        const chunk = pending.slice(i, i + 8);
+        await Promise.all(
+          chunk.map((row) => onUpdateProspect(row, { prospect_status: nextStatus }))
+        );
+      }
+      const moved = new Set(pending.map((row) => row.id));
+      setSelectedIds((cur) => cur.filter((id) => !moved.has(id)));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Unable to update pipeline status."
       );
     } finally {
       setSavingId(null);
+    }
+  }
+
+  async function moveSelectedToPool(rows: ProspectRow[]) {
+    if (!onMoveToPool || rows.length === 0 || movingToPool) return;
+    setError(null);
+    setMovingToPool(true);
+    try {
+      await onMoveToPool(rows);
+      const moved = new Set(rows.map((row) => row.id));
+      setSelectedIds((cur) => cur.filter((id) => !moved.has(id)));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to move prospects to Pool."
+      );
+    } finally {
+      setMovingToPool(false);
     }
   }
 
@@ -273,8 +297,14 @@ export function ProspectsPipelineBoard({
         const id =
           e.dataTransfer.getData(DRAG_TYPE) ||
           e.dataTransfer.getData("text/plain");
-        const row = prospects.find((p) => p.id === id);
-        if (row) void moveProspect(row, target.columnId, target.sectionId);
+        const dragged = prospects.find((p) => p.id === id);
+        if (dragged) {
+          const group =
+            selectedIds.includes(dragged.id)
+              ? prospects.filter((row) => selectedIds.includes(row.id))
+              : [dragged];
+          void moveProspects(group, target.columnId, target.sectionId);
+        }
         setDraggingId(null);
       },
     };
@@ -295,13 +325,14 @@ export function ProspectsPipelineBoard({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
       {loading && prospects.length === 0 ? (
         <p className="text-sm text-slate-500">Loading pipeline…</p>
       ) : (
-        <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
+        <div className="-mr-4 min-h-0 min-w-0 flex-1 overflow-x-auto overscroll-x-contain pb-2 md:-mr-[60px]">
+          <div className="flex h-full w-max gap-3 pr-4">
           {columns.map((col) =>
             col.collapsible && layout.collapsedIds.includes(col.id) ? (
               <CollapsedRail
@@ -315,8 +346,42 @@ export function ProspectsPipelineBoard({
               <PipelineColumn
                 key={col.id}
                 col={col}
-                avgDeal={layout.avgDealAmount}
                 cardFields={layout.cardFields}
+                collapsedSectionIds={layout.collapsedSectionIds ?? []}
+                onToggleSection={(sectionId) =>
+                  onLayoutChange(
+                    setSectionCollapsed(
+                      layout,
+                      col.id,
+                      sectionId,
+                      !layout.collapsedSectionIds.includes(
+                        sectionCollapseKey(col.id, sectionId)
+                      )
+                    )
+                  )
+                }
+                selectedIds={selectedIds}
+                onToggleSelected={(id) =>
+                  setSelectedIds((cur) =>
+                    cur.includes(id) ? cur.filter((item) => item !== id) : [...cur, id]
+                  )
+                }
+                onToggleSelectAll={(ids, on) =>
+                  setSelectedIds((cur) => {
+                    const next = new Set(cur);
+                    for (const id of ids) {
+                      if (on) next.add(id);
+                      else next.delete(id);
+                    }
+                    return [...next];
+                  })
+                }
+                onMoveToPool={
+                  onMoveToPool
+                    ? (rows) => void moveSelectedToPool(rows)
+                    : undefined
+                }
+                movingToPool={movingToPool}
                 onCollapse={
                   col.collapsible
                     ? () =>
@@ -364,6 +429,7 @@ export function ProspectsPipelineBoard({
               />
             )
           )}
+          </div>
         </div>
       )}
 
@@ -433,7 +499,7 @@ function CollapsedRail({
       type="button"
       onClick={onExpand}
       aria-expanded={false}
-      aria-label={`Show ${col.label} column, ${dealsLabel(col.prospects.length)}`}
+      aria-label={`Show ${col.label} column, ${peopleLabel(col.prospects.length)}`}
       title={`Show ${col.label}`}
       className={`flex h-full min-h-0 w-11 shrink-0 flex-col items-center gap-3 rounded-xl bg-slate-100 py-4 text-slate-500 transition hover:bg-slate-200/80 ${
         active ? "ring-2 ring-sky-400" : ""
@@ -448,7 +514,7 @@ function CollapsedRail({
       >
         {col.label}
       </span>
-      <span className="text-[11px] font-medium tabular-nums text-slate-400">
+      <span className="text-[11px] font-medium tabular-nums text-slate-600">
         {col.prospects.length}
       </span>
     </button>
@@ -457,8 +523,14 @@ function CollapsedRail({
 
 function PipelineColumn({
   col,
-  avgDeal,
   cardFields,
+  collapsedSectionIds,
+  onToggleSection,
+  selectedIds,
+  onToggleSelected,
+  onToggleSelectAll,
+  onMoveToPool,
+  movingToPool,
   onCollapse,
   dropTarget,
   bindDrop,
@@ -481,8 +553,14 @@ function PipelineColumn({
   deletingId,
 }: {
   col: PipelineBoardColumn;
-  avgDeal: number;
   cardFields: PipelineCardFields;
+  collapsedSectionIds: string[];
+  onToggleSection: (sectionId: string) => void;
+  selectedIds: string[];
+  onToggleSelected: (id: string) => void;
+  onToggleSelectAll: (ids: string[], on: boolean) => void;
+  onMoveToPool?: (rows: ProspectRow[]) => void;
+  movingToPool: boolean;
   onCollapse?: () => void;
   dropTarget: DropTarget | null;
   bindDrop: (target: DropTarget) => {
@@ -513,30 +591,65 @@ function PipelineColumn({
 }) {
   const colDrop: DropTarget = { columnId: col.id };
   const colActive = sameDrop(dropTarget, colDrop);
-  const value = columnDealValue(col.prospects.length, avgDeal);
-  const CollapseIcon = col.id === "closed" ? ChevronRight : ChevronLeft;
+  const CollapseIcon = ChevronLeft;
+  const selectable = col.id === "to_sort";
+  const columnIds = col.prospects.map((row) => row.id);
+  const selectedInColumn = columnIds.filter((id) => selectedIds.includes(id));
+  const allSelected = columnIds.length > 0 && selectedInColumn.length === columnIds.length;
+
+  function renderCard(row: ProspectRow) {
+    return (
+      <PipelineCard
+        key={row.id}
+        row={row}
+        fields={cardFields}
+        selectable={selectable}
+        selected={selectedIds.includes(row.id)}
+        onToggleSelected={() => onToggleSelected(row.id)}
+        dragging={draggingId === row.id}
+        saving={savingId === row.id}
+        draggable={
+          draggable && tagPickerId !== row.id && cardMenuId !== row.id
+        }
+        isAdmin={isAdmin}
+        canBook={col.id !== "closed"}
+        showPill={Boolean(cardFields.pill) && col.id !== "to_sort"}
+        tagCatalog={tagCatalog}
+        tagsOpen={tagPickerId === row.id}
+        tagSaving={tagSavingId === row.id}
+        onToggleTags={() => onToggleTags(row)}
+        onCloseTags={onCloseTags}
+        onSaveTags={onSaveTags ? (tags) => onSaveTags(row, tags) : undefined}
+        onDragStart={() => cardHandlers.onDragStart(row.id)}
+        onDragEnd={cardHandlers.onDragEnd}
+        onClick={() => onCardClick(row)}
+        onBook={() => onBook(row)}
+        menuOpen={cardMenuId === row.id}
+        onToggleMenu={onToggleMenu ? () => onToggleMenu(row) : undefined}
+        onDelete={onDelete ? () => onDelete(row) : undefined}
+        deleting={deletingId === row.id}
+      />
+    );
+  }
 
   return (
     <div
-      className={`flex h-full min-h-0 w-[300px] shrink-0 flex-col rounded-xl bg-slate-100 ${
+      className={`flex h-full min-h-0 w-[220px] shrink-0 flex-col rounded-xl bg-slate-100 ${
         colActive ? "ring-2 ring-sky-400" : ""
       }`}
       {...bindDrop(colDrop)}
     >
       <div className="px-2 pt-2">
-        <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.06)]">
+        <div className="flex items-center gap-2 rounded-xl bg-white px-2.5 py-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.06)]">
           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${col.dotClass}`} aria-hidden />
           <h3 className="min-w-0 truncate text-sm font-semibold text-slate-900">
             {col.label}
           </h3>
-          <span className="shrink-0 text-xs tabular-nums text-slate-400">
-            {dealsLabel(col.prospects.length)}
-          </span>
           <span
-            className="ml-auto shrink-0 text-sm font-medium tabular-nums text-slate-500"
-            title={`${dealsLabel(col.prospects.length)} × ${formatPipelineMoney(avgDeal)} avg`}
+            className="ml-auto shrink-0 text-xs font-medium tabular-nums text-slate-600"
+            title={peopleLabel(col.prospects.length)}
           >
-            {formatPipelineMoney(value)}
+            {col.prospects.length}
           </span>
           {onCollapse ? (
             <button
@@ -550,6 +663,45 @@ function PipelineColumn({
             </button>
           ) : null}
         </div>
+        {selectable ? (
+          <div className="mt-2 space-y-2 px-1">
+            <label className="flex items-center gap-1.5 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                disabled={columnIds.length === 0 || movingToPool}
+                onChange={(e) => onToggleSelectAll(columnIds, e.target.checked)}
+                aria-label={`Select all in ${col.label}`}
+                className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+              />
+              <span>
+                {selectedInColumn.length
+                  ? `${selectedInColumn.length} selected`
+                  : "Select"}
+              </span>
+            </label>
+            {selectedInColumn.length > 0 && onMoveToPool ? (
+              <button
+                type="button"
+                disabled={movingToPool}
+                onClick={() =>
+                  onMoveToPool(
+                    col.prospects.filter((row) => selectedIds.includes(row.id))
+                  )
+                }
+                className="w-full rounded-md bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+              >
+                {movingToPool
+                  ? "Moving…"
+                  : `Move ${selectedInColumn.length} to pool`}
+              </button>
+            ) : col.prospects.length > 0 ? (
+              <p className="text-[11px] leading-snug text-slate-500">
+                Tick people, then Move to pool. Or drag a card into a column.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-3 pt-2">
@@ -561,15 +713,24 @@ function PipelineColumn({
                 sectionId: section.id,
               };
               const sectionActive = sameDrop(dropTarget, sectionDrop);
+              const collapsed = collapsedSectionIds.includes(
+                sectionCollapseKey(col.id, section.id)
+              );
+              const SectionChevron = collapsed ? ChevronRight : ChevronDown;
               return (
                 <div
                   key={section.id}
-                  className={`flex flex-col gap-2 rounded-lg p-1 ${
+                  className={`flex flex-col gap-1.5 rounded-lg p-1 ${
                     sectionActive ? "bg-sky-100/80" : ""
                   }`}
                   {...bindDrop(sectionDrop)}
                 >
-                  <p className="flex items-center gap-1.5 px-1.5 pt-1 text-sm font-semibold text-slate-800">
+                  <button
+                    type="button"
+                    aria-expanded={!collapsed}
+                    onClick={() => onToggleSection(section.id)}
+                    className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-sm font-semibold text-slate-800 hover:bg-white/70"
+                  >
                     {Icon ? (
                       <Icon
                         className={`h-3.5 w-3.5 shrink-0 ${sectionIconClass(section.id)}`}
@@ -577,47 +738,17 @@ function PipelineColumn({
                         aria-hidden
                       />
                     ) : null}
-                    {section.label}
-                    <span className="ml-0.5 text-xs font-medium tabular-nums text-slate-500">
+                    <span className="min-w-0 truncate">{section.label}</span>
+                    <span className="ml-auto text-xs font-medium tabular-nums text-slate-600">
                       {section.prospects.length}
                     </span>
-                  </p>
-                  {section.prospects.map((row) => (
-                    <PipelineCard
-                      key={row.id}
-                      row={row}
-                      fields={cardFields}
-                      dragging={draggingId === row.id}
-                      saving={savingId === row.id}
-                      draggable={
-                        draggable &&
-                        tagPickerId !== row.id &&
-                        cardMenuId !== row.id
-                      }
-                      isAdmin={isAdmin}
-                      canBook={col.id !== "closed"}
-                      tagCatalog={tagCatalog}
-                      tagsOpen={tagPickerId === row.id}
-                      tagSaving={tagSavingId === row.id}
-                      onToggleTags={() => onToggleTags(row)}
-                      onCloseTags={onCloseTags}
-                      onSaveTags={
-                        onSaveTags
-                          ? (tags) => onSaveTags(row, tags)
-                          : undefined
-                      }
-                      onDragStart={() => cardHandlers.onDragStart(row.id)}
-                      onDragEnd={cardHandlers.onDragEnd}
-                      onClick={() => onCardClick(row)}
-                      onBook={() => onBook(row)}
-                      menuOpen={cardMenuId === row.id}
-                      onToggleMenu={
-                        onToggleMenu ? () => onToggleMenu(row) : undefined
-                      }
-                      onDelete={onDelete ? () => onDelete(row) : undefined}
-                      deleting={deletingId === row.id}
+                    <SectionChevron
+                      className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                      strokeWidth={1.75}
+                      aria-hidden
                     />
-                  ))}
+                  </button>
+                  {collapsed ? null : section.prospects.map((row) => renderCard(row))}
                 </div>
               );
             })
@@ -627,40 +758,7 @@ function PipelineColumn({
                   Drop prospects here
                 </p>
               )
-            : col.prospects.map((row) => (
-                <PipelineCard
-                  key={row.id}
-                  row={row}
-                  fields={cardFields}
-                  dragging={draggingId === row.id}
-                  saving={savingId === row.id}
-                  draggable={
-                    draggable &&
-                    tagPickerId !== row.id &&
-                    cardMenuId !== row.id
-                  }
-                  isAdmin={isAdmin}
-                  canBook={col.id !== "closed"}
-                  tagCatalog={tagCatalog}
-                  tagsOpen={tagPickerId === row.id}
-                  tagSaving={tagSavingId === row.id}
-                  onToggleTags={() => onToggleTags(row)}
-                  onCloseTags={onCloseTags}
-                  onSaveTags={
-                    onSaveTags ? (tags) => onSaveTags(row, tags) : undefined
-                  }
-                  onDragStart={() => cardHandlers.onDragStart(row.id)}
-                  onDragEnd={cardHandlers.onDragEnd}
-                  onClick={() => onCardClick(row)}
-                  onBook={() => onBook(row)}
-                  menuOpen={cardMenuId === row.id}
-                  onToggleMenu={
-                    onToggleMenu ? () => onToggleMenu(row) : undefined
-                  }
-                  onDelete={onDelete ? () => onDelete(row) : undefined}
-                  deleting={deletingId === row.id}
-                />
-              ))}
+            : col.prospects.map((row) => renderCard(row))}
       </div>
     </div>
   );
@@ -689,7 +787,7 @@ function CardAction({
       title={title}
       onClick={stopCardAction}
       onPointerDown={stopCardAction}
-      className={`relative inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-sky-700 ${
+      className={`relative inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-sky-700 ${
         muted ? "opacity-35 hover:opacity-80" : ""
       }`}
     >
@@ -706,11 +804,15 @@ function CardAction({
 function PipelineCard({
   row,
   fields,
+  selectable = false,
+  selected = false,
+  onToggleSelected,
   dragging,
   saving,
   draggable,
   isAdmin,
   canBook,
+  showPill = false,
   tagCatalog,
   tagsOpen,
   tagSaving,
@@ -728,11 +830,15 @@ function PipelineCard({
 }: {
   row: ProspectRow;
   fields: PipelineCardFields;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelected?: () => void;
   dragging: boolean;
   saving: boolean;
   draggable: boolean;
   isAdmin: boolean;
   canBook: boolean;
+  showPill?: boolean;
   tagCatalog: string[];
   tagsOpen: boolean;
   tagSaving: boolean;
@@ -748,17 +854,17 @@ function PipelineCard({
   onDelete?: () => void;
   deleting?: boolean;
 }) {
-  const name = formatProspectPersonName(row.full_name) || row.full_name;
-  const company = row.business_name?.trim() || row.job_title?.trim() || "";
-  const score = cardScore(row);
+  const identity = pipelineCardIdentity(row);
+  const name = identity.title;
   const pill = pipelineCardPillLabel(row);
   const workspaceHref = prospectWorkspacePath(row.id, { admin: isAdmin });
   const callsHref = isAdmin ? "/admin/calls" : "/coach/calls";
   const telHref = phoneToTelHref(row.phone);
-  const appointment = formatProspectNextCallChip(row.next_call);
+  const appointment = fields.appointment
+    ? formatProspectNextCallChip(row.next_call)
+    : null;
   const tagCount = row.tags?.length ?? 0;
   const hasNotes = Boolean(row.next_action?.text?.trim());
-  const showFooter = fields.actions || fields.appointment;
 
   return (
     <div
@@ -779,18 +885,29 @@ function PipelineCard({
           onClick?.();
         }
       }}
-      className={`w-full rounded-xl border border-slate-200/80 bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition hover:border-slate-300 hover:shadow-[0_6px_14px_rgba(15,23,42,0.07)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
-        dragging ? "opacity-50" : ""
-      } ${saving || deleting ? "pointer-events-none opacity-70" : ""} ${
-        draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
-      }`}
+      className={`w-full rounded-lg border bg-white px-2 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition hover:border-slate-300 hover:shadow-[0_4px_10px_rgba(15,23,42,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
+        selected ? "border-sky-300 bg-sky-50/60" : "border-slate-200/80"
+      } ${dragging ? "opacity-50" : ""} ${
+        saving || deleting ? "pointer-events-none opacity-70" : ""
+      } ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 text-sm font-semibold leading-snug text-slate-900">
+      <div className="flex items-center gap-1.5">
+        {selectable ? (
+          <input
+            type="checkbox"
+            checked={selected}
+            aria-label={`Select ${name}`}
+            onClick={stopCardAction}
+            onPointerDown={stopCardAction}
+            onChange={() => onToggleSelected?.()}
+            className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+          />
+        ) : null}
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
           {name}
         </p>
-        <div className="flex shrink-0 items-start gap-1">
-          {fields.pill ? (
+        <div className="flex shrink-0 items-center gap-0.5">
+          {showPill ? (
             <span
               className={`mt-0.5 inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium leading-none ${prospectStatusBadgeClass(row.status.value)}`}
             >
@@ -810,13 +927,13 @@ function PipelineCard({
                   onToggleMenu();
                 }}
                 onPointerDown={stopCardAction}
-                className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition ${
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-md transition ${
                   menuOpen
                     ? "bg-slate-100 text-slate-700"
                     : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                 }`}
               >
-                <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                <MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
               </button>
               {menuOpen ? (
                 <div
@@ -842,44 +959,35 @@ function PipelineCard({
           ) : null}
         </div>
       </div>
-      {fields.company && company ? (
-        <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{company}</p>
-      ) : null}
-      {fields.score && score ? (
-        <p className="mt-2 text-xs font-medium tabular-nums text-slate-700">
-          BOSS {score}
+      {identity.detail ? (
+        <p
+          className={`mt-0.5 truncate text-[11px] text-slate-600 ${
+            selectable ? "pl-5" : ""
+          }`}
+        >
+          {identity.detail}
         </p>
       ) : null}
-      {tagCount > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {(row.tags ?? []).slice(0, 3).map((tag) => (
-            <ProspectTagChip
-              key={tag}
-              tag={tag}
-              title={onSaveTags ? "Edit tags" : tag}
-              onClick={onSaveTags ? onToggleTags : undefined}
-            />
-          ))}
-          {tagCount > 3 ? (
-            <span className="self-center text-[10px] font-medium tabular-nums text-slate-400">
-              +{tagCount - 3}
-            </span>
-          ) : null}
-        </div>
+      {appointment ? (
+        <p
+          className={`mt-0.5 truncate text-[11px] font-medium text-sky-700 ${
+            selectable ? "pl-5" : ""
+          }`}
+        >
+          {appointment}
+        </p>
       ) : null}
-      {showFooter ? (
-        <div className="mt-3 flex items-center justify-between gap-2">
-          {fields.actions ? (
-            <div className="flex items-center">
+      {fields.actions ? (
+        <div className="mt-1 flex items-center">
               <CardAction
                 href={telHref ?? workspaceHref}
                 title={telHref ? "Call" : "Add a phone number"}
                 muted={!telHref}
               >
-                <Phone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                <Phone className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
               </CardAction>
               <CardAction href={workspaceHref} title="Conversations">
-                <MessageCircle className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                <MessageCircle className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
               </CardAction>
               {onSaveTags ? (
                 <ProspectTagsPopover
@@ -908,7 +1016,7 @@ function PipelineCard({
                       onToggleTags();
                     }}
                     onPointerDown={stopCardAction}
-                    className={`relative inline-flex h-7 w-7 items-center justify-center rounded-md transition ${
+                    className={`relative inline-flex h-6 w-6 items-center justify-center rounded-md transition ${
                       tagsOpen
                         ? "bg-sky-50 text-sky-700"
                         : `text-slate-400 hover:bg-slate-100 hover:text-sky-700 ${
@@ -916,7 +1024,7 @@ function PipelineCard({
                           }`
                     }`}
                   >
-                    <Tags className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                    <Tags className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
                     {tagCount > 0 ? (
                       <span className="absolute -right-0.5 -top-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-sky-600 px-0.5 text-[9px] font-semibold leading-none text-white">
                         {tagCount}
@@ -935,7 +1043,7 @@ function PipelineCard({
                   muted={tagCount === 0}
                   badge={tagCount > 0 ? tagCount : null}
                 >
-                  <Tags className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                  <Tags className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
                 </CardAction>
               )}
               <CardAction
@@ -943,42 +1051,33 @@ function PipelineCard({
                 title={hasNotes ? "Follow-up note" : "Notes"}
                 muted={!hasNotes}
               >
-                <StickyNote className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                <StickyNote className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
               </CardAction>
+              {canBook ? (
+                appointment ? (
+                  <CardAction
+                    href={callsHref}
+                    title={row.next_call?.title || appointment}
+                  >
+                    <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+                  </CardAction>
+                ) : (
+                  <button
+                    type="button"
+                    title="Book a call"
+                    onClick={(e) => {
+                      stopCardAction(e);
+                      onBook?.();
+                    }}
+                    onPointerDown={stopCardAction}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 opacity-35 transition hover:bg-slate-100 hover:text-sky-700 hover:opacity-80"
+                  >
+                    <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+                  </button>
+                )
+              ) : null}
             </div>
-          ) : (
-            <span />
-          )}
-          {fields.appointment ? (
-            appointment ? (
-              <a
-                href={callsHref}
-                title={row.next_call?.title || "Upcoming call"}
-                onClick={stopCardAction}
-                onPointerDown={stopCardAction}
-                className="inline-flex max-w-[11rem] shrink-0 items-center gap-1 truncate rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 hover:bg-sky-100"
-              >
-                <Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
-                <span className="truncate">{appointment}</span>
-              </a>
-            ) : canBook ? (
-              <button
-                type="button"
-                title="Book a call"
-                onClick={(e) => {
-                  stopCardAction(e);
-                  onBook?.();
-                }}
-                onPointerDown={stopCardAction}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-dashed border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-400 hover:border-sky-300 hover:text-sky-700"
-              >
-                <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
-                Book
-              </button>
-            ) : null
           ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }

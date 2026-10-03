@@ -4,6 +4,7 @@ import {
   allowlistedEmail,
   emptyKnownContactIndex,
   matchKnownContact,
+  whatsAppThreadAllowed,
   type KnownContactIndex,
   type KnownContactMatch,
 } from "./knownContacts";
@@ -30,6 +31,46 @@ function index(partial: Partial<KnownContactIndex> = {}): KnownContactIndex {
     extraEmails: partial.extraEmails ?? base.extraEmails,
   };
 }
+
+describe("whatsAppThreadAllowed", () => {
+  it("keeps a pool number, a prospect, or a client", () => {
+    assert.equal(
+      whatsAppThreadAllowed({ blocked: false, onPool: true, contactType: null }),
+      true
+    );
+    assert.equal(
+      whatsAppThreadAllowed({
+        blocked: false,
+        onPool: false,
+        contactType: "prospect",
+      }),
+      true
+    );
+    assert.equal(
+      whatsAppThreadAllowed({
+        blocked: false,
+        onPool: false,
+        contactType: "client",
+      }),
+      true
+    );
+  });
+
+  it("drops personal chats and anyone the coach blocked", () => {
+    assert.equal(
+      whatsAppThreadAllowed({ blocked: false, onPool: false, contactType: null }),
+      false
+    );
+    assert.equal(
+      whatsAppThreadAllowed({
+        blocked: true,
+        onPool: true,
+        contactType: "prospect",
+      }),
+      false
+    );
+  });
+});
 
 describe("allowlistedEmail", () => {
   it("allows a CRM contact email", () => {

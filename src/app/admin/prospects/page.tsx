@@ -94,6 +94,7 @@ export default function AdminProspectsPage() {
         onProspectBooked={page.handleProspectBooked}
         onDelete={page.handleDeleteProspect}
         onDeleteMany={page.handleDeleteProspects}
+        onMoveToPool={page.handleMoveProspectsToPool}
         deletingId={page.deletingId}
         coachSlugByCoachId={page.coachSlugByCoachId}
         onVisibleIdsChange={page.enrichVisibleIds}

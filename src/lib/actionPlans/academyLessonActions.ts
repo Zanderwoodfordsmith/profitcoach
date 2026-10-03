@@ -265,7 +265,7 @@ export async function dedupeAcademyRecommendedActionItems(
 
 /**
  * Move academy-linked rows into Classroom path groups (Start Here, Get Calls, …)
- * with section/lesson subgroups under Get Calls, Win Clients, Coach Clients, and
+ * with section/lesson subgroups under Get Calls, Win Clients, Keep Clients, and
  * Going Pro. Safe to call on every My Actions load.
  */
 export async function reorganizeClassroomActionGroups(

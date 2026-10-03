@@ -174,10 +174,10 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
     },
     {
       id: "deliver",
-      title: "Coach Clients",
+      title: "Keep Clients",
       letter: "D",
-      green: "Rewarding Coaching",
-      red: "Thankless Grind",
+      green: "Lasting Retainers",
+      red: "Ending Projects",
       modules: [
         {
           id: "launchpad",

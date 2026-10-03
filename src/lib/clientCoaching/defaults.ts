@@ -28,7 +28,7 @@ export const ORBIT_AREA_META: {
   },
   {
     id: "deliver",
-    label: "Coach Clients",
+    label: "Keep Clients",
     group: "business",
     hint: "Launch, method, and retention.",
   },

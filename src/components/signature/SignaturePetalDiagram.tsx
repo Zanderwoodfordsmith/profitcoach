@@ -23,7 +23,7 @@ const PETAL_OUTER = rC + 88;
 const LENS_CORE_NAVY = "#1f3a66";
 const LENS_STROKE = "rgba(22, 45, 80, 0.65)";
 
-/** Pillar discs: Get Calls, Win Clients, Coach Clients — same hex as classroom module covers */
+/** Pillar discs: Get Calls, Win Clients, Keep Clients — same hex as classroom module covers */
 const PILLAR_COLORS = [
   SIGNATURE_COMPASS_PILLAR_COVER_HEX.reach,
   SIGNATURE_COMPASS_PILLAR_COVER_HEX.enrol,

@@ -27,7 +27,7 @@ export type PlaybooksLibraryProps = {
   /** Match dashboard main padding (`-mx-[60px] px-[60px]`). Use `false` for standalone pages. */
   stickyBleedInset?: string | false;
   headerLeading?: ReactNode;
-  /** Optional header tabs (e.g. Coach Clients hub). */
+  /** Optional header tabs (e.g. Keep Clients hub). */
   tabs?: ReactNode;
   /** Extra actions beside the grid/list toggle (e.g. Classroom course link). */
   headerActions?: ReactNode;

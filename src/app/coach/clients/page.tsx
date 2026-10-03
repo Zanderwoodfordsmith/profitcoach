@@ -153,7 +153,7 @@ export default function CoachClientsPage() {
     <CoachClientHubGate>
       <div className="flex flex-col gap-4">
         <StickyPageHeader
-          title="Coach Clients"
+          title="Keep Clients"
           description={
             empty
               ? "Import a client from LinkedIn to open their coaching workspace."

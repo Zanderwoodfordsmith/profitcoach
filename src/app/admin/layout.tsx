@@ -46,6 +46,9 @@ export default function AdminLayout({
   const campaignsListPage = pathname === "/admin/campaigns";
   const prospectWorkspacePage = pathname.startsWith("/admin/prospects/");
   const fullHeightInboxPage = conversationsPage || supportInboxPage;
+  /** Inbox-style workspaces: panes run to the header and the shell edges. */
+  const edgeToEdgeInbox =
+    fullHeightInboxPage || prospectWorkspacePage;
   const fullHeightPage =
     fullHeightInboxPage ||
     prospectsListPage ||
@@ -160,14 +163,12 @@ export default function AdminLayout({
           ) : null}
           <main
             className={`min-w-0 w-full pt-0 ${
-              supportInboxPage
+              edgeToEdgeInbox
                 ? `h-dvh overflow-hidden px-0 ${
                     sidebarExpanded
                       ? "pb-0 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
                       : "pb-0"
                   }`
-                : fullHeightInboxPage || prospectWorkspacePage
-                ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px]"
                 : prospectsListPage || campaignsListPage
                 ? `h-dvh overflow-hidden px-4 md:px-[60px] ${
                     sidebarExpanded
@@ -201,7 +202,7 @@ export default function AdminLayout({
               {chromeEnabled ? (
                 <DashboardChromeFallback
                   bleedInset={
-                    blueprintPage || supportInboxPage ? "px-4 md:px-6" : undefined
+                    blueprintPage || edgeToEdgeInbox ? "px-4 md:px-6" : undefined
                   }
                 />
               ) : null}

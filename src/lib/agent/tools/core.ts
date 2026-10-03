@@ -40,7 +40,7 @@ export const coreTools: AgentToolDef[] = [
     input_schema: { type: "object", properties: {} },
     run: async (_input, ctx) => {
       const coach = coachOf(ctx);
-      const [linkedIn, campaigns, lists, salesNavRuns, mapsRuns, practice] = await Promise.all([
+      const [linkedIn, campaigns, lists, salesNavRuns, mapsRuns, searchRuns, practice] = await Promise.all([
         getOkLinkedInAccount(coach.id).catch(() => null),
         supabaseAdmin
           .from("linkedin_campaigns")
@@ -64,6 +64,12 @@ export const coreTools: AgentToolDef[] = [
           .limit(3),
         supabaseAdmin
           .from("google_maps_import_runs")
+          .select("id, status, progress_count, created_at")
+          .eq("coach_id", coach.id)
+          .in("status", ["pending", "running"])
+          .limit(3),
+        supabaseAdmin
+          .from("google_search_import_runs")
           .select("id, status, progress_count, created_at")
           .eq("coach_id", coach.id)
           .in("status", ["pending", "running"])
@@ -111,6 +117,7 @@ export const coreTools: AgentToolDef[] = [
         imports_running: [
           ...(salesNavRuns.data ?? []).map((row) => ({ kind: "sales_nav", id: row.id, progress: row.progress_count })),
           ...(mapsRuns.data ?? []).map((row) => ({ kind: "google_maps", id: row.id, progress: row.progress_count })),
+          ...(searchRuns.data ?? []).map((row) => ({ kind: "google_search", id: row.id, progress: row.progress_count })),
         ],
         blueprint: {
           targeting: Boolean(built["market:criteria"] || built["market:avatar"]),

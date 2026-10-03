@@ -24,6 +24,7 @@ import { PoolFilterMenu } from "@/components/campaigns/PoolFilterMenu";
 import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { googleMapsImportProgressPercent } from "@/lib/googleMaps/cost";
+import { googleSearchImportProgressPercent } from "@/lib/googleSearch/cost";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { ContactInfoCell } from "@/components/table/ContactInfoCell";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
@@ -66,8 +67,11 @@ import {
 import type { AudienceListSummary } from "@/lib/leadLists/audienceLists";
 import {
   SALES_NAV_IMPORT_WATCH_EVENT,
+  isBusinessPoolImport,
   listWatchedSalesNavImports,
+  poolImportStatusPath,
   unwatchSalesNavImport,
+  type PoolImportKind,
   type WatchedSalesNavImport,
 } from "@/lib/salesNavigator/importJobWatch";
 import {
@@ -413,7 +417,7 @@ export function CampaignPoolHub({
         phase: "scraping" | "finalizing";
         name: string | null;
         peopleFound: number;
-        kind: "sales_nav" | "google_maps";
+        kind: PoolImportKind;
       }
     >
   >({});
@@ -686,7 +690,7 @@ export function CampaignPoolHub({
   }, [reloadPeople, loadImportLists]);
 
   useEffect(() => {
-    const mapsWatching = watchedImports.some((j) => j.kind === "google_maps");
+    const mapsWatching = watchedImports.some((j) => isBusinessPoolImport(j.kind));
     if (!mapsWatching) return;
     const handle = window.setInterval(() => setImportClockMs(Date.now()), 1000);
     return () => window.clearInterval(handle);
@@ -706,10 +710,7 @@ export function CampaignPoolHub({
       for (const job of listWatchedSalesNavImports()) {
         if (cancelled) return;
         try {
-          const path =
-            job.kind === "google_maps"
-              ? `/api/coach/google-maps-import/${encodeURIComponent(job.id)}`
-              : `/api/coach/sales-nav-import/${encodeURIComponent(job.id)}`;
+          const path = poolImportStatusPath(job.kind, job.id);
           const res = await fetch(path, { headers });
           const body = (await res.json().catch(() => ({}))) as {
             error?: string;
@@ -746,8 +747,9 @@ export function CampaignPoolHub({
           );
           const name = body.run?.name?.trim() || job.name;
           const peopleFound = Math.max(0, Number(body.peopleFound ?? 0));
-          const kind =
-            job.kind === "google_maps" ? "google_maps" : "sales_nav";
+          const kind: PoolImportKind = isBusinessPoolImport(job.kind)
+            ? job.kind
+            : "sales_nav";
 
           if (body.status === "succeeded") {
             unwatchSalesNavImport(job.id);
@@ -755,7 +757,7 @@ export function CampaignPoolHub({
             const saveListId = body.saveListId ?? job.saveListId ?? null;
             if (saveListId) setSavingImportListId(saveListId);
             setNotice(
-              kind === "google_maps"
+              kind === "google_maps" || kind === "google_search"
                 ? `Added ${added.toLocaleString()} ${
                     added === 1 ? "business" : "businesses"
                   } to the pool${
@@ -2752,12 +2754,15 @@ export function CampaignPoolHub({
                   const progressCount = live?.progressCount ?? 0;
                   const targetCount =
                     live?.targetCount || job?.targetCount || 0;
-                  const mapsImport =
-                    (live?.kind ?? job?.kind) === "google_maps";
+                  const businessImport = isBusinessPoolImport(
+                    live?.kind ?? job?.kind
+                  );
                   const tabPct =
                     importing && targetCount > 0
-                      ? mapsImport
-                        ? googleMapsImportProgressPercent({
+                      ? businessImport
+                        ? ((live?.kind ?? job?.kind) === "google_search"
+                            ? googleSearchImportProgressPercent
+                            : googleMapsImportProgressPercent)({
                             progressCount,
                             targetCount,
                             startedAtMs: Date.parse(
@@ -3046,13 +3051,14 @@ export function CampaignPoolHub({
                     const live = activeImport
                       ? importLiveById[activeImport.id]
                       : null;
-                    if (
-                      activeImport &&
-                      (live?.kind === "google_maps" ||
-                        activeImport.kind === "google_maps")
-                    ) {
+                    if (activeImport && isBusinessPoolImport(live?.kind ?? activeImport.kind)) {
                       return (
                         <GoogleMapsImportWaitPanel
+                          source={
+                            (live?.kind ?? activeImport.kind) === "google_search"
+                              ? "search"
+                              : "maps"
+                          }
                           progressCount={live?.progressCount ?? 0}
                           targetCount={
                             live?.targetCount || activeImport.targetCount || 0
@@ -3261,7 +3267,11 @@ export function CampaignPoolHub({
                 name: info.saveListName,
                 kind: "audience" as const,
                 source:
-                  info.kind === "google_maps" ? "google_maps" : "sales_nav",
+                  info.kind === "google_maps"
+                    ? "google_maps"
+                    : info.kind === "google_search"
+                      ? "google_search"
+                      : "sales_nav",
                 item_count: 0,
                 updated_at: new Date().toISOString(),
                 created_at: new Date().toISOString(),

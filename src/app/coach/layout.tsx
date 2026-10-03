@@ -185,12 +185,11 @@ export default function CoachLayout({
   const prospectsListPage = pathname === "/coach/prospects";
   const campaignsListPage = pathname === "/coach/campaigns";
   const prospectWorkspacePage = pathname.startsWith("/coach/prospects/");
+  /** Inbox-style workspaces: panes run to the header and the shell edges. */
+  const edgeToEdgeInbox =
+    conversationsPage || supportPage || prospectWorkspacePage;
   const fullHeightPage =
-    conversationsPage ||
-    supportPage ||
-    prospectsListPage ||
-    prospectWorkspacePage ||
-    campaignsListPage;
+    edgeToEdgeInbox || prospectsListPage || campaignsListPage;
   const fullBleed = isPlaybooksReaderPath(pathname) || membershipPage;
   const playbooksReader = fullBleed;
   const sidebarExpanded = sidebarOpen && !playbooksReader;
@@ -339,14 +338,12 @@ export default function CoachLayout({
       ) : null}
         <main
           className={`min-w-0 w-full pt-0 ${
-            supportPage
+            edgeToEdgeInbox
               ? `h-dvh overflow-hidden px-0 ${
                   sidebarExpanded
                     ? "pb-0 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
                     : "pb-0"
                 }`
-              : conversationsPage || prospectWorkspacePage
-              ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px]"
               : prospectsListPage || campaignsListPage
               ? `h-dvh overflow-hidden px-4 md:px-[60px] ${
                   sidebarExpanded
@@ -380,7 +377,7 @@ export default function CoachLayout({
                 bleedInset={
                   membershipPage
                     ? "px-4 md:px-[60px]"
-                    : supportPage
+                    : edgeToEdgeInbox
                       ? "px-4 md:px-6"
                       : undefined
                 }

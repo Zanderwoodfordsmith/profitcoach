@@ -8,6 +8,7 @@ import {
   dismissSalesNavImportProgressToast,
   isSalesNavImportProgressToastDismissed,
   listWatchedSalesNavImports,
+  poolImportStatusPath,
   requestSalesNavImportResume,
   unwatchSalesNavImport,
   type WatchedSalesNavImport,
@@ -17,6 +18,7 @@ import {
   requestedTakePagesFromTargetCount,
 } from "@/lib/salesNavigator/importSizing";
 import { formatGoogleMapsApproxDuration } from "@/lib/googleMaps/cost";
+import { formatGoogleSearchApproxDuration } from "@/lib/googleSearch/cost";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 type ToastState =
@@ -131,10 +133,7 @@ export function SalesNavImportToast() {
       for (const job of listWatchedSalesNavImports()) {
         if (cancelled) return;
         try {
-          const path =
-            job.kind === "google_maps"
-              ? `/api/coach/google-maps-import/${job.id}`
-              : `/api/coach/sales-nav-import/${job.id}`;
+          const path = poolImportStatusPath(job.kind, job.id);
           const res = await fetch(path, { headers });
           const body = (await res.json().catch(() => ({}))) as PollBody;
           if (!res.ok) continue;
@@ -292,24 +291,30 @@ export function SalesNavImportToast() {
             : ""
         }`
       : toast.kind === "error"
-        ? toastJob?.kind === "google_maps"
-          ? "Google Maps import failed"
-          : "Sales Nav import failed"
+        ? toastJob?.kind === "google_search"
+          ? "Google Search import failed"
+          : toastJob?.kind === "google_maps"
+            ? "Google Maps import failed"
+            : "Sales Nav import failed"
         : toast.phase === "finalizing"
           ? "Finishing up"
-          : toastJob?.kind === "google_maps"
-            ? "Google Maps import"
-            : "In progress";
+          : toastJob?.kind === "google_search"
+            ? "Google Search import"
+            : toastJob?.kind === "google_maps"
+              ? "Google Maps import"
+              : "In progress";
 
   const progressShown =
     toast.kind === "progress" ? toast.progressCount : 0;
   const approx =
     toast.kind === "progress"
-      ? toastJob?.kind === "google_maps"
-        ? formatGoogleMapsApproxDuration(toast.targetCount)
-        : formatApproxImportDuration(
-            requestedTakePagesFromTargetCount(toast.targetCount)
-          )
+      ? toastJob?.kind === "google_search"
+        ? formatGoogleSearchApproxDuration(toast.targetCount)
+        : toastJob?.kind === "google_maps"
+          ? formatGoogleMapsApproxDuration(toast.targetCount)
+          : formatApproxImportDuration(
+              requestedTakePagesFromTargetCount(toast.targetCount)
+            )
       : null;
 
   const detail =
@@ -320,7 +325,8 @@ export function SalesNavImportToast() {
             toast.name ? `“${toast.name}”` : null,
             toast.phase === "finalizing"
               ? `${progressShown.toLocaleString()} scraped · saving`
-              : toastJob?.kind === "google_maps"
+              : toastJob?.kind === "google_maps" ||
+                  toastJob?.kind === "google_search"
                 ? `${progressShown.toLocaleString()} / ${toast.targetCount.toLocaleString()} businesses`
                 : `${progressShown.toLocaleString()} / ${toast.targetCount.toLocaleString()}`,
             toast.phase === "finalizing" ? null : approx,

@@ -17,6 +17,7 @@ export default function AdminConversationsPage() {
       contentClassName="min-h-0 flex-1 overflow-hidden"
       header={
         <StickyPageHeader
+          bleedInset="px-4 md:px-6"
           className="shrink-0"
           title="Get Clients"
           description="Inbox for LinkedIn, WhatsApp, email and booked-call messages. Sync pulls new threads from connected channels."

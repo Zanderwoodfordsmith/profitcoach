@@ -85,7 +85,7 @@ export default function AdminPlaybooksPage() {
       summaries={summaries}
       loading={loading}
       error={error}
-      title="Coach Clients"
+      title="Keep Clients"
       description="Browse the library by area. Open a playbook to edit content and manage the full overview."
       buildHref={(ref) => `/admin/playbooks/${ref}`}
       tabs={<CoachToolsHubTabs hub="coach-clients" />}

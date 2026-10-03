@@ -229,7 +229,7 @@ function CompassScoringInfoPopover() {
   const jumps = [
     { href: "#compass-pillar-reach", label: "Get Calls" },
     { href: "#compass-pillar-enrol", label: "Win Clients" },
-    { href: "#compass-pillar-deliver", label: "Coach Clients" },
+    { href: "#compass-pillar-deliver", label: "Keep Clients" },
     { href: "#compass-section-centre", label: "Centre" },
   ] as const;
 

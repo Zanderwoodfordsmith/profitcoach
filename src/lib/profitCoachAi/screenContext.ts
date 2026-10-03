@@ -113,7 +113,7 @@ const SCREEN_RULES: ScreenRule[] = [
   },
   {
     prefix: "/clients",
-    label: "Coach Clients",
+    label: "Keep Clients",
     suggestedOutputId: "funnel_constraints",
     describe: "working with their coaching clients",
   },

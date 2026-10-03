@@ -93,6 +93,7 @@ type Props = {
     options?: { skipConfirm?: boolean }
   ) => void | Promise<void>;
   onDeleteMany?: (rows: ProspectRow[]) => Promise<string[]>;
+  onMoveToPool?: (rows: ProspectRow[]) => Promise<void>;
   deletingId?: string | null;
   coachSlug?: string | null;
   coachSlugByCoachId?: Record<string, string>;
@@ -163,6 +164,7 @@ export function ProspectsHub({
   onProspectBooked,
   onDelete,
   onDeleteMany,
+  onMoveToPool,
   deletingId,
   coachSlug,
   coachSlugByCoachId,
@@ -442,7 +444,7 @@ export function ProspectsHub({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
       {error || tableViews.error ? (
         <p className="text-sm text-rose-600">{error ?? tableViews.error}</p>
       ) : null}
@@ -772,6 +774,7 @@ export function ProspectsHub({
           onUpdateProspect={onUpdateProspect}
           onProspectBooked={onProspectBooked}
           onDelete={onDelete}
+          onMoveToPool={onMoveToPool}
           deletingId={deletingId}
         />
       ) : (

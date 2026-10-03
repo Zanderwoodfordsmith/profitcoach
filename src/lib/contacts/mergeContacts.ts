@@ -5,6 +5,7 @@ import {
   normalizeContactPhone,
   type ContactIdentityRow,
 } from "@/lib/contacts/identity";
+import { looksLikePersonName } from "@/lib/messaging/conversationDisplay";
 import { linkedInProviderIdFromUrl } from "@/lib/contacts/linkedinIdentity";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { tryUpdateContactStripping } from "@/lib/contactSchemaSafeInsert";
@@ -37,6 +38,18 @@ function preferString(
   const s = survivor?.trim() || null;
   if (s) return s;
   return loser?.trim() || null;
+}
+
+/** Unknown and bare email addresses lose to a real person name. */
+function preferPersonField(
+  survivor: string | null | undefined,
+  loser: string | null | undefined
+): string | null {
+  const s = survivor?.trim() || null;
+  const l = loser?.trim() || null;
+  if (looksLikePersonName(s)) return s;
+  if (looksLikePersonName(l)) return l;
+  return s || l;
 }
 
 /**
@@ -123,9 +136,9 @@ export async function mergeContacts(input: {
   );
 
   const fieldPatch: Record<string, unknown> = {
-    full_name: preferString(survivor.full_name, loser.full_name),
-    first_name: preferString(survivor.first_name, loser.first_name),
-    last_name: preferString(survivor.last_name, loser.last_name),
+    full_name: preferPersonField(survivor.full_name, loser.full_name),
+    first_name: preferPersonField(survivor.first_name, loser.first_name),
+    last_name: preferPersonField(survivor.last_name, loser.last_name),
     email: preferString(survivor.email, loser.email),
     phone: preferString(survivor.phone, loser.phone),
     linkedin_url: preferString(survivor.linkedin_url, loser.linkedin_url),

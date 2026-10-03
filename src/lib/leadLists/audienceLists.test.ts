@@ -126,6 +126,7 @@ describe("audience lists", () => {
 
   it("labels sources and names for the table", () => {
     assert.equal(audienceItemSourceLabel("google_maps"), "Google Maps");
+    assert.equal(audienceItemSourceLabel("google_search"), "Google Search");
     assert.equal(
       displayListPersonName({ first_name: "Pat", last_name: "Lee" }),
       "Pat Lee"

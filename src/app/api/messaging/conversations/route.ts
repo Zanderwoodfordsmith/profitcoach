@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { collapseConversationsByContact } from "@/lib/messaging/collapseConversationsByContact";
 import { enrichConversationFilters } from "@/lib/messaging/enrichConversationFilters";
 import { enrichMessagingConversationPeople } from "@/lib/messaging/enrichConversationPeople";
+import { linkStatedEmailThreads } from "@/lib/messaging/linkStatedEmailThreads";
 import { resolveMessagingAccess } from "@/lib/messaging/resolveMessagingAccess";
 import {
   findOrCreateConversationForContact,
@@ -66,7 +67,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Could not load conversations." }, { status: 500 });
   }
 
-  const enriched = await enrichMessagingConversationPeople(data ?? []);
+  const linked = await linkStatedEmailThreads(data ?? []);
+  const enriched = await enrichMessagingConversationPeople(linked);
   // Drop empty CRM shells when a real provider thread exists for the same person.
   const hasProviderIdentity = new Set<string>();
   for (const row of enriched) {

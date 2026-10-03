@@ -24,6 +24,7 @@ export const AUDIENCE_ITEM_SOURCES = [
   "manual",
   "search",
   "google_maps",
+  "google_search",
 ] as const;
 export type AudienceItemSource = (typeof AUDIENCE_ITEM_SOURCES)[number];
 
@@ -102,6 +103,8 @@ export function audienceItemSourceLabel(source: string): string {
       return "Search";
     case "google_maps":
       return "Google Maps";
+    case "google_search":
+      return "Google Search";
     case "manual":
       return "Added";
     case "mixed":
@@ -284,11 +287,13 @@ export function poolImportListDateStamp(now = new Date()): string {
 
 /** Default name for a pool bulk-import list tab. */
 export function defaultPoolImportListName(
-  kind: "sales_nav" | "google_maps",
+  kind: "sales_nav" | "google_maps" | "google_search",
   now = new Date()
 ): string {
   const stamp = poolImportListDateStamp(now);
-  return kind === "google_maps" ? `Maps · ${stamp}` : `Sales Nav · ${stamp}`;
+  if (kind === "google_maps") return `Maps · ${stamp}`;
+  if (kind === "google_search") return `Search · ${stamp}`;
+  return `Sales Nav · ${stamp}`;
 }
 
 const MAX_AUDIENCE_LIST_NAME_LENGTH = 120;

@@ -85,7 +85,7 @@ export function classroomActionPathTitleForLesson(
 /**
  * Nested subgroup under a path card, or null when the path stays flat
  * (Start Here, Coach Action Plan, path cards).
- * - Get Calls / Win Clients / Coach Clients → Classroom section
+ * - Get Calls / Win Clients / Keep Clients → Classroom section
  * - Going Pro → lesson (PRO Energy, …)
  */
 export function classroomActionSubgroupTitleForLesson(
@@ -168,7 +168,7 @@ export function isKnownClassroomSubgroupTitle(text: string): boolean {
 }
 
 /**
- * Global Classroom lesson order (Start Here → Coach Clients).
+ * Global Classroom lesson order (Start Here → Keep Clients).
  */
 export function buildClassroomLessonOrderIndex(): Map<string, number> {
   const hub = loadClassroomHub();

@@ -210,10 +210,13 @@ export async function enrichMessagingConversationPeople<
       : undefined;
     const leadName = leadDisplayName(lead);
 
-    const contactName =
+    const contactNameRaw =
       (contact?.full_name || "").trim() ||
       (leadContact?.full_name || "").trim() ||
       null;
+    const contactName = looksLikePersonName(contactNameRaw)
+      ? contactNameRaw
+      : null;
     let prospect_name = row.prospect_name ?? null;
     if (contactName) {
       prospect_name = contactName;

@@ -7,6 +7,7 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 | Find prospects, "build me a list", "who should I target" | `find-prospects` | Then the source they choose |
 | Import from a Sales Navigator search or criteria | `sales-navigator-import` | `lists` to see the result |
 | Find businesses on Google Maps (country, town, search) | `google-maps-import` | `lists` to see the result |
+| Find businesses on Google Search, not Maps | `google-search-import` | `lists` to see the result |
 | See, create or look inside lists | `lists` | |
 | Create a campaign, see campaigns, turn one on or off, change volume or priority | `campaigns` | `campaign-messaging` to write it |
 | Add a list or people to a campaign, remove, pause or move people | `campaign-people` | `lists`, `campaigns` |
@@ -21,4 +22,4 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 
 ## Capability ids
 
-`find-prospects`, `sales-navigator-import`, `google-maps-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `blueprint-writing`, `guide`, `coach-access`.
+`find-prospects`, `sales-navigator-import`, `google-maps-import`, `google-search-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `blueprint-writing`, `guide`, `coach-access`.

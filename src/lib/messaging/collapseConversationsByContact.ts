@@ -3,6 +3,7 @@ import {
   normalizeContactLinkedInUrl,
   normalizeContactPhone,
 } from "@/lib/contacts/identity";
+import { bestPersonName } from "@/lib/messaging/threadIdentity";
 import {
   linkedInIdentityKeys,
   linkedInProviderIdFromUrl,
@@ -25,6 +26,7 @@ export type CollapsibleConversation = {
   unipile_chat_id?: string | null;
   last_preview?: string | null;
   unread_count?: number | null;
+  prospect_name?: string | null;
   prospect_email?: string | null;
   prospect_phone?: string | null;
   prospect_linkedin_url?: string | null;
@@ -172,9 +174,19 @@ export function collapseConversationsByContact<T extends CollapsibleConversation
       linkedInProviderIdFromUrl(primary.prospect_linkedin_url) ||
       null;
 
+    const personName = bestPersonName(sorted.map((row) => row.prospect_name));
+    const email =
+      normalizeContactEmail(primary.prospect_email) ||
+      siblings
+        .map((row) => normalizeContactEmail(row.prospect_email))
+        .find(Boolean) ||
+      null;
+
     collapsed.push({
       ...primary,
       contact_id: contactId,
+      ...(personName ? { prospect_name: personName } : {}),
+      ...(email ? { prospect_email: email } : {}),
       prospect_linkedin_provider_id: providerId,
       unread_count: unread,
       reply_channels: [...channels],

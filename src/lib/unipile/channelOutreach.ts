@@ -14,6 +14,7 @@ import {
 import { unpackEmailBody } from "@/lib/unipile/playbookSteps";
 import { facebookProfileIdentifier } from "@/lib/unipile/facebookIdentity";
 import { instagramUsername } from "@/lib/unipile/instagramIdentity";
+import { liftWhatsAppImportBlock } from "@/lib/messaging/whatsappImport";
 import { resolveAccountIdForChannel } from "@/lib/messaging/startConversation";
 import type { UnipileAppChannel } from "@/lib/unipile/providers";
 import {
@@ -427,6 +428,11 @@ export async function sendCampaignWhatsApp(input: {
       text,
     });
     if (!sent.ok) throw new Error(sent.error || "WhatsApp send failed");
+    await liftWhatsAppImportBlock({
+      coachId: input.coachId,
+      contactId: input.lead.contact_id,
+      phone: asString(input.lead.metadata?.phone),
+    });
     return { chatId: storedChat, messageId: sent.data?.message_id ?? null };
   }
   const metaPhone = asString(input.lead.metadata?.phone);
@@ -474,6 +480,11 @@ export async function sendCampaignWhatsApp(input: {
       whatsapp_chat_id: chatId,
     });
   }
+  await liftWhatsAppImportBlock({
+    coachId: input.coachId,
+    contactId: input.lead.contact_id,
+    phone,
+  });
   return { chatId, messageId: started.data?.message_id ?? null };
 }
 

@@ -1,5 +1,8 @@
 import type { ProspectRow } from "@/lib/prospectRow";
-import type { ProspectStatusValue } from "@/lib/prospectStatus";
+import {
+  canonicalizeProspectStatus,
+  type ProspectStatusValue,
+} from "@/lib/prospectStatus";
 import {
   visiblePipelineColumns,
   visibleSections,
@@ -9,6 +12,7 @@ import {
 
 export const PIPELINE_COLUMN_IDS = [
   "leads",
+  "to_sort",
   "replied",
   "interested",
   "booked",
@@ -19,6 +23,7 @@ export const PIPELINE_COLUMN_IDS = [
 export type PipelineColumnId = (typeof PIPELINE_COLUMN_IDS)[number] | string;
 
 export const DEFAULT_PIPELINE_COLUMN_IDS: PipelineColumnId[] = [
+  "to_sort",
   "replied",
   "interested",
   "booked",
@@ -51,6 +56,7 @@ export type PipelineSectionId = string;
 
 export const PIPELINE_COLUMN_LABELS: Record<string, string> = {
   leads: "Pool",
+  to_sort: "To sort",
   replied: "Replied",
   interested: "Interested",
   booked: "Booked",
@@ -60,6 +66,7 @@ export const PIPELINE_COLUMN_LABELS: Record<string, string> = {
 
 export const PIPELINE_COLUMN_DOT: Record<string, string> = {
   leads: "bg-slate-400",
+  to_sort: "bg-slate-400",
   replied: "bg-violet-500",
   interested: "bg-rose-400",
   booked: "bg-sky-500",
@@ -93,6 +100,7 @@ const STATUS_TO_COLUMN: Record<ProspectStatusValue, PipelineColumnId> = {
 
 export const COLUMN_DROP_STATUS: Record<string, string> = {
   leads: "leads",
+  to_sort: "leads",
   replied: "replied",
   interested: "interested",
   booked: "booked",
@@ -127,28 +135,45 @@ export function pipelineDropStatus(
   return COLUMN_DROP_STATUS[columnId] ?? columnId;
 }
 
+/**
+ * Still on Prospects, but nobody has marked them as a real pipeline stage.
+ * Stored Pool / blank status, with no scorecard, call, or follow-up.
+ * Display-only lifts (a CRM import shown as Expressed) stay here until a coach moves them.
+ */
+export function isToSortProspect(row: ProspectRow): boolean {
+  if (row.last_assessed_at) return false;
+  if (row.next_call?.start_time) return false;
+  if (row.next_action?.text?.trim()) return false;
+  const stored = canonicalizeProspectStatus(row.prospect_status);
+  return stored == null || stored === "leads";
+}
+
 export function pipelineColumnForProspect(
   row: ProspectRow,
   layout?: PipelineLayout
 ): string {
-  const status = row.status.value;
   const visible = layout ? visiblePipelineColumns(layout) : null;
+  if (
+    isToSortProspect(row) &&
+    (!visible || visible.some((col) => col.id === "to_sort"))
+  ) {
+    return "to_sort";
+  }
+
+  const stored = canonicalizeProspectStatus(row.prospect_status);
+  const unstaged = stored == null || stored === "leads";
+  if (unstaged && row.next_call?.start_time) return "booked";
+  if (unstaged && row.next_action?.text?.trim()) return "follow_up";
+  if (unstaged && row.last_assessed_at) return "interested";
+
+  const status = row.status.value;
   if (visible) {
     for (const col of visible) {
       if (col.id === status) return col.id;
       if (col.sections.some((section) => section.id === status)) return col.id;
     }
   }
-  const mapped = STATUS_TO_COLUMN[status as ProspectStatusValue] ?? "leads";
-  // Prospects hides the Pool column; inbound people at Pool still belong here.
-  if (
-    mapped === "leads" &&
-    visible &&
-    !visible.some((col) => col.id === "leads")
-  ) {
-    return "interested";
-  }
-  return mapped;
+  return STATUS_TO_COLUMN[status as ProspectStatusValue] ?? "leads";
 }
 
 export function bookedSectionForProspect(row: ProspectRow): BookedSectionId {
@@ -300,7 +325,7 @@ export function buildPipelineBoard(
           ({
             id,
             label: PIPELINE_COLUMN_LABELS[id],
-            collapsible: id === "leads" || id === "closed",
+            collapsible: id === "leads" || id === "closed" || id === "to_sort",
             system: true,
             sections: [],
           }) satisfies PipelineColumnConfig

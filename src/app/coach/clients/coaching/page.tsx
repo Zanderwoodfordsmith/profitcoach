@@ -117,7 +117,7 @@ function CoachingHubInner() {
     <CoachClientHubGate>
       <div className="flex flex-col gap-4">
         <StickyPageHeader
-          title="Coach Clients"
+          title="Keep Clients"
           description="Pick a client to open their coaching workspace."
           tabs={<CoachToolsHubTabs hub="coach-clients" />}
         />

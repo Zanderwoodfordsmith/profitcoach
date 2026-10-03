@@ -9,6 +9,7 @@ import {
   Link2,
   Loader2,
   MapPin,
+  Globe,
   Plus,
   Search,
   UserPlus,
@@ -37,6 +38,7 @@ import { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
 import {
   unwatchSalesNavImport,
   watchSalesNavImport,
+  poolImportStatusPath,
 } from "@/lib/salesNavigator/importJobWatch";
 import {
   SALES_NAV_POOL_LIMIT_OPTIONS,
@@ -61,6 +63,11 @@ import {
 } from "@/lib/googleMaps/location";
 import { GOOGLE_MAPS_SIZE_OPTIONS, formatGoogleMapsSizeOption } from "@/lib/googleMaps/cost";
 import {
+  formatGoogleSearchSizeOption,
+  GOOGLE_SEARCH_SIZE_OPTIONS,
+} from "@/lib/googleSearch/cost";
+import { formatGoogleSearchSplitHint } from "@/lib/googleSearch/searchTerms";
+import {
   GOOGLE_MAPS_MAX_SEARCH_TERMS,
   formatGoogleMapsSplitHint,
   parseGoogleMapsSearchTerms,
@@ -75,8 +82,8 @@ const MAPS_TERM_PLACEHOLDERS = [
   "cafes",
 ];
 
-type Mode = "pick" | "search" | "maps" | "csv" | "one";
-type ImportKind = "sales_nav" | "google_maps";
+type Mode = "pick" | "search" | "maps" | "google" | "csv" | "one";
+type ImportKind = "sales_nav" | "google_maps" | "google_search";
 type SalesNavSource = "first" | "custom";
 
 const SALES_NAV_IMPORT_SOURCES: Array<{
@@ -103,6 +110,7 @@ const MODE_TITLES: Record<Mode, string> = {
   pick: "Import into pool",
   search: "Sales Navigator import",
   maps: "Google Maps",
+  google: "Google Search",
   csv: "Upload CSV",
   one: "Add one person",
 };
@@ -206,6 +214,12 @@ const OPTIONS: Array<{
     icon: MapPin,
   },
   {
+    id: "google",
+    title: "Google Search",
+    body: "Same idea, from Google results rather than Maps. We add the business and a person to contact.",
+    icon: Globe,
+  },
+  {
     id: "csv",
     title: "Upload CSV",
     body: "Choose the list, then match your columns. Name plus email, phone, LinkedIn, or website.",
@@ -292,10 +306,7 @@ export function ImportPoolModal({
       const headers = await getCoachAuthHeaders();
       if (!headers) return;
       if (cancelled) return;
-      const path =
-        importKind === "google_maps"
-          ? `/api/coach/google-maps-import/${jobId}`
-          : `/api/coach/sales-nav-import/${jobId}`;
+      const path = poolImportStatusPath(importKind, jobId);
       let res = await fetch(path, { headers });
       if (res.status === 401) {
         const retryHeaders = await getCoachAuthHeaders();
@@ -356,7 +367,7 @@ export function ImportPoolModal({
           : "";
         pendingSaveListNameRef.current = null;
         setNotice(
-          importKind === "google_maps"
+          importKind === "google_maps" || importKind === "google_search"
             ? `Added ${added.toLocaleString()} ${
                 added === 1 ? "business" : "businesses"
               } to the pool${
@@ -391,6 +402,10 @@ export function ImportPoolModal({
 
   const mapsParsedTerms = parseGoogleMapsSearchTerms(mapsTerms);
   const mapsSplitHint = formatGoogleMapsSplitHint(
+    mapsMaxPlaces,
+    mapsParsedTerms.length
+  );
+  const searchSplitHint = formatGoogleSearchSplitHint(
     mapsMaxPlaces,
     mapsParsedTerms.length
   );
@@ -613,6 +628,92 @@ export function ImportPoolModal({
       setMapsStartedAt(startedAt);
       setImportJobId(body.jobId);
       setImportKind("google_maps");
+      setImportProgress({
+        progressCount: 0,
+        targetCount: body.targetCount ?? mapsMaxPlaces,
+        phase: "scraping",
+        segmentLabel: null,
+        segmentIndex: 0,
+        segmentTotal: 1,
+        peopleFound: 0,
+      });
+      setBusy(false);
+    } catch (err) {
+      setBusy(false);
+      setError(err instanceof Error ? err.message : "Import failed.");
+    }
+  }
+
+  async function startGoogleSearchImport() {
+    const searchTerms = parseGoogleMapsSearchTerms(mapsTerms);
+    const location = resolveGoogleMapsLocation({
+      city: mapsLocation,
+      countryCode: mapsCountry,
+      countryName: mapsCountryOther,
+      stateCode: mapsUsState || null,
+    });
+    if (!searchTerms.length) {
+      setError("Enter a search like plumbers or dental practices.");
+      return;
+    }
+    if ("error" in location) {
+      setError(location.error);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    setImportProgress(null);
+    try {
+      const headers = await getCoachAuthHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch("/api/coach/google-search-import", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          searchTerms,
+          city: mapsLocation.trim(),
+          countryCode: mapsCountry,
+          countryName: mapsCountryOther.trim(),
+          stateCode: mapsUsState || undefined,
+          maxResults: mapsMaxPlaces,
+          findPeople: true,
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        jobId?: string;
+        targetCount?: number;
+        saveListId?: string | null;
+        saveListName?: string | null;
+      };
+      if (!res.ok) throw new Error(body.error || "Import failed.");
+      if (!body.jobId) throw new Error("Import started but no job id was returned.");
+      if (!body.saveListId) {
+        throw new Error("Import started but no list was created.");
+      }
+      const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
+      const saveListName = body.saveListName?.trim() || "Google Search import";
+      const startedAt = new Date().toISOString();
+      pendingSaveListNameRef.current = saveListName;
+      watchSalesNavImport({
+        id: body.jobId,
+        name: saveListName,
+        targetCount: body.targetCount ?? mapsMaxPlaces,
+        resumeHref: `${prefix}/campaigns?tab=pool`,
+        saveListId: body.saveListId,
+        kind: "google_search",
+      });
+      onImportStartedRef.current?.({
+        jobId: body.jobId,
+        saveListId: body.saveListId,
+        saveListName,
+        targetCount: body.targetCount ?? mapsMaxPlaces,
+        kind: "google_search",
+      });
+      setMapsStartedAt(startedAt);
+      setImportJobId(body.jobId);
+      setImportKind("google_search");
       setImportProgress({
         progressCount: 0,
         targetCount: body.targetCount ?? mapsMaxPlaces,
@@ -1121,8 +1222,14 @@ export function ImportPoolModal({
             </div>
           ) : null}
 
-          {mode === "maps" ? (
+          {mode === "maps" || mode === "google" ? (
             <div className="space-y-3">
+              {mode === "google" ? (
+                <p className="text-sm leading-snug text-slate-600">
+                  Google results, not Maps. We keep the business sites that
+                  rank and look up a person to contact.
+                </p>
+              ) : null}
               <div>
                 <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                   {mapsTerms.length > 1 ? "Searches" : "Search"}
@@ -1282,21 +1389,28 @@ export function ImportPoolModal({
                   disabled={Boolean(importJobId)}
                   className={MAPS_SELECT_CLASS}
                 >
-                  {GOOGLE_MAPS_SIZE_OPTIONS.map((size) => (
+                  {(mode === "google"
+                    ? GOOGLE_SEARCH_SIZE_OPTIONS
+                    : GOOGLE_MAPS_SIZE_OPTIONS
+                  ).map((size) => (
                     <option key={size} value={size}>
-                      {formatGoogleMapsSizeOption(size)}
+                      {mode === "google"
+                        ? formatGoogleSearchSizeOption(size)
+                        : formatGoogleMapsSizeOption(size)}
                     </option>
                   ))}
                 </select>
-                {mapsSplitHint ? (
+                {(mode === "google" ? searchSplitHint : mapsSplitHint) ? (
                   <p className="mt-1.5 text-xs leading-snug text-slate-500">
-                    {mapsSplitHint}
+                    {mode === "google" ? searchSplitHint : mapsSplitHint}
                   </p>
                 ) : null}
               </label>
-              {importProgress && importKind === "google_maps" ? (
+              {importProgress &&
+              (importKind === "google_maps" || importKind === "google_search") ? (
                 <GoogleMapsImportWaitPanel
                   compact
+                  source={importKind === "google_search" ? "search" : "maps"}
                   progressCount={importProgress.progressCount}
                   targetCount={importProgress.targetCount}
                   startedAt={mapsStartedAt}
@@ -1312,7 +1426,11 @@ export function ImportPoolModal({
                     mapsParsedTerms.length < 1 ||
                     !mapsLocationReady
                   }
-                  onClick={() => void startMapsImport()}
+                  onClick={() =>
+                    void (mode === "google"
+                      ? startGoogleSearchImport()
+                      : startMapsImport())
+                  }
                   className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                 >
                   Import to pool

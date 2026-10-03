@@ -387,7 +387,7 @@ export const CURRICULUM_COURSES: CurriculumCourse[] = [
   },
   {
     id: "coach-clients",
-    title: "Coach Clients",
+    title: "Keep Clients",
     purpose: "Activate → Get results → Retain. Sessions 1–4 stay as activation. Profit System drops off the main path.",
     milestones: [
       {

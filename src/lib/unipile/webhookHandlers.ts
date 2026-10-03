@@ -16,7 +16,9 @@ import {
 } from "@/lib/unipile/chatCounterpart";
 import {
   isGenericConversationName,
+  looksLikePersonName,
 } from "@/lib/messaging/conversationDisplay";
+import { mailboxPersonName } from "@/lib/messaging/threadIdentity";
 import {
   allowPersonalChannelIngest,
 } from "@/lib/messaging/knownContacts";
@@ -569,7 +571,9 @@ export async function handleUnipileMailReceived(
   const from = body.from_attendee as
     | { display_name?: string; identifier?: string }
     | undefined;
-  const to0 = (body.to_attendees as Array<{ identifier?: string }>)?.[0];
+  const to0 = (
+    body.to_attendees as Array<{ identifier?: string; display_name?: string }>
+  )?.[0];
   const role = String(body.role || "").toLowerCase();
   const isSent = role === "sent" || String(body.origin || "") === "unipile";
   let text = unipileEmailBodyText(body);
@@ -588,9 +592,11 @@ export async function handleUnipileMailReceived(
   const prospectEmail = isSent
     ? to0?.identifier || null
     : from?.identifier || null;
-  const prospectName =
-    (isSent ? to0?.identifier : from?.display_name || from?.identifier) ||
-    "Email";
+  const headerName = mailboxPersonName({
+    isSent,
+    fromName: from?.display_name,
+    toName: to0?.display_name,
+  });
 
   let conversationId: string | null = null;
   const existingConv = await findExistingMailConversation({
@@ -618,7 +624,11 @@ export async function handleUnipileMailReceived(
         coach_id: coachId,
         contact_id: gate.contact?.id ?? null,
         prospect_name:
-          gate.contact?.full_name || String(prospectName).slice(0, 200),
+          (looksLikePersonName(gate.contact?.full_name)
+            ? gate.contact?.full_name
+            : null) ||
+          headerName ||
+          (prospectEmail ? String(prospectEmail).slice(0, 200) : "Email"),
         prospect_email: (prospectEmail || gate.contact?.email || null)
           ?.trim()
           .toLowerCase() || null,

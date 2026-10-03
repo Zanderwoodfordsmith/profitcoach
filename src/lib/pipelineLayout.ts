@@ -1,5 +1,6 @@
 export const SYSTEM_PIPELINE_COLUMN_IDS = [
   "leads",
+  "to_sort",
   "replied",
   "interested",
   "booked",
@@ -41,11 +42,13 @@ export type PipelineLayout = {
   version?: number;
   avgDealAmount: number;
   collapsedIds: string[];
+  /** `${columnId}:${sectionId}` keys for sections folded on the board. */
+  collapsedSectionIds: string[];
   cardFields: PipelineCardFields;
   columns: PipelineColumnConfig[];
 };
 
-export const PIPELINE_LAYOUT_VERSION = 2;
+export const PIPELINE_LAYOUT_VERSION = 3;
 
 export const DEFAULT_AVG_DEAL_AMOUNT = 2000;
 
@@ -53,10 +56,10 @@ const SHOW_LEADS_LEGACY_KEY = "pc-pipeline-show-leads";
 const AVG_DEAL_LEGACY_KEY = "pc-pipeline-avg-deal";
 
 export const DEFAULT_CARD_FIELDS: PipelineCardFields = {
-  company: true,
-  score: true,
+  company: false,
+  score: false,
   appointment: true,
-  pill: true,
+  pill: false,
   actions: true,
 };
 
@@ -64,7 +67,8 @@ export function defaultPipelineLayout(): PipelineLayout {
   return {
     version: PIPELINE_LAYOUT_VERSION,
     avgDealAmount: DEFAULT_AVG_DEAL_AMOUNT,
-    collapsedIds: ["leads", "closed"],
+    collapsedIds: ["leads", "to_sort", "closed"],
+    collapsedSectionIds: [],
     cardFields: { ...DEFAULT_CARD_FIELDS },
     columns: [
       {
@@ -77,6 +81,13 @@ export function defaultPipelineLayout(): PipelineLayout {
           { id: "not_started", label: "Not started", system: true },
           { id: "in_outreach", label: "In outreach", system: true },
         ],
+      },
+      {
+        id: "to_sort",
+        label: "To sort",
+        collapsible: true,
+        system: true,
+        sections: [],
       },
       {
         id: "replied",
@@ -167,7 +178,11 @@ export function parsePipelineLayout(raw: unknown): PipelineLayout {
 
   const collapsedIds = Array.isArray(raw.collapsedIds)
     ? raw.collapsedIds.filter((id): id is string => typeof id === "string")
-    : fallback.collapsedIds;
+    : [...fallback.collapsedIds];
+
+  const collapsedSectionIds = Array.isArray(raw.collapsedSectionIds)
+    ? raw.collapsedSectionIds.filter((id): id is string => typeof id === "string")
+    : [];
 
   const cardFields: PipelineCardFields = { ...DEFAULT_CARD_FIELDS };
   if (isRecord(raw.cardFields)) {
@@ -220,7 +235,13 @@ export function parsePipelineLayout(raw: unknown): PipelineLayout {
   }
 
   if (columns.length === 0) {
-    return { ...fallback, avgDealAmount: avg, collapsedIds, cardFields };
+    return {
+      ...fallback,
+      avgDealAmount: avg,
+      collapsedIds,
+      collapsedSectionIds,
+      cardFields,
+    };
   }
 
   const byId = new Map(columns.map((col) => [col.id, col]));
@@ -253,6 +274,11 @@ export function parsePipelineLayout(raw: unknown): PipelineLayout {
 
   const leads = columns.find((col) => col.id === "leads");
   if (leads) leads.hidden = true;
+  const toSort = columns.find((col) => col.id === "to_sort");
+  if (toSort) {
+    toSort.hidden = false;
+    toSort.collapsible = true;
+  }
 
   const storedVersion =
     typeof raw.version === "number" && Number.isFinite(raw.version)
@@ -261,11 +287,18 @@ export function parsePipelineLayout(raw: unknown): PipelineLayout {
   if (storedVersion < 2) {
     moveAbandonedAboveLost(columns);
   }
+  if (storedVersion < 3) {
+    cardFields.company = false;
+    cardFields.score = false;
+    cardFields.pill = false;
+    if (!collapsedIds.includes("to_sort")) collapsedIds.push("to_sort");
+  }
 
   return {
     version: PIPELINE_LAYOUT_VERSION,
     avgDealAmount: avg,
     collapsedIds,
+    collapsedSectionIds,
     cardFields,
     columns,
   };
@@ -346,6 +379,23 @@ function withColumns(
   return { ...layout, columns };
 }
 
+export function sectionCollapseKey(columnId: string, sectionId: string): string {
+  return `${columnId}:${sectionId}`;
+}
+
+export function setSectionCollapsed(
+  layout: PipelineLayout,
+  columnId: string,
+  sectionId: string,
+  collapsed: boolean
+): PipelineLayout {
+  const key = sectionCollapseKey(columnId, sectionId);
+  const collapsedSectionIds = collapsed
+    ? Array.from(new Set([...layout.collapsedSectionIds, key]))
+    : layout.collapsedSectionIds.filter((id) => id !== key);
+  return { ...layout, collapsedSectionIds };
+}
+
 export function setCollapsed(
   layout: PipelineLayout,
   columnId: string,
@@ -405,6 +455,7 @@ export function setColumnHidden(
   columnId: string,
   hidden: boolean
 ): PipelineLayout {
+  if (hidden && columnId === "to_sort") return layout;
   const visibleCount = layout.columns.filter((col) => !col.hidden).length;
   if (hidden && visibleCount <= 1) return layout;
   return withColumns(
@@ -585,8 +636,6 @@ export const CARD_FIELD_OPTIONS: Array<{
   key: keyof PipelineCardFields;
   label: string;
 }> = [
-  { key: "company", label: "Company" },
-  { key: "score", label: "BOSS score" },
   { key: "pill", label: "Status pill" },
   { key: "actions", label: "Quick actions" },
   { key: "appointment", label: "Appointment" },

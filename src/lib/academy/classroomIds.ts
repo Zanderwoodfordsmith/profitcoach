@@ -11,7 +11,7 @@ export const CLASSROOM_START_COURSE_IDS = [
   "going-pro",
 ] as const;
 
-/** Get Calls, Win Clients, Coach Clients. */
+/** Get Calls, Win Clients, Keep Clients. */
 export const CLASSROOM_PATH_COURSE_IDS = [
   "get-calls",
   "win-clients",

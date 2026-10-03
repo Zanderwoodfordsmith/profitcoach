@@ -20,10 +20,11 @@ The front door for "find me prospects" or "build me a list". You choose the sour
 |---|---|---|---|
 | Sales Navigator search | Owners by industry, title and size, anywhere on LinkedIn. The default for connector campaigns. | Their LinkedIn connected, with Sales Navigator | `sales-navigator-import` |
 | Google Maps | Local trades and services (plumbers, dentists, accountants) in a town, county or US state | Nothing. Costs a little per business found | `google-maps-import` |
+| Google Search | The same local businesses when they rank on Google, not only on a map | Nothing. Costs a little per business found | `google-search-import` |
 | A list they already have | People already imported into the pool or a list | | `lists` |
 | Their own connections (1st degree) | Warm outreach to people they already know | LinkedIn with Sales Navigator | `sales-navigator-import` with degree 1 |
 
-3. Recommend: Sales Navigator for most coaches. Google Maps when the market is local and owner-run, or when they have no Sales Navigator.
+3. Recommend: Sales Navigator for most coaches. Google Maps when the market is local and owner-run, or when they have no Sales Navigator. Google Search when they want the websites that rank, not map pins.
 4. Once they choose, open that capability and follow its contract.
 
 ## List size and quality (from the classroom)

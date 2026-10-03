@@ -40,6 +40,7 @@ A gated tool call stores a pending action (server side, input frozen) and return
 | find-prospects | chooser only: asks how they want to find people, then opens one of the below |
 | sales-navigator-import | `build_sales_nav_search`, `start_sales_nav_import` (confirm), `check_import` |
 | google-maps-import | `google_maps_options`, `start_google_maps_import` (confirm), `check_import` |
+| google-search-import | `google_search_options`, `start_google_search_import` (confirm), `check_import` |
 | lists | `list_lists`, `get_list_people`, `create_list` |
 | campaigns | `list_campaigns`, `get_campaign`, `list_campaign_templates`, `create_campaign`, `update_campaign_settings`, `set_campaign_status` |
 | campaign-people | `add_list_to_campaign`, `list_campaign_people`, `remove_people_from_campaign`, `pause_people`, `resume_people` |

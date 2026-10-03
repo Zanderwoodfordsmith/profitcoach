@@ -217,7 +217,7 @@ export function buildGrowthSystemMap(
     },
     {
       id: "coach-clients",
-      title: "Coach Clients",
+      title: "Keep Clients",
       description:
         "Deliver a coaching experience that creates progress and keeps clients moving.",
       href: courseHref(catalog, "coach-clients", basePath),

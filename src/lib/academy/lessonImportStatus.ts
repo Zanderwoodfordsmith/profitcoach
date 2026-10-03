@@ -104,7 +104,7 @@ function catalogSectionFromHub(
   };
 }
 
-/** Classroom card order (Start Here → Coach Clients), nested categories preserved. */
+/** Classroom card order (Start Here → Keep Clients), nested categories preserved. */
 function catalogOrderFromHub(
   hub: ReturnType<typeof loadClassroomHub>,
   deletedLessonIds: ReadonlySet<string>,

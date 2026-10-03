@@ -183,13 +183,62 @@ export async function findKnownContactForCoach(
   return null;
 }
 
-async function contactIsProspect(contactId: string): Promise<boolean> {
+async function contactRecordType(contactId: string): Promise<string | null> {
   const { data } = await supabaseAdmin
     .from("contacts")
     .select("type")
     .eq("id", contactId)
     .maybeSingle();
-  return (data?.type as string | undefined) === "prospect";
+  const type = (data?.type as string | undefined)?.trim().toLowerCase();
+  return type || null;
+}
+
+/**
+ * WhatsApp may enter the inbox only for a pool number, a prospect, or a
+ * client — and never when the coach has blocked that person.
+ * Personal chats (anyone else on the phone) stay out.
+ */
+export function whatsAppThreadAllowed(input: {
+  blocked: boolean;
+  onPool: boolean;
+  contactType: string | null;
+}): boolean {
+  if (input.blocked) return false;
+  if (input.onPool) return true;
+  const type = (input.contactType || "").toLowerCase();
+  return type === "prospect" || type === "client";
+}
+
+/** Coach asked us not to import this WhatsApp number or contact. */
+export async function isWhatsAppImportBlocked(
+  coachId: string,
+  input: { phoneKey?: string | null; contactId?: string | null }
+): Promise<boolean> {
+  const phoneKey = input.phoneKey?.trim() || null;
+  const contactId = input.contactId?.trim() || null;
+  if (!phoneKey && !contactId) return false;
+
+  let query = supabaseAdmin
+    .from("messaging_import_blocks")
+    .select("id")
+    .eq("coach_id", coachId)
+    .eq("channel", "whatsapp")
+    .limit(1);
+  if (phoneKey && contactId) {
+    query = query.or(
+      `phone_key.eq.${phoneKey},contact_id.eq.${contactId}`
+    );
+  } else if (phoneKey) {
+    query = query.eq("phone_key", phoneKey);
+  } else {
+    query = query.eq("contact_id", contactId);
+  }
+  const { data, error } = await query.maybeSingle();
+  if (error) {
+    console.error("whatsapp import block lookup:", error.message);
+    return false;
+  }
+  return Boolean(data?.id);
 }
 
 async function poolHasPhone(coachId: string, phoneKey: string): Promise<boolean> {
@@ -220,8 +269,9 @@ async function poolHasPhone(coachId: string, phoneKey: string): Promise<boolean>
 
 /**
  * Whether this inbound/sync event may enter Conversations.
- * LinkedIn stays open. Email needs a known contact. WhatsApp only stays
- * when the number is already on the pool or on a prospect.
+ * LinkedIn stays open. Email needs a known contact. WhatsApp stays only for
+ * a pool number, a prospect, or a client, and only when the coach has not
+ * chosen "Don't import" for that person. Recent personal chats are not scanned.
  */
 export async function allowPersonalChannelIngest(input: {
   coachId: string;
@@ -236,42 +286,31 @@ export async function allowPersonalChannelIngest(input: {
   }
   if ((input.channel || "").toLowerCase() === "whatsapp") {
     const phoneKey = phoneMatchKey(input.phone);
-    if (phoneKey && (await poolHasPhone(input.coachId, phoneKey))) {
-      const contact = await findKnownContactForCoach(input.coachId, {
-        phone: input.phone,
-      });
-      return {
-        allowed: true,
-        contact:
-          contact ??
-          (input.existingContactId
-            ? {
-                id: input.existingContactId,
-                full_name: null,
-                email: null,
-                phone: input.phone ?? null,
-              }
-            : null),
-      };
+    const known = phoneKey
+      ? await findKnownContactForCoach(input.coachId, { phone: input.phone })
+      : null;
+    const contactId = input.existingContactId || known?.id || null;
+    const [blocked, onPool, contactType] = await Promise.all([
+      isWhatsAppImportBlocked(input.coachId, { phoneKey, contactId }),
+      phoneKey ? poolHasPhone(input.coachId, phoneKey) : Promise.resolve(false),
+      contactId ? contactRecordType(contactId) : Promise.resolve(null),
+    ]);
+    if (!whatsAppThreadAllowed({ blocked, onPool, contactType })) {
+      return { allowed: false, contact: null };
     }
-    if (input.existingContactId && (await contactIsProspect(input.existingContactId))) {
-      return {
-        allowed: true,
-        contact: {
-          id: input.existingContactId,
-          full_name: null,
-          email: null,
-          phone: input.phone ?? null,
-        },
-      };
-    }
-    const contact = await findKnownContactForCoach(input.coachId, {
-      phone: input.phone,
-    });
-    if (contact && (await contactIsProspect(contact.id))) {
-      return { allowed: true, contact };
-    }
-    return { allowed: false, contact: null };
+    return {
+      allowed: true,
+      contact:
+        known ??
+        (contactId
+          ? {
+              id: contactId,
+              full_name: null,
+              email: null,
+              phone: input.phone ?? null,
+            }
+          : null),
+    };
   }
   if (input.existingContactId) {
     return {

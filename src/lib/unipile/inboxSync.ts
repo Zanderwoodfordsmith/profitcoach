@@ -11,6 +11,7 @@ import {
   isGenericConversationName,
   looksLikePersonName,
 } from "@/lib/messaging/conversationDisplay";
+import { mailboxPersonName } from "@/lib/messaging/threadIdentity";
 import {
   downloadMessagingAttachments,
   uploadMessagingAttachment,
@@ -26,6 +27,10 @@ import {
   loadKnownContactIndex,
   matchKnownContact,
 } from "@/lib/messaging/knownContacts";
+import {
+  dropDisallowedWhatsAppThreads,
+  liftWhatsAppImportBlock,
+} from "@/lib/messaging/whatsappImport";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import {
   emailNeedsBodyFetch,
@@ -409,6 +414,14 @@ async function syncMessagingAccount(input: {
   /** Extra chat list pages beyond the first 80. Soft = 1, force = more. */
   maxPages?: number;
 }): Promise<AccountSyncResult> {
+  const syncChannel = input.channel;
+  if (syncChannel === "whatsapp") {
+    // Never list recent WhatsApp chats or backfill history. Personal threads
+    // stay on the phone. New messages arrive by webhook for pool, prospect,
+    // and client numbers the coach has not blocked.
+    return dropDisallowedWhatsAppThreads(input.coachId);
+  }
+
   let chats = 0;
   let messages = 0;
   const listed = await listUnipileChatsPaged({
@@ -1086,15 +1099,22 @@ async function syncMailingAccount(input: {
     const from = latest.from_attendee as
       | { display_name?: string; identifier?: string }
       | undefined;
-    const to0 = (latest.to_attendees as Array<{ identifier?: string }>)?.[0];
+    const to0 = (
+      latest.to_attendees as Array<{
+        identifier?: string;
+        display_name?: string;
+      }>
+    )?.[0];
     const role = String(latest.role || "").toLowerCase();
     const isSent = role === "sent" || Boolean(latest.is_sender);
     const prospectEmail = isSent
       ? to0?.identifier || null
       : from?.identifier || null;
-    const prospectName =
-      (isSent ? to0?.identifier : from?.display_name || from?.identifier) ||
-      "Email";
+    const prospectName = mailboxPersonName({
+      isSent,
+      fromName: from?.display_name,
+      toName: to0?.display_name,
+    });
     const subject = String(latest.subject || "Email").slice(0, 200);
 
     let conversationId: string | null = null;
@@ -1122,7 +1142,11 @@ async function syncMailingAccount(input: {
         .update({
           contact_id: linkedContactId,
           prospect_email: prospectEmail || known?.email || undefined,
-          prospect_name: known?.full_name || undefined,
+          ...(looksLikePersonName(known?.full_name)
+            ? { prospect_name: known?.full_name }
+            : prospectName
+              ? { prospect_name: prospectName }
+              : {}),
         })
         .eq("id", conversationId);
     } else {
@@ -1132,7 +1156,9 @@ async function syncMailingAccount(input: {
           coach_id: input.coachId,
           contact_id: linkedContactId,
           prospect_name:
-            known?.full_name || String(prospectName).slice(0, 200),
+            (looksLikePersonName(known?.full_name) ? known?.full_name : null) ||
+            prospectName ||
+            (prospectEmail ? String(prospectEmail).slice(0, 200) : "Email"),
           prospect_email: prospectEmail || known?.email || null,
           subject,
           unipile_chat_id: threadKey,
@@ -1232,7 +1258,7 @@ async function syncMailingAccount(input: {
           }),
           subject,
           prospect_email: prospectEmail || undefined,
-          prospect_name: String(prospectName).slice(0, 200),
+          ...(prospectName ? { prospect_name: prospectName } : {}),
         })
         .eq("id", conversationId);
     }
@@ -1603,6 +1629,14 @@ export async function replyUnipileConversation(input: {
       })
       .eq("id", conv.id);
 
+    if (channel === "whatsapp") {
+      await liftWhatsAppImportBlock({
+        coachId: input.coachId,
+        contactId: (conv.contact_id as string | null) ?? null,
+        phone: (conv.prospect_phone as string | null) ?? null,
+      });
+    }
+
     return firstMsg;
   }
 
@@ -1748,6 +1782,14 @@ export async function replyUnipileConversation(input: {
       }),
     })
     .eq("id", conv.id);
+
+  if (channel === "whatsapp") {
+    await liftWhatsAppImportBlock({
+      coachId: input.coachId,
+      contactId: (conv.contact_id as string | null) ?? null,
+      phone: (conv.prospect_phone as string | null) ?? null,
+    });
+  }
 
   return msg;
 }

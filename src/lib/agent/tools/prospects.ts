@@ -37,6 +37,20 @@ import {
   loadGoogleMapsImportJob,
   syncGoogleMapsImportJob,
 } from "@/lib/googleMaps/importJob";
+import {
+  planGoogleSearchImport,
+  startGoogleSearchImport,
+  type GoogleSearchImportRequest,
+} from "@/lib/googleSearch/startImport";
+import {
+  estimateGoogleSearchCostUsd,
+  formatGoogleSearchApproxDuration,
+  GOOGLE_SEARCH_SIZE_OPTIONS,
+} from "@/lib/googleSearch/cost";
+import {
+  loadGoogleSearchImportJob,
+  syncGoogleSearchImportJob,
+} from "@/lib/googleSearch/importJob";
 import { getOkLinkedInAccount } from "@/lib/unipile/outreachAccounts";
 
 import type { AgentToolContext, AgentToolDef, AgentToolInput } from "../types";
@@ -156,6 +170,24 @@ async function runningMapsImport(coachId: string): Promise<boolean> {
   return Boolean(data?.length);
 }
 
+function searchRequestFrom(input: AgentToolInput): GoogleSearchImportRequest {
+  const maps = mapsRequestFrom(input);
+  return {
+    ...maps,
+    maxResults: maps.maxPlaces,
+  };
+}
+
+async function runningSearchImport(coachId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from("google_search_import_runs")
+    .select("id")
+    .eq("coach_id", coachId)
+    .in("status", ["pending", "running"])
+    .limit(1);
+  return Boolean(data?.length);
+}
+
 async function runningSalesNavImport(coachId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from("sales_nav_import_runs")
@@ -167,7 +199,10 @@ async function runningSalesNavImport(coachId: string): Promise<boolean> {
 }
 
 async function latestJobId(
-  table: "google_maps_import_runs" | "sales_nav_import_runs",
+  table:
+    | "google_maps_import_runs"
+    | "google_search_import_runs"
+    | "sales_nav_import_runs",
   coachId: string
 ): Promise<string | null> {
   const { data } = await supabaseAdmin
@@ -433,25 +468,132 @@ export const prospectTools: AgentToolDef[] = [
     },
   },
   {
+    name: "google_search_options",
+    label: "Checking Google Search options",
+    description:
+      "Supported countries, US states, and the size options with rough cost and time for a Google Search import.",
+    input_schema: { type: "object", properties: {} },
+    run: async () => ({
+      countries: GOOGLE_MAPS_COUNTRIES.map((c) => ({ code: c.code, name: c.label })),
+      other_country: 'Any other country: country_code "OTHER" plus country_name.',
+      us_states: GOOGLE_MAPS_US_STATES.map((s) => ({ code: s.code, name: s.label })),
+      sizes: GOOGLE_SEARCH_SIZE_OPTIONS.map((size) => ({
+        businesses: size,
+        up_to_usd: estimateGoogleSearchCostUsd({
+          maxResults: size,
+          queryCount: 1,
+          findPeople: true,
+        }),
+        takes: formatGoogleSearchApproxDuration(size),
+      })),
+    }),
+  },
+  {
+    name: "start_google_search_import",
+    label: "Starting the Google Search import",
+    needsCoach: true,
+    description:
+      "Search Google (not Maps) for businesses in a place, find a person at each, and save them to a new list. Asks for confirmation with the cost.",
+    input_schema: {
+      type: "object",
+      properties: {
+        search_terms: {
+          type: "array",
+          items: { type: "string" },
+          description: 'One to five terms a customer would type into Google: ["plumbers","emergency plumber"]',
+        },
+        country_code: { type: "string", description: 'ISO code from google_search_options, or "OTHER"' },
+        country_name: { type: "string", description: 'Only with country_code "OTHER"' },
+        state_code: { type: "string", description: "US only: two-letter state code" },
+        city: { type: "string", description: "Town, city or county. Leave out for the whole country or state" },
+        max_places: { type: "number", description: "How many businesses: 20, 50, 100, 250, 500 or 1000" },
+        list_name: { type: "string", description: "Name for the new list" },
+      },
+      required: ["search_terms", "country_code", "max_places"],
+    },
+    gate: async (input, ctx) => {
+      const coach = coachOf(ctx);
+      const plan = planGoogleSearchImport(searchRequestFrom(input));
+      if ("error" in plan) return { error: plan.error };
+      if (await runningSearchImport(coach.id)) {
+        return { error: `A Google Search import is already running for ${coach.name}. Check it with check_import, then start the next one.` };
+      }
+      return {
+        confirm: true,
+        title: `Find ${plan.searchTerms.join(", ")} in ${plan.location.locationQuery}`,
+        details: [
+          { label: "For", value: coach.name },
+          { label: "Search", value: plan.queries.join(" · ") },
+          { label: "Where", value: plan.location.locationQuery },
+          { label: "How many", value: `Up to ${plan.maxResults.toLocaleString("en-GB")} businesses` },
+          { label: "Cost", value: `Up to $${plan.estimatedCostUsd.toFixed(2)}` },
+          { label: "Takes", value: `About ${plan.approxDuration}` },
+          { label: "Saved to list", value: plan.saveListName },
+        ],
+      };
+    },
+    run: async (input, ctx) => {
+      const coach = coachOf(ctx);
+      const plan = planGoogleSearchImport(searchRequestFrom(input));
+      if ("error" in plan) throw new AgentToolError(plan.error);
+      const started = await startGoogleSearchImport(coach.id, plan);
+      return {
+        job_id: started.jobId,
+        kind: "google_search",
+        list_id: started.saveListId,
+        list_name: started.saveListName,
+        target: started.targetCount,
+        cost_up_to_usd: started.estimatedCostUsd,
+      };
+    },
+  },
+  {
     name: "check_import",
     label: "Checking the import",
     needsCoach: true,
     description:
-      "Progress of a Sales Navigator or Google Maps import. Leave out job_id for the most recent one of that kind.",
+      "Progress of a Sales Navigator, Google Maps, or Google Search import. Leave out job_id for the most recent one of that kind.",
     input_schema: {
       type: "object",
       properties: {
-        kind: { type: "string", enum: ["sales_nav", "google_maps"] },
+        kind: { type: "string", enum: ["sales_nav", "google_maps", "google_search"] },
         job_id: { type: "string" },
       },
       required: ["kind"],
     },
     run: async (input, ctx: AgentToolContext) => {
       const coach = coachOf(ctx);
-      const kind = str(input, "kind") === "google_maps" ? "google_maps" : "sales_nav";
-      const table = kind === "google_maps" ? "google_maps_import_runs" : "sales_nav_import_runs";
+      const requested = str(input, "kind");
+      const kind =
+        requested === "google_maps" || requested === "google_search"
+          ? requested
+          : "sales_nav";
+      const table =
+        kind === "google_maps"
+          ? "google_maps_import_runs"
+          : kind === "google_search"
+            ? "google_search_import_runs"
+            : "sales_nav_import_runs";
       const jobId = str(input, "job_id") || (await latestJobId(table, coach.id));
       if (!jobId) throw new AgentToolError("No imports of that kind yet.");
+
+      if (kind === "google_search") {
+        let job = await loadGoogleSearchImportJob(jobId);
+        if (!job || job.coach_id !== coach.id) throw new AgentToolError("Import not found.");
+        if (job.status === "pending" || job.status === "running") {
+          job = await syncGoogleSearchImportJob(job.id).catch(() => job!);
+        }
+        return {
+          kind,
+          status: job.status,
+          businesses_found: job.progress_count,
+          target: job.max_results,
+          added_to_list: job.added_count,
+          people_found: job.people_found,
+          list: await listName(job.save_list_id),
+          error: job.error_message,
+        };
+      }
 
       if (kind === "google_maps") {
         let job = await loadGoogleMapsImportJob(jobId);

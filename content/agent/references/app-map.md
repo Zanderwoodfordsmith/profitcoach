@@ -20,6 +20,7 @@ Coach pages start with `/coach`. Admin pages show the coach the admin is viewing
 
 - **Import from Sales Navigator**: Pool → **Import** → **Sales Navigator**. Paste a search URL or build one from filters, pick how many people. It lands on a new list (a new tab in the Pool).
 - **Google Maps**: Pool → **Import** → **Google Maps**. Country, then state (US) or city, then what to search for and how many.
+- **Google Search**: Pool → **Import** → **Google Search**. Same place and size as Maps, from Google results rather than map listings.
 - **Other imports**: Pool → **Import** → **1st degree** (their connections), **Upload CSV**, **Add one person**, **Custom URL**.
 - **Add a list to a campaign**: open the campaign → **Add prospects** → choose the list. Or: Pool → click the list's tab → tick the box at the top of the column → add them to the campaign.
 - **Remove, pause, resume or move people**: open the campaign → **Prospects** tab → tick them → **Remove**, **Pause**, **Resume** or **Move**.

@@ -137,6 +137,7 @@ export function ProspectWorkspace({ contactId }: Props) {
       contentClassName="min-h-0 flex-1 overflow-hidden"
       header={
         <StickyPageHeader
+          bleedInset="px-4 md:px-6"
           className="shrink-0"
           title="Get Clients"
           tabs={<CoachToolsHubTabs hub="get-clients" />}
@@ -144,9 +145,9 @@ export function ProspectWorkspace({ contactId }: Props) {
       }
     >
       {error && !canOpenInbox ? (
-        <p className="px-1 py-6 text-sm text-rose-600">{error}</p>
+        <p className="px-4 py-6 text-sm text-rose-600 md:px-6">{error}</p>
       ) : !canOpenInbox ? (
-        <p className="px-1 py-6 text-sm text-slate-600">Loading…</p>
+        <p className="px-4 py-6 text-sm text-slate-600 md:px-6">Loading…</p>
       ) : (
         <MessagingInbox
           key={contactId}

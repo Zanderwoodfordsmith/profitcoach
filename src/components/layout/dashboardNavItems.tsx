@@ -252,7 +252,7 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
     },
     {
       href: `${prefix}/clients`,
-      label: "Coach Clients",
+      label: "Keep Clients",
       icon: IconBriefcase,
       requiredFeature: "nav.delivery",
       toolsHub: "coach-clients",
@@ -267,7 +267,7 @@ export function getClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
     .map((item) => item.href);
 }
 
-/** Tabs inside the Coach Clients hub (former Delivery links). */
+/** Tabs inside the Keep Clients hub (former Delivery links). */
 export function coachClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
   return [
     `${prefix}/clients`,
@@ -407,7 +407,7 @@ export function isGetClientsStudioPath(pathname: string | null): boolean {
 }
 
 /**
- * Coach Clients hub tabs only. Per-client tools (plans, notes, …) live on the
+ * Keep Clients hub tabs only. Per-client tools (plans, notes, …) live on the
  * individual client workspace, not here.
  */
 export function coachClientsTabItems(

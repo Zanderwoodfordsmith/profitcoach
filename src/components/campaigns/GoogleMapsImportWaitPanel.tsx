@@ -1,17 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, MapPin } from "lucide-react";
+import { Globe, Loader2, MapPin } from "lucide-react";
 import {
   formatGoogleMapsApproxDuration,
   googleMapsImportProgressPercent,
 } from "@/lib/googleMaps/cost";
+import {
+  formatGoogleSearchApproxDuration,
+  googleSearchImportProgressPercent,
+} from "@/lib/googleSearch/cost";
 
 const WAIT_BEATS = [
   "Scanning Google Maps for matching businesses…",
   "Opening each listing for details…",
   "Pulling phones, websites, and emails…",
   "Looking for people to message on LinkedIn…",
+  "You can leave this page — the import keeps running.",
+] as const;
+
+const SEARCH_WAIT_BEATS = [
+  "Searching Google for matching businesses…",
+  "Reading the websites that rank…",
+  "Pulling phones, emails, and LinkedIn profiles…",
+  "Looking for people to message…",
   "You can leave this page — the import keeps running.",
 ] as const;
 
@@ -23,6 +35,7 @@ type Props = {
   peopleFound?: number;
   listName?: string | null;
   compact?: boolean;
+  source?: "maps" | "search";
 };
 
 export function GoogleMapsImportWaitPanel({
@@ -33,7 +46,9 @@ export function GoogleMapsImportWaitPanel({
   peopleFound = 0,
   listName,
   compact = false,
+  source = "maps",
 }: Props) {
+  const web = source === "search";
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [beatIndex, setBeatIndex] = useState(0);
   const startedAtMs = startedAt ? Date.parse(startedAt) : Date.now();
@@ -51,20 +66,25 @@ export function GoogleMapsImportWaitPanel({
     return () => window.clearInterval(tick);
   }, []);
 
-  const pct = googleMapsImportProgressPercent({
+  const pct = (web ? googleSearchImportProgressPercent : googleMapsImportProgressPercent)({
     progressCount,
     targetCount,
     startedAtMs: safeStarted,
     nowMs,
     phase,
   });
-  const eta = formatGoogleMapsApproxDuration(targetCount);
+  const eta = web
+    ? formatGoogleSearchApproxDuration(targetCount)
+    : formatGoogleMapsApproxDuration(targetCount);
+  const beats = web ? SEARCH_WAIT_BEATS : WAIT_BEATS;
   const headline =
     phase === "finalizing"
       ? "Saving into your pool…"
       : progressCount > 0
         ? "Finding businesses…"
-        : "Starting Google Maps search…";
+        : web
+          ? "Starting Google Search…"
+          : "Starting Google Maps search…";
 
   return (
     <div
@@ -78,7 +98,11 @@ export function GoogleMapsImportWaitPanel({
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
-          <MapPin className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+          {web ? (
+            <Globe className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+          ) : (
+            <MapPin className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+          )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -96,7 +120,7 @@ export function GoogleMapsImportWaitPanel({
           <p className="mt-2 text-sm leading-snug text-amber-950/80 transition-opacity duration-500">
             {phase === "finalizing"
               ? "Almost done — writing businesses into your pool and list."
-              : WAIT_BEATS[beatIndex]}
+              : beats[beatIndex]}
           </p>
         </div>
       </div>

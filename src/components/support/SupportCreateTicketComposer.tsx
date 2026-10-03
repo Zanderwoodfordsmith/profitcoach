@@ -371,6 +371,7 @@ export function SupportCreateTicketComposer({
             details: detailsText,
             media: media.length > 0 ? media : null,
             member_notify_email: notifyEmail,
+            status: "open" as const,
             page_path:
               typeof window !== "undefined"
                 ? window.location.pathname + window.location.search

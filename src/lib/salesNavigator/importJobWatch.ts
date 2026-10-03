@@ -3,6 +3,8 @@
  * Lets a global toast finish the job if the user leaves Lead Finder.
  */
 
+export type PoolImportKind = "sales_nav" | "google_maps" | "google_search";
+
 export type WatchedSalesNavImport = {
   id: string;
   name: string | null;
@@ -10,8 +12,24 @@ export type WatchedSalesNavImport = {
   startedAt: string;
   resumeHref?: string | null;
   saveListId?: string | null;
-  kind?: "sales_nav" | "google_maps";
+  kind?: PoolImportKind;
 };
+
+export function poolImportStatusPath(
+  kind: PoolImportKind | undefined,
+  jobId: string
+): string {
+  const id = encodeURIComponent(jobId);
+  if (kind === "google_maps") return `/api/coach/google-maps-import/${id}`;
+  if (kind === "google_search") return `/api/coach/google-search-import/${id}`;
+  return `/api/coach/sales-nav-import/${id}`;
+}
+
+export function isBusinessPoolImport(
+  kind: PoolImportKind | undefined
+): kind is "google_maps" | "google_search" {
+  return kind === "google_maps" || kind === "google_search";
+}
 
 const STORAGE_KEY = "sales-nav-import-watch-v1";
 const DISMISS_KEY = "sales-nav-import-toast-dismissed-v1";
@@ -84,11 +102,15 @@ export function watchSalesNavImport(job: {
   targetCount?: number;
   resumeHref?: string | null;
   saveListId?: string | null;
-  kind?: "sales_nav" | "google_maps";
+  kind?: PoolImportKind;
 }): void {
   const id = job.id.trim();
   if (!id) return;
   const next = readRaw().filter((j) => j.id !== id);
+  const kind: PoolImportKind =
+    job.kind === "google_maps" || job.kind === "google_search"
+      ? job.kind
+      : "sales_nav";
   next.push({
     id,
     name: job.name?.trim() || null,
@@ -96,7 +118,7 @@ export function watchSalesNavImport(job: {
     startedAt: new Date().toISOString(),
     resumeHref: job.resumeHref?.trim() || null,
     saveListId: job.saveListId?.trim() || null,
-    kind: job.kind === "google_maps" ? "google_maps" : "sales_nav",
+    kind,
   });
   // Re-show progress toast if they start / resume this job.
   const dismissed = readDismissed();

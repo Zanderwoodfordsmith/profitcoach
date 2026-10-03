@@ -770,7 +770,7 @@ export function IntegrationsSettingsTab() {
                     }
                     info={
                       provider === "WHATSAPP"
-                        ? "Messages send from this WhatsApp. Chats stay in the inbox only when that person is already in your pool or on your prospects list."
+                        ? "Messages send from this WhatsApp. We don't pull your recent chats. A chat appears only when that person is already in your pool, on your prospects list, or saved as a client — and only as new messages arrive. Open a chat and choose Don't import to leave someone out."
                         : provider === "LINKEDIN"
                           ? LINKEDIN_CONNECT_TIP
                           : null

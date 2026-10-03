@@ -1,7 +1,7 @@
 /**
  * Hub loaders for academy body import scripts (no `server-only` — safe in tsx).
  *
- * Combines the Classroom hub (Get Calls, Win Clients, Coach Clients, Profit
+ * Combines the Classroom hub (Get Calls, Win Clients, Keep Clients, Profit
  * System tools, etc.) with the archive hub so source-doc titles resolve to
  * live `academy_lesson_content` rows.
  */

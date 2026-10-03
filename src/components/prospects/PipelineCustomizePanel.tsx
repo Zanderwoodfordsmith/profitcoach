@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Plus, Trash2, X } from "lucide-react";
 import {
   addCustomColumn,
@@ -11,7 +10,6 @@ import {
   moveSection,
   renameColumn,
   renameSection,
-  setAvgDealAmount,
   setColumnHidden,
   setSectionHidden,
   type PipelineLayout,
@@ -30,12 +28,6 @@ export function PipelineCustomizePanel({
   onChange,
   onClose,
 }: Props) {
-  const [avgDraft, setAvgDraft] = useState(String(layout.avgDealAmount));
-
-  useEffect(() => {
-    setAvgDraft(String(layout.avgDealAmount));
-  }, [layout.avgDealAmount, open]);
-
   if (!open) return null;
 
   return (
@@ -53,7 +45,7 @@ export function PipelineCustomizePanel({
               Customize pipeline
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">
-              Columns, sections, and average deal value.
+              Columns and sections.
             </p>
           </div>
           <button
@@ -66,36 +58,7 @@ export function PipelineCustomizePanel({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-          <label className="block">
-            <span className="text-xs font-medium text-slate-600">
-              Average deal
-            </span>
-            <span className="mt-1 flex h-10 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700">
-              £
-              <input
-                type="text"
-                inputMode="numeric"
-                value={avgDraft}
-                onChange={(e) => setAvgDraft(e.target.value)}
-                onBlur={() => {
-                  const n = Number(avgDraft.replace(/[^0-9.]/g, ""));
-                  onChange(
-                    setAvgDealAmount(
-                      layout,
-                      Number.isFinite(n) ? n : layout.avgDealAmount
-                    )
-                  );
-                }}
-                aria-label="Average deal amount in pounds"
-                className="w-full border-0 bg-transparent p-0 outline-none"
-              />
-            </span>
-            <span className="mt-1 block text-[11px] text-slate-400">
-              Used to estimate column value from deal count.
-            </span>
-          </label>
-
-          <div className="mt-6 flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">Columns</h3>
             <button
               type="button"
@@ -149,6 +112,7 @@ export function PipelineCustomizePanel({
                     <input
                       type="checkbox"
                       checked={!col.hidden}
+                      disabled={col.id === "to_sort"}
                       onChange={(e) =>
                         onChange(
                           setColumnHidden(layout, col.id, !e.target.checked)
