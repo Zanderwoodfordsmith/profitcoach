@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SalesNavImportRejectedError } from "@/lib/salesNavigator/classifySalesNavUrl";
 import {
   startSalesNavImport,
   type SalesNavImportRequest,
@@ -44,12 +45,17 @@ export async function POST(request: Request) {
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Sales Navigator import failed.";
+    const rejected = err instanceof SalesNavImportRejectedError;
     const status =
+      rejected ||
       /Connect LinkedIn|disconnected|people-search URL|UNIPILE|Give the new list/i.test(
         message
       )
         ? 400
         : 500;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json(
+      { error: message, support: rejected && err.support },
+      { status }
+    );
   }
 }

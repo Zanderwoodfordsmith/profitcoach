@@ -34,7 +34,10 @@ import {
   implicitImportTeamSizes,
   salesNavUrlWithImportTeamSizes,
 } from "@/lib/salesNavigator/importHeadcounts";
-import { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
+import {
+  classifySalesNavUrl,
+  salesNavSingleSearchNote,
+} from "@/lib/salesNavigator/classifySalesNavUrl";
 import {
   unwatchSalesNavImport,
   watchSalesNavImport,
@@ -101,7 +104,7 @@ const SALES_NAV_IMPORT_SOURCES: Array<{
   {
     id: "custom",
     title: "Custom URL",
-    body: "Paste a people-search link after you adjust filters.",
+    body: "Paste a people-search link, including a saved search.",
     url: null,
   },
 ];
@@ -130,6 +133,21 @@ const MAPS_SELECT_CLASS =
 const MAPS_COUNTRY_STORAGE_KEY = "profit-coach.google-maps-country";
 const MAPS_US_STATE_STORAGE_KEY = "profit-coach.google-maps-us-state";
 const UNIPILE_POLL_MS = 5_000;
+
+function supportTicketLink(message: string, href: string) {
+  const needle = "support ticket";
+  const index = message.toLowerCase().indexOf(needle);
+  if (index === -1) return message;
+  return (
+    <>
+      {message.slice(0, index)}
+      <a href={href} className="font-medium underline">
+        {message.slice(index, index + needle.length)}
+      </a>
+      {message.slice(index + needle.length)}
+    </>
+  );
+}
 
 function loadStoredMapsCountry(): GoogleMapsCountryCode {
   if (typeof window === "undefined") return GOOGLE_MAPS_DEFAULT_COUNTRY;
@@ -416,8 +434,10 @@ export function ImportPoolModal({
     stateCode: mapsUsState || null,
   });
   const mapsLocationReady = !("error" in mapsResolvedLocation);
-  const salesNavUrlReady = isSalesNavSearchUrl(searchUrl.trim());
-  const importTeamBase = salesNavUrlReady
+  const salesNavPaste = classifySalesNavUrl(searchUrl.trim());
+  const salesNavUrlReady = salesNavPaste.kind !== "rejected";
+  const salesNavSingleNote = salesNavSingleSearchNote(salesNavPaste);
+  const importTeamBase = salesNavPaste.kind === "query"
     ? implicitImportTeamSizes(searchUrl.trim())
     : [];
   // Extra sizes belong on 1st degree only. A custom URL already carries
@@ -478,10 +498,9 @@ export function ImportPoolModal({
 
   async function startSalesNavImport() {
     const url = searchUrl.trim();
-    if (!isSalesNavSearchUrl(url)) {
-      setError(
-        "Paste a Sales Navigator people-search URL (linkedin.com/sales/search/people…)."
-      );
+    const paste = classifySalesNavUrl(url);
+    if (paste.kind === "rejected") {
+      setError(paste.message);
       return;
     }
     let importUrl = url;
@@ -918,7 +937,14 @@ export function ImportPoolModal({
         </div>
 
         <div className="space-y-4 px-5 py-4">
-          {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+          {error ? (
+            <p className="text-sm text-rose-700">
+              {supportTicketLink(
+                error,
+                pathname.startsWith("/admin") ? "/admin/support" : "/coach/support"
+              )}
+            </p>
+          ) : null}
           {notice ? <p className="text-sm text-slate-700">{notice}</p> : null}
 
           {mode === "pick" ? (
@@ -1109,21 +1135,31 @@ export function ImportPoolModal({
                     value={searchUrl}
                     onChange={(e) => setSearchUrl(e.target.value)}
                     rows={3}
-                    placeholder="https://www.linkedin.com/sales/search/people?query=…"
+                    placeholder="https://www.linkedin.com/sales/search/people?…"
                     className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 font-mono text-xs"
                     spellCheck={false}
                     disabled={Boolean(importJobId)}
                   />
-                  {searchUrl.trim() &&
-                  !isSalesNavSearchUrl(searchUrl.trim()) ? (
+                  {searchUrl.trim() && salesNavPaste.kind === "rejected" ? (
                     <p className="text-xs text-rose-600">
-                      Needs a Sales Navigator people-search URL.
+                      {supportTicketLink(
+                        salesNavPaste.message,
+                        pathname.startsWith("/admin")
+                          ? "/admin/support"
+                          : "/coach/support"
+                      )}
                     </p>
                   ) : null}
                 </div>
               ) : null}
 
-              {salesNavSource && salesNavUrlReady ? (
+              {salesNavSource && salesNavSingleNote ? (
+                <p className="text-sm leading-snug text-slate-700">
+                  {salesNavSingleNote}
+                </p>
+              ) : null}
+
+              {salesNavSource && salesNavPaste.kind === "query" ? (
                 <div className="space-y-2">
                   <p className="text-sm leading-snug text-slate-900">
                     We&apos;ll import company sizes{" "}
@@ -1203,7 +1239,7 @@ export function ImportPoolModal({
                     disabled={
                       busy ||
                       Boolean(importJobId) ||
-                      !isSalesNavSearchUrl(searchUrl.trim())
+                      !salesNavUrlReady
                     }
                     onClick={() => void startSalesNavImport()}
                     className="ml-auto inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"

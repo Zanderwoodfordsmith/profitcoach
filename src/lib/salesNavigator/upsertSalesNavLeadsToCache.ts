@@ -119,7 +119,12 @@ async function fetchExistingCandidates(opts: {
       )
       .in("company", chunk)
       .limit(500);
-    if (error) throw new Error(error.message);
+    if (error) {
+      // A common company name can scan the whole lead cache and hit the
+      // statement timeout. URL and dedupe-key matches above still apply.
+      if (/statement timeout|canceling statement/i.test(error.message)) continue;
+      throw new Error(error.message);
+    }
     for (const row of data ?? []) byId.set(row.id, row as CacheRow);
   }
 

@@ -8,6 +8,11 @@
 import { SALES_NAV_MAX_LEADS } from "@/lib/apify/salesNavigatorTypes";
 import type { SalesNavYearsAtCompanyId } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
 import {
+  classifySalesNavUrl,
+  SalesNavImportRejectedError,
+} from "@/lib/salesNavigator/classifySalesNavUrl";
+import { hasRewriteableSalesNavQuery } from "@/lib/salesNavigator/salesNavUrlRewrite";
+import {
   DEFAULT_IMPORT_SEGMENT_TEAM_SIZES,
   sortHeadcountLabels,
 } from "@/lib/salesNavigator/headcountBands";
@@ -154,6 +159,9 @@ export function subSplitOverExtractCap(
   segment: SalesNavImportSegmentPlan | SalesNavImportSegmentDraft
 ): SalesNavImportSegmentDraft[] | null {
   const draft = asDraft(segment);
+  // Saved searches, recent searches, and unknown query shapes have nothing
+  // to rewrite. Splitting them throws "missing query" and stalls the job.
+  if (!hasRewriteableSalesNavQuery(draft.salesNavUrl)) return null;
   const parsed = parseSalesNavSearchUrl(draft.salesNavUrl);
   const companyOnUrl = parsed.yearsAtCurrentCompany;
   const roleOnUrl = parsed.yearsAtCurrentPosition;
@@ -204,21 +212,30 @@ export function planSalesNavImportSegments(
   input: PlanSalesNavImportSegmentsInput
 ): SalesNavImportSegmentPlan[] {
   const autoSegment = input.autoSegment !== false;
-  if (!autoSegment) {
+  const classified = classifySalesNavUrl(input.salesNavUrl);
+  if (classified.kind === "rejected") {
+    throw new SalesNavImportRejectedError(
+      classified.message,
+      classified.reason,
+      classified.support
+    );
+  }
+  if (!autoSegment || classified.kind !== "query") {
+    const label =
+      classified.kind === "saved_people"
+        ? "Saved search"
+        : classified.kind === "recent_people"
+          ? "Recent search"
+          : "Import";
     return [
-      {
+      emptySegmentPlanRow({
         id: "single",
-        label: "Import",
+        label,
         salesNavUrl: input.salesNavUrl,
         teamSize: null,
         yearsAtCompany: null,
         yearsInRole: null,
-        status: "pending",
-        scrapedCount: 0,
-        cacheInserted: 0,
-        cacheUpdated: 0,
-        errorMessage: null,
-      },
+      }),
     ];
   }
 

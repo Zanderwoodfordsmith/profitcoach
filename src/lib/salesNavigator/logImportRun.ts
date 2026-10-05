@@ -1,6 +1,7 @@
 import { estimateSalesNavShortCostUsd } from "@/lib/salesNavigator/apifyCost";
 import type { SalesNavImportLeadSnapshot } from "@/lib/salesNavigator/importLeadSnapshot";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { salesNavUrlForUnipile } from "@/lib/unipile/linkedinSearchCursor";
 
 export type LogSalesNavImportRunInput = {
   coachId: string;
@@ -102,4 +103,39 @@ export async function logSalesNavImportRun(
     return { ok: false, error: error.message };
   }
   return { ok: true, id: data?.id };
+}
+
+/**
+ * A pasted Sales Nav link we refused. Shows on Admin → Sales Nav imports
+ * so the URL shape is there without waiting on a support reply.
+ * sessionId is stripped before the row is stored.
+ */
+export async function logRejectedSalesNavImport(input: {
+  coachId: string;
+  salesNavUrl: string;
+  reason: string;
+  message: string;
+}): Promise<void> {
+  const salesNavUrl = salesNavUrlForUnipile(input.salesNavUrl).slice(0, 4000);
+  const message = input.message.slice(0, 2000);
+  console.error(
+    "[sales-nav-import] rejected",
+    input.reason,
+    input.coachId,
+    salesNavUrl
+  );
+  const { error } = await supabaseAdmin.from("sales_nav_import_runs").insert({
+    coach_id: input.coachId,
+    sales_nav_url: salesNavUrl || null,
+    name: `Rejected ${input.reason.replace(/_/g, " ")}`,
+    status: "failed",
+    error_message: message,
+    provider: "unipile",
+    profile_scraper_mode: "Unipile",
+    scraped_count: 0,
+    finished_at: new Date().toISOString(),
+  });
+  if (error) {
+    console.error("sales_nav_import_runs reject log failed:", error.message);
+  }
 }

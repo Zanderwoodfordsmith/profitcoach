@@ -172,9 +172,17 @@ export function SalesNavImportsPanel() {
                       {run.provider === "unipile" ? "Unipile" : "Apify"}
                     </td>
                     <td className="max-w-[14rem] px-3 py-2.5">
-                      <div className="truncate font-medium text-slate-900">
-                        {run.name || "—"}
-                      </div>
+                        <div className="truncate font-medium text-slate-900">
+                          {run.name || "—"}
+                        </div>
+                        {run.status === "failed" && run.errorMessage ? (
+                          <div
+                            className="mt-0.5 line-clamp-2 text-xs text-rose-700"
+                            title={run.errorMessage}
+                          >
+                            {run.errorMessage}
+                          </div>
+                        ) : null}
                     </td>
                     <td className="px-3 py-2.5">
                       <div className="font-medium text-slate-900">

@@ -4,7 +4,8 @@ import "leaflet/dist/leaflet.css";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, useMapEvents } from "react-leaflet";
+import { BasemapLayer } from "@/components/maps/BasemapLayer";
 
 const PIN_HTML = `
 <svg viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -92,11 +93,7 @@ export function MapLocationPickerLeaflet({
       scrollWheelZoom
       className="h-[min(420px,55vh)] w-full rounded-lg border border-slate-200"
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        subdomains={["a", "b", "c", "d"]}
-      />
+      <BasemapLayer />
       <MapEvents onPick={notify} />
       <Marker
         position={pos}

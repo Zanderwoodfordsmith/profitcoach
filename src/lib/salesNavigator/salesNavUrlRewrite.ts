@@ -44,6 +44,15 @@ function isRewriteEncodedQuery(query: string): boolean {
   );
 }
 
+/** True when we can rewrite COMPANY_HEADCOUNT / tenure filters in place. */
+export function hasRewriteableSalesNavQuery(salesNavUrl: string): boolean {
+  const query = extractQueryParam(salesNavUrl);
+  if (!query) return false;
+  return (
+    query.includes("filters%3AList(") || query.includes("filters:List(")
+  );
+}
+
 function headcountFilterEncoded(bands: SalesNavHeadcountBand[]): string {
   const parts = bands.map(
     (b) =>

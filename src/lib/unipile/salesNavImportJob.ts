@@ -9,6 +9,7 @@
  * can continue past LinkedIn’s extract cap.
  */
 
+import { SalesNavImportRejectedError } from "@/lib/salesNavigator/classifySalesNavUrl";
 import { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
 import { toSalesNavImportLeadSnapshot } from "@/lib/salesNavigator/importLeadSnapshot";
 import {
@@ -167,10 +168,20 @@ export async function createUnipileSalesNavImportJob(opts: {
 
   const requestedTakePages = normalizeRequestedTakePages(opts.takePages);
   const targetCount = salesNavLeadTarget(requestedTakePages);
-  const segments = planSalesNavImportSegments({
-    salesNavUrl,
-    targetLeadCount: targetCount,
-  });
+  let segments;
+  try {
+    segments = planSalesNavImportSegments({
+      salesNavUrl,
+      targetLeadCount: targetCount,
+    });
+  } catch (err) {
+    if (err instanceof SalesNavImportRejectedError) throw err;
+    throw new SalesNavImportRejectedError(
+      "We couldn’t read the filters on that Sales Navigator link. Open a support ticket and paste the link so we can add it.",
+      "unreadable",
+      true
+    );
+  }
   const segmented = segments.length > 1;
   const segmentPlan = segments.map((seg, idx) =>
     idx === 0 ? { ...seg, status: "running" as const } : seg

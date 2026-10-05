@@ -10,7 +10,8 @@ import {
   type SalesNavKeyword,
 } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
 import { SALES_NAV_HEADCOUNT_BANDS } from "@/lib/salesNavigator/headcountBands";
-import { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
+import { prepareSalesNavImportUrl } from "@/lib/salesNavigator/classifySalesNavUrl";
+import { summarizeSalesNavSearch } from "@/lib/salesNavigator/salesNavSearchSummary";
 import { BASE_SEARCH_TEAM_SIZES } from "@/lib/salesNavigator/prospectSearch/applyStrategy";
 import {
   resolveSalesNavRegion,
@@ -52,6 +53,7 @@ import {
   syncGoogleSearchImportJob,
 } from "@/lib/googleSearch/importJob";
 import { getOkLinkedInAccount } from "@/lib/unipile/outreachAccounts";
+import { linkedInSearch, unipileLinkedInAccountError } from "@/lib/unipile/client";
 
 import type { AgentToolContext, AgentToolDef, AgentToolInput } from "../types";
 import { AgentToolError, coachOf, num, plural, str, strList } from "./util";
@@ -325,15 +327,95 @@ export const prospectTools: AgentToolDef[] = [
     },
   },
   {
+    name: "preview_sales_nav_search",
+    label: "Checking how many people match",
+    needsCoach: true,
+    description:
+      "Count a Sales Navigator people search on the coach's own LinkedIn, without importing. Cleans a pasted link: drops a session id, and when the link already contains the filters, drops someone else's saved-search id so the search does not open blank. Returns the count, a short read of the filters, and a list name. Call this before start_sales_nav_import.",
+    input_schema: {
+      type: "object",
+      properties: {
+        sales_nav_url: {
+          type: "string",
+          description:
+            "A people-search URL from build_sales_nav_search, or a link the coach pasted.",
+        },
+      },
+      required: ["sales_nav_url"],
+    },
+    run: async (input, ctx) => {
+      const coach = coachOf(ctx);
+      const prepared = prepareSalesNavImportUrl(str(input, "sales_nav_url"));
+      if (prepared.classified.kind === "rejected") {
+        return {
+          can_import: false,
+          problem: prepared.classified.message,
+          adjustments: prepared.adjustments,
+        };
+      }
+      const linkedIn = await getOkLinkedInAccount(coach.id);
+      if (!linkedIn?.unipile_account_id) {
+        return {
+          can_import: false,
+          problem: `${coach.name} has no connected LinkedIn account. They need to connect LinkedIn, with Sales Navigator, on the Campaigns page first.`,
+          adjustments: prepared.adjustments,
+        };
+      }
+      const res = await linkedInSearch({
+        account_id: linkedIn.unipile_account_id,
+        url: prepared.url,
+        limit: 1,
+        timeoutMs: 30_000,
+      });
+      if (!res.ok) {
+        return {
+          can_import: false,
+          problem: unipileLinkedInAccountError(res),
+          adjustments: prepared.adjustments,
+          url: prepared.url,
+        };
+      }
+      const total = res.data?.paging?.total_count;
+      const count =
+        typeof total === "number" && Number.isFinite(total) ? Math.floor(total) : null;
+      const summary =
+        prepared.classified.kind === "query" || prepared.classified.kind === "passthrough"
+          ? summarizeSalesNavSearch(prepared.url)
+          : null;
+      const cap = 2_500;
+      return {
+        can_import: true,
+        people: count,
+        capped_at: count != null && count > cap ? cap : null,
+        adjustments: prepared.adjustments,
+        filters: summary,
+        suggested_list_name:
+          summary?.suggested_list_name ??
+          (prepared.classified.kind === "saved_people" ? "Saved Sales Nav search" : "Sales Nav import"),
+        url: prepared.url,
+        note:
+          count == null
+            ? "Sales Navigator did not report a total. You can still import."
+            : count > cap
+              ? `Sales Navigator reports ${count.toLocaleString("en-GB")} people. One search only returns the first ${cap.toLocaleString("en-GB")}, so offer to narrow it (one company size, or a smaller area) before importing everyone.`
+              : `Sales Navigator reports ${count.toLocaleString("en-GB")} people on ${coach.name}'s account.`,
+      };
+    },
+  },
+  {
     name: "start_sales_nav_import",
     label: "Starting the Sales Navigator import",
     needsCoach: true,
     description:
-      "Import people from a Sales Navigator people-search URL into a new list in the coach's pool, using their connected LinkedIn account. Asks for confirmation.",
+      "Import people from a Sales Navigator people-search URL into a new list in the coach's pool, using their connected LinkedIn account. Strips a session id, and a saved-search id when the link already has filters. Asks for confirmation. Call preview_sales_nav_search first so you can tell them how many people match.",
     input_schema: {
       type: "object",
       properties: {
-        sales_nav_url: { type: "string", description: "A linkedin.com/sales/search/people URL" },
+        sales_nav_url: {
+          type: "string",
+          description:
+            "A linkedin.com/sales/search/people URL, including a saved search (savedSearchId). Not a company search or a lead list.",
+        },
         search_summary: {
           type: "string",
           description: 'One line for the card, e.g. "Owners of UK engineering firms, 1 to 200 staff"',
@@ -349,8 +431,9 @@ export const prospectTools: AgentToolDef[] = [
     gate: async (input, ctx) => {
       const coach = coachOf(ctx);
       const url = str(input, "sales_nav_url");
-      if (!isSalesNavSearchUrl(url)) {
-        return { error: "That is not a Sales Navigator people-search URL." };
+      const prepared = prepareSalesNavImportUrl(url);
+      if (prepared.classified.kind === "rejected") {
+        return { error: prepared.classified.message };
       }
       const linkedIn = await getOkLinkedInAccount(coach.id).catch(() => null);
       if (!linkedIn) {
@@ -369,9 +452,17 @@ export const prospectTools: AgentToolDef[] = [
           { label: "Saved to list", value: str(input, "list_name") },
           { label: "Runs on", value: `${linkedIn.display_name ?? "their"} LinkedIn account, a few minutes` },
         ],
-        warning: running
-          ? "A Sales Navigator import is already running. Starting this one stops it."
-          : undefined,
+        warning: [
+          ...prepared.adjustments,
+          prepared.classified.kind === "query"
+            ? null
+            : "Sales Navigator only returns the first 2,500 people from one saved search.",
+          running
+            ? "A Sales Navigator import is already running. Starting this one stops it."
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" ") || undefined,
       };
     },
     run: async (input, ctx) => {

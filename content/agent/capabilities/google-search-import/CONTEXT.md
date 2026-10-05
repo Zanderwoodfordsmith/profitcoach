@@ -10,7 +10,7 @@ modes: [admin, coach]
 # Find businesses on Google Search
 
 ## What this is
-Search Google for a type of business in a place. This is web search, not Google Maps. For each business website that ranks we save the name and site, and look up one person (name, email, phone, LinkedIn) the same way Maps does. Directory sites such as Yelp are skipped. Results land on a new list in the coach's pool. Use it when the businesses they want show up in Google, not only on a map.
+Search Google for a type of business in a place. This is web search, not Google Maps. For each business website that ranks we save the name and site, and look up one person (name, email, phone, LinkedIn) the same way Maps does. Directory sites such as Yelp are skipped. Results land on a new list in the coach's pool. Use it when the businesses they want show up in Google, not only on a map. We have not tested this much in real coaching yet. Say that plainly: it should behave like Maps, and we are still learning how often the owner, email and phone actually come back.
 
 ## What you need (ask in this order, one at a time)
 1. **Country.** Call `google_search_options` for the supported countries. Default to the coach's country. Any other country works too (use "OTHER" with the country name).
