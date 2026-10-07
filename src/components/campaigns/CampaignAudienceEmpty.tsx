@@ -1,58 +1,20 @@
 "use client";
 
+import { ChevronRight, ListOrdered, Users } from "lucide-react";
 import {
-  FileSpreadsheet,
-  Link2,
-  ListOrdered,
-  Search,
-  Users,
-  UserRound,
-} from "lucide-react";
-import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
+  POOL_IMPORT_OPTIONS,
+  type PoolImportMode,
+} from "@/components/campaigns/poolImportOptions";
 
-export const CAMPAIGN_ADD_PROSPECT_METHODS: Array<{
-  id: CampaignAddProspectsMode;
-  label: string;
-  hint: string;
-  icon: typeof Users;
-}> = [
-  {
-    id: "named",
-    label: "From your pool",
-    hint: "People you already imported",
-    icon: Users,
-  },
-  {
-    id: "list",
-    label: "From your prospects",
-    hint: "Anyone already in your list",
-    icon: UserRound,
-  },
-  {
-    id: "search",
-    label: "Search LinkedIn",
-    hint: "Sales Nav URL or keywords",
-    icon: Search,
-  },
-  {
-    id: "urls",
-    label: "Paste profile URLs",
-    hint: "One LinkedIn URL per line",
-    icon: Link2,
-  },
-  {
-    id: "csv",
-    label: "Upload a CSV",
-    hint: "Drag in a file or use our template",
-    icon: FileSpreadsheet,
-  },
-];
+export type CampaignAddChoice =
+  | { source: "pool" }
+  | { source: "import"; mode: PoolImportMode };
 
 type Props = {
   variant: "overview" | "prospects";
   running?: boolean;
   hasSteps?: boolean;
-  onAdd: (mode: CampaignAddProspectsMode) => void;
+  onAdd: (choice?: CampaignAddChoice) => void;
   onSetupSteps?: () => void;
 };
 
@@ -106,35 +68,58 @@ export function CampaignAudienceEmpty({
           {overview ? (
             <p className="text-sm font-semibold text-slate-800">Add people</p>
           ) : null}
-          <div className={`grid gap-2.5 sm:grid-cols-2 ${overview ? "mt-3" : ""}`}>
-            {CAMPAIGN_ADD_PROSPECT_METHODS.map((method) => {
-              const Icon = method.icon;
-              return (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => onAdd(method.id)}
-                  className="flex min-h-[3.5rem] items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-left hover:border-[#0c5290] hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
-                >
-                  <Icon
-                    className="mt-0.5 h-5 w-5 shrink-0 text-[#0c5290]"
-                    strokeWidth={2.1}
-                    aria-hidden
-                  />
-                  <span>
-                    <span className="block text-[15px] font-semibold text-slate-900">
-                      {method.label}
-                    </span>
-                    <span className="mt-0.5 block text-sm leading-snug text-slate-600">
-                      {method.hint}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
+          <div className={`mx-auto flex max-w-[28rem] flex-col gap-2 text-left ${overview ? "mt-3" : ""}`}>
+            <AddMethodButton
+              label="Already in the system"
+              hint="Pool or prospects. Choose the list once you're looking at it."
+              icon={Users}
+              onClick={() => onAdd({ source: "pool" })}
+            />
+            {POOL_IMPORT_OPTIONS.map((option) => (
+              <AddMethodButton
+                key={option.id}
+                label={option.title}
+                hint={option.body}
+                icon={option.icon}
+                onClick={() => onAdd({ source: "import", mode: option.id })}
+              />
+            ))}
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function AddMethodButton({
+  label,
+  hint,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  hint: string;
+  icon: typeof Users;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3.5 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#0c5290]">
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-slate-900">
+          {label}
+        </span>
+        <span className="mt-0.5 block text-sm leading-snug text-slate-600">
+          {hint}
+        </span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+    </button>
   );
 }

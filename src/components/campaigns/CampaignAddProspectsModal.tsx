@@ -40,6 +40,9 @@ type Props = {
   /** Primary campaign channel — gates which prospects are eligible. */
   campaignChannel?: string;
   initialMode?: CampaignAddProspectsMode;
+  /** Pool and prospects only — the other ways live on the shared import screen. */
+  poolOnly?: boolean;
+  onBack?: () => void;
   existingContactIds: string[];
   existingLinkedInUrls: string[];
   onClose: () => void;
@@ -72,6 +75,8 @@ export function CampaignAddProspectsModal({
   campaignId,
   campaignChannel = "linkedin",
   initialMode = "named",
+  poolOnly = false,
+  onBack,
   existingContactIds,
   existingLinkedInUrls,
   onClose,
@@ -780,12 +785,23 @@ export function CampaignAddProspectsModal({
         }`}
       >
         <div className="flex items-center justify-between px-5 pt-5">
-          <h2
-            id="add-prospects-title"
-            className="text-sm font-semibold text-slate-900"
-          >
-            Add prospects
-          </h2>
+          <div className="min-w-0">
+            {poolOnly && onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="mb-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
+              >
+                ← All ways
+              </button>
+            ) : null}
+            <h2
+              id="add-prospects-title"
+              className="text-sm font-semibold text-slate-900"
+            >
+              {poolOnly ? "Already in the system" : "Add prospects"}
+            </h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -796,6 +812,45 @@ export function CampaignAddProspectsModal({
           </button>
         </div>
 
+        {poolOnly ? (
+          <div className="mt-4 grid grid-cols-2 gap-2 px-5">
+            {(
+              [
+                { id: "named" as const, label: "Pool", hint: "Imported people" },
+                {
+                  id: "list" as const,
+                  label: "Prospects",
+                  hint: "Your prospects list",
+                },
+              ] as const
+            ).map((item) => {
+              const selected = mode === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setMode(item.id)}
+                  className={`rounded-xl border px-3 py-2 text-left ${
+                    selected
+                      ? "border-sky-300 bg-sky-50"
+                      : "border-slate-200 bg-white hover:border-sky-200 hover:bg-sky-50/50"
+                  }`}
+                >
+                  <span
+                    className={`block text-sm font-semibold ${
+                      selected ? "text-[#0c5290]" : "text-slate-900"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-600">
+                    {item.hint}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
         <div className="mt-4 flex gap-4 border-b border-slate-200 px-5 text-xs font-semibold">
           {TAB_ITEMS.map((item) => (
             <button
@@ -812,6 +867,7 @@ export function CampaignAddProspectsModal({
             </button>
           ))}
         </div>
+        )}
 
         <div className="flex min-h-0 flex-1 flex-col px-5 py-4">
           {error ? (
@@ -866,8 +922,8 @@ export function CampaignAddProspectsModal({
               namedLists.length === 0 &&
               namedItems.length === 0 ? (
                 <p className="py-10 text-center text-sm text-slate-600">
-                  Your pool is empty. Import people under Campaigns → Pool, then
-                  add them here.
+                  Your pool is empty. Go back and pull people in the same way
+                  you add them to the pool.
                 </p>
               ) : (
                 <>

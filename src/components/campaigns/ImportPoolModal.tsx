@@ -5,14 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   ChevronRight,
   ExternalLink,
-  FileSpreadsheet,
   Link2,
   Loader2,
-  MapPin,
-  Globe,
   Plus,
-  Search,
-  UserPlus,
+  Users,
   X,
 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
@@ -76,6 +72,12 @@ import {
   parseGoogleMapsSearchTerms,
 } from "@/lib/googleMaps/searchTerms";
 import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
+import {
+  POOL_IMPORT_OPTIONS,
+  type PoolImportMode,
+} from "@/components/campaigns/poolImportOptions";
+
+export { POOL_IMPORT_OPTIONS, type PoolImportMode };
 
 const MAPS_TERM_PLACEHOLDERS = [
   "dentists",
@@ -85,7 +87,7 @@ const MAPS_TERM_PLACEHOLDERS = [
   "cafes",
 ];
 
-type Mode = "pick" | "search" | "maps" | "google" | "csv" | "one";
+type Mode = "pick" | PoolImportMode;
 type ImportKind = "sales_nav" | "google_maps" | "google_search";
 type SalesNavSource = "first" | "custom";
 
@@ -192,7 +194,25 @@ type CsvListChoice = { id: string; name: string };
 type Props = {
   open: boolean;
   onClose: () => void;
-  onImported: () => void | Promise<void>;
+  onImported: (info?: { listId?: string | null }) => void | Promise<void>;
+  /** Opens on this step instead of the chooser. */
+  initialMode?: Mode;
+  pickTitle?: string;
+  pickSubtitle?: string;
+  /** Extra row on the chooser, above the pool import methods. */
+  leadingOption?: { title: string; body: string; onSelect: () => void };
+  /** People just written by Add one person, paste, or CSV — not a whole list. */
+  onAddedPeople?: (
+    people: Array<{
+      linkedin_url?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      first_name?: string | null;
+      last_name?: string | null;
+      company?: string | null;
+      title?: string | null;
+    }>
+  ) => void | Promise<void>;
   /** List tab this import was opened from. Pool when they are on All. */
   currentListId?: string | null;
   currentListName?: string | null;
@@ -207,49 +227,64 @@ type Props = {
   }) => void;
 };
 
-const OPTIONS: Array<{
-  id: Exclude<Mode, "pick">;
-  title: string;
-  body: string;
-  icon: typeof Search;
-}> = [
-  {
-    id: "one",
-    title: "Add one person",
-    body: "Name plus email, phone, or LinkedIn. LinkedIn is optional.",
-    icon: UserPlus,
-  },
-  {
-    id: "search",
-    title: "Sales Navigator",
-    body: "Open the base search, then import 1st degree or a custom URL.",
-    icon: Search,
-  },
-  {
-    id: "maps",
-    title: "Google Maps",
-    body: "Search a trade in a country or city. We add the business and contacts.",
-    icon: MapPin,
-  },
-  {
-    id: "google",
-    title: "Google Search",
-    body: "Same idea, from Google results rather than Maps. We add the business and a person to contact.",
-    icon: Globe,
-  },
-  {
-    id: "csv",
-    title: "Upload CSV",
-    body: "Choose the list, then match your columns. Name plus email, phone, LinkedIn, or website.",
-    icon: FileSpreadsheet,
-  },
-];
+function peopleFromImportInput(input: {
+  people?: unknown;
+  text?: string;
+}): Array<{
+  linkedin_url?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  company?: string | null;
+  title?: string | null;
+}> {
+  const rows: Array<{
+    linkedin_url?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    company?: string | null;
+    title?: string | null;
+  }> = [];
+  const textOf = (row: Record<string, unknown>, key: string) =>
+    typeof row[key] === "string" ? (row[key] as string) : null;
+
+  if (Array.isArray(input.people)) {
+    for (const person of input.people) {
+      if (!person || typeof person !== "object") continue;
+      const row = person as Record<string, unknown>;
+      rows.push({
+        linkedin_url: textOf(row, "linkedin_url"),
+        email: textOf(row, "email"),
+        phone: textOf(row, "phone"),
+        first_name: textOf(row, "first_name"),
+        last_name: textOf(row, "last_name"),
+        company: textOf(row, "company"),
+        title: textOf(row, "title") ?? textOf(row, "job_title"),
+      });
+    }
+  }
+  if (input.text?.trim()) {
+    for (const line of input.text.split(/\n/)) {
+      const url = line.split(",")[0]?.trim();
+      if (url) rows.push({ linkedin_url: url });
+    }
+  }
+  return rows.filter((row) => row.linkedin_url || row.email || row.phone);
+}
 
 export function ImportPoolModal({
   open,
   onClose,
   onImported,
   onImportStarted,
+  initialMode = "pick",
+  pickTitle,
+  pickSubtitle,
+  leadingOption,
+  onAddedPeople,
   currentListId = null,
   currentListName = null,
   audienceLists = [],
@@ -260,6 +295,19 @@ export function ImportPoolModal({
   onImportedRef.current = onImported;
   const onImportStartedRef = useRef(onImportStarted);
   onImportStartedRef.current = onImportStarted;
+  const onAddedPeopleRef = useRef(onAddedPeople);
+  onAddedPeopleRef.current = onAddedPeople;
+  const pendingSaveListIdRef = useRef<string | null>(null);
+  const openedRef = useRef(false);
+
+  useEffect(() => {
+    if (open && !openedRef.current) {
+      setMode(initialMode);
+      setError(null);
+      setNotice(null);
+    }
+    openedRef.current = open;
+  }, [open, initialMode]);
   const [mode, setMode] = useState<Mode>("pick");
   const [csvStage, setCsvStage] = useState<"where" | "file" | "match">("where");
   const [csvDest, setCsvDest] = useState<"current" | "new" | "existing">(
@@ -399,7 +447,9 @@ export function ImportPoolModal({
                 progressCount === 1 ? "person" : "people"
               } to the pool.${savedAs}`
         );
-        await onImportedRef.current();
+        const listId = pendingSaveListIdRef.current;
+        pendingSaveListIdRef.current = null;
+        await onImportedRef.current(listId ? { listId } : undefined);
         return;
       }
       if (body.status === "failed") {
@@ -466,6 +516,7 @@ export function ImportPoolModal({
     setPoolSize("all");
     setExtraTeamSizes([]);
     pendingSaveListNameRef.current = null;
+    pendingSaveListIdRef.current = null;
     setImportJobId(null);
     setImportKind("sales_nav");
     setImportProgress(null);
@@ -552,6 +603,7 @@ export function ImportPoolModal({
       const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
       const saveListName = body.saveListName?.trim() || "Sales Nav import";
       pendingSaveListNameRef.current = saveListName;
+      pendingSaveListIdRef.current = body.saveListId;
       watchSalesNavImport({
         id: body.jobId,
         name: saveListName,
@@ -629,6 +681,7 @@ export function ImportPoolModal({
       const saveListName = body.saveListName?.trim() || "Google Maps import";
       const startedAt = new Date().toISOString();
       pendingSaveListNameRef.current = saveListName;
+      pendingSaveListIdRef.current = body.saveListId;
       watchSalesNavImport({
         id: body.jobId,
         name: saveListName,
@@ -715,6 +768,7 @@ export function ImportPoolModal({
       const saveListName = body.saveListName?.trim() || "Google Search import";
       const startedAt = new Date().toISOString();
       pendingSaveListNameRef.current = saveListName;
+      pendingSaveListIdRef.current = body.saveListId;
       watchSalesNavImport({
         id: body.jobId,
         name: saveListName,
@@ -793,6 +847,8 @@ export function ImportPoolModal({
         ? ` · on ${body.targetListName}`
         : "";
       setNotice((parts.join(" · ") || "Nothing new to add.") + landed);
+      const direct = peopleFromImportInput(input);
+      if (direct.length) await onAddedPeopleRef.current?.(direct);
       if (added > 0 || body.targetListId) await onImported();
       if (body.targetListId && body.targetListName) {
         onListReady?.({ id: body.targetListId, name: body.targetListName });
@@ -917,12 +973,12 @@ export function ImportPoolModal({
               </button>
             ) : null}
             <h2 className="text-base font-semibold text-slate-900">
-              {MODE_TITLES[mode]}
+              {mode === "pick" && pickTitle ? pickTitle : MODE_TITLES[mode]}
             </h2>
             {mode === "pick" ? (
               <p className="mt-0.5 text-xs text-slate-600">
-                People you already have stay one row. Overlap does not grow the
-                pool.
+                {pickSubtitle ??
+                  "People you already have stay one row. Overlap does not grow the pool."}
               </p>
             ) : null}
           </div>
@@ -949,7 +1005,30 @@ export function ImportPoolModal({
 
           {mode === "pick" ? (
             <div className="flex flex-col gap-2">
-              {OPTIONS.map((option) => {
+              {leadingOption ? (
+                <button
+                  type="button"
+                  onClick={leadingOption.onSelect}
+                  className="flex w-full items-center gap-3.5 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#0c5290]">
+                    <Users className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-slate-900">
+                      {leadingOption.title}
+                    </span>
+                    <span className="mt-0.5 block text-sm leading-snug text-slate-600">
+                      {leadingOption.body}
+                    </span>
+                  </span>
+                  <ChevronRight
+                    className="h-4 w-4 shrink-0 text-slate-400"
+                    aria-hidden
+                  />
+                </button>
+              ) : null}
+              {POOL_IMPORT_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 return (
                   <button

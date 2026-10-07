@@ -17,6 +17,7 @@ export async function POST(request: Request, ctx: Ctx) {
   const body = (await request.json().catch(() => ({}))) as {
     campaign_id?: string;
     item_ids?: unknown;
+    all?: boolean;
   };
 
   try {
@@ -27,6 +28,7 @@ export async function POST(request: Request, ctx: Ctx) {
       itemIds: Array.isArray(body.item_ids)
         ? body.item_ids.filter((value): value is string => typeof value === "string")
         : [],
+      all: body.all === true,
     });
     return NextResponse.json({
       added: result.added,

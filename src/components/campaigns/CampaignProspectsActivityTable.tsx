@@ -25,7 +25,7 @@ import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar"
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
-import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
+import type { CampaignAddChoice } from "@/components/campaigns/CampaignAudienceEmpty";
 import { dispositionFromInterestOutcome } from "@/lib/prospects/replyDisposition";
 import {
   formatBusinessLabel,
@@ -70,7 +70,7 @@ type Props = {
   campaigns?: CampaignOption[];
   prospectHref?: (lead: CampaignActivityLead) => string | null;
   busy?: boolean;
-  onAdd: (mode?: CampaignAddProspectsMode) => void;
+  onAdd: (choice?: CampaignAddChoice) => void;
   onDelete: (leadIds: string[]) => void;
   onPause: (leadIds: string[]) => void;
   onResume: (leadIds: string[]) => void;

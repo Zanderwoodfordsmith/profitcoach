@@ -7,6 +7,10 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { ChevronRight, Pencil, SlidersHorizontal } from "lucide-react";
 import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import {
+  poolImportStatusPath,
+  type PoolImportKind,
+} from "@/lib/salesNavigator/importJobWatch";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import type { CampaignActivityDay } from "@/components/campaigns/CampaignOverviewMetrics";
 import {
@@ -60,9 +64,12 @@ import {
 } from "@/lib/unipile/campaignLeadActivity";
 import { magnetForPlaybookId } from "@/lib/leadMagnets/catalog";
 import { mergeFieldPickerForPlaybook } from "@/lib/unipile/mergeFields";
-import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
+import {
+  CampaignAudienceEmpty,
+  type CampaignAddChoice,
+} from "@/components/campaigns/CampaignAudienceEmpty";
 import { CampaignTemplatePickerModal } from "@/components/campaigns/CampaignTemplatePicker";
-import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
+import type { PoolImportMode } from "@/components/campaigns/poolImportOptions";
 
 const CampaignSequenceBuilder = dynamic(() =>
   import("@/components/campaigns/CampaignSequenceBuilder").then((m) => ({
@@ -77,6 +84,11 @@ const CampaignProspectsActivityTable = dynamic(() =>
 const CampaignAddProspectsModal = dynamic(() =>
   import("@/components/campaigns/CampaignAddProspectsModal").then((m) => ({
     default: m.CampaignAddProspectsModal,
+  }))
+);
+const ImportPoolModal = dynamic(() =>
+  import("@/components/campaigns/ImportPoolModal").then((m) => ({
+    default: m.ImportPoolModal,
   }))
 );
 const CampaignSettingsModal = dynamic(() =>
@@ -301,8 +313,13 @@ export function LinkedInCampaignEditor() {
   );
   const [leadDrawer, setLeadDrawer] = useState<LeadDrawerFilter | null>(null);
   const [addLeadsOpen, setAddLeadsOpen] = useState(false);
-  const [addLeadsMode, setAddLeadsMode] =
-    useState<CampaignAddProspectsMode>("named");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importMode, setImportMode] = useState<PoolImportMode | "pick">("pick");
+  const [enrolTick, setEnrolTick] = useState(0);
+  const pendingEnrolRef = useRef<
+    Array<{ jobId: string; listId: string; kind: PoolImportKind }>
+  >([]);
+  const enrolInflightRef = useRef<Map<string, Promise<void>>>(new Map());
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -410,6 +427,84 @@ export function LinkedInCampaignEditor() {
       loadExtras({ force: true }),
     ]);
   }, [loadCore, loadExtras]);
+
+  const enrolListInCampaign = useCallback(
+    async (listId: string) => {
+      const existing = enrolInflightRef.current.get(listId);
+      if (existing) return existing;
+      const run = (async () => {
+        const headers = await getCoachAuthHeaders(impersonatingCoachId);
+        if (!headers) return;
+        const res = await fetch(
+          `/api/coach/lead-lists/${encodeURIComponent(listId)}/add-to-campaign`,
+          {
+            method: "POST",
+            headers: { ...headers, "Content-Type": "application/json" },
+            body: JSON.stringify({ campaign_id: campaignId, all: true }),
+          }
+        );
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          enrolInflightRef.current.delete(listId);
+          setError(
+            body.error || "Could not add those people to the campaign."
+          );
+          return;
+        }
+        await load();
+      })();
+      enrolInflightRef.current.set(listId, run);
+      return run;
+    },
+    [campaignId, impersonatingCoachId, load]
+  );
+
+  useEffect(() => {
+    if (!pendingEnrolRef.current.length) return;
+    let cancelled = false;
+
+    async function pollPendingEnrols() {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers || cancelled) return;
+      const still: Array<{ jobId: string; listId: string; kind: PoolImportKind }> =
+        [];
+      for (const job of pendingEnrolRef.current) {
+        if (cancelled) return;
+        try {
+          const res = await fetch(poolImportStatusPath(job.kind, job.jobId), {
+            headers,
+          });
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            status?: string;
+          };
+          if (!res.ok) {
+            still.push(job);
+            continue;
+          }
+          if (body.status === "succeeded") {
+            await enrolListInCampaign(job.listId);
+            continue;
+          }
+          if (body.status === "failed") {
+            if (!cancelled) setError(body.error || "Import failed.");
+            continue;
+          }
+          still.push(job);
+        } catch {
+          still.push(job);
+        }
+      }
+      if (!cancelled) pendingEnrolRef.current = still;
+    }
+
+    void pollPendingEnrols();
+    const handle = window.setInterval(() => void pollPendingEnrols(), 5_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(handle);
+    };
+  }, [enrolTick, impersonatingCoachId, enrolListInCampaign]);
 
   useEffect(() => {
     let cancelled = false;
@@ -910,9 +1005,43 @@ export function LinkedInCampaignEditor() {
   const running = activeCampaign.status === "running";
   const archived = activeCampaign.status === "archived";
 
-  function openAddLeads(mode: CampaignAddProspectsMode = "named") {
-    setAddLeadsMode(mode);
-    setAddLeadsOpen(true);
+  function openAddLeads(choice?: CampaignAddChoice) {
+    if (choice?.source === "pool") {
+      setImportOpen(false);
+      setAddLeadsOpen(true);
+      return;
+    }
+    setAddLeadsOpen(false);
+    setImportMode(choice?.source === "import" ? choice.mode : "pick");
+    setImportOpen(true);
+  }
+
+  async function addImportedPeople(
+    people: Array<{
+      linkedin_url?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      first_name?: string | null;
+      last_name?: string | null;
+      company?: string | null;
+      title?: string | null;
+    }>
+  ) {
+    if (!people.length) return;
+    const headers = await getCoachAuthHeaders(impersonatingCoachId);
+    if (!headers) return;
+    const res = await fetch(
+      `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+      {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "add_leads", leads: people }),
+      }
+    );
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setError(body.error || "Could not add those people to the campaign.");
+    }
   }
 
   function startEditingName() {
@@ -1339,18 +1468,50 @@ export function LinkedInCampaignEditor() {
         </div>
       ) : null}
 
+      <ImportPoolModal
+        open={importOpen}
+        initialMode={importMode}
+        pickTitle="Add people"
+        pickSubtitle="Same ways you pull people into the pool. Already in the system is people you already have."
+        leadingOption={{
+          title: "Already in the system",
+          body: "Pool or prospects. Choose the list once you're looking at it.",
+          onSelect: () => openAddLeads({ source: "pool" }),
+        }}
+        onClose={() => setImportOpen(false)}
+        onImportStarted={(info) => {
+          pendingEnrolRef.current = [
+            ...pendingEnrolRef.current.filter((job) => job.jobId !== info.jobId),
+            {
+              jobId: info.jobId,
+              listId: info.saveListId,
+              kind: info.kind,
+            },
+          ];
+          setEnrolTick((tick) => tick + 1);
+        }}
+        onImported={async (info) => {
+          if (info?.listId) await enrolListInCampaign(info.listId);
+          else await load();
+        }}
+        onAddedPeople={async (people) => {
+          await addImportedPeople(people);
+          await load();
+        }}
+      />
       <CampaignAddProspectsModal
-        key={addLeadsMode}
         open={addLeadsOpen}
+        poolOnly
         campaignId={campaignId}
         campaignChannel={campaign?.channel}
-        initialMode={addLeadsMode}
+        initialMode="named"
         existingContactIds={leads
           .map((lead) => lead.contact_id)
           .filter((id): id is string => Boolean(id))}
         existingLinkedInUrls={leads
           .map((lead) => lead.linkedin_url)
           .filter((url): url is string => Boolean(url))}
+        onBack={() => openAddLeads()}
         onClose={() => setAddLeadsOpen(false)}
         onAdded={load}
       />
