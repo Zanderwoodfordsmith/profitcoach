@@ -43,6 +43,11 @@ export const PROGRAMME_JOIN_FOUR_PAY_2600_PRICE_ID =
   process.env.STRIPE_PRICE_PROGRAMME_JOIN_FOUR_PAY_2600?.trim() ||
   "price_1U3cIKEz5QxIrr4nAou16X2g";
 
+/** Live 4-pay: £2,500 × 4 (total £10,000). */
+export const PROGRAMME_JOIN_FOUR_PAY_2500_PRICE_ID =
+  process.env.STRIPE_PRICE_PROGRAMME_JOIN_FOUR_PAY_2500?.trim() ||
+  "price_1UNug8Ez5QxIrr4nbfaTOdpl";
+
 export const PROGRAMME_JOIN_SIX_PAY_1750_PRICE_ID =
   process.env.STRIPE_PRICE_PROGRAMME_JOIN_SIX_PAY_1750?.trim() ||
   "price_1U3cIKEz5QxIrr4nhfmYCWX3";
@@ -75,6 +80,7 @@ export type ProgrammeJoinOfferSlug =
   | "pay-in-full-9900"
   | "two-pay-4950"
   | "four-pay-2600"
+  | "four-pay-2500"
   | "six-pay-1750"
   | "pay-in-full-12900"
   | "two-pay-6450"
@@ -313,6 +319,14 @@ export const PROGRAMME_JOIN_OFFERS: Record<
     installmentAmount: 2600,
     paymentCount: 4,
     totalAmount: 10400,
+  }),
+  "four-pay-2500": liveOffer({
+    slug: "four-pay-2500",
+    priceId: PROGRAMME_JOIN_FOUR_PAY_2500_PRICE_ID,
+    currency: "gbp",
+    installmentAmount: 2500,
+    paymentCount: 4,
+    totalAmount: 10000,
   }),
   "six-pay-1750": liveOffer({
     slug: "six-pay-1750",
