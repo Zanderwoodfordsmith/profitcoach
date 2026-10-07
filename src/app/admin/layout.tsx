@@ -18,6 +18,7 @@ import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
 import { GetClientsHubWarmup } from "@/components/layout/GetClientsHubWarmup";
+import { landingPathForRole } from "@/lib/auth/loginReturnPath";
 
 export default function AdminLayout({
   children,
@@ -61,11 +62,26 @@ export default function AdminLayout({
 
   /**
    * Docked AI panel — pushes the canvas from the right (ClickUp-style).
-   * Admin-only: the admin layout itself has no role guard (only a session
-   * check), so gate the AI explicitly in case a coach opens an /admin URL.
+   * The admin chrome (sidebar included) stays hidden until this viewer is
+   * confirmed as an admin. Coaches and clients are sent to their own area.
    */
   const { profile: viewerProfile, profileLoading } = useDashboardProfile();
-  const aiPanelAvailable = viewerProfile?.role === "admin";
+  const adminConfirmed = viewerProfile?.role === "admin";
+  const aiPanelAvailable = adminConfirmed;
+
+  useEffect(() => {
+    if (!authReady || profileLoading || adminConfirmed) return;
+    const dest = landingPathForRole(viewerProfile?.role, pathname || "/admin");
+    if (dest === pathname) return;
+    router.replace(dest);
+  }, [
+    adminConfirmed,
+    authReady,
+    pathname,
+    profileLoading,
+    router,
+    viewerProfile?.role,
+  ]);
   /** Sparkles shows while role loads so the header doesn't feel empty on first paint. */
   const showAiSparkles = profileLoading || aiPanelAvailable;
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
@@ -99,7 +115,7 @@ export default function AdminLayout({
     [isMinimalWorkshopChrome]
   );
 
-  if (!authReady) {
+  if (!authReady || profileLoading || !adminConfirmed) {
     return (
       <div className="app-canvas-bg flex min-h-screen items-center justify-center px-4">
         <p className="text-sm text-slate-600">Loading…</p>
