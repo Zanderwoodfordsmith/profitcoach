@@ -7,7 +7,7 @@
     "dev:webpack": "next dev --webpack",
     "dev:clean": "rm -rf .next node_modules/.cache && next dev",
     "dev:clean:webpack": "rm -rf .next node_modules/.cache && next dev --webpack",
-    "build": "next build",
+    "build": "node scripts/sync-public-site-v2.mjs && next build",
     "typecheck": "tsc --noEmit",
     "start": "next start",
     "lint": "eslint",
