@@ -9,6 +9,7 @@ import {
   computeBookingSlots,
   slotSearchHorizonDays,
 } from "@/lib/booking/computeBookingSlots";
+import { clampBookingDurationMinutes } from "@/lib/booking/directBookingSlot";
 import { loadBookingSettingsForCoach, loadExistingBookedIntervals } from "@/lib/booking/bookingService";
 import { fetchUnipileBusyIntervals } from "@/lib/booking/unipileCalendar";
 
@@ -23,6 +24,8 @@ export async function loadCalendarSlotDays(input: {
   displayTimezone: string;
   /** Coach booking their own calendar — skip public min-notice / advance window. */
   ignorePublicLimits?: boolean;
+  /** Offer slots at this length instead of the calendar default. */
+  durationMinutes?: number;
 }): Promise<{
   coachTimezone: string;
   displayTimezone: string;
@@ -38,13 +41,20 @@ export async function loadCalendarSlotDays(input: {
   const { settings: coachSettings, rules } = await loadBookingSettingsForCoach(
     calendar.coach_id
   );
-  const settings = calendarToBookingSettings(calendar, coachSettings.timezone);
+  const durationMinutes = clampBookingDurationMinutes(
+    input.durationMinutes,
+    calendar.meeting_duration_minutes
+  );
+  const settings = {
+    ...calendarToBookingSettings(calendar, coachSettings.timezone),
+    meeting_duration_minutes: durationMinutes,
+  };
 
   if (rules.length === 0) {
     return {
       coachTimezone: coachSettings.timezone,
       displayTimezone,
-      durationMinutes: calendar.meeting_duration_minutes,
+      durationMinutes,
       title: calendar.name,
       days: [],
     };
@@ -122,7 +132,7 @@ export async function loadCalendarSlotDays(input: {
   return {
     coachTimezone: coachSettings.timezone,
     displayTimezone,
-    durationMinutes: calendar.meeting_duration_minutes,
+    durationMinutes,
     title: calendar.name,
     days,
   };

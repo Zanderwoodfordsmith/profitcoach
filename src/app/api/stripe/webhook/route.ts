@@ -5,7 +5,15 @@ import {
   linkStripeCustomerToCoach,
   syncCoachMembershipFromSubscription,
 } from "@/lib/membership/syncFromStripe";
-import { loadCoachDirectory, upsertCoachPaymentFromStripe } from "@/lib/stripePaymentsSync";
+import {
+  paymentIntentIdFromInvoice,
+  subscriptionIdFromInvoice,
+} from "@/lib/stripeInvoicePayment";
+import {
+  loadCoachDirectory,
+  upsertCoachPaymentFromStripe,
+  type CoachDirectory,
+} from "@/lib/stripePaymentsSync";
 import { stripeServer } from "@/lib/stripeServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -17,6 +25,45 @@ function coalesceEmail(...values: Array<string | null | undefined>): string | nu
     if (trimmed) return trimmed;
   }
   return null;
+}
+
+async function directoryWithCoach(
+  directory: CoachDirectory,
+  coachId: string | null
+): Promise<CoachDirectory> {
+  if (!coachId || directory.coachById.has(coachId)) return directory;
+  return loadCoachDirectory(supabaseAdmin);
+}
+
+async function coachIdFromSubscriptionOrCustomer(input: {
+  subscriptionId: string | null;
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null;
+}): Promise<string | null> {
+  if (input.subscriptionId) {
+    try {
+      const subscription = await stripeServer.subscriptions.retrieve(input.subscriptionId);
+      const fromSub = subscription.metadata?.coach_id?.trim();
+      if (fromSub) return fromSub;
+    } catch {
+      // fall through to the customer
+    }
+  }
+
+  const customerId =
+    typeof input.customer === "string"
+      ? input.customer
+      : input.customer && !input.customer.deleted
+        ? input.customer.id
+        : null;
+  if (!customerId) return null;
+
+  try {
+    const customer = await stripeServer.customers.retrieve(customerId);
+    if (customer.deleted) return null;
+    return customer.metadata?.coach_id?.trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 async function customerEmailFromStripe(
@@ -115,32 +162,62 @@ export async function POST(request: Request) {
 
         const amountCents = session.amount_total ?? 0;
         if (customerEmail && amountCents > 0) {
-          const paidAt = new Date(
-            (session.created ?? Math.floor(Date.now() / 1000)) * 1000
-          );
-
-          // Re-read metadata in case provision stamped coach_id.
+          // Provision creates the coach after the directory was loaded.
+          // Subscription checkouts also have no PaymentIntent on the session —
+          // the charge lives on the invoice, which invoice.paid already recorded.
           let metadataCoachId = coachId;
+          let paymentIntentId =
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null;
+          let invoiceId =
+            typeof session.invoice === "string"
+              ? session.invoice
+              : session.invoice?.id ?? null;
+          let paidAtSeconds = session.created ?? Math.floor(Date.now() / 1000);
+
           try {
-            const fresh = await stripeServer.checkout.sessions.retrieve(session.id);
+            const fresh = await stripeServer.checkout.sessions.retrieve(session.id, {
+              expand: ["invoice", "payment_intent"],
+            });
             if (typeof fresh.metadata?.coach_id === "string") {
               metadataCoachId = fresh.metadata.coach_id;
             }
-          } catch {
-            // keep original
+            paymentIntentId =
+              typeof fresh.payment_intent === "string"
+                ? fresh.payment_intent
+                : fresh.payment_intent?.id ?? paymentIntentId;
+            invoiceId =
+              typeof fresh.invoice === "string"
+                ? fresh.invoice
+                : fresh.invoice?.id ?? invoiceId;
+
+            if (invoiceId) {
+              const invoice =
+                typeof fresh.invoice === "object" && fresh.invoice
+                  ? fresh.invoice
+                  : await stripeServer.invoices.retrieve(invoiceId, {
+                      expand: ["payments.data.payment.payment_intent"],
+                    });
+              paymentIntentId = paymentIntentIdFromInvoice(invoice) ?? paymentIntentId;
+              paidAtSeconds =
+                invoice.status_transitions?.paid_at ?? invoice.created ?? paidAtSeconds;
+            }
+          } catch (error) {
+            console.warn("stripe webhook: checkout payment lookup failed:", error);
           }
 
-          await upsertCoachPaymentFromStripe(supabaseAdmin, directory, {
-            stripePaymentIntentId:
-              typeof session.payment_intent === "string"
-                ? session.payment_intent
-                : session.payment_intent?.id ?? null,
+          const paymentDirectory = await directoryWithCoach(directory, metadataCoachId);
+
+          await upsertCoachPaymentFromStripe(supabaseAdmin, paymentDirectory, {
+            stripePaymentIntentId: paymentIntentId,
             stripeCheckoutSessionId: session.id,
+            stripeInvoiceId: invoiceId,
             customerEmail,
             amountCents,
             currency: session.currency ?? "gbp",
             status: "succeeded",
-            paidAtIso: paidAt.toISOString(),
+            paidAtIso: new Date(paidAtSeconds * 1000).toISOString(),
             metadataCoachId,
             notes: "synced via checkout.session.completed",
           });
@@ -175,11 +252,7 @@ export async function POST(request: Request) {
       }
       case "invoice.paid":
       case "invoice.payment_failed": {
-        type InvoiceLegacy = Stripe.Invoice & {
-          payment_intent?: string | Stripe.PaymentIntent | null;
-          subscription?: string | Stripe.Subscription | null;
-        };
-        const invoice = event.data.object as InvoiceLegacy;
+        const invoice = event.data.object as Stripe.Invoice;
         const customerEmail = coalesceEmail(invoice.customer_email);
         if (!customerEmail) break;
 
@@ -195,26 +268,28 @@ export async function POST(request: Request) {
             Math.floor(Date.now() / 1000)) * 1000
         );
 
-        await upsertCoachPaymentFromStripe(supabaseAdmin, directory, {
-          stripePaymentIntentId:
-            typeof invoice.payment_intent === "string"
-              ? invoice.payment_intent
-              : invoice.payment_intent?.id ?? null,
+        const subscriptionIdForCoach = subscriptionIdFromInvoice(invoice);
+        const metadataCoachId = await coachIdFromSubscriptionOrCustomer({
+          subscriptionId: subscriptionIdForCoach,
+          customer: invoice.customer,
+        });
+        const paymentDirectory = await directoryWithCoach(directory, metadataCoachId);
+
+        await upsertCoachPaymentFromStripe(supabaseAdmin, paymentDirectory, {
+          stripePaymentIntentId: paymentIntentIdFromInvoice(invoice),
           stripeCheckoutSessionId: null,
+          stripeInvoiceId: invoice.id,
           customerEmail,
           amountCents,
           currency: invoice.currency ?? "gbp",
           status: event.type === "invoice.paid" ? "succeeded" : "failed",
           paidAtIso: paidAt.toISOString(),
-          metadataCoachId: null,
+          metadataCoachId,
           notes: `synced via ${event.type}`,
         });
 
-        if (invoice.subscription) {
-          const subscriptionId =
-            typeof invoice.subscription === "string"
-              ? invoice.subscription
-              : invoice.subscription.id;
+        if (subscriptionIdForCoach) {
+          const subscriptionId = subscriptionIdForCoach;
           const subscription =
             await stripeServer.subscriptions.retrieve(subscriptionId);
           await syncCoachMembershipFromSubscription(

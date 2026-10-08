@@ -105,3 +105,35 @@ export async function loadSupportCallContactPrefill(
     phone: profile?.phone?.trim() || null,
   };
 }
+
+/**
+ * Name / email / phone for a ticket's support-call link. Prefers the linked
+ * profile (Auth email + phone); falls back to the ticket's contact fields.
+ */
+export async function loadTicketSupportCallContact(ticket: {
+  created_by: string | null;
+  contact_email: string | null;
+  submitter_name: string | null;
+}): Promise<SupportCallContactPrefill> {
+  const fromProfile = ticket.created_by
+    ? await loadSupportCallContactPrefill(ticket.created_by)
+    : {};
+
+  let firstName = fromProfile.firstName ?? null;
+  let lastName = fromProfile.lastName ?? null;
+  if ((!firstName || !lastName) && ticket.submitter_name?.trim()) {
+    const parts = ticket.submitter_name.trim().split(/\s+/);
+    firstName = firstName || parts[0] || null;
+    lastName = lastName || parts.slice(1).join(" ") || null;
+  }
+
+  return {
+    firstName,
+    lastName,
+    email:
+      fromProfile.email?.trim() ||
+      ticket.contact_email?.trim()?.toLowerCase() ||
+      null,
+    phone: fromProfile.phone?.trim() || null,
+  };
+}

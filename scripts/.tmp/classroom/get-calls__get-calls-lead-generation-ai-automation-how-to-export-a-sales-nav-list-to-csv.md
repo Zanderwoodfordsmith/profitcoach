@@ -1,0 +1,11 @@
+# Download Sales Navigator Profiles to CSV
+
+## Transcript
+[00:00:01]
+Hi, everyone. I'm going to show you how you can actually download your profiles, like from Sales Navigator if you want to get that into an Excel sheet. So the way you do it is you just set up a normal campaign, okay? So you would go create campaign and then I'm an advanced user, put it in. You could just call it Download if you want, click Save and then go add from Sales Navigator Search, okay? And then you'll put in your Sales Navigator whatever list that you're wanting to export basically to CSV and then click Save. Okay? Now obviously I haven't put the link in. Now I'm going to show you with another campaign. But then once your campaign is live, the first thing you need to do is you need to come in and click pause, okay? Because you've got it here. Like you can just put in a single step, like a connection request or a space.
+[00:00:52]
+Like you just need to get the campaign live and then immediately pause it because otherwise you don't want that sending out to these people. All right? So make sure you come in and actually pause it. So it'll be a pink button. You can click pause and then what you can do is you can click this prospects button up here, right? And then you can go to this campaign filter here and you can choose. So in this case, I would go to the DAP because it's not active. I don't think it's going to let me. But look, here's the other ones. So here's the other campaigns that you.
+[00:01:22]
+We've had going before. So I could click Local connector, just click off this here and go like this. You've then got to click this button as well and it will show all the prospects that are inside Local connector, like this, okay? So you can see pages and pages and then you just go export a CSV, put in the email and then click get CSV. And then that is going to. I don't know how long it takes, could be quite quickly. So. Oh, there we go. Campaign data like this.
+[00:02:04]
+And then you will have your CSV, your contacts that are in there from the campaign, just like that. Exactly how you want to be able to do whatever you want with it. All right? So that's how you can download from Sales Navigator into CSV to then be able to use in different ways, edit these and then always re upload them if you want for a new campaign.

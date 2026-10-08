@@ -1,3 +1,4 @@
+import { bookingEventAttendees } from "@/lib/booking/bookingEventAttendees";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   listOutreachAccounts,
@@ -66,6 +67,8 @@ export type CreateBookingEventInput = {
   locationMode: "google_meet" | "phone" | "custom";
   locationPhone?: string | null;
   locationCustom?: string | null;
+  /** Extra people who should get the calendar invite (for example Pam). */
+  extraAttendees?: { email: string; name?: string }[];
 };
 
 export type CreateBookingEventResult = {
@@ -610,20 +613,21 @@ export async function createUnipileBookingEvent(
     location: location ?? undefined,
     start: { date_time: input.startsAt, time_zone: input.timezone },
     end: { date_time: input.endsAt, time_zone: input.timezone },
-    attendees: input.guestEmail.trim()
-      ? [{ email: input.guestEmail.trim() }]
-      : [],
+    attendees: bookingEventAttendees({
+      guestEmail: input.guestEmail,
+      guestName: input.guestName,
+      extra: input.extraAttendees,
+    }).map((attendee) => ({ email: attendee.email })),
     notify: true,
     transparency: "opaque" as const,
   };
 
-  let created = await createUnipileCalendarEvent({
-    ...eventBody,
-    conference,
-  });
-  if ((!created.ok || !created.data?.event_id) && zoomUrl) {
+  let created = await createUnipileCalendarEvent(
+    conference ? { ...eventBody, conference } : eventBody
+  );
+  if ((!created.ok || !created.data?.event_id) && conference) {
     console.error(
-      "unipile create with zoom link failed, retrying without conference:",
+      "unipile create with conference failed, retrying without conference:",
       created.status,
       created.error
     );

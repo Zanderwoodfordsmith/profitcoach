@@ -1,0 +1,11 @@
+# win-clients-getting-paid-clients-using-value-sessions-how-to-create-cvalue-session-calendar-in-the-crm
+
+## Transcript
+[00:00:00] Just a little quick tutorial on how to create that extra calendar. You just go into calendars and then calendar settings. This is in the training, so what's in the academy. And then from here, what I usually do instead of just creating a whole new calendar, because then you have to revamp all the settings from scratch, I just go and duplicate an active calendar or any calendar that is there. So I'll go in Click duplicate, duplicate. So the 3 dots over there and then duplicate. And then wait for that to load. And then I'll just come in and change the details. So I'll name it Profit Maximizer, Profit Maximizer with SAC, whatever it may be. Sorry, I don't know how to spell. Anyways, and then I will come and edit the details as per as they're meant to be, to change the availability, etc., etc., etc. But yeah, that way, if you just duplicate an already existing calendar, all the settings should be set up perfectly. Yeah, but obviously just go in and double-check.
+[00:01:11] And what— can you show where to change the wording as well?
+[00:01:14] The wording of the description? Yeah, sure thing. Let me find it myself. I think it's meeting details. Oh, yeah. So this description over here, it'll be a book of 45 minutes session in there.
+[00:01:34] What, what you're going to be. So if you put in the description, when you do this for yourselves, put in the description what they're going, what you're going to do on the call, what they're going to get from attending the call.
+[00:01:50] Something of the sorts.
+[00:01:52] Yeah. So just a brief description so they know when they're on that call.
+[00:02:00] Awesome. And then meeting invite title, you obviously want to change this as well. So value session or profit maximizer, whichever one you're calling it. Awesome.
+[00:02:13] You will want to create a calendar in the system so that you've got it ready to use and make sure that you can do it. Do you want to just have a few minutes doing that now and make sure it's done? And because you want to be able to put a link to that calendar so that when people can click on the link to book the call in with you. And so that wants to go in your VIP 100 letters, your emails, at the bottom of your newsletter.

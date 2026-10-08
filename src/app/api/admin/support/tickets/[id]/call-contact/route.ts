@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
-import {
-  loadSupportCallContactPrefill,
-  type SupportCallContactPrefill,
-} from "@/lib/support/supportCallPrefill";
+import { loadTicketSupportCallContact } from "@/lib/support/supportCallPrefill";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -36,27 +33,11 @@ export async function GET(
     return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
   }
 
-  const fromProfile = ticket.created_by
-    ? await loadSupportCallContactPrefill(ticket.created_by as string)
-    : {};
-
-  let firstName = fromProfile.firstName ?? null;
-  let lastName = fromProfile.lastName ?? null;
-  if ((!firstName || !lastName) && ticket.submitter_name?.trim()) {
-    const parts = String(ticket.submitter_name).trim().split(/\s+/);
-    firstName = firstName || parts[0] || null;
-    lastName = lastName || parts.slice(1).join(" ") || null;
-  }
-
-  const contact: SupportCallContactPrefill = {
-    firstName,
-    lastName,
-    email:
-      fromProfile.email?.trim() ||
-      (ticket.contact_email as string | null)?.trim()?.toLowerCase() ||
-      null,
-    phone: fromProfile.phone?.trim() || null,
-  };
+  const contact = await loadTicketSupportCallContact({
+    created_by: (ticket.created_by as string | null) ?? null,
+    contact_email: (ticket.contact_email as string | null) ?? null,
+    submitter_name: (ticket.submitter_name as string | null) ?? null,
+  });
 
   return NextResponse.json({ contact });
 }

@@ -1,0 +1,1304 @@
+{
+  "doc": {
+    "height": 17562,
+    "vh": 844,
+    "acts": [
+      "pin",
+      "flow",
+      "pin",
+      "pan",
+      "flow",
+      "flow",
+      "pin"
+    ],
+    "world": null
+  },
+  "report": [
+    {
+      "i": 0,
+      "y": 20,
+      "pct": 0,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        0,
+        3297,
+        6166,
+        16487
+      ],
+      "segs": [],
+      "custom": [
+        "hero:0",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 1,
+      "y": 344,
+      "pct": 2,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        0,
+        2973,
+        5842,
+        16163
+      ],
+      "segs": [],
+      "custom": [
+        "hero:8",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 2,
+      "y": 669,
+      "pct": 4,
+      "settled": true,
+      "contrast": [],
+      "cues": [
+        {
+          "t": "Everything still comes back to you.",
+          "o": 1
+        }
+      ],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        0,
+        2648,
+        5517,
+        15838
+      ],
+      "segs": [],
+      "custom": [
+        "hero:16",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 3,
+      "y": 993,
+      "pct": 6,
+      "settled": true,
+      "contrast": [],
+      "cues": [
+        {
+          "t": "Everything still comes back to you.",
+          "o": 0.56
+        }
+      ],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        0,
+        2324,
+        5193,
+        15514
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 4,
+      "y": 1059,
+      "pct": 6,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        -46,
+        2258,
+        5127,
+        15448
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 5,
+      "y": 1796,
+      "pct": 11,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "flow",
+      "stages": [
+        -783,
+        1521,
+        4390,
+        14711
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 6,
+      "y": 2533,
+      "pct": 15,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "flow",
+      "stages": [
+        -1520,
+        784,
+        3653,
+        13974
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:0",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 7,
+      "y": 3271,
+      "pct": 20,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        -2258,
+        46,
+        2915,
+        13236
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:0",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 8,
+      "y": 3357,
+      "pct": 20,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        -2344,
+        0,
+        2829,
+        13150
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:1",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 9,
+      "y": 4005,
+      "pct": 24,
+      "settled": true,
+      "contrast": [
+        {
+          "t": "The BOSS Score",
+          "dir": "light-on-dark",
+          "worst": 9.12,
+          "mean": 9.46
+        },
+        {
+          "t": "Your business has a score. You just don'",
+          "dir": "light-on-dark",
+          "worst": 15.61,
+          "mean": 16.79
+        },
+        {
+          "t": "Every business scores somewhere between ",
+          "dir": "light-on-dark",
+          "worst": 8.05,
+          "mean": 8.73
+        }
+      ],
+      "cues": [
+        {
+          "t": "The BOSS Score",
+          "o": 1
+        },
+        {
+          "t": "Your business has a score. You just don't know",
+          "o": 1
+        },
+        {
+          "t": "Every business scores somewhere between 0 and ",
+          "o": 1
+        }
+      ],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        -2992,
+        0,
+        2181,
+        12502
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:10",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 10,
+      "y": 4654,
+      "pct": 28,
+      "settled": true,
+      "contrast": [
+        {
+          "t": "In about 10 minutes, you get four things",
+          "dir": "light-on-dark",
+          "worst": 12.24,
+          "mean": 13.98
+        },
+        {
+          "t": "ScoreYour BOSS Score Where the business ",
+          "dir": "light-on-dark",
+          "worst": 6.75,
+          "mean": 7.76
+        },
+        {
+          "t": "WheelYour BOSS Wheel Where the gaps are,",
+          "dir": "light-on-dark",
+          "worst": 7.44,
+          "mean": 8.23
+        }
+      ],
+      "cues": [
+        {
+          "t": "In about 10 minutes, you get four things.",
+          "o": 1
+        },
+        {
+          "t": "ScoreYour BOSS Score Where the business stands",
+          "o": 1
+        },
+        {
+          "t": "WheelYour BOSS Wheel Where the gaps are, acros",
+          "o": 1
+        },
+        {
+          "t": "LevelYour level Where you sit, from Overwhelm ",
+          "o": 0.81
+        },
+        {
+          "t": "90 daysYour first 90 days What deserves your a",
+          "o": 0.05
+        }
+      ],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        -3641,
+        0,
+        1532,
+        11853
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:20",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 11,
+      "y": 5302,
+      "pct": 32,
+      "settled": true,
+      "contrast": [
+        {
+          "t": "In about 10 minutes, you get four things",
+          "dir": "light-on-dark",
+          "worst": 12.24,
+          "mean": 13.98
+        },
+        {
+          "t": "ScoreYour BOSS Score Where the business ",
+          "dir": "light-on-dark",
+          "worst": 6.75,
+          "mean": 7.76
+        },
+        {
+          "t": "WheelYour BOSS Wheel Where the gaps are,",
+          "dir": "light-on-dark",
+          "worst": 7.44,
+          "mean": 8.23
+        },
+        {
+          "t": "LevelYour level Where you sit, from Over",
+          "dir": "light-on-dark",
+          "worst": 8.07,
+          "mean": 8.71
+        },
+        {
+          "t": "90 daysYour first 90 days What deserves ",
+          "dir": "light-on-dark",
+          "worst": 8.76,
+          "mean": 9.11
+        },
+        {
+          "t": "You don't need another opinion. You need",
+          "dir": "light-on-dark",
+          "worst": 13.87,
+          "mean": 15.24
+        }
+      ],
+      "cues": [
+        {
+          "t": "In about 10 minutes, you get four things.",
+          "o": 1
+        },
+        {
+          "t": "ScoreYour BOSS Score Where the business stands",
+          "o": 1
+        },
+        {
+          "t": "WheelYour BOSS Wheel Where the gaps are, acros",
+          "o": 1
+        },
+        {
+          "t": "LevelYour level Where you sit, from Overwhelm ",
+          "o": 1
+        },
+        {
+          "t": "90 daysYour first 90 days What deserves your a",
+          "o": 1
+        },
+        {
+          "t": "You don't need another opinion. You need a cle",
+          "o": 1
+        }
+      ],
+      "clips": [],
+      "rails": [
+        0
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pin",
+      "stages": [
+        -4289,
+        0,
+        884,
+        11205
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 12,
+      "y": 6217,
+      "pct": 37,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -37
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pan",
+      "stages": [
+        -5204,
+        -875,
+        0,
+        10290
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 13,
+      "y": 6703,
+      "pct": 40,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -622
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pan",
+      "stages": [
+        -5690,
+        -1361,
+        0,
+        9804
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 14,
+      "y": 7189,
+      "pct": 43,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1207
+      ],
+      "wipes": [
+        "none",
+        "none",
+        "none"
+      ],
+      "act": "pan",
+      "stages": [
+        -6176,
+        -1847,
+        0,
+        9318
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 15,
+      "y": 7675,
+      "pct": 46,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1791
+      ],
+      "wipes": [
+        "inset(0px 0px 100%)",
+        "inset(0px 0px 100%)",
+        "inset(0px 0px 100%)"
+      ],
+      "act": "pan",
+      "stages": [
+        -6662,
+        -2333,
+        0,
+        8832
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 16,
+      "y": 7756,
+      "pct": 46,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 100%)",
+        "inset(0px 0px 100%)",
+        "inset(0px 0px 100%)"
+      ],
+      "act": "pan",
+      "stages": [
+        -6743,
+        -2414,
+        -51,
+        8751
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 17,
+      "y": 8559,
+      "pct": 51,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 30.01%)",
+        "inset(0px 0px 81.7%)"
+      ],
+      "act": "flow",
+      "stages": [
+        -7546,
+        -3217,
+        -854,
+        7948
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 18,
+      "y": 9362,
+      "pct": 56,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "flow",
+      "stages": [
+        -8349,
+        -4020,
+        -1657,
+        7145
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 19,
+      "y": 10165,
+      "pct": 61,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "-",
+      "stages": [
+        -9152,
+        -4823,
+        -2460,
+        6342
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 20,
+      "y": 12237,
+      "pct": 73,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "-",
+      "stages": [
+        -11224,
+        -6895,
+        -4532,
+        4270
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 21,
+      "y": 13237,
+      "pct": 79,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "flow",
+      "stages": [
+        -12224,
+        -7895,
+        -5532,
+        3270
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 22,
+      "y": 14236,
+      "pct": 85,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "flow",
+      "stages": [
+        -13223,
+        -8894,
+        -6531,
+        2271
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 23,
+      "y": 15236,
+      "pct": 91,
+      "settled": true,
+      "contrast": [],
+      "cues": [],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "-",
+      "stages": [
+        -14223,
+        -9894,
+        -7531,
+        1271
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 24,
+      "y": 16512,
+      "pct": 99,
+      "settled": true,
+      "contrast": [
+        {
+          "t": "Every business has a score.",
+          "dir": "light-on-dark",
+          "worst": 6.18,
+          "mean": 7.48
+        },
+        {
+          "t": "Find out what's actually holding your bu",
+          "dir": "light-on-dark",
+          "worst": 9.57,
+          "mean": 12.51
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profi",
+          "dir": "light-on-dark",
+          "worst": 10.94,
+          "mean": 13.18
+        }
+      ],
+      "cues": [
+        {
+          "t": "Every business has a score.",
+          "o": 1
+        },
+        {
+          "t": "Find out what's actually holding your business",
+          "o": 1
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profit Syst",
+          "o": 1
+        }
+      ],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "pin",
+      "stages": [
+        -15499,
+        -11170,
+        -8807,
+        0
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 25,
+      "y": 16579,
+      "pct": 99,
+      "settled": true,
+      "contrast": [
+        {
+          "t": "Every business has a score.",
+          "dir": "light-on-dark",
+          "worst": 6.18,
+          "mean": 7.48
+        },
+        {
+          "t": "Find out what's actually holding your bu",
+          "dir": "light-on-dark",
+          "worst": 9.57,
+          "mean": 12.51
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profi",
+          "dir": "light-on-dark",
+          "worst": 10.94,
+          "mean": 13.18
+        }
+      ],
+      "cues": [
+        {
+          "t": "Every business has a score.",
+          "o": 1
+        },
+        {
+          "t": "Find out what's actually holding your business",
+          "o": 1
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profit Syst",
+          "o": 1
+        }
+      ],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "pin",
+      "stages": [
+        -15566,
+        -11237,
+        -8874,
+        0
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 26,
+      "y": 16647,
+      "pct": 100,
+      "settled": true,
+      "contrast": [
+        {
+          "t": "Every business has a score.",
+          "dir": "light-on-dark",
+          "worst": 6.18,
+          "mean": 7.48
+        },
+        {
+          "t": "Find out what's actually holding your bu",
+          "dir": "light-on-dark",
+          "worst": 9.57,
+          "mean": 12.51
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profi",
+          "dir": "light-on-dark",
+          "worst": 10.94,
+          "mean": 13.18
+        }
+      ],
+      "cues": [
+        {
+          "t": "Every business has a score.",
+          "o": 1
+        },
+        {
+          "t": "Find out what's actually holding your business",
+          "o": 1
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profit Syst",
+          "o": 1
+        }
+      ],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "pin",
+      "stages": [
+        -15634,
+        -11305,
+        -8942,
+        0
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 27,
+      "y": 16714,
+      "pct": 100,
+      "settled": true,
+      "contrast": [
+        {
+          "t": "Every business has a score.",
+          "dir": "light-on-dark",
+          "worst": 6.18,
+          "mean": 7.48
+        },
+        {
+          "t": "Find out what's actually holding your bu",
+          "dir": "light-on-dark",
+          "worst": 9.57,
+          "mean": 12.51
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profi",
+          "dir": "light-on-dark",
+          "worst": 10.94,
+          "mean": 13.18
+        }
+      ],
+      "cues": [
+        {
+          "t": "Every business has a score.",
+          "o": 1
+        },
+        {
+          "t": "Find out what's actually holding your business",
+          "o": 1
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profit Syst",
+          "o": 1
+        }
+      ],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "pin",
+      "stages": [
+        -15701,
+        -11372,
+        -9009,
+        0
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    },
+    {
+      "i": 28,
+      "y": 16718,
+      "pct": 100,
+      "settled": true,
+      "contrast": [
+        {
+          "t": "Every business has a score.",
+          "dir": "light-on-dark",
+          "worst": 6.18,
+          "mean": 7.48
+        },
+        {
+          "t": "Find out what's actually holding your bu",
+          "dir": "light-on-dark",
+          "worst": 9.57,
+          "mean": 12.51
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profi",
+          "dir": "light-on-dark",
+          "worst": 10.94,
+          "mean": 13.18
+        }
+      ],
+      "cues": [
+        {
+          "t": "Every business has a score.",
+          "o": 1
+        },
+        {
+          "t": "Find out what's actually holding your business",
+          "o": 1
+        },
+        {
+          "t": "Get my free BOSS Score See how the Profit Syst",
+          "o": 1
+        }
+      ],
+      "clips": [],
+      "rails": [
+        -1828
+      ],
+      "wipes": [
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)",
+        "inset(0px 0px 0%)"
+      ],
+      "act": "pin",
+      "stages": [
+        -15705,
+        -11376,
+        -9013,
+        0
+      ],
+      "segs": [],
+      "custom": [
+        "hero:24",
+        "peak:29",
+        "close"
+      ],
+      "customHold": true,
+      "seg": null,
+      "segp": null,
+      "bg": "#FAFBFD"
+    }
+  ],
+  "consoleErrors": [],
+  "failed": []
+}

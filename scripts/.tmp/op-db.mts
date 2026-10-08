@@ -1,0 +1,10 @@
+import { createClient } from "@supabase/supabase-js";
+import * as fs from "node:fs";
+const env = Object.fromEntries(fs.readFileSync(".env.local","utf8").split("\n").filter(l=>/^[A-Z_]+=/.test(l)).map(l=>{const i=l.indexOf("=");return [l.slice(0,i), l.slice(i+1).replace(/^['"]|['"]$/g,"")];}));
+const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+const p = await sb.from("profiles").select("*").limit(1); console.log("profiles", Object.keys(p.data?.[0]??{}).join(", "));
+const c = await sb.from("coaches").select("*").limit(1); console.log("coaches", Object.keys(c.data?.[0]??{}).join(", "));
+const demo = await sb.from("profiles").select("id, full_name, role, email").or("full_name.ilike.%demo%,full_name.ilike.%woodford%,full_name.ilike.%zander%"); console.log(demo.data);
+const lists = await sb.from("coach_lead_lists").select("*").limit(1); console.log("lists", Object.keys(lists.data?.[0]??{}).join(", "));
+const items = await sb.from("coach_lead_list_items").select("*").limit(1); console.log("items", Object.keys(items.data?.[0]??{}).join(", "));
+const acc = await sb.from("outreach_accounts").select("*").limit(1); console.log("outreach_accounts", acc.error?.message ?? Object.keys(acc.data?.[0]??{}).join(", "));

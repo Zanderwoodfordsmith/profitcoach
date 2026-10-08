@@ -8,15 +8,9 @@ export type LastLoginFilter =
   | "never"
   | "last_30_days"
   | "over_90_days";
-export type SalesRobotFilter =
-  | "all"
-  | "has_sales_robot"
-  | "no_sales_robot"
-  | "paying"
-  | "not_paying"
-  | "active_campaigns";
+export type SalesRobotFilter = "all" | "has_sales_robot" | "no_sales_robot";
 export type RecurringBillingFilter = "all" | "active" | "inactive";
-export type CoachSortField = "last_login" | "last_active" | "join_date" | "active_campaigns";
+export type CoachSortField = "last_login" | "last_active" | "join_date";
 export type CoachSortOrder = "recent_first" | "oldest_first" | "missing_first";
 
 export type CoachSortCriterion = {
@@ -44,8 +38,6 @@ export type CoachTableColumnVisibility = {
   lastActive: boolean;
   crm: boolean;
   salesRobot: boolean;
-  activeCampaigns: boolean;
-  payingAccounts: boolean;
   profitCoachEmail: boolean;
   accessTier: boolean;
   recurringPayment: boolean;
@@ -186,8 +178,6 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   "calendarEmbed",
   "leadWebhook",
   "salesRobot",
-  "activeCampaigns",
-  "payingAccounts",
   "profitCoachEmail",
   "landing",
 ];
@@ -209,8 +199,6 @@ export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   lastActive: true,
   crm: false,
   salesRobot: false,
-  activeCampaigns: false,
-  payingAccounts: false,
   profitCoachEmail: false,
   accessTier: true,
   recurringPayment: true,

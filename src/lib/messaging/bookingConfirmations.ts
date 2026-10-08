@@ -15,7 +15,13 @@ import {
   type BookingNotifyVars,
   type BookingReminderStep,
 } from "@/lib/booking/reminderSequence";
+import { isProgrammeOrientationBooking } from "@/config/programmeOrientationCalendar";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
+import {
+  orientationReminderHtml,
+  orientationReminderSubject,
+  orientationReminderText,
+} from "@/lib/messaging/orientationReminderEmail";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getOkMailingAccount } from "@/lib/unipile/outreachAccounts";
 import {
@@ -42,6 +48,10 @@ export type BookingNotifyInput = {
   meetingJoinUrl?: string | null;
   /** Existing thread to append to; created if missing. */
   conversationId?: string | null;
+  /** Programme orientation call — friendly prep email, not the generic template. */
+  variant?: "orientation";
+  /** True when a calendar invite was created for the host and the guest. */
+  calendarEventCreated?: boolean;
 };
 
 export type BookingNotifyResult = {
@@ -491,9 +501,25 @@ async function sendBookingSequenceStep(args: {
   threadReply: boolean;
 }): Promise<BookingNotifyResult> {
   const vars = notifyVars(args.input);
-  const subject = interpolateReminderText(args.step.subject, vars);
-  const text = interpolateReminderText(args.step.body, vars);
-  const html = reminderTextToHtml(text);
+  const orientation = args.input.variant === "orientation";
+  const orientationInput = {
+    stepId: args.step.id,
+    firstName: vars.first_name,
+    when: vars.when,
+    joinUrl: args.input.meetingJoinUrl?.trim() || null,
+    startsAtIso: args.input.startsAtIso,
+    endsAtIso: args.input.endsAtIso,
+    calendarEventCreated: Boolean(args.input.calendarEventCreated),
+  };
+  const subject = orientation
+    ? orientationReminderSubject(args.step.id)
+    : interpolateReminderText(args.step.subject, vars);
+  const text = orientation
+    ? orientationReminderText(orientationInput)
+    : interpolateReminderText(args.step.body, vars);
+  const html = orientation
+    ? orientationReminderHtml(orientationInput)
+    : reminderTextToHtml(text);
 
   let mailboxId: string | null = null;
   try {
@@ -535,7 +561,7 @@ async function sendBookingSequenceStep(args: {
   }
 
   let smsOk = true;
-  if (args.step.sms) {
+  if (args.step.sms && !orientation) {
     smsOk = await sendBookingSms({
       input: args.input,
       conversationId,
@@ -611,7 +637,7 @@ export async function processDueBookingReminders(limit = 25): Promise<{
   const { data: bookings, error } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, coach_id, contact_id, calendar_id, starts_at, ends_at, created_at, reminder_sent_at, reminder_sends, prospect_name, prospect_email, prospect_phone, prospect_timezone, meeting_join_url, meeting_phone, meeting_instructions, meeting_location_type"
+      "id, coach_id, contact_id, calendar_id, kind, starts_at, ends_at, created_at, reminder_sent_at, reminder_sends, prospect_name, prospect_email, prospect_phone, prospect_timezone, meeting_join_url, meeting_phone, meeting_instructions, meeting_location_type, google_event_id"
     )
     .eq("status", "booked")
     .gt("starts_at", windowStart)
@@ -680,13 +706,23 @@ export async function processDueBookingReminders(limit = 25): Promise<{
       const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(
         coachId
       );
+      const { data: coachRow } = await supabaseAdmin
+        .from("coaches")
+        .select("slug")
+        .eq("id", coachId)
+        .maybeSingle();
       const { data: calendar } = b.calendar_id
         ? await supabaseAdmin
             .from("coach_calendars")
-            .select("name")
+            .select("name, slug")
             .eq("id", b.calendar_id)
             .maybeSingle()
         : { data: null };
+      const orientation = isProgrammeOrientationBooking({
+        coachSlug: coachRow?.slug as string | null,
+        calendarSlug:
+          (calendar?.slug as string | null) ?? (b.kind as string | null),
+      });
 
       const coachName =
         (profile?.full_name as string | null)?.trim() ||
@@ -722,6 +758,8 @@ export async function processDueBookingReminders(limit = 25): Promise<{
         locationLabel,
         meetingJoinUrl: (b.meeting_join_url as string | null) ?? null,
         conversationId: (conv?.id as string | null) ?? null,
+        variant: orientation ? "orientation" : undefined,
+        calendarEventCreated: Boolean(b.google_event_id),
       };
 
       for (const step of pending) {

@@ -2,6 +2,11 @@ import { formatInTimeZone, isValidIanaTimeZone, ymdInTimeZone } from "@/lib/book
 import { calendarToBookingSettings } from "@/lib/booking/coachCalendars";
 import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import {
+  clampBookingDurationMinutes,
+  directBookingWindow,
+  directSlotConflicts,
+} from "@/lib/booking/directBookingSlot";
+import {
   computeBookingSlots,
   slotSearchHorizonDays,
 } from "@/lib/booking/computeBookingSlots";
@@ -16,6 +21,12 @@ import {
   deleteZoomBookingMeeting,
 } from "@/lib/booking/zoomMeetings";
 import { sendBookingConfirmations } from "@/lib/messaging/bookingConfirmations";
+import {
+  isProgrammeOrientationBooking,
+  orientationEventTitle,
+  PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE,
+  PROGRAMME_ORIENTATION_JOIN_URL,
+} from "@/config/programmeOrientationCalendar";
 import {
   SUPPORT_CALL_CALENDAR_SLUG,
   supportCallEventTitle,
@@ -42,6 +53,13 @@ export type CreateCalendarBookingInput = {
   markProspectBooked?: boolean;
   /** Coach booking their own calendar — skip public min-notice / advance window. */
   ignorePublicLimits?: boolean;
+  /**
+   * Staff one-off: this start does not have to be on the public grid or
+   * inside weekly hours. Existing bookings and calendar busy time still block it.
+   */
+  allowUnlistedStart?: boolean;
+  /** Used with allowUnlistedStart. Otherwise the calendar's duration applies. */
+  durationMinutes?: number;
 };
 
 export type CreateCalendarBookingSuccess = {
@@ -84,50 +102,100 @@ export async function createCalendarBooking(
   const { settings: coachSettings, rules } = await loadBookingSettingsForCoach(
     coach.id
   );
-  if (rules.length === 0) {
-    return { ok: false, status: 400, error: "No availability configured." };
-  }
 
-  const settings = calendarToBookingSettings(calendar, coachSettings.timezone);
-  const windowStart = new Date();
-  const windowEnd = new Date(
-    windowStart.getTime() +
-      slotSearchHorizonDays({
-        bookingWindowDays: settings.booking_window_days,
-        ignorePublicLimits: input.ignorePublicLimits,
-      }) *
-        24 *
-        60 *
-        60 *
-        1000
-  );
+  let chosen: { startsAt: string; endsAt: string };
 
-  const [existing, googleBusy] = await Promise.all([
-    loadExistingBookedIntervals(
-      coach.id,
-      windowStart.toISOString(),
-      windowEnd.toISOString()
-    ),
-    fetchUnipileBusyIntervals({
-      coachId: coach.id,
-      timeMin: windowStart.toISOString(),
-      timeMax: windowEnd.toISOString(),
-    }),
-  ]);
+  if (input.allowUnlistedStart) {
+    const durationMinutes = clampBookingDurationMinutes(
+      input.durationMinutes,
+      calendar.meeting_duration_minutes
+    );
+    const slotWindow = directBookingWindow({ startsAt, durationMinutes });
+    if (!slotWindow.ok) return slotWindow;
 
-  const slots = computeBookingSlots({
-    settings,
-    rules,
-    existing: [...existing, ...googleBusy],
-    ignorePublicLimits: input.ignorePublicLimits,
-  });
-  const match = slots.find((s) => s.startsAt === new Date(startsAt).toISOString());
-  const alt = slots.find(
-    (s) => new Date(s.startsAt).getTime() === new Date(startsAt).getTime()
-  );
-  const chosen = match ?? alt;
-  if (!chosen) {
-    return { ok: false, status: 409, error: "That time is no longer available." };
+    const bufferMs = Math.max(0, calendar.buffer_minutes) * 60_000;
+    const padMs = 36 * 60 * 60 * 1000;
+    const rangeStart = new Date(slotWindow.start.getTime() - bufferMs - padMs);
+    const rangeEnd = new Date(slotWindow.end.getTime() + bufferMs + padMs);
+    const [existing, googleBusy] = await Promise.all([
+      loadExistingBookedIntervals(
+        coach.id,
+        rangeStart.toISOString(),
+        rangeEnd.toISOString()
+      ),
+      fetchUnipileBusyIntervals({
+        coachId: coach.id,
+        timeMin: rangeStart.toISOString(),
+        timeMax: rangeEnd.toISOString(),
+      }),
+    ]);
+    if (
+      directSlotConflicts({
+        start: slotWindow.start,
+        end: slotWindow.end,
+        existing: [...existing, ...googleBusy],
+        bufferMinutes: calendar.buffer_minutes,
+      })
+    ) {
+      return {
+        ok: false,
+        status: 409,
+        error: "That time overlaps something already on the calendar.",
+      };
+    }
+    chosen = {
+      startsAt: slotWindow.start.toISOString(),
+      endsAt: slotWindow.end.toISOString(),
+    };
+  } else {
+    if (rules.length === 0) {
+      return { ok: false, status: 400, error: "No availability configured." };
+    }
+
+    const settings = calendarToBookingSettings(calendar, coachSettings.timezone);
+    const windowStart = new Date();
+    const windowEnd = new Date(
+      windowStart.getTime() +
+        slotSearchHorizonDays({
+          bookingWindowDays: settings.booking_window_days,
+          ignorePublicLimits: input.ignorePublicLimits,
+        }) *
+          24 *
+          60 *
+          60 *
+          1000
+    );
+
+    const [existing, googleBusy] = await Promise.all([
+      loadExistingBookedIntervals(
+        coach.id,
+        windowStart.toISOString(),
+        windowEnd.toISOString()
+      ),
+      fetchUnipileBusyIntervals({
+        coachId: coach.id,
+        timeMin: windowStart.toISOString(),
+        timeMax: windowEnd.toISOString(),
+      }),
+    ]);
+
+    const slots = computeBookingSlots({
+      settings,
+      rules,
+      existing: [...existing, ...googleBusy],
+      ignorePublicLimits: input.ignorePublicLimits,
+    });
+    const match = slots.find(
+      (s) => s.startsAt === new Date(startsAt).toISOString()
+    );
+    const alt = slots.find(
+      (s) => new Date(s.startsAt).getTime() === new Date(startsAt).getTime()
+    );
+    const listed = match ?? alt;
+    if (!listed) {
+      return { ok: false, status: 409, error: "That time is no longer available." };
+    }
+    chosen = listed;
   }
 
   const email = guest.email.trim().toLowerCase();
@@ -180,16 +248,33 @@ export async function createCalendarBooking(
     input.notes?.trim() ? `About:\n${input.notes.trim()}` : null,
   ].filter(Boolean);
 
+  const { data: coachRow } = await supabaseAdmin
+    .from("coaches")
+    .select("slug")
+    .eq("id", coach.id)
+    .maybeSingle();
+  const coachSlug = String(coachRow?.slug ?? "");
+  const orientation = isProgrammeOrientationBooking({
+    coachSlug,
+    calendarSlug: calendar.slug,
+  });
+
   let eventTitle = calendar.name;
   if (calendar.slug === SUPPORT_CALL_CALENDAR_SLUG) {
-    const { data: coachRow } = await supabaseAdmin
-      .from("coaches")
-      .select("slug")
-      .eq("id", coach.id)
-      .maybeSingle();
-    eventTitle =
-      supportCallEventTitle(String(coachRow?.slug ?? ""), guestName) ??
-      calendar.name;
+    eventTitle = supportCallEventTitle(coachSlug, guestName) ?? calendar.name;
+  } else if (orientation) {
+    eventTitle = orientationEventTitle(guestName);
+    meetingJoinUrl = PROGRAMME_ORIENTATION_JOIN_URL;
+    for (let i = descriptionParts.length - 1; i >= 0; i -= 1) {
+      const line = String(descriptionParts[i] ?? "");
+      if (line.startsWith("Join:") || line.startsWith("Call:")) {
+        descriptionParts.splice(i, 1);
+      }
+    }
+    descriptionParts.unshift(`Join: ${PROGRAMME_ORIENTATION_JOIN_URL}`);
+    descriptionParts.push(
+      `Invited: ${PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE.name} (${PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE.email})`
+    );
   }
 
   const eventInput = {
@@ -201,27 +286,54 @@ export async function createCalendarBooking(
     guestEmail: email,
     guestName,
     timezone: coachSettings.timezone,
-    locationMode:
-      calendar.location_mode === "zoom" ? ("custom" as const) : calendar.location_mode,
+    locationMode: orientation
+      ? ("custom" as const)
+      : calendar.location_mode === "zoom"
+        ? ("custom" as const)
+        : calendar.location_mode,
     locationPhone: calendar.location_phone,
-    locationCustom:
-      calendar.location_mode === "zoom"
+    locationCustom: orientation
+      ? PROGRAMME_ORIENTATION_JOIN_URL
+      : calendar.location_mode === "zoom"
         ? meetingJoinUrl
         : calendar.location_custom,
+    extraAttendees: orientation
+      ? [
+          {
+            email: PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE.email,
+            name: PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE.name,
+          },
+        ]
+      : undefined,
   };
   const googleEvent =
     (await createUnipileBookingEvent(eventInput)) ??
     (await createGoogleBookingEvent(eventInput));
 
+  if (!googleEvent) {
+    console.error(
+      "booking calendar event was not created:",
+      coach.id,
+      calendar.slug,
+      email
+    );
+  }
+
   if (googleEvent) {
     googleEventId = googleEvent.eventId;
     googleCalendarId = googleEvent.calendarId;
-    if (googleEvent.hangoutLink && calendar.location_mode !== "zoom") {
+    if (
+      googleEvent.hangoutLink &&
+      !orientation &&
+      calendar.location_mode !== "zoom"
+    ) {
       meetingJoinUrl = googleEvent.hangoutLink;
     }
   }
 
-  if (
+  if (orientation) {
+    meetingJoinUrl = PROGRAMME_ORIENTATION_JOIN_URL;
+  } else if (
     calendar.location_mode === "custom" &&
     calendar.location_custom &&
     /^https?:\/\//i.test(calendar.location_custom.trim())
@@ -247,7 +359,7 @@ export async function createCalendarBooking(
       google_event_id: googleEventId,
       google_calendar_id: googleCalendarId,
       zoom_meeting_id: zoomMeetingId,
-      meeting_location_type: calendar.location_mode,
+      meeting_location_type: orientation ? "custom" : calendar.location_mode,
       meeting_join_url: meetingJoinUrl,
       meeting_phone: meetingPhone,
       meeting_instructions: meetingInstructions,
@@ -270,7 +382,9 @@ export async function createCalendarBooking(
   }
 
   let whereLabel = "Details by email";
-  if (calendar.location_mode === "google_meet") {
+  if (orientation && meetingJoinUrl) {
+    whereLabel = meetingJoinUrl;
+  } else if (calendar.location_mode === "google_meet") {
     whereLabel = meetingJoinUrl ? "Google Meet" : "Google Meet (invite by email)";
   } else if (calendar.location_mode === "zoom") {
     whereLabel = meetingJoinUrl ? "Zoom" : "Zoom (invite by email)";
@@ -303,6 +417,8 @@ export async function createCalendarBooking(
         timezone: prospectTz,
         locationLabel: whereLabel,
         meetingJoinUrl,
+        variant: orientation ? "orientation" : undefined,
+        calendarEventCreated: Boolean(googleEvent),
       });
     } catch (notifyErr) {
       console.error("booking confirmation notify:", notifyErr);

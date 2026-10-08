@@ -1,3 +1,4 @@
+import { bookingEventAttendees } from "@/lib/booking/bookingEventAttendees";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   googleCalendarEnv,
@@ -255,6 +256,7 @@ export type CreateBookingEventInput = {
   locationMode: "google_meet" | "phone" | "custom";
   locationPhone?: string | null;
   locationCustom?: string | null;
+  extraAttendees?: { email: string; name?: string }[];
 };
 
 export type CreateBookingEventResult = {
@@ -405,12 +407,14 @@ export async function createGoogleBookingEvent(
       dateTime: input.endsAt,
       timeZone: input.timezone,
     },
-    attendees: [
-      {
-        email: input.guestEmail,
-        displayName: input.guestName,
-      },
-    ],
+    attendees: bookingEventAttendees({
+      guestEmail: input.guestEmail,
+      guestName: input.guestName,
+      extra: input.extraAttendees,
+    }).map((attendee) => ({
+      email: attendee.email,
+      displayName: attendee.name,
+    })),
     reminders: {
       useDefault: true,
     },

@@ -9,7 +9,11 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
  * brand_knowledge_files override them (editable from Admin → Brand → Canon).
  */
 
-export type BrandKnowledgeGroup = "core" | "skill" | "reply-copilot";
+export type BrandKnowledgeGroup =
+  | "core"
+  | "skill"
+  | "reply-copilot"
+  | "support-copilot";
 
 export type BrandKnowledgeFileMeta = {
   file: string;
@@ -185,6 +189,22 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     label: "Situation: scorecard done",
     description: "They completed the scorecard. Offer a 30-minute review.",
     group: "reply-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "support-copilot/ROUTER.md",
+    label: "Support copilot voice & router",
+    description:
+      "How support replies sound, honesty rules, and the situation map. Loaded on every support draft.",
+    group: "support-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "support-copilot/playbook.md",
+    label: "Support playbook",
+    description:
+      "Links, menu paths, known issues and standard answers. Update when a fix ships or a link changes.",
+    group: "support-copilot",
     dir: "ai-knowledge",
   },
 ];

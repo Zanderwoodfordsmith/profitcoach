@@ -1,0 +1,92 @@
+export type CommandCenterModel = {
+  lead: string;
+  detail: string;
+  completion: string;
+  milestone: string;
+  action: { label: string; href: string };
+  building: string;
+  call: string;
+  recommendation: string;
+  blocker: string;
+  progress: string[];
+};
+
+export function commandCenter(row: PracticeKnowledgeRow): CommandCenterModel {
+  const missing = row.missing_fields ?? [];
+  const report = row.report_payload;
+  const booked = row.payload.review.decision_call_booked_at?.value;
+  const proofOpen = missing.includes("proof.career_results");
+  const askedOpen =
+    missing.includes("proof.problems_asked") ||
+    missing.includes("proof.superpowers") ||
+    missing.includes("proof.uniqueness");
+
+  let lead = "You are building the brief for your practice.";
+  let detail = "LinkedIn is the start. The conversation fills what a profile cannot.";
+  let action = { label: "Open your Practice Blueprint", href: "/coach/practice/blueprint" };
+  let building = "Waiting on the brief before we draft a market and a campaign angle.";
+  let milestone = "Complete the brief";
+
+  if (proofOpen) {
+    lead = "You are capturing the proof behind your practice.";
+    detail = "Your next step is one commercial result with a from, a to, and a timeframe.";
+    action = { label: "Add the result in your blueprint", href: "/coach/practice/blueprint#brief-experience" };
+    milestone = "One precise result";
+  } else if (askedOpen) {
+    lead = "You are turning experience into a position.";
+    detail = "Your next step is the problems people already ask you to solve.";
+    action = { label: "Continue the blueprint", href: "/coach/practice/blueprint#brief-experience" };
+    milestone = "Problems you already solve";
+  } else if (!report) {
+    lead = "You have enough for a first recommendation.";
+    detail = "BCA is ready to draft the market options and the campaign angle.";
+    action = { label: "Read your Practice Blueprint", href: "/coach/practice/blueprint#brief-priorities" };
+    building = "Writing the recommendation from the brief.";
+    milestone = "Recommendation drafted";
+  } else if (!row.coach_reviewed_at) {
+    lead = "You are preparing the Decision Call.";
+    detail = "BCA has drafted your market options and a campaign angle. Your next step is to read them and note what feels off.";
+    action = { label: "Review the recommendation", href: "/coach/practice/blueprint#brief-priorities" };
+    building = "Market options and a campaign angle are drafted. The Decision Call locks them.";
+    milestone = "You review the recommendation";
+  } else if (row.status === "ready_to_build" || row.status === "building") {
+    lead = "You are preparing to launch your first campaign.";
+    detail = "The Decision Record is the source. BCA builds LinkedIn, the campaign, follow-ups, and nurture from it.";
+    action = { label: "See what is being built", href: "/coach/practice/campaigns" };
+    building = "LinkedIn, the first campaign, follow-ups, and nurture are queued.";
+    milestone = "First campaign";
+  } else {
+    lead = "The brief is in. The Decision Call makes the choices.";
+    detail = booked
+      ? "Your call is booked. Read the recommendation before you join."
+      : "Your next step is to book the Decision Call.";
+    action = booked
+      ? { label: "Read the recommendation", href: "/coach/practice/blueprint#brief-priorities" }
+      : { label: "Book the Decision Call", href: "/welcome" };
+    building = "Holding the recommendation until the call locks one market, one offer, and one angle.";
+    milestone = "Decision Call";
+  }
+
+  const progress: string[] = [];
+  if (row.linkedin_seeded_at) progress.push("LinkedIn imported");
+  if (row.interview_completed_at) progress.push("Conversation captured");
+  if (row.report_generated_at) progress.push("Recommendation drafted");
+  if (row.coach_reviewed_at) progress.push("You reviewed the brief");
+  if (!progress.length) progress.push("Blueprint opened");
+
+  return {
+    lead,
+    detail,
+    completion: `The blueprint is ${row.completeness_score}% captured.`,
+    milestone,
+    action,
+    building,
+    call: booked ? `Booked ${new Date(booked).toLocaleString()}` : "Not booked yet",
+    recommendation: report?.experience_summary
+      ? report.experience_summary.slice(0, 280)
+      : "Not written yet.",
+    blocker: missing[0] ? labelMissingField(missing[0]) : "Nothing is blocking the next step.",
+    progress,
+  };
+}
+

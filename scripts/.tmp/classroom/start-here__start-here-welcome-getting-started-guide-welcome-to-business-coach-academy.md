@@ -1,0 +1,49 @@
+# Welcome To Business Coach Academy!
+
+## Body
+### We are so excited you joined this incredible community and programme.
+
+This is just a very short video to welcome you in and let you know you are in a great position. This is our version 10 of the programme and people have had incredible results from when we started way back in 2018.
+
+### Next Steps
+
+1.  Jump on a group call as soon as you can, [schedule is here](https://academy.businesscoachacademy.com/events-calendar)
+2.  Introduce yourself to the community by [reading this post](https://academy.businesscoachacademy.com/feed/RmVlZDoxMjE0NA==/posts?postId=UG9zdDoxMzA0Nw%3D%3D) and then posting in the [community](https://academy.businesscoachacademy.com/feed/RmVlZDoxMjE0NA==/posts)
+3.  Go through the programme in order and each video will build towards you having a £10,000/mo business with the least stress possible.
+
+Order to go through the Academy
+
+-   Kick Start (all)
+-   Coach Action Plan (all)
+-   Going Pro (ideally all - will set you up fro success)
+-   Coach certification
+    - Welcome
+    -   Module 1
+    -   Module 2
+-   Client Acquisition
+    - Ideal Clients
+    -   LinkedIn Optimisation
+    -   Lead Generation
+    -   Automated Outreach
+-   Client Delivery
+    - Client onboarding Sessions 1-4
+
+This will give you all the core elements you need to start generating clients an working with them. You can then go back to certification and do week 3 and 4, do the rest of client acquisition and the rest of client delivery.
+
+### Useful Links
+
+-   [The Training Curriculum](https://www.theprofitcoach.com/admin/academy/programs) - to learn how to build your business.
+-   [Upcoming Group Calls List](https://www.theprofitcoach.com/admin/community/calendar) - to get your questions answered by experts live (and to join a call [**Click here >>**](https://businesscoachacademy.com/calls))
+-   [Community](https://www.theprofitcoach.com/admin/community) - to introduce yourself and learn from other coaches.
+-   [Connector](https://connect.businesscoachacaemy.com/) - to automate your Linkedin outreach
+
+## Let's get going!
+
+## Transcript
+Hello and welcome to Business Coach Academy. It is fantastic to have you here. If you don't know me, I'm Xander Woodford-Smith. I'm one of the co-founders along with my mom, Pam Featherstone, who was a 7-figure business coach and the number 1 globally of one of the largest business coaching franchises. And we could not be more excited that you joined the Academy.
+In this video, it's just a very, very quick welcome. You're going to see as you go through the program, We have an absolute focus on making sure every second that you invest in this, you get the absolute most out of it. But obviously, when you first started, there's just got to be a little bit of housekeeping and other stuff. So this members area that you're in is actually the main part. This is where you can communicate and share things with other people in the community.
+So you can post your wins, you can post questions. This is where the training is that you can go through all the content and you want to go through it step by step. I'll be talking about about that in videos coming up. And then this is also where you can access the group calls, and I encourage you to click on the Events tab and get, uh, familiar with the calendar, and then you can actually join one probably today depending on what day of the week you're watching this. But we hold multiple ones every single week.
+But we just want to say welcome and just say you've made an amazing decision. You're going to be impacting lives. There's nothing like getting paid an incredible income while impacting lives, being able to do it and having flexibility to work from anywhere, spend more time with your family and do those things. So there's people that are way ahead of you in the journey and people who are just starting at exactly the same point right now. And what you're about to see inside the platform at the moment, like towards the end of 2024, beginning of 2025, is kind of version 10.
+We've been doing this over 5 years now. We've got people who Even version 1 or 2 from ages ago still got to, you know, half a million a year, have never lost a client. So the version you have now is just so incredible. I just encourage you, follow the system, dive into the program, make this space in your life to actually do this because it's so worth it because you've made such a great investment. So welcome to the team.
+You can go in and introduce yourself. I'll be talking about that coming up about how to get the most out of the community. This is just to say, It's so good to have you here. So let's get stuck in.
+true

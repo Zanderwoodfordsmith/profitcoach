@@ -64,6 +64,13 @@ const ESTABLISHED_CUSTOMER_PRIOR_TOTAL_CENTS: Record<string, number> = {
 const UPGRADE_AMOUNT_MIN_CENTS = 800_000;
 const UPGRADE_AMOUNT_MAX_CENTS = 1_200_000;
 
+/**
+ * Payment plans start at £1,000+. Charges under 500 in major units are
+ * recurring unless they are a known membership price (£495 / $399), which
+ * still uses New for the first payment and Recurring after that.
+ */
+const RECURRING_BELOW_CENTS = 50_000;
+
 function normalizeCurrency(currency: string): string {
   return currency.trim().toLowerCase();
 }
@@ -299,10 +306,21 @@ function classifyEstablishedCustomerPayment(
   return "recurring";
 }
 
+function isSmallRecurringAmount(amountCents: number): boolean {
+  return amountCents > 0 && amountCents < RECURRING_BELOW_CENTS;
+}
+
 function classifySucceededPayment(
   payment: PaymentForBillingKind,
   ctx: ClassifyContext
 ): PaymentBillingKind {
+  if (
+    isSmallRecurringAmount(payment.amount_cents) &&
+    !isSubscriptionTierAmount(payment.amount_cents, payment.currency)
+  ) {
+    return "recurring";
+  }
+
   if (isUpgradeAmount(payment.amount_cents, payment.currency)) {
     return "initial";
   }

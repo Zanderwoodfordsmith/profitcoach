@@ -1,0 +1,7 @@
+# client-delivery-coaching-session-faqs-coaching-faq-how-to-handle-clients-in-crisis
+
+## Transcript
+[00:00:00]
+Now, obviously, if they've had a crisis in the business, the absolute will be in there as well. So if they've got a lot on and it looks like they're not going to be able to stick to the 90 day plan because there's some major crisis going on, I'm not talking about just some usual business interference, I mean a real problem, then you might revisit the 90 day plan, budge things up and deal with whatever it is that week. You really need to be in tune with your client's business and be helping them, guiding and supporting them to have a business that's running smoothly and getting rid of any bottlenecks, hindrances, interferences, challenges. So it gets everything free from the mind so they can really focus on the things they need to do. So this is where they are in the current reality. This is where they've told you they want to be. You're making sure that every single week they're taking steps closer towards those long term goals. When you're taking a client here, it doesn't matter how slowly you're going, if you're going towards here, you will keep your client forever.
+[00:00:56]
+If you end up just doing the day job and they're just stuck here improving the day job and there's no progress to, there's no progression, you'd be really lucky to keep your clients six months and that's why it's so important to do the long term stuff.

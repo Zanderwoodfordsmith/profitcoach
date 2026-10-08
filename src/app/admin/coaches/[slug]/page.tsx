@@ -76,8 +76,6 @@ type CoachDetail = {
   has_directory_summary: boolean;
   has_directory_bio: boolean;
   has_sales_robot_account: boolean;
-  sales_robot_active_campaigns: number | null;
-  sales_robot_paying_accounts: number | null;
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
   recurring_billing_active: boolean;
@@ -737,14 +735,6 @@ export default function AdminCoachDetailPage({
                   <DetailField
                     label="Sales Robot"
                     value={coach.has_sales_robot_account ? "Yes" : "No"}
-                  />
-                  <DetailField
-                    label="Active campaigns"
-                    value={
-                      coach.sales_robot_active_campaigns != null
-                        ? String(coach.sales_robot_active_campaigns)
-                        : null
-                    }
                   />
                   <DetailField
                     label="PC email account"

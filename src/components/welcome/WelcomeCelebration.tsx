@@ -487,14 +487,10 @@ export function WelcomeCelebration({
                 <StepBadge n={2} done />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-emerald-900">
-                    Intake complete
+                    Questions answered
                   </p>
                   <p className="text-xs text-emerald-800/80">
-                    Continue in{" "}
-                    <Link href="/coach/practice" className="font-medium underline">
-                      practice setup
-                    </Link>{" "}
-                    when you’re ready.
+                    We’ll use these on your orientation call.
                   </p>
                 </div>
               </div>
@@ -508,11 +504,10 @@ export function WelcomeCelebration({
                   <StepBadge n={2} active={showIntakeBody} />
                   <div className="min-w-0 flex-1">
                     <h2 className="text-base font-semibold text-slate-900">
-                      Start your practice setup
+                      A few quick questions
                     </h2>
                     <p className="mt-0.5 text-sm text-slate-600">
-                      One brief. LinkedIn writes what it can. You speak the rest,
-                      then we prepare the Decision Call.
+                      So we can prepare for your orientation call.
                     </p>
                   </div>
                   {showIntakeBody ? (
@@ -524,16 +519,6 @@ export function WelcomeCelebration({
 
                 {showIntakeBody ? (
                   <div className="mt-5 space-y-4">
-                    <p className="text-sm text-slate-600">
-                      Open the brief. What LinkedIn already knows is written in.
-                      A short conversation fills the lines we cannot invent.
-                    </p>
-                    <Link
-                      href="/coach/practice"
-                      className="inline-flex rounded-lg bg-[#0c5290] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0a4478]"
-                    >
-                      Open practice setup
-                    </Link>
                     {intakeError ? (
                       <p className="text-sm text-rose-600" role="alert">
                         {intakeError}

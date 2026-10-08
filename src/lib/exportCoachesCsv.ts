@@ -47,8 +47,6 @@ export type CoachExportRow = {
   has_directory_summary: boolean;
   has_directory_bio: boolean;
   has_sales_robot_account: boolean;
-  sales_robot_active_campaigns: number | null;
-  sales_robot_paying_accounts: number | null;
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
   recurring_billing_active: boolean;
@@ -80,8 +78,6 @@ export type CoachExportColumnKey =
   | "crm"
   | "crmLocationId"
   | "salesRobot"
-  | "activeCampaigns"
-  | "payingAccounts"
   | "profitCoachEmail"
   | "accessTier"
   | "accessTierLocked"
@@ -118,8 +114,6 @@ const EXPORT_COLUMN_DEFS: Array<{ key: CoachExportColumnKey; label: string }> =
     { key: "crm", label: "CRM" },
     { key: "crmLocationId", label: "CRM location ID" },
     { key: "salesRobot", label: "Sales Robot" },
-    { key: "activeCampaigns", label: "Active campaigns" },
-    { key: "payingAccounts", label: "Sales robot accounts" },
     { key: "profitCoachEmail", label: "PC email" },
     { key: "accessTier", label: "Access tier" },
     { key: "accessTierLocked", label: "Access tier locked" },
@@ -153,8 +147,6 @@ const TABLE_KEY_TO_EXPORT: Partial<
   lastActive: ["lastActive"],
   crm: ["crm"],
   salesRobot: ["salesRobot"],
-  activeCampaigns: ["activeCampaigns"],
-  payingAccounts: ["payingAccounts"],
   profitCoachEmail: ["profitCoachEmail"],
   accessTier: ["accessTier", "accessTierLocked"],
   recurringPayment: ["recurringPayment"],
@@ -285,10 +277,6 @@ function getExportCellValue(
       return row.crm_location_id ?? "";
     case "salesRobot":
       return yesNo(row.has_sales_robot_account);
-    case "activeCampaigns":
-      return row.sales_robot_active_campaigns ?? "";
-    case "payingAccounts":
-      return row.sales_robot_paying_accounts ?? "";
     case "profitCoachEmail":
       return yesNo(row.has_profit_coach_email_account);
     case "accessTier":

@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
-import { getAppBaseUrl } from "@/lib/appBaseUrl";
+import { getPublicAppBaseUrl } from "@/lib/appBaseUrl";
 import {
   qualifyingToWebhookFields,
   type ScorecardAnswers,
@@ -521,7 +521,7 @@ export async function POST(request: Request) {
       : null;
   const reportLink =
     reportToken && assessmentType === "boss_scorecard"
-      ? buildScorecardReportUrl(coachSlug, reportToken, getAppBaseUrl(request))
+      ? buildScorecardReportUrl(coachSlug, reportToken, getPublicAppBaseUrl(request))
       : null;
 
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);

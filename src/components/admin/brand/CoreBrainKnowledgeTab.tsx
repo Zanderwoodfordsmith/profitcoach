@@ -10,7 +10,7 @@ export type CanonFile = {
   file: string;
   label: string;
   description: string;
-  group: "core" | "skill" | "reply-copilot";
+  group: "core" | "skill" | "reply-copilot" | "support-copilot";
   content: string;
   overridden: boolean;
   updated_at: string | null;
@@ -262,6 +262,7 @@ export function CoreBrainKnowledgeTab({
   const core = files.filter((f) => f.group === "core");
   const skill = files.filter((f) => f.group === "skill");
   const replyCopilot = files.filter((f) => f.group === "reply-copilot");
+  const supportCopilot = files.filter((f) => f.group === "support-copilot");
 
   return (
     <div className="flex flex-col gap-8">
@@ -283,6 +284,15 @@ export function CoreBrainKnowledgeTab({
         title="Reply copilot"
         hint="Conversations drafts. The router is the map. Shared rules always load. Situation files load from the tagged reply type, or all of them if untagged."
         files={replyCopilot}
+        openId={openId}
+        setOpenId={setOpenId}
+        authHeaders={authHeaders}
+        onSaved={load}
+      />
+      <KnowledgeGroup
+        title="Support copilot"
+        hint="Support inbox drafts. The router sets the voice and honesty rules. The playbook holds links, menu paths and known issues."
+        files={supportCopilot}
         openId={openId}
         setOpenId={setOpenId}
         authHeaders={authHeaders}

@@ -1,4 +1,4 @@
-import { getAppBaseUrl } from "@/lib/appBaseUrl";
+import { getPublicAppBaseUrl } from "@/lib/appBaseUrl";
 import { BCA_SUPPORT_EMAIL } from "@/config/businessContact";
 import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import { getSupportMailboxAccount } from "@/lib/support/mailbox";
@@ -504,7 +504,7 @@ export async function notifyCoachOfSupportReply(input: {
     };
   }
 
-  const base = getAppBaseUrl(input.request);
+  const base = getPublicAppBaseUrl(input.request);
   const subjectTitle = (input.title || "").trim() || "your support request";
   const supportUrl = `${base}/coach/support`;
   const html = buildSupportReplyEmailHtml({

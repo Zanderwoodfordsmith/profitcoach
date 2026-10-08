@@ -41,6 +41,7 @@ type PaymentUpsertInput = {
   stripePaymentIntentId?: string | null;
   stripeCheckoutSessionId?: string | null;
   stripeChargeId?: string | null;
+  stripeInvoiceId?: string | null;
   customerEmail: string;
   amountCents: number;
   currency?: string | null;
@@ -76,6 +77,11 @@ type ExistingPaymentRow = {
   id: string;
   coach_id: string | null;
   assignment_method: AssignmentMethod;
+  stripe_payment_intent_id: string | null;
+  stripe_checkout_session_id: string | null;
+  stripe_charge_id: string | null;
+  stripe_invoice_id: string | null;
+  import_row_key: string | null;
 };
 
 function normalizeEmail(value: string | null | undefined): string | null {
@@ -385,7 +391,9 @@ async function findExistingPaymentByColumn(
 ): Promise<ExistingPaymentRow | null> {
   const { data, error } = await supabase
     .from("coach_payments")
-    .select("id, coach_id, assignment_method")
+    .select(
+      "id, coach_id, assignment_method, stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, stripe_invoice_id, import_row_key"
+    )
     .eq(column, value)
     .maybeSingle();
 
@@ -401,6 +409,7 @@ async function findExistingPayment(
     stripePaymentIntentId: string | null;
     stripeCheckoutSessionId: string | null;
     stripeChargeId: string | null;
+    stripeInvoiceId: string | null;
     importRowKey: string | null;
   }
 ): Promise<ExistingPaymentRow | null> {
@@ -429,6 +438,15 @@ async function findExistingPayment(
       keys.stripePaymentIntentId
     );
     if (byIntent) return byIntent;
+  }
+
+  if (keys.stripeInvoiceId) {
+    const byInvoice = await findExistingPaymentByColumn(
+      supabase,
+      "stripe_invoice_id",
+      keys.stripeInvoiceId
+    );
+    if (byInvoice) return byInvoice;
   }
 
   if (keys.stripeCheckoutSessionId) {
@@ -527,12 +545,14 @@ export async function upsertCoachPaymentFromStripe(
   const paymentIntentId = input.stripePaymentIntentId?.trim() || null;
   const sessionId = input.stripeCheckoutSessionId?.trim() || null;
   const chargeId = input.stripeChargeId?.trim() || null;
+  const invoiceId = input.stripeInvoiceId?.trim() || null;
   const normalizedCurrency = (input.currency ?? "gbp").trim().toLowerCase();
 
   const existing = await findExistingPayment(supabase, {
     stripePaymentIntentId: paymentIntentId,
     stripeCheckoutSessionId: sessionId,
     stripeChargeId: chargeId,
+    stripeInvoiceId: invoiceId,
     importRowKey: chargeId ? `charge:${chargeId}` : null,
   });
 
@@ -543,10 +563,12 @@ export async function upsertCoachPaymentFromStripe(
   });
 
   const payload = {
-    stripe_payment_intent_id: paymentIntentId,
-    stripe_checkout_session_id: sessionId,
-    stripe_charge_id: chargeId,
-    import_row_key: chargeId ? `charge:${chargeId}` : null,
+    stripe_payment_intent_id: paymentIntentId ?? existing?.stripe_payment_intent_id ?? null,
+    stripe_checkout_session_id: sessionId ?? existing?.stripe_checkout_session_id ?? null,
+    stripe_charge_id: chargeId ?? existing?.stripe_charge_id ?? null,
+    stripe_invoice_id: invoiceId ?? existing?.stripe_invoice_id ?? null,
+    import_row_key:
+      (chargeId ? `charge:${chargeId}` : null) ?? existing?.import_row_key ?? null,
     customer_email: email,
     amount_cents: input.amountCents,
     currency: normalizedCurrency,
@@ -600,6 +622,7 @@ export async function upsertCoachPaymentFromCsv(
     stripePaymentIntentId: null,
     stripeCheckoutSessionId: null,
     stripeChargeId: chargeId,
+    stripeInvoiceId: input.stripeInvoiceId?.trim() || null,
     importRowKey: chargeImportRowKey ?? importRowKey,
   });
 
@@ -651,6 +674,7 @@ export async function upsertCoachPaymentFromCsv(
         stripePaymentIntentId: null,
         stripeCheckoutSessionId: null,
         stripeChargeId: chargeId,
+        stripeInvoiceId: input.stripeInvoiceId?.trim() || null,
         importRowKey: resolvedImportRowKey,
       });
       if (duplicate) {

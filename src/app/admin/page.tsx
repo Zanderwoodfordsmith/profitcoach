@@ -331,8 +331,6 @@ type CoachRow = {
   has_directory_summary: boolean;
   has_directory_bio: boolean;
   has_sales_robot_account: boolean;
-  sales_robot_active_campaigns: number | null;
-  sales_robot_paying_accounts: number | null;
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
   recurring_billing_active: boolean;
@@ -349,13 +347,7 @@ type CoachRow = {
 type ConferenceFilter = "all" | "yes" | "maybe" | "no" | "not_set";
 type CrmNameFilter = "all" | "has_name" | "no_name";
 type LastLoginFilter = "all" | "has_login" | "never" | "last_30_days" | "over_90_days";
-type SalesRobotFilter =
-  | "all"
-  | "has_sales_robot"
-  | "no_sales_robot"
-  | "paying"
-  | "not_paying"
-  | "active_campaigns";
+type SalesRobotFilter = "all" | "has_sales_robot" | "no_sales_robot";
 type RecurringBillingFilter = "all" | "active" | "inactive";
 
 type CoachTableColumnVisibility = {
@@ -374,8 +366,6 @@ type CoachTableColumnVisibility = {
   lastActive: boolean;
   crm: boolean;
   salesRobot: boolean;
-  activeCampaigns: boolean;
-  payingAccounts: boolean;
   profitCoachEmail: boolean;
   accessTier: boolean;
   recurringPayment: boolean;
@@ -449,8 +439,6 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "calendarEmbed", label: "Calendar embed", category: "integrations" },
   { key: "leadWebhook", label: "Lead webhook", category: "integrations" },
   { key: "salesRobot", label: "Sales Robot", category: "billing" },
-  { key: "activeCampaigns", label: "Active campaigns", category: "billing" },
-  { key: "payingAccounts", label: "Sales robot account #", category: "billing" },
   { key: "profitCoachEmail", label: "PC email", category: "billing" },
   { key: "accessTier", label: "Access tier", category: "billing" },
   { key: "recurringPayment", label: "Billing", category: "billing" },
@@ -504,15 +492,8 @@ function isSalesRobotFilter(value: unknown): value is SalesRobotFilter {
   return (
     value === "all" ||
     value === "has_sales_robot" ||
-    value === "no_sales_robot" ||
-    value === "paying" ||
-    value === "not_paying" ||
-    value === "active_campaigns"
+    value === "no_sales_robot"
   );
-}
-
-function coachPayingAccountCount(coach: CoachRow): number {
-  return coach.sales_robot_paying_accounts ?? 0;
 }
 
 function matchesSalesRobotFilter(
@@ -521,10 +502,7 @@ function matchesSalesRobotFilter(
 ): boolean {
   if (filter === "all") return true;
   if (filter === "has_sales_robot") return coach.has_sales_robot_account;
-  if (filter === "no_sales_robot") return !coach.has_sales_robot_account;
-  if (filter === "paying") return coachPayingAccountCount(coach) >= 1;
-  if (filter === "not_paying") return coachPayingAccountCount(coach) < 1;
-  return (coach.sales_robot_active_campaigns ?? 0) > 0;
+  return !coach.has_sales_robot_account;
 }
 
 function parseSalesRobotFilter(
@@ -533,9 +511,16 @@ function parseSalesRobotFilter(
   }
 ): SalesRobotFilter {
   const raw = parsed.salesRobotFilter ?? parsed.connectorSubsidyFilter;
-  if (raw === "active_paying") return "paying";
+  if (
+    raw === "paying" ||
+    raw === "active_paying" ||
+    raw === "active_campaigns" ||
+    raw === "connector_subsidy"
+  ) {
+    return "has_sales_robot";
+  }
+  if (raw === "not_paying") return "no_sales_robot";
   if (isSalesRobotFilter(raw)) return raw;
-  if (raw === "connector_subsidy") return "has_sales_robot";
   return "all";
 }
 
@@ -1598,29 +1583,9 @@ export default function AdminPage() {
       return (
         <th
           className="sticky top-0 z-10 w-24 bg-slate-50 px-2 py-2 text-center"
-          title="Paying Sales Robot account (payingAccounts ≥ 1)"
+          title="Sales Robot account"
         >
           Sales Robot
-        </th>
-      );
-    }
-    if (key === "activeCampaigns") {
-      return (
-        <th
-          className="sticky top-0 z-10 w-20 bg-slate-50 px-2 py-2 text-center"
-          title="Active Sales Robot campaigns"
-        >
-          Campaigns
-        </th>
-      );
-    }
-    if (key === "payingAccounts") {
-      return (
-        <th
-          className="sticky top-0 z-10 w-20 bg-slate-50 px-2 py-2 text-center"
-          title="Sales Robot paying account count (payingAccounts from export)"
-        >
-          Sales robot account #
         </th>
       );
     }
@@ -2048,7 +2013,7 @@ export default function AdminPage() {
         <td className="px-2 py-2 text-center">
           <input
             type="checkbox"
-            title="Paying Sales Robot account (payingAccounts ≥ 1)"
+            title="Sales Robot account"
             checked={coach.has_sales_robot_account}
             disabled={directorySavingId === coach.id}
             onChange={(e) =>
@@ -2058,28 +2023,6 @@ export default function AdminPage() {
             }
             className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
           />
-        </td>
-      );
-    }
-    if (key === "activeCampaigns") {
-      return (
-        <td className="px-2 py-2 text-center align-middle text-xs text-slate-700">
-          {coach.sales_robot_active_campaigns == null ? (
-            <span className="text-slate-400">—</span>
-          ) : (
-            coach.sales_robot_active_campaigns
-          )}
-        </td>
-      );
-    }
-    if (key === "payingAccounts") {
-      return (
-        <td className="px-2 py-2 text-center align-middle text-xs text-slate-700">
-          {coach.sales_robot_paying_accounts == null ? (
-            <span className="text-slate-400">—</span>
-          ) : (
-            coach.sales_robot_paying_accounts
-          )}
         </td>
       );
     }
@@ -2627,9 +2570,6 @@ export default function AdminPage() {
                         <option value="all">All</option>
                         <option value="has_sales_robot">Has account</option>
                         <option value="no_sales_robot">No account</option>
-                        <option value="paying">Paying (1+)</option>
-                        <option value="not_paying">Not paying</option>
-                        <option value="active_campaigns">Active campaigns</option>
                       </select>
                     </div>
                     <div>

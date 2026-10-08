@@ -1,4 +1,4 @@
-import { getAppBaseUrl } from "./appBaseUrl";
+import { getPublicAppBaseUrl } from "./appBaseUrl";
 
 /** URL-safe slug from a contact business name (readable path segment). */
 export function slugifyBusinessName(name: string | null | undefined): string {
@@ -21,7 +21,7 @@ export function buildBossProDashboardShareUrl(
   dashboardShareToken: string,
   baseUrl?: string
 ): string {
-  const origin = (baseUrl ?? getAppBaseUrl()).replace(/\/$/, "");
+  const origin = (baseUrl ?? getPublicAppBaseUrl()).replace(/\/$/, "");
   const slug = coachSlug.trim().toLowerCase();
   const businessSlug = slugifyBusinessName(businessName);
   const token = dashboardShareToken.trim();

@@ -17,6 +17,9 @@ export function getAppBaseUrl(request?: Request): string {
   return "http://localhost:3000";
 }
 
+/** Live site. Links that reach real people fall back to this when local. */
+export const PUBLIC_APP_ORIGIN = "https://www.theprofitcoach.com" as const;
+
 function isLocalHostname(hostname: string): boolean {
   return (
     hostname === "localhost" ||
@@ -24,6 +27,23 @@ function isLocalHostname(hostname: string): boolean {
     hostname === "0.0.0.0" ||
     hostname.endsWith(".local")
   );
+}
+
+/**
+ * Origin for links that leave the app: emails to members and prospects, and
+ * share links people copy and send. Never localhost, so replying from a local
+ * dev server still sends working links. Set PUBLIC_APP_BASE_URL to override.
+ */
+export function getPublicAppBaseUrl(request?: Request): string {
+  const override = process.env.PUBLIC_APP_BASE_URL?.trim();
+  if (override) return override.replace(/\/$/, "");
+  const base = getAppBaseUrl(request);
+  try {
+    if (!isLocalHostname(new URL(base).hostname)) return base;
+  } catch {
+    // fall through
+  }
+  return PUBLIC_APP_ORIGIN;
 }
 
 /**

@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The Profit Coach · Find out what's actually holding your business back</title>
+  <meta name="description" content="The free BOSS Score measures your business across 10 areas in about 10 minutes, then shows what deserves your attention first.">
+  <meta name="theme-color" content="#FAFBFD">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="scrollcraft.css">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <span data-sc-progress aria-hidden="true"></span>
+
+  <main id="main">
+
+    <!-- 1 · HERO · pin. Your week, tethered to you. -->
+    <section class="hero" data-sc-act="pin" data-sc-span="2.2" aria-labelledby="hero-title">
+      <div class="hero__stage" data-sc-stage data-hero>
+        <div class="hero__bloom" aria-hidden="true"></div>
+        <svg class="hero__rings" aria-hidden="true" data-hero-rings></svg>
+        <svg class="hero__tethers" aria-hidden="true" data-hero-tethers></svg>
+
+        <div class="hero__field" aria-hidden="true" data-hero-field>
+          <span class="chip" data-chip="0" style="--x:.50;--y:.45;--z:.9;--mx:.27;--my:.585"><b>+</b>Working Sunday again</span>
+          <span class="chip chip--desk" data-chip="1" style="--x:.93;--y:.42;--z:.75"><b>A</b>Where's this all going?</span>
+          <span class="chip" data-chip="2" style="--x:.95;--y:.61;--z:1.05;--mx:.78;--my:.88"><b>D</b>Yes to every job</span>
+          <span class="chip chip--desk" data-chip="3" style="--x:.40;--y:.67;--z:.7"><b>D</b>Plan gone by Wednesday</span>
+          <span class="chip" data-chip="4" style="--x:.88;--y:.84;--z:.95;--mx:.5;--my:.965"><b>P</b>Busy year, thin margin</span>
+          <span class="chip chip--desk" data-chip="5" style="--x:.56;--y:.90;--z:.8"><b>R</b>Sales stop when you do</span>
+          <span class="chip chip--near chip--desk" data-chip="6" style="--x:.99;--y:.96;--z:1.5"><b>O</b>Every problem lands on you</span>
+          <span class="chip" data-chip="7" style="--x:.21;--y:.85;--z:.85;--mx:.24;--my:.9"><b>F</b>Numbers in your head</span>
+          <span class="chip chip--near chip--desk" data-chip="8" style="--x:.26;--y:.60;--z:1.45"><b>I</b>Two weeks off? No chance.</span>
+          <span class="chip" data-chip="9" style="--x:.70;--y:.40;--z:.65;--mx:.75;--my:.62"><b>T</b>Team waiting on you</span>
+          <span class="you" data-you><span>You</span></span>
+        </div>
+
+        <header class="mast">
+          <a class="mast__logo" href="/" aria-label="The Profit Coach, home">
+            <img src="assets/logo.svg" alt="" width="178" height="27">
+          </a>
+          <nav class="mast__nav" aria-label="Main">
+            <a href="/how-it-works">The Profit System</a>
+            <a href="/our-story">Our story</a>
+            <a href="/directory">Find a Profit Coach</a>
+          </nav>
+          <details class="mast__menu">
+            <summary>Menu</summary>
+            <nav aria-label="Main">
+              <a href="/how-it-works">The Profit System</a>
+              <a href="/our-story">Our story</a>
+              <a href="/directory">Find a Profit Coach</a>
+            </nav>
+          </details>
+        </header>
+
+        <div class="hero__copy">
+          <h1 id="hero-title" class="hero__title">The business you built for freedom now owns your time.</h1>
+          <p class="hero__sub">Find out what's actually holding it back. 50 questions, 10 areas, one score out of 100.</p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="/score">Get my free BOSS Score<svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg></a>
+            <span class="hero__meta">Free. About 10 minutes.</span>
+          </div>
+        </div>
+
+        <p class="hero__note" data-sc-cue="0.4 1 0.25 0.06">Everything still comes back to you.</p>
+      </div>
+    </section>
+
+    <!-- 2 · LEDGER · in. Tick what's true. -->
+    <section class="ledger" id="your-week" data-sc-act="flow" aria-labelledby="ledger-title">
+      <div class="sc-wrap ledger__wrap">
+        <div class="ledger__aside">
+          <div class="ledger__sticky" data-sc-in>
+            <h2 id="ledger-title" class="h2">Which of these sound like your week?</h2>
+            <p class="ledger__lede">Tick the ones that are true. Your answers stay in this browser.</p>
+            <figure class="ledger__figure">
+              <svg class="wheel wheel--light" viewBox="0 0 600 600" data-wheel="ledger" aria-hidden="true"></svg>
+              <figcaption class="ledger__status" aria-live="polite" data-ledger-status>Nothing ticked yet.</figcaption>
+            </figure>
+            <button class="ledger__clear" type="button" data-clear hidden>Clear my answers</button>
+          </div>
+        </div>
+
+        <ul class="ticks" data-sc-in data-sc-stagger="45" aria-label="Statements about your business">
+          <li><button class="tick" type="button" aria-pressed="false" data-area="0"><span class="tick__code">+</span><span class="tick__text">I never really switch off. Evenings and weekends included.</span><span class="tick__area">Owner Performance</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="1"><span class="tick__code">A</span><span class="tick__text">I couldn't tell you where the business will be in three years.</span><span class="tick__area">Aligned Vision</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="2"><span class="tick__code">D</span><span class="tick__text">We say yes to almost any job that comes in.</span><span class="tick__area">Defined Strategy</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="3"><span class="tick__code">D</span><span class="tick__text">We make plans. By Wednesday, the week has taken over.</span><span class="tick__area">Disciplined Planning</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="4"><span class="tick__code">P</span><span class="tick__text">We're busy all year and the margin is still thin.</span><span class="tick__area">Profit &amp; Cash Flow</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="5"><span class="tick__code">R</span><span class="tick__text">When I stop selling, the sales stop.</span><span class="tick__area">Revenue &amp; Marketing</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="6"><span class="tick__code">O</span><span class="tick__text">When something goes wrong, it lands on my desk.</span><span class="tick__area">Operations &amp; Delivery</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="7"><span class="tick__code">F</span><span class="tick__text">Most of the important numbers live in my head.</span><span class="tick__area">Financials &amp; Metrics</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="8"><span class="tick__code">I</span><span class="tick__text">If I took two weeks off, things would slip.</span><span class="tick__area">Infrastructure &amp; Systems</span><span class="tick__box" aria-hidden="true"></span></button></li>
+          <li><button class="tick" type="button" aria-pressed="false" data-area="9"><span class="tick__code">T</span><span class="tick__text">The team waits for me to make the call.</span><span class="tick__area">Team &amp; Leadership</span><span class="tick__box" aria-hidden="true"></span></button></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3 · PEAK · pin. The screen goes dark and your answers draw. -->
+    <section class="peak ground-navy" id="boss-score" data-sc-act="pin" data-sc-span="3.4" aria-labelledby="peak-title">
+      <div class="peak__stage" data-sc-stage data-peak>
+        <div class="peak__glow" aria-hidden="true"></div>
+        <figure class="peak__figure" aria-hidden="true">
+          <svg class="wheel wheel--dark" viewBox="0 0 600 600" data-wheel="peak"></svg>
+          <div class="peak__centre" data-peak-centre><span class="peak__q">?</span><span class="peak__of">/100</span></div>
+        </figure>
+
+        <div class="peak__copy peak__copy--a">
+          <p class="sc-label peak__eyebrow" data-sc-cue="0.03 0.47 0.25 0.14">The BOSS Score</p>
+          <h2 id="peak-title" class="peak__title" data-sc-cue="0.06 0.47 0.4 0.14" data-sc-kinetic="lines">Your business has a score. You just don't know it yet.</h2>
+          <p class="peak__flags" data-sc-cue="0.16 0.47 0.3 0.14" data-flag-sentence>Every business scores somewhere between 0 and 100. The BOSS Score reads all ten areas.</p>
+        </div>
+
+        <div class="peak__copy peak__copy--b">
+          <p class="peak__lead" data-sc-cue="0.47 1.3 0.12 0.02">In about 10 minutes, you get four things.</p>
+          <ul class="outputs">
+            <li data-sc-cue="0.5 1.3 0.12 0.02"><span class="outputs__tag">Score</span><span><b>Your BOSS Score</b> Where the business stands, out of 100.</span></li>
+            <li data-sc-cue="0.55 1.3 0.12 0.02"><span class="outputs__tag">Wheel</span><span><b>Your BOSS Wheel</b> Where the gaps are, across all ten areas.</span></li>
+            <li data-sc-cue="0.6 1.3 0.12 0.02"><span class="outputs__tag">Level</span><span><b>Your level</b> Where you sit, from Overwhelm to Owner.</span></li>
+            <li data-sc-cue="0.65 1.3 0.12 0.02"><span class="outputs__tag">90 days</span><span><b>Your first 90 days</b> What deserves your attention first.</span></li>
+          </ul>
+          <div class="peak__end" data-sc-cue="0.72 1.3 0.12 0.02">
+            <p class="peak__close">You don't need another opinion. You need a clearer picture of your business.</p>
+            <a class="btn btn--light" href="/score">Get my free BOSS Score<svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · LEVELS · pan. Which one are you? -->
+    <section class="levels" id="levels" data-sc-act="pan" data-sc-span="2.8" aria-labelledby="levels-title">
+      <div class="levels__stage" data-sc-stage>
+        <div class="levels__rail" data-sc-pan="0">
+          <div class="levels__lead">
+            <h2 id="levels-title" class="h2">Which one are you?</h2>
+            <p class="levels__body">Every owner sits on one of five levels. Your BOSS Score tells you which, and what it takes to reach the next one.</p>
+          </div>
+          <article class="level" style="--lvl:1">
+            <span class="level__n" aria-hidden="true">1</span>
+            <div class="level__copy">
+              <p class="level__tag">Level 1</p>
+              <h3 class="level__name">Overwhelm</h3>
+              <p class="level__line">Fires every day. It's hard to think past this week.</p>
+            </div>
+          </article>
+          <article class="level" style="--lvl:2">
+            <span class="level__n" aria-hidden="true">2</span>
+            <div class="level__copy">
+              <p class="level__tag">Level 2</p>
+              <h3 class="level__name">Overworked</h3>
+              <p class="level__line">It works because you work. The team waits on you.</p>
+            </div>
+          </article>
+          <article class="level" style="--lvl:3">
+            <span class="level__n" aria-hidden="true">3</span>
+            <div class="level__copy">
+              <p class="level__tag">Level 3</p>
+              <h3 class="level__name">Organised</h3>
+              <p class="level__line">Processes are in place. It runs without you, for a while.</p>
+            </div>
+          </article>
+          <article class="level level--deep" style="--lvl:4">
+            <span class="level__n" aria-hidden="true">4</span>
+            <div class="level__copy">
+              <p class="level__tag">Level 4</p>
+              <h3 class="level__name">Overseer</h3>
+              <p class="level__line">Leaders own their areas. You manage performance and steer.</p>
+            </div>
+          </article>
+          <article class="level level--deep level--top" style="--lvl:5">
+            <span class="level__n" aria-hidden="true">5</span>
+            <div class="level__copy">
+              <p class="level__tag">Level 5</p>
+              <h3 class="level__name">Owner</h3>
+              <p class="level__line">The business runs, grows and pays you. You choose your role.</p>
+            </div>
+          </article>
+          <div class="levels__end">
+            <p class="levels__endline">Your score places you on one of these levels, and shows the reasons why.</p>
+            <a class="btn btn--primary" href="/score">Get my free BOSS Score<svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · BOTTLENECK · reveal. The same owner at three sizes. -->
+    <section class="bottleneck" id="bottleneck" data-sc-act="flow" aria-labelledby="bn-title">
+      <div class="sc-wrap">
+        <div class="bn__head" data-sc-in>
+          <h2 id="bn-title" class="h2">Your business changed. The way you run it didn't.</h2>
+          <p class="bn__lede">The habits that built the business are the ones holding it back now. Every growing business hits this point. Here's how it looks as you grow.</p>
+        </div>
+        <div class="bn__grid">
+          <figure class="bn__fig" data-sc-reveal="up" data-sc-reveal-at="0.12 0.34">
+            <svg class="bn__svg" viewBox="0 0 320 220" data-bn="4" aria-hidden="true"></svg>
+            <figcaption>
+              <span class="bn__size">£300K</span>
+              <b>You can know everything.</b>
+              <span>Every decision is quick, because every decision is yours.</span>
+            </figcaption>
+          </figure>
+          <figure class="bn__fig" data-sc-reveal="up" data-sc-reveal-at="0.2 0.42">
+            <svg class="bn__svg" viewBox="0 0 320 220" data-bn="11" aria-hidden="true"></svg>
+            <figcaption>
+              <span class="bn__size">£1M</span>
+              <b>Knowing everything gets risky.</b>
+              <span>Every question still routes to you, and the week starts to show it.</span>
+            </figcaption>
+          </figure>
+          <figure class="bn__fig" data-sc-reveal="up" data-sc-reveal-at="0.28 0.5">
+            <svg class="bn__svg" viewBox="0 0 320 220" data-bn="26" aria-hidden="true"></svg>
+            <figcaption>
+              <span class="bn__size">£5M+</span>
+              <b>Knowing everything is impossible.</b>
+              <span>The business has to run on a system instead of on you.</span>
+            </figcaption>
+          </figure>
+        </div>
+        <p class="bn__turn" data-sc-in>The way you run it is the constraint. That part is fixable.</p>
+      </div>
+    </section>
+
+    <!-- 6 · PROFIT SYSTEM · in (stagger). ADD PROFIT on a foundation of you. -->
+    <section class="system" id="profit-system" aria-labelledby="system-title">
+      <div class="sc-wrap">
+        <div class="system__head" data-sc-in>
+          <h2 id="system-title" class="h2">The Profit System puts every fix in the right order.</h2>
+          <p class="system__lede">Three pillars on one foundation. Read the nine codes in order and they spell the point: ADD PROFIT.</p>
+        </div>
+
+        <div class="pillars" data-sc-in data-sc-stagger="90">
+          <div class="pillar">
+            <p class="pillar__name">Vision</p>
+            <ol class="pillar__areas">
+              <li><span class="code">A</span><span>Aligned Vision</span></li>
+              <li><span class="code">D</span><span>Defined Strategy</span></li>
+              <li><span class="code">D</span><span>Disciplined Planning</span></li>
+            </ol>
+          </div>
+          <div class="pillar">
+            <p class="pillar__name">Velocity</p>
+            <ol class="pillar__areas">
+              <li><span class="code">P</span><span>Profit &amp; Cash Flow</span></li>
+              <li><span class="code">R</span><span>Revenue &amp; Marketing</span></li>
+              <li><span class="code">O</span><span>Operations &amp; Delivery</span></li>
+            </ol>
+          </div>
+          <div class="pillar">
+            <p class="pillar__name">Value</p>
+            <ol class="pillar__areas">
+              <li><span class="code">F</span><span>Financials &amp; Metrics</span></li>
+              <li><span class="code">I</span><span>Infrastructure &amp; Systems</span></li>
+              <li><span class="code">T</span><span>Team &amp; Leadership</span></li>
+            </ol>
+          </div>
+          <div class="foundation">
+            <span class="code code--found">+</span>
+            <p><b>Owner Performance</b> The foundation is you: your time, your energy and your focus hold the rest up.</p>
+          </div>
+        </div>
+
+        <div class="playbooks" data-sc-in>
+          <div class="playbooks__head">
+            <p class="playbooks__count"><span>50</span> playbooks</p>
+            <p class="playbooks__body">One for every area at every level. Your score picks the ones you need first, so the work starts where it pays.</p>
+          </div>
+          <div class="playbooks__scroll" tabindex="0" role="region" aria-label="The 50 Profit System playbooks, by level and area">
+            <table class="grid" data-playbooks>
+              <caption class="sr-only">Profit System playbooks. Rows are levels, from Owner at the top to Overwhelm at the bottom. Columns are the ten areas.</caption>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 · MATHS · count. Five small gains. -->
+    <section class="maths ground-navy" id="maths" aria-labelledby="maths-title">
+      <div class="sc-wrap maths__wrap">
+        <div class="maths__head" data-sc-in>
+          <h2 id="maths-title" class="h2">Small gains multiply.</h2>
+          <p class="maths__lede">Improve five numbers by 10% each and revenue grows by 61%. The maths is easy. Knowing where to look is the hard part, and that's what the score is for.</p>
+        </div>
+        <div class="equation" data-sc-in data-sc-stagger="80" role="img" aria-label="1.1 times 1.1 times 1.1 times 1.1 times 1.1 equals 1.61">
+          <div class="factor"><span class="factor__x">×1.1</span><span class="factor__name">Leads</span></div>
+          <div class="factor"><span class="factor__x">×1.1</span><span class="factor__name">Appointments</span></div>
+          <div class="factor"><span class="factor__x">×1.1</span><span class="factor__name">Sales closed</span></div>
+          <div class="factor"><span class="factor__x">×1.1</span><span class="factor__name">Average sale</span></div>
+          <div class="factor"><span class="factor__x">×1.1</span><span class="factor__name">Repeat purchases</span></div>
+          <div class="result"><span class="result__eq" aria-hidden="true">=</span><span class="result__n" data-sc-count="1.00 1.61" data-sc-count-ms="1600">1.61</span><span class="result__name">61% more revenue</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 · STORY · parallax. Pam learned this the hard way. -->
+    <section class="story" id="our-story" data-sc-act="flow" aria-labelledby="story-title">
+      <div class="sc-wrap">
+        <div class="story__grid">
+          <figure class="story__photo">
+            <div class="story__frame">
+              <img src="assets/pam-zander-stage.webp" srcset="assets/pam-zander-stage-600.webp 600w, assets/pam-zander-stage.webp 900w" sizes="(max-width: 860px) 92vw, 44vw" width="900" height="667" alt="Pam and Zander on stage, next to a flipchart of business numbers" loading="lazy" decoding="async" data-sc-parallax="-0.06">
+            </div>
+            <figcaption>Pam and Zander, co-founders.</figcaption>
+          </figure>
+          <div class="story__copy" data-sc-in>
+            <p class="sc-label">Our story</p>
+            <h2 id="story-title" class="h2">Pam learned this the hard way.</h2>
+            <p>Pam started her first business at 17. Twenty years later she had five businesses, a great team and money in the bank. It all ran on her hard work.</p>
+            <p>On New Year's Day 2000 she caught flu and went into work anyway. Within days she was paralysed from the neck down. On day ten her family was called in to say goodbye. Her son, Zander, was ten.</p>
+            <p>She spent three years learning to walk again, reading business books for up to eight hours a day. She went back £70,000 in debt, and within five years she had rebuilt everything. She sold at 46.</p>
+            <p>She learned that being really good at what you do doesn't make you good at business. So she became the coach she wished she'd had at 17, and built the Profit System with Zander.</p>
+            <a class="link" href="/our-story">Read our story<svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg></a>
+          </div>
+        </div>
+
+        <blockquote class="pull" data-sc-in>
+          <p>“Don't wait for a life-changing moment to make a better decision.”</p>
+          <footer>Pam, co-founder</footer>
+        </blockquote>
+
+        <div class="collective" data-sc-in>
+          <p class="collective__line">Business coaching starts with a coach. Profit coaching starts with a business.</p>
+          <div class="collective__side">
+            <p class="collective__stat"><span>250+</span> coaches trained worldwide</p>
+            <p class="collective__body">Every Profit Coach is trained in the same system and starts from the same BOSS Score. Whoever you work with, the work starts with your numbers.</p>
+            <a class="link" href="/directory">Find a Profit Coach<svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg></a>
+          </div>
+        </div>
+
+        <figure class="testimonial" data-sc-in>
+          <blockquote><p>“The sessions we've had fundamentally changed the way I do business. I can point to huge amounts of profit in my companies that Pam and only Pam recognised.”</p></blockquote>
+          <figcaption><b>John Davy</b> Entrepreneur and business owner</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 9 · QUESTIONS · in. Fair questions, straight answers. -->
+    <section class="questions" id="questions" aria-labelledby="q-title">
+      <div class="sc-wrap questions__wrap">
+        <div class="questions__head" data-sc-in>
+          <h2 id="q-title" class="h2">Fair questions.</h2>
+          <a class="link" href="/how-it-works">See how the Profit System works<svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg></a>
+        </div>
+        <dl class="qa" data-sc-in data-sc-stagger="60">
+          <div><dt>“I've tried business coaching before.”</dt><dd>Most coaching starts with advice. This starts with data: your score, your gaps and your level. The advice comes after, and it fits your business.</dd></div>
+          <div><dt>“I don't have time.”</dt><dd>The score takes about 10 minutes. After that, the work goes to the areas with the biggest effect first, so your hours count.</dd></div>
+          <div><dt>“My business is already successful.”</dt><dd>Good. The question is whether it works without you. The score shows how much of that success depends on you being there.</dd></div>
+          <div><dt>“My situation is different.”</dt><dd>That's why it starts with a diagnostic. Your plan comes from your answers across all ten areas.</dd></div>
+          <div><dt>“I've tried everything.”</dt><dd>Then the useful question is what you tried, what changed, and where the real constraint sits. The score gives that conversation a starting point.</dd></div>
+          <div><dt>“I don't want another programme.”</dt><dd>Neither do we. The goal is a better-run business. The programme is only the vehicle.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 10 · CLOSE · pin. Your wheel comes back. -->
+    <section class="close ground-navy" id="start" data-sc-act="pin" data-sc-span="1.25" aria-labelledby="close-title">
+      <div class="close__stage" data-sc-stage data-close data-sc-verify-state="close" data-sc-verify-hold="true">
+        <div class="close__glow" aria-hidden="true"></div>
+        <div class="sc-wrap close__wrap">
+          <div class="close__copy">
+            <p class="close__read" data-sc-cue="0 1 0 0" data-flag-close>Every business has a score.</p>
+            <h2 id="close-title" class="close__title" data-sc-cue="0 1 0 0">Find out what's actually holding your business back.</h2>
+            <div class="close__actions" data-sc-cue="0 1 0 0">
+              <a class="btn btn--light" href="/score">Get my free BOSS Score<svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg></a>
+              <a class="link link--light" href="/how-it-works">See how the Profit System works</a>
+            </div>
+            <p class="close__meta">50 questions · 10 areas · about 10 minutes · free</p>
+          </div>
+          <figure class="close__figure" aria-hidden="true">
+            <svg class="wheel wheel--dark" viewBox="0 0 600 600" data-wheel="close"></svg>
+          </figure>
+        </div>
+
+        <footer class="foot">
+          <div class="sc-wrap foot__wrap">
+            <div class="foot__brand">
+              <img src="assets/logo-white.svg" alt="The Profit Coach" width="150" height="23">
+              <p>Less chaos. More profit. Real freedom.</p>
+            </div>
+            <nav class="foot__nav" aria-label="Footer">
+              <a href="/how-it-works">The Profit System</a>
+              <a href="/our-story">Our story</a>
+              <a href="/directory">Find a Profit Coach</a>
+              <a href="/privacy">Privacy</a>
+              <a href="/terms">Terms</a>
+            </nav>
+            <p class="foot__small">Are you a business coach? <a href="https://www.businesscoachacademy.com">Business Coach Academy</a> · © 2026 The Profit Coach</p>
+          </div>
+        </footer>
+      </div>
+    </section>
+  </main>
+
+  <aside class="dock" data-dock aria-label="Your BOSS readout">
+    <span class="dock__wheel"><svg class="wheel wheel--light wheel--mini" viewBox="0 0 600 600" data-wheel="dock" aria-hidden="true"></svg><span class="dock__n" data-flag-count aria-hidden="true">0</span></span>
+    <p class="dock__read" data-dock-read>10 areas. One score.</p>
+    <a class="btn btn--primary btn--sm" href="/score">Get my free BOSS Score</a>
+  </aside>
+
+  <script src="scrollcraft.js"></script>
+  <script src="site.js"></script>
+  <script>ScrollCraft.mount(document.body);</script>
+</body>
+</html>

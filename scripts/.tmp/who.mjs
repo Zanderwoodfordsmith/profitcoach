@@ -1,0 +1,11 @@
+import { createClient } from "@supabase/supabase-js";
+const sb = createClient(process.env.SB_URL, process.env.SB_KEY, { auth: { persistSession: false } });
+const p = await sb.from("profiles").select("id,full_name,role,coach_business_name,linkedin_url").or("full_name.ilike.%pam%,full_name.ilike.%zander%,full_name.ilike.%demo%");
+console.log(p.error?.message, p.data);
+const ids = (p.data ?? []).map((x) => x.id);
+const c = await sb.from("coaches").select("id,slug").in("id", ids);
+console.log("coach slugs", c.data);
+const li = await sb.from("coach_linkedin_profiles").select("coach_id,updated_at").in("coach_id", ids);
+console.log("linkedin", li.error?.message, li.data);
+const who = await sb.from("profiles").select("id,full_name,role").eq("id", "01df174c-646c-4a29-8e76-9d0132735434");
+console.log("existing practice row belongs to", who.data);

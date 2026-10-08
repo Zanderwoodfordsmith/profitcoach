@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
+import {
+  invoiceIdFromCheckoutSession,
+  paymentIntentIdFromInvoice,
+} from "@/lib/stripeInvoicePayment";
 import { loadCoachDirectory, upsertCoachPaymentFromStripe } from "@/lib/stripePaymentsSync";
 
 function coalesceEmail(...values: Array<string | null | undefined>): string | null {
@@ -16,12 +20,6 @@ function paymentIntentIdFrom(
 ): string | null {
   if (!value) return null;
   return typeof value === "string" ? value : value.id ?? null;
-}
-
-function paymentIntentIdFromInvoice(invoice: Stripe.Invoice): string | null {
-  const payments = invoice.payments?.data ?? [];
-  const defaultPayment = payments.find((payment) => payment.is_default) ?? payments[0];
-  return paymentIntentIdFrom(defaultPayment?.payment?.payment_intent);
 }
 
 export function stripeKeyMode(
@@ -257,10 +255,20 @@ export async function backfillStripePayments(
         return;
       }
 
+      let paymentIntentId = paymentIntentIdFrom(session.payment_intent);
+      const invoiceId = invoiceIdFromCheckoutSession(session);
+      if (!paymentIntentId && invoiceId) {
+        const invoice = await stripe.invoices.retrieve(invoiceId, {
+          expand: ["payments.data.payment.payment_intent"],
+        });
+        paymentIntentId = paymentIntentIdFromInvoice(invoice);
+      }
+
       await tryUpsert("checkoutSessions", session.id, {
-        stripePaymentIntentId: paymentIntentIdFrom(session.payment_intent),
+        stripePaymentIntentId: paymentIntentId,
         stripeCheckoutSessionId: session.id,
         stripeChargeId: null,
+        stripeInvoiceId: invoiceId,
         customerEmail,
         amountCents,
         currency: session.currency ?? "gbp",
@@ -299,6 +307,7 @@ export async function backfillStripePayments(
         stripePaymentIntentId: paymentIntentIdFromInvoice(invoice),
         stripeCheckoutSessionId: null,
         stripeChargeId: null,
+        stripeInvoiceId: invoice.id,
         customerEmail,
         amountCents,
         currency: invoice.currency,

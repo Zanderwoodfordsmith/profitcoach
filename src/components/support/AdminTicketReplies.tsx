@@ -24,6 +24,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
+import { ReplyCopilotButton } from "@/components/messaging/ReplyCopilotButton";
 import {
   CommentAttachButton,
   CommentImagePreviews,
@@ -197,6 +198,8 @@ type AdminTicketRepliesProps = {
   supportCallContact?: SupportCallContactPrefill | null;
   /** Fired after an internal note is saved (for inbox attention refresh). */
   onInternalNoteSaved?: () => void;
+  /** Bump to reload the thread after a support call is booked. */
+  threadRefreshKey?: number;
 };
 
 export function AdminTicketReplies({
@@ -213,6 +216,7 @@ export function AdminTicketReplies({
   sendAsOptions = [],
   supportCallContact = null,
   onInternalNoteSaved,
+  threadRefreshKey = 0,
 }: AdminTicketRepliesProps) {
   const [replies, setReplies] = useState<SupportReply[]>([]);
   const [internalNotes, setInternalNotes] = useState<SupportInternalNote[]>([]);
@@ -252,6 +256,8 @@ export function AdminTicketReplies({
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [emailNotify, setEmailNotify] = useState(emailNotifyDefault);
   const [notifyNote, setNotifyNote] = useState<string | null>(null);
+  const [copilotLoading, setCopilotLoading] = useState(false);
+  const [copilotError, setCopilotError] = useState<string | null>(null);
   const loadGenerationRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const threadScrollRef = useRef<HTMLDivElement>(null);
@@ -298,6 +304,14 @@ export function AdminTicketReplies({
     setEmailNotify(emailNotifyDefault);
     setNotifyNote(null);
   }, [reportId, emailNotifyDefault]);
+
+  // A draft requested on another ticket must not land in this one.
+  const copilotTicketRef = useRef<string | null>(null);
+  useEffect(() => {
+    copilotTicketRef.current = null;
+    setCopilotLoading(false);
+    setCopilotError(null);
+  }, [reportId]);
 
   const loadReplies = useCallback(async (opts?: { silent?: boolean }) => {
     const generation = ++loadGenerationRef.current;
@@ -350,6 +364,11 @@ export function AdminTicketReplies({
       loadGenerationRef.current += 1;
     };
   }, [loadReplies]);
+
+  useEffect(() => {
+    if (!threadRefreshKey) return;
+    void loadReplies({ silent: true });
+  }, [threadRefreshKey, loadReplies]);
 
   useEffect(() => {
     const pending = scheduledReplies.filter((row) => row.status === "scheduled");
@@ -678,6 +697,58 @@ export function AdminTicketReplies({
       const pos = start + insert.length;
       el?.setSelectionRange(pos, pos);
     });
+  }
+
+  /** Draft a reply with AI. Anything already typed is sent as a hint. */
+  async function suggestReply() {
+    if (copilotLoading || busy) return;
+    const requestedFor = reportId;
+    copilotTicketRef.current = requestedFor;
+    setCopilotError(null);
+    setCopilotLoading(true);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Sign in again, then retry.");
+      }
+      const res = await fetch(
+        `/api/admin/support/tickets/${encodeURIComponent(reportId)}/reply-suggest`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ hint: draft, sendAsId: sendAsId ?? userId }),
+        }
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        suggestion?: string;
+        error?: string;
+      };
+      if (copilotTicketRef.current !== requestedFor) return;
+      if (!res.ok || !data.suggestion?.trim()) {
+        throw new Error(data.error || "Could not draft a reply.");
+      }
+      const suggestion = data.suggestion.trim();
+      setDraft(suggestion);
+      setComposerOpen(true);
+      requestAnimationFrame(() => {
+        const ta = replyTextareaRef.current;
+        if (!ta) return;
+        ta.focus();
+        ta.setSelectionRange(suggestion.length, suggestion.length);
+      });
+    } catch (err) {
+      if (copilotTicketRef.current !== requestedFor) return;
+      setCopilotError(
+        err instanceof Error ? err.message : "Could not draft a reply."
+      );
+    } finally {
+      if (copilotTicketRef.current === requestedFor) setCopilotLoading(false);
+    }
   }
 
   function minimizeComposer() {
@@ -1434,7 +1505,7 @@ export function AdminTicketReplies({
             ) : null}
 
             <div
-              className={`flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white focus-within:border-sky-400 ${
+              className={`relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white focus-within:border-sky-400 ${
                 composerMode === "note"
                   ? "border-amber-300 focus-within:border-amber-500"
                   : "border-slate-200"
@@ -1463,13 +1534,23 @@ export function AdminTicketReplies({
                     }
                   }}
                   autoFocus
-                  placeholder="Write a message..."
-                  className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
+                  placeholder="Write a message, or jot notes and tap ✨ to draft it..."
+                  className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 pr-12 pb-10 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
                     composerExpanded ? "min-h-0 flex-1" : ""
                   }`}
                 />
               )}
+              {composerMode === "reply" ? (
+                <ReplyCopilotButton
+                  loading={copilotLoading}
+                  disabled={busy}
+                  onClick={() => void suggestReply()}
+                />
+              ) : null}
             </div>
+            {composerMode === "reply" && copilotError ? (
+              <p className="shrink-0 text-xs text-rose-600">{copilotError}</p>
+            ) : null}
 
             {composerMode === "note" ? (
               <div className="flex shrink-0 items-center justify-end gap-2">

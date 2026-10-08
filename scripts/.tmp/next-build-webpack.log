@@ -1,0 +1,32 @@
+▲ Next.js 16.1.6 (webpack)
+- Environments: .env.local
+- Experiments (use with caution):
+  · proxyClientMaxBodySize: "50mb"
+  ✓ viewTransition
+
+  Creating an optimized production build ...
+Failed to compile.
+
+node:crypto
+Module build failed: UnhandledSchemeError: Reading from "node:crypto" is not handled by plugins (Unhandled scheme).
+Webpack supports "data:" and "file:" URIs by default.
+You may need an additional plugin to handle "node:" URIs.
+    at /Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/webpack/bundle5.js:29:408361
+    at Hook.eval [as callAsync] (eval at create (/Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/webpack/bundle5.js:14:9224), <anonymous>:6:1)
+    at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (/Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/webpack/bundle5.js:14:6378)
+    at Object.processResource (/Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/webpack/bundle5.js:29:408286)
+    at processResource (/Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5308)
+    at iteratePitchingLoaders (/Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4667)
+    at runLoaders (/Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8590)
+    at NormalModule._doBuild (/Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/webpack/bundle5.js:29:408148)
+    at NormalModule.build (/Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/webpack/bundle5.js:29:410161)
+    at /Users/zander/Coding/profit-coach-app/node_modules/next/dist/compiled/webpack/bundle5.js:29:82482
+
+Import trace for requested module:
+node:crypto
+./src/lib/revolutDirectPaymentsCsvImport.ts
+./src/app/admin/coaches/[slug]/page.tsx
+
+
+> Build failed because of webpack errors
+exit 1

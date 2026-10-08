@@ -1,0 +1,10 @@
+import { createClient } from "@supabase/supabase-js";
+import fs from "node:fs";
+const env = Object.fromEntries(fs.readFileSync(".env.local","utf8").split("\n").filter(l=>/^[A-Z_]+=/.test(l)).map(l=>{const i=l.indexOf("=");return [l.slice(0,i),l.slice(i+1).replace(/^['"]|['"]$/g,"")]}));
+const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+const C = "01df174c-646c-4a29-8e76-9d0132735434";
+const { data: coach } = await sb.from("coaches").select("slug").eq("id", C).maybeSingle();
+const { data: prof } = await sb.from("profiles").select("full_name, email").eq("id", C).maybeSingle();
+const { data: acct } = await sb.from("linkedin_outreach_accounts").select("id, display_name, created_at, raw").eq("coach_id", C);
+const { data: camps } = await sb.from("linkedin_campaigns").select("id, name, status, outreach_account_id").eq("coach_id", C);
+console.log(coach, prof, acct?.map(a => ({ id: a.id, name: a.display_name, created: a.created_at, rawKeys: Object.keys(a.raw || {}).length })), camps);

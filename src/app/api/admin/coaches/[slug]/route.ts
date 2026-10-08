@@ -60,8 +60,7 @@ export async function GET(
     const coachSelect = `
       id, slug, directory_listed, directory_level, conference_status, lead_webhook_url,
       crm_profile_name, crm_location_id, calendar_embed_code, booking_calendar_provider, access_tier, access_tier_locked,
-      ghl_calendar_id, has_sales_robot_account, sales_robot_active_campaigns,
-      sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status,
+      ghl_calendar_id, has_sales_robot_account, has_profit_coach_email_account, recurring_payment_status,
       stripe_customer_id, stripe_subscription_id, membership_status, membership_interval,
       membership_current_period_end, membership_cancel_at_period_end,
       ${profileSelect}
@@ -216,18 +215,6 @@ export async function GET(
       has_directory_summary: Boolean(resolveDirectorySummary(bioFields)),
       has_directory_bio: Boolean(resolveDirectoryBio(bioFields)),
       has_sales_robot_account: !!row.has_sales_robot_account,
-      sales_robot_active_campaigns:
-        typeof row.sales_robot_active_campaigns === "number"
-          ? row.sales_robot_active_campaigns
-          : row.sales_robot_active_campaigns != null
-            ? Number(row.sales_robot_active_campaigns)
-            : null,
-      sales_robot_paying_accounts:
-        typeof row.sales_robot_paying_accounts === "number"
-          ? row.sales_robot_paying_accounts
-          : row.sales_robot_paying_accounts != null
-            ? Number(row.sales_robot_paying_accounts)
-            : null,
       has_profit_coach_email_account: !!row.has_profit_coach_email_account,
       recurring_payment_status:
         (row.recurring_payment_status as string | null) ?? null,

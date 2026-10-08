@@ -1,4 +1,5 @@
 import { getOrCreateShareLink } from "@/lib/actionPlans/invitationService";
+import { getPublicAppBaseUrl } from "@/lib/appBaseUrl";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { NextResponse } from "next/server";
 
@@ -23,7 +24,7 @@ export async function GET(
       token: link.token,
       coachPath: link.urlPath,
       adminPath: `/admin/signature/actions?plan=${link.token}`,
-      coachUrl: `${origin}${link.urlPath}`,
+      coachUrl: `${getPublicAppBaseUrl(request)}${link.urlPath}`,
       adminUrl: `${origin}/admin/signature/actions?plan=${link.token}`,
     });
   } catch (err) {

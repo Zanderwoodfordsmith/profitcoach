@@ -11,6 +11,8 @@ import {
 
 type LegacyCoachTableColumnVisibility = CoachTableColumnVisibility & {
   memberFor?: boolean;
+  activeCampaigns?: boolean;
+  payingAccounts?: boolean;
 };
 
 export type CoachSortableRow = {
@@ -18,7 +20,6 @@ export type CoachSortableRow = {
   joined_at: string | null;
   last_login_at: string | null;
   last_active_at: string | null;
-  sales_robot_active_campaigns: number | null;
 };
 
 export const COACH_SORT_FIELD_OPTIONS: Array<{
@@ -28,7 +29,6 @@ export const COACH_SORT_FIELD_OPTIONS: Array<{
   { value: "last_active", label: "Last active" },
   { value: "last_login", label: "Last login" },
   { value: "join_date", label: "Join date" },
-  { value: "active_campaigns", label: "Active campaigns" },
 ];
 
 export function coachSortOrderOptions(
@@ -39,13 +39,6 @@ export function coachSortOrderOptions(
       { value: "recent_first", label: "Newest first" },
       { value: "oldest_first", label: "Oldest first" },
       { value: "missing_first", label: "No join date first" },
-    ];
-  }
-  if (field === "active_campaigns") {
-    return [
-      { value: "recent_first", label: "Most first" },
-      { value: "oldest_first", label: "Least first" },
-      { value: "missing_first", label: "Not set first" },
     ];
   }
   if (field === "last_active") {
@@ -73,8 +66,7 @@ export function isCoachSortField(value: unknown): value is CoachSortField {
   return (
     value === "last_login" ||
     value === "last_active" ||
-    value === "join_date" ||
-    value === "active_campaigns"
+    value === "join_date"
   );
 }
 
@@ -129,24 +121,6 @@ export function compareCoachesByCriterion(
   b: CoachSortableRow,
   { field, order }: CoachSortCriterion
 ): number {
-  if (field === "active_campaigns") {
-    const aCount = a.sales_robot_active_campaigns;
-    const bCount = b.sales_robot_active_campaigns;
-    const aHas = aCount != null;
-    const bHas = bCount != null;
-    if (order === "missing_first") {
-      if (aHas !== bHas) return aHas ? 1 : -1;
-      if (!aHas && !bHas) return 0;
-    } else if (aHas !== bHas) {
-      return aHas ? -1 : 1;
-    }
-    if (!aHas && !bHas) return 0;
-    const aVal = aCount ?? 0;
-    const bVal = bCount ?? 0;
-    if (order === "oldest_first") return aVal - bVal;
-    return bVal - aVal;
-  }
-
   const aIso =
     field === "join_date"
       ? a.joined_at
@@ -202,8 +176,15 @@ function migrateCoachTableColumns(
   const legacyVisibility =
     settings.columnVisibility as LegacyCoachTableColumnVisibility;
   const legacyMemberFor = legacyVisibility.memberFor;
-  const { memberFor: _removed, ...columnVisibility } = legacyVisibility;
+  const {
+    memberFor: _removed,
+    activeCampaigns: _activeCampaigns,
+    payingAccounts: _payingAccounts,
+    ...columnVisibility
+  } = legacyVisibility;
   void _removed;
+  void _activeCampaigns;
+  void _payingAccounts;
 
   if (legacyMemberFor === true) {
     columnVisibility.joinDate = true;
@@ -214,9 +195,18 @@ function migrateCoachTableColumns(
     columnVisibility.joinDate = false;
   }
 
+  const removedColumnKeys = new Set([
+    "memberFor",
+    "activeCampaigns",
+    "payingAccounts",
+  ]);
   const columnOrder = (
-    settings.columnOrder as Array<keyof CoachTableColumnVisibility | "memberFor">
-  ).filter((key): key is keyof CoachTableColumnVisibility => key !== "memberFor");
+    settings.columnOrder as Array<
+      keyof CoachTableColumnVisibility | "memberFor" | "activeCampaigns" | "payingAccounts"
+    >
+  ).filter(
+    (key): key is keyof CoachTableColumnVisibility => !removedColumnKeys.has(key)
+  );
 
   for (const key of Object.keys(
     DEFAULT_COACH_TABLE_COLUMNS

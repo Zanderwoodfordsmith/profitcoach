@@ -32,7 +32,9 @@ import {
 } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
 import type { SupportCallContactPrefill } from "@/lib/support/supportCallPrefill";
+import type { SupportCallHostSlug } from "@/lib/support/supportCallHosts";
 import { SupportCallAdminSettings } from "@/components/support/SupportCallAdminSettings";
+import { SupportTicketBookCall } from "@/components/support/SupportTicketBookCall";
 import {
   CoachSearchCombobox,
   SupportCreateTicketComposer,
@@ -236,6 +238,14 @@ function initialsFromLabel(label: string): string {
 
 function ticketAuthorAvatarUrl(row: AdminTicketRow): string | null {
   return row.author?.avatar_url?.trim() || null;
+}
+
+function defaultSupportHost(
+  assignedTo: string | null,
+  pamAssigneeId: string | null
+): SupportCallHostSlug {
+  if (pamAssigneeId && assignedTo === pamAssigneeId) return "pam";
+  return "zander";
 }
 
 function ticketSupportCallContact(row: AdminTicketRow): SupportCallContactPrefill {
@@ -548,6 +558,7 @@ export function AdminSupportPage() {
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const [supportCallContact, setSupportCallContact] =
     useState<SupportCallContactPrefill | null>(null);
+  const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [attentionByTicket, setAttentionByTicket] = useState<SupportAttentionMap>(
     {}
   );
@@ -1643,6 +1654,7 @@ export function AdminSupportPage() {
                       onInternalNoteSaved={() => {
                         void loadAttention();
                       }}
+                      threadRefreshKey={threadRefreshKey}
                     />
                   </div>
                 </div>
@@ -1823,6 +1835,33 @@ export function AdminSupportPage() {
                         </a>
                       ) : null}
                     </div>
+
+                    {(() => {
+                      const contact =
+                        supportCallContact ?? ticketSupportCallContact(selected);
+                      const guestLabel =
+                        [contact.firstName, contact.lastName]
+                          .filter(Boolean)
+                          .join(" ")
+                          .trim() || ticketAuthorLabel(selected);
+                      return (
+                        <SupportTicketBookCall
+                          key={`${selected.id}:${pamAssigneeId ?? ""}`}
+                          ticketId={selected.id}
+                          defaultHost={defaultSupportHost(
+                            selected.assigned_to,
+                            pamAssigneeId
+                          )}
+                          guestLabel={guestLabel}
+                          guestEmail={contact.email?.trim() || null}
+                          onOpenSettings={() => selectTopTab("settings")}
+                          onBooked={() => {
+                            setThreadRefreshKey((n) => n + 1);
+                            void loadAttention();
+                          }}
+                        />
+                      );
+                    })()}
 
                     <button
                       type="button"

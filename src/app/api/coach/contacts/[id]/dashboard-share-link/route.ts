@@ -4,7 +4,7 @@ import {
   buildBossProDashboardShareUrl,
   slugifyBusinessName,
 } from "@/lib/bossProDashboardShareLink";
-import { getAppBaseUrl } from "@/lib/appBaseUrl";
+import { getPublicAppBaseUrl } from "@/lib/appBaseUrl";
 import { getTotalScore, type AnswersMap } from "@/lib/bossScores";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -197,7 +197,7 @@ export async function GET(
     coachSlug,
     businessName,
     shareToken,
-    getAppBaseUrl(request)
+    getPublicAppBaseUrl(request)
   );
 
   return NextResponse.json({

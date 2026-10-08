@@ -54,6 +54,22 @@ function overlaps(
   return aS < bEnd && aE > bStart;
 }
 
+/** True when [start, end) plus buffer overlaps any existing interval. */
+export function intervalsOverlapWithBuffer(
+  startMs: number,
+  endMs: number,
+  existing: ExistingBookingInterval[],
+  bufferMinutes: number
+): boolean {
+  const bufferMs = Math.max(0, bufferMinutes) * 60_000;
+  return existing.some((ex) => {
+    const s = new Date(ex.starts_at).getTime();
+    const e = new Date(ex.ends_at).getTime();
+    if (!Number.isFinite(s) || !Number.isFinite(e)) return false;
+    return overlaps(startMs, endMs, s, e, bufferMs);
+  });
+}
+
 /** Public booking: calendar days to scan when collecting open days. */
 export const PUBLIC_BOOKING_LOOKAHEAD_CAP_DAYS = 90;
 
