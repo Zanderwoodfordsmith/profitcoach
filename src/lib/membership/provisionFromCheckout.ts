@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { findAuthUserIdByEmail } from "@/lib/auth/findAuthUserIdByEmail";
 import { allocateCoachSlug } from "@/lib/coachSlug";
 import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
+import { notifyBcaNewMember } from "@/lib/membership/notifyBcaNewMember";
 import { notifyProgrammeJoinGhl } from "@/lib/membership/notifyProgrammeJoinGhl";
 import {
   linkStripeCustomerToCoach,
@@ -165,9 +166,14 @@ async function ensureCoachRecords(input: {
     .eq("id", input.userId)
     .maybeSingle();
 
+  const createdCoach = !existingCoach?.id;
+  if (createdCoach) {
+    await notifyBcaNewMember(input.userId);
+  }
+
   return {
     slug: ((coachAfter?.slug as string | null) ?? slug).trim(),
-    createdCoach: !existingCoach?.id,
+    createdCoach,
   };
 }
 

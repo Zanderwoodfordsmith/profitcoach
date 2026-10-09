@@ -1,4 +1,5 @@
 import { formatPersonName } from "@/lib/formatPersonName";
+import { notifyBcaNewMember } from "@/lib/membership/notifyBcaNewMember";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type CreateCoachRecordsInput = {
@@ -110,6 +111,7 @@ async function createCoachProfileAndRowViaBootstrap(
   }
 
   void seedDefaultCampaigns(normalized.userId);
+  await notifyBcaNewMember(normalized.userId);
   return null;
 }
 
@@ -148,5 +150,6 @@ export async function createCoachProfileAndRow(
   }
 
   void seedDefaultCampaigns(normalized.userId);
+  await notifyBcaNewMember(normalized.userId);
   return null;
 }
