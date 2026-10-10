@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { FinancialsHubTabs } from "@/components/admin/FinancialsHubTabs";
+import { PaymentCoachAssignMenu } from "@/components/admin/PaymentCoachAssignMenu";
 import { PaymentsMonthlyBarChart } from "@/components/admin/PaymentsMonthlyBarChart";
 import { StickyPageHeader } from "@/components/layout";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
@@ -41,6 +42,7 @@ import {
   inferInstallmentCount,
   ongoingPlanInstallmentCents,
 } from "@/lib/cashFlowForecast/paymentPlanInference";
+import type { PaymentCoachAssignSort } from "@/lib/paymentCoachAssignSort";
 import { paymentSourceLabel } from "@/lib/paymentSource";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -837,6 +839,8 @@ export default function AdminPaymentsPage() {
   const [coachAssignPaymentId, setCoachAssignPaymentId] = useState<string | null>(
     null
   );
+  const [coachAssignSort, setCoachAssignSort] =
+    useState<PaymentCoachAssignSort>("az");
   const [needsActionOnly, setNeedsActionOnly] = useState(false);
   const [paymentSort, setPaymentSort] = useState<PaymentSort>("recent_first");
   const [paymentGroupBy, setPaymentGroupBy] = useState<PaymentGroupBy>("none");
@@ -858,7 +862,6 @@ export default function AdminPaymentsPage() {
   const [hasLoadedPersistedSettings, setHasLoadedPersistedSettings] =
     useState(false);
 
-  const [assignmentDrafts, setAssignmentDrafts] = useState<Record<string, string>>({});
   const [assignmentNotice, setAssignmentNotice] = useState<string | null>(null);
   const [savingBillingId, setSavingBillingId] = useState<string | null>(null);
 
@@ -1136,14 +1139,8 @@ export default function AdminPaymentsPage() {
       setLoading(false);
       return;
     }
-    const loadedPayments = body.payments ?? [];
-    setPayments(loadedPayments);
+    setPayments(body.payments ?? []);
     setCoaches(body.coaches ?? []);
-    setAssignmentDrafts(
-      Object.fromEntries(
-        loadedPayments.map((payment) => [payment.id, payment.assigned_coach?.id ?? ""])
-      )
-    );
     setLoading(false);
   }
 
@@ -1541,45 +1538,28 @@ export default function AdminPaymentsPage() {
         );
       case "coach": {
         const assigned = payment.assigned_coach;
-        const editing = coachAssignPaymentId === payment.id;
-        const coachSelect = (
-          compact: boolean,
-          onClose?: () => void
-        ) => (
-          <select
-            value={assignmentDrafts[payment.id] ?? ""}
-            autoFocus={!compact}
-            onChange={(e) => {
-              const coachId = e.target.value;
-              setAssignmentDrafts((prev) => ({
-                ...prev,
-                [payment.id]: coachId,
-              }));
-              void saveAssignment(payment.id, coachId || null);
-              setCoachAssignPaymentId(null);
-            }}
-            onBlur={() => {
-              onClose?.();
-              setCoachAssignPaymentId(null);
-            }}
+        const assignMenu = (
+          <PaymentCoachAssignMenu
+            coaches={coaches}
+            selectedCoachId={assigned?.id ?? null}
+            open={coachAssignPaymentId === payment.id}
             disabled={savingId === payment.id || deletingId === payment.id}
-            className={
-              compact
-                ? "absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-wait"
-                : "max-w-[14rem] rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-wait disabled:opacity-60"
+            sort={coachAssignSort}
+            onSortChange={setCoachAssignSort}
+            onOpenChange={(next) =>
+              setCoachAssignPaymentId(next ? payment.id : null)
             }
-            aria-label={`Assign coach for ${payment.customer_email}`}
-          >
-            <option value="">Unassigned</option>
-            {coachOptions.map((coach) => (
-              <option key={coach.value} value={coach.value}>
-                {coach.label}
-              </option>
-            ))}
-          </select>
+            onSelect={(coachId) => {
+              setCoachAssignPaymentId(null);
+              if ((assigned?.id ?? null) === coachId) return;
+              void saveAssignment(payment.id, coachId);
+            }}
+            ariaLabel={`Assign coach for ${payment.customer_email}`}
+            variant={assigned ? "change" : "unassigned"}
+          />
         );
 
-        if (assigned && !editing) {
+        if (assigned) {
           return (
             <td key={key} className="px-3 py-2 text-slate-800">
               <div className="inline-flex max-w-[14rem] items-center gap-0.5">
@@ -1590,44 +1570,15 @@ export default function AdminPaymentsPage() {
                 >
                   {coachLabel(assigned)}
                 </Link>
-                <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setCoachAssignPaymentId(payment.id)}
-                    className="absolute inset-0"
-                    title="Change coach"
-                    aria-label={`Change coach for ${payment.customer_email}`}
-                  />
-                  <ChevronDown
-                    className="pointer-events-none h-3.5 w-3.5 text-slate-500"
-                    aria-hidden
-                  />
-                </span>
+                {assignMenu}
               </div>
-            </td>
-          );
-        }
-
-        if (assigned && editing) {
-          return (
-            <td key={key} className="px-3 py-2">
-              {coachSelect(false)}
             </td>
           );
         }
 
         return (
           <td key={key} className="px-3 py-2">
-            <div className="inline-flex items-center gap-0.5 text-sm text-slate-400">
-              <span>Unassigned</span>
-              <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-slate-100">
-                {coachSelect(true)}
-                <ChevronDown
-                  className="pointer-events-none h-3.5 w-3.5 text-slate-500"
-                  aria-hidden
-                />
-              </span>
-            </div>
+            {assignMenu}
           </td>
         );
       }
@@ -1790,7 +1741,7 @@ export default function AdminPaymentsPage() {
       ) : null}
 
       <section
-        className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+        className="flex min-h-0 flex-col overflow-visible rounded-xl border border-slate-200 bg-white shadow-sm"
         style={{ maxHeight: "calc(100dvh - 11rem)" }}
       >
         <div className="shrink-0 border-b border-slate-100 px-4 py-2">
@@ -2053,7 +2004,7 @@ export default function AdminPaymentsPage() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto rounded-b-xl">
           <table className="w-max min-w-max text-left text-sm">
             <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm">
               <tr>

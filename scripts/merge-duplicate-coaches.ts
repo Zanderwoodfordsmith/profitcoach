@@ -61,6 +61,31 @@ const MERGE_PLANS: Array<{ label: string; keepId: string; removeId: string }> = 
     keepId: "371d2052-57ed-4aaa-97b1-443266f02ec1",
     removeId: "59f7ebae-229b-4254-95ac-7c8173710741",
   },
+  {
+    label: "Rob Miller (keep robmiller, has payment)",
+    keepId: "97f108ec-7dbe-4ae1-9665-331abdc54a71",
+    removeId: "f61ce177-3ad3-441c-b8a1-a639d3ebfc52",
+  },
+  {
+    label: "Le'mon Eluett (keep lreluett, has payments)",
+    keepId: "36b0ad3d-16ba-4fdd-b9ad-da55d5cb05f0",
+    removeId: "803c3a9b-5bfc-4a7f-8cf3-5c7f1a27c7ac",
+  },
+  {
+    label: "Mark Cadbury (keep markcadbury, drop couple record)",
+    keepId: "5470db04-03d1-4149-aeda-052b7007e28a",
+    removeId: "1a2631e5-3ac4-4238-a7a7-408ed0bc3f40",
+  },
+  {
+    label: "Sara Biddle (keep theprofitduo, drop Luke & Sarah)",
+    keepId: "3c9df8ed-a4c5-41cf-84b6-a684077feb11",
+    removeId: "b433a8b1-f431-4abc-9261-be3a27173438",
+  },
+  {
+    label: "Janelle O'Keeffe (keep janelle, drop Pete & Janelle)",
+    keepId: "270c2420-204b-4816-ae49-a24b57d8da08",
+    removeId: "6a44c153-7721-4835-b8e4-d69a6e703eea",
+  },
 ];
 
 async function reassignColumn(
