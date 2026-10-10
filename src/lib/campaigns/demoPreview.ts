@@ -215,6 +215,27 @@ export function isDemoPreviewId(id: string | null | undefined): boolean {
   return Boolean(id?.startsWith(DEMO_PREVIEW_ID_PREFIX));
 }
 
+/** Sample campaigns are a staff preview. They are not a real coach's account. */
+const SAMPLE_PREVIEW_COACH_SLUGS = new Set(["zander-demo", "pam"]);
+
+export function isSamplePreviewCoachSlug(slug: string | null | undefined): boolean {
+  return SAMPLE_PREVIEW_COACH_SLUGS.has((slug ?? "").trim().toLowerCase());
+}
+
+/**
+ * Sample data follows the staff switch on your own view and on the demo coaches.
+ * While impersonating anyone else it stays off, even if the switch was left on.
+ */
+export function campaignSamplePreviewActive(opts: {
+  stored: boolean;
+  impersonating: boolean;
+  coachSlug: string | null;
+}): boolean {
+  if (!opts.stored) return false;
+  if (!opts.impersonating) return true;
+  return isSamplePreviewCoachSlug(opts.coachSlug);
+}
+
 function hoursAgoIso(hours: number, now: Date): string {
   return new Date(now.getTime() - hours * 3_600_000).toISOString();
 }

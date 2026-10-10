@@ -48,8 +48,10 @@ import {
 import { partitionOutreachCampaigns } from "@/lib/leadMagnets/catalog";
 import {
   DEMO_PREVIEW_ACCOUNT,
+  campaignSamplePreviewActive,
   demoPreviewCampaigns,
   isDemoPreviewId,
+  isSamplePreviewCoachSlug,
 } from "@/lib/campaigns/demoPreview";
 import { useCampaignDemoPreview } from "@/hooks/useCampaignDemoPreview";
 import { CampaignDemoPreviewToggle } from "@/components/campaigns/CampaignDemoPreviewToggle";
@@ -500,8 +502,21 @@ export function LinkedInCampaignsOverview() {
   const [coachSlug, setCoachSlug] = useState<string | null>(
     () => cached?.coachSlug ?? null
   );
+  // Slug from the previous coach must not keep sample data on after a switch.
+  const [slugSession, setSlugSession] = useState<string | null>(
+    impersonatingCoachId
+  );
   const [appOrigin, setAppOrigin] = useState("");
-  const { enabled: preview, setEnabled: setPreview } = useCampaignDemoPreview();
+  const { enabled: sampleDataOn, setEnabled: setPreview } = useCampaignDemoPreview();
+  const slugForSample =
+    (impersonatingCoachId ?? null) === slugSession ? coachSlug : null;
+  const preview = campaignSamplePreviewActive({
+    stored: sampleDataOn,
+    impersonating: Boolean(impersonatingCoachId),
+    coachSlug: slugForSample,
+  });
+  const showSampleToggle =
+    !impersonatingCoachId || isSamplePreviewCoachSlug(slugForSample);
   const tab = searchParams.get("tab");
   const magnetsTab = tab === "magnets";
   const poolTab = tab === "pool" || tab === "lists";
@@ -589,10 +604,14 @@ export function LinkedInCampaignsOverview() {
 
   useEffect(() => {
     let cancelled = false;
+    setSlugSession(impersonatingCoachId);
     (async () => {
       const hit = peekHubQuery<CampaignsHubPayload>(cacheKey);
       if (hit) applyPayload(hit);
-      else setLoading(true);
+      else {
+        setCoachSlug(null);
+        setLoading(true);
+      }
       setError(null);
       try {
         await load(false);
@@ -623,7 +642,7 @@ export function LinkedInCampaignsOverview() {
     return () => {
       cancelled = true;
     };
-  }, [applyPayload, cacheKey, load, linkedinConnected]);
+  }, [applyPayload, cacheKey, impersonatingCoachId, load, linkedinConnected]);
 
   async function connectLinkedIn() {
     setBusy(true);
@@ -1328,11 +1347,14 @@ export function LinkedInCampaignsOverview() {
         </div>
       ) : null}
 
-      <CampaignDemoPreviewToggle
-        enabled={preview}
-        onChange={setPreview}
-        coachSlug={coachSlug}
-      />
+      {showSampleToggle ? (
+        <CampaignDemoPreviewToggle
+          enabled={preview}
+          onChange={setPreview}
+          coachSlug={coachSlug}
+          raised={Boolean(impersonatingCoachId)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildDemoCampaignOverview,
+  campaignSamplePreviewActive,
   demoPreviewActivityFeed,
   demoPreviewCampaigns,
   demoPreviewRemindQueue,
@@ -9,6 +10,46 @@ import {
 } from "./demoPreview";
 
 const NOW = new Date("2026-09-13T12:00:00.000Z");
+
+describe("sample preview while impersonating", () => {
+  it("stays on for your own view and the demo coaches", () => {
+    assert.equal(
+      campaignSamplePreviewActive({
+        stored: true,
+        impersonating: false,
+        coachSlug: "peter-buglass",
+      }),
+      true
+    );
+    assert.equal(
+      campaignSamplePreviewActive({
+        stored: true,
+        impersonating: true,
+        coachSlug: "zander-demo",
+      }),
+      true
+    );
+  });
+
+  it("stays off for a real coach even when the switch was left on", () => {
+    assert.equal(
+      campaignSamplePreviewActive({
+        stored: true,
+        impersonating: true,
+        coachSlug: "peter-buglass",
+      }),
+      false
+    );
+    assert.equal(
+      campaignSamplePreviewActive({
+        stored: true,
+        impersonating: true,
+        coachSlug: null,
+      }),
+      false
+    );
+  });
+});
 
 describe("demo campaign preview", () => {
   it("includes running invite campaigns and a paused future list", () => {
