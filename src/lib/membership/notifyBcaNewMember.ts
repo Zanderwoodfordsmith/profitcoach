@@ -10,7 +10,7 @@ import { isSystemCoachSlug } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const DEFAULT_URL =
-  "https://businesscoachacademy.com/api/webhooks/profit-coach/member";
+  "https://www.businesscoachacademy.com/api/webhooks/profit-coach/member";
 
 const ALLOWED_URLS = new Set([
   DEFAULT_URL,

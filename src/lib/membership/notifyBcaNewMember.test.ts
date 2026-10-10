@@ -47,10 +47,10 @@ describe("notifyBcaNewMember", () => {
   it("only allows the live site or local dev", () => {
     const previous = process.env.BCA_MEMBER_WEBHOOK_URL;
     process.env.BCA_MEMBER_WEBHOOK_URL =
-      "https://businesscoachacademy.com/api/webhooks/profit-coach/member";
+      "https://www.businesscoachacademy.com/api/webhooks/profit-coach/member";
     assert.equal(
       memberWebhookTarget(),
-      "https://businesscoachacademy.com/api/webhooks/profit-coach/member"
+      "https://www.businesscoachacademy.com/api/webhooks/profit-coach/member"
     );
     process.env.BCA_MEMBER_WEBHOOK_URL = "https://evil.example/hook";
     assert.equal(memberWebhookTarget(), null);
