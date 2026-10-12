@@ -5,6 +5,7 @@ import { getSupportMailboxAccount } from "@/lib/support/mailbox";
 import { formatSupportTicketId } from "@/lib/support/tickets";
 import {
   parseSupportReplyMedia,
+  parseSupportTicketMedia,
   supportEmailAttachmentFilename,
   supportReplyBodyForEmail,
 } from "@/lib/support/supportTicketMedia";
@@ -578,6 +579,109 @@ export async function notifyCoachOfSupportReply(input: {
   });
 
   return { ok: true };
+}
+
+export type SendCreatedTicketEmailResult =
+  | {
+      ok: true;
+      emailed: string | null;
+      alreadySent?: boolean;
+      skipped?: boolean;
+    }
+  | { ok: false; error: string };
+
+/**
+ * Email the coach the ticket body when an admin creates it.
+ * Later staff replies still use the reply-notify queue.
+ */
+export async function sendSupportCreatedTicketEmail(input: {
+  ticketId: string;
+  signatureUserId: string;
+  request?: Request;
+}): Promise<SendCreatedTicketEmailResult> {
+  const { data: ticket, error } = await supabaseAdmin
+    .from("community_feedback_reports")
+    .select(
+      "id, ticket_number, title, details, media, created_by, contact_email, submitter_name, source, member_notify_email, email_notify_last_sent_at, unipile_email_id"
+    )
+    .eq("id", input.ticketId)
+    .maybeSingle();
+
+  if (error || !ticket) {
+    return { ok: false, error: "Ticket not found." };
+  }
+  if (ticket.source !== "admin_created") {
+    return {
+      ok: false,
+      error: "Only tickets created for a coach are emailed when they are opened.",
+    };
+  }
+  if (ticket.member_notify_email === false) {
+    return { ok: true, emailed: null, skipped: true };
+  }
+  if (ticket.email_notify_last_sent_at) {
+    return { ok: true, emailed: null, alreadySent: true };
+  }
+
+  const recipient = await resolveSupportNotifyRecipient({
+    created_by: ticket.created_by,
+    contact_email: ticket.contact_email,
+    submitter_name: ticket.submitter_name,
+  });
+  if (!recipient) {
+    return { ok: false, error: "No email address for this coach." };
+  }
+
+  const claimedAt = new Date().toISOString();
+  const claim = await supabaseAdmin
+    .from("community_feedback_reports")
+    .update({ email_notify_last_sent_at: claimedAt })
+    .eq("id", ticket.id)
+    .is("email_notify_last_sent_at", null)
+    .select("id");
+
+  if (claim.error) {
+    return { ok: false, error: claim.error.message };
+  }
+  if (!claim.data?.length) {
+    return { ok: true, emailed: null, alreadySent: true };
+  }
+
+  const { data: signer } = await supabaseAdmin
+    .from("profiles")
+    .select("full_name, first_name")
+    .eq("id", input.signatureUserId)
+    .maybeSingle();
+
+  const media = parseSupportTicketMedia(ticket.media);
+  const replyBody = supportReplyBodyForEmail(
+    (ticket.details || "").trim() || (ticket.title || "").trim(),
+    media
+  );
+  const attachments = await emailAttachmentsFromSupportMedia(media);
+
+  const result = await notifyCoachOfSupportReply({
+    ticketId: ticket.id,
+    ticketNumber: ticket.ticket_number,
+    title: ticket.title,
+    replyBody,
+    signatureName: firstNameOf(signer),
+    recipient,
+    unipileEmailId: ticket.unipile_email_id,
+    attachments,
+    request: input.request,
+  });
+
+  if (!result.ok) {
+    await supabaseAdmin
+      .from("community_feedback_reports")
+      .update({ email_notify_last_sent_at: null })
+      .eq("id", ticket.id)
+      .eq("email_notify_last_sent_at", claimedAt);
+    return { ok: false, error: result.error || "Could not send email." };
+  }
+
+  return { ok: true, emailed: recipient.email };
 }
 
 function escapeHtml(value: string): string {

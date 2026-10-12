@@ -30,6 +30,7 @@ import { mergeSocialUrls, socialUrlsFromUnknown } from "@/lib/unipile/socialUrls
 import { normalizeFacebookProfileUrl } from "@/lib/unipile/facebookIdentity";
 import { normalizeInstagramProfileUrl } from "@/lib/unipile/instagramIdentity";
 import { campaignPriorityValues } from "@/lib/unipile/campaignPriority";
+import { placeCampaignAtTopOfList } from "@/lib/unipile/campaignListPlacement";
 import {
   clampDailyLimit,
   DAILY_INVITE_LIMIT_MAX,
@@ -46,6 +47,7 @@ import {
 } from "@/lib/unipile/interest";
 import { parseLinkedInIdentity } from "@/lib/contacts/linkedinIdentity";
 import { normalizePoolEmail, normalizePoolPhone } from "@/lib/pool/identity";
+import { selectRowsWhereIn } from "@/lib/supabase/inFilterChunks";
 
 const CONTACT_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -79,7 +81,7 @@ export type CampaignStepInput = {
 };
 
 const CAMPAIGN_LIST_SELECT =
-  "id, name, status, channel, source_playbook_id, daily_invite_limit, daily_message_limit, daily_react_limit, min_action_delay_seconds, timezone, send_rules, outreach_account_id, outreach_priority, outreach_weight, stats, created_at, updated_at";
+  "id, name, status, channel, source_playbook_id, daily_invite_limit, daily_message_limit, daily_react_limit, min_action_delay_seconds, timezone, send_rules, outreach_account_id, outreach_priority, outreach_weight, list_order, stats, created_at, updated_at";
 
 type CampaignListRow = {
   id: string;
@@ -96,6 +98,7 @@ type CampaignListRow = {
   outreach_account_id?: string | null;
   outreach_priority?: number | null;
   outreach_weight?: number | null;
+  list_order?: number | null;
   stats?: unknown;
   created_at?: string;
   updated_at: string;
@@ -415,6 +418,13 @@ export async function createCampaign(
       body: "Hi,",
     });
   }
+  if (data?.id) {
+    try {
+      await placeCampaignAtTopOfList(coachId, data.id);
+    } catch (err) {
+      console.error("placeCampaignAtTopOfList:", err);
+    }
+  }
   return data;
 }
 
@@ -501,6 +511,13 @@ export async function duplicateCampaign(coachId: string, campaignId: string) {
     await replaceCampaignSteps(data.id, stepInputs);
   }
 
+  if (data?.id) {
+    try {
+      await placeCampaignAtTopOfList(coachId, data.id);
+    } catch (err) {
+      console.error("placeCampaignAtTopOfList:", err);
+    }
+  }
   return data;
 }
 
@@ -884,56 +901,46 @@ export async function addCampaignLeads(
     await Promise.all([
       loadBlacklistedLinkedInUrls(coachId),
       loadBlacklistedEmails(coachId),
-      uniqueUrls.length
-        ? supabaseAdmin
-            .from("linkedin_campaign_leads")
-            .select("linkedin_url")
-            .eq("campaign_id", campaignId)
-            .in("linkedin_url", uniqueUrls)
-        : Promise.resolve({ data: [] as { linkedin_url: string | null }[], error: null }),
-      uniqueProviders.length
-        ? supabaseAdmin
+      selectRowsWhereIn<{ linkedin_url: string | null }>(uniqueUrls, (chunk) =>
+        supabaseAdmin
+          .from("linkedin_campaign_leads")
+          .select("linkedin_url")
+          .eq("campaign_id", campaignId)
+          .in("linkedin_url", chunk)
+      ),
+      selectRowsWhereIn<{ linkedin_provider_id: string | null }>(
+        uniqueProviders,
+        (chunk) =>
+          supabaseAdmin
             .from("linkedin_campaign_leads")
             .select("linkedin_provider_id")
             .eq("campaign_id", campaignId)
-            .in("linkedin_provider_id", uniqueProviders)
-        : Promise.resolve({
-            data: [] as { linkedin_provider_id: string | null }[],
-            error: null,
-          }),
-      uniqueContactIds.length
-        ? supabaseAdmin
+            .in("linkedin_provider_id", chunk)
+      ),
+      selectRowsWhereIn<{ contact_id: string | null }>(
+        uniqueContactIds,
+        (chunk) =>
+          supabaseAdmin
             .from("linkedin_campaign_leads")
             .select("contact_id")
             .eq("campaign_id", campaignId)
-            .in("contact_id", uniqueContactIds)
-        : Promise.resolve({
-            data: [] as { contact_id: string | null }[],
-            error: null,
-          }),
+            .in("contact_id", chunk)
+      ),
     ]);
-
-  if (existingByUrl.error) throw new Error(existingByUrl.error.message);
-  if (existingByProvider.error) {
-    throw new Error(existingByProvider.error.message);
-  }
-  if (existingByContact.error) {
-    throw new Error(existingByContact.error.message);
-  }
 
   const existingUrls = new Set<string>();
   const existingProviders = new Set<string>();
   const existingContactIds = new Set<string>();
-  for (const row of existingByUrl.data ?? []) {
+  for (const row of existingByUrl) {
     const url = normalizeLinkedInProfileUrl(String(row.linkedin_url ?? ""));
     if (url) existingUrls.add(url);
   }
-  for (const row of existingByProvider.data ?? []) {
+  for (const row of existingByProvider) {
     if (row.linkedin_provider_id) {
       existingProviders.add(String(row.linkedin_provider_id));
     }
   }
-  for (const row of existingByContact.data ?? []) {
+  for (const row of existingByContact) {
     if (row.contact_id) existingContactIds.add(String(row.contact_id));
   }
 
@@ -1159,14 +1166,17 @@ export async function addCampaignLeads(
 
   const contactByEmail = new Map<string, string>();
   if (emailsToLink.length) {
-    const { data: existingContacts, error: contactLookupError } =
-      await supabaseAdmin
+    const existingContacts = await selectRowsWhereIn<{
+      id: string;
+      email: string | null;
+    }>(emailsToLink, (chunk) =>
+      supabaseAdmin
         .from("contacts")
         .select("id, email")
         .eq("coach_id", coachId)
-        .in("email", emailsToLink);
-    if (contactLookupError) throw new Error(contactLookupError.message);
-    for (const contact of existingContacts ?? []) {
+        .in("email", chunk)
+    );
+    for (const contact of existingContacts) {
       const normalized = normalizePoolEmail(
         typeof contact.email === "string" ? contact.email : null
       );
@@ -1243,14 +1253,17 @@ export async function addCampaignLeads(
       ),
     ];
     if (phonesNeeded.length) {
-      const { data: existingByPhone, error: phoneLookupError } =
-        await supabaseAdmin
+      const existingByPhone = await selectRowsWhereIn<{
+        id: string;
+        phone: string | null;
+      }>(phonesNeeded, (chunk) =>
+        supabaseAdmin
           .from("contacts")
           .select("id, phone")
           .eq("coach_id", coachId)
-          .in("phone", phonesNeeded);
-      if (phoneLookupError) throw new Error(phoneLookupError.message);
-      for (const contact of existingByPhone ?? []) {
+          .in("phone", chunk)
+      );
+      for (const contact of existingByPhone) {
         const key = normalizePoolPhone(
           typeof contact.phone === "string" ? contact.phone : null
         );
@@ -1323,6 +1336,30 @@ export async function addCampaignLeads(
     inserts.push(row.insert);
   }
 
+  if (inserts.length) {
+    const { count: queuedBefore, error: queuedCountError } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId)
+      .eq("coach_id", coachId)
+      .eq("status", "queued");
+    if (queuedCountError) throw new Error(queuedCountError.message);
+    const alreadyQueued = queuedBefore ?? 0;
+    const paced = staggerInviteActionTimes({
+      count: alreadyQueued + inserts.length,
+      dailyLimit:
+        typeof campaign.daily_invite_limit === "number"
+          ? campaign.daily_invite_limit
+          : 20,
+      timezone: (campaign.timezone as string | null) ?? null,
+      sendRules: campaign.send_rules,
+    });
+    for (let i = 0; i < inserts.length; i += 1) {
+      const at = paced[alreadyQueued + i];
+      if (at) inserts[i]!.next_action_at = at.toISOString();
+    }
+  }
+
   let added = 0;
   const addedIds: string[] = [];
   for (let i = 0; i < inserts.length; i += 100) {
@@ -1351,19 +1388,6 @@ export async function addCampaignLeads(
     for (const row of data ?? []) {
       if (row.id) addedIds.push(row.id);
     }
-  }
-
-  // Pace queued leads across send days at the daily invite limit so the UI
-  // does not show every connection request as due today.
-  if (added > 0) {
-    await restaggerQueuedLeadTimes(coachId, campaignId, {
-      dailyInviteLimit:
-        typeof campaign.daily_invite_limit === "number"
-          ? campaign.daily_invite_limit
-          : 20,
-      timezone: (campaign.timezone as string | null) ?? null,
-      sendRules: campaign.send_rules,
-    });
   }
 
   if (campaign.status === "running" && addedIds.length > 0) {
@@ -1888,26 +1912,46 @@ export async function enqueuePendingJobsForCampaign(
   const timezone =
     (campaign?.timezone as string | null)?.trim() || "Europe/London";
 
-  const { data: leads, error: leadsError } = await fetchAllSupabasePages<{
+  type EnqueueLead = {
     id: string;
     status: string | null;
     current_step_position: number | null;
     next_action_at: string | null;
-  }>(async (from, to) => {
-    let q = supabaseAdmin
-      .from("linkedin_campaign_leads")
-      .select("id, status, current_step_position, next_action_at")
-      .eq("campaign_id", campaignId)
-      .eq("coach_id", coachId)
-      .in("status", ["queued", "invited", "connected", "in_sequence"])
-      .order("created_at", { ascending: true })
-      .range(from, to);
-    if (leadIds?.length) {
-      q = q.in("id", leadIds.slice(0, 2500));
+    created_at?: string | null;
+  };
+  const openLeadStatuses = ["queued", "invited", "connected", "in_sequence"];
+  let leads: EnqueueLead[];
+  if (leadIds?.length) {
+    leads = await selectRowsWhereIn<EnqueueLead>(leadIds, (chunk) =>
+      supabaseAdmin
+        .from("linkedin_campaign_leads")
+        .select(
+          "id, status, current_step_position, next_action_at, created_at"
+        )
+        .eq("campaign_id", campaignId)
+        .eq("coach_id", coachId)
+        .in("status", openLeadStatuses)
+        .in("id", chunk)
+    );
+    leads.sort((a, b) =>
+      String(a.created_at ?? "").localeCompare(String(b.created_at ?? ""))
+    );
+  } else {
+    const page = await fetchAllSupabasePages<EnqueueLead>(async (from, to) =>
+      supabaseAdmin
+        .from("linkedin_campaign_leads")
+        .select("id, status, current_step_position, next_action_at")
+        .eq("campaign_id", campaignId)
+        .eq("coach_id", coachId)
+        .in("status", openLeadStatuses)
+        .order("created_at", { ascending: true })
+        .range(from, to)
+    );
+    if (page.error) {
+      throw new Error(page.error.message ?? "Unable to load leads.");
     }
-    return q;
-  });
-  if (leadsError) throw new Error(leadsError.message ?? "Unable to load leads.");
+    leads = page.data;
+  }
   if (!leads.length) return { enqueued: 0 };
 
   const { data: existingJobs } = await fetchAllSupabasePages<{

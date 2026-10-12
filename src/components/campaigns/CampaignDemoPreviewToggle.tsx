@@ -10,15 +10,12 @@ type Props = {
   onChange: (enabled: boolean) => void;
   /** Current coach slug from the campaigns profile load. */
   coachSlug?: string | null;
-  /** Sit above the impersonation bar, which occupies the same corner. */
-  raised?: boolean;
 };
 
 export function CampaignDemoPreviewToggle({
   enabled,
   onChange,
   coachSlug,
-  raised = false,
 }: Props) {
   const [allowed, setAllowed] = useState(false);
 
@@ -43,11 +40,7 @@ export function CampaignDemoPreviewToggle({
 
   return (
     <div
-      className={`fixed z-[80] right-4 md:right-6 ${
-        raised
-          ? "bottom-[calc(8.5rem+env(safe-area-inset-bottom))] md:bottom-20"
-          : "bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:bottom-6"
-      }`}
+      className="fixed z-[80] right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:right-6 md:bottom-6"
     >
       <button
         type="button"

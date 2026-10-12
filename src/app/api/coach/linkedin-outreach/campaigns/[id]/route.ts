@@ -24,6 +24,7 @@ import {
   type CampaignStepInput,
   type CampaignStatus,
 } from "@/lib/unipile/campaigns";
+import { placeCampaignAtTopOfList } from "@/lib/unipile/campaignListPlacement";
 import { loadCampaignActivity } from "@/lib/unipile/activityHeatmap";
 import { abStatsForCampaign } from "@/lib/unipile/interest";
 
@@ -235,6 +236,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
     if (body.action === "unarchive") {
       const campaign = await setCampaignStatus(auth.coachId, id, "paused");
+      await placeCampaignAtTopOfList(auth.coachId, id);
       return NextResponse.json({ campaign });
     }
 

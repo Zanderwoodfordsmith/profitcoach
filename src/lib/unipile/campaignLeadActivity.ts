@@ -1,5 +1,6 @@
 import {
   callWaitFrom,
+  campaignStepCountsInTotal,
   campaignStepIsInternal,
   campaignStepTypeLabel,
 } from "@/lib/unipile/campaignStepTypes";
@@ -187,7 +188,7 @@ export function actionSteps(
   steps: CampaignActivityStep[]
 ): CampaignActivityStep[] {
   return [...steps]
-    .filter((step) => step.step_type !== "wait")
+    .filter((step) => campaignStepCountsInTotal(step.step_type))
     .sort((a, b) => a.position - b.position);
 }
 

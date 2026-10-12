@@ -7,7 +7,6 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
-import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachImpersonationSwitcher";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
@@ -17,12 +16,15 @@ import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
-import { useIsDemoCoachImpersonation } from "@/hooks/useIsDemoCoachImpersonation";
 import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
 import { GetClientsHubWarmup } from "@/components/layout/GetClientsHubWarmup";
+import {
+  coachAccountLabel,
+  rememberCoachAccountLabel,
+} from "@/lib/admin/coachDirectoryClient";
 
 export default function CoachLayout({
   children,
@@ -37,7 +39,10 @@ export default function CoachLayout({
     clearImpersonation,
     clearContactImpersonation,
   } = useImpersonation();
-  const [coachName, setCoachName] = useState<string | null>(null);
+  const [coachName, setCoachName] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -71,12 +76,13 @@ export default function CoachLayout({
       setCoachAvatarUrl(null);
       return;
     }
+    const coachId = impersonatingCoachId;
     let cancelled = false;
     async function loadCoachName() {
       const res = await fetch("/api/profile-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: impersonatingCoachId }),
+        body: JSON.stringify({ userId: coachId }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         full_name?: string | null;
@@ -85,13 +91,15 @@ export default function CoachLayout({
       };
       if (!cancelled && data) {
         const name =
-          data.full_name ??
-          data.coach_business_name ??
-          "Coach";
-        setCoachName(name);
+          data.full_name?.trim() || data.coach_business_name?.trim() || "";
+        if (name) {
+          if (!coachAccountLabel(coachId)) {
+            rememberCoachAccountLabel(coachId, name);
+          }
+          setCoachName({ id: coachId, name });
+        }
         setCoachAvatarUrl(data.avatar_url ?? null);
       } else if (!cancelled) {
-        setCoachName("Coach");
         setCoachAvatarUrl(null);
       }
     }
@@ -146,11 +154,6 @@ export default function CoachLayout({
     };
   }, [pathname, impersonatingCoachId, router]);
 
-  function handleExit() {
-    clearImpersonation();
-    router.push("/admin");
-  }
-
   async function handleSignOut() {
     if (signingOut) return;
     setSigningOut(true);
@@ -165,10 +168,6 @@ export default function CoachLayout({
   }
 
   const isImpersonatingCoach = Boolean(impersonatingCoachId);
-  const { ready: demoImpersonationReady, isDemoCoach: isDemoCoachImpersonation } =
-    useIsDemoCoachImpersonation(impersonatingCoachId);
-  const showImpersonationBanner =
-    isImpersonatingCoach && demoImpersonationReady && !isDemoCoachImpersonation;
   const isSignaturePage = pathname === "/coach/signature";
   const bossWorkshopPage = isBossWorkshopPath(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -236,9 +235,14 @@ export default function CoachLayout({
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
   const { access, hasFeature } = useCoachAccess(impersonatingCoachId);
   const chromeEnabled = !playbooksReader && !isMinimalWorkshopChrome;
+  const fetchedName =
+    coachName?.id === impersonatingCoachId ? coachName.name : null;
+  const accountName = impersonatingCoachId
+    ? coachAccountLabel(impersonatingCoachId) || fetchedName
+    : null;
   const avatarOverride = isImpersonatingCoach
     ? {
-        name: coachName ?? "Coach",
+        name: accountName || "Loading...",
         avatarUrl: coachAvatarUrl,
       }
     : null;
@@ -285,37 +289,6 @@ export default function CoachLayout({
         {!playbooksReader && isMinimalWorkshopChrome && workshopTopRightSlot ? (
           <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
             <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
-          </div>
-        ) : null}
-        {showImpersonationBanner ? (
-          <div
-            className={`fixed right-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6 ${
-              playbooksReader || isMinimalWorkshopChrome || sidebarCollapsed
-                ? "bottom-3 sm:bottom-6"
-                : "bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:bottom-6"
-            }`}
-          >
-            <div
-              className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
-              role="status"
-              aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
-            >
-              <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
-                Admin
-              </span>
-              <AdminCoachImpersonationSwitcher
-                coachName={coachName}
-                accessTier={access.tier}
-                enforcementEnabled={access.enforcementEnabled}
-              />
-              <button
-                type="button"
-                onClick={handleExit}
-                className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
-              >
-                Exit
-              </button>
-            </div>
           </div>
         ) : null}
       {!playbooksReader ? (

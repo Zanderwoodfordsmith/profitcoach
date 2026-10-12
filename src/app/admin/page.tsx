@@ -27,6 +27,8 @@ import {
   isDefaultCoachTableViewName,
 } from "@/lib/admin/coachTableViews";
 import type { CoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
+import type { ProgrammeShortfall } from "@/lib/admin/programmeShortfall";
+import { ProgrammeShortfallInfo } from "@/components/admin/ProgrammeShortfallInfo";
 import {
   COACH_SORT_FIELD_OPTIONS,
   coachSortOrderOptions,
@@ -335,6 +337,7 @@ type CoachRow = {
   recurring_payment_status: CoachRecurringPaymentStatus | null;
   recurring_billing_active: boolean;
   payment_summary: CoachPaymentSummary;
+  programme_shortfall: ProgrammeShortfall | null;
   access_tier: CoachAccessTier;
   access_tier_locked: boolean;
   ladder_level: string | null;
@@ -637,6 +640,11 @@ function isEarlyExitCoach(coach: Pick<CoachRow, "access_tier">): boolean {
 
 function coachTableRowClasses(coach: CoachRow, selected: boolean): string {
   const base = "border-t border-slate-100";
+  if (coach.programme_shortfall) {
+    return selected
+      ? `${base} bg-yellow-200`
+      : `${base} bg-yellow-100 hover:bg-yellow-200/70`;
+  }
   if (isDoNotContactCoach(coach)) {
     return selected
       ? `${base} bg-rose-200/70 hover:bg-rose-200/80`
@@ -2995,6 +3003,11 @@ export default function AdminPage() {
                       >
                         {coach.full_name ?? "—"}
                       </Link>
+                      {coach.programme_shortfall ? (
+                        <ProgrammeShortfallInfo
+                          explanation={coach.programme_shortfall.explanation}
+                        />
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => {

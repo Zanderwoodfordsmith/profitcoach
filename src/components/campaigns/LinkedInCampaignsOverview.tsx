@@ -1,14 +1,41 @@
 "use client";
 
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type HTMLAttributes,
+} from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Archive, ChevronDown, Copy, MoreVertical, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Archive, ChevronDown, Copy, GripVertical, MoreVertical, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { fetchHubQuery, invalidateHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import { fetchHubQuery, invalidateHubQuery, patchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
 import { hubQueryKey } from "@/lib/getClients/hubKeys";
 import {
   loadCampaignsHubPayload,
@@ -45,6 +72,7 @@ import {
   CampaignQueueCell,
   CampaignReplyMix,
 } from "@/components/campaigns/CampaignOverviewMetrics";
+import { orderCampaignsForDisplay } from "@/lib/campaigns/campaignListOrder";
 import { partitionOutreachCampaigns } from "@/lib/leadMagnets/catalog";
 import {
   DEMO_PREVIEW_ACCOUNT,
@@ -91,6 +119,7 @@ type Campaign = {
   progress?: CampaignProgress;
   created_at?: string;
   updated_at: string;
+  list_order?: number | null;
 };
 
 async function authHeaders(): Promise<Record<string, string> | null> {
@@ -332,6 +361,21 @@ function RowMenu({
   );
 }
 
+function dragCellStyle(
+  shift: string | undefined,
+  transition: string | undefined,
+  dragging: boolean
+): CSSProperties | undefined {
+  if (!shift && !dragging) return undefined;
+  return {
+    transform: shift,
+    transition,
+    ...(dragging
+      ? { position: "relative" as const, zIndex: 2, backgroundColor: "#fff" }
+      : null),
+  };
+}
+
 function CampaignTableRow({
   campaign: c,
   archived = false,
@@ -346,6 +390,13 @@ function CampaignTableRow({
   onArchive,
   onUnarchive,
   onDelete,
+  showReorderColumn = false,
+  reorderable = false,
+  setRowRef,
+  dragShift,
+  dragTransition,
+  isDragging = false,
+  dragHandleProps,
 }: {
   campaign: Campaign;
   archived?: boolean;
@@ -360,6 +411,13 @@ function CampaignTableRow({
   onArchive?: () => void;
   onUnarchive?: () => void;
   onDelete: () => void;
+  showReorderColumn?: boolean;
+  reorderable?: boolean;
+  setRowRef?: (node: HTMLTableRowElement | null) => void;
+  dragShift?: string;
+  dragTransition?: string;
+  isDragging?: boolean;
+  dragHandleProps?: HTMLAttributes<HTMLButtonElement>;
 }) {
   const contacts = c.lead_count ?? 0;
   const { progress, replies } = campaignRates(c);
@@ -367,9 +425,11 @@ function CampaignTableRow({
   const isDemo = isDemoPreviewId(c.id);
   const hasInvite = c.has_invite_step !== false;
   const statusLabel = campaignStatusLabel(c);
+  const cellStyle = dragCellStyle(dragShift, dragTransition, isDragging);
 
   return (
     <tr
+      ref={setRowRef}
       onClick={onEdit}
       onPointerEnter={() => {
         if (isDemo) return;
@@ -377,6 +437,7 @@ function CampaignTableRow({
       }}
       onKeyDown={(e) => {
         if (isDemo) return;
+        if ((e.target as HTMLElement).closest("[data-reorder-handle]")) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onEdit();
@@ -389,10 +450,33 @@ function CampaignTableRow({
           : undefined
       }
       className={`group border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0c5290]/40 ${
-        isDemo ? "" : "cursor-pointer"
-      }`}
+        isDragging ? "shadow-md shadow-slate-200/80" : ""
+      } ${isDemo ? "" : "cursor-pointer"}`}
     >
-      <td className="px-4 py-3.5 align-middle">
+      {showReorderColumn ? (
+        <td className="w-5 py-3.5 pl-1.5 pr-0 align-middle" style={cellStyle}>
+          {reorderable ? (
+            <button
+              type="button"
+              className="inline-flex h-5 w-3.5 cursor-grab items-center justify-center text-slate-300 hover:text-slate-500 active:cursor-grabbing touch-none"
+              aria-label={`Reorder ${c.name}`}
+              data-reorder-handle=""
+              {...dragHandleProps}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <GripVertical className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
+            </button>
+          ) : null}
+        </td>
+      ) : null}
+      <td
+        className={
+          showReorderColumn
+            ? "py-3.5 pl-1.5 pr-4 align-middle"
+            : "px-4 py-3.5 align-middle"
+        }
+        style={cellStyle}
+      >
         <CampaignOnOffToggle
           on={isRunning}
           busy={busy}
@@ -400,7 +484,7 @@ function CampaignTableRow({
           onChange={onToggle}
         />
       </td>
-      <td className="min-w-0 px-3 py-3.5 align-middle">
+      <td className="min-w-0 px-3 py-3.5 align-middle" style={cellStyle}>
         <div className="flex min-w-0 max-w-full items-center gap-2 text-left">
           <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 group-hover:text-[#0c5290]">
             {c.name}
@@ -424,7 +508,7 @@ function CampaignTableRow({
           />
         </div>
       </td>
-      <td className="px-3 py-3.5 align-middle">
+      <td className="px-3 py-3.5 align-middle" style={cellStyle}>
         <div className="flex justify-center">
           <CampaignChannelPills
             channels={c.channels}
@@ -433,7 +517,7 @@ function CampaignTableRow({
           />
         </div>
       </td>
-      <td className="px-4 py-3.5 align-middle">
+      <td className="px-4 py-3.5 align-middle" style={cellStyle}>
         <CampaignCompactDial
           label="Connect"
           numerator={progress.connected}
@@ -442,14 +526,14 @@ function CampaignTableRow({
           muted={!hasInvite}
         />
       </td>
-      <td className="px-4 py-3.5 align-middle">
+      <td className="px-4 py-3.5 align-middle" style={cellStyle}>
         <CampaignReplyMix
           positive={replies.positive}
           negative={replies.negative}
           other={replies.other}
         />
       </td>
-      <td className="px-3 py-3.5 align-middle">
+      <td className="px-3 py-3.5 align-middle" style={cellStyle}>
         <RowMenu
           open={menuOpen}
           onOpenChange={onMenuOpenChange}
@@ -462,6 +546,48 @@ function CampaignTableRow({
         />
       </td>
     </tr>
+  );
+}
+
+function SortableCampaignRow({
+  reorderable,
+  ...props
+}: {
+  campaign: Campaign;
+  reorderable: boolean;
+} & Omit<
+  Parameters<typeof CampaignTableRow>[0],
+  | "reorderable"
+  | "setRowRef"
+  | "dragShift"
+  | "dragTransition"
+  | "isDragging"
+  | "dragHandleProps"
+>) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: props.campaign.id,
+    disabled: !reorderable,
+  });
+
+  return (
+    <CampaignTableRow
+      {...props}
+      reorderable={reorderable}
+      setRowRef={setNodeRef}
+      dragShift={reorderable ? CSS.Translate.toString(transform) : undefined}
+      dragTransition={transition}
+      isDragging={isDragging}
+      dragHandleProps={
+        reorderable ? { ...attributes, ...listeners } : undefined
+      }
+    />
   );
 }
 
@@ -532,14 +658,19 @@ export function LinkedInCampaignsOverview() {
     if (magnetsTab) setMagnetsHubMounted(true);
   }, [magnetsTab]);
 
-  const { ordered, more } = useMemo(
+  const sorted = useMemo(
     () =>
-      partitionOutreachCampaigns(
-        preview ? demoPreviewCampaigns() : campaigns
-      ),
+      orderCampaignsForDisplay(preview ? demoPreviewCampaigns() : campaigns),
     [campaigns, preview]
   );
-  const sorted = useMemo(() => [...ordered, ...more], [ordered, more]);
+  const canReorder = !preview;
+  const ignoreRowClick = useRef(false);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   const poolCampaigns = useMemo(() => {
     const partitioned = partitionOutreachCampaigns(campaigns);
     return [...partitioned.ordered, ...partitioned.more];
@@ -705,6 +836,63 @@ export function LinkedInCampaignsOverview() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function persistCampaignOrder(nextIds: string[]) {
+    const orderOf = new Map(nextIds.map((id, index) => [id, index]));
+    const previous = campaigns;
+    const previousOrders = new Map(
+      campaigns.map((campaign) => [campaign.id, campaign.list_order ?? null])
+    );
+    const nextCampaigns = campaigns.map((campaign) =>
+      orderOf.has(campaign.id)
+        ? { ...campaign, list_order: orderOf.get(campaign.id) ?? null }
+        : campaign
+    );
+    setCampaigns(nextCampaigns);
+    const patchOrders = (
+      orders: Map<string, number | null>
+    ) => {
+      patchHubQuery<CampaignsHubPayload>(cacheKey, (prev) => ({
+        ...prev,
+        campaigns: prev.campaigns.map((row) => {
+          const id = typeof row.id === "string" ? row.id : "";
+          if (!orders.has(id)) return row;
+          return { ...row, list_order: orders.get(id) };
+        }),
+      }));
+    };
+    patchOrders(orderOf);
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch("/api/coach/linkedin-outreach/campaigns/reorder", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ ids: nextIds }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Could not save the order.");
+    } catch (err) {
+      setCampaigns(previous);
+      patchOrders(previousOrders);
+      setError(err instanceof Error ? err.message : "Could not save the order.");
+    }
+  }
+
+  function onCampaignDragEnd(event: DragEndEvent) {
+    ignoreRowClick.current = true;
+    window.setTimeout(() => {
+      ignoreRowClick.current = false;
+    }, 80);
+    const { active, over } = event;
+    if (!canReorder || !over || active.id === over.id) return;
+    const ids = sorted.map((campaign) => campaign.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    void persistCampaignOrder(arrayMove(ids, oldIndex, newIndex));
   }
 
   async function quickToggle(campaign: Campaign) {
@@ -988,12 +1176,26 @@ export function LinkedInCampaignsOverview() {
                 ) : (
                   <div>
                     <div className="overflow-x-auto">
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={onCampaignDragEnd}
+                      >
                       <table className="w-full border-collapse text-left">
                         <thead>
                           <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+                            {canReorder ? (
+                              <th scope="col" className="w-5 py-3 pl-1.5 pr-0 font-semibold">
+                                <span className="sr-only">Reorder</span>
+                              </th>
+                            ) : null}
                             <th
                               scope="col"
-                              className="w-14 px-4 py-3 font-semibold"
+                              className={
+                                canReorder
+                                  ? "w-14 py-3 pl-1.5 pr-4 font-semibold"
+                                  : "w-14 px-4 py-3 font-semibold"
+                              }
                             >
                               <span className="sr-only">On or off</span>
                             </th>
@@ -1029,7 +1231,10 @@ export function LinkedInCampaignsOverview() {
                         <tbody>
                           {sorted.length === 0 ? (
                             <tr>
-                              <td colSpan={6} className="px-6 py-10 text-center">
+                              <td
+                                colSpan={canReorder ? 7 : 6}
+                                className="px-6 py-10 text-center"
+                              >
                                 <p className="text-sm font-medium text-slate-800">
                                   No active campaigns
                                 </p>
@@ -1040,7 +1245,11 @@ export function LinkedInCampaignsOverview() {
                               </td>
                             </tr>
                           ) : (
-                            sorted.map((c) => {
+                            <SortableContext
+                              items={sorted.map((campaign) => campaign.id)}
+                              strategy={verticalListSortingStrategy}
+                            >
+                            {sorted.map((c) => {
                               const isRunning = c.status === "running";
                               const isEmail = c.channel === "email";
                               const isWhatsApp = c.channel === "whatsapp";
@@ -1055,9 +1264,11 @@ export function LinkedInCampaignsOverview() {
                                       ? Boolean(whatsappAccount)
                                       : Boolean(okLinkedInAccount)));
                               return (
-                                <CampaignTableRow
+                                <SortableCampaignRow
                                   key={c.id}
                                   campaign={c}
+                                  showReorderColumn={canReorder}
+                                  reorderable={canReorder && !isDemo}
                                   busy={busy}
                                   menuOpen={menuOpenId === c.id}
                                   onMenuOpenChange={(next) =>
@@ -1066,7 +1277,7 @@ export function LinkedInCampaignsOverview() {
                                   canToggle={canToggle}
                                   onToggle={() => void quickToggle(c)}
                                   onEdit={() => {
-                                    if (isDemo) return;
+                                    if (ignoreRowClick.current || isDemo) return;
                                     router.push(`${prefix}/campaigns/${c.id}`);
                                   }}
                                   onPrefetch={() => {
@@ -1095,12 +1306,13 @@ export function LinkedInCampaignsOverview() {
                                   }
                                 />
                               );
-                            })
+                            })}
+                            </SortableContext>
                           )}
                           {!preview && archivedCampaigns.length > 0 ? (
                             <>
                               <tr>
-                                <td colSpan={6} className="p-0">
+                                <td colSpan={canReorder ? 7 : 6} className="p-0">
                                   <button
                                     type="button"
                                     aria-expanded={archivedOpen}
@@ -1135,6 +1347,7 @@ export function LinkedInCampaignsOverview() {
                                       key={c.id}
                                       campaign={c}
                                       archived
+                                      showReorderColumn={canReorder}
                                       busy={busy}
                                       menuOpen={menuOpenId === c.id}
                                       onMenuOpenChange={(next) =>
@@ -1176,6 +1389,7 @@ export function LinkedInCampaignsOverview() {
                           ) : null}
                         </tbody>
                       </table>
+                      </DndContext>
                     </div>
                   </div>
                 )}
@@ -1329,11 +1543,12 @@ export function LinkedInCampaignsOverview() {
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
-              <div className="border-b border-slate-100 px-5 py-4">
+              <div className="flex justify-end border-b border-slate-100 px-5 py-3">
                 <PublicSlugEditor
                   slug={coachSlug ?? ""}
                   onSlugChange={(next) => setCoachSlug(next)}
                   framed={false}
+                  layout="inline"
                 />
               </div>
               {!coachSlug ? (
@@ -1352,7 +1567,6 @@ export function LinkedInCampaignsOverview() {
           enabled={preview}
           onChange={setPreview}
           coachSlug={coachSlug}
-          raised={Boolean(impersonatingCoachId)}
         />
       ) : null}
     </div>

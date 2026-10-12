@@ -81,13 +81,15 @@ export function calendarFeatureErrorMessage(
   if (type === "errors/feature_not_subscribed") {
     return "Unipile Calendar isn’t on this workspace plan, so busy times and meeting links can’t load yet.";
   }
+  if (type === "errors/insufficient_privileges") {
+    return "Mail is connected, but Calendar was not approved. Reconnect and approve Calendar so clients get the invite and events show on this calendar.";
+  }
   if (
     type === "errors/disconnected_feature" ||
-    type === "errors/insufficient_privileges" ||
     type === "errors/invalid_credentials" ||
     type === "errors/expired_credentials"
   ) {
-    return "This Google/Outlook connection doesn’t have calendar access. Disconnect and connect again, then approve Calendar.";
+    return "This Google or Outlook connection can’t read the calendar. Reconnect and approve Calendar.";
   }
   return result.error || "Could not load calendars.";
 }

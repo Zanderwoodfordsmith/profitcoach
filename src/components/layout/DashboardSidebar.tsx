@@ -33,7 +33,8 @@ import { MembershipSidebarPromo } from "@/components/membership/MembershipSideba
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { DemoCoachToggle } from "@/components/layout/DemoCoachToggle";
+import { UseAsMenu } from "@/components/layout/UseAsMenu";
+import { loadCoachDirectory } from "@/lib/admin/coachDirectoryClient";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { prefetchGetClientsHref } from "@/lib/getClients/hubFetchers";
 import {
@@ -172,6 +173,7 @@ export function DashboardSidebar({
     const onDoc = (e: MouseEvent) => {
       const target = e.target as Node;
       if (accountMenuRef.current && !accountMenuRef.current.contains(target)) {
+        if (target instanceof Element && target.closest("[data-use-as-panel]")) return;
         setAccountMenuOpen(false);
       }
     };
@@ -220,6 +222,13 @@ export function DashboardSidebar({
   const { profile, profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
   const { impersonatingCoachId } = useImpersonation();
+
+  useEffect(() => {
+    if (profile?.role !== "admin") return;
+    void loadCoachDirectory().catch(() => {
+      /* The menu retries and shows its own error. */
+    });
+  }, [profile?.role]);
   const viewingMemberId =
     variant === "coach" && profile?.role === "admin"
       ? impersonatingCoachId
@@ -651,14 +660,6 @@ export function DashboardSidebar({
                 </span>
               ) : null}
             </button>
-            {collapsed ? (
-              <DemoCoachToggle
-                compact
-                className="pointer-events-auto absolute bottom-1 right-1 z-10"
-              />
-            ) : (
-              <DemoCoachToggle className="pointer-events-auto absolute bottom-2 right-3 z-10" />
-            )}
             {accountMenuOpen ? (
               <div
                 role="menu"
@@ -682,8 +683,8 @@ export function DashboardSidebar({
                   <Settings className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   Settings
                 </Link>
-                <DemoCoachToggle
-                  variant="menu"
+                <UseAsMenu
+                  isAdmin={profile?.role === "admin"}
                   onAction={() => setAccountMenuOpen(false)}
                 />
                 <button
@@ -774,7 +775,6 @@ export function DashboardSidebar({
                 <p className="truncate text-base font-semibold">
                   {profileLoading ? "Loading..." : avatarLabel}
                 </p>
-                <DemoCoachToggle className="mt-1" />
               </div>
             </div>
             {variant === "admin" ? (
@@ -887,6 +887,11 @@ export function DashboardSidebar({
                   Membership
                 </Link>
               ) : null}
+              <UseAsMenu
+                layout="inline"
+                isAdmin={profile?.role === "admin"}
+                onAction={closeMobileSheets}
+              />
               <p className="mb-1 mt-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
                 Settings
               </p>

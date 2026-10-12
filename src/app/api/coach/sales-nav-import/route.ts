@@ -1,10 +1,28 @@
 import { NextResponse } from "next/server";
 import { SalesNavImportRejectedError } from "@/lib/salesNavigator/classifySalesNavUrl";
+import { listActiveSalesNavImports } from "@/lib/salesNavigator/listActiveImports";
 import {
   startSalesNavImport,
   type SalesNavImportRequest,
 } from "@/lib/salesNavigator/startImport";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
+
+/** Running imports for this coach, without lead snapshots. */
+export async function GET(request: Request) {
+  const auth = await requireOutreachCoach(request);
+  if (auth.error || !auth.coachId) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
+  try {
+    const imports = await listActiveSalesNavImports(auth.coachId);
+    return NextResponse.json({ imports });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Could not load imports.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 export const maxDuration = 60;
 

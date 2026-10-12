@@ -212,7 +212,10 @@ type Props = {
   /** Admin profile id for `created_by_admin` when creating on behalf of a coach. */
   createdByAdminId?: string | null;
   onClose: () => void;
-  onCreated: (ticket: SupportTicket) => void;
+  onCreated: (
+    ticket: SupportTicket,
+    result?: { emailed?: string | null; emailError?: string | null }
+  ) => void;
 };
 
 export function SupportCreateTicketComposer({
@@ -409,7 +412,42 @@ export function SupportCreateTicketComposer({
       for (const p of pendingMedia) URL.revokeObjectURL(p.previewUrl);
       revokePendingSupportVoice(pendingVoice);
       notifySupportCountsChanged();
-      onCreated(created);
+
+      let emailed: string | null = null;
+      let emailError: string | null = null;
+      if (isAdminCreate && notifyEmail) {
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+        if (!session?.access_token) {
+          emailError =
+            "Ticket created, but the email could not be sent. Sign in again, then reply on the ticket to email the coach.";
+        } else {
+          const notifyRes = await fetch(
+            `/api/admin/support/tickets/${created.id}/notify-created`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+            }
+          );
+          const notifyBody = (await notifyRes.json().catch(() => ({}))) as {
+            error?: string;
+            emailed?: string | null;
+            sent?: boolean;
+          };
+          if (!notifyRes.ok || !notifyBody.sent) {
+            emailError =
+              notifyBody.error ||
+              "Ticket created, but the email to the coach failed.";
+          } else {
+            emailed = notifyBody.emailed?.trim() || null;
+          }
+        }
+      }
+
+      onCreated(created, { emailed, emailError });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send ticket.");
     } finally {
@@ -645,7 +683,7 @@ export function SupportCreateTicketComposer({
                   className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-500"
                   title={
                     isAdminCreate
-                      ? "Email the coach when support replies."
+                      ? "Email this message to the coach now. Later support replies are emailed too."
                       : accountEmail
                         ? `Email ${accountEmail} when support replies.`
                         : "Email me when support replies."
@@ -658,7 +696,7 @@ export function SupportCreateTicketComposer({
                     className="h-3.5 w-3.5 rounded border-slate-300 accent-sky-600"
                   />
                   <span className="whitespace-nowrap">
-                    {isAdminCreate ? "Email coach on reply" : "Email me on reply"}
+                    {isAdminCreate ? "Email the coach" : "Email me on reply"}
                   </span>
                 </label>
                 <button

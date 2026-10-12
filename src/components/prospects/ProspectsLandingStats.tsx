@@ -65,7 +65,7 @@ const PRESET_DROPDOWN_LABELS: Record<LandingStatsRangePreset, string> = {
   custom: "Custom range",
 };
 
-function LandingStatsRangeDropdown({
+export function LandingStatsRangeDropdown({
   value,
   onChange,
 }: {
@@ -162,7 +162,7 @@ function LandingStatsRangeDropdown({
   );
 }
 
-function LandingStatsCustomRangeFields({
+export function LandingStatsCustomRangeFields({
   value,
   onChange,
 }: {

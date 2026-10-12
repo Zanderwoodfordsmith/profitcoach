@@ -36,7 +36,8 @@ function pickPrimaryCurrency(
 }
 
 export function buildCoachPaymentSummary(
-  payments: PaymentForBillingKind[]
+  payments: PaymentForBillingKind[],
+  recentLimit = RECENT_PAYMENT_LIMIT
 ): CoachPaymentSummary {
   const sorted = [...payments]
     .filter((payment) => payment.status === "succeeded")
@@ -59,7 +60,7 @@ export function buildCoachPaymentSummary(
     totals_by_currency: [...totalsByCurrency.entries()]
       .map(([currency, cents]) => ({ currency, cents }))
       .sort((a, b) => a.currency.localeCompare(b.currency)),
-    recent_payments: sorted.slice(0, RECENT_PAYMENT_LIMIT).map((payment) => ({
+    recent_payments: sorted.slice(0, Math.max(0, recentLimit)).map((payment) => ({
       id: payment.id,
       amount_cents: payment.amount_cents,
       currency: payment.currency,

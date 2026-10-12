@@ -95,6 +95,36 @@ export async function POST(request: Request) {
     contactId = (existing?.id as string) ?? null;
   }
 
+  if (contactId) {
+    const { data: existing, error: progressReadError } = await supabaseAdmin
+      .from("contacts")
+      .select("scorecard_last_screen")
+      .eq("id", contactId)
+      .eq("coach_id", coachId)
+      .maybeSingle();
+
+    if (!progressReadError) {
+      const current =
+        typeof (existing as { scorecard_last_screen?: number | null } | null)
+          ?.scorecard_last_screen === "number"
+          ? (existing as { scorecard_last_screen: number }).scorecard_last_screen
+          : 0;
+      if (screen > current) {
+        const { error: progressWriteError } = await supabaseAdmin
+          .from("contacts")
+          .update({
+            scorecard_last_screen: screen,
+            scorecard_progress_at: new Date().toISOString(),
+          })
+          .eq("id", contactId)
+          .eq("coach_id", coachId);
+        if (progressWriteError) {
+          console.error("scorecard progress save:", progressWriteError.message);
+        }
+      }
+    }
+  }
+
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);
   if (body.abandoned) {
     const { fireBossScoreWatchSafe } = await import("@/lib/coachWatch/fire");

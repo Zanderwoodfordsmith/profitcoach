@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   calendarBusyDisplayTitle,
+  calendarFeatureErrorMessage,
   isOwnedUnipileCalendar,
   pickDefaultUnipileCalendar,
   type UnipileCalendar,
@@ -90,5 +91,16 @@ describe("unipile calendar isolation", () => {
       calendarBusyDisplayTitle("30 minutes with Hillary McNair", true),
       "30 minutes with Hillary McNair"
     );
+  });
+
+  it("asks for a calendar reconnect when mail is connected without calendar scope", () => {
+    const message = calendarFeatureErrorMessage({
+      ok: false,
+      status: 401,
+      error: "Insufficient privileges",
+      raw: { type: "errors/insufficient_privileges" },
+    });
+    assert.match(message, /Reconnect/);
+    assert.doesNotMatch(message, /Disconnect/);
   });
 });

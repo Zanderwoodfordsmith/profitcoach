@@ -582,6 +582,14 @@ export function campaignStepIsInternal(type: string): boolean {
   return type === "notify" || type === "add_to_campaign";
 }
 
+/**
+ * Steps that count in the sequence total on campaigns and lead magnets.
+ * Waits and coach-only alerts stay in the sequence, off the number.
+ */
+export function campaignStepCountsInTotal(type: string): boolean {
+  return type !== "wait" && !campaignStepIsInternal(type);
+}
+
 /** Sequence pauses here until the coach marks the step done. */
 export function campaignStepNeedsCoach(
   type: string,

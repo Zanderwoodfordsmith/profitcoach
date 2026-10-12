@@ -457,7 +457,10 @@ export function GoogleCalendarBookingCard({
     return "calls";
   }
 
-  async function connectProvider(provider: "GOOGLE" | "OUTLOOK") {
+  async function connectProvider(
+    provider: "GOOGLE" | "OUTLOOK",
+    options?: { reconnect?: boolean }
+  ) {
     setConnecting(provider === "GOOGLE" ? "google" : "outlook");
     setError(null);
     const headers = await authHeaders();
@@ -473,6 +476,8 @@ export function GoogleCalendarBookingCard({
         body: JSON.stringify({
           provider,
           returnTo: connectReturnTo(),
+          forSlug: forSlug ?? undefined,
+          reconnect: options?.reconnect === true,
         }),
       });
       const body = (await res.json().catch(() => ({}))) as {
@@ -663,18 +668,29 @@ export function GoogleCalendarBookingCard({
   }
 
   const googleNeedsReconnect = Boolean(connected && status?.calendar_error);
-  const googleAction = connected ? (
-    compact || !canManage ? (
-      <span className="text-sm font-medium text-teal-700">Connected</span>
-    ) : googleNeedsReconnect ? (
+
+  function reconnectButton(provider: "GOOGLE" | "OUTLOOK") {
+    const opening =
+      connecting === (provider === "GOOGLE" ? "google" : "outlook");
+    return (
       <button
         type="button"
-        disabled={saving}
-        onClick={() => void disconnectProvider("GOOGLE")}
-        className="text-sm font-medium text-rose-700 hover:text-rose-800 disabled:opacity-60"
+        disabled={connecting !== null || !configured}
+        onClick={() => void connectProvider(provider, { reconnect: true })}
+        className="text-sm font-medium text-teal-700 hover:text-teal-800 disabled:opacity-60"
       >
-        {saving ? "Disconnecting…" : "Disconnect"}
+        {opening ? "Opening…" : "Reconnect"}
       </button>
+    );
+  }
+
+  const googleAction = connected ? (
+    !canManage ? (
+      <span className="text-sm font-medium text-teal-700">Connected</span>
+    ) : googleNeedsReconnect ? (
+      reconnectButton("GOOGLE")
+    ) : compact ? (
+      <span className="text-sm font-medium text-teal-700">Connected</span>
     ) : (
       <button
         type="button"
@@ -757,14 +773,7 @@ export function GoogleCalendarBookingCard({
               outlookConnected ? (
                 outlookCanManage ? (
                   outlook?.calendar_error ? (
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => void disconnectProvider("OUTLOOK")}
-                      className="text-sm font-medium text-rose-700 hover:text-rose-800 disabled:opacity-60"
-                    >
-                      {saving ? "Disconnecting…" : "Disconnect"}
-                    </button>
+                    reconnectButton("OUTLOOK")
                   ) : (
                     <button
                       type="button"

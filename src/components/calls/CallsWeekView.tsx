@@ -555,7 +555,7 @@ export function CallsWeekView({
                 href={settingsHref}
                 className="font-semibold text-amber-950 underline decoration-amber-400 underline-offset-2 hover:text-amber-800"
               >
-                Open Settings to connect again
+                Reconnect in Settings
               </Link>
             </p>
           ) : null}

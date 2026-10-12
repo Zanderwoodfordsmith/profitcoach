@@ -11,6 +11,8 @@ type CoachInfo = {
   coach_business_name: string | null;
   email: string | null;
   joined_at: string | null;
+  /** True when joined_at comes from the community join date, not account creation. */
+  joined_on_programme_date: boolean;
 };
 
 export type CsvPaymentStatus =
@@ -268,6 +270,9 @@ export async function loadCoachDirectory(
             (profile?.disco_community_joined_on as string | null) ?? null,
           profileCreatedAt: (profile?.created_at as string | null) ?? null,
         }),
+        joined_on_programme_date: Boolean(
+          (profile?.disco_community_joined_on as string | null)?.trim()
+        ),
       };
     }) ?? [];
 

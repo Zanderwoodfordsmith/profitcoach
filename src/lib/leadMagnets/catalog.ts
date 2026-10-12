@@ -24,7 +24,7 @@ export const LEAD_MAGNETS: LeadMagnetDef[] = [
     id: "boss-score",
     title: "Boss Score Assessment",
     description:
-      "Short scorecard — owners opt in, take the assessment, and land in your prospects list.",
+      "10 quick questions, one for each profit system area, then 3 on company size and what they want help with.",
     imageSrc: "/landing/v2/dashboard.png",
     imageAlt: "Boss Score assessment preview",
     pathForSlug: (slug) => `/score/${slug}`,
@@ -47,9 +47,8 @@ export const LEAD_MAGNETS: LeadMagnetDef[] = [
   },
   {
     id: "boss-score-pro",
-    title: "Boss Score Pro Assessments",
-    description:
-      "Full 50-question diagnostic across every playbook — share when you want a deeper read on the business.",
+    title: "Boss Score Pro",
+    description: "Full 50 questions, mainly used for sales.",
     imageSrc: "/landing/c/hero-dashboard.png",
     imageAlt: "Boss Score Pro assessment preview",
     pathForSlug: (slug) => `/assessment-pro/${slug}`,

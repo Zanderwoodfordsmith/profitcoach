@@ -35,6 +35,7 @@ import {
   campaignSendModePatch,
   DEFAULT_MANUAL_FALLBACK_HOURS,
   campaignStepAllowsVariants,
+  campaignStepCountsInTotal,
   campaignStepDisplayLabel,
   keepAbPair,
   campaignStepHasCopy,
@@ -2055,6 +2056,9 @@ export function CampaignSequenceBuilder({
     steps.length > 0 &&
     steps.every((s, i) => s.step_type === "wait" || expanded.has(i));
   const allStepsSendMode = sequenceMessageSendMode(steps);
+  const countedSteps = steps.filter((step) =>
+    campaignStepCountsInTotal(step.step_type)
+  ).length;
 
   function setAllSendModes(mode: "auto" | "remind") {
     if (allStepsSendMode === mode) return;
@@ -2115,7 +2119,7 @@ export function CampaignSequenceBuilder({
         {steps.length > 0 ? (
         <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-500">
-            {`${steps.length} step${steps.length === 1 ? "" : "s"}`}
+            {`${countedSteps} step${countedSteps === 1 ? "" : "s"}`}
           </p>
           <div className="flex flex-wrap items-center justify-end gap-3">
             {allStepsSendMode ? (

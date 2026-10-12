@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 
 type Props = {
@@ -18,6 +19,12 @@ export function DeleteProspectsDialog({
   onCancel,
   onConfirm,
 }: Props) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !busy) onCancel();
@@ -28,9 +35,14 @@ export function DeleteProspectsDialog({
 
   const single = rows.length === 1;
 
-  return (
+  if (!mounted) return null;
+
+  // The prospect details column sets view-transition-name and overflow:hidden.
+  // That traps position:fixed inside the column and clips the confirm button,
+  // so the page greys out with no way to finish the delete.
+  return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-[260] flex items-center justify-center bg-slate-900/40 p-4"
       role="presentation"
       onClick={() => {
         if (!busy) onCancel();
@@ -90,6 +102,7 @@ export function DeleteProspectsDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -463,9 +463,9 @@ P.S. If you replied to the playbook email and never heard back, hit reply to thi
   ]),
 };
 
-// Attach level-branched variants to email 1 (first message step).
+// Attach level-branched variants to email 1 (first email step).
 const completeSteps = SCORECARD_COMPLETE_PLAYBOOK.steps;
-const firstMessage = completeSteps.find((s) => s.step_type === "message");
+const firstMessage = completeSteps.find((s) => s.step_type === "email");
 if (firstMessage) {
   firstMessage.variants = [
     { key: "1", label: "Level 1 · Overwhelmed", body: firstMessage.body || EMAIL_1A },

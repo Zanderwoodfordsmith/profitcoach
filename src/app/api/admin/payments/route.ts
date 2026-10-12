@@ -21,6 +21,7 @@ function coachOptionFromInfo(coach: {
   coach_business_name: string | null;
   email: string | null;
   joined_at: string | null;
+  joined_on_programme_date?: boolean;
 }) {
   return {
     id: coach.id,
@@ -29,6 +30,7 @@ function coachOptionFromInfo(coach: {
     coach_business_name: coach.coach_business_name,
     email: coach.email,
     joined_at: coach.joined_at,
+    joined_on_programme_date: coach.joined_on_programme_date === true,
   };
 }
 
@@ -43,16 +45,24 @@ export async function GET(request: Request) {
     const directory = await loadCoachDirectory(supabaseAdmin);
     const coachById = new Map(directory.coaches.map((coach) => [coach.id, coach]));
 
-    const { data: payments, error: paymentsError } = await supabaseAdmin
-      .from("coach_payments")
-      .select(
-        "id, stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, customer_email, customer_company_name, amount_cents, currency, status, paid_at, coach_id, assignment_method, decline_reason, description, notes, payment_source, billing_kind_override, created_at"
-      )
-      .order("paid_at", { ascending: false })
-      .limit(2000);
-
-    if (paymentsError) {
-      return NextResponse.json({ error: "Unable to load payments." }, { status: 500 });
+    const paymentSelect =
+      "id, stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, customer_email, customer_company_name, amount_cents, currency, status, paid_at, coach_id, assignment_method, decline_reason, description, notes, payment_source, billing_kind_override, created_at";
+    const pageSize = 1000;
+    const payments: Record<string, unknown>[] = [];
+    let from = 0;
+    while (true) {
+      const { data, error: paymentsError } = await supabaseAdmin
+        .from("coach_payments")
+        .select(paymentSelect)
+        .order("paid_at", { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (paymentsError) {
+        return NextResponse.json({ error: "Unable to load payments." }, { status: 500 });
+      }
+      const page = (data ?? []) as Record<string, unknown>[];
+      payments.push(...page);
+      if (page.length < pageSize) break;
+      from += pageSize;
     }
 
     const rows = (payments ?? []).map((row: Record<string, unknown>) => {

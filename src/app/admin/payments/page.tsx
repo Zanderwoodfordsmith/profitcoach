@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { FinancialsHubTabs } from "@/components/admin/FinancialsHubTabs";
+import { PaymentAttentionList } from "@/components/admin/PaymentAttentionList";
 import { PaymentCoachAssignMenu } from "@/components/admin/PaymentCoachAssignMenu";
 import { PaymentsMonthlyBarChart } from "@/components/admin/PaymentsMonthlyBarChart";
 import { StickyPageHeader } from "@/components/layout";
@@ -44,6 +45,10 @@ import {
 } from "@/lib/cashFlowForecast/paymentPlanInference";
 import type { PaymentCoachAssignSort } from "@/lib/paymentCoachAssignSort";
 import { paymentSourceLabel } from "@/lib/paymentSource";
+import {
+  listOverdueProgrammeCoaches,
+  listUnrecoveredFailedCharges,
+} from "@/lib/admin/programmeShortfall";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type CoachOption = {
@@ -53,6 +58,7 @@ type CoachOption = {
   coach_business_name: string | null;
   email: string | null;
   joined_at: string | null;
+  joined_on_programme_date?: boolean;
 };
 
 type PaymentRow = {
@@ -844,6 +850,9 @@ export default function AdminPaymentsPage() {
   const [needsActionOnly, setNeedsActionOnly] = useState(false);
   const [paymentSort, setPaymentSort] = useState<PaymentSort>("recent_first");
   const [paymentGroupBy, setPaymentGroupBy] = useState<PaymentGroupBy>("none");
+  const [paymentView, setPaymentView] = useState<"transactions" | "attention">(
+    "transactions"
+  );
   const [expandedPaymentGroups, setExpandedPaymentGroups] = useState<
     Set<string>
   >(() => new Set());
@@ -975,6 +984,48 @@ export default function AdminPaymentsPage() {
   const groupedPayments = useMemo(
     () => buildPaymentGroups(filteredPayments, paymentGroupBy),
     [filteredPayments, paymentGroupBy]
+  );
+
+  const overdueCoaches = useMemo(
+    () =>
+      listOverdueProgrammeCoaches(
+        coaches.map((coach) => ({
+          id: coach.id,
+          slug: coach.slug,
+          name: coachLabel(coach),
+          joinedAt: coach.joined_at,
+          joinedOnProgrammeDate: coach.joined_on_programme_date === true,
+        })),
+        payments.map((payment) => ({
+          coachId: payment.assigned_coach?.id ?? null,
+          amountCents: payment.amount_cents,
+          currency: payment.currency,
+          status: payment.status,
+          paidAt: payment.paid_at,
+        }))
+      ),
+    [coaches, payments]
+  );
+
+  const failedCharges = useMemo(
+    () =>
+      listUnrecoveredFailedCharges(
+        payments.map((payment) => ({
+          coachId: payment.assigned_coach?.id ?? null,
+          coachSlug: payment.assigned_coach?.slug ?? null,
+          coachName: payment.assigned_coach
+            ? coachLabel(payment.assigned_coach)
+            : null,
+          email: payment.customer_email,
+          amountCents: payment.amount_cents,
+          currency: payment.currency,
+          status: payment.status,
+          paidAt: payment.paid_at,
+          declineReason: payment.decline_reason,
+          description: payment.description,
+        }))
+      ),
+    [payments]
   );
 
   function togglePaymentGroup(groupKey: string) {
@@ -1746,10 +1797,47 @@ export default function AdminPaymentsPage() {
       >
         <div className="shrink-0 border-b border-slate-100 px-4 py-2">
           <div className="flex flex-wrap items-center gap-2">
+            <div
+              className="inline-flex rounded-lg bg-slate-100 p-0.5"
+              role="tablist"
+              aria-label="Payment views"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={paymentView === "transactions"}
+                onClick={() => setPaymentView("transactions")}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                  paymentView === "transactions"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                All payments
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={paymentView === "attention"}
+                onClick={() => setPaymentView("attention")}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                  paymentView === "attention"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Overdue & failed
+              </button>
+            </div>
             <div className="ml-auto flex flex-wrap items-center gap-2">
             <p className="text-xs text-slate-500">
-              {filteredPayments.length} of {stats.total}
-              {stats.needsAction > 0 ? ` · ${stats.needsAction} need action` : ""}
+              {paymentView === "attention"
+                ? `${overdueCoaches.length} overdue · ${failedCharges.length} failed`
+                : `${filteredPayments.length} of ${stats.total}${
+                    stats.needsAction > 0
+                      ? ` · ${stats.needsAction} need action`
+                      : ""
+                  }`}
             </p>
 
             <input
@@ -1782,7 +1870,10 @@ export default function AdminPaymentsPage() {
               }}
             />
 
-            <div ref={filtersMenuRef} className="relative">
+            <div
+              ref={filtersMenuRef}
+              className={`relative ${paymentView === "attention" ? "hidden" : ""}`}
+            >
               <TableToolbarButton
                 label="Filters"
                 aria-haspopup="true"
@@ -1887,7 +1978,10 @@ export default function AdminPaymentsPage() {
               ) : null}
             </div>
 
-            <div ref={sortMenuRef} className="relative">
+            <div
+              ref={sortMenuRef}
+              className={`relative ${paymentView === "attention" ? "hidden" : ""}`}
+            >
               <TableToolbarButton
                 label="Sort"
                 aria-haspopup="true"
@@ -1932,7 +2026,10 @@ export default function AdminPaymentsPage() {
               ) : null}
             </div>
 
-            <div ref={groupMenuRef} className="relative">
+            <div
+              ref={groupMenuRef}
+              className={`relative ${paymentView === "attention" ? "hidden" : ""}`}
+            >
               <TableToolbarButton
                 label="Group"
                 aria-haspopup="true"
@@ -1975,6 +2072,7 @@ export default function AdminPaymentsPage() {
               ) : null}
             </div>
 
+            <div className={paymentView === "attention" ? "hidden" : ""}>
             <DataTableColumnsMenu
               open={columnsMenuOpen}
               onToggle={() => {
@@ -2001,10 +2099,23 @@ export default function AdminPaymentsPage() {
               menuId="payments-columns-menu"
             />
             </div>
+            </div>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto rounded-b-xl">
+        {paymentView === "attention" ? (
+          <PaymentAttentionList
+            overdue={overdueCoaches}
+            failed={failedCharges}
+            loading={loading || checkingRole}
+          />
+        ) : null}
+
+        <div
+          className={`min-h-0 flex-1 overflow-x-auto overflow-y-auto rounded-b-xl ${
+            paymentView === "attention" ? "hidden" : ""
+          }`}
+        >
           <table className="w-max min-w-max text-left text-sm">
             <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm">
               <tr>

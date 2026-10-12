@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
+import { Check, Copy, Info, Share2 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import {
   CampaignSequenceBuilder,
@@ -12,14 +14,33 @@ import {
 } from "@/components/campaigns/CampaignSequenceBuilder";
 import { CampaignsSubTabs } from "@/components/campaigns/CampaignsSubTabs";
 import { CoachWatchRulesPanel } from "@/components/campaigns/CoachWatchRulesPanel";
-import { LeadMagnetShareSettings } from "@/components/leadMagnets/LeadMagnetShareSettings";
+import { LeadMagnetOverview } from "@/components/leadMagnets/LeadMagnetOverview";
+import { LeadMagnetPeople } from "@/components/leadMagnets/LeadMagnetPeople";
+import { LeadMagnetShareModal } from "@/components/leadMagnets/LeadMagnetShareModal";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
-import { ProspectsLandingStats } from "@/components/prospects/ProspectsLandingStats";
+import {
+  LandingStatsCustomRangeFields,
+  LandingStatsRangeDropdown,
+} from "@/components/prospects/ProspectsLandingStats";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
+  emptyMagnetAudience,
+  type MagnetAudience,
+  type MagnetStage,
+} from "@/lib/leadMagnets/audience";
+import {
   getLeadMagnet,
+  magnetShareCopyUrl,
+  magnetShareDisplayUrl,
   type LeadMagnetSequenceDef,
 } from "@/lib/leadMagnets/catalog";
+import {
+  defaultLandingStatsRange,
+  isLandingStatsRangeValid,
+  landingStatsRangeQuery,
+  type LandingStatsRange,
+} from "@/lib/landingStatsRange";
+import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
 import { campaignNewStepSendFields, campaignStepHasCopy, defaultStepConfig, sequenceMessageSendMode, type CampaignStepType } from "@/lib/unipile/campaignStepTypes";
 import { mergeFieldPickerForMagnet } from "@/lib/unipile/mergeFields";
 import { duplicateCampaignStep } from "@/lib/unipile/campaignStepDuplicate";
@@ -31,6 +52,75 @@ type Account = {
   display_name: string | null;
   provider?: string;
 };
+
+type MagnetTab = "overview" | "people" | "sequences";
+
+const MAGNET_TABS: Array<{ id: MagnetTab; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "people", label: "People" },
+  { id: "sequences", label: "Sequences" },
+];
+
+const SEQUENCES_TAB_HINT =
+  "Follow-up messages after someone starts or finishes.";
+
+function TabHint({ text }: { text: string }) {
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const [box, setBox] = useState<{ top: number; left: number } | null>(null);
+
+  function show() {
+    const rect = anchorRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setBox({ top: rect.top - 6, left: rect.left + rect.width / 2 });
+  }
+
+  return (
+    <span
+      ref={anchorRef}
+      className="inline-flex text-current/55"
+      onMouseEnter={show}
+      onMouseLeave={() => setBox(null)}
+      onFocus={show}
+      onBlur={() => setBox(null)}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+    >
+      <Info className="h-3.5 w-3.5" aria-hidden />
+      <span className="sr-only">{text}</span>
+      {box
+        ? createPortal(
+            <span
+              role="tooltip"
+              style={{ top: box.top, left: box.left }}
+              className="pointer-events-none fixed z-50 w-max max-w-[16rem] -translate-x-1/2 -translate-y-full rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm"
+            >
+              {text}
+            </span>,
+            document.body
+          )
+        : null}
+    </span>
+  );
+}
+
+function tabLabel(title: string, hint?: string) {
+  if (!hint) return title;
+  return (
+    <span className="inline-flex items-center gap-1">
+      {title}
+      <TabHint text={hint} />
+    </span>
+  );
+}
+
+function readMagnetTab(): MagnetTab {
+  if (typeof window === "undefined") return "overview";
+  const raw = new URLSearchParams(window.location.search).get("tab");
+  if (raw === "people" || raw === "sequences") return raw;
+  return "overview";
+}
 
 type SequenceState = {
   def: LeadMagnetSequenceDef;
@@ -62,6 +152,16 @@ export function LeadMagnetEditor() {
     null
   );
   const [sequenceTab, setSequenceTab] = useState<string | null>(null);
+  const [tab, setTab] = useState<MagnetTab>("overview");
+  const [dateRange, setDateRange] = useState<LandingStatsRange>(
+    defaultLandingStatsRange
+  );
+  const [audience, setAudience] = useState<MagnetAudience | null>(null);
+  const [audienceLoading, setAudienceLoading] = useState(true);
+  const [audienceError, setAudienceError] = useState<string | null>(null);
+  const [peopleStage, setPeopleStage] = useState<MagnetStage | "all">("all");
+  const [shareOpen, setShareOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [otherCampaigns, setOtherCampaigns] = useState<
     Array<{ id: string; name: string }>
   >([]);
@@ -70,7 +170,55 @@ export function LeadMagnetEditor() {
 
   useEffect(() => {
     setAppOrigin(window.location.origin);
+    setTab(readMagnetTab());
   }, []);
+
+  const rangeQuery = useMemo(
+    () => landingStatsRangeQuery(dateRange),
+    [dateRange]
+  );
+  const rangeValid = isLandingStatsRangeValid(dateRange);
+
+  useEffect(() => {
+    if (!magnet) return;
+    if (!rangeValid) {
+      setAudienceLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setAudienceLoading(true);
+      setAudienceError(null);
+      try {
+        const headers = await authHeaders();
+        if (!headers) {
+          if (!cancelled) setAudience(emptyMagnetAudience());
+          return;
+        }
+        const url = rangeQuery
+          ? `/api/coach/lead-magnets/${encodeURIComponent(magnet.id)}/audience?${rangeQuery}`
+          : `/api/coach/lead-magnets/${encodeURIComponent(magnet.id)}/audience`;
+        const res = await fetch(url, { headers });
+        const body = (await res.json().catch(() => ({}))) as MagnetAudience & {
+          error?: string;
+        };
+        if (!res.ok) throw new Error(body.error || "Could not load people.");
+        if (!cancelled) setAudience(body);
+      } catch (err) {
+        if (!cancelled) {
+          setAudience(emptyMagnetAudience());
+          setAudienceError(
+            err instanceof Error ? err.message : "Could not load people."
+          );
+        }
+      } finally {
+        if (!cancelled) setAudienceLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [magnet, rangeQuery, rangeValid, impersonatingCoachId]);
 
   const load = useCallback(async () => {
     const headers = await authHeaders();
@@ -310,6 +458,34 @@ export function LeadMagnetEditor() {
     }
   }
 
+  function selectTab(next: MagnetTab) {
+    setTab(next);
+    const url = new URL(window.location.href);
+    if (next === "overview") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", next);
+    const query = url.searchParams.toString();
+    window.history.replaceState(
+      null,
+      "",
+      query ? `${url.pathname}?${query}` : url.pathname
+    );
+  }
+
+  function openPeople(stage: MagnetStage | "all") {
+    setPeopleStage(stage);
+    selectTab("people");
+  }
+
+  async function copyShareLink(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      window.setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      setCopiedLink(false);
+    }
+  }
+
   if (!magnet) {
     return (
       <div className="space-y-3 py-16 text-center">
@@ -324,39 +500,87 @@ export function LeadMagnetEditor() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="py-20 text-center text-sm text-slate-500">
-        Loading {magnet.title}…
-      </div>
-    );
-  }
-
   const activeSequence =
     sequences.find((seq) => seq.def.slot === sequenceTab) ?? sequences[0] ?? null;
+  const sharePath = coachSlug ? magnet.pathForSlug(coachSlug) : null;
+  const displayUrl = sharePath
+    ? magnetShareDisplayUrl(sharePath, appOrigin)
+    : null;
+  const copyUrl = sharePath ? magnetShareCopyUrl(sharePath, appOrigin) : null;
+  const showPeopleWindow = tab === "overview" || tab === "people";
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5 pb-16">
       <CampaignsSubTabs prefix={prefix} active="magnets" />
 
-      <div className="flex flex-wrap items-start gap-4">
-        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-24 sm:w-36">
-          <Image
-            src={magnet.imageSrc}
-            alt={magnet.imageAlt}
-            fill
-            className="object-cover object-top"
-            sizes="144px"
-          />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+            <Image
+              src={magnet.imageSrc}
+              alt=""
+              fill
+              className="object-cover object-top"
+              sizes="96px"
+            />
+          </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+              {magnet.title}
+            </h1>
+            <p className="mt-1 max-w-xl text-sm text-slate-500">
+              {magnet.id === "boss-score"
+                ? "Who opted in, who started the scorecard, and who finished."
+                : "Who started the diagnostic, and who finished."}
+            </p>
+            {displayUrl && copyUrl ? (
+              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <a
+                  href={sharePath ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="max-w-full truncate text-sm text-[#0c5290] hover:underline"
+                >
+                  {displayUrl}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void copyShareLink(copyUrl)}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900"
+                >
+                  {copiedLink ? (
+                    <Check className="h-3.5 w-3.5" aria-hidden />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                  {copiedLink ? "Copied" : "Copy"}
+                </button>
+              </div>
+            ) : loading ? null : (
+              <button
+                type="button"
+                onClick={() => setShareOpen(true)}
+                className="mt-2 text-sm font-medium text-[#0c5290] hover:underline"
+              >
+                Add a public link
+              </button>
+            )}
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
-            {magnet.title}
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            {magnet.description}
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => setShareOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={shareOpen}
+          className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 ${
+            shareOpen
+              ? "border-slate-400 bg-slate-50"
+              : "border-slate-300 bg-transparent hover:border-slate-400 hover:bg-slate-50/60"
+          }`}
+        >
+          <Share2 className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.25} aria-hidden />
+          Share
+        </button>
       </div>
 
       {error ? (
@@ -365,81 +589,143 @@ export function LeadMagnetEditor() {
         </div>
       ) : null}
 
-      {magnet.id === "boss-score" ? (
-        <ProspectsLandingStats
-          coachSlug={coachSlug}
-          impersonatingCoachId={impersonatingCoachId ?? null}
+      <div className="border-b border-slate-200">
+        <PageHeaderUnderlineTabs
+          ariaLabel="Lead magnet sections"
+          items={MAGNET_TABS.map((item) => ({
+            kind: "button" as const,
+            id: item.id,
+            label: tabLabel(
+              item.label,
+              item.id === "sequences" ? SEQUENCES_TAB_HINT : undefined
+            ),
+            active: tab === item.id,
+            onClick: () => selectTab(item.id),
+          }))}
+        />
+      </div>
+
+      {showPeopleWindow && audienceError ? (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {audienceError}
+        </div>
+      ) : null}
+
+      {showPeopleWindow ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <LandingStatsRangeDropdown value={dateRange} onChange={setDateRange} />
+            {magnet.id === "boss-score" ? (
+              <span className="text-xs text-slate-500">
+                {audienceLoading || !rangeValid
+                  ? "Views —"
+                  : `${(audience?.unique_views ?? 0).toLocaleString()} views`}
+              </span>
+            ) : null}
+          </div>
+          <LandingStatsCustomRangeFields value={dateRange} onChange={setDateRange} />
+        </div>
+      ) : null}
+
+      {tab === "overview" ? (
+        <LeadMagnetOverview
+          audience={rangeValid ? audience : emptyMagnetAudience()}
+          loading={audienceLoading && rangeValid}
+          showOptInRate={magnet.id === "boss-score"}
+          onOpenStage={(stage) => openPeople(stage)}
+          onViewPeople={() => openPeople("all")}
         />
       ) : null}
 
-      <LeadMagnetShareSettings
+      {tab === "people" ? (
+        <LeadMagnetPeople
+          people={rangeValid ? (audience?.people ?? []) : []}
+          loading={audienceLoading && rangeValid}
+          stage={peopleStage}
+          onStageChange={setPeopleStage}
+          prospectHref={(contactId) =>
+            prospectDetailHref(contactId, prefix === "/admin")
+          }
+        />
+      ) : null}
+
+      {tab === "sequences" ? (
+        loading ? (
+          <p className="py-16 text-center text-sm text-slate-500">
+            Loading sequences…
+          </p>
+        ) : sequences.length === 0 || !activeSequence ? (
+          <p className="text-sm text-slate-500">
+            Sequences for this magnet are not set up yet. Refresh to seed them.
+          </p>
+        ) : (
+          <>
+            <div className="border-b border-slate-200">
+              <PageHeaderUnderlineTabs
+                ariaLabel="Magnet sequences"
+                items={sequences.map((seq) => ({
+                  kind: "button" as const,
+                  id: seq.def.slot,
+                  label: tabLabel(seq.def.title, seq.def.description),
+                  active: seq.def.slot === activeSequence.def.slot,
+                  onClick: () => setSequenceTab(seq.def.slot),
+                }))}
+              />
+            </div>
+            <CampaignSequenceBuilder
+              steps={activeSequence.steps}
+              campaignId={activeSequence.campaignId}
+              mergeFields={mergeFieldPickerForMagnet(
+                magnet.id,
+                activeSequence.def.slot
+              )}
+              peopleAtStep={() => EMPTY_STEP_PEOPLE}
+              abStats={null}
+              accounts={accounts}
+              connectingProvider={connectingProvider}
+              onAddStep={(type, at, mediaKind) =>
+                addStep(activeSequence.campaignId, type, at, mediaKind)
+              }
+              onConnect={(provider) => void connectProvider(provider)}
+              onPatchStep={(index, patch) =>
+                patchStep(activeSequence.campaignId, index, patch)
+              }
+              onCommitSteps={() => void commitSequence(activeSequence.campaignId)}
+              onDeleteStep={(index) =>
+                deleteStep(activeSequence.campaignId, index)
+              }
+              onDuplicateStep={(index) =>
+                duplicateStep(activeSequence.campaignId, index)
+              }
+              onReorderSteps={(next) =>
+                reorderSteps(activeSequence.campaignId, next)
+              }
+              onOpenLeads={() => undefined}
+              campaigns={otherCampaigns.filter(
+                (c) => c.id !== activeSequence.campaignId
+              )}
+              sidebarExtra={
+                <CoachWatchRulesPanel
+                  scopeKind="magnet"
+                  scopeId={magnet.id}
+                />
+              }
+            />
+          </>
+        )
+      ) : null}
+
+      <LeadMagnetShareModal
+        open={shareOpen}
         magnetId={magnet.id}
+        title={magnet.title}
         coachSlug={coachSlug}
         appOrigin={appOrigin}
         impersonatingCoachId={impersonatingCoachId}
         prospectsHref={`${prefix}/prospects`}
+        onSlugChange={setCoachSlug}
+        onClose={() => setShareOpen(false)}
       />
-
-      {sequences.length === 0 || !activeSequence ? (
-        <p className="text-sm text-slate-500">
-          Sequences for this magnet are not set up yet. Refresh to seed them.
-        </p>
-      ) : (
-        <>
-          <div className="border-b border-slate-200">
-            <PageHeaderUnderlineTabs
-              ariaLabel="Magnet sequences"
-              items={sequences.map((seq) => ({
-                kind: "button" as const,
-                id: seq.def.slot,
-                label: seq.def.title,
-                active: seq.def.slot === activeSequence.def.slot,
-                onClick: () => setSequenceTab(seq.def.slot),
-              }))}
-            />
-          </div>
-          <p className="text-sm text-slate-500">{activeSequence.def.description}</p>
-          <CampaignSequenceBuilder
-            steps={activeSequence.steps}
-            campaignId={activeSequence.campaignId}
-            mergeFields={mergeFieldPickerForMagnet(
-              magnet.id,
-              activeSequence.def.slot
-            )}
-            peopleAtStep={() => EMPTY_STEP_PEOPLE}
-            abStats={null}
-            accounts={accounts}
-            connectingProvider={connectingProvider}
-            onAddStep={(type, at, mediaKind) =>
-              addStep(activeSequence.campaignId, type, at, mediaKind)
-            }
-            onConnect={(provider) => void connectProvider(provider)}
-            onPatchStep={(index, patch) =>
-              patchStep(activeSequence.campaignId, index, patch)
-            }
-            onCommitSteps={() => void commitSequence(activeSequence.campaignId)}
-            onDeleteStep={(index) =>
-              deleteStep(activeSequence.campaignId, index)
-            }
-            onDuplicateStep={(index) =>
-              duplicateStep(activeSequence.campaignId, index)
-            }
-            onReorderSteps={(next) =>
-              reorderSteps(activeSequence.campaignId, next)
-            }
-            onOpenLeads={() => undefined}
-            campaigns={otherCampaigns.filter(
-              (c) => c.id !== activeSequence.campaignId
-            )}
-            sidebarExtra={
-              <CoachWatchRulesPanel
-                scopeKind="magnet"
-                scopeId={magnet.id}
-              />
-            }
-          />
-        </>
-      )}
     </div>
   );
 }

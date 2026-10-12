@@ -83,28 +83,39 @@ async function loadAssessmentContactMap(
   return map;
 }
 
+const LANDING_EVENT_PAGE = 1000;
+
 async function loadLandingEventsForKind(
   coachSlug: string,
   eventType: LandingStatKind,
   from: string | null,
   to: string | null
 ): Promise<LandingEventActorRow[]> {
-  let query = supabaseAdmin
-    .from("landing_events")
-    .select("contact_id, assessment_id, created_at")
-    .eq("coach_slug", coachSlug)
-    .eq("event_type", eventType)
-    .order("created_at", { ascending: false });
+  const rows: LandingEventActorRow[] = [];
 
-  query = applyDateFilters(query, from, to);
+  for (let offset = 0; offset < 20000; offset += LANDING_EVENT_PAGE) {
+    let query = supabaseAdmin
+      .from("landing_events")
+      .select("contact_id, assessment_id, created_at")
+      .eq("coach_slug", coachSlug)
+      .eq("event_type", eventType)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + LANDING_EVENT_PAGE - 1);
 
-  const { data: events, error } = await query;
-  if (error) {
-    console.error("landing actors events:", error.message);
-    return [];
+    query = applyDateFilters(query, from, to);
+
+    const { data: events, error } = await query;
+    if (error) {
+      console.error("landing actors events:", error.message);
+      return rows;
+    }
+
+    const batch = (events ?? []) as LandingEventActorRow[];
+    rows.push(...batch);
+    if (batch.length < LANDING_EVENT_PAGE) break;
   }
 
-  return (events ?? []) as LandingEventActorRow[];
+  return rows;
 }
 
 function contactIdsFromResolvedEvents(
@@ -192,30 +203,31 @@ function correlateOrphanEventsToContacts(
   return matched;
 }
 
-function mergeOrderedContactIds(
+function mergeOrderedMarks(
   sources: { id: string; at: string }[][]
-): string[] {
-  const ordered: string[] = [];
+): { id: string; at: string }[] {
+  const ordered: { id: string; at: string }[] = [];
   const seen = new Set<string>();
 
   for (const source of sources) {
     for (const row of source) {
       if (seen.has(row.id)) continue;
       seen.add(row.id);
-      ordered.push(row.id);
+      ordered.push(row);
     }
   }
 
   return ordered;
 }
 
-export async function resolveLandingStatContactIds(
+/** Latest matching contact per person, newest event first. */
+export async function resolveLandingStatContactMarks(
   coachSlug: string,
   coachId: string,
   kind: LandingStatKind,
   from?: string | null,
   to?: string | null
-): Promise<string[]> {
+): Promise<{ id: string; at: string }[]> {
   const fromVal = from?.trim() || null;
   const toVal = to?.trim() || null;
 
@@ -240,7 +252,24 @@ export async function resolveLandingStatContactIds(
       ? []
       : correlateOrphanEventsToContacts(orphanEvents, funnelContacts, seen);
 
-  return mergeOrderedContactIds([resolved, fromOrphans]);
+  return mergeOrderedMarks([resolved, fromOrphans]);
+}
+
+export async function resolveLandingStatContactIds(
+  coachSlug: string,
+  coachId: string,
+  kind: LandingStatKind,
+  from?: string | null,
+  to?: string | null
+): Promise<string[]> {
+  const marks = await resolveLandingStatContactMarks(
+    coachSlug,
+    coachId,
+    kind,
+    from,
+    to
+  );
+  return marks.map((mark) => mark.id);
 }
 
 export async function loadLandingStatActors(

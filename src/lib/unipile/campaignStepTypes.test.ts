@@ -6,6 +6,7 @@ import {
   campaignNewStepSendFields,
   campaignSendModePatch,
   parseManualFallbackHours,
+  campaignStepCountsInTotal,
   campaignStepDisplayLabel,
   campaignStepHasSendMode,
   campaignStepIncompleteHint,
@@ -160,6 +161,18 @@ describe("invite no-connect", () => {
       no_connect_wait_hours: 48,
       no_connect_campaign_id: id,
     });
+  });
+});
+
+describe("campaign step total", () => {
+  it("counts messages and skips waits and coach alerts", () => {
+    assert.equal(campaignStepCountsInTotal("email"), true);
+    assert.equal(campaignStepCountsInTotal("message"), true);
+    assert.equal(campaignStepCountsInTotal("invite"), true);
+    assert.equal(campaignStepCountsInTotal("call"), true);
+    assert.equal(campaignStepCountsInTotal("wait"), false);
+    assert.equal(campaignStepCountsInTotal("notify"), false);
+    assert.equal(campaignStepCountsInTotal("add_to_campaign"), false);
   });
 });
 

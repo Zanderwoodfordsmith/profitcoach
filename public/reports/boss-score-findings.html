@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Boss Score so far</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Tokens from bca-website/app/design-tokens.css (Oct 2026). */
+    :root {
+      --ink: #0d1f31;
+      --ink-soft: #46566b;
+      --muted: #5b6b80;
+      --accent: #0c5290;
+      --sky: #1f7bc7;
+      --canvas: #f6f8fb;
+      --surface: #ffffff;
+      --line: #e3e8ef;
+      --line-strong: #cbd4df;
+      --mist: #dce4ec;
+      --green: #127a53;
+      --green-bg: #e7f5ee;
+      --amber: #9a5b00;
+      --amber-bg: #fdf3e1;
+      --red: #b4232f;
+      --navy-50: #eef4fa;
+      --gutter: clamp(20px, 4vw, 40px);
+      --font: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--ink);
+      background: var(--canvas);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    ::selection { background: #cfe0f1; color: var(--ink); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    button { font-family: inherit; }
+
+    .deck {
+      height: 100dvh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+
+    .slide {
+      display: none;
+      min-height: 0;
+      overflow: auto;
+    }
+    .slide.is-on { display: block; }
+
+    .frame {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: clamp(28px, 5vh, 56px) var(--gutter) 24px;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    h1 {
+      margin: 0;
+      max-width: 18ch;
+      font-size: clamp(2.125rem, 1.5rem + 2vw, 3.15rem);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      font-weight: 500;
+      text-wrap: balance;
+    }
+    h1 strong { font-weight: 700; }
+    .stand {
+      margin: 14px 0 0;
+      max-width: 62ch;
+      font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.2rem);
+      line-height: 1.5;
+      color: var(--ink-soft);
+      text-wrap: pretty;
+    }
+    .note {
+      margin: 0;
+      max-width: 78ch;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .cover { background: var(--ink); color: #fff; }
+    .cover .frame { justify-content: space-between; min-height: 100%; }
+    .cover .kicker { color: #8eb6dc; }
+    .cover h1 {
+      max-width: 12ch;
+      color: #fff;
+      font-size: clamp(2.75rem, 2rem + 3vw, 4.5rem);
+    }
+    .cover .stand { color: rgba(255,255,255,0.72); font-size: clamp(1.125rem, 1rem + 0.4vw, 1.35rem); }
+    .cover-rule { width: 48px; height: 3px; background: var(--sky); border: 0; margin: 22px 0 0; }
+    .cover-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+      margin: 0;
+      padding-top: 28px;
+      border-top: 1px solid rgba(255,255,255,0.16);
+    }
+    .cover-facts div { min-width: 0; }
+    .cover-facts dt {
+      font-size: clamp(1.75rem, 1.2rem + 1.5vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+    .cover-facts dd { margin: 6px 0 0; color: rgba(255,255,255,0.68); font-size: 15px; line-height: 1.4; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr 1fr;
+      gap: 16px;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 22px 22px 20px;
+    }
+    .stat .label { margin: 0; font-size: 14px; font-weight: 600; color: var(--muted); }
+    .stat .value {
+      margin: 10px 0 0;
+      font-size: clamp(2.5rem, 2rem + 1.5vw, 3.5rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat .detail { margin: 10px 0 0; color: var(--ink-soft); font-size: 15px; line-height: 1.45; }
+    .stat.lead { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .stat.lead .label { color: #8eb6dc; }
+    .stat.lead .detail { color: rgba(255,255,255,0.72); }
+
+    .bars { display: flex; flex-direction: column; gap: 6px; }
+    .bar {
+      display: grid;
+      grid-template-columns: 210px 1fr 58px;
+      gap: 12px;
+      align-items: center;
+    }
+    .bar .who { font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .bar .who span { font-weight: 500; color: var(--muted); }
+    .track {
+      position: relative;
+      height: 8px;
+      background: #e7edf3;
+      border-radius: 99px;
+    }
+    .track i {
+      display: block;
+      height: 100%;
+      border-radius: 99px;
+      background: #b6cfe6;
+    }
+    .bar.top .track i { background: var(--accent); }
+    .bar .pct {
+      font-size: 14px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .trio {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .trio article {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px 22px;
+    }
+    .trio .n {
+      margin: 0;
+      font-size: clamp(2rem, 1.4rem + 1.4vw, 2.75rem);
+      letter-spacing: -0.04em;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .trio h2 { margin: 10px 0 0; font-size: 16px; font-weight: 700; }
+    .trio p { margin: 6px 0 0; color: var(--ink-soft); font-size: 15px; line-height: 1.45; }
+
+    .bigpair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bigpair .n {
+      margin: 0;
+      font-size: clamp(4rem, 3rem + 3vw, 5.5rem);
+      line-height: 0.9;
+      letter-spacing: -0.045em;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .bigpair .n em { font-style: normal; color: var(--amber); }
+    .bigpair .n.cash { color: var(--green); }
+    .bigpair h2 { margin: 12px 0 0; font-size: 18px; font-weight: 700; }
+    .bigpair p { margin: 6px 0 0; color: var(--ink-soft); font-size: 15px; line-height: 1.45; max-width: 32ch; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 11px 14px;
+      text-align: left;
+      font-size: 15px;
+      border-bottom: 1px solid var(--line);
+    }
+    th {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--canvas);
+    }
+    tr:last-child td { border-bottom: 0; }
+    td.num, th.num { text-align: right; }
+    tr.hot td { background: var(--amber-bg); }
+    tr.high td { background: var(--green-bg); }
+    tr.total td { font-weight: 700; background: var(--navy-50); }
+
+    .meter {
+      display: inline-grid;
+      grid-template-columns: 72px auto;
+      gap: 8px;
+      align-items: center;
+      justify-content: end;
+      width: 100%;
+    }
+    .meter span {
+      display: block;
+      height: 6px;
+      background: #e7edf3;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .meter i { display: block; height: 100%; background: var(--amber); }
+    tr.high .meter i { background: var(--green); }
+
+    .asks { display: grid; grid-template-columns: 240px 1fr; gap: 36px; align-items: start; }
+    .ask-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+    .ask-list li { display: grid; grid-template-columns: 52px 1fr; gap: 12px; align-items: baseline; }
+    .ask-list b {
+      font-size: 28px;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .ask-list span { color: var(--ink-soft); font-size: 15px; line-height: 1.35; }
+    ol.steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    ol.steps li {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    ol.steps li:last-child { border-bottom: 0; padding-bottom: 0; }
+    ol.steps .idx { font-weight: 700; color: var(--accent); }
+    ol.steps p { margin: 0; font-size: 16px; line-height: 1.45; }
+    ol.steps p strong { font-weight: 700; }
+
+    .levels { display: flex; height: 18px; border-radius: 99px; overflow: hidden; background: var(--mist); }
+    .levels i { display: block; height: 100%; }
+    .level-key { display: flex; flex-wrap: wrap; gap: 14px 22px; margin: 12px 0 0; padding: 0; list-style: none; }
+    .level-key li { font-size: 14px; color: var(--ink-soft); }
+    .level-key i { display: inline-block; width: 8px; height: 8px; border-radius: 99px; margin-right: 6px; }
+
+    .dock {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 56px;
+      padding: 0 var(--gutter);
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+    }
+    .dock .pos {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      min-width: 52px;
+    }
+    .dock .label { font-size: 14px; color: var(--ink-soft); flex: 1; }
+    .dock .hint { font-size: 13px; color: var(--muted); }
+    .nav { display: flex; gap: 8px; }
+    .nav button {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .nav button:hover { background: var(--canvas); }
+
+    @media (max-width: 860px) {
+      .stats, .trio, .bigpair, .asks, .cover-facts { grid-template-columns: 1fr; }
+      .bar { grid-template-columns: 1fr auto; }
+      .track { grid-column: 1 / -1; }
+      .frame { justify-content: flex-start; padding-top: 24px; }
+      .dock .hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <section class="slide cover is-on" data-label="Cover">
+      <div class="frame">
+        <div>
+          <p class="kicker">26 May to 7 October 2026</p>
+          <h1><strong>Boss Score</strong><br>so far.</h1>
+          <hr class="cover-rule" />
+          <p class="stand">208 people finished the assessment. 59 were coaches testing it: their own login, their own name, a demo account, or a test email. This is the rest, and what it suggests we do next.</p>
+        </div>
+        <dl class="cover-facts">
+          <div><dt>20%</dt><dd>Best landing opt-in so far. About 1 in 5 visitors on the strongest pages.</dd></div>
+          <div><dt>54</dt><dd>Median score. Most people land in Organised, not in crisis.</dd></div>
+          <div><dt>44%</dt><dd>Scored red on both a written strategy and a 90-day plan.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="slide" data-label="Opt-in">
+      <div class="frame">
+        <div>
+          <p class="kicker">Landing page</p>
+          <h1>The best opt-in so far is <strong>about 20%</strong>.</h1>
+          <p class="stand">That’s roughly 1 in 5 visitors. Sara’s page is at 21%, Jonathan Forster at 19%, Anne Melling at 17%. Nick Summers and Paul Wainwright are at 16% and 15%. Same landing page. The top of the range is the number worth aiming at.</p>
+        </div>
+        <div class="stats">
+          <article class="stat lead">
+            <p class="label">Strongest pages</p>
+            <p class="value">~20%</p>
+            <p class="detail">Sara, 10 opt-ins from 47 views. Jonathan and Anne are just behind, on a few dozen views each.</p>
+          </article>
+          <article class="stat">
+            <p class="label">21 June, then 1–2 July</p>
+            <p class="value">2,000</p>
+            <p class="detail">Views on one page across those three days, and 7 opt-ins. That burst is half of every landing view in the period.</p>
+          </article>
+          <article class="stat">
+            <p class="label">That same page, every other day</p>
+            <p class="value">8%</p>
+            <p class="detail">12 opt-ins from 143 views. The burst was unqualified clicks. The page on a normal day sat with the rest.</p>
+          </article>
+        </div>
+        <p class="note">A single average across every view lands near 5%, or about 10% if those three days are set aside. That mixes the best pages with one click burst on 21 June and 1–2 July. It is not what a working page does. There is also no A/B result yet: almost all live traffic is on one version of the page.</p>
+      </div>
+    </section>
+
+    <section class="slide" data-label="By coach">
+      <div class="frame">
+        <div>
+          <p class="kicker">Same page, different coaches</p>
+          <h1>Five coaches are already around <strong>15% to 21%</strong>.</h1>
+          <p class="stand">Highlighted bars are that group. After someone opts in, most of them finish the assessment. The shorter bars are smaller samples, or the June and July click burst.</p>
+        </div>
+        <div class="bars" id="coach-bars"></div>
+        <p class="note">Adam Graham’s all-time figure is the 21 June and 1–2 July burst, about 2,000 views and 7 opt-ins. On every other day his page was 8%, in line with the middle of this list.</p>
+      </div>
+    </section>
+
+    <section class="slide" data-label="Drop-off">
+      <div class="frame">
+        <div>
+          <p class="kicker">From view to a saved score</p>
+          <h1>People who start the questions <strong>usually finish</strong>.</h1>
+          <p class="stand">The drop is earlier. About one in three opt-ins we can tie to a person never becomes a saved Boss Score.</p>
+        </div>
+        <div class="trio">
+          <article>
+            <p class="n">3,914</p>
+            <h2>Unique page views</h2>
+            <p>Coach tests taken out. Variant D is almost all of this.</p>
+          </article>
+          <article>
+            <p class="n">209</p>
+            <h2>Unique opt-ins</h2>
+            <p>On the strongest pages, about 1 in 5 views becomes an opt-in.</p>
+          </article>
+          <article>
+            <p class="n">163</p>
+            <h2>Unique finishes</h2>
+            <p>About 46 opt-ins, 22%, never produced a finish event.</p>
+          </article>
+        </div>
+        <div class="trio">
+          <article>
+            <p class="n">1 in 3</p>
+            <h2>Opted in, no score saved</h2>
+            <p>50 of 149 people we could match to a contact.</p>
+          </article>
+          <article>
+            <p class="n">1 in 6</p>
+            <h2>Clicked Start, didn’t finish</h2>
+            <p>25 of 148. The assessment itself is not where people leave.</p>
+          </article>
+          <article>
+            <p class="n">20</p>
+            <h2>Finished off the landing page</h2>
+            <p>Of 149 kept submissions, 129 came through a tracked landing finish. The other 20 used a direct link.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-label="Who finished">
+      <div class="frame">
+        <div>
+          <p class="kicker">The 137 people</p>
+          <h1>Median score <strong>54</strong>. Organised, and wanting profit.</h1>
+          <p class="stand">Mean is 56. One person is Overwhelmed. Eleven are Owners. This is a mid-pack owner. 40% have been in business more than 10 years.</p>
+        </div>
+        <div>
+          <div class="levels" aria-hidden="true">
+            <i style="width:46.7%;background:#0c5290"></i>
+            <i style="width:27%;background:#1f7bc7"></i>
+            <i style="width:17.5%;background:#9a5b00"></i>
+            <i style="width:8%;background:#127a53"></i>
+            <i style="width:0.8%;background:#b4232f"></i>
+          </div>
+          <ul class="level-key">
+            <li><i style="background:#0c5290"></i>Organised 41–60 · 64</li>
+            <li><i style="background:#1f7bc7"></i>Overseer 61–80 · 37</li>
+            <li><i style="background:#9a5b00"></i>Overworked 21–40 · 24</li>
+            <li><i style="background:#127a53"></i>Owner 81–100 · 11</li>
+            <li><i style="background:#b4232f"></i>Overwhelmed · 1</li>
+          </ul>
+        </div>
+        <div class="trio">
+          <article>
+            <p class="n">69%</p>
+            <h2>Want more profit</h2>
+            <p>94 of 137. Time freedom is 15%. Stepping back or selling is 5%.</p>
+          </article>
+          <article>
+            <p class="n">37%</p>
+            <h2>Under £200K</h2>
+            <p>And 33% are over £1M, including 15 people over £5M. Revenue is self-reported.</p>
+          </article>
+          <article>
+            <p class="n">73</p>
+            <h2>Average score over £5M</h2>
+            <p>Everyone under £500K averages about 51. The score stays flat until that top band, and until teams of 30 or more.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-label="The plan">
+      <div class="frame">
+        <div>
+          <p class="kicker">Where the score is actually low</p>
+          <h1>They can see the numbers. <strong>The plan is the gap.</strong></h1>
+          <p class="stand">Both the 12-month strategy and the 90-day plan average 2.4 out of 5. Profit and cash averages 3.1. Sixty people scored 1 or 2 on both plan questions.</p>
+        </div>
+        <div class="bigpair">
+          <article>
+            <p class="n"><em>2.4</em></p>
+            <h2>Written plan</h2>
+            <p>12-month strategy and the 90-day plan. The two lowest areas in the assessment.</p>
+          </article>
+          <article>
+            <p class="n cash">3.1</p>
+            <h2>Profit and cash</h2>
+            <p>Knowing margin, cash, and the next 90 days of cash. A full point higher than the plan.</p>
+          </article>
+        </div>
+        <div class="trio">
+          <article>
+            <p class="n">44%</p>
+            <h2>Red on both plans</h2>
+            <p>60 of 137. Red means a score of 1 or 2.</p>
+          </article>
+          <article>
+            <p class="n">23%</p>
+            <h2>Know the cash, no plan</h2>
+            <p>32 people rate profit and cash a 4 or 5, and are still red on the plan.</p>
+          </article>
+          <article>
+            <p class="n">3.3</p>
+            <h2>Strongest area</h2>
+            <p>Improving how the business works. They are tinkering. They are not planning.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-label="By size">
+      <div class="frame">
+        <div>
+          <p class="kicker">The gap is not only a small-company problem</p>
+          <h1>It is worst under £500K, and it <strong>changes shape</strong> after that.</h1>
+          <p class="stand">Under £500K, 39 of 76 people are red on both plans. At £1–2M the cash score jumps and the plan does not. Over £5M, both move up. Bands from £500K to £5M are 12 to 18 people.</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Annual revenue</th>
+              <th class="num">People</th>
+              <th class="num">90-day plan</th>
+              <th class="num">Profit and cash</th>
+              <th class="num">Red on both plans</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Under £200K</td>
+              <td class="num">52</td>
+              <td class="num">2.2</td>
+              <td class="num">2.7</td>
+              <td class="num"><span class="meter"><span><i style="width:46%"></i></span>46%</span></td>
+            </tr>
+            <tr class="hot">
+              <td>£200K to £500K</td>
+              <td class="num">24</td>
+              <td class="num">2.1</td>
+              <td class="num">2.8</td>
+              <td class="num"><span class="meter"><span><i style="width:63%"></i></span>63%</span></td>
+            </tr>
+            <tr>
+              <td>£500K to £1M</td>
+              <td class="num">16</td>
+              <td class="num">2.4</td>
+              <td class="num">3.5</td>
+              <td class="num"><span class="meter"><span><i style="width:31%"></i></span>31%</span></td>
+            </tr>
+            <tr>
+              <td>£1M to £2M</td>
+              <td class="num">18</td>
+              <td class="num">2.5</td>
+              <td class="num">3.6</td>
+              <td class="num"><span class="meter"><span><i style="width:44%"></i></span>44%</span></td>
+            </tr>
+            <tr>
+              <td>£2M to £5M</td>
+              <td class="num">12</td>
+              <td class="num">2.4</td>
+              <td class="num">3.1</td>
+              <td class="num"><span class="meter"><span><i style="width:42%"></i></span>42%</span></td>
+            </tr>
+            <tr class="high">
+              <td>Over £5M</td>
+              <td class="num">15</td>
+              <td class="num">3.2</td>
+              <td class="num">4.3</td>
+              <td class="num"><span class="meter"><span><i style="width:20%"></i></span>20%</span></td>
+            </tr>
+            <tr class="total">
+              <td>All 137</td>
+              <td class="num">137</td>
+              <td class="num">2.4</td>
+              <td class="num">3.1</td>
+              <td class="num">44%</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">At £1–2M, 8 of 18 people know their cash position and are still red on the plan. Over £5M, 10 of 15 asked for tools to figure it out themselves, and 1 asked for one-to-one.</p>
+      </div>
+    </section>
+
+    <section class="slide" data-label="What next">
+      <div class="frame">
+        <div>
+          <p class="kicker">Front-end offer</p>
+          <h1>The people missing a plan <strong>asked for a person</strong>.</h1>
+          <p class="stand">Across all 137, the most common support answer is tools, 55 people. Inside the 60 who are red on both plans, one-to-one is the largest answer. 43 of those 60 want more profit.</p>
+        </div>
+        <div class="asks">
+          <ul class="ask-list">
+            <li><b>28</b><span>One-to-one, of the 60 with no written plan</span></li>
+            <li><b>16</b><span>Tools, to figure it out themselves</span></li>
+            <li><b>11</b><span>Done with you</span></li>
+            <li><b>5</b><span>A group programme</span></li>
+          </ul>
+          <ol class="steps">
+            <li>
+              <span class="idx">1</span>
+              <p><strong>Keep this landing page.</strong> Split traffic on variant D for coaches who have volume. Current headline against one line about the missing plan. A new visual will not explain a 4% to 21% spread on the same template.</p>
+            </li>
+            <li>
+              <span class="idx">2</span>
+              <p><strong>When the plan is the red area, offer to build the 90-day plan with them.</strong> That matches the 60. A self-serve template matches the over-£5M group, who already score 73 and mostly asked for tools.</p>
+            </li>
+            <li>
+              <span class="idx">3</span>
+              <p><strong>Say one thing in public.</strong> Owners who finish the Boss Score are weakest on a written plan, and they want profit. Keep the band percentages in the room. Half the completions come from four coaches, and several bands are under 20 people.</p>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <footer class="dock">
+      <div class="pos" id="pos">01 / 08</div>
+      <div class="label" id="label">Cover</div>
+      <div class="hint">Arrow keys</div>
+      <div class="nav">
+        <button type="button" id="prev">Back</button>
+        <button type="button" id="next">Next</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const coaches = [
+      ["Sara", "47 views", 21.3],
+      ["Jonathan Forster", "31 views", 19.4],
+      ["Anne Melling", "53 views", 17],
+      ["Nick Summers", "38 views", 15.8],
+      ["Paul Wainwright", "75 views", 14.7],
+      ["Yair Emanuel", "299 views", 13],
+      ["Mark Hodgkinson", "37 views", 10.8],
+      ["Eugene James", "141 views", 7.8],
+      ["Taff Kara", "221 views", 7.7],
+      ["Shaumit Saglani", "41 views", 7.3],
+      ["Hilary McNair", "235 views", 6.4],
+      ["Amer Fasihi", "98 views", 4.1],
+      ["Daniel Mirwis", "247 views", 4],
+      ["Athlone Performance", "84 views", 1.2],
+      ["Adam Graham", "2,115 views", 0.9],
+    ];
+    const bars = document.getElementById("coach-bars");
+    for (const [name, views, rate] of coaches) {
+      const row = document.createElement("div");
+      row.className = rate >= 14.5 ? "bar top" : "bar";
+      const width = Math.max(1.5, (rate / 25) * 100);
+      row.innerHTML =
+        '<div class="who">' + name + " <span>· " + views + "</span></div>" +
+        '<div class="track"><i style="width:' + width.toFixed(1) + '%"></i></div>' +
+        '<div class="pct">' + rate.toFixed(1) + "%</div>";
+      bars.appendChild(row);
+    }
+
+    const slides = [...document.querySelectorAll(".slide")];
+    const pos = document.getElementById("pos");
+    const label = document.getElementById("label");
+    let index = 0;
+
+    function show(next) {
+      index = Math.max(0, Math.min(slides.length - 1, next));
+      slides.forEach((slide, i) => {
+        const on = i === index;
+        slide.classList.toggle("is-on", on);
+        slide.hidden = !on;
+      });
+      pos.textContent = String(index + 1).padStart(2, "0") + " / 08";
+      label.textContent = slides[index].dataset.label;
+      history.replaceState(null, "", "#" + (index + 1));
+      slides[index].scrollTop = 0;
+    }
+
+    document.getElementById("next").addEventListener("click", () => show(index + 1));
+    document.getElementById("prev").addEventListener("click", () => show(index - 1));
+    document.addEventListener("keydown", (event) => {
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") {
+        event.preventDefault();
+        show(index + 1);
+      } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        show(index - 1);
+      } else if (event.key === "Home") {
+        show(0);
+      } else if (event.key === "End") {
+        show(slides.length - 1);
+      }
+    });
+
+    const start = Number(location.hash.replace("#", ""));
+    show(Number.isFinite(start) && start >= 1 ? start - 1 : 0);
+  </script>
+</body>
+</html>

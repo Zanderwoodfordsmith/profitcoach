@@ -19,7 +19,10 @@ import {
   type CampaignLibraryKind,
   type CoachCampaignTemplate,
 } from "@/lib/campaignLibrary/types";
-import { campaignStepTypeLabel } from "@/lib/unipile/campaignStepTypes";
+import {
+  campaignStepCountsInTotal,
+  campaignStepTypeLabel,
+} from "@/lib/unipile/campaignStepTypes";
 
 const KIND_ICON: Record<CampaignLibraryKind, LucideIcon> = {
   connector: UserPlus,
@@ -29,8 +32,8 @@ const KIND_ICON: Record<CampaignLibraryKind, LucideIcon> = {
 };
 
 export function campaignTemplateActionSummary(stepTypes: string[]): string {
-  const actions = stepTypes.filter((type) => type && type !== "wait");
-  const count = stepTypes.length;
+  const actions = stepTypes.filter((type) => campaignStepCountsInTotal(type));
+  const count = actions.length;
   const stepsLabel = `${count} step${count === 1 ? "" : "s"}`;
   if (actions.length === 0) return stepsLabel;
   const labels = actions

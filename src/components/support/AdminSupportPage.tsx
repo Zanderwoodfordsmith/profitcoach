@@ -9,6 +9,7 @@ import {
   Plus,
   Search,
   Trash2,
+  UserRound,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -35,6 +36,7 @@ import type { SupportCallContactPrefill } from "@/lib/support/supportCallPrefill
 import type { SupportCallHostSlug } from "@/lib/support/supportCallHosts";
 import { SupportCallAdminSettings } from "@/components/support/SupportCallAdminSettings";
 import { SupportTicketBookCall } from "@/components/support/SupportTicketBookCall";
+import { SupportTicketCoachPayments } from "@/components/support/SupportTicketCoachPayments";
 import {
   CoachSearchCombobox,
   SupportCreateTicketComposer,
@@ -42,7 +44,6 @@ import {
 import { SupportMailboxConnect } from "@/components/support/SupportMailboxConnect";
 import {
   DEFAULT_SUPPORT_ASSIGNEE_ID,
-  assigneeDisplayName,
   isSupportAssignable,
   type SupportAssignee,
   type SupportAssigneeFilter,
@@ -182,6 +183,14 @@ function assigneePickerOptions(
 ): SupportAssignee[] {
   if (!current || assignees.some((a) => a.id === current.id)) return assignees;
   return [current, ...assignees];
+}
+
+function assigneeShortName(assignee: SupportAssignee): string {
+  const first = assignee.first_name?.trim();
+  if (first) return first;
+  const full = assignee.full_name?.trim();
+  if (full) return full.split(/\s+/)[0] || full;
+  return "Team";
 }
 
 function ticketAuthorLabel(row: AdminTicketRow): string {
@@ -540,6 +549,7 @@ export function AdminSupportPage() {
   const [pamAssigneeId, setPamAssigneeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [createNotice, setCreateNotice] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] =
     useState<SupportAssigneeFilter>("anyone");
   const [statusFilter, setStatusFilter] =
@@ -1155,7 +1165,7 @@ export function AdminSupportPage() {
               assigneeOptions={assignees}
               createdByAdminId={adminUserId}
               onClose={() => setCreateOpen(false)}
-              onCreated={(created) => {
+              onCreated={(created, result) => {
                 const row: AdminTicketRow = {
                   id: created.id,
                   created_at: created.created_at,
@@ -1202,6 +1212,13 @@ export function AdminSupportPage() {
                 setRows((prev) => [row, ...prev]);
                 setSelectedId(row.id);
                 setCreateOpen(false);
+                if (result?.emailError) {
+                  setCreateNotice(null);
+                  setError(result.emailError);
+                } else if (result?.emailed) {
+                  setError(null);
+                  setCreateNotice(`Emailed ${result.emailed}.`);
+                }
               }}
             />
           </div>
@@ -1302,6 +1319,10 @@ export function AdminSupportPage() {
               {error ? (
                 <p className="shrink-0 border-b border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                   {error}
+                </p>
+              ) : createNotice ? (
+                <p className="shrink-0 border-b border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                  {createNotice}
                 </p>
               ) : null}
 
@@ -1555,15 +1576,28 @@ export function AdminSupportPage() {
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                   <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 xl:hidden">
                     {selected.created_by ? (
-                      <a
-                        href={`/coach/support?impersonate=${encodeURIComponent(selected.created_by)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3" aria-hidden />
-                        Open member Support
-                      </a>
+                      <span className="inline-flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                        <a
+                          href={`/admin/coaches/${encodeURIComponent(selected.created_by)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open coach profile"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:underline"
+                        >
+                          <UserRound className="h-3 w-3" aria-hidden />
+                          Profile
+                        </a>
+                        <a
+                          href={`/coach/support?impersonate=${encodeURIComponent(selected.created_by)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open their Support inbox"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:underline"
+                        >
+                          <ExternalLink className="h-3 w-3" aria-hidden />
+                          Their inbox
+                        </a>
+                      </span>
                     ) : (
                       <span />
                     )}
@@ -1579,11 +1613,11 @@ export function AdminSupportPage() {
                         className="max-w-[7.5rem] rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700"
                         aria-label="Assignee"
                       >
-                        <option value="">Unassigned</option>
+                        <option value="">Anyone</option>
                         {assigneePickerOptions(assignees, selected.assignee).map(
                           (a) => (
                             <option key={a.id} value={a.id}>
-                              {assigneeDisplayName(a)}
+                              {assigneeShortName(a)}
                             </option>
                           )
                         )}
@@ -1671,13 +1705,63 @@ export function AdminSupportPage() {
             </section>
 
             {/* Right: ticket details */}
-            <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-white xl:flex xl:border-l xl:border-t-0">
+            <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-slate-50 xl:flex xl:border-l xl:border-t-0">
               {selected && !showPeopleList ? (
                 <div className="flex min-h-0 flex-1 flex-col">
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
-                    <div className="space-y-3">
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-semibold text-slate-600">
+                    <div>
+                      <span className="mb-1 block text-xs font-semibold text-slate-600">
+                        Linked coach
+                      </span>
+                      <CoachSearchCombobox
+                        coaches={coaches}
+                        value={selected.created_by ?? ""}
+                        allowClear
+                        placeholder="Link to a coach…"
+                        onChange={(id) =>
+                          void linkTicketCoach(selected.id, id || null)
+                        }
+                      />
+                      {selected.contact_email ? (
+                        <p className="mt-1 truncate text-xs text-slate-500">
+                          {selected.contact_email}
+                        </p>
+                      ) : null}
+                      {selected.contact_email && !selected.created_by ? (
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          Linking also remembers this email for future inbox
+                          mail.
+                        </p>
+                      ) : null}
+                      {selected.created_by ? (
+                        <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg border border-sky-200 bg-sky-50">
+                          <a
+                            href={`/admin/coaches/${encodeURIComponent(selected.created_by)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Open coach profile"
+                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap border-r border-sky-200 px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+                          >
+                            <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            Profile
+                          </a>
+                          <a
+                            href={`/coach/support?impersonate=${encodeURIComponent(selected.created_by)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Open their Support inbox"
+                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            Their inbox
+                          </a>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
+                      <label className="flex items-center gap-3">
+                        <span className="w-16 shrink-0 text-xs font-semibold text-slate-600">
                           Assignee
                         </span>
                         <select
@@ -1688,22 +1772,22 @@ export function AdminSupportPage() {
                               assigned_to: e.target.value || null,
                             })
                           }
-                          className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
+                          className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm"
                         >
-                          <option value="">Unassigned</option>
+                          <option value="">Anyone</option>
                           {assigneePickerOptions(
                             assignees,
                             selected.assignee
                           ).map((a) => (
                             <option key={a.id} value={a.id}>
-                              {assigneeDisplayName(a)}
+                              {assigneeShortName(a)}
                             </option>
                           ))}
                         </select>
                       </label>
 
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-semibold text-slate-600">
+                      <label className="flex items-center gap-3">
+                        <span className="w-16 shrink-0 text-xs font-semibold text-slate-600">
                           Type
                         </span>
                         <select
@@ -1714,7 +1798,7 @@ export function AdminSupportPage() {
                               type: e.target.value as SupportTicketType,
                             })
                           }
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 [color-scheme:light]"
+                          className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm [color-scheme:light]"
                         >
                           {(
                             Object.keys(
@@ -1748,7 +1832,7 @@ export function AdminSupportPage() {
                                     : null,
                                 })
                               }
-                              className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
+                              className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm"
                             >
                               <option value="">—</option>
                               {[1, 2, 3, 4, 5].map((n) => (
@@ -1772,7 +1856,7 @@ export function AdminSupportPage() {
                                     : null,
                                 })
                               }
-                              className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
+                              className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm"
                             >
                               <option value="">—</option>
                               {[1, 2, 3, 4, 5].map((n) => (
@@ -1786,53 +1870,6 @@ export function AdminSupportPage() {
                             Score: {score ?? "—"}
                           </p>
                         </div>
-                      ) : null}
-                    </div>
-
-                    <div className="mt-6 border-t border-slate-100 pt-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        Source
-                      </p>
-                      <p className="mt-1 text-sm font-medium text-slate-900">
-                        {SUPPORT_SOURCE_LABELS[selected.source]}
-                      </p>
-                      {selected.contact_email ? (
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {selected.contact_email}
-                        </p>
-                      ) : null}
-
-                      <label className="mt-3 block">
-                        <span className="mb-1 block text-xs font-semibold text-slate-600">
-                          Linked coach
-                        </span>
-                        <CoachSearchCombobox
-                          coaches={coaches}
-                          value={selected.created_by ?? ""}
-                          allowClear
-                          placeholder="Link to a coach…"
-                          onChange={(id) =>
-                            void linkTicketCoach(selected.id, id || null)
-                          }
-                        />
-                        {selected.contact_email && !selected.created_by ? (
-                          <p className="mt-1 text-[11px] text-slate-500">
-                            Linking also remembers this email for future inbox
-                            mail.
-                          </p>
-                        ) : null}
-                      </label>
-
-                      {selected.created_by ? (
-                        <a
-                          href={`/coach/support?impersonate=${encodeURIComponent(selected.created_by)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                          Open member Support
-                        </a>
                       ) : null}
                     </div>
 
@@ -1863,20 +1900,32 @@ export function AdminSupportPage() {
                       );
                     })()}
 
+                    <SupportTicketCoachPayments coachId={selected.created_by} />
+
+                    <div className="mt-6 border-t border-slate-200 pt-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Source
+                      </p>
+                      <p className="mt-0.5 text-xs font-medium text-slate-700">
+                        {SUPPORT_SOURCE_LABELS[selected.source]}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-4 py-2">
+                    <p className="text-[10px] tabular-nums text-slate-400">
+                      {formatSupportTicketId(selected.ticket_number)}
+                    </p>
                     <button
                       type="button"
                       disabled={saving}
                       onClick={() => void deleteRow(selected)}
-                      className="mt-6 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                      Delete ticket
+                      Delete
                     </button>
                   </div>
-
-                  <p className="shrink-0 border-t border-slate-100 px-4 py-2 text-[10px] tabular-nums text-slate-400">
-                    {formatSupportTicketId(selected.ticket_number)}
-                  </p>
                 </div>
               ) : (
                 <div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm text-slate-400">

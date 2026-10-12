@@ -9,9 +9,16 @@ type Props = {
   slug: string;
   onSlugChange: (slug: string) => void;
   framed?: boolean;
+  /** Short field, for a header. The stacked layout is the full-width form. */
+  layout?: "stacked" | "inline";
 };
 
-export function PublicSlugEditor({ slug, onSlugChange, framed = true }: Props) {
+export function PublicSlugEditor({
+  slug,
+  onSlugChange,
+  framed = true,
+  layout = "stacked",
+}: Props) {
   const [draft, setDraft] = useState(slug);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<"success" | "error" | null>(null);
@@ -59,6 +66,55 @@ export function PublicSlugEditor({ slug, onSlugChange, framed = true }: Props) {
     setMessage("success");
     window.setTimeout(() => setMessage(null), 2000);
   }, [draft, onSlugChange]);
+
+  if (layout === "inline") {
+    return (
+      <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+        <label
+          htmlFor="public-url-slug"
+          className="text-xs font-medium text-slate-500"
+        >
+          Public URL
+        </label>
+        <div className="flex items-center overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
+          <span className="flex shrink-0 items-center border-r border-slate-200 bg-slate-50 px-2 text-[11px] text-slate-500">
+            {PUBLIC_SHARE_HOST}/
+          </span>
+          <input
+            id="public-url-slug"
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value.toLowerCase())}
+            onBlur={() => {
+              if (draft.trim() !== slug) void save();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void save();
+              }
+            }}
+            placeholder="your-name"
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Public URL slug"
+            className="w-36 border-0 bg-transparent px-2 py-1.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+          />
+        </div>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => void save()}
+          className="shrink-0 text-sm font-medium text-[#0c5290] hover:text-[#051e36] disabled:text-slate-300"
+        >
+          {saving ? "Saving" : message === "success" ? "Saved" : "Save"}
+        </button>
+        {message === "error" && error ? (
+          <p className="basis-full text-right text-[13px] text-rose-600">{error}</p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div

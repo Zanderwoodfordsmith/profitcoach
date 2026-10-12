@@ -6,7 +6,6 @@ import {
   ChevronRight,
   ExternalLink,
   Link2,
-  Loader2,
   Plus,
   Users,
   X,
@@ -38,6 +37,7 @@ import {
   unwatchSalesNavImport,
   watchSalesNavImport,
   poolImportStatusPath,
+  type PoolImportKind,
 } from "@/lib/salesNavigator/importJobWatch";
 import {
   SALES_NAV_POOL_LIMIT_OPTIONS,
@@ -88,7 +88,6 @@ const MAPS_TERM_PLACEHOLDERS = [
 ];
 
 type Mode = "pick" | PoolImportMode;
-type ImportKind = "sales_nav" | "google_maps" | "google_search";
 type SalesNavSource = "first" | "custom";
 
 const SALES_NAV_IMPORT_SOURCES: Array<{
@@ -129,6 +128,38 @@ type ImportProgress = {
   segmentTotal: number;
   peopleFound?: number;
 };
+
+type PlaceDraft = {
+  terms: string[];
+  location: string;
+  maxPlaces: number;
+  country: GoogleMapsCountryCode;
+  countryOther: string;
+  usState: GoogleMapsUsStateCode | "";
+};
+
+type BusinessKind = "google_maps" | "google_search";
+
+type BusinessRun = {
+  id: string;
+  kind: BusinessKind;
+  startedAt: string;
+  progress: ImportProgress;
+  saveListId: string;
+  saveListName: string;
+  draft: PlaceDraft;
+};
+
+function emptyPlaceDraft(): PlaceDraft {
+  return {
+    terms: [""],
+    location: "",
+    maxPlaces: 100,
+    country: GOOGLE_MAPS_DEFAULT_COUNTRY,
+    countryOther: "",
+    usState: "",
+  };
+}
 
 const MAPS_SELECT_CLASS =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 [color-scheme:light]";
@@ -223,7 +254,7 @@ type Props = {
     saveListId: string;
     saveListName: string;
     targetCount: number;
-    kind: ImportKind;
+    kind: PoolImportKind;
   }) => void;
 };
 
@@ -297,7 +328,6 @@ export function ImportPoolModal({
   onImportStartedRef.current = onImportStarted;
   const onAddedPeopleRef = useRef(onAddedPeople);
   onAddedPeopleRef.current = onAddedPeople;
-  const pendingSaveListIdRef = useRef<string | null>(null);
   const openedRef = useRef(false);
 
   useEffect(() => {
@@ -329,31 +359,18 @@ export function ImportPoolModal({
   );
   const [poolSize, setPoolSize] = useState<SalesNavPoolSizeValue>("all");
   const [extraTeamSizes, setExtraTeamSizes] = useState<string[]>([]);
-  const pendingSaveListNameRef = useRef<string | null>(null);
-  const [importJobId, setImportJobId] = useState<string | null>(null);
-  const [importKind, setImportKind] = useState<ImportKind>("sales_nav");
-  const [importProgress, setImportProgress] = useState<ImportProgress | null>(
-    null
-  );
-
-  const [mapsTerms, setMapsTerms] = useState<string[]>([""]);
-  const [mapsLocation, setMapsLocation] = useState("");
-  const [mapsCountry, setMapsCountry] = useState<GoogleMapsCountryCode>(
-    GOOGLE_MAPS_DEFAULT_COUNTRY
-  );
-  const [mapsCountryOther, setMapsCountryOther] = useState("");
-  const [mapsUsState, setMapsUsState] = useState<GoogleMapsUsStateCode | "">(
-    ""
-  );
-  const [mapsMaxPlaces, setMapsMaxPlaces] = useState(100);
-  const [mapsStartedAt, setMapsStartedAt] = useState<string | null>(null);
+  const [mapsDraft, setMapsDraft] = useState<PlaceDraft>(emptyPlaceDraft);
+  const [searchDraft, setSearchDraft] = useState<PlaceDraft>(emptyPlaceDraft);
+  const [mapsRun, setMapsRun] = useState<BusinessRun | null>(null);
+  const [searchRun, setSearchRun] = useState<BusinessRun | null>(null);
 
   useEffect(() => {
-    setMapsCountry(loadStoredMapsCountry());
-    setMapsUsState(loadStoredMapsUsState());
+    const country = loadStoredMapsCountry();
+    const usState = loadStoredMapsUsState();
+    setMapsDraft((draft) => ({ ...draft, country, usState }));
+    setSearchDraft((draft) => ({ ...draft, country, usState }));
   }, []);
 
-  const salesNavCapRef = useRef(0);
   const [pasteText, setPasteText] = useState("");
   const [showPasteLinks, setShowPasteLinks] = useState(false);
   const [oneUrl, setOneUrl] = useState("");
@@ -364,19 +381,20 @@ export function ImportPoolModal({
   const [onePhone, setOnePhone] = useState("");
 
   useEffect(() => {
-    if (!importJobId) return;
-    const jobId = importJobId;
+    const jobs = [mapsRun, searchRun].filter(
+      (run): run is BusinessRun => run != null
+    );
+    if (jobs.length === 0) return;
     let cancelled = false;
 
-    async function poll() {
+    async function pollJob(job: BusinessRun) {
       const headers = await getCoachAuthHeaders();
-      if (!headers) return;
-      if (cancelled) return;
-      const path = poolImportStatusPath(importKind, jobId);
+      if (!headers || cancelled) return;
+      const path = poolImportStatusPath(job.kind, job.id);
       let res = await fetch(path, { headers });
       if (res.status === 401) {
         const retryHeaders = await getCoachAuthHeaders();
-        if (!retryHeaders) return;
+        if (!retryHeaders || cancelled) return;
         res = await fetch(path, { headers: retryHeaders });
       }
       const body = (await res.json().catch(() => ({}))) as {
@@ -388,100 +406,98 @@ export function ImportPoolModal({
         added?: number;
         peopleFound?: number;
         phase?: "scraping" | "finalizing" | null;
-        run?: {
-          segmentLabel?: string | null;
-          segmentIndex?: number;
-          segmentTotal?: number;
-        };
       };
       if (cancelled) return;
+      const setRun = job.kind === "google_maps" ? setMapsRun : setSearchRun;
       if (!res.ok) {
         // Stale JWT or a sync blip — keep polling; do not kill a running job.
         if (res.status === 401 || res.status === 502) return;
         setError(body.error || "Import failed.");
         setBusy(false);
-        setImportJobId(null);
-        unwatchSalesNavImport(jobId);
+        unwatchSalesNavImport(job.id);
+        setRun(null);
         return;
       }
 
-      const cap = importKind === "sales_nav" ? salesNavCapRef.current : 0;
-      const targetCount =
-        cap > 0 ? cap : Math.max(0, body.targetCount ?? 0);
       const progressCount = Math.max(
         0,
         body.progressCount ?? body.scrapedCount ?? 0
       );
-      setImportProgress({
+      const progress: ImportProgress = {
         progressCount,
-        targetCount,
+        targetCount: Math.max(0, body.targetCount ?? job.progress.targetCount),
         phase: body.phase === "finalizing" ? "finalizing" : "scraping",
-        segmentLabel: body.run?.segmentLabel ?? null,
-        segmentIndex: body.run?.segmentIndex ?? 0,
-        segmentTotal: body.run?.segmentTotal ?? 1,
+        segmentLabel: null,
+        segmentIndex: 0,
+        segmentTotal: 1,
         peopleFound: Math.max(0, body.peopleFound ?? 0),
-      });
+      };
 
       if (body.status === "succeeded") {
-        unwatchSalesNavImport(jobId);
-        setImportJobId(null);
+        unwatchSalesNavImport(job.id);
+        setRun(null);
         setBusy(false);
         const added = Math.max(0, body.added ?? progressCount);
         const peopleFound = Math.max(0, body.peopleFound ?? 0);
-        const savedAs = pendingSaveListNameRef.current
-          ? ` Also saved as “${pendingSaveListNameRef.current}”.`
+        const savedAs = job.saveListName
+          ? ` Also saved as “${job.saveListName}”.`
           : "";
-        pendingSaveListNameRef.current = null;
         setNotice(
-          importKind === "google_maps" || importKind === "google_search"
-            ? `Added ${added.toLocaleString()} ${
-                added === 1 ? "business" : "businesses"
-              } to the pool${
-                peopleFound
-                  ? ` · ${peopleFound.toLocaleString()} ${
-                      peopleFound === 1 ? "person" : "people"
-                    } found`
-                  : ""
-              }.${savedAs}`
-            : `Added ${progressCount.toLocaleString()} ${
-                progressCount === 1 ? "person" : "people"
-              } to the pool.${savedAs}`
+          `Added ${added.toLocaleString()} ${
+            added === 1 ? "business" : "businesses"
+          } to the pool${
+            peopleFound
+              ? ` · ${peopleFound.toLocaleString()} ${
+                  peopleFound === 1 ? "person" : "people"
+                } found`
+              : ""
+          }.${savedAs}`
         );
-        const listId = pendingSaveListIdRef.current;
-        pendingSaveListIdRef.current = null;
-        await onImportedRef.current(listId ? { listId } : undefined);
+        await onImportedRef.current(
+          job.saveListId ? { listId: job.saveListId } : undefined
+        );
         return;
       }
       if (body.status === "failed") {
-        unwatchSalesNavImport(jobId);
-        setImportJobId(null);
+        unwatchSalesNavImport(job.id);
+        setRun(null);
         setBusy(false);
         setError(body.error || "Import failed.");
+        return;
       }
+
+      setRun((prev) =>
+        prev && prev.id === job.id ? { ...prev, progress } : prev
+      );
     }
 
-    void poll();
-    const handle = window.setInterval(() => void poll(), UNIPILE_POLL_MS);
+    void Promise.all(jobs.map((job) => pollJob(job)));
+    const handle = window.setInterval(() => {
+      void Promise.all(jobs.map((job) => pollJob(job)));
+    }, UNIPILE_POLL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(handle);
     };
-  }, [importJobId, importKind]);
+  }, [mapsRun?.id, searchRun?.id]);
 
-  const mapsParsedTerms = parseGoogleMapsSearchTerms(mapsTerms);
+  const visibleRun = mode === "google" ? searchRun : mapsRun;
+  const visibleDraft =
+    visibleRun?.draft ?? (mode === "google" ? searchDraft : mapsDraft);
+  const mapsParsedTerms = parseGoogleMapsSearchTerms(visibleDraft.terms);
   const mapsSplitHint = formatGoogleMapsSplitHint(
-    mapsMaxPlaces,
+    visibleDraft.maxPlaces,
     mapsParsedTerms.length
   );
   const searchSplitHint = formatGoogleSearchSplitHint(
-    mapsMaxPlaces,
+    visibleDraft.maxPlaces,
     mapsParsedTerms.length
   );
   const mapsResolvedLocation = resolveGoogleMapsLocation({
-    city: mapsLocation,
-    countryCode: mapsCountry,
-    countryName: mapsCountryOther,
-    stateCode: mapsUsState || null,
+    city: visibleDraft.location,
+    countryCode: visibleDraft.country,
+    countryName: visibleDraft.countryOther,
+    stateCode: visibleDraft.usState || null,
   });
   const mapsLocationReady = !("error" in mapsResolvedLocation);
   const salesNavPaste = classifySalesNavUrl(searchUrl.trim());
@@ -515,15 +531,18 @@ export function ImportPoolModal({
     setSalesNavSource(null);
     setPoolSize("all");
     setExtraTeamSizes([]);
-    pendingSaveListNameRef.current = null;
-    pendingSaveListIdRef.current = null;
-    setImportJobId(null);
-    setImportKind("sales_nav");
-    setImportProgress(null);
-    setMapsTerms([""]);
-    setMapsLocation("");
-    setMapsCountryOther("");
-    setMapsMaxPlaces(100);
+    setMapsRun(null);
+    setSearchRun(null);
+    setMapsDraft((draft) => ({
+      ...emptyPlaceDraft(),
+      country: draft.country,
+      usState: draft.usState,
+    }));
+    setSearchDraft((draft) => ({
+      ...emptyPlaceDraft(),
+      country: draft.country,
+      usState: draft.usState,
+    }));
     setPasteText("");
     setShowPasteLinks(false);
     setOneUrl("");
@@ -570,12 +589,10 @@ export function ImportPoolModal({
     setBusy(true);
     setError(null);
     setNotice(null);
-    setImportProgress(null);
     try {
       const headers = await getCoachAuthHeaders();
       if (!headers) throw new Error("Sign in required.");
       const cap = poolSize === "all" ? 0 : poolSize;
-      salesNavCapRef.current = cap;
       const res = await fetch("/api/coach/sales-nav-import", {
         method: "POST",
         headers,
@@ -602,8 +619,6 @@ export function ImportPoolModal({
       }
       const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
       const saveListName = body.saveListName?.trim() || "Sales Nav import";
-      pendingSaveListNameRef.current = saveListName;
-      pendingSaveListIdRef.current = body.saveListId;
       watchSalesNavImport({
         id: body.jobId,
         name: saveListName,
@@ -622,7 +637,6 @@ export function ImportPoolModal({
       setBusy(false);
       setMode("pick");
       setSalesNavSource(null);
-      setImportProgress(null);
     } catch (err) {
       setBusy(false);
       setError(err instanceof Error ? err.message : "Import failed.");
@@ -630,12 +644,14 @@ export function ImportPoolModal({
   }
 
   async function startMapsImport() {
-    const searchTerms = parseGoogleMapsSearchTerms(mapsTerms);
+    if (mapsRun) return;
+    const draft = mapsDraft;
+    const searchTerms = parseGoogleMapsSearchTerms(draft.terms);
     const location = resolveGoogleMapsLocation({
-      city: mapsLocation,
-      countryCode: mapsCountry,
-      countryName: mapsCountryOther,
-      stateCode: mapsUsState || null,
+      city: draft.location,
+      countryCode: draft.country,
+      countryName: draft.countryOther,
+      stateCode: draft.usState || null,
     });
     if (!searchTerms.length) {
       setError("Enter a search like plumbers or dental practices.");
@@ -648,7 +664,6 @@ export function ImportPoolModal({
     setBusy(true);
     setError(null);
     setNotice(null);
-    setImportProgress(null);
     try {
       const headers = await getCoachAuthHeaders();
       if (!headers) throw new Error("Sign in required.");
@@ -657,11 +672,11 @@ export function ImportPoolModal({
         headers,
         body: JSON.stringify({
           searchTerms,
-          city: mapsLocation.trim(),
-          countryCode: mapsCountry,
-          countryName: mapsCountryOther.trim(),
-          stateCode: mapsUsState || undefined,
-          maxPlaces: mapsMaxPlaces,
+          city: draft.location.trim(),
+          countryCode: draft.country,
+          countryName: draft.countryOther.trim(),
+          stateCode: draft.usState || undefined,
+          maxPlaces: draft.maxPlaces,
           findPeople: true,
         }),
       });
@@ -679,13 +694,11 @@ export function ImportPoolModal({
       }
       const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
       const saveListName = body.saveListName?.trim() || "Google Maps import";
-      const startedAt = new Date().toISOString();
-      pendingSaveListNameRef.current = saveListName;
-      pendingSaveListIdRef.current = body.saveListId;
+      const targetCount = body.targetCount ?? draft.maxPlaces;
       watchSalesNavImport({
         id: body.jobId,
         name: saveListName,
-        targetCount: body.targetCount ?? mapsMaxPlaces,
+        targetCount,
         resumeHref: `${prefix}/campaigns?tab=pool`,
         saveListId: body.saveListId,
         kind: "google_maps",
@@ -694,20 +707,25 @@ export function ImportPoolModal({
         jobId: body.jobId,
         saveListId: body.saveListId,
         saveListName,
-        targetCount: body.targetCount ?? mapsMaxPlaces,
+        targetCount,
         kind: "google_maps",
       });
-      setMapsStartedAt(startedAt);
-      setImportJobId(body.jobId);
-      setImportKind("google_maps");
-      setImportProgress({
-        progressCount: 0,
-        targetCount: body.targetCount ?? mapsMaxPlaces,
-        phase: "scraping",
-        segmentLabel: null,
-        segmentIndex: 0,
-        segmentTotal: 1,
-        peopleFound: 0,
+      setMapsRun({
+        id: body.jobId,
+        kind: "google_maps",
+        startedAt: new Date().toISOString(),
+        saveListId: body.saveListId,
+        saveListName,
+        draft,
+        progress: {
+          progressCount: 0,
+          targetCount,
+          phase: "scraping",
+          segmentLabel: null,
+          segmentIndex: 0,
+          segmentTotal: 1,
+          peopleFound: 0,
+        },
       });
       setBusy(false);
     } catch (err) {
@@ -717,12 +735,14 @@ export function ImportPoolModal({
   }
 
   async function startGoogleSearchImport() {
-    const searchTerms = parseGoogleMapsSearchTerms(mapsTerms);
+    if (searchRun) return;
+    const draft = searchDraft;
+    const searchTerms = parseGoogleMapsSearchTerms(draft.terms);
     const location = resolveGoogleMapsLocation({
-      city: mapsLocation,
-      countryCode: mapsCountry,
-      countryName: mapsCountryOther,
-      stateCode: mapsUsState || null,
+      city: draft.location,
+      countryCode: draft.country,
+      countryName: draft.countryOther,
+      stateCode: draft.usState || null,
     });
     if (!searchTerms.length) {
       setError("Enter a search like plumbers or dental practices.");
@@ -735,7 +755,6 @@ export function ImportPoolModal({
     setBusy(true);
     setError(null);
     setNotice(null);
-    setImportProgress(null);
     try {
       const headers = await getCoachAuthHeaders();
       if (!headers) throw new Error("Sign in required.");
@@ -744,11 +763,11 @@ export function ImportPoolModal({
         headers,
         body: JSON.stringify({
           searchTerms,
-          city: mapsLocation.trim(),
-          countryCode: mapsCountry,
-          countryName: mapsCountryOther.trim(),
-          stateCode: mapsUsState || undefined,
-          maxResults: mapsMaxPlaces,
+          city: draft.location.trim(),
+          countryCode: draft.country,
+          countryName: draft.countryOther.trim(),
+          stateCode: draft.usState || undefined,
+          maxResults: draft.maxPlaces,
           findPeople: true,
         }),
       });
@@ -766,13 +785,11 @@ export function ImportPoolModal({
       }
       const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
       const saveListName = body.saveListName?.trim() || "Google Search import";
-      const startedAt = new Date().toISOString();
-      pendingSaveListNameRef.current = saveListName;
-      pendingSaveListIdRef.current = body.saveListId;
+      const targetCount = body.targetCount ?? draft.maxPlaces;
       watchSalesNavImport({
         id: body.jobId,
         name: saveListName,
-        targetCount: body.targetCount ?? mapsMaxPlaces,
+        targetCount,
         resumeHref: `${prefix}/campaigns?tab=pool`,
         saveListId: body.saveListId,
         kind: "google_search",
@@ -781,26 +798,41 @@ export function ImportPoolModal({
         jobId: body.jobId,
         saveListId: body.saveListId,
         saveListName,
-        targetCount: body.targetCount ?? mapsMaxPlaces,
+        targetCount,
         kind: "google_search",
       });
-      setMapsStartedAt(startedAt);
-      setImportJobId(body.jobId);
-      setImportKind("google_search");
-      setImportProgress({
-        progressCount: 0,
-        targetCount: body.targetCount ?? mapsMaxPlaces,
-        phase: "scraping",
-        segmentLabel: null,
-        segmentIndex: 0,
-        segmentTotal: 1,
-        peopleFound: 0,
+      setSearchRun({
+        id: body.jobId,
+        kind: "google_search",
+        startedAt: new Date().toISOString(),
+        saveListId: body.saveListId,
+        saveListName,
+        draft,
+        progress: {
+          progressCount: 0,
+          targetCount,
+          phase: "scraping",
+          segmentLabel: null,
+          segmentIndex: 0,
+          segmentTotal: 1,
+          peopleFound: 0,
+        },
       });
       setBusy(false);
     } catch (err) {
       setBusy(false);
       setError(err instanceof Error ? err.message : "Import failed.");
     }
+  }
+
+  function patchPlaceDraft(patch: Partial<PlaceDraft>) {
+    if (mode === "google") {
+      if (searchRun) return;
+      setSearchDraft((draft) => ({ ...draft, ...patch }));
+      return;
+    }
+    if (mapsRun) return;
+    setMapsDraft((draft) => ({ ...draft, ...patch }));
   }
 
   async function importPeople(input: {
@@ -966,8 +998,7 @@ export function ImportPoolModal({
                   setSalesNavSource(null);
                   setExtraTeamSizes([]);
                 }}
-                disabled={Boolean(importJobId)}
-                className="mb-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 disabled:opacity-50"
+                className="mb-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
               >
                 ← All import options
               </button>
@@ -1064,69 +1095,15 @@ export function ImportPoolModal({
 
           {mode === "search" ? (
             <div className="space-y-3">
-              {importProgress && importKind === "sales_nav" ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3">
-                  <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-amber-950">
-                    <Loader2
-                      className="h-3.5 w-3.5 shrink-0 animate-spin"
-                      aria-hidden
-                    />
-                    <span className="font-semibold">
-                      {importProgress.phase === "finalizing"
-                        ? "Finishing import"
-                        : "Importing into pool"}
-                    </span>
-                    <span className="tabular-nums text-amber-950">
-                      {importProgress.phase === "finalizing"
-                        ? `${importProgress.progressCount.toLocaleString()} people`
-                        : importProgress.targetCount > 0
-                          ? `${importProgress.progressCount.toLocaleString()} / ${importProgress.targetCount.toLocaleString()}`
-                          : `${importProgress.progressCount.toLocaleString()} people`}
-                    </span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-amber-200/80">
-                    {importProgress.targetCount > 0 ? (
-                      <div
-                        className="h-full rounded-full bg-amber-500 transition-[width] duration-500"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(
-                              (importProgress.progressCount /
-                                Math.max(1, importProgress.targetCount)) *
-                                100
-                            )
-                          )}%`,
-                        }}
-                      />
-                    ) : (
-                      <div className="h-full w-1/3 animate-pulse rounded-full bg-amber-500" />
-                    )}
-                  </div>
-                  <p className="mt-2 text-xs leading-snug text-amber-950">
-                    {importProgress.segmentLabel &&
-                    importProgress.phase !== "finalizing"
-                      ? `Company size ${importProgress.segmentLabel}${
-                          importProgress.segmentTotal > 1
-                            ? ` (${importProgress.segmentIndex + 1} of ${importProgress.segmentTotal})`
-                            : ""
-                        }. You can close this and keep working.`
-                      : "You can close this and keep working. Progress stays on the pool page."}
-                  </p>
-                </div>
-              ) : null}
-
               <div className="flex flex-col gap-2">
                 <a
                   href={SALES_NAV_BASE_SEARCH_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => {
-                    if (!importJobId) {
-                      setError(null);
-                      setSalesNavSource("custom");
-                      setSearchUrl("");
-                    }
+                    setError(null);
+                    setSalesNavSource("custom");
+                    setSearchUrl("");
                   }}
                   className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
                 >
@@ -1160,7 +1137,6 @@ export function ImportPoolModal({
                     >
                       <button
                         type="button"
-                        disabled={Boolean(importJobId)}
                         onClick={() => {
                           setError(null);
                           setSalesNavSource(source.id);
@@ -1217,7 +1193,6 @@ export function ImportPoolModal({
                     placeholder="https://www.linkedin.com/sales/search/people?…"
                     className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 font-mono text-xs"
                     spellCheck={false}
-                    disabled={Boolean(importJobId)}
                   />
                   {searchUrl.trim() && salesNavPaste.kind === "rejected" ? (
                     <p className="text-xs text-rose-600">
@@ -1245,7 +1220,7 @@ export function ImportPoolModal({
                     <span className="font-semibold">{importTeamSummary}</span>.
                   </p>
                   {importTeamExtras.length > 0 ? (
-                    <fieldset disabled={Boolean(importJobId)} className="min-w-0">
+                    <fieldset className="min-w-0">
                       <legend className="text-xs font-medium text-slate-900">
                         Add other sizes if you want them too
                       </legend>
@@ -1261,13 +1236,12 @@ export function ImportPoolModal({
                                 on
                                   ? "border-[#0c5290] bg-[#0c5290] text-white"
                                   : "border-slate-200 bg-white text-slate-900 hover:border-sky-300"
-                              } ${importJobId ? "cursor-not-allowed opacity-50" : ""}`}
+                              }`}
                             >
                               <input
                                 type="checkbox"
                                 className="sr-only"
                                 checked={on}
-                                disabled={Boolean(importJobId)}
                                 onChange={() => {
                                   setExtraTeamSizes((prev) =>
                                     prev.includes(band.label)
@@ -1302,7 +1276,6 @@ export function ImportPoolModal({
                             Number(v) as (typeof SALES_NAV_POOL_LIMIT_OPTIONS)[number]
                           );
                       }}
-                      disabled={Boolean(importJobId)}
                       className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
                     >
                       <option value="all">All available</option>
@@ -1315,22 +1288,11 @@ export function ImportPoolModal({
                   </label>
                   <button
                     type="button"
-                    disabled={
-                      busy ||
-                      Boolean(importJobId) ||
-                      !salesNavUrlReady
-                    }
+                    disabled={busy || !salesNavUrlReady}
                     onClick={() => void startSalesNavImport()}
                     className="ml-auto inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                   >
-                    {importJobId ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Importing…
-                      </>
-                    ) : (
-                      "Import to pool"
-                    )}
+                    Import to pool
                   </button>
                 </div>
               ) : null}
@@ -1347,33 +1309,35 @@ export function ImportPoolModal({
               ) : null}
               <div>
                 <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
-                  {mapsTerms.length > 1 ? "Searches" : "Search"}
+                  {visibleDraft.terms.length > 1 ? "Searches" : "Search"}
                 </span>
                 <div className="space-y-2">
-                  {mapsTerms.map((term, index) => (
+                  {visibleDraft.terms.map((term, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <input
                         value={term}
                         onChange={(e) => {
-                          const next = [...mapsTerms];
+                          const next = [...visibleDraft.terms];
                           next[index] = e.target.value;
-                          setMapsTerms(next);
+                          patchPlaceDraft({ terms: next });
                         }}
                         placeholder={
                           MAPS_TERM_PLACEHOLDERS[index] ?? "another trade"
                         }
-                        disabled={Boolean(importJobId)}
+                        disabled={Boolean(visibleRun)}
                         className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
                       />
-                      {mapsTerms.length > 1 ? (
+                      {visibleDraft.terms.length > 1 ? (
                         <button
                           type="button"
                           aria-label="Remove search"
-                          disabled={Boolean(importJobId)}
+                          disabled={Boolean(visibleRun)}
                           onClick={() =>
-                            setMapsTerms(
-                              mapsTerms.filter((_, i) => i !== index)
-                            )
+                            patchPlaceDraft({
+                              terms: visibleDraft.terms.filter(
+                                (_, i) => i !== index
+                              ),
+                            })
                           }
                           className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
                         >
@@ -1383,12 +1347,14 @@ export function ImportPoolModal({
                     </div>
                   ))}
                 </div>
-                {mapsTerms.length < GOOGLE_MAPS_MAX_SEARCH_TERMS &&
+                {visibleDraft.terms.length < GOOGLE_MAPS_MAX_SEARCH_TERMS &&
                 mapsParsedTerms.length > 0 &&
-                !importJobId ? (
+                !visibleRun ? (
                   <button
                     type="button"
-                    onClick={() => setMapsTerms([...mapsTerms, ""])}
+                    onClick={() =>
+                      patchPlaceDraft({ terms: [...visibleDraft.terms, ""] })
+                    }
                     className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-[#0c5290] hover:underline"
                   >
                     <Plus className="h-3.5 w-3.5" aria-hidden />
@@ -1401,14 +1367,14 @@ export function ImportPoolModal({
                   Country
                 </span>
                 <select
-                  value={mapsCountry}
+                  value={visibleDraft.country}
                   onChange={(e) => {
                     const next = e.target.value;
                     if (!isGoogleMapsCountryCode(next)) return;
-                    setMapsCountry(next);
+                    patchPlaceDraft({ country: next });
                     storeMapsCountry(next);
                   }}
-                  disabled={Boolean(importJobId)}
+                  disabled={Boolean(visibleRun)}
                   className={MAPS_SELECT_CLASS}
                 >
                   {GOOGLE_MAPS_COUNTRIES.map((country) => (
@@ -1419,24 +1385,24 @@ export function ImportPoolModal({
                   <option value={GOOGLE_MAPS_COUNTRY_OTHER}>🌍 Other</option>
                 </select>
               </label>
-              {googleMapsNeedsUsState(mapsCountry) ? (
+              {googleMapsNeedsUsState(visibleDraft.country) ? (
                 <label className="block">
                   <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                     State
                   </span>
                   <select
-                    value={mapsUsState}
+                    value={visibleDraft.usState}
                     onChange={(e) => {
                       const next = e.target.value;
                       if (!next) {
-                        setMapsUsState("");
+                        patchPlaceDraft({ usState: "" });
                         return;
                       }
                       if (!isGoogleMapsUsStateCode(next)) return;
-                      setMapsUsState(next);
+                      patchPlaceDraft({ usState: next });
                       storeMapsUsState(next);
                     }}
-                    disabled={Boolean(importJobId)}
+                    disabled={Boolean(visibleRun)}
                     className={MAPS_SELECT_CLASS}
                   >
                     <option value="">Select a state</option>
@@ -1448,16 +1414,18 @@ export function ImportPoolModal({
                   </select>
                 </label>
               ) : null}
-              {mapsCountry === GOOGLE_MAPS_COUNTRY_OTHER ? (
+              {visibleDraft.country === GOOGLE_MAPS_COUNTRY_OTHER ? (
                 <label className="block">
                   <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                     Country name
                   </span>
                   <input
-                    value={mapsCountryOther}
-                    onChange={(e) => setMapsCountryOther(e.target.value)}
+                    value={visibleDraft.countryOther}
+                    onChange={(e) =>
+                      patchPlaceDraft({ countryOther: e.target.value })
+                    }
                     placeholder="United Kingdom"
-                    disabled={Boolean(importJobId)}
+                    disabled={Boolean(visibleRun)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
                   />
                 </label>
@@ -1470,19 +1438,21 @@ export function ImportPoolModal({
                   </span>
                 </span>
                 <input
-                  value={mapsLocation}
-                  onChange={(e) => setMapsLocation(e.target.value)}
+                  value={visibleDraft.location}
+                  onChange={(e) => patchPlaceDraft({ location: e.target.value })}
                   placeholder={
-                    googleMapsNeedsUsState(mapsCountry) ? "Austin" : "Manchester"
+                    googleMapsNeedsUsState(visibleDraft.country)
+                      ? "Austin"
+                      : "Manchester"
                   }
-                  disabled={Boolean(importJobId)}
+                  disabled={Boolean(visibleRun)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
                 />
                 {"error" in mapsResolvedLocation ? (
                   <p className="mt-1.5 text-xs leading-snug text-slate-500">
-                    {mapsCountry === GOOGLE_MAPS_COUNTRY_OTHER
+                    {visibleDraft.country === GOOGLE_MAPS_COUNTRY_OTHER
                       ? "Enter the country name in full, for example United Kingdom."
-                      : googleMapsNeedsUsState(mapsCountry)
+                      : googleMapsNeedsUsState(visibleDraft.country)
                         ? "Pick a state so we don’t search the whole United States."
                         : "Leave blank to search the whole country."}
                   </p>
@@ -1499,9 +1469,11 @@ export function ImportPoolModal({
                   Amount to import
                 </span>
                 <select
-                  value={mapsMaxPlaces}
-                  onChange={(e) => setMapsMaxPlaces(Number(e.target.value))}
-                  disabled={Boolean(importJobId)}
+                  value={visibleDraft.maxPlaces}
+                  onChange={(e) =>
+                    patchPlaceDraft({ maxPlaces: Number(e.target.value) })
+                  }
+                  disabled={Boolean(visibleRun)}
                   className={MAPS_SELECT_CLASS}
                 >
                   {(mode === "google"
@@ -1521,25 +1493,21 @@ export function ImportPoolModal({
                   </p>
                 ) : null}
               </label>
-              {importProgress &&
-              (importKind === "google_maps" || importKind === "google_search") ? (
+              {visibleRun ? (
                 <GoogleMapsImportWaitPanel
                   compact
-                  source={importKind === "google_search" ? "search" : "maps"}
-                  progressCount={importProgress.progressCount}
-                  targetCount={importProgress.targetCount}
-                  startedAt={mapsStartedAt}
-                  phase={importProgress.phase}
-                  peopleFound={importProgress.peopleFound ?? 0}
+                  source={visibleRun.kind === "google_search" ? "search" : "maps"}
+                  progressCount={visibleRun.progress.progressCount}
+                  targetCount={visibleRun.progress.targetCount}
+                  startedAt={visibleRun.startedAt}
+                  phase={visibleRun.progress.phase}
+                  peopleFound={visibleRun.progress.peopleFound ?? 0}
                 />
               ) : (
                 <button
                   type="button"
                   disabled={
-                    busy ||
-                    Boolean(importJobId) ||
-                    mapsParsedTerms.length < 1 ||
-                    !mapsLocationReady
+                    busy || mapsParsedTerms.length < 1 || !mapsLocationReady
                   }
                   onClick={() =>
                     void (mode === "google"

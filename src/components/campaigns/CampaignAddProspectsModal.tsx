@@ -20,6 +20,28 @@ import {
 import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
 import type { ParsedProspectCsvRow } from "@/lib/prospects/parseProspectsCsv";
 import { CsvUploadDropzone } from "@/components/prospects/CsvUploadDropzone";
+import { PoolFilterMenu } from "@/components/campaigns/PoolFilterMenu";
+import { isMagnetPlaybookId } from "@/lib/leadMagnets/catalog";
+import {
+  poolRowMatchesCityFilter,
+  poolRowMatchesContactFilter,
+  poolRowMatchesDateAddedFilter,
+  poolRowMatchesHeadcountFilter,
+  poolRowMatchesIndustryFilter,
+  poolRowMatchesLinkedInFilter,
+  poolRowMatchesPostcodeFilter,
+  poolRowMatchesTagFilter,
+  poolRowPassesExcludedTags,
+  type PoolContactFilter,
+  type PoolDateAddedFilter,
+  type PoolLinkedInFilter,
+  type PoolPerson,
+} from "@/lib/pool/poolPeople";
+import {
+  DEFAULT_PROSPECT_TAGS,
+  mergeProspectTagCatalog,
+  sortProspectTagCatalog,
+} from "@/lib/prospects/tagAppearance";
 
 export type { CampaignAddProspectsMode };
 
@@ -64,6 +86,106 @@ type ListSortOrder = "asc" | "desc";
 const fieldClass =
   "block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
 
+const ADD_COUNT_PRESETS = [100, 250, 500, 1000] as const;
+const MAX_CAMPAIGN_ADD = 2500;
+
+type AddCountPreset = (typeof ADD_COUNT_PRESETS)[number] | "custom";
+
+function resolveAddCount(preset: AddCountPreset, customValue: string): number {
+  if (preset !== "custom") return preset;
+  const parsed = Math.floor(Number(customValue));
+  if (!Number.isFinite(parsed) || parsed < 1) return 0;
+  return Math.min(MAX_CAMPAIGN_ADD, parsed);
+}
+
+function sameIds(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function AddCountPicker({
+  preset,
+  customValue,
+  manual,
+  addingCount,
+  eligibleCount,
+  onPreset,
+  onCustomValue,
+}: {
+  preset: AddCountPreset;
+  customValue: string;
+  manual: boolean;
+  addingCount: number;
+  eligibleCount: number;
+  onPreset: (preset: AddCountPreset) => void;
+  onCustomValue: (value: string) => void;
+}) {
+  const summary = manual
+    ? `${addingCount.toLocaleString()} selected`
+    : eligibleCount === 0
+      ? "No one to add"
+      : addingCount === 0
+        ? "Enter a number"
+        : addingCount < eligibleCount
+          ? `First ${addingCount.toLocaleString()} of ${eligibleCount.toLocaleString()}`
+          : `All ${eligibleCount.toLocaleString()}`;
+
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <span className="text-xs font-medium text-slate-600">Add</span>
+      <div className="flex flex-wrap gap-0.5 rounded-lg bg-slate-100 p-0.5">
+        {ADD_COUNT_PRESETS.map((value) => {
+          const selected = !manual && preset === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onPreset(value)}
+              className={`inline-flex h-8 min-w-8 items-center justify-center rounded-md px-2.5 text-xs font-semibold ${
+                selected
+                  ? "bg-[#0c5290] text-white shadow-sm"
+                  : "bg-white text-slate-800 hover:bg-slate-50"
+              }`}
+            >
+              {value.toLocaleString()}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          aria-pressed={!manual && preset === "custom"}
+          onClick={() => onPreset("custom")}
+          className={`inline-flex h-8 items-center justify-center rounded-md px-2.5 text-xs font-semibold ${
+            !manual && preset === "custom"
+              ? "bg-[#0c5290] text-white shadow-sm"
+              : "bg-white text-slate-800 hover:bg-slate-50"
+          }`}
+        >
+          Custom
+        </button>
+      </div>
+      {!manual && preset === "custom" ? (
+        <input
+          type="text"
+          inputMode="numeric"
+          value={customValue}
+          onChange={(e) =>
+            onCustomValue(e.target.value.replace(/[^\d]/g, "").slice(0, 4))
+          }
+          placeholder="How many"
+          aria-label="Custom number of people"
+          className="h-8 w-24 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+        />
+      ) : null}
+      <span className="text-xs text-slate-500">{summary}</span>
+    </div>
+  );
+}
+
 function normalizeUrl(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   if (!trimmed) return null;
@@ -89,8 +211,18 @@ export function CampaignAddProspectsModal({
   }
   const [mode, setMode] = useState<AudienceMode>(initialMode);
   const [busy, setBusy] = useState(false);
+  const [addProgress, setAddProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const addingLabel =
+    addProgress == null
+      ? "Adding…"
+      : addProgress.done > 0 && addProgress.done < addProgress.total
+        ? `Adding ${addProgress.done.toLocaleString()} of ${addProgress.total.toLocaleString()}…`
+        : `Adding ${addProgress.total.toLocaleString()}…`;
 
   const [prospects, setProspects] = useState<ProspectRow[]>([]);
   const [listLoading, setListLoading] = useState(false);
@@ -106,6 +238,11 @@ export function CampaignAddProspectsModal({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
+  const poolFilterRef = useRef<HTMLDivElement | null>(null);
+
+  const [addCountPreset, setAddCountPreset] = useState<AddCountPreset>(250);
+  const [customAddCount, setCustomAddCount] = useState("");
+  const [selectionMode, setSelectionMode] = useState<"count" | "manual">("count");
 
   const [searchUrl, setSearchUrl] = useState("");
   const [searchKeywords, setSearchKeywords] = useState("");
@@ -117,27 +254,57 @@ export function CampaignAddProspectsModal({
   const [namedLists, setNamedLists] = useState<AudienceListSummary[]>([]);
   const [poolListId, setPoolListId] = useState<string>("");
   const [namedListId, setNamedListId] = useState<string>("");
-  const [namedItems, setNamedItems] = useState<
-    Array<{
-      id: string;
-      full_name: string | null;
-      first_name: string | null;
-      last_name: string | null;
-      job_title: string | null;
-      company: string | null;
-      linkedin_url: string | null;
-      source: string;
-    }>
-  >([]);
+  const [namedItems, setNamedItems] = useState<PoolPerson[]>([]);
   const [namedLoading, setNamedLoading] = useState(false);
   const [namedItemIds, setNamedItemIds] = useState<string[]>([]);
   const [namedQuery, setNamedQuery] = useState("");
   const namedListsLoadedRef = useRef(false);
+  const poolCampaignsLoadedRef = useRef(false);
+  const [poolCampaigns, setPoolCampaigns] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  const [poolMenuOpen, setPoolMenuOpen] = useState(false);
+  const [poolSourceFilter, setPoolSourceFilter] = useState("all");
+  const [poolCampaignFilter, setPoolCampaignFilter] = useState<
+    "all" | "in_campaign" | "not_in_campaign"
+  >("all");
+  const [poolCampaignIdFilter, setPoolCampaignIdFilter] = useState("");
+  const [poolHeadcountFilter, setPoolHeadcountFilter] = useState<string[]>([]);
+  const [poolCityFilter, setPoolCityFilter] = useState("");
+  const [poolPostcodeFilter, setPoolPostcodeFilter] = useState("");
+  const [poolIndustryFilter, setPoolIndustryFilter] = useState("");
+  const [poolContactFilter, setPoolContactFilter] =
+    useState<PoolContactFilter>("all");
+  const [poolLinkedinFilter, setPoolLinkedinFilter] =
+    useState<PoolLinkedInFilter>("all");
+  const [poolDateAddedFilter, setPoolDateAddedFilter] =
+    useState<PoolDateAddedFilter>("all");
+  const [poolTagFilter, setPoolTagFilter] = useState("all");
+  const [poolExcludeTags, setPoolExcludeTags] = useState<string[]>([]);
 
   const visibleNamedItems = useMemo(() => {
     const term = namedQuery.trim().toLowerCase();
-    if (!term) return namedItems;
     return namedItems.filter((row) => {
+      if (poolSourceFilter !== "all" && row.source !== poolSourceFilter) {
+        return false;
+      }
+      if (poolCampaignIdFilter) {
+        if (!(row.campaign_ids ?? []).includes(poolCampaignIdFilter)) return false;
+      } else if (poolCampaignFilter === "in_campaign" && !row.in_campaign) {
+        return false;
+      } else if (poolCampaignFilter === "not_in_campaign" && row.in_campaign) {
+        return false;
+      }
+      if (!poolRowMatchesContactFilter(row, poolContactFilter)) return false;
+      if (!poolRowMatchesLinkedInFilter(row, poolLinkedinFilter)) return false;
+      if (!poolRowMatchesDateAddedFilter(row, poolDateAddedFilter)) return false;
+      if (!poolRowMatchesHeadcountFilter(row, poolHeadcountFilter)) return false;
+      if (!poolRowMatchesCityFilter(row, poolCityFilter)) return false;
+      if (!poolRowMatchesPostcodeFilter(row, poolPostcodeFilter)) return false;
+      if (!poolRowMatchesIndustryFilter(row, poolIndustryFilter)) return false;
+      if (!poolRowMatchesTagFilter(row, poolTagFilter)) return false;
+      if (!poolRowPassesExcludedTags(row, poolExcludeTags)) return false;
+      if (!term) return true;
       const hay = [
         row.full_name,
         row.first_name,
@@ -145,13 +312,33 @@ export function CampaignAddProspectsModal({
         row.job_title,
         row.company,
         row.linkedin_url,
+        row.email,
+        row.phone,
+        row.city,
+        row.industry,
+        ...(row.tags ?? []),
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return hay.includes(term);
     });
-  }, [namedItems, namedQuery]);
+  }, [
+    namedItems,
+    namedQuery,
+    poolCampaignFilter,
+    poolCampaignIdFilter,
+    poolCityFilter,
+    poolContactFilter,
+    poolDateAddedFilter,
+    poolExcludeTags,
+    poolHeadcountFilter,
+    poolIndustryFilter,
+    poolLinkedinFilter,
+    poolPostcodeFilter,
+    poolSourceFilter,
+    poolTagFilter,
+  ]);
 
   const existingContactSet = useMemo(
     () => new Set(existingContactIds),
@@ -194,6 +381,24 @@ export function CampaignAddProspectsModal({
     setNamedItemIds([]);
     setNamedQuery("");
     namedListsLoadedRef.current = false;
+    poolCampaignsLoadedRef.current = false;
+    setPoolCampaigns([]);
+    setPoolMenuOpen(false);
+    setPoolSourceFilter("all");
+    setPoolCampaignFilter("all");
+    setPoolCampaignIdFilter("");
+    setPoolHeadcountFilter([]);
+    setPoolCityFilter("");
+    setPoolPostcodeFilter("");
+    setPoolIndustryFilter("");
+    setPoolContactFilter("all");
+    setPoolLinkedinFilter("all");
+    setPoolDateAddedFilter("all");
+    setPoolTagFilter("all");
+    setPoolExcludeTags([]);
+    setAddCountPreset(250);
+    setCustomAddCount("");
+    setSelectionMode("count");
   }, [open, initialMode]);
 
   useEffect(() => {
@@ -252,36 +457,16 @@ export function CampaignAddProspectsModal({
             : typeof body.listId === "string"
               ? (body.listId as string)
               : listId || "";
-        const people = Array.isArray(body.people) ? body.people : [];
+        const people = Array.isArray(body.people)
+          ? (body.people as PoolPerson[])
+          : [];
         if (!listId) {
           setPoolListId(resolvedListId);
           setNamedListId(resolvedListId);
         } else {
           setNamedListId(listId);
         }
-        setNamedItems(
-          people.map(
-            (row: {
-              id: string;
-              full_name: string | null;
-              first_name: string | null;
-              last_name: string | null;
-              job_title: string | null;
-              company: string | null;
-              linkedin_url: string | null;
-              source: string;
-            }) => ({
-              id: row.id,
-              full_name: row.full_name,
-              first_name: row.first_name,
-              last_name: row.last_name,
-              job_title: row.job_title,
-              company: row.company,
-              linkedin_url: row.linkedin_url,
-              source: row.source,
-            })
-          )
-        );
+        setNamedItems(people);
         setNamedItemIds([]);
       } catch (err) {
         if (!cancelled) {
@@ -322,6 +507,42 @@ export function CampaignAddProspectsModal({
           }
         }
       }
+      if (!poolCampaignsLoadedRef.current && !cancelled) {
+        try {
+          const headers = await authHeaders();
+          if (!headers) throw new Error("Sign in required.");
+          const res = await fetch("/api/coach/linkedin-outreach/campaigns", {
+            headers,
+          });
+          const body = (await res.json().catch(() => ({}))) as {
+            campaigns?: Array<{
+              id?: string;
+              name?: string;
+              status?: string;
+              source_playbook_id?: string | null;
+            }>;
+          };
+          if (!res.ok || cancelled) return;
+          const campaigns = (body.campaigns ?? [])
+            .filter(
+              (row) =>
+                typeof row.id === "string" &&
+                row.status !== "archived" &&
+                !isMagnetPlaybookId(row.source_playbook_id)
+            )
+            .map((row) => ({
+              id: row.id as string,
+              name:
+                typeof row.name === "string" && row.name.trim()
+                  ? row.name.trim()
+                  : "Untitled",
+            }));
+          setPoolCampaigns(campaigns);
+          poolCampaignsLoadedRef.current = true;
+        } catch {
+          // Campaign names are optional. In / not in a campaign still works.
+        }
+      }
       if (cancelled) return;
       await loadPeople(null);
     }
@@ -341,6 +562,7 @@ export function CampaignAddProspectsModal({
     }
     setNamedQuery("");
     setNamedItemIds([]);
+    setSelectionMode("count");
     setNamedLoading(true);
     setError(null);
     try {
@@ -356,36 +578,16 @@ export function CampaignAddProspectsModal({
           : typeof body.listId === "string"
             ? (body.listId as string)
             : listId || poolListId;
-      const people = Array.isArray(body.people) ? body.people : [];
+      const people = Array.isArray(body.people)
+        ? (body.people as PoolPerson[])
+        : [];
       if (selectingPool) {
         setPoolListId(resolvedListId);
         setNamedListId(resolvedListId);
       } else {
         setNamedListId(listId);
       }
-      setNamedItems(
-        people.map(
-          (row: {
-            id: string;
-            full_name: string | null;
-            first_name: string | null;
-            last_name: string | null;
-            job_title: string | null;
-            company: string | null;
-            linkedin_url: string | null;
-            source: string;
-          }) => ({
-            id: row.id,
-            full_name: row.full_name,
-            first_name: row.first_name,
-            last_name: row.last_name,
-            job_title: row.job_title,
-            company: row.company,
-            linkedin_url: row.linkedin_url,
-            source: row.source,
-          })
-        )
-      );
+      setNamedItems(people);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load pool.");
     } finally {
@@ -394,16 +596,18 @@ export function CampaignAddProspectsModal({
   }
 
   useEffect(() => {
-    if (!listMenu) return;
+    if (!listMenu && !poolMenuOpen) return;
     function onPointer(e: MouseEvent) {
       const target = e.target as Node;
       if (filterMenuRef.current?.contains(target)) return;
       if (sortMenuRef.current?.contains(target)) return;
+      if (poolFilterRef.current?.contains(target)) return;
       setListMenu(null);
+      setPoolMenuOpen(false);
     }
     document.addEventListener("mousedown", onPointer);
     return () => document.removeEventListener("mousedown", onPointer);
-  }, [listMenu]);
+  }, [listMenu, poolMenuOpen]);
 
   const tagOptions = useMemo(() => {
     const seen = new Map<string, string>();
@@ -524,30 +728,130 @@ export function CampaignAddProspectsModal({
     // prospectState closes over campaignChannel + enrollment sets
     [filteredProspects, existingContactSet, existingUrlSet, campaignChannel]
   );
+  const orderedEligibleProspectIds = useMemo(
+    () =>
+      sortedProspects
+        .filter((row) => prospectState(row) === "ok")
+        .map((row) => row.id),
+    [sortedProspects, existingContactSet, existingUrlSet, campaignChannel]
+  );
   const eligibleIds = useMemo(
-    () => eligibleAllIds.slice(0, 2500),
+    () => eligibleAllIds.slice(0, MAX_CAMPAIGN_ADD),
     [eligibleAllIds]
   );
 
-  const eligibleSet = useMemo(() => new Set(eligibleIds), [eligibleIds]);
-  const selectedEligible = selectedIds.filter((id) => eligibleSet.has(id));
+  const eligibleSet = useMemo(() => new Set(eligibleAllIds), [eligibleAllIds]);
   const allVisibleSelected =
     eligibleIds.length > 0 && eligibleIds.every((id) => selectedIds.includes(id));
 
   function toggleId(id: string) {
     if (!eligibleSet.has(id)) return;
+    setSelectionMode("manual");
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   }
 
   function toggleAllVisible() {
+    setSelectionMode("manual");
     if (allVisibleSelected) {
       setSelectedIds((prev) => prev.filter((id) => !eligibleSet.has(id)));
       return;
     }
     setSelectedIds((prev) => [...new Set([...prev, ...eligibleIds])]);
   }
+
+  function poolAlreadyHere(row: PoolPerson): boolean {
+    if (row.contact_id && existingContactSet.has(row.contact_id)) return true;
+    if (campaignId && (row.campaign_ids ?? []).includes(campaignId)) return true;
+    const url = normalizeUrl(row.linkedin_url);
+    return Boolean(url && existingUrlSet.has(url));
+  }
+
+  function poolCanJoin(row: PoolPerson): boolean {
+    if (row.blacklisted || poolAlreadyHere(row)) return false;
+    if (campaignChannel === "email") return Boolean(row.email?.trim());
+    if (campaignChannel === "whatsapp") return Boolean(row.phone?.trim());
+    return Boolean(normalizeUrl(row.linkedin_url));
+  }
+
+  const poolSourceOptions = useMemo(() => {
+    const values = [...new Set(namedItems.map((row) => row.source).filter(Boolean))];
+    return values.sort();
+  }, [namedItems]);
+
+  const poolTagOptions = useMemo(
+    () =>
+      sortProspectTagCatalog(
+        mergeProspectTagCatalog(
+          DEFAULT_PROSPECT_TAGS,
+          ...namedItems.map((row) => row.tags ?? [])
+        ),
+        []
+      ),
+    [namedItems]
+  );
+
+  const poolFilterCount =
+    (poolSourceFilter !== "all" ? 1 : 0) +
+    (poolCampaignIdFilter || poolCampaignFilter !== "all" ? 1 : 0) +
+    (poolContactFilter !== "all" ? 1 : 0) +
+    (poolLinkedinFilter !== "all" ? 1 : 0) +
+    (poolDateAddedFilter !== "all" ? 1 : 0) +
+    (poolHeadcountFilter.length > 0 ? 1 : 0) +
+    (poolCityFilter.trim() ? 1 : 0) +
+    (poolPostcodeFilter.trim() ? 1 : 0) +
+    (poolIndustryFilter.trim() ? 1 : 0) +
+    (poolTagFilter !== "all" ? 1 : 0) +
+    (poolExcludeTags.length > 0 ? 1 : 0);
+
+  const eligibleNamedIds = useMemo(
+    () => visibleNamedItems.filter((row) => poolCanJoin(row)).map((row) => row.id),
+    // poolCanJoin closes over channel and enrollment sets
+    [visibleNamedItems, existingContactSet, existingUrlSet, campaignChannel, campaignId]
+  );
+
+  const addCount = resolveAddCount(addCountPreset, customAddCount);
+
+  const namedIdsToAdd = useMemo(() => {
+    if (selectionMode === "count") {
+      return eligibleNamedIds.slice(0, addCount);
+    }
+    const allowed = new Set(eligibleNamedIds);
+    return namedItemIds.filter((id) => allowed.has(id)).slice(0, MAX_CAMPAIGN_ADD);
+  }, [addCount, eligibleNamedIds, namedItemIds, selectionMode]);
+
+  const prospectIdsToAdd = useMemo(() => {
+    if (selectionMode === "count") {
+      return orderedEligibleProspectIds.slice(0, addCount);
+    }
+    return selectedIds
+      .filter((id) => eligibleSet.has(id))
+      .slice(0, MAX_CAMPAIGN_ADD);
+  }, [addCount, eligibleSet, orderedEligibleProspectIds, selectedIds, selectionMode]);
+
+  useEffect(() => {
+    if (!open || selectionMode !== "count") return;
+    const ids =
+      mode === "named"
+        ? eligibleNamedIds.slice(0, addCount)
+        : mode === "list"
+          ? orderedEligibleProspectIds.slice(0, addCount)
+          : null;
+    if (!ids) return;
+    if (mode === "named") {
+      setNamedItemIds((prev) => (sameIds(prev, ids) ? prev : ids));
+    } else {
+      setSelectedIds((prev) => (sameIds(prev, ids) ? prev : ids));
+    }
+  }, [
+    addCount,
+    eligibleNamedIds,
+    mode,
+    open,
+    orderedEligibleProspectIds,
+    selectionMode,
+  ]);
 
   function toggleTag(tag: string) {
     setSelectedTags((prev) =>
@@ -559,17 +863,21 @@ export function CampaignAddProspectsModal({
   }
 
   async function addFromContacts() {
-    if (!campaignId || !selectedEligible.length) return;
+    const ids = prospectIdsToAdd;
+    if (!campaignId || !ids.length) return;
     setBusy(true);
+    setAddProgress({ done: 0, total: ids.length });
     setError(null);
-    setNotice(null);
+    setNotice(
+      `Adding ${ids.length.toLocaleString()} ${ids.length === 1 ? "person" : "people"}…`
+    );
     try {
       const headers = await authHeaders();
       if (!headers) throw new Error("Sign in required.");
       let added = 0;
       let skipped = 0;
-      for (let i = 0; i < selectedEligible.length; i += 250) {
-        const chunk = selectedEligible.slice(i, i + 250);
+      for (let i = 0; i < ids.length; i += 250) {
+        const chunk = ids.slice(i, i + 250);
         const res = await fetch(
           `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
           {
@@ -585,6 +893,13 @@ export function CampaignAddProspectsModal({
         if (!res.ok) throw new Error(body.error || "Import failed.");
         added += Number(body.added ?? 0);
         skipped += Number(body.skipped ?? 0);
+        const done = Math.min(i + chunk.length, ids.length);
+        setAddProgress({ done, total: ids.length });
+        if (done < ids.length) {
+          setNotice(
+            `Adding ${done.toLocaleString()} of ${ids.length.toLocaleString()}…`
+          );
+        }
       }
       if (added === 0) {
         setNotice(
@@ -601,6 +916,7 @@ export function CampaignAddProspectsModal({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Import failed.");
     } finally {
+      setAddProgress(null);
       setBusy(false);
     }
   }
@@ -608,8 +924,11 @@ export function CampaignAddProspectsModal({
   async function importLeadsFromPayload(leadsPayload: Array<Record<string, unknown>>) {
     if (!campaignId || !leadsPayload.length) return;
     setBusy(true);
+    setAddProgress({ done: 0, total: leadsPayload.length });
     setError(null);
-    setNotice(null);
+    setNotice(
+      `Adding ${leadsPayload.length.toLocaleString()} ${leadsPayload.length === 1 ? "person" : "people"}…`
+    );
     try {
       const headers = await authHeaders();
       if (!headers) throw new Error("Sign in required.");
@@ -633,22 +952,26 @@ export function CampaignAddProspectsModal({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Import failed.");
     } finally {
+      setAddProgress(null);
       setBusy(false);
     }
   }
 
   async function addFromNamedList() {
-    if (!campaignId || !namedListId) return;
+    const ids = namedIdsToAdd.slice(0, MAX_CAMPAIGN_ADD);
+    if (!campaignId || !namedListId || !ids.length) return;
     setBusy(true);
+    setAddProgress({ done: 0, total: ids.length });
     setError(null);
-    setNotice(null);
+    setNotice(
+      `Adding ${ids.length.toLocaleString()} ${ids.length === 1 ? "person" : "people"}…`
+    );
     try {
       const headers = await authHeaders();
       if (!headers) throw new Error("Sign in required.");
       let added = 0;
       let skipped = 0;
       let blocked = 0;
-      const ids = namedItemIds.slice(0, 2500);
       for (let i = 0; i < ids.length; i += 250) {
         const chunk = ids.slice(i, i + 250);
         const res = await fetch(
@@ -667,6 +990,13 @@ export function CampaignAddProspectsModal({
         added += Number(body.added ?? 0);
         skipped += Number(body.skipped ?? 0);
         blocked += Number(body.blacklisted ?? 0);
+        const done = Math.min(i + chunk.length, ids.length);
+        setAddProgress({ done, total: ids.length });
+        if (done < ids.length) {
+          setNotice(
+            `Adding ${done.toLocaleString()} of ${ids.length.toLocaleString()}…`
+          );
+        }
       }
       if (added === 0) {
         setNotice(
@@ -683,6 +1013,7 @@ export function CampaignAddProspectsModal({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add list.");
     } finally {
+      setAddProgress(null);
       setBusy(false);
     }
   }
@@ -767,7 +1098,7 @@ export function CampaignAddProspectsModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-900/40 px-4 pb-20 pt-4 md:items-center md:p-4">
       <button
         type="button"
         className="absolute inset-0"
@@ -780,7 +1111,7 @@ export function CampaignAddProspectsModal({
         aria-labelledby="add-prospects-title"
         className={`relative flex w-full flex-col rounded-2xl bg-white shadow-xl ${
           mode === "list" || mode === "named"
-            ? "max-h-[min(44rem,92vh)] max-w-2xl"
+            ? "max-h-[min(44rem,calc(100dvh-7.5rem))] max-w-2xl md:max-h-[min(44rem,92vh)]"
             : "max-w-lg"
         }`}
       >
@@ -927,53 +1258,110 @@ export function CampaignAddProspectsModal({
                 </p>
               ) : (
                 <>
-                  <label className="relative block">
-                    <Search
-                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                      strokeWidth={1.75}
-                      aria-hidden
-                    />
-                    <input
-                      type="search"
-                      value={namedQuery}
-                      onChange={(e) => setNamedQuery(e.target.value)}
-                      placeholder={
-                        poolListId && namedListId === poolListId
-                          ? "Search the pool…"
-                          : "Search this list…"
-                      }
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
-                    />
-                  </label>
-                  <div className="mt-3 min-h-0 flex-1 overflow-hidden rounded-lg border border-slate-200">
+                  <div className="flex items-center gap-1.5">
+                    <label className="relative min-w-0 flex-1">
+                      <Search
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                        strokeWidth={1.75}
+                        aria-hidden
+                      />
+                      <input
+                        type="search"
+                        value={namedQuery}
+                        onChange={(e) => setNamedQuery(e.target.value)}
+                        placeholder={
+                          poolListId && namedListId === poolListId
+                            ? "Search the pool…"
+                            : "Search this list…"
+                        }
+                        className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+                      />
+                    </label>
+                    <div ref={poolFilterRef} className="relative shrink-0">
+                      <TableToolbarButton
+                        label="Filter"
+                        aria-haspopup="true"
+                        aria-expanded={poolMenuOpen}
+                        active={poolMenuOpen}
+                        badge={poolFilterCount > 0 ? poolFilterCount : null}
+                        onClick={() => setPoolMenuOpen((open) => !open)}
+                        icon={
+                          <FilterSlidersIcon className="h-5 w-5 text-slate-500" />
+                        }
+                      />
+                      {poolMenuOpen ? (
+                        <PoolFilterMenu
+                          align="end"
+                          sourceFilter={poolSourceFilter}
+                          sourceOptions={poolSourceOptions}
+                          onSourceFilter={setPoolSourceFilter}
+                          campaignFilter={poolCampaignFilter}
+                          campaignIdFilter={poolCampaignIdFilter}
+                          campaigns={poolCampaigns}
+                          onCampaignFilter={(value) => {
+                            setPoolCampaignIdFilter("");
+                            setPoolCampaignFilter(value);
+                          }}
+                          onCampaignIdFilter={(value) => {
+                            setPoolCampaignIdFilter(value);
+                            if (value) setPoolCampaignFilter("all");
+                          }}
+                          headcountFilter={poolHeadcountFilter}
+                          onHeadcountFilter={setPoolHeadcountFilter}
+                          cityFilter={poolCityFilter}
+                          onCityFilter={setPoolCityFilter}
+                          postcodeFilter={poolPostcodeFilter}
+                          onPostcodeFilter={setPoolPostcodeFilter}
+                          industryFilter={poolIndustryFilter}
+                          onIndustryFilter={setPoolIndustryFilter}
+                          contactFilter={poolContactFilter}
+                          onContactFilter={setPoolContactFilter}
+                          linkedinFilter={poolLinkedinFilter}
+                          onLinkedinFilter={setPoolLinkedinFilter}
+                          dateAddedFilter={poolDateAddedFilter}
+                          onDateAddedFilter={setPoolDateAddedFilter}
+                          tagFilter={poolTagFilter}
+                          tagOptions={poolTagOptions}
+                          onTagFilter={setPoolTagFilter}
+                          excludeTags={poolExcludeTags}
+                          onExcludeTags={setPoolExcludeTags}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200">
                     <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2">
                       <input
                         type="checkbox"
-                        checked={
-                          visibleNamedItems.length > 0 &&
-                          visibleNamedItems.every((row) =>
-                            namedItemIds.includes(row.id)
-                          )
-                        }
-                        disabled={!visibleNamedItems.length}
+                        checked={(() => {
+                          const cap = eligibleNamedIds.slice(0, MAX_CAMPAIGN_ADD);
+                          return (
+                            cap.length > 0 &&
+                            cap.every((id) => namedItemIds.includes(id))
+                          );
+                        })()}
+                        disabled={!eligibleNamedIds.length}
                         onChange={() => {
-                          const all = visibleNamedItems.every((row) =>
-                            namedItemIds.includes(row.id)
-                          );
-                          setNamedItemIds(
-                            all ? [] : visibleNamedItems.map((row) => row.id)
-                          );
+                          const cap = eligibleNamedIds.slice(0, MAX_CAMPAIGN_ADD);
+                          const all =
+                            cap.length > 0 &&
+                            cap.every((id) => namedItemIds.includes(id));
+                          setSelectionMode("manual");
+                          setNamedItemIds(all ? [] : cap);
                         }}
-                        aria-label="Select everyone in this list"
+                        aria-label="Select everyone who can be added"
                         className="rounded border-slate-300 text-[#0c5290]"
                       />
                       <span className="text-xs font-medium text-slate-600">
-                        {namedItemIds.length
-                          ? `${namedItemIds.length} selected`
-                          : `${namedItems.length} people`}
+                        {namedIdsToAdd.length
+                          ? `${namedIdsToAdd.length.toLocaleString()} selected`
+                          : `${visibleNamedItems.length.toLocaleString()} people`}
+                        {eligibleNamedIds.length > MAX_CAMPAIGN_ADD
+                          ? ` · first ${MAX_CAMPAIGN_ADD.toLocaleString()}`
+                          : ""}
                       </span>
                     </div>
-                    <ul className="max-h-[22rem] overflow-y-auto">
+                    <ul className="max-h-[min(18rem,36vh)] overflow-y-auto">
                       {namedLoading ? (
                         <li className="px-3 py-10 text-center text-sm text-slate-600">
                           Loading…
@@ -982,35 +1370,34 @@ export function CampaignAddProspectsModal({
                         <li className="px-3 py-10 text-center text-sm text-slate-600">
                           {namedItems.length === 0
                             ? "Nobody in this list yet."
-                            : "No one matches that search."}
+                            : "No one matches these filters."}
                         </li>
                       ) : (
                         visibleNamedItems.map((row) => {
                           const name = displayListPersonName(row);
-                          const inCampaign = Boolean(
-                            normalizeUrl(row.linkedin_url) &&
-                              existingUrlSet.has(normalizeUrl(row.linkedin_url)!)
-                          );
+                          const inCampaign = poolAlreadyHere(row);
+                          const canJoin = poolCanJoin(row);
                           return (
                             <li key={row.id}>
                               <label
                                 className={`flex items-center gap-3 px-3 py-2.5 ${
-                                  inCampaign
-                                    ? "cursor-default opacity-60"
-                                    : "cursor-pointer hover:bg-slate-50"
+                                  canJoin
+                                    ? "cursor-pointer hover:bg-slate-50"
+                                    : "cursor-default opacity-60"
                                 }`}
                               >
                                 <input
                                   type="checkbox"
                                   checked={namedItemIds.includes(row.id)}
-                                  disabled={busy || inCampaign}
-                                  onChange={() =>
+                                  disabled={busy || !canJoin}
+                                  onChange={() => {
+                                    setSelectionMode("manual");
                                     setNamedItemIds((prev) =>
                                       prev.includes(row.id)
                                         ? prev.filter((id) => id !== row.id)
                                         : [...prev, row.id]
-                                    )
-                                  }
+                                    );
+                                  }}
                                   className="rounded border-slate-300 text-[#0c5290]"
                                 />
                                 <ProspectTableAvatar name={name} />
@@ -1027,7 +1414,15 @@ export function CampaignAddProspectsModal({
                                 <span className="text-[11px] font-medium text-slate-600">
                                   {inCampaign
                                     ? "Already added"
-                                    : audienceItemSourceLabel(row.source)}
+                                    : row.blacklisted
+                                      ? "Blacklisted"
+                                      : !canJoin
+                                        ? campaignChannel === "email"
+                                          ? "No email"
+                                          : campaignChannel === "whatsapp"
+                                            ? "No phone"
+                                            : "No LinkedIn"
+                                        : audienceItemSourceLabel(row.source)}
                                 </span>
                               </label>
                             </li>
@@ -1038,7 +1433,23 @@ export function CampaignAddProspectsModal({
                   </div>
                 </>
               )}
-              <div className="mt-4 flex items-center justify-end gap-2">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <AddCountPicker
+                  preset={addCountPreset}
+                  customValue={customAddCount}
+                  manual={selectionMode === "manual"}
+                  addingCount={namedIdsToAdd.length}
+                  eligibleCount={eligibleNamedIds.length}
+                  onPreset={(value) => {
+                    setAddCountPreset(value);
+                    setSelectionMode("count");
+                  }}
+                  onCustomValue={(value) => {
+                    setCustomAddCount(value);
+                    setSelectionMode("count");
+                  }}
+                />
+                <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onClose}
@@ -1048,24 +1459,20 @@ export function CampaignAddProspectsModal({
                 </button>
                 <button
                   type="button"
-                  disabled={busy || !namedListId || namedItems.length === 0}
+                  disabled={busy || !namedListId || namedIdsToAdd.length === 0}
                   onClick={() => void addFromNamedList()}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                 >
                   {busy ? (
-                    "Adding…"
-                  ) : namedItemIds.length ? (
-                    <>
-                      <Check className="h-3.5 w-3.5" aria-hidden />
-                      Add {namedItemIds.length} to campaign
-                    </>
+                    addingLabel
                   ) : (
                     <>
                       <Check className="h-3.5 w-3.5" aria-hidden />
-                      Add list to campaign
+                      Add {namedIdsToAdd.length.toLocaleString()} to campaign
                     </>
                   )}
                 </button>
+                </div>
               </div>
             </>
           ) : mode === "list" ? (
@@ -1342,7 +1749,11 @@ export function CampaignAddProspectsModal({
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
-                Only people with a LinkedIn profile can join this campaign.
+                {campaignChannel === "email"
+                  ? "Only people with an email can join this campaign."
+                  : campaignChannel === "whatsapp"
+                    ? "Only people with a phone number can join this campaign."
+                    : "Only people with a LinkedIn profile can join this campaign."}
               </p>
 
               <div className="mt-3 min-h-0 flex-1 overflow-hidden rounded-lg border border-slate-200">
@@ -1356,12 +1767,14 @@ export function CampaignAddProspectsModal({
                     className="rounded border-slate-300 text-[#0c5290]"
                   />
                   <span className="text-xs font-medium text-slate-600">
-                    {eligibleAllIds.length} of {filteredProspects.length} can be
-                    added
-                    {eligibleAllIds.length > 2500 ? " · first 2500" : ""}
+                    {eligibleAllIds.length.toLocaleString()} of{" "}
+                    {filteredProspects.length.toLocaleString()} can be added
+                    {eligibleAllIds.length > MAX_CAMPAIGN_ADD
+                      ? ` · first ${MAX_CAMPAIGN_ADD.toLocaleString()}`
+                      : ""}
                   </span>
                 </div>
-                <ul className="max-h-[22rem] overflow-y-auto">
+                <ul className="max-h-[min(18rem,36vh)] overflow-y-auto">
                   {listLoading ? (
                     <li className="px-3 py-10 text-center text-sm text-slate-500">
                       Loading your list…
@@ -1438,7 +1851,23 @@ export function CampaignAddProspectsModal({
                 </ul>
               </div>
 
-              <div className="mt-4 flex items-center justify-end gap-2">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <AddCountPicker
+                  preset={addCountPreset}
+                  customValue={customAddCount}
+                  manual={selectionMode === "manual"}
+                  addingCount={prospectIdsToAdd.length}
+                  eligibleCount={orderedEligibleProspectIds.length}
+                  onPreset={(value) => {
+                    setAddCountPreset(value);
+                    setSelectionMode("count");
+                  }}
+                  onCustomValue={(value) => {
+                    setCustomAddCount(value);
+                    setSelectionMode("count");
+                  }}
+                />
+                <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onClose}
@@ -1448,20 +1877,20 @@ export function CampaignAddProspectsModal({
                 </button>
                 <button
                   type="button"
-                  disabled={busy || selectedEligible.length === 0}
+                  disabled={busy || prospectIdsToAdd.length === 0}
                   onClick={() => void addFromContacts()}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                 >
                   {busy ? (
-                    "Adding…"
+                    addingLabel
                   ) : (
                     <>
                       <Check className="h-3.5 w-3.5" aria-hidden />
-                      Add {selectedEligible.length || ""}
-                      {selectedEligible.length ? " to campaign" : ""}
+                      Add {prospectIdsToAdd.length.toLocaleString()} to campaign
                     </>
                   )}
                 </button>
+                </div>
               </div>
             </>
           ) : mode === "search" ? (
@@ -1592,7 +2021,7 @@ export function CampaignAddProspectsModal({
                   className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                 >
                   {busy ? (
-                    "Adding…"
+                    addingLabel
                   ) : (
                     <>
                       <Check className="h-3.5 w-3.5" aria-hidden />

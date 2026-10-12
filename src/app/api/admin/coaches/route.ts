@@ -19,6 +19,7 @@ import {
   type CoachRecurringPaymentStatus,
 } from "@/lib/coachBilling";
 import { buildCoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
+import { assessProgrammeShortfall } from "@/lib/admin/programmeShortfall";
 import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
 import { normalizeCoachAccessTier } from "@/lib/coachAccess/tiers";
 import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
@@ -41,6 +42,49 @@ export async function GET(request: Request) {
       { error: authCheck.error },
       { status }
     );
+  }
+
+  const directoryView =
+    new URL(request.url).searchParams.get("view") === "directory";
+  if (directoryView) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("coaches")
+        .select("id, slug, profiles!inner(full_name, coach_business_name)");
+      if (error) {
+        console.error("admin coach directory:", error);
+        return NextResponse.json(
+          { error: "Could not load coaches." },
+          { status: 500 }
+        );
+      }
+      const coaches = (data ?? []).map((row) => {
+        const record = row as {
+          id: string;
+          slug: string;
+          profiles:
+            | { full_name: string | null; coach_business_name: string | null }
+            | Array<{ full_name: string | null; coach_business_name: string | null }>
+            | null;
+        };
+        const profile = Array.isArray(record.profiles)
+          ? record.profiles[0]
+          : record.profiles;
+        return {
+          id: record.id,
+          slug: record.slug,
+          full_name: profile?.full_name ?? null,
+          coach_business_name: profile?.coach_business_name ?? null,
+        };
+      });
+      return NextResponse.json({ coaches });
+    } catch (err) {
+      console.error("admin coach directory:", err);
+      return NextResponse.json(
+        { error: "Could not load coaches." },
+        { status: 500 }
+      );
+    }
   }
 
   try {
@@ -212,21 +256,36 @@ export async function GET(request: Request) {
 
     const paymentsByCoachId = new Map<string, PaymentForBillingKind[]>();
     if (ids.length > 0) {
-      const paymentsRes = await supabaseAdmin
-        .from("coach_payments")
-        .select(
-          "id, customer_email, coach_id, amount_cents, currency, status, description, paid_at, billing_kind_override"
-        )
-        .in("coach_id", ids)
-        .eq("status", "succeeded");
-      if (paymentsRes.error?.code !== "42P01" && !paymentsRes.error) {
-        for (const payment of paymentsRes.data ?? []) {
+      const paymentSelect =
+        "id, customer_email, coach_id, amount_cents, currency, status, description, paid_at, billing_kind_override";
+      const pageSize = 1000;
+      let from = 0;
+      let paymentsError: { code?: string } | null = null;
+      while (!paymentsError) {
+        const paymentsRes = await supabaseAdmin
+          .from("coach_payments")
+          .select(paymentSelect)
+          .in("coach_id", ids)
+          .eq("status", "succeeded")
+          .order("paid_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (paymentsRes.error) {
+          paymentsError = paymentsRes.error as { code?: string };
+          break;
+        }
+        const page = paymentsRes.data ?? [];
+        for (const payment of page) {
           const coachId = payment.coach_id as string | null;
           if (!coachId) continue;
           const list = paymentsByCoachId.get(coachId) ?? [];
           list.push(payment as PaymentForBillingKind);
           paymentsByCoachId.set(coachId, list);
         }
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+      if (paymentsError && paymentsError.code !== "42P01") {
+        paymentsByCoachId.clear();
       }
     }
 
@@ -391,6 +450,24 @@ export async function GET(request: Request) {
               recent_payments: [],
             }
           : buildCoachPaymentSummary(paymentsByCoachId.get(id) ?? []),
+        programme_shortfall: accountBillingMissing
+          ? null
+          : assessProgrammeShortfall({
+              joinedAt: resolveCoachJoinedAt(row.slug as string, {
+                discoCommunityJoinedOn:
+                  (prof?.disco_community_joined_on as string | null) ?? null,
+                profileCreatedAt: (prof?.created_at as string | null) ?? null,
+              }),
+              joinedOnProgrammeDate: Boolean(
+                (prof?.disco_community_joined_on as string | null)?.trim()
+              ),
+              payments: (paymentsByCoachId.get(id) ?? []).map((payment) => ({
+                amountCents: payment.amount_cents,
+                currency: payment.currency,
+                status: payment.status,
+                paidAt: payment.paid_at,
+              })),
+            }),
         access_tier: accessTierMissing
           ? "premium"
           : normalizeCoachAccessTier(row.access_tier) ?? "programme",

@@ -486,8 +486,12 @@ export type UnipileSentInvitation = {
   invitation_text?: string | null;
 };
 
-/** Unipile `limit` for GET /users/invite/sent is 1–250. */
-export const UNIPILE_SENT_INVITE_PAGE_MAX = 250;
+/**
+ * Live Unipile rejects `limit` above 100 on GET /users/invite/sent
+ * (`errors/invalid_parameters`, schema maximum 100). The published spec
+ * still says 250; that value makes every pending-invite load fail.
+ */
+export const UNIPILE_SENT_INVITE_PAGE_MAX = 100;
 
 export async function listSentInvitations(input: {
   account_id: string;

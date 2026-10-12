@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  canAccessCoachResource,
+  requireCoachOrAdmin,
+  resolveCoachTarget,
+} from "@/lib/booking/resolveCoachTarget";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import {
   createProviderConnectLink,
@@ -8,9 +13,9 @@ import {
   syncOutreachAccountsForCoach,
 } from "@/lib/unipile/outreachAccounts";
 import { isUnipileConfigured } from "@/lib/unipile/client";
+import { pickMailingReconnectAccountId } from "@/lib/unipile/mailingReconnect";
 import {
   isConnectableProvider,
-  normalizeUnipileProvider,
   UNIPILE_CONNECT_PROVIDERS,
   type UnipileConnectProvider,
 } from "@/lib/unipile/providers";
@@ -39,8 +44,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireOutreachCoach(request);
-  if (auth.error || !auth.coachId) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
   const body = (await request.json().catch(() => ({}))) as {
@@ -48,10 +53,34 @@ export async function POST(request: Request) {
     account_id?: string;
     provider?: string;
     returnTo?: string;
+    forSlug?: string;
+    reconnect?: boolean;
   };
+
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
+  try {
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug: body.forSlug,
+      impersonateCoachId: auth.impersonateCoachId,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Could not set up coach profile." },
+      { status: 500 }
+    );
+  }
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+  if (!canAccessCoachResource(auth, target.coach.id)) {
+    return NextResponse.json({ error: "Not authorized." }, { status: 403 });
+  }
+  const coachId = target.coach.id;
+
   try {
     if (body.action === "sync") {
-      const accounts = await syncOutreachAccountsForCoach(auth.coachId);
+      const accounts = await syncOutreachAccountsForCoach(coachId);
       return NextResponse.json({ accounts });
     }
     if (body.action === "disconnect") {
@@ -62,7 +91,7 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      const accounts = await removeOutreachAccount(auth.coachId, accountId);
+      const accounts = await removeOutreachAccount(coachId, accountId);
       return NextResponse.json({ accounts, ok: true });
     }
 
@@ -76,20 +105,19 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const accounts = await listOutreachAccounts(auth.coachId);
-    const existing = accounts.find((row) => {
-      if (normalizeUnipileProvider(row.provider) !== providerRaw) return false;
-      if (!row.unipile_account_id?.trim()) return false;
-      const status = (row.status || "").toUpperCase();
-      return status !== "OK" && status !== "CONNECTING";
-    });
+    const accounts = await listOutreachAccounts(coachId);
+    const reconnectAccountId = pickMailingReconnectAccountId(
+      accounts,
+      providerRaw,
+      { upgradeConnected: body.reconnect === true }
+    );
     const { url } = await createProviderConnectLink(
-      auth.coachId,
+      coachId,
       request,
       providerRaw as UnipileConnectProvider,
       {
         returnTo: parseUnipileConnectReturnTo(body.returnTo),
-        reconnectAccountId: existing?.unipile_account_id,
+        reconnectAccountId,
       }
     );
     return NextResponse.json({ url, provider: providerRaw });

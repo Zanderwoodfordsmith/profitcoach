@@ -30,6 +30,8 @@ type Props = {
   appOrigin: string;
   impersonatingCoachId?: string | null;
   prospectsHref: string;
+  /** Drop the outer card when this sits inside the share dialog. */
+  embedded?: boolean;
 };
 
 export function LeadMagnetShareSettings({
@@ -38,6 +40,7 @@ export function LeadMagnetShareSettings({
   appOrigin,
   impersonatingCoachId,
   prospectsHref,
+  embedded = false,
 }: Props) {
   const slug = coachSlug?.trim() || "";
   const slugReady = slug.length > 0;
@@ -102,7 +105,14 @@ export function LeadMagnetShareSettings({
     : "/assessment-pro/your-slug";
 
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white px-5 py-4 shadow-sm shadow-slate-200/40">
+    <section
+      className={
+        embedded
+          ? "space-y-4"
+          : "space-y-4 rounded-2xl border border-slate-200/90 bg-white px-5 py-4 shadow-sm shadow-slate-200/40"
+      }
+    >
+      {embedded ? null : (
       <div>
         <p className="text-sm font-semibold text-slate-900">Share</p>
         <p className="mt-0.5 text-xs text-slate-500">
@@ -111,10 +121,11 @@ export function LeadMagnetShareSettings({
             : "Personalised diagnostic link."}
         </p>
       </div>
+      )}
 
       {!slugReady ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Set your public URL on the Lead magnets tab so these links work.
+          Save a public URL above so these links work.
         </p>
       ) : null}
 

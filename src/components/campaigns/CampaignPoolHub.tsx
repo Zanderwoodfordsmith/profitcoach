@@ -22,6 +22,7 @@ import {
 import { ImportPoolModal } from "@/components/campaigns/ImportPoolModal";
 import { PoolFilterMenu } from "@/components/campaigns/PoolFilterMenu";
 import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
+import { SalesNavImportWaitPanel } from "@/components/campaigns/SalesNavImportWaitPanel";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { googleMapsImportProgressPercent } from "@/lib/googleMaps/cost";
 import { googleSearchImportProgressPercent } from "@/lib/googleSearch/cost";
@@ -65,6 +66,11 @@ import {
   GOOGLE_MAPS_FIND_PERSON_MAX,
 } from "@/lib/googleMaps/cost";
 import type { AudienceListSummary } from "@/lib/leadLists/audienceLists";
+import {
+  progressViewMatchingList,
+  watchedSalesNavProgressView,
+  type SalesNavImportProgressView,
+} from "@/lib/salesNavigator/activeImportView";
 import {
   SALES_NAV_IMPORT_WATCH_EVENT,
   isBusinessPoolImport,
@@ -267,9 +273,23 @@ function PoolCampaignPickerList({
 }
 
 const POOL_PAGE_SIZE_STORAGE_KEY = "pool-table-page-size-v1";
-const POOL_PAGE_SIZE_OPTIONS = [20, 50, 100, 250, 500] as const;
-type PoolPageSize = (typeof POOL_PAGE_SIZE_OPTIONS)[number];
-const DEFAULT_POOL_PAGE_SIZE: PoolPageSize = 50;
+const POOL_PAGE_SIZE_OPTIONS = [20, 50, 100, 250, 500, 1000] as const;
+const POOL_PAGE_SIZE_MIN = 1;
+const POOL_PAGE_SIZE_MAX = 1000;
+const DEFAULT_POOL_PAGE_SIZE = 50;
+
+function isPresetPoolPageSize(
+  n: number
+): n is (typeof POOL_PAGE_SIZE_OPTIONS)[number] {
+  return (POOL_PAGE_SIZE_OPTIONS as readonly number[]).includes(n);
+}
+
+function clampPoolPageSize(n: number): number {
+  return Math.min(
+    POOL_PAGE_SIZE_MAX,
+    Math.max(POOL_PAGE_SIZE_MIN, Math.floor(n))
+  );
+}
 const TABLE_SECTION_PADDING = "px-5 sm:px-6";
 const TABLE_CHECKBOX_COL_WIDTH = 28;
 const TABLE_NAME_COL_WIDTH = 280;
@@ -309,13 +329,17 @@ function getPoolColumnWidth(key: PoolColumnKey): number {
   }
 }
 
-function readStoredPoolPageSize(): PoolPageSize {
+function readStoredPoolPageSize(): number {
   if (typeof window === "undefined") return DEFAULT_POOL_PAGE_SIZE;
   try {
     const raw = window.localStorage.getItem(POOL_PAGE_SIZE_STORAGE_KEY);
     const n = Number(raw);
-    if ((POOL_PAGE_SIZE_OPTIONS as readonly number[]).includes(n)) {
-      return n as PoolPageSize;
+    if (
+      Number.isInteger(n) &&
+      n >= POOL_PAGE_SIZE_MIN &&
+      n <= POOL_PAGE_SIZE_MAX
+    ) {
+      return n;
     }
   } catch {
     // ignore
@@ -363,6 +387,12 @@ export function CampaignPoolHub({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Result copy that stays up until dismissed. Other notices still fade. */
+  const [heldNotice, setHeldNotice] = useState<string | null>(null);
+  const [addProgress, setAddProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -408,6 +438,10 @@ export function CampaignPoolHub({
   const [watchedImports, setWatchedImports] = useState<WatchedSalesNavImport[]>(
     []
   );
+  const [activeImports, setActiveImports] = useState<SalesNavImportProgressView[]>(
+    []
+  );
+  const seenActiveImportIds = useRef<Set<string> | null>(null);
   const [importLiveById, setImportLiveById] = useState<
     Record<
       string,
@@ -442,7 +476,11 @@ export function CampaignPoolHub({
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(
     () => new Set()
   );
-  const [pageSize, setPageSize] = useState<PoolPageSize>(DEFAULT_POOL_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(DEFAULT_POOL_PAGE_SIZE);
+  const [customPageSize, setCustomPageSize] = useState(false);
+  const [customPageSizeDraft, setCustomPageSizeDraft] = useState("");
+  const customPageSizeInputRef = useRef<HTMLInputElement | null>(null);
+  const customPageSizeShouldFocusRef = useRef(false);
   const [draggingColumnKey, setDraggingColumnKey] = useState<PoolColumnKey | null>(
     null
   );
@@ -661,11 +699,11 @@ export function CampaignPoolHub({
 
   // Ephemeral status toasts — don't leave a banner between tabs and the table.
   useEffect(() => {
-    if (!notice) return;
+    if (!notice || notice === heldNotice) return;
     if (notice.includes("…")) return;
     const timer = window.setTimeout(() => setNotice(null), 4000);
     return () => window.clearTimeout(timer);
-  }, [notice]);
+  }, [notice, heldNotice]);
 
   useEffect(() => {
     function refreshWatched() {
@@ -688,6 +726,45 @@ export function CampaignPoolHub({
     return () =>
       window.removeEventListener(SALES_NAV_IMPORT_WATCH_EVENT, onWatchChange);
   }, [reloadPeople, loadImportLists]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function pollActive() {
+      const headers = await getAuthHeaders();
+      if (!headers || cancelled) return;
+      try {
+        const res = await fetch("/api/coach/sales-nav-import", { headers });
+        const body = (await res.json().catch(() => ({}))) as {
+          imports?: SalesNavImportProgressView[];
+        };
+        if (!res.ok || cancelled) return;
+        const imports = Array.isArray(body.imports) ? body.imports : [];
+        const ids = new Set(imports.map((job) => job.id));
+        const previous = seenActiveImportIds.current;
+        if (previous) {
+          for (const id of previous) {
+            if (!ids.has(id)) {
+              void reloadPeople();
+              void loadImportLists();
+              break;
+            }
+          }
+        }
+        seenActiveImportIds.current = ids;
+        setActiveImports(imports);
+      } catch {
+        // keep the last progress on screen
+      }
+    }
+
+    void pollActive();
+    const handle = window.setInterval(() => void pollActive(), 5_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(handle);
+    };
+  }, [getAuthHeaders, reloadPeople, loadImportLists]);
 
   useEffect(() => {
     const mapsWatching = watchedImports.some((j) => isBusinessPoolImport(j.kind));
@@ -1150,8 +1227,20 @@ export function CampaignPoolHub({
   }, [campaignMenu]);
 
   useEffect(() => {
-    setPageSize(readStoredPoolPageSize());
+    const stored = readStoredPoolPageSize();
+    setPageSize(stored);
+    if (!isPresetPoolPageSize(stored)) {
+      setCustomPageSize(true);
+      setCustomPageSizeDraft(String(stored));
+    }
   }, []);
+
+  useEffect(() => {
+    if (!customPageSize || !customPageSizeShouldFocusRef.current) return;
+    customPageSizeShouldFocusRef.current = false;
+    customPageSizeInputRef.current?.focus();
+    customPageSizeInputRef.current?.select();
+  }, [customPageSize]);
 
   useEffect(() => {
     try {
@@ -1169,9 +1258,36 @@ export function CampaignPoolHub({
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  function handlePageSizeChange(next: PoolPageSize) {
-    setPageSize(next);
+  function applyPageSize(next: number) {
+    const clamped = clampPoolPageSize(next);
+    if (clamped === pageSize) return;
+    setPageSize(clamped);
     setPage(1);
+  }
+
+  function handlePageSizeSelect(value: string) {
+    if (value === "custom") {
+      customPageSizeShouldFocusRef.current = true;
+      setCustomPageSizeDraft(String(pageSize));
+      setCustomPageSize(true);
+      return;
+    }
+    const next = Number(value);
+    if (!isPresetPoolPageSize(next)) return;
+    setCustomPageSize(false);
+    applyPageSize(next);
+  }
+
+  function commitCustomPageSize() {
+    const parsed = Number(customPageSizeDraft);
+    if (!Number.isFinite(parsed) || customPageSizeDraft.trim() === "") {
+      setCustomPageSizeDraft(String(pageSize));
+      return;
+    }
+    const next = clampPoolPageSize(parsed);
+    setCustomPageSizeDraft(String(next));
+    if (next === parsed && isPresetPoolPageSize(next)) setCustomPageSize(false);
+    applyPageSize(next);
   }
 
   function toggleId(id: string) {
@@ -1207,15 +1323,21 @@ export function CampaignPoolHub({
       );
       return;
     }
+    const campaignName = campaign?.name?.trim() || "the campaign";
+    const total = itemIds.length;
+    let added = 0;
+    let skipped = 0;
     setBusy(true);
     setError(null);
-    setNotice(null);
+    setHeldNotice(null);
+    setAddProgress({ done: 0, total });
+    setNotice(
+      `Adding ${total.toLocaleString()} ${total === 1 ? "person" : "people"} to ${campaignName}…`
+    );
     setCampaignMenu(null);
     try {
       const headers = await getAuthHeaders();
       if (!headers) throw new Error("Sign in required.");
-      let added = 0;
-      let skipped = 0;
       for (let i = 0; i < itemIds.length; i += 250) {
         const chunk = itemIds.slice(i, i + 250);
         const res = await fetch(
@@ -1234,16 +1356,35 @@ export function CampaignPoolHub({
         if (!res.ok) throw new Error(body.error || "Could not add to campaign.");
         added += Number(body.added ?? 0);
         skipped += Number(body.skipped ?? 0);
+        const done = Math.min(i + chunk.length, total);
+        setAddProgress({ done, total });
+        if (done < total) {
+          setNotice(
+            `Adding to ${campaignName}… ${done.toLocaleString()} of ${total.toLocaleString()}`
+          );
+        }
       }
-      setNotice(
-        `Added ${added} to campaign${skipped ? ` · ${skipped} skipped` : ""}.`
-      );
+      const addedLabel = `${added.toLocaleString()} ${added === 1 ? "person" : "people"}`;
+      const result = skipped
+        ? `Added ${addedLabel} to ${campaignName}. ${skipped.toLocaleString()} ${skipped === 1 ? "was" : "were"} already in it.`
+        : `Added ${addedLabel} to ${campaignName}.`;
+      setHeldNotice(result);
+      setNotice(result);
       if (!personIds?.length) setSelectedIds([]);
       // Don't block the UI on list refresh — basket write already succeeded.
       void reloadPeople();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add to campaign.");
+      setNotice(null);
+      setHeldNotice(null);
+      const message =
+        err instanceof Error ? err.message : "Could not add to campaign.";
+      setError(
+        added > 0
+          ? `${message} ${added.toLocaleString()} ${added === 1 ? "was" : "were"} added before it stopped.`
+          : message
+      );
     } finally {
+      setAddProgress(null);
       setBusy(false);
     }
   }
@@ -2582,11 +2723,20 @@ export function CampaignPoolHub({
                         prev?.kind === "bulk" ? null : { kind: "bulk" }
                       );
                     }}
-                    className="inline-flex h-10 shrink-0 items-center rounded-lg bg-emerald-600 px-3.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    aria-busy={addProgress != null}
+                    className={`inline-flex h-10 shrink-0 items-center rounded-lg bg-emerald-600 px-3.5 text-sm font-semibold text-white ${
+                      addProgress
+                        ? "cursor-wait disabled:text-white disabled:opacity-100"
+                        : "hover:bg-emerald-700 disabled:opacity-50"
+                    }`}
                   >
-                    {campaignableSelected.length <= 1
-                      ? "Add to campaign"
-                      : `Add ${campaignableSelected.length} to campaign`}
+                    {addProgress
+                      ? addProgress.done > 0
+                        ? `Adding ${addProgress.done.toLocaleString()} of ${addProgress.total.toLocaleString()}…`
+                        : `Adding ${addProgress.total.toLocaleString()}…`
+                      : campaignableSelected.length <= 1
+                        ? "Add to campaign"
+                        : `Add ${campaignableSelected.length} to campaign`}
                   </button>
                   {campaignMenu?.kind === "bulk" ? (
                     <div className="absolute right-0 z-20 mt-1 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
@@ -2750,10 +2900,20 @@ export function CampaignPoolHub({
                     (j) => j.saveListId === list.id
                   );
                   const live = job ? importLiveById[job.id] : null;
-                  const importing = Boolean(job);
-                  const progressCount = live?.progressCount ?? 0;
-                  const targetCount =
-                    live?.targetCount || job?.targetCount || 0;
+                  const serverImport = progressViewMatchingList(
+                    list.id,
+                    activeImports
+                  );
+                  const importing = Boolean(job) || Boolean(serverImport);
+                  const progressCount =
+                    serverImport?.progressCount ?? live?.progressCount ?? 0;
+                  const targetCount = serverImport
+                    ? serverImport.finalizing
+                      ? Math.max(1, serverImport.progressCount)
+                      : (serverImport.overallTotal ??
+                        serverImport.segmentTotalCount ??
+                        0)
+                    : live?.targetCount || job?.targetCount || 0;
                   const businessImport = isBusinessPoolImport(
                     live?.kind ?? job?.kind
                   );
@@ -3020,72 +3180,116 @@ export function CampaignPoolHub({
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td
-                  colSpan={2 + shownColumnOptions.length}
-                  className="p-0"
-                >
-                  <div className="sticky left-0 w-[100cqw] px-3 py-12 text-center text-sm text-slate-600">
-                  {savingImportListId &&
-                  (savingImportListId === activeViewId ||
-                    activeViewId === "pool")
-                    ? "Saving businesses into your pool…"
-                    : watchedImports.some((j) => j.saveListId === activeViewId)
-                      ? "Still importing — hang tight…"
-                      : "Loading pool…"}
-                  </div>
-                </td>
-              </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={2 + shownColumnOptions.length}
-                  className="p-0"
-                >
-                  <div className="sticky left-0 w-[100cqw] px-3 py-10 text-center text-sm text-slate-600">
-                  {(() => {
-                    const activeImport = watchedImports.find(
-                      (j) => j.saveListId === activeViewId
-                    );
-                    const live = activeImport
-                      ? importLiveById[activeImport.id]
-                      : null;
-                    if (activeImport && isBusinessPoolImport(live?.kind ?? activeImport.kind)) {
-                      return (
-                        <GoogleMapsImportWaitPanel
-                          source={
-                            (live?.kind ?? activeImport.kind) === "google_search"
-                              ? "search"
-                              : "maps"
-                          }
-                          progressCount={live?.progressCount ?? 0}
-                          targetCount={
-                            live?.targetCount || activeImport.targetCount || 0
-                          }
-                          startedAt={activeImport.startedAt}
-                          phase={live?.phase ?? "scraping"}
-                          peopleFound={live?.peopleFound ?? 0}
-                          listName={activeImport.name}
+            {(() => {
+              const serverImport =
+                activeViewId === "pool"
+                  ? null
+                  : progressViewMatchingList(activeViewId, activeImports);
+              const watchedImport = watchedImports.find(
+                (j) => j.saveListId === activeViewId
+              );
+              const watchedLive = watchedImport
+                ? importLiveById[watchedImport.id]
+                : null;
+              const salesNavImport =
+                serverImport ??
+                (watchedImport &&
+                !isBusinessPoolImport(watchedLive?.kind ?? watchedImport.kind)
+                  ? watchedSalesNavProgressView(watchedImport, watchedLive)
+                  : null);
+              const showSalesNavWait =
+                salesNavImport != null && people.length === 0;
+              const listName =
+                importLists.find((list) => list.id === activeViewId)?.name?.trim() ||
+                salesNavImport?.name ||
+                "This list";
+
+              if ((loading || filtered.length === 0) && showSalesNavWait && salesNavImport) {
+                return (
+                  <tr>
+                    <td colSpan={2 + shownColumnOptions.length} className="p-0">
+                      <div className="sticky left-0 w-[100cqw] px-6 py-8">
+                        <SalesNavImportWaitPanel
+                          listName={listName}
+                          view={salesNavImport}
                         />
-                      );
-                    }
-                    if (people.length === 0) {
-                      if (activeViewId === "pool") {
-                        return "The pool is empty. Add a person, upload a CSV, or import from Sales Nav or Google Maps.";
-                      }
-                      if (activeImport) {
-                        return "Import in progress — people will show here when it finishes.";
-                      }
-                      return "This list is empty.";
-                    }
-                    return "No people match this smart list.";
-                  })()}
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              (
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              const businessImportWaiting =
+                Boolean(watchedImport) &&
+                isBusinessPoolImport(watchedLive?.kind ?? watchedImport?.kind);
+              const listStillLoading =
+                loading ||
+                (loadingMore && filtered.length === 0 && !businessImportWaiting);
+
+              if (listStillLoading) {
+                return (
+                  <tr>
+                    <td colSpan={2 + shownColumnOptions.length} className="p-0">
+                      <div className="sticky left-0 w-[100cqw] px-3 py-12 text-center text-sm text-slate-600">
+                        {savingImportListId &&
+                        (savingImportListId === activeViewId ||
+                          activeViewId === "pool")
+                          ? "Saving businesses into your pool…"
+                          : "Loading list…"}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              if (filtered.length === 0) {
+                return (
+                  <tr>
+                    <td colSpan={2 + shownColumnOptions.length} className="p-0">
+                      <div className="sticky left-0 w-[100cqw] px-3 py-10 text-center text-sm text-slate-600">
+                        {(() => {
+                          if (
+                            watchedImport &&
+                            isBusinessPoolImport(
+                              watchedLive?.kind ?? watchedImport.kind
+                            )
+                          ) {
+                            return (
+                              <GoogleMapsImportWaitPanel
+                                source={
+                                  (watchedLive?.kind ?? watchedImport.kind) ===
+                                  "google_search"
+                                    ? "search"
+                                    : "maps"
+                                }
+                                progressCount={watchedLive?.progressCount ?? 0}
+                                targetCount={
+                                  watchedLive?.targetCount ||
+                                  watchedImport.targetCount ||
+                                  0
+                                }
+                                startedAt={watchedImport.startedAt}
+                                phase={watchedLive?.phase ?? "scraping"}
+                                peopleFound={watchedLive?.peopleFound ?? 0}
+                                listName={watchedImport.name}
+                              />
+                            );
+                          }
+                          if (people.length === 0) {
+                            if (activeViewId === "pool") {
+                              return "The pool is empty. Add a person, upload a CSV, or import from Sales Nav or Google Maps.";
+                            }
+                            return "This list is empty.";
+                          }
+                          return "No people match this smart list.";
+                        })()}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              return (
                 paginatedGroupedItems ??
                 pagedPeople.map((row) => ({ type: "row" as const, row }))
               ).map((item) => {
@@ -3133,8 +3337,8 @@ export function CampaignPoolHub({
                     {renderRows([item.row])}
                   </Fragment>
                 );
-              })
-            )}
+              });
+            })()}
           </tbody>
         </table>
       </div>
@@ -3145,13 +3349,11 @@ export function CampaignPoolHub({
           className={`flex shrink-0 flex-col gap-3 border-t border-slate-100 bg-white py-3 sm:flex-row sm:items-center sm:justify-between ${TABLE_SECTION_PADDING}`}
           aria-label="Pool pagination"
         >
-          <label className="inline-flex items-center gap-2 text-sm text-slate-500">
+          <div className="inline-flex items-center gap-2 text-sm text-slate-500">
             <span>Show</span>
             <select
-              value={pageSize}
-              onChange={(e) =>
-                handlePageSizeChange(Number(e.target.value) as PoolPageSize)
-              }
+              value={customPageSize ? "custom" : pageSize}
+              onChange={(e) => handlePageSizeSelect(e.target.value)}
               className="h-8 rounded-lg border border-slate-200 bg-white py-0 pl-2 pr-7 text-sm font-medium text-slate-700 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               aria-label="People per page"
             >
@@ -3160,9 +3362,30 @@ export function CampaignPoolHub({
                   {n}
                 </option>
               ))}
+              <option value="custom">Custom</option>
             </select>
+            {customPageSize ? (
+              <input
+                ref={customPageSizeInputRef}
+                type="number"
+                inputMode="numeric"
+                min={POOL_PAGE_SIZE_MIN}
+                max={POOL_PAGE_SIZE_MAX}
+                value={customPageSizeDraft}
+                onChange={(e) => setCustomPageSizeDraft(e.target.value)}
+                onBlur={commitCustomPageSize}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+                className="h-8 w-[4.5rem] rounded-lg border border-slate-200 bg-white px-2 text-sm font-medium tabular-nums text-slate-700 outline-none [appearance:textfield] focus:border-sky-500 focus:ring-1 focus:ring-sky-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                aria-label="Custom people per page"
+              />
+            ) : null}
             <span>per page</span>
-          </label>
+          </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <p className="tabular-nums text-sm text-slate-500">
               {paginationRangeLabel}
@@ -3324,7 +3547,10 @@ export function CampaignPoolHub({
           {!notice.includes("…") ? (
             <button
               type="button"
-              onClick={() => setNotice(null)}
+              onClick={() => {
+                setNotice(null);
+                setHeldNotice(null);
+              }}
               className="mt-1.5 text-xs font-semibold text-white/80 underline underline-offset-2 hover:text-white"
             >
               Dismiss
