@@ -244,6 +244,7 @@ export function isPersonalisedAssessmentEntry(
 
 export type ResultsContactPrompt = {
   show: boolean;
+  askName: boolean;
   askEmail: boolean;
   askPhone: boolean;
 };
@@ -252,45 +253,27 @@ function hasContactValue(value: string | null | undefined): boolean {
   return Boolean(value?.trim());
 }
 
-/**
- * Ask for email (required) and phone (optional) just before results — only on
- * personalised assessment links, and only for fields we do not already have.
- * Landing opt-in already collected contact, so that path never shows this.
- * If email is already known, skip entirely (do not interrupt for optional phone).
- */
-export function getResultsContactPrompt(input: {
-  fromLanding: boolean;
-  urlContact: AssessmentContactFromUrl;
-  email?: string | null;
-  phone?: string | null;
-  /** True when the invite token already maps to a contact with email. */
-  inviteHasEmail?: boolean;
-  /** True when the invite token already maps to a contact with phone. */
-  inviteHasPhone?: boolean;
-}): ResultsContactPrompt {
-  const hidden = { show: false, askEmail: false, askPhone: false };
-  if (input.fromLanding) return hidden;
-  if (!isPersonalisedAssessmentEntry(input.urlContact)) return hidden;
-
-  const hasEmail =
-    input.inviteHasEmail === true ||
-    hasContactValue(input.email) ||
-    hasContactValue(input.urlContact.email);
-  if (hasEmail) return hidden;
-
-  const hasPhone =
-    input.inviteHasPhone === true ||
-    hasContactValue(input.phone) ||
-    hasContactValue(input.urlContact.phone);
-
-  return {
-    show: true,
-    askEmail: true,
-    askPhone: !hasPhone,
-  };
+/** A stored or typed person name. "Unknown" is the old missing-name placeholder. */
+export function isKnownAssessmentPersonName(
+  value: string | null | undefined
+): boolean {
+  const name = (value ?? "").replace(/\s+/g, " ").trim();
+  if (name.length < 2 || name.length > 120) return false;
+  return name.toLowerCase() !== "unknown";
 }
 
-/** Lowercased email if valid; otherwise null. */
+/** First candidate that is a real person name. */
+export function knownAssessmentPersonName(
+  ...candidates: Array<string | null | undefined>
+): string | null {
+  for (const candidate of candidates) {
+    const name = (candidate ?? "").replace(/\s+/g, " ").trim();
+    if (isKnownAssessmentPersonName(name)) return name;
+  }
+  return null;
+}
+
+/** Lowercased email if valid; otherwise null. Placeholder inboxes are rejected. */
 export function normalizeAssessmentResultsEmail(
   raw: string | null | undefined
 ): string | null {
@@ -298,5 +281,94 @@ export function normalizeAssessmentResultsEmail(
   if (!value || value.length > 254 || !RESULTS_EMAIL_RE.test(value)) {
     return null;
   }
+  if (value.endsWith("@noemail.local")) return null;
   return value;
+}
+
+export function isPlaceholderAssessmentEmail(
+  email: string | null | undefined
+): boolean {
+  return (email ?? "").trim().toLowerCase().endsWith("@noemail.local");
+}
+
+export function isDeliverableAssessmentEmail(
+  raw: string | null | undefined
+): boolean {
+  return normalizeAssessmentResultsEmail(raw) != null;
+}
+
+/**
+ * Ask for any required identity we do not already have, before results.
+ * Name and email are required. Phone is optional, and only asked on the same
+ * step as a missing name or email.
+ */
+export function getResultsContactPrompt(input: {
+  fullName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  /** True when the invite token already maps to a contact with a real name. */
+  inviteHasName?: boolean;
+  /** True when the invite token already maps to a contact with a real email. */
+  inviteHasEmail?: boolean;
+  /** True when the invite token already maps to a contact with a phone. */
+  inviteHasPhone?: boolean;
+}): ResultsContactPrompt {
+  const hasName =
+    input.inviteHasName === true || isKnownAssessmentPersonName(input.fullName);
+  const hasEmail =
+    input.inviteHasEmail === true || isDeliverableAssessmentEmail(input.email);
+  const hasPhone =
+    input.inviteHasPhone === true || hasContactValue(input.phone);
+  const askName = !hasName;
+  const askEmail = !hasEmail;
+  const askPhone = !hasPhone && (askName || askEmail);
+
+  return {
+    show: askName || askEmail,
+    askName,
+    askEmail,
+    askPhone,
+  };
+}
+
+/** Client-side message when the results step is still missing required identity. */
+export function assessmentResultsContactError(
+  prompt: Pick<ResultsContactPrompt, "askName" | "askEmail">,
+  values: { fullName?: string | null; email?: string | null }
+): string | null {
+  if (prompt.askName && !isKnownAssessmentPersonName(values.fullName)) {
+    return "Please enter your name.";
+  }
+  if (prompt.askEmail && !isDeliverableAssessmentEmail(values.email)) {
+    return "Please enter a valid email so we can send your results.";
+  }
+  return null;
+}
+
+/**
+ * Name and email required to finish. Uses the typed values, then the invited
+ * contact when the link already identified them.
+ */
+export function resolveSubmittedAssessmentIdentity(input: {
+  fullName?: string | null;
+  email?: string | null;
+  invitedFullName?: string | null;
+  invitedFirstName?: string | null;
+  invitedLastName?: string | null;
+  invitedEmail?: string | null;
+}): { fullName: string; email: string } | null {
+  const invitedCombined = [input.invitedFirstName, input.invitedLastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+  const fullName = knownAssessmentPersonName(
+    input.fullName,
+    input.invitedFullName,
+    invitedCombined
+  );
+  const email =
+    normalizeAssessmentResultsEmail(input.email) ??
+    normalizeAssessmentResultsEmail(input.invitedEmail);
+  if (!fullName || !email) return null;
+  return { fullName, email };
 }

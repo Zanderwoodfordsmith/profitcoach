@@ -37,7 +37,9 @@ import {
   campaignStepAllowsVariants,
   campaignStepCountsInTotal,
   campaignStepDisplayLabel,
+  isLevelVariantSet,
   keepAbPair,
+  keepStepVariants,
   campaignStepHasCopy,
   campaignStepHasSendMode,
   campaignStepIncompleteHint,
@@ -415,6 +417,9 @@ function stepPreview(
       return notes || "Sequence waits until you call";
     }
     return notes || "Call them. Sequence carries on.";
+  }
+  if (isLevelVariantSet(step.variants)) {
+    return "Different email for each BOSS level";
   }
   const first = step.variants?.[0]?.body ?? step.body ?? "";
   return first.trim() || "No copy yet";
@@ -1351,8 +1356,11 @@ export function StepInlineEditor({
   libraryMode?: boolean;
   mergeFields?: MergeFieldPickerContext;
 }) {
-  const variants = keepAbPair(step.variants ?? []);
-  const hasAb = variants.length > 0;
+  const levelBranch = isLevelVariantSet(step.variants);
+  const variants = levelBranch
+    ? keepStepVariants(step.variants ?? [])
+    : keepAbPair(step.variants ?? []);
+  const hasAb = !levelBranch && variants.length > 0;
   const allowsAb = campaignStepAllowsVariants(step.step_type);
   const metric = abMetricForStep(step.step_type);
   const stepStats = step.id ? abStats?.[step.id] : undefined;
@@ -1369,12 +1377,13 @@ export function StepInlineEditor({
     : 0;
 
   function patchActiveVariant(patch: Partial<SequenceVariant>) {
-    const next = keepAbPair(
-      variants.map((item, i) => (i === activeIndex ? { ...item, ...patch } : item))
+    const next = variants.map((item, i) =>
+      i === activeIndex ? { ...item, ...patch } : item
     );
+    const kept = levelBranch ? keepStepVariants(next) : keepAbPair(next);
     onChange({
-      variants: next,
-      body: next[0]?.body ?? patch.body ?? step.body ?? "",
+      variants: kept,
+      body: kept[0]?.body ?? patch.body ?? step.body ?? "",
     });
   }
 
@@ -1608,6 +1617,11 @@ export function StepInlineEditor({
           Subject: …
         </p>
       ) : null}
+      {levelBranch ? (
+        <p className="text-xs leading-relaxed text-slate-500">
+          Sends the version that matches their BOSS level.
+        </p>
+      ) : null}
       {step.step_type === "whatsapp" ? (
         <p className="text-xs leading-relaxed text-slate-500">
           Sends on WhatsApp. The prospect needs a phone number.
@@ -1625,27 +1639,32 @@ export function StepInlineEditor({
         </p>
       ) : null}
 
-      {hasAb && activeVariant ? (
+      {(hasAb || levelBranch) && activeVariant ? (
         <div className="space-y-3">
           <div className="flex w-full items-center justify-between gap-3">
             <div
-              className="inline-grid grid-cols-2 rounded-full bg-slate-100 p-0.5"
+              className={
+                levelBranch
+                  ? "flex flex-wrap gap-1"
+                  : "inline-grid grid-cols-2 rounded-full bg-slate-100 p-0.5"
+              }
               role="tablist"
-              aria-label="Message versions"
+              aria-label={levelBranch ? "BOSS level" : "Message versions"}
             >
               {variants.map((variant) => {
                 const selected = variant.key === activeVariant.key;
-                const rate = abRatePercent(
-                  stepStats?.[variant.key],
-                  metric.key
-                );
-                const isBest = winner === variant.key;
+                const rate = levelBranch
+                  ? null
+                  : abRatePercent(stepStats?.[variant.key], metric.key);
+                const isBest = levelBranch ? false : winner === variant.key;
                 const KindIcon =
                   variant.media_kind === "voice"
                     ? Mic
                     : variant.media_kind === "video"
                       ? Video
                       : MessageSquare;
+                const levelName =
+                  variant.label?.split("·").pop()?.trim() || variant.key;
                 return (
                   <button
                     key={variant.key}
@@ -1654,15 +1673,19 @@ export function StepInlineEditor({
                     aria-selected={selected}
                     onClick={() => setActiveVariantKey(variant.key)}
                     className={`inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-[13px] font-semibold leading-tight transition duration-150 ${
-                      selected
-                        ? "bg-[#1a8fd4] text-white"
-                        : "text-slate-400 hover:text-slate-600"
+                      levelBranch
+                        ? selected
+                          ? "bg-[#1a8fd4] text-white"
+                          : "bg-slate-100 text-slate-500 hover:text-slate-700"
+                        : selected
+                          ? "bg-[#1a8fd4] text-white"
+                          : "text-slate-400 hover:text-slate-600"
                     }`}
                   >
-                    {step.step_type === "message" ? (
+                    {step.step_type === "message" && !levelBranch ? (
                       <KindIcon className="h-3.5 w-3.5" aria-hidden />
                     ) : null}
-                    {variant.key}
+                    {levelBranch ? levelName : variant.key}
                     {isBest || rate != null ? (
                       <span
                         className={`text-[11px] font-medium tabular-nums ${
@@ -1677,7 +1700,9 @@ export function StepInlineEditor({
                 );
               })}
             </div>
-            {abToggle ? <div className="ml-auto shrink-0">{abToggle}</div> : null}
+            {abToggle && !levelBranch ? (
+              <div className="ml-auto shrink-0">{abToggle}</div>
+            ) : null}
           </div>
           {step.step_type === "message" ? (
             <MessageStepMedia

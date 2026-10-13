@@ -95,6 +95,7 @@ type CoachDetail = {
   community_bio: string | null;
   directory_summary: string | null;
   directory_bio: string | null;
+  access_removed_at: string | null;
 };
 
 type CoachPayment = {
@@ -208,6 +209,9 @@ export default function AdminCoachDetailPage({
   const [accessMsg, setAccessMsg] = useState<
     { kind: "ok" | "err"; text: string } | null
   >(null);
+  const [confirmingRemoveAccess, setConfirmingRemoveAccess] = useState(false);
+  const [removingAccess, setRemovingAccess] = useState(false);
+  const [removeAccessError, setRemoveAccessError] = useState<string | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -327,6 +331,54 @@ export default function AdminCoachDetailPage({
     );
     setAccessMsg({ kind: "ok", text: "Saved." });
     setSavingAccess(false);
+  }
+
+  async function removeAccess() {
+    if (!coach) return;
+    setRemovingAccess(true);
+    setRemoveAccessError(null);
+
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      router.replace("/login");
+      return;
+    }
+
+    const res = await fetch(
+      `/api/admin/coaches/${encodeURIComponent(coach.slug)}/remove-access`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }
+    );
+    const body = (await res.json().catch(() => ({}))) as {
+      access_removed_at?: string;
+      error?: string;
+    };
+
+    if (!res.ok || !body.access_removed_at) {
+      setRemoveAccessError(body.error ?? "Could not remove access.");
+      setRemovingAccess(false);
+      return;
+    }
+
+    setCoach((prev) =>
+      prev
+        ? {
+            ...prev,
+            email: null,
+            linkedin_url: null,
+            directory_listed: false,
+            access_tier: "early_exit",
+            access_tier_locked: true,
+            access_removed_at: body.access_removed_at ?? null,
+          }
+        : prev
+    );
+    setConfirmingRemoveAccess(false);
+    setRemovingAccess(false);
   }
 
   const paymentsWithBilling = useMemo(() => {
@@ -793,6 +845,79 @@ export default function AdminCoachDetailPage({
                     </p>
                   </div>
                 ) : null}
+              </SectionCard>
+
+              <SectionCard
+                title="Remove access"
+                description="For someone who has left. Their name and avatar stay on their posts and comments so the community still makes sense. Everything that lets them back in or reaches them is removed."
+              >
+                {coach.access_removed_at ? (
+                  <p className="text-sm text-slate-700">
+                    Access removed on{" "}
+                    <span className="font-medium text-slate-900">
+                      {formatIsoDate(coach.access_removed_at)}
+                    </span>
+                    . Their login is blocked and their contact details are cleared.
+                  </p>
+                ) : confirmingRemoveAccess ? (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 sm:p-5">
+                    <p className="text-sm font-semibold text-slate-900">
+                      Remove {coach.full_name?.trim() || "this coach"}&apos;s access?
+                    </p>
+                    <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-slate-700">
+                      <li>
+                        Their login stops working. Their sign-in email is replaced, so they
+                        can use it again if they ever rejoin.
+                      </li>
+                      <li>
+                        Their phone, LinkedIn, social links and calendar feed link are cleared.
+                      </li>
+                      <li>
+                        They are hidden from the member list, @-mentions and the public
+                        directory, and set to Early exit.
+                      </li>
+                      <li>Their posts, comments, payments and history stay.</li>
+                    </ul>
+                    <p className="mt-3 text-sm text-slate-600">
+                      Cleared contact details can&apos;t be brought back.
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => void removeAccess()}
+                        disabled={removingAccess}
+                        className="inline-flex items-center gap-2 rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {removingAccess ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : null}
+                        Yes, remove access
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmingRemoveAccess(false);
+                          setRemoveAccessError(null);
+                        }}
+                        disabled={removingAccess}
+                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      {removeAccessError ? (
+                        <span className="text-sm text-rose-600">{removeAccessError}</span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingRemoveAccess(true)}
+                    className="rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50"
+                  >
+                    Remove access
+                  </button>
+                )}
               </SectionCard>
             </div>
           ) : null}

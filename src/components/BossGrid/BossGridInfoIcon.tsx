@@ -23,6 +23,8 @@ type BossGridInfoIconProps = {
   variant?: "default" | "header";
   /** Wider tooltip with extra padding (levels) */
   panelSize?: "default" | "wide";
+  /** Stack above overlays such as the playbook score sheet. */
+  panelZClass?: string;
 };
 
 export function BossGridInfoIcon({
@@ -31,6 +33,7 @@ export function BossGridInfoIcon({
   header,
   variant = "default",
   panelSize = "default",
+  panelZClass = "z-[450]",
 }: BossGridInfoIconProps) {
   const tooltipId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -103,6 +106,9 @@ export function BossGridInfoIcon({
   const isWide = panelSize === "wide";
   const panelWidthPx = isWide ? 416 : 352;
   const panelHalfWidth = panelWidthPx / 2;
+  const spaceBelow = anchor ? window.innerHeight - anchor.bottom - 12 : 0;
+  const spaceAbove = anchor ? anchor.top - 12 : 0;
+  const openBelow = !anchor || spaceBelow >= 240 || spaceBelow >= spaceAbove;
 
   const panel =
     open && anchor && typeof document !== "undefined"
@@ -110,7 +116,7 @@ export function BossGridInfoIcon({
           <div
             id={tooltipId}
             role="tooltip"
-            className={`pointer-events-auto fixed z-[450] rounded-xl border bg-white shadow-lg ring-1 ring-slate-900/5 ${
+            className={`pointer-events-auto fixed overflow-y-auto rounded-xl border bg-white shadow-lg ring-1 ring-slate-900/5 ${panelZClass} ${
               isWide
                 ? "w-[min(26rem,calc(100vw-1.5rem))] px-6 py-5"
                 : "w-[min(22rem,calc(100vw-1.5rem))] px-5 py-4"
@@ -123,7 +129,12 @@ export function BossGridInfoIcon({
                   window.innerWidth - panelWidthPx - 12
                 )
               ),
-              top: anchor.bottom + 10,
+              ...(openBelow
+                ? { top: anchor.bottom + 10, maxHeight: Math.max(160, spaceBelow - 8) }
+                : {
+                    bottom: window.innerHeight - anchor.top + 10,
+                    maxHeight: Math.max(160, spaceAbove - 8),
+                  }),
               borderColor: header ? `${header.accentColor}33` : "rgba(226, 232, 240, 0.9)",
               borderTopWidth: header ? 3 : 1,
               borderTopColor: header?.accentColor,

@@ -56,7 +56,7 @@ export async function GET(
 
   try {
     const profileSelect =
-      "profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)";
+      "profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024, access_removed_at)";
     const coachSelect = `
       id, slug, directory_listed, directory_level, conference_status, lead_webhook_url,
       crm_profile_name, crm_location_id, calendar_embed_code, booking_calendar_provider, access_tier, access_tier_locked,
@@ -241,6 +241,7 @@ export async function GET(
         (prof?.ladder_goal_target_date as string | null) ?? null,
       last_login_at: authUserRes.data.user?.last_sign_in_at ?? null,
       last_active_at: lastActiveAt,
+      access_removed_at: (prof?.access_removed_at as string | null) ?? null,
       community_bio: bioFields.community_bio,
       directory_summary: bioFields.directory_summary,
       directory_bio: bioFields.directory_bio,
@@ -843,6 +844,45 @@ export async function DELETE(
       return NextResponse.json(
         { error: "Only coach profiles can be deleted here." },
         { status: 400 }
+      );
+    }
+
+    // The database refuses to delete the author of posts, comments or support
+    // replies, so other readers keep them. Check before deleting anything so the
+    // coach is never left half deleted.
+    const authoredCounts = await Promise.all([
+      supabaseAdmin
+        .from("community_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("author_id", coachId),
+      supabaseAdmin
+        .from("community_post_comments")
+        .select("id", { count: "exact", head: true })
+        .eq("author_id", coachId),
+      supabaseAdmin
+        .from("community_feedback_replies")
+        .select("id", { count: "exact", head: true })
+        .eq("created_by", coachId),
+      supabaseAdmin
+        .from("support_ticket_internal_notes")
+        .select("id", { count: "exact", head: true })
+        .eq("created_by", coachId),
+    ]);
+    const authoredError = authoredCounts.find((result) => result.error)?.error;
+    if (authoredError) {
+      console.error("admin/coaches/[id] delete authored content check error:", authoredError);
+      return NextResponse.json(
+        { error: "Unable to check this coach's community posts." },
+        { status: 500 }
+      );
+    }
+    if (authoredCounts.some((result) => (result.count ?? 0) > 0)) {
+      return NextResponse.json(
+        {
+          error:
+            "This coach has community posts, comments or support replies, so their account can't be deleted without losing them. Remove their login and contact details instead and keep their name and avatar.",
+        },
+        { status: 409 }
       );
     }
 

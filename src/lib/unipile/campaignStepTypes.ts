@@ -460,6 +460,35 @@ export function keepAbPair<T extends { key: string }>(variants: T[]): T[] {
   });
 }
 
+/** BOSS level branches use keys 1–5, one email per level. */
+export const LEVEL_VARIANT_KEYS = ["1", "2", "3", "4", "5"] as const;
+
+export function isLevelVariantKey(key: string): boolean {
+  return (LEVEL_VARIANT_KEYS as readonly string[]).includes(key);
+}
+
+export function isLevelVariantSet(
+  variants: Array<{ key: string }> | null | undefined
+): boolean {
+  return Boolean(
+    variants?.length && variants.every((variant) => isLevelVariantKey(variant.key))
+  );
+}
+
+/** Keep an A/B pair, or a full BOSS level branch (keys 1–5). */
+export function keepStepVariants<T extends { key: string }>(
+  variants: T[]
+): T[] {
+  if (isLevelVariantSet(variants)) {
+    const byKey = new Map(variants.map((variant) => [variant.key, variant]));
+    return LEVEL_VARIANT_KEYS.flatMap((key) => {
+      const variant = byKey.get(key);
+      return variant ? [variant] : [];
+    });
+  }
+  return keepAbPair(variants);
+}
+
 /** LinkedIn messages (text, voice, video) can send automatically or wait for the coach. */
 export type CampaignSendMode = "auto" | "remind";
 

@@ -18,6 +18,12 @@ import {
   type DimensionPlaybookLists,
   type ProspectDimensionBreakdown,
 } from "@/lib/playbookSessionNotes";
+import {
+  prospectDimensionGuideSections,
+  prospectLevelExplanation,
+  type ProspectDimensionKey,
+} from "@/lib/prospectScoreGuide";
+import { BossGridInfoIcon } from "@/components/BossGrid/BossGridInfoIcon";
 
 import {
   BOSS_PILLAR_DIAL_GRADIENTS,
@@ -366,12 +372,13 @@ const MIX_SEGMENTS = [
   { key: "notAnswered", label: "Not answered", color: NOT_ANSWERED_GREY },
 ] as const;
 
-type LevelLegendDef = { level: number; label: string; color: string };
+type LevelLegendDef = { level: number; label: string; color: string; explanation: string };
 
 const IMPACT_LEGEND: LevelLegendDef[] = PROSPECT_IMPACT_LEVELS.map((level) => ({
   level,
   label: WORKSHOP_IMPACT_META[level].label,
   color: level === 3 ? "#1e3a8a" : level === 2 ? "#3b82f6" : "#94a3b8",
+  explanation: prospectLevelExplanation("impact", level) ?? "",
 }));
 
 const URGENCY_LEGEND: LevelLegendDef[] = ([4, 3, 2, 1] as const).map((level) => ({
@@ -379,12 +386,14 @@ const URGENCY_LEGEND: LevelLegendDef[] = ([4, 3, 2, 1] as const).map((level) => 
   label: WORKSHOP_PRIORITY_META[POINTS_TO_URGENCY[level]].label,
   color:
     level === 4 ? "#ef4444" : level === 3 ? "#eab308" : level === 2 ? "#2563eb" : "#94a3b8",
+  explanation: prospectLevelExplanation("urgency", level) ?? "",
 }));
 
 const EASE_LEGEND: LevelLegendDef[] = PROSPECT_EASE_LEVELS.map((level) => ({
   level,
   label: WORKSHOP_EASE_META[level].label,
   color: level === 3 ? "#22c55e" : level === 2 ? "#eab308" : "#ef4444",
+  explanation: prospectLevelExplanation("ease", level) ?? "",
 }));
 
 function dimensionLegendItems<T extends number>(
@@ -394,12 +403,13 @@ function dimensionLegendItems<T extends number>(
   playbooks: DimensionPlaybookLists<T>
 ): LegendItem[] {
   return [
-    ...defs.map(({ level, label, color }) => ({
+    ...defs.map(({ level, label, color, explanation }) => ({
       id: `${prefix}-${level}`,
       label,
       color,
       count: levelCounts[level] ?? 0,
       playbooks: playbooks.byLevel[level as T] ?? [],
+      description: explanation,
     })),
     {
       id: `${prefix}-unset`,
@@ -416,6 +426,7 @@ function DimensionProgressRow({
   setCount,
   total,
   prefix,
+  guideKey,
   defs,
   levelCounts,
   playbooks,
@@ -425,6 +436,7 @@ function DimensionProgressRow({
   setCount: number;
   total: number;
   prefix: string;
+  guideKey: ProspectDimensionKey;
   defs: LevelLegendDef[];
   levelCounts: Record<number, number>;
   playbooks: DimensionPlaybookLists<number>;
@@ -433,7 +445,16 @@ function DimensionProgressRow({
   const segments = dimensionLegendItems(prefix, defs, levelCounts, playbooks);
   return (
     <ProgressMetricRow
-      title={title}
+      title={
+        <>
+          {title}
+          <BossGridInfoIcon
+            title={title}
+            sections={prospectDimensionGuideSections(guideKey)}
+            panelSize="wide"
+          />
+        </>
+      }
       trailing={<ProgressLegend items={segments} onPlaybookClick={onPlaybookClick} />}
       bar={
         <SegmentedProgressBar
@@ -453,10 +474,12 @@ type LegendItem = {
   color: string;
   count: number;
   playbooks: ProgressCategoryPlaybook[];
+  description?: string;
 };
 
 function ProgressCategoryPopover({
   label,
+  description,
   playbooks,
   accentColor,
   onPlaybookClick,
@@ -464,6 +487,7 @@ function ProgressCategoryPopover({
   className = "",
 }: {
   label: string;
+  description?: string;
   playbooks: ProgressCategoryPlaybook[];
   accentColor?: string;
   onPlaybookClick?: (ref: string) => void;
@@ -567,7 +591,10 @@ function ProgressCategoryPopover({
           >
             {label}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          {description ? (
+            <p className="mt-1.5 text-sm leading-snug text-slate-600">{description}</p>
+          ) : null}
+          <p className="mt-1.5 text-[11px] text-slate-500">
             {playbooks.length} playbook{playbooks.length === 1 ? "" : "s"}
           </p>
           <ul className="mt-2 max-h-[220px] space-y-0.5 overflow-y-auto">
@@ -620,14 +647,16 @@ function ProgressMetricRow({
   trailing,
   bar,
 }: {
-  title: string;
+  title: React.ReactNode;
   trailing?: React.ReactNode;
   bar: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
-        <span className="text-sm font-medium text-slate-800">{title}</span>
+        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-800">
+          {title}
+        </span>
         {trailing ? (
           <div className="flex min-w-0 flex-wrap justify-end gap-x-1.5 gap-y-0.5 sm:gap-x-2">{trailing}</div>
         ) : null}
@@ -653,6 +682,7 @@ function ProgressLegend({
         <ProgressCategoryPopover
           key={item.id}
           label={item.label}
+          description={item.description}
           playbooks={item.playbooks}
           accentColor={item.color}
           onPlaybookClick={onPlaybookClick}
@@ -724,6 +754,7 @@ function SegmentedProgressBar({
                 >
                   <ProgressCategoryPopover
                     label={seg.label}
+                    description={seg.description}
                     playbooks={seg.playbooks}
                     accentColor={seg.color}
                     onPlaybookClick={onPlaybookClick}
@@ -814,6 +845,7 @@ export function BossAnswerMixBar({
           <DimensionProgressRow
             title="Impact"
             prefix="impact"
+            guideKey="impact"
             setCount={prospectBreakdown.impactSet}
             total={totalPlaybooks}
             defs={IMPACT_LEGEND}
@@ -824,6 +856,7 @@ export function BossAnswerMixBar({
           <DimensionProgressRow
             title="Urgency"
             prefix="urgency"
+            guideKey="urgency"
             setCount={prospectBreakdown.urgencySet}
             total={totalPlaybooks}
             defs={URGENCY_LEGEND}
@@ -834,6 +867,7 @@ export function BossAnswerMixBar({
           <DimensionProgressRow
             title="Ease"
             prefix="ease"
+            guideKey="ease"
             setCount={prospectBreakdown.easeSet}
             total={totalPlaybooks}
             defs={EASE_LEGEND}

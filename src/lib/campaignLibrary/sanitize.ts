@@ -4,7 +4,7 @@ import {
   campaignStepStoresBody,
   defaultStepConfig,
   isCampaignStepType,
-  keepAbPair,
+  keepStepVariants,
   parseManualFallbackHours,
   sanitizeMessageMediaPatch,
   sanitizeStepConfig,
@@ -174,7 +174,7 @@ export function cleanLibraryStep(
       campaignStepAllowsVariants(step.step_type) &&
       Array.isArray(step.variants) &&
       step.variants.length
-        ? keepAbPair(
+        ? keepStepVariants(
             step.variants
               .filter((v) => v?.key)
               .map((v) => {

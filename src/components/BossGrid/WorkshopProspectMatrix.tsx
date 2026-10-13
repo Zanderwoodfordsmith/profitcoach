@@ -19,9 +19,30 @@ import {
   type WorkshopProspectPlotPoint,
 } from "@/lib/playbookSessionNotes";
 import {
+  prospectDimensionGuideSections,
+  type ProspectDimensionKey,
+} from "@/lib/prospectScoreGuide";
+import { BossGridInfoIcon } from "./BossGridInfoIcon";
+import {
   WorkshopProspectFocusHero,
   type WorkshopProspectFocusVariant,
 } from "./WorkshopProspectFocusHero";
+
+function DimensionInfoIcon({
+  dimension,
+  title,
+}: {
+  dimension: ProspectDimensionKey;
+  title: string;
+}) {
+  return (
+    <BossGridInfoIcon
+      title={title}
+      sections={prospectDimensionGuideSections(dimension)}
+      panelSize="wide"
+    />
+  );
+}
 
 const CARD_SHELL =
   "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]";
@@ -304,7 +325,10 @@ function Legend({ tab }: { tab: MatrixTab }) {
     return (
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600">
-          <span className="font-medium text-slate-500">Dot colour = urgency</span>
+          <span className="inline-flex items-center gap-1 font-medium text-slate-500">
+            Dot colour = urgency
+            <DimensionInfoIcon dimension="urgency" title="Urgency" />
+          </span>
           {WORKSHOP_PRIORITIES.map((priority) => (
             <span key={priority} className="inline-flex items-center gap-1.5">
               <span
@@ -323,7 +347,10 @@ function Legend({ tab }: { tab: MatrixTab }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600">
-        <span className="font-medium text-slate-500">Dot colour = ease</span>
+        <span className="inline-flex items-center gap-1 font-medium text-slate-500">
+          Dot colour = ease
+          <DimensionInfoIcon dimension="ease" title="Ease" />
+        </span>
         {PROSPECT_EASE_LEVELS.slice()
           .reverse()
           .map((level) => (
@@ -598,8 +625,21 @@ export function WorkshopProspectMatrix({
           <>
             <p className="mb-4 text-sm font-medium text-slate-500">See the full picture</p>
             <div className="mb-4 flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              <span>{activeTab.axisY} ↑</span>
-              <span>{activeTab.axisX} →</span>
+              <span className="inline-flex items-center gap-1.5">
+                {activeTab.axisY} ↑
+                {activeTab.axisY === "Impact" ? (
+                  <DimensionInfoIcon dimension="impact" title="Impact" />
+                ) : null}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                {activeTab.axisX} →
+                {activeTab.axisX === "Ease" ? (
+                  <DimensionInfoIcon dimension="ease" title="Ease" />
+                ) : null}
+                {activeTab.axisX === "Urgency" ? (
+                  <DimensionInfoIcon dimension="urgency" title="Urgency" />
+                ) : null}
+              </span>
             </div>
 
             {tab === "impact-ease" ? (

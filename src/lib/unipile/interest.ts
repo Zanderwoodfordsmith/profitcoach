@@ -7,7 +7,8 @@ import { loadAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import type { AbVariantStats } from "@/lib/unipile/abMetrics";
 import {
   sanitizeMessageMediaPatch,
-  keepAbPair,
+  isLevelVariantSet,
+  keepStepVariants,
   type CampaignStepMedia,
   type CampaignStepMediaKind,
 } from "@/lib/unipile/campaignStepTypes";
@@ -401,7 +402,7 @@ export function parseStepVariants(raw: unknown): StepVariant[] {
       };
     })
     .filter(Boolean) as StepVariant[];
-  return keepAbPair(parsed);
+  return keepStepVariants(parsed);
 }
 
 /** Pick (and persist) A/B body for a step. */
@@ -424,6 +425,15 @@ export async function resolveStepBodyForLead(input: {
       variantKey: null,
       variant: null,
     };
+  }
+
+  if (isLevelVariantSet(variants)) {
+    const preferred = input.preferredVariantKey?.trim() || "";
+    const key = variants.some((variant) => variant.key === preferred)
+      ? preferred
+      : variants[0].key;
+    const chosen = variants.find((variant) => variant.key === key) || variants[0];
+    return { body: chosen.body, variantKey: key, variant: chosen };
   }
 
   const assignments =

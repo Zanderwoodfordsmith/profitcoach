@@ -12,7 +12,9 @@ import {
   campaignStepIncompleteHint,
   campaignStepSendMode,
   inviteNoConnectFrom,
+  isLevelVariantSet,
   keepAbPair,
+  keepStepVariants,
   messageMediaFrom,
   messageMediaKindFrom,
   sanitizeStepConfig,
@@ -136,6 +138,36 @@ describe("keepAbPair", () => {
         { key: "A", body: "a" },
         { key: "B", body: "b" },
       ]
+    );
+  });
+});
+
+describe("keepStepVariants", () => {
+  it("keeps BOSS level keys 1 through 5 in order", () => {
+    assert.equal(
+      isLevelVariantSet([
+        { key: "5" },
+        { key: "1" },
+      ]),
+      true
+    );
+    assert.deepEqual(
+      keepStepVariants([
+        { key: "5", body: "owner" },
+        { key: "2", body: "overworked" },
+        { key: "1", body: "overwhelmed" },
+      ]).map((variant) => variant.key),
+      ["1", "2", "5"]
+    );
+  });
+
+  it("still drops non A/B keys on a normal test", () => {
+    assert.deepEqual(
+      keepStepVariants([
+        { key: "C", body: "c" },
+        { key: "A", body: "a" },
+      ]).map((variant) => variant.key),
+      ["A"]
     );
   });
 });

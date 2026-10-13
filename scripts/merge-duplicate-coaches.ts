@@ -319,12 +319,28 @@ async function mergePair(
     dryRun
   );
 
+  // The database refuses to delete the author of posts, comments or support
+  // replies, so move them to the keeper (support tickets would otherwise lose
+  // their author).
+  const authored: string[] = [];
+  for (const [table, column] of [
+    ["community_posts", "author_id"],
+    ["community_post_comments", "author_id"],
+    ["community_feedback_replies", "created_by"],
+    ["support_ticket_internal_notes", "created_by"],
+    ["community_feedback_reports", "created_by"],
+  ] as const) {
+    const n = await reassignColumn(supabase, table, column, removeId, keepId, dryRun);
+    authored.push(`${table}=${n}`);
+  }
+
   const ladder = await mergeLadderAchievements(supabase, keepId, removeId, dryRun);
   const scorecard = await mergeScorecardWeeks(supabase, keepId, removeId, dryRun);
 
   console.log(
     `  reassigned: payments=${payments}, contacts=${contacts}, revenue_lines=${revenue}, assessments=${assessments}`
   );
+  console.log(`  authored: ${authored.join(", ")}`);
   console.log(
     `  ladder: moved=${ladder.moved}, dropped=${ladder.dropped}; scorecard: moved=${scorecard.moved}, dropped=${scorecard.dropped}`
   );

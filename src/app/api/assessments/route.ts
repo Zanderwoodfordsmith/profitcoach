@@ -28,6 +28,10 @@ import { prospectSourceForAssessmentType } from "@/lib/prospectSourceKind";
 import { canonicalizeProspectStatus } from "@/lib/prospectStatus";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { findContactByAssessmentInviteToken } from "@/lib/assessmentInviteToken";
+import {
+  isPlaceholderAssessmentEmail,
+  resolveSubmittedAssessmentIdentity,
+} from "@/lib/assessmentContactParams";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -278,7 +282,10 @@ async function resolveOrCreateContact(
       phone,
       assessmentType
     );
-    if (email && !invited.email) {
+    if (
+      email &&
+      (!invited.email || isPlaceholderAssessmentEmail(invited.email))
+    ) {
       await tryUpdateContactStripping(invited.id, { email });
     }
     return { contactId: invited.id };
@@ -425,12 +432,29 @@ export async function POST(request: Request) {
     );
   }
 
-  const fullName = body.contact?.full_name?.trim() || "Unknown";
-  const email = body.contact?.email?.trim().toLowerCase() || null;
   const businessName = body.contact?.business_name?.trim() || null;
   const phone = body.contact?.phone?.trim() || null;
   const inviteToken =
     typeof body.invite_token === "string" ? body.invite_token : null;
+  const invited = await findContactByAssessmentInviteToken({
+    token: inviteToken,
+    coachId,
+  });
+  const identity = resolveSubmittedAssessmentIdentity({
+    fullName: body.contact?.full_name,
+    email: body.contact?.email,
+    invitedFullName: invited?.fullName,
+    invitedFirstName: invited?.firstName,
+    invitedLastName: invited?.lastName,
+    invitedEmail: invited?.email,
+  });
+  if (!identity) {
+    return NextResponse.json(
+      { error: "Name and email are required to save this assessment." },
+      { status: 400 }
+    );
+  }
+  const { fullName, email } = identity;
 
   const contactResult = await resolveOrCreateContact(
     coachId,

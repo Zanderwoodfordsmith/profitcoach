@@ -120,6 +120,25 @@ describe("campaign library step replace", () => {
     assert.equal(blankLibraryMessageStep().step_type, "message");
   });
 
+  it("keeps BOSS level variants", () => {
+    const step = cleanLibraryStep(
+      {
+        position: 0,
+        step_type: "email",
+        body: "Level 1",
+        variants: [
+          { key: "2", body: "Level 2" },
+          { key: "1", body: "Level 1" },
+        ],
+      },
+      0
+    );
+    assert.deepEqual(
+      step?.variants?.map((variant) => variant.key),
+      ["1", "2"]
+    );
+  });
+
   it("drops C and extra variant keys", () => {
     const step = cleanLibraryStep(
       {

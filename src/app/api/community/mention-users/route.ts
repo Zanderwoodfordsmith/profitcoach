@@ -10,7 +10,7 @@ import {
 import { isHiddenFromMentionPicker } from "@/lib/communityFormerStaff";
 
 const PROFILE_SELECT =
-  "id, full_name, first_name, last_name, avatar_url, role" as const;
+  "id, full_name, first_name, last_name, avatar_url, role, access_removed_at" as const;
 
 async function requireStaff(request: Request): Promise<
   | { ok: true; userId: string }
@@ -59,7 +59,13 @@ function profileNameSearchFilter(needle: string): string {
 
 type ProfileRow = MentionProfileRow & {
   avatar_url: string | null;
+  access_removed_at?: string | null;
 };
+
+/** Former staff, and anyone whose access an admin has removed. */
+function isHiddenProfile(row: Pick<ProfileRow, "id" | "access_removed_at">): boolean {
+  return isHiddenFromMentionPicker(row.id) || Boolean(row.access_removed_at);
+}
 
 async function loadSlugByCoachId(coachIds: string[]): Promise<Record<string, string>> {
   if (coachIds.length === 0) return {};
@@ -177,14 +183,13 @@ export async function GET(request: Request) {
     }
 
     const users: ReturnType<typeof toMentionUser>[] = [];
-    if (priorityRes.data) {
+    if (priorityRes.data && !isHiddenProfile(priorityRes.data as ProfileRow)) {
       users.push(toMentionUser(priorityRes.data as ProfileRow));
     }
 
     const sorted = [...(adminsRes.data ?? [])]
       .filter(
-        (row) =>
-          row.id !== prioritizeOk && !isHiddenFromMentionPicker(row.id as string)
+        (row) => row.id !== prioritizeOk && !isHiddenProfile(row as ProfileRow)
       )
       .sort(compareAdminMentionOrder);
 
@@ -201,7 +206,7 @@ export async function GET(request: Request) {
   const needle = q.toLowerCase();
   const matched = rows.filter(
     (row) =>
-      !isHiddenFromMentionPicker(row.id) &&
+      !isHiddenProfile(row) &&
       mentionMatchScore(row, slugByCoach[row.id], needle) > 0
   );
 

@@ -161,7 +161,9 @@ function useCommunityMemberDirectoryState() {
       .select(
         "id, full_name, first_name, last_name, coach_business_name, avatar_url, bio, community_bio, linkedin_url, location, role, created_at, disco_community_joined_on"
       )
-      .in("role", ["coach", "admin"]);
+      .in("role", ["coach", "admin"])
+      // People who have left keep their profile for their posts, not a place in the list.
+      .is("access_removed_at", null);
 
     if (pErr) throw pErr;
     const plist = profiles ?? [];

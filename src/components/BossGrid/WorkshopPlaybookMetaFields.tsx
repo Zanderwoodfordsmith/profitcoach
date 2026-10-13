@@ -35,6 +35,11 @@ import {
   WORKSHOP_PRIORITY_META,
   URGENCY_POINTS,
 } from "@/lib/playbookSessionNotes";
+import {
+  prospectDimensionGuideSections,
+  type ProspectDimensionKey,
+} from "@/lib/prospectScoreGuide";
+import { BossGridInfoIcon } from "./BossGridInfoIcon";
 
 type ProspectPillOption = {
   value: string;
@@ -74,7 +79,7 @@ function getImportancePartialHint(scores: PlaybookProspectScores): string | null
 }
 
 const META_ROW_CLASS =
-  "grid grid-cols-[7.75rem_minmax(0,1fr)] items-center gap-x-4 text-sm";
+  "grid grid-cols-[8.75rem_minmax(0,1fr)] items-center gap-x-4 text-sm";
 
 export const WORKSHOP_PLAYBOOK_TABLE_GRID =
   "grid grid-cols-[1.25rem_minmax(0,1fr)_2.25rem_2rem_2rem_2rem_1.25rem] items-center gap-x-1.5";
@@ -95,10 +100,12 @@ function memberInitials(name: string): string {
 function MetaFieldRow({
   icon: Icon,
   label,
+  guideKey,
   children,
 }: {
   icon: typeof Target;
   label: string;
+  guideKey?: ProspectDimensionKey;
   children: React.ReactNode;
 }) {
   return (
@@ -106,6 +113,14 @@ function MetaFieldRow({
       <div className="flex items-center gap-2 text-slate-400">
         <Icon className="h-4 w-4 shrink-0" aria-hidden />
         <span>{label}</span>
+        {guideKey ? (
+          <BossGridInfoIcon
+            title={label}
+            sections={prospectDimensionGuideSections(guideKey)}
+            panelSize="wide"
+            panelZClass="z-[560]"
+          />
+        ) : null}
       </div>
       <div className="min-w-0">{children}</div>
     </div>
@@ -431,7 +446,9 @@ export function WorkshopAssigneesField({
                         type="button"
                         onClick={() => toggleAssignee(member.id)}
                         className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
-                          selected ? "bg-sky-50 text-sky-900" : "text-slate-700 hover:bg-slate-50"
+                          selected
+                            ? "bg-sky-50 text-sky-900"
+                            : "text-slate-700 hover:bg-slate-50"
                         }`}
                       >
                         <AssigneeAvatar name={member.name} />
@@ -683,7 +700,7 @@ export function WorkshopPlaybookMetaFields({
   return (
     <div className="mt-5 grid grid-cols-1 items-center gap-y-3 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-3">
       {showScorers ? (
-        <MetaFieldRow icon={Target} label="Impact">
+        <MetaFieldRow icon={Target} label="Impact" guideKey="impact">
           <WorkshopProspectPillDropdown
             value={scores.impact !== undefined ? String(scores.impact) : undefined}
             options={IMPACT_PILL_OPTIONS}
@@ -711,7 +728,7 @@ export function WorkshopPlaybookMetaFields({
       </MetaFieldRow>
 
       {showScorers ? (
-        <MetaFieldRow icon={Flag} label="Urgency">
+        <MetaFieldRow icon={Flag} label="Urgency" guideKey="urgency">
           <WorkshopProspectPillDropdown
             value={scores.urgency !== undefined ? String(scores.urgency) : undefined}
             options={URGENCY_PILL_OPTIONS}
@@ -734,7 +751,7 @@ export function WorkshopPlaybookMetaFields({
       </MetaFieldRow>
 
       {showScorers ? (
-        <MetaFieldRow icon={Gauge} label="Ease">
+        <MetaFieldRow icon={Gauge} label="Ease" guideKey="ease">
           <WorkshopProspectPillDropdown
             value={scores.ease !== undefined ? String(scores.ease) : undefined}
             options={EASE_PILL_OPTIONS}

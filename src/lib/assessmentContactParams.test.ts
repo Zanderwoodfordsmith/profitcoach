@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  assessmentResultsContactError,
   buildPersonalisedAssessmentLink,
   getResultsContactPrompt,
   isPersonalisedAssessmentEntry,
   normalizeAssessmentResultsEmail,
   parseAssessmentContactParams,
+  resolveSubmittedAssessmentIdentity,
   type AssessmentContactFromUrl,
 } from "./assessmentContactParams";
 import { normalizeAssessmentInviteToken } from "./assessmentInviteToken";
@@ -54,78 +56,135 @@ describe("isPersonalisedAssessmentEntry", () => {
 });
 
 describe("getResultsContactPrompt", () => {
-  it("does not ask after the landing opt-in, even without email on the URL", () => {
+  it("asks for name, email, and optional phone when nothing is known", () => {
+    assert.deepEqual(getResultsContactPrompt({}), {
+      show: true,
+      askName: true,
+      askEmail: true,
+      askPhone: true,
+    });
+  });
+
+  it("asks for email and optional phone when only a name is known", () => {
+    assert.deepEqual(getResultsContactPrompt({ fullName: "Alex Morgan" }), {
+      show: true,
+      askName: false,
+      askEmail: true,
+      askPhone: true,
+    });
+  });
+
+  it("asks for a name when email is already known", () => {
     assert.deepEqual(
       getResultsContactPrompt({
-        fromLanding: true,
-        urlContact: contact({ firstName: "Alex" }),
+        email: "alex@acme.com",
+        phone: "+447700900123",
       }),
-      { show: false, askEmail: false, askPhone: false }
+      { show: true, askName: true, askEmail: false, askPhone: false }
     );
   });
 
-  it("does not ask on a generic scorecard-only link", () => {
+  it("skips the step when name and email are already known", () => {
     assert.deepEqual(
       getResultsContactPrompt({
-        fromLanding: false,
-        urlContact: emptyContact,
-      }),
-      { show: false, askEmail: false, askPhone: false }
-    );
-  });
-
-  it("asks for email and optional phone on a personalised link with neither", () => {
-    assert.deepEqual(
-      getResultsContactPrompt({
-        fromLanding: false,
-        urlContact: contact({ firstName: "Alex" }),
-      }),
-      { show: true, askEmail: true, askPhone: true }
-    );
-  });
-
-  it("skips the step when the personalised link already has email", () => {
-    assert.deepEqual(
-      getResultsContactPrompt({
-        fromLanding: false,
-        urlContact: contact({ firstName: "Alex", email: "alex@acme.com" }),
-      }),
-      { show: false, askEmail: false, askPhone: false }
-    );
-  });
-
-  it("skips the step when email is already known in state", () => {
-    assert.deepEqual(
-      getResultsContactPrompt({
-        fromLanding: false,
-        urlContact: contact({ firstName: "Alex" }),
+        fullName: "Alex Morgan",
         email: "alex@acme.com",
       }),
-      { show: false, askEmail: false, askPhone: false }
+      { show: false, askName: false, askEmail: false, askPhone: false }
     );
   });
 
-  it("asks for email only when phone is already on the link", () => {
+  it("does not treat Unknown or a placeholder inbox as identity", () => {
     assert.deepEqual(
       getResultsContactPrompt({
-        fromLanding: false,
-        urlContact: contact({ firstName: "Alex", phone: "+447700900123" }),
+        fullName: "Unknown",
+        email: "unknown+abc@noemail.local",
       }),
-      { show: true, askEmail: true, askPhone: false }
+      { show: true, askName: true, askEmail: true, askPhone: true }
     );
   });
 
-  it("skips the step when the invite token already has email on file", () => {
+  it("skips the step when the invite already has a name and email", () => {
     assert.deepEqual(
       getResultsContactPrompt({
-        fromLanding: false,
-        urlContact: contact({
-          firstName: "Alex",
-          inviteToken: "11111111-1111-4111-8111-111111111111",
-        }),
+        inviteHasName: true,
         inviteHasEmail: true,
       }),
-      { show: false, askEmail: false, askPhone: false }
+      { show: false, askName: false, askEmail: false, askPhone: false }
+    );
+  });
+
+  it("still asks for a name when the invite only has email", () => {
+    assert.deepEqual(
+      getResultsContactPrompt({
+        inviteHasEmail: true,
+        inviteHasPhone: true,
+      }),
+      { show: true, askName: true, askEmail: false, askPhone: false }
+    );
+  });
+});
+
+describe("assessmentResultsContactError", () => {
+  it("names the missing required field", () => {
+    assert.equal(
+      assessmentResultsContactError(
+        { askName: true, askEmail: true },
+        { fullName: " ", email: "alex@acme.com" }
+      ),
+      "Please enter your name."
+    );
+    assert.equal(
+      assessmentResultsContactError(
+        { askName: false, askEmail: true },
+        { fullName: "Alex Morgan", email: "not-an-email" }
+      ),
+      "Please enter a valid email so we can send your results."
+    );
+    assert.equal(
+      assessmentResultsContactError(
+        { askName: false, askEmail: false },
+        { fullName: "Alex Morgan", email: "alex@acme.com" }
+      ),
+      null
+    );
+  });
+});
+
+describe("resolveSubmittedAssessmentIdentity", () => {
+  it("requires a real name and email from the submission", () => {
+    assert.equal(
+      resolveSubmittedAssessmentIdentity({ fullName: "Unknown", email: "" }),
+      null
+    );
+    assert.deepEqual(
+      resolveSubmittedAssessmentIdentity({
+        fullName: "Alex Morgan",
+        email: " Alex@Acme.com ",
+      }),
+      { fullName: "Alex Morgan", email: "alex@acme.com" }
+    );
+  });
+
+  it("uses the invited contact when the submission omits identity", () => {
+    assert.deepEqual(
+      resolveSubmittedAssessmentIdentity({
+        invitedFullName: "Unknown",
+        invitedFirstName: "Alex",
+        invitedLastName: "Morgan",
+        invitedEmail: "alex@acme.com",
+      }),
+      { fullName: "Alex Morgan", email: "alex@acme.com" }
+    );
+  });
+
+  it("rejects a placeholder invited email", () => {
+    assert.equal(
+      resolveSubmittedAssessmentIdentity({
+        invitedFullName: "Alex Morgan",
+        invitedEmail: "unknown+abc@noemail.local",
+      }),
+      null
     );
   });
 });

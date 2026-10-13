@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import {
+  isDeliverableAssessmentEmail,
+  knownAssessmentPersonName,
+} from "@/lib/assessmentContactParams";
 import { findContactByAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
- * Public, token-gated: should this personalised assessment ask for email/phone?
+ * Public, token-gated: which identity fields does this invite already have?
  * Does not return the stored email or phone.
  */
 export async function GET(request: Request) {
@@ -31,10 +35,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false }, { status: 200 });
   }
 
+  const invitedName = [contact.firstName, contact.lastName]
+    .filter(Boolean)
+    .join(" ");
+
   return NextResponse.json({
     ok: true,
     firstName: contact.firstName,
-    hasEmail: Boolean(contact.email),
-    hasPhone: Boolean(contact.phone),
+    hasName: knownAssessmentPersonName(contact.fullName, invitedName) != null,
+    hasEmail: isDeliverableAssessmentEmail(contact.email),
+    hasPhone: Boolean(contact.phone?.trim()),
   });
 }

@@ -10,6 +10,7 @@ import { BossScoreProWordmark } from "@/components/scorecard/BossScoreWordmark";
 import { ScorecardResultsContactStep } from "@/components/scorecard/ScorecardResultsContactStep";
 import {
   assessmentContactToSessionPayload,
+  assessmentResultsContactError,
   getResultsContactPrompt,
   LANDING_CONTACT_SESSION_KEY,
   mergeAssessmentContactWithSession,
@@ -17,6 +18,7 @@ import {
   parseAssessmentContactParams,
   readLandingContactSession,
   resolveAssessmentProspectFirstName,
+  type ResultsContactPrompt,
 } from "@/lib/assessmentContactParams";
 import { BOSS_PRO_INTRO } from "@/lib/bossProAssessmentCopy";
 import {
@@ -94,6 +96,10 @@ export default function BossProAssessmentPage({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showResultsContact, setShowResultsContact] = useState(false);
+  const [resultsContactPrompt, setResultsContactPrompt] =
+    useState<ResultsContactPrompt | null>(null);
+  const [inviteHasName, setInviteHasName] = useState(false);
+  const [inviteFirstName, setInviteFirstName] = useState<string | null>(null);
   const [inviteHasEmail, setInviteHasEmail] = useState(false);
   const [inviteHasPhone, setInviteHasPhone] = useState(false);
 
@@ -113,25 +119,20 @@ export default function BossProAssessmentPage({
     [urlContact, landingSession, fullName]
   );
 
-  const resultsContactPrompt = useMemo(
-    () =>
-      getResultsContactPrompt({
-        fromLanding: landingVariant != null,
-        urlContact,
-        email: initialContact.email,
-        phone: initialContact.phone,
-        inviteHasEmail,
-        inviteHasPhone,
-      }),
-    [
-      landingVariant,
-      urlContact,
-      initialContact.email,
-      initialContact.phone,
+  function identityPrompt(override?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+  }): ResultsContactPrompt {
+    return getResultsContactPrompt({
+      fullName: override?.fullName ?? fullName,
+      email: override?.email ?? email,
+      phone: override?.phone ?? phone,
+      inviteHasName,
       inviteHasEmail,
       inviteHasPhone,
-    ]
-  );
+    });
+  }
 
   const [clientDashboardChecked, setClientDashboardChecked] = useState(false);
   const [isClientFromDashboard, setIsClientFromDashboard] = useState(false);
@@ -185,10 +186,14 @@ export default function BossProAssessmentPage({
         );
         const body = (await res.json().catch(() => ({}))) as {
           ok?: boolean;
+          firstName?: string | null;
+          hasName?: boolean;
           hasEmail?: boolean;
           hasPhone?: boolean;
         };
         if (cancelled || !body.ok) return;
+        setInviteFirstName(body.firstName?.trim() || null);
+        setInviteHasName(Boolean(body.hasName));
         setInviteHasEmail(Boolean(body.hasEmail));
         setInviteHasPhone(Boolean(body.hasPhone));
       } catch {
@@ -402,11 +407,15 @@ export default function BossProAssessmentPage({
     }, 180);
   }
 
-  function captureResultsContact(next: { email: string; phone: string }) {
+  function captureResultsContact(next: {
+    fullName: string;
+    email: string;
+    phone: string;
+  }) {
     const contact = {
       firstName: urlContact.firstName,
       lastName: urlContact.lastName,
-      fullName: fullName.trim() || urlContact.fullName,
+      fullName: next.fullName || urlContact.fullName,
       email: next.email,
       phone: next.phone || null,
       businessName: businessName.trim() || urlContact.businessName,
@@ -440,7 +449,9 @@ export default function BossProAssessmentPage({
   }
 
   function requestProResults(overrideAnswers?: AnswersMap) {
-    if (resultsContactPrompt.show) {
+    const prompt = identityPrompt();
+    if (prompt.show) {
+      setResultsContactPrompt(prompt);
       setSubmitError(null);
       setShowResultsContact(true);
       return;
@@ -449,16 +460,28 @@ export default function BossProAssessmentPage({
   }
 
   function submitResultsContact() {
-    const normalizedEmail = normalizeAssessmentResultsEmail(email);
-    if (!normalizedEmail) {
-      setSubmitError("Please enter a valid email so we can send your results.");
+    const prompt = resultsContactPrompt ?? identityPrompt();
+    const nextName = fullName.trim();
+    const nextPhone = phone.trim();
+    const error = assessmentResultsContactError(prompt, {
+      fullName: nextName,
+      email,
+    });
+    if (error) {
+      setSubmitError(error);
       return;
     }
-    const nextPhone = phone.trim();
+    const normalizedEmail = normalizeAssessmentResultsEmail(email) ?? "";
+    setFullName(nextName);
     setEmail(normalizedEmail);
     setPhone(nextPhone);
-    captureResultsContact({ email: normalizedEmail, phone: nextPhone });
+    captureResultsContact({
+      fullName: nextName,
+      email: normalizedEmail,
+      phone: nextPhone,
+    });
     void handleSubmitAssessment(undefined, {
+      fullName: nextName,
       email: normalizedEmail,
       phone: nextPhone,
     });
@@ -466,11 +489,28 @@ export default function BossProAssessmentPage({
 
   async function handleSubmitAssessment(
     overrideAnswers?: AnswersMap,
-    contactOverride?: { email?: string; phone?: string }
+    contactOverride?: { fullName?: string; email?: string; phone?: string }
   ) {
     const answersToSubmit = overrideAnswers ?? answers;
+    const nameVal = (contactOverride?.fullName ?? fullName).trim();
     const emailVal = (contactOverride?.email ?? email).trim();
     const phoneVal = (contactOverride?.phone ?? phone).trim();
+    const prompt = identityPrompt({
+      fullName: nameVal,
+      email: emailVal,
+      phone: phoneVal,
+    });
+    if (prompt.askName || prompt.askEmail) {
+      setResultsContactPrompt(prompt);
+      setShowResultsContact(true);
+      setSubmitError(
+        assessmentResultsContactError(prompt, {
+          fullName: nameVal,
+          email: emailVal,
+        })
+      );
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     const total_score = computeTotalScore(answersToSubmit);
@@ -486,7 +526,7 @@ export default function BossProAssessmentPage({
           methodology_version: METHODOLOGY_VERSION,
           invite_token: urlContact.inviteToken,
           contact: {
-            full_name: fullName,
+            full_name: nameVal,
             email: emailVal,
             phone: phoneVal || undefined,
             business_name: businessName,
@@ -504,7 +544,7 @@ export default function BossProAssessmentPage({
         throw new Error(`${base}${detail}`);
       }
       try {
-        const { first_name, last_name } = splitFullName(fullName);
+        const { first_name, last_name } = splitFullName(nameVal);
         sessionStorage.setItem(
           "boss_assessment_result",
           JSON.stringify({
@@ -513,7 +553,7 @@ export default function BossProAssessmentPage({
             contact: {
               first_name: first_name ?? undefined,
               last_name: last_name ?? undefined,
-              full_name: fullName.trim() || undefined,
+              full_name: nameVal || undefined,
               email: emailVal || undefined,
               phone: phoneVal || undefined,
             },
@@ -712,15 +752,22 @@ export default function BossProAssessmentPage({
         </header>
 
         <main className="flex flex-col gap-6 pt-6 pb-8 flex-1 flex items-start w-full">
-          {showResultsContact ? (
+          {showResultsContact && resultsContactPrompt ? (
             <div className="w-full">
               <ScorecardResultsContactStep
-                firstName={prospectFirstName}
+                firstName={prospectFirstName ?? inviteFirstName}
+                askName={resultsContactPrompt.askName}
+                askEmail={resultsContactPrompt.askEmail}
                 askPhone={resultsContactPrompt.askPhone}
+                fullName={fullName}
                 email={email}
                 phone={phone}
                 error={submitError}
                 submitting={submitting}
+                onFullNameChange={(value) => {
+                  setFullName(value);
+                  if (submitError) setSubmitError(null);
+                }}
                 onEmailChange={(value) => {
                   setEmail(value);
                   if (submitError) setSubmitError(null);

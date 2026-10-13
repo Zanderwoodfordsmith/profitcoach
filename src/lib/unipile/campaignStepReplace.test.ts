@@ -57,6 +57,25 @@ describe("cleanCampaignStepsForSave", () => {
     assert.equal(cleaned[0]?.fallback_hours, null);
   });
 
+  it("keeps BOSS level variants on the completed follow-up email", () => {
+    const cleaned = cleanCampaignStepsForSave([
+      {
+        position: 0,
+        step_type: "email",
+        body: "Level 1",
+        variants: [
+          { key: "1", label: "Level 1 · Overwhelmed", body: "Level 1" },
+          { key: "3", label: "Level 3 · Organised", body: "Level 3" },
+          { key: "5", label: "Level 5 · Owner", body: "Level 5" },
+        ],
+      },
+    ]);
+    assert.deepEqual(
+      cleaned[0]?.variants.map((variant) => variant.key),
+      ["1", "3", "5"]
+    );
+  });
+
   it("drops unknown step types", () => {
     const cleaned = cleanCampaignStepsForSave([
       {

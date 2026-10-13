@@ -2,7 +2,7 @@ import {
   campaignStepAllowsVariants,
   campaignStepStoresBody,
   isCampaignStepType,
-  keepAbPair,
+  keepStepVariants,
   sanitizeMessageMediaPatch,
   sanitizeStepConfig,
   type CampaignStepMedia,
@@ -82,7 +82,7 @@ export function cleanCampaignStepsForSave(
         campaignStepAllowsVariants(s.step_type) &&
         Array.isArray(s.variants) &&
         s.variants.length
-          ? keepAbPair(
+          ? keepStepVariants(
               s.variants
                 .filter((v) => v?.key)
                 .map((v) => {

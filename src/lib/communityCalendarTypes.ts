@@ -19,7 +19,7 @@ export type RecurrencePayload = {
 
 export type CommunityCalendarEventRow = {
   id: string;
-  created_by: string;
+  created_by: string | null;
   title: string;
   description: string;
   cover_image_url: string | null;
