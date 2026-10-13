@@ -167,4 +167,26 @@ describe("pool table views", () => {
       "Warm leads copy"
     );
   });
+
+  it("moves the old Name A-Z default over to Sales Nav order", () => {
+    const settings = normalizePoolTableViewSettings({
+      sortField: "name",
+      sortOrder: "asc",
+    });
+    assert.equal(settings.sortField, "import_order");
+    assert.equal(settings.sortOrder, "asc");
+  });
+
+  it("keeps Name A-Z when someone picked it after the change", () => {
+    const settings = normalizePoolTableViewSettings({
+      sortField: "name",
+      sortOrder: "asc",
+      sortVersion: 1,
+    });
+    assert.equal(settings.sortField, "name");
+  });
+
+  it("defaults new views to Sales Nav order", () => {
+    assert.equal(createDefaultPoolTableViewSettings().sortField, "import_order");
+  });
 });

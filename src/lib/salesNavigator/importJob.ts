@@ -186,9 +186,14 @@ function activeSegmentUrl(job: SalesNavImportJobRow): string | null {
 
 type SalesNavImportLeadSnapshot = ReturnType<typeof toSalesNavImportLeadSnapshot>;
 
+/**
+ * Append a page of results, keeping Sales Nav's order. A person seen again
+ * keeps their first (best) position and segment, with the fresher details.
+ */
 export function mergeSalesNavLeadSnapshots(
   existing: SalesNavImportLeadSnapshot[],
-  incoming: SalesNavImportedLead[]
+  incoming: SalesNavImportedLead[],
+  segment?: number
 ): SalesNavImportLeadSnapshot[] {
   const byKey = new Map<string, SalesNavImportLeadSnapshot>();
   for (const row of existing) {
@@ -198,9 +203,41 @@ export function mergeSalesNavLeadSnapshots(
   for (const lead of incoming) {
     const snap = toSalesNavImportLeadSnapshot(lead);
     const key = salesNavLeadDedupeKey(snap);
-    if (key) byKey.set(key, snap);
+    if (!key) continue;
+    const prior = byKey.get(key);
+    const keepSegment = prior ? prior.segment : segment;
+    byKey.set(key, keepSegment == null ? snap : { ...snap, segment: keepSegment });
   }
   return [...byKey.values()];
+}
+
+/**
+ * Best-first order across a split import. Each segment comes back in Sales
+ * Nav's relevance order, so take #1 from every segment, then #2, and so on,
+ * instead of all of segment 1 before any of segment 2.
+ */
+export function rankSalesNavSnapshot<T extends { segment?: number }>(
+  snapshot: T[]
+): T[] {
+  const bySegment = new Map<number, T[]>();
+  for (const row of snapshot) {
+    const segment = row.segment ?? 0;
+    const bucket = bySegment.get(segment);
+    if (bucket) bucket.push(row);
+    else bySegment.set(segment, [row]);
+  }
+  if (bySegment.size <= 1) return snapshot.slice();
+  const buckets = [...bySegment.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, rows]) => rows);
+  const out: T[] = [];
+  const longest = Math.max(...buckets.map((rows) => rows.length));
+  for (let i = 0; i < longest; i += 1) {
+    for (const rows of buckets) {
+      if (i < rows.length) out.push(rows[i]!);
+    }
+  }
+  return out;
 }
 
 async function markFailed(

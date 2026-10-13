@@ -32,7 +32,7 @@ import {
 import { normalizeProspectTags } from "@/lib/prospects/tags";
 
 const POOL_ITEM_SELECT =
-  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id, team_size, industry, location";
+  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id, team_size, industry, location, source_rank, source_ranked_at";
 
 const POOL_PREVIEW_MAX = 50;
 
@@ -102,6 +102,9 @@ function mapPoolItem(
     place_id: placeId,
     source: String(item.source ?? "manual"),
     created_at: (item.created_at as string | null) ?? null,
+    source_rank:
+      typeof item.source_rank === "number" ? item.source_rank : null,
+    source_ranked_at: (item.source_ranked_at as string | null) ?? null,
     tags: normalizeProspectTags(item.tags),
     campaign_ids: campaignIds,
     in_campaign: campaignIds.length > 0,

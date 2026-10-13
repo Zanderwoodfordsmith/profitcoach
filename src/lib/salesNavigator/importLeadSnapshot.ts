@@ -16,6 +16,8 @@ export type SalesNavImportLeadSnapshot = {
   monthsAtCompany: number | null;
   yearsAtCompanyBucket: string | null;
   premium: boolean;
+  /** Which segment of a split import found this person (0 when not split). */
+  segment?: number;
 };
 
 export function toSalesNavImportLeadSnapshot(

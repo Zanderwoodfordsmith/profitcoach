@@ -31,6 +31,10 @@ export type PoolPerson = {
   place_id: string | null;
   source: string;
   created_at: string | null;
+  /** Position in the Sales Nav search it came from. 0 = best match. */
+  source_rank?: number | null;
+  /** When that import landed. Newer imports sort first. */
+  source_ranked_at?: string | null;
   tags: string[];
   in_campaign: boolean;
   /** Campaigns this person is already enrolled in. */
@@ -155,7 +159,12 @@ export const POOL_HEADCOUNT_FILTER_OPTIONS: Array<{
   { key: POOL_HEADCOUNT_UNKNOWN, label: "No headcount" },
 ];
 
-export type PoolSortField = "name" | "company" | "created_at" | "source";
+export type PoolSortField =
+  | "import_order"
+  | "name"
+  | "company"
+  | "created_at"
+  | "source";
 export type PoolSortOrder = "asc" | "desc";
 
 export type PoolGroupField = "source" | "company" | "campaign" | "tags";
@@ -587,6 +596,19 @@ export function comparePoolPeople(
     case "source":
       result = poolSourceLabel(a.source).localeCompare(poolSourceLabel(b.source));
       break;
+    case "import_order": {
+      // Newest import first, then Sales Nav's own order within it.
+      // People without a rank sit at the end of their import.
+      result =
+        time(b.source_ranked_at ?? b.created_at) -
+        time(a.source_ranked_at ?? a.created_at);
+      if (result === 0) {
+        const aRank = a.source_rank ?? Number.MAX_SAFE_INTEGER;
+        const bRank = b.source_rank ?? Number.MAX_SAFE_INTEGER;
+        result = aRank - bRank;
+      }
+      break;
+    }
     default:
       result = a.full_name.localeCompare(b.full_name, undefined, {
         sensitivity: "base",

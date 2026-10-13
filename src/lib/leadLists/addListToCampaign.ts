@@ -41,6 +41,22 @@ const ITEM_SELECT =
 const ENROL_CHUNK = 2_500;
 const PAGE_SIZE = 1_000;
 
+/**
+ * Campaigns contact people in the order they are added, so load them in
+ * Sales Nav order (newest import first, best match first), then date added.
+ */
+function listItemsInSalesNavOrder(coachId: string, listId: string) {
+  return supabaseAdmin
+    .from("coach_lead_list_items")
+    .select(ITEM_SELECT)
+    .eq("coach_id", coachId)
+    .eq("list_id", listId)
+    .order("source_ranked_at", { ascending: false, nullsFirst: false })
+    .order("source_rank", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+}
+
 async function loadItems(opts: {
   coachId: string;
   listId: string;
@@ -48,30 +64,28 @@ async function loadItems(opts: {
   all: boolean;
 }): Promise<ListItemRow[]> {
   if (!opts.all) {
-    let query = supabaseAdmin
-      .from("coach_lead_list_items")
-      .select(ITEM_SELECT)
-      .eq("coach_id", opts.coachId)
-      .eq("list_id", opts.listId)
-      .order("created_at", { ascending: true })
-      .limit(MAX_LIST_ITEMS_PER_REQUEST);
-    if (opts.itemIds.length) {
-      query = query.in("id", opts.itemIds.slice(0, MAX_LIST_ITEMS_PER_REQUEST));
-    }
+    const ids = opts.itemIds.slice(0, MAX_LIST_ITEMS_PER_REQUEST);
+    let query = listItemsInSalesNavOrder(opts.coachId, opts.listId).limit(
+      MAX_LIST_ITEMS_PER_REQUEST
+    );
+    if (ids.length) query = query.in("id", ids);
     const { data, error } = await query;
     if (error) throw new AddListToCampaignError(error.message, 500);
-    return (data ?? []) as ListItemRow[];
+    const rows = (data ?? []) as ListItemRow[];
+    if (!ids.length) return rows;
+    // Picked people: keep the order the coach sees on screen.
+    const position = new Map(ids.map((id, i) => [id, i]));
+    return rows.sort(
+      (a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0)
+    );
   }
 
   const rows: ListItemRow[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabaseAdmin
-      .from("coach_lead_list_items")
-      .select(ITEM_SELECT)
-      .eq("coach_id", opts.coachId)
-      .eq("list_id", opts.listId)
-      .order("created_at", { ascending: true })
-      .range(from, from + PAGE_SIZE - 1);
+    const { data, error } = await listItemsInSalesNavOrder(
+      opts.coachId,
+      opts.listId
+    ).range(from, from + PAGE_SIZE - 1);
     if (error) throw new AddListToCampaignError(error.message, 500);
     rows.push(...((data ?? []) as ListItemRow[]));
     if (!data || data.length < PAGE_SIZE) break;

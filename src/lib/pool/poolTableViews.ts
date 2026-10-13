@@ -54,6 +54,8 @@ export type PoolTableViewSettings = {
   excludeTags: string[];
   sortField: PoolSortField;
   sortOrder: PoolSortOrder;
+  /** Bumped when the default sort changes, so old defaults can move over. */
+  sortVersion: number;
   grouping: PersistedPoolGrouping;
   columnVisibility: PoolColumnVisibility;
   columnOrder: PoolColumnKey[];
@@ -84,7 +86,11 @@ export type PoolTableViewsStorage = {
   viewOrder: string[];
 };
 
+/** v1: default sort moved from Name A-Z to Sales Nav order. */
+export const POOL_SORT_VERSION = 1;
+
 const POOL_SORT_FIELDS: PoolSortField[] = [
+  "import_order",
   "name",
   "company",
   "created_at",
@@ -156,6 +162,32 @@ function normalizeColumns(source: Partial<PoolTableViewSettings>): {
   };
 }
 
+/**
+ * Views saved before Sales Nav order existed still hold the old Name A-Z
+ * default. Move those over; keep any sort someone picked on purpose.
+ */
+function normalizeSort(
+  source: Partial<PoolTableViewSettings>,
+  defaults: PoolTableViewSettings
+): Pick<PoolTableViewSettings, "sortField" | "sortOrder" | "sortVersion"> {
+  const sortField = isPoolSortField(source.sortField)
+    ? source.sortField
+    : defaults.sortField;
+  const sortOrder: PoolSortOrder = source.sortOrder === "desc" ? "desc" : "asc";
+  const savedVersion =
+    typeof source.sortVersion === "number" && Number.isFinite(source.sortVersion)
+      ? source.sortVersion
+      : 0;
+  if (savedVersion < 1 && sortField === "name" && sortOrder === "asc") {
+    return {
+      sortField: defaults.sortField,
+      sortOrder: defaults.sortOrder,
+      sortVersion: POOL_SORT_VERSION,
+    };
+  }
+  return { sortField, sortOrder, sortVersion: POOL_SORT_VERSION };
+}
+
 export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
   return {
     sourceFilter: "all",
@@ -170,8 +202,9 @@ export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
     industryFilter: "",
     tagFilter: "all",
     excludeTags: [],
-    sortField: "name",
+    sortField: "import_order",
     sortOrder: "asc",
+    sortVersion: POOL_SORT_VERSION,
     grouping: defaultPoolGrouping(),
     columnVisibility: { ...DEFAULT_POOL_COLUMN_VISIBILITY },
     columnOrder: [...DEFAULT_POOL_COLUMN_ORDER],
@@ -283,10 +316,7 @@ export function normalizePoolTableViewSettings(
     industryFilter: normalizePlaceQuery(source.industryFilter),
     tagFilter,
     excludeTags: normalizeExcludeTags(source.excludeTags),
-    sortField: isPoolSortField(source.sortField)
-      ? source.sortField
-      : defaults.sortField,
-    sortOrder: source.sortOrder === "desc" ? "desc" : "asc",
+    ...normalizeSort(source, defaults),
     grouping: normalizeGrouping(source.grouping),
     columnVisibility: columns.columnVisibility,
     columnOrder: columns.columnOrder,

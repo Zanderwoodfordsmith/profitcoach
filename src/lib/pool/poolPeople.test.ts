@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  comparePoolPeople,
   poolDisplayName,
   poolLeadCompany,
   poolRowFitsCampaignChannel,
@@ -213,5 +214,21 @@ describe("pool filters", () => {
     assert.equal(poolRowMatchesLinkedInFilter(missing, "none"), true);
     assert.equal(poolRowMatchesLinkedInFilter(blank, "none"), true);
     assert.equal(poolRowMatchesLinkedInFilter(hasUrl, "none"), false);
+  });
+});
+
+describe("comparePoolPeople Sales Nav order", () => {
+  it("puts the newest import first, then Sales Nav rank", () => {
+    const rows = [
+      person({ id: "old-1", full_name: "Aaron", source_rank: 0, source_ranked_at: "2026-10-01T00:00:00Z" }),
+      person({ id: "new-2", full_name: "Abby", source_rank: 1, source_ranked_at: "2026-10-10T00:00:00Z" }),
+      person({ id: "new-0", full_name: "Zoe", source_rank: 0, source_ranked_at: "2026-10-10T00:00:00Z" }),
+      person({ id: "manual", full_name: "Adam", created_at: "2026-10-05T00:00:00Z" }),
+    ];
+    const sorted = rows
+      .slice()
+      .sort((a, b) => comparePoolPeople(a, b, "import_order", "asc"))
+      .map((row) => row.id);
+    assert.deepEqual(sorted, ["new-0", "new-2", "manual", "old-1"]);
   });
 });

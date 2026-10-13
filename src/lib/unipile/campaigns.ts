@@ -1419,6 +1419,8 @@ async function restaggerQueuedLeadTimes(
         .eq("coach_id", coachId)
         .eq("status", "queued")
         .order("created_at", { ascending: true })
+        // Same-batch rows share created_at; keep the order they were paced in.
+        .order("next_action_at", { ascending: true, nullsFirst: false })
         .range(from, to)
   );
   if (error) throw new Error(error.message ?? "Unable to load queued leads.");

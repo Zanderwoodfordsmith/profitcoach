@@ -63,21 +63,15 @@ export async function ClassroomCatalogGrid({ basePath }: Props) {
   const pathCourses = classroomCoursesByIds(catalog, CLASSROOM_PATH_COURSE_IDS);
 
   return (
-    <div className="mx-auto flex w-[80%] max-w-6xl flex-col gap-8 pt-5">
-      <div className="grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        {startCourses.map((course) => (
+    <div className="mx-auto w-[80%] max-w-6xl pt-5">
+      {/* One grid so cards flow 2-up (three rows of two) below xl instead of
+          each row of three wrapping on its own. At xl it is still start
+          courses on top, paths below, with the wider gap between them. */}
+      <div className="grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-y-8">
+        {[...startCourses, ...pathCourses].map((course) => (
           <CourseCard key={course.id} course={course} basePath={basePath} />
         ))}
       </div>
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        {pathCourses.map((course) => (
-          <CourseCard key={course.id} course={course} basePath={basePath} />
-        ))}
-      </div>
-      <p className="rounded-lg border border-sky-200/70 bg-sky-50/80 px-4 py-2.5 text-center text-[12px] leading-relaxed text-sky-800/80">
-        Profit Coach OS training now lives in Get Calls, Win Clients, and Coach
-        Clients — open those paths above.
-      </p>
     </div>
   );
 }

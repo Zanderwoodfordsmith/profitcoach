@@ -5,6 +5,7 @@ import {
   type AudienceListKind,
 } from "@/lib/leadLists/audienceLists";
 import type { SalesNavImportLeadSnapshot } from "@/lib/salesNavigator/importLeadSnapshot";
+import { rankSalesNavSnapshot } from "@/lib/salesNavigator/importJob";
 import { canonicalLinkedInProfileUrl } from "@/lib/salesNavigator/linkedinUrl";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -64,12 +65,15 @@ export async function flushSalesNavSnapshotToList(opts: {
   listId: string;
   kind: AudienceListKind;
   snapshot: SalesNavImportLeadSnapshot[];
+  /** When the import started. Newer imports sort ahead of older ones. */
+  rankedAt: string;
 }): Promise<{ added: number; skipped: number; blacklisted: number }> {
+  const ranked = rankSalesNavSnapshot(opts.snapshot);
   const firmographics = await loadFirmographics(
-    opts.snapshot.map((row) => row.linkedinUrl)
+    ranked.map((row) => row.linkedinUrl)
   );
   const people = mapAudiencePeopleInput(
-    opts.snapshot.map((row) => {
+    ranked.map((row) => {
       const cached = firmographics.get(
         canonicalLinkedInProfileUrl(row.linkedinUrl) ?? ""
       );
@@ -87,7 +91,7 @@ export async function flushSalesNavSnapshotToList(opts: {
       };
     }),
     "sales_nav",
-    opts.snapshot.length
+    ranked.length
   );
 
   let added = 0;
@@ -104,6 +108,36 @@ export async function flushSalesNavSnapshotToList(opts: {
     skipped += result.skipped;
     blacklisted += result.blacklisted;
   }
+  await stampSalesNavRanks({
+    listId: opts.listId,
+    identityKeys: people.map((person) => `li:${person.linkedin_url}`),
+    rankedAt: opts.rankedAt,
+  });
   await recountLeadListItems(opts.listId);
   return { added, skipped, blacklisted };
+}
+
+/**
+ * Record each person's Sales Nav position on the list, including people who
+ * were already there. The pool and campaign adds use this instead of A-Z.
+ */
+async function stampSalesNavRanks(opts: {
+  listId: string;
+  identityKeys: string[];
+  rankedAt: string;
+}) {
+  const chunks = toChunks(opts.identityKeys, 1000);
+  for (let i = 0; i < chunks.length; i += 1) {
+    const { error } = await supabaseAdmin.rpc("stamp_lead_list_item_ranks", {
+      p_list_id: opts.listId,
+      p_identity_keys: chunks[i],
+      p_ranked_at: opts.rankedAt,
+      p_rank_offset: i * 1000,
+    });
+    // Order is a nice-to-have; never fail the import over it.
+    if (error) {
+      console.error("stamp_lead_list_item_ranks:", error.message);
+      return;
+    }
+  }
 }

@@ -448,7 +448,7 @@ async function syncUnipileSalesNavImportJobInner(
       cacheInserted += cache.inserted;
       cacheUpdated += cache.updated;
       cacheSkipped += cache.skipped;
-      snapshot = mergeSalesNavLeadSnapshots(snapshot, items);
+      snapshot = mergeSalesNavLeadSnapshots(snapshot, items, segmentIndex);
       if (segmentPlan[segmentIndex]) {
         segmentPlan[segmentIndex] = {
           ...segmentPlan[segmentIndex],
@@ -653,6 +653,7 @@ async function persistProgress(
           listId,
           kind: "pool",
           snapshot: opts.snapshot,
+          rankedAt: job.created_at,
         });
       }
       if (saveListId) {
@@ -661,6 +662,7 @@ async function persistProgress(
           listId: saveListId,
           kind: "audience",
           snapshot: opts.snapshot,
+          rankedAt: job.created_at,
         });
       }
       await supabaseAdmin

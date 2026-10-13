@@ -115,6 +115,7 @@ import {
 } from "@/lib/pool/poolPeople";
 import {
   normalizePoolTableViewSettings,
+  POOL_SORT_VERSION,
   type PoolTableViewSettings,
 } from "@/lib/pool/poolTableViews";
 import { paginationItems } from "@/lib/communityPagination";
@@ -412,7 +413,7 @@ export function CampaignPoolHub({
   const [industryFilter, setIndustryFilter] = useState("");
   const [tagFilter, setTagFilter] = useState<PoolTagFilter>("all");
   const [excludeTags, setExcludeTags] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<PoolTableViewSettings["sortField"]>("name");
+  const [sortField, setSortField] = useState<PoolTableViewSettings["sortField"]>("import_order");
   const [sortOrder, setSortOrder] = useState<PoolTableViewSettings["sortOrder"]>("asc");
   const [grouping, setGrouping] = useState<PersistedPoolGrouping>({
     field: null,
@@ -539,6 +540,7 @@ export function CampaignPoolHub({
         excludeTags,
         sortField,
         sortOrder,
+        sortVersion: POOL_SORT_VERSION,
         grouping,
         columnVisibility,
         columnOrder,
@@ -1092,7 +1094,7 @@ export function CampaignPoolHub({
     (industryFilter.trim() ? 1 : 0) +
     (tagFilter !== "all" ? 1 : 0) +
     (excludeTags.length > 0 ? 1 : 0);
-  const sortActive = sortField !== "name" || sortOrder !== "asc";
+  const sortActive = sortField !== "import_order" || sortOrder !== "asc";
   const activeCampaigns = campaigns.filter(
     (campaign) =>
       campaign.status !== "archived" &&
@@ -1310,7 +1312,15 @@ export function CampaignPoolHub({
     const sourcePeople = personIds?.length
       ? people.filter((row) => personIds.includes(row.id))
       : selectedPeople;
+    // Enrol in the order on screen: campaigns contact people in the order added.
+    const onScreen = new Map(displayPeople.map((row, i) => [row.id, i]));
     const itemIds = sourcePeople
+      .slice()
+      .sort(
+        (a, b) =>
+          (onScreen.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (onScreen.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+      )
       .filter((row) =>
         poolRowFitsCampaignChannel(row, campaign?.channel ?? "linkedin")
       )
@@ -2363,6 +2373,7 @@ export function CampaignPoolHub({
                     setSortField(e.target.value as typeof sortField)
                   }
                 >
+                  <option value="import_order">Sales Nav order</option>
                   <option value="name">Name</option>
                   <option value="company">Company</option>
                   <option value="created_at">Date added</option>
