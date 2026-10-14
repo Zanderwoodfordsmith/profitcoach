@@ -60,6 +60,7 @@ export default function PublicSupportPage() {
     <AuthSplitShell
       title="Contact support"
       subtitle="Having trouble signing in or need help with your account? Send us a message and we'll get back to you by email."
+      backHref="/login"
       footer={
         <p className="text-center text-sm text-slate-600">
           Already have an account?{" "}

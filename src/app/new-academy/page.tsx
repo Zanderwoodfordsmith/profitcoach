@@ -80,11 +80,6 @@ export default function NewAcademyPage() {
         </Link>
         <p className="text-left text-[14px] font-normal leading-snug text-[#07111c] sm:text-[15px]">
           <span className="font-semibold">Email:</span> same as before
-          <br />
-          <span className="font-semibold">Password:</span>{" "}
-          <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 font-mono font-bold text-emerald-800">
-            bcalogin
-          </span>
         </p>
       </div>
 

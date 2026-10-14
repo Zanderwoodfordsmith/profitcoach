@@ -108,19 +108,6 @@ export default function LoginPage() {
     <AuthSplitShell
       title="Welcome back"
       subtitle="Sign in to Profit Coach to continue coaching with clarity."
-      footer={
-        <div className="space-y-2 text-center text-sm text-slate-600">
-          <p>
-            New coach?{" "}
-            <Link
-              href="/join"
-              className="font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
-            >
-              Create an account
-            </Link>
-          </p>
-        </div>
-      }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
@@ -163,31 +150,6 @@ export default function LoginPage() {
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-              Default password
-            </p>
-            <p className="mt-1 text-sm">
-              Use your Academy email login and the password{" "}
-              <span className="rounded-md bg-emerald-100 px-2 py-0.5 font-mono text-sm font-bold text-emerald-800">
-                bcalogin
-              </span>
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-1 pt-0.5">
-            <Link
-              href="/support"
-              className="text-sm font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
-            >
-              Can&apos;t sign in? Contact support
-            </Link>
-            <Link
-              href="/login/forgot-password"
-              className="text-sm font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
         </div>
         {successMessage ? (
           <p className="text-sm text-emerald-700" role="status">
@@ -206,6 +168,20 @@ export default function LoginPage() {
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <Link
+            href="/support"
+            className="text-sm font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
+          >
+            Contact support
+          </Link>
+          <Link
+            href="/login/forgot-password"
+            className="text-sm font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
+          >
+            Reset password
+          </Link>
+        </div>
       </form>
     </AuthSplitShell>
   );

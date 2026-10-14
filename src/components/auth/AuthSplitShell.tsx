@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 export const authInputClassName =
@@ -17,6 +19,7 @@ type AuthSplitShellProps = {
   subtitle: string;
   children: ReactNode;
   footer?: ReactNode;
+  backHref?: string;
 };
 
 export function AuthSplitShell({
@@ -24,11 +27,21 @@ export function AuthSplitShell({
   subtitle,
   children,
   footer,
+  backHref,
 }: AuthSplitShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-white lg:flex-row">
       <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-10 lg:max-w-none lg:flex-1 lg:px-16 xl:px-24">
         <div className="mx-auto w-full max-w-[420px]">
+          {backHref ? (
+            <Link
+              href={backHref}
+              className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 transition hover:text-slate-700"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              Back
+            </Link>
+          ) : null}
           <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
             {title}
           </h1>
