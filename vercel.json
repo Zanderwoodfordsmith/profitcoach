@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/support-mailbox-sync",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/practice-build",
+      "schedule": "* * * * *"
     }
   ]
 }

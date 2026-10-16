@@ -11,10 +11,12 @@ import {
 } from "react";
 
 import { buildOrder, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
+import type { BuildJob } from "@/lib/practiceKnowledge/buildJobs";
 import { readyForRecommendation } from "@/lib/practiceKnowledge/brief";
 import { emptyPracticePayload, mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
 import {
-  buildPracticeSection,
+  cancelPracticeBuild,
+  loadPracticeBuild,
   saveBuiltBlocks,
   sendBlueprintCampaign,
   generatePracticeReport,
@@ -25,6 +27,7 @@ import {
   seedPracticeLinkedIn,
   sendInterviewTurn,
   speakInterviewText,
+  startPracticeBuild,
   ttsAvailable,
   uploadPracticeAsset,
 } from "@/lib/practiceKnowledge/practiceApi";
@@ -96,6 +99,28 @@ export type BuildState = {
 };
 
 const IDLE_BUILD: BuildState = { active: [], queue: [], done: 0, total: 0, failed: [] };
+/** How often the page checks on a blueprint being written on the server. */
+const BUILD_POLL_MS = 4000;
+
+function jobOpen(job: BuildJob | null): boolean {
+  return Boolean(job && (job.status === "queued" || job.status === "running"));
+}
+
+/** The server job as the page shows it. */
+function buildStateFromJob(job: BuildJob): BuildState {
+  const failed = job.failed.map((f) => f.key);
+  const finished = new Set([...job.done, ...failed]);
+  const left = job.keys.filter((key) => !finished.has(key));
+  const open = jobOpen(job);
+  const active = open ? [job.current_key ?? left[0]].filter((k): k is string => Boolean(k)) : [];
+  return {
+    active,
+    queue: open ? left.filter((key) => !active.includes(key)) : [],
+    done: job.done.length + failed.length,
+    total: job.keys.length,
+    failed,
+  };
+}
 const ASSISTANT_KEY = "practice-assistant-open";
 
 export const PRACTICE_BASE = "/coach/practice";
@@ -172,7 +197,9 @@ export function PracticeProvider({
   const [coachName, setCoachName] = useState("");
   const [decision, setDecision] = useState<DecisionRecordRow | null>(null);
   const [building, setBuilding] = useState<BuildState>(IDLE_BUILD);
-  const stopRef = useRef(false);
+  /** The server job this page is following, while it is open. */
+  const [jobId, setJobId] = useState<string | null>(null);
+  const seenDone = useRef(0);
   const [assistantOpen, setAssistantOpenState] = useState(false);
   const reportAttempted = useRef(false);
   const draftRef = useRef<PracticeKnowledgePayload | null>(null);
@@ -237,22 +264,67 @@ export function PracticeProvider({
       setError("This is an empty preview. Choose a coach to write sections.");
       return;
     }
-    stopRef.current = false;
-    setBuilding({ active: [], queue: keys, done: 0, total: keys.length, failed: [] });
-    for (const key of keys) {
-      if (stopRef.current) break;
-      setBuilding((b) => ({ ...b, active: [key], queue: b.queue.filter((k) => k !== key) }));
-      const res = await buildPracticeSection(key, coachId);
-      if (res.ok && res.data) {
-        setKnowledge(res.data.knowledge);
-        setBuilding((b) => ({ ...b, done: b.done + 1 }));
-      } else {
-        setBuilding((b) => ({ ...b, done: b.done + 1, failed: [...b.failed, key] }));
-        setError(res.error || "A section could not be written. Try it again.");
-      }
+    // Written on the server: the page can close and the writing carries on.
+    const res = await startPracticeBuild(keys, coachId);
+    if (!res.ok || !res.data?.job) {
+      setError(res.error || "Could not start writing. Try again.");
+      return;
     }
-    setBuilding((b) => ({ ...b, active: [], queue: [] }));
+    seenDone.current = 0;
+    setBuilding(buildStateFromJob(res.data.job));
+    setJobId(res.data.job.id);
   }
+
+  const refreshKnowledge = useCallback(async () => {
+    const res = await loadPractice(coachId);
+    if (res.ok && res.data) setKnowledge(res.data.knowledge);
+  }, [coachId]);
+
+  // Follow a job started here, or one already running when the page opened.
+  useEffect(() => {
+    if (sample || !jobId) return;
+    let cancelled = false;
+    const tick = async () => {
+      const res = await loadPracticeBuild(coachId);
+      if (cancelled || !res.ok) return;
+      const job = res.data?.job ?? null;
+      if (!job || job.id !== jobId) {
+        setJobId(null);
+        setBuilding(IDLE_BUILD);
+        return;
+      }
+      setBuilding(buildStateFromJob(job));
+      if (job.done.length !== seenDone.current) {
+        seenDone.current = job.done.length;
+        await refreshKnowledge();
+      }
+      if (!jobOpen(job)) {
+        setJobId(null);
+        if (job.failed.length) setError("Some sections could not be written. Try them again.");
+      }
+    };
+    void tick();
+    const timer = window.setInterval(() => void tick(), BUILD_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [jobId, coachId, sample, refreshKnowledge]);
+
+  useEffect(() => {
+    if (sample) return;
+    let cancelled = false;
+    void loadPracticeBuild(coachId).then((res) => {
+      const job = res.ok ? (res.data?.job ?? null) : null;
+      if (cancelled || !job || !jobOpen(job)) return;
+      seenDone.current = job.done.length;
+      setBuilding(buildStateFromJob(job));
+      setJobId(job.id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [coachId, sample]);
 
   const persist = useCallback(async (next: PracticeKnowledgePayload) => {
     // The empty preview keeps edits on screen only.
@@ -432,7 +504,10 @@ export function PracticeProvider({
       void runBuilds(keys);
     },
     stopBuild: () => {
-      stopRef.current = true;
+      void cancelPracticeBuild(coachId).then(() => {
+        setJobId(null);
+        setBuilding(IDLE_BUILD);
+      });
     },
     saveField: (field, value) => {
       const base = draftRef.current;

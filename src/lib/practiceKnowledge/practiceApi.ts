@@ -12,6 +12,7 @@ import type {
   PracticeReportPayload,
   PracticeStatus,
 } from "./types";
+import type { BuildJob } from "./buildJobs";
 
 export type PracticeLoad = {
   knowledge: PracticeKnowledgeRow;
@@ -105,6 +106,19 @@ export function sendInterviewTurn(body: { message?: string; start?: boolean }, c
 }
 
 /** Write (or with clear, remove) one "We build" section. Takes up to a minute or two. */
+/** Server-side writing: start (replacing any open job), cancel, or read progress. */
+export function startPracticeBuild(keys: string[], coachId?: PracticeCoachId) {
+  return post<{ job: BuildJob | null }>("/api/coach/practice/build-all", coachId, { keys });
+}
+
+export function cancelPracticeBuild(coachId?: PracticeCoachId) {
+  return post<{ job: BuildJob | null }>("/api/coach/practice/build-all", coachId, { cancel: true });
+}
+
+export function loadPracticeBuild(coachId?: PracticeCoachId) {
+  return get<{ job: BuildJob | null }>("/api/coach/practice/build-all", coachId);
+}
+
 export function buildPracticeSection(section: string, coachId?: PracticeCoachId, clear = false) {
   return post<{ knowledge: PracticeKnowledgeRow }>(
     "/api/coach/practice/build",
