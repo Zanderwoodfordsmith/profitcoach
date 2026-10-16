@@ -246,10 +246,16 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
  * Get Clients href is Conversations on first visit; the sidebar overrides it
  * with the last hub tab from this session.
  */
+/**
+ * Coaches' Blueprint link in the sidebar. Off while the blueprint is being
+ * finalised; coaches can still open /coach/practice directly.
+ */
+const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = false;
+
 export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   // Admins reach every coach's blueprint from Admin → Blueprint instead.
   const blueprint: DashboardNavItem[] =
-    prefix === "/coach"
+    SHOW_BLUEPRINT_IN_COACH_SIDEBAR && prefix === "/coach"
       ? [{ href: "/coach/practice", label: "Blueprint", icon: IconBlueprint }]
       : [];
   return [
