@@ -31,7 +31,6 @@ export type CoachTableColumnVisibility = {
   linkedinProfile: boolean;
   directory: boolean;
   certification: boolean;
-  conference: boolean;
   currentLevel: boolean;
   goalBy: boolean;
   lastLogin: boolean;
@@ -164,7 +163,6 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   "slug",
   "email",
   "clients",
-  "conference",
   "lastLogin",
   "goalLevel",
   "currentLevel",
@@ -192,7 +190,6 @@ export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   linkedinProfile: true,
   directory: false,
   certification: false,
-  conference: false,
   currentLevel: false,
   goalBy: false,
   lastLogin: false,

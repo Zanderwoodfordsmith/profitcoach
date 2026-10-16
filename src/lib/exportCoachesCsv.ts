@@ -29,7 +29,6 @@ export type CoachExportRow = {
   client_count: number;
   directory_listed: boolean;
   directory_level: string | null;
-  conference_status: "no" | "maybe" | "yes" | null;
   current_monthly_income: number | null;
   goal_monthly_income: number | null;
   ladder_level: string | null;
@@ -68,7 +67,6 @@ export type CoachExportColumnKey =
   | "linkedinProfile"
   | "directory"
   | "certification"
-  | "conference"
   | "currentLevel"
   | "ladderLevel"
   | "ladderGoalLevel"
@@ -104,7 +102,6 @@ const EXPORT_COLUMN_DEFS: Array<{ key: CoachExportColumnKey; label: string }> =
     { key: "linkedinProfile", label: "LinkedIn" },
     { key: "directory", label: "Directory listed" },
     { key: "certification", label: "Certification" },
-    { key: "conference", label: "Conference" },
     { key: "currentLevel", label: "Current income" },
     { key: "ladderLevel", label: "Ladder level" },
     { key: "ladderGoalLevel", label: "Ladder goal level" },
@@ -140,7 +137,6 @@ const TABLE_KEY_TO_EXPORT: Partial<
   linkedinProfile: ["linkedinProfile"],
   directory: ["directory"],
   certification: ["certification"],
-  conference: ["conference"],
   currentLevel: ["currentLevel"],
   goalBy: ["goalBy"],
   lastLogin: ["lastLogin"],
@@ -251,8 +247,6 @@ function getExportCellValue(
       return yesNo(row.directory_listed);
     case "certification":
       return row.directory_level ?? "";
-    case "conference":
-      return row.conference_status ?? "";
     case "currentLevel":
       return row.current_monthly_income == null
         ? ""

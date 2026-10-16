@@ -13,6 +13,7 @@ type LegacyCoachTableColumnVisibility = CoachTableColumnVisibility & {
   memberFor?: boolean;
   activeCampaigns?: boolean;
   payingAccounts?: boolean;
+  conference?: boolean;
 };
 
 export type CoachSortableRow = {
@@ -180,11 +181,13 @@ function migrateCoachTableColumns(
     memberFor: _removed,
     activeCampaigns: _activeCampaigns,
     payingAccounts: _payingAccounts,
+    conference: _conference,
     ...columnVisibility
   } = legacyVisibility;
   void _removed;
   void _activeCampaigns;
   void _payingAccounts;
+  void _conference;
 
   if (legacyMemberFor === true) {
     columnVisibility.joinDate = true;
@@ -199,10 +202,15 @@ function migrateCoachTableColumns(
     "memberFor",
     "activeCampaigns",
     "payingAccounts",
+    "conference",
   ]);
   const columnOrder = (
     settings.columnOrder as Array<
-      keyof CoachTableColumnVisibility | "memberFor" | "activeCampaigns" | "payingAccounts"
+      | keyof CoachTableColumnVisibility
+      | "memberFor"
+      | "activeCampaigns"
+      | "payingAccounts"
+      | "conference"
     >
   ).filter(
     (key): key is keyof CoachTableColumnVisibility => !removedColumnKeys.has(key)
@@ -248,6 +256,7 @@ export function normalizeCoachTableViewSettings(
   const { columnVisibility, columnOrder } = migrateCoachTableColumns(settings);
   return {
     ...settings,
+    conferenceFilter: "all",
     sorts: sorts.length > 0 ? sorts : DEFAULT_COACH_SORTS,
     columnVisibility,
     columnOrder,

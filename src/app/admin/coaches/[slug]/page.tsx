@@ -66,7 +66,6 @@ type CoachDetail = {
   client_count: number;
   directory_listed: boolean;
   directory_level: string | null;
-  conference_status: "no" | "maybe" | "yes" | null;
   crm_profile_name: string | null;
   crm_location_id: string | null;
   booking_calendar_provider: "native" | "ghl";
@@ -576,7 +575,6 @@ export default function AdminCoachDetailPage({
                       </span>
                     )}
                   </DetailField>
-                  <DetailField label="Conference" value={coach.conference_status ?? "Not set"} />
                   <DetailField
                     label="LinkedIn"
                     value={coach.linkedin_url ? undefined : null}
