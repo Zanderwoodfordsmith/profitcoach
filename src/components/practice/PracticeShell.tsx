@@ -137,8 +137,11 @@ export function PracticeShell({
   children,
   embedded = false,
   path,
+  switcher,
 }: {
   children: ReactNode;
+  /** Admin only: whose blueprint this is, and a way to switch coach. Top of the sidebar. */
+  switcher?: ReactNode;
   /** Admin blueprint: fill the page under the header, flush to the app sidebar. */
   embedded?: boolean;
   /** Practice path to treat as the open page, when this shell is not on its own route. */
@@ -257,7 +260,13 @@ export function PracticeShell({
       >
         <div className="lg:h-full lg:overflow-y-auto">
         <div className={`flex items-center gap-2 border-b border-slate-200/70 px-3 py-3 ${showNav ? "justify-between" : "justify-center"}`}>
-          {showNav ? <p className="text-[0.8125rem] font-semibold text-[#0f172a]">Blueprint</p> : null}
+          {showNav ? (
+            switcher ? (
+              <div className="min-w-0 flex-1">{switcher}</div>
+            ) : (
+              <p className="text-[0.8125rem] font-semibold text-[#0f172a]">Blueprint</p>
+            )
+          ) : null}
           <button
             type="button"
             onClick={toggleNav}
