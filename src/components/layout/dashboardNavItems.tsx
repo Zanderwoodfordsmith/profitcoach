@@ -247,13 +247,15 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
  * with the last hub tab from this session.
  */
 /**
- * Blueprint link at the top of Tools, for coaches and admins.
+ * Blueprint link at the top of Tools. Admins always see it. Coaches see it
+ * locally only until it is released: set this to true.
  */
-const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = true;
+const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = process.env.NODE_ENV !== "production";
 
 export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   // Admins open the coach view, where they can page through every coach's blueprint.
-  const blueprint: DashboardNavItem[] = SHOW_BLUEPRINT_IN_COACH_SIDEBAR
+  const blueprint: DashboardNavItem[] =
+    prefix === "/admin" || SHOW_BLUEPRINT_IN_COACH_SIDEBAR
     ? [
         {
           href: prefix === "/coach" ? "/coach/practice" : "/admin/blueprint/coach",
