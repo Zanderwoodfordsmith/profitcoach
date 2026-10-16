@@ -253,11 +253,16 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
 const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = process.env.NODE_ENV !== "production";
 
 export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
-  // Admins reach every coach's blueprint from Admin → Blueprint instead.
-  const blueprint: DashboardNavItem[] =
-    SHOW_BLUEPRINT_IN_COACH_SIDEBAR && prefix === "/coach"
-      ? [{ href: "/coach/practice", label: "Blueprint", icon: IconBlueprint }]
-      : [];
+  // Admins open the coach view, where they can page through every coach's blueprint.
+  const blueprint: DashboardNavItem[] = SHOW_BLUEPRINT_IN_COACH_SIDEBAR
+    ? [
+        {
+          href: prefix === "/coach" ? "/coach/practice" : "/admin/blueprint/coach",
+          label: "Blueprint",
+          icon: IconBlueprint,
+        },
+      ]
+    : [];
   return [
     ...blueprint,
     {
