@@ -31,6 +31,12 @@ describe("hostedAuthMailCalendarScopes", () => {
     assert.match(scopes.microsoft_scopes ?? "", /Calendars\.ReadWrite/);
   });
 
+  it("only sends Graph scopes Unipile accepts for Outlook", () => {
+    for (const scope of UNIPILE_MICROSOFT_MAIL_AND_CALENDAR_SCOPES.split(",")) {
+      assert.match(scope, /^[A-Z][A-Za-z]*(\.[A-Za-z]+)+$/, scope);
+    }
+  });
+
   it("does not attach mail/calendar scopes to LinkedIn", () => {
     assert.deepEqual(hostedAuthMailCalendarScopes("LINKEDIN"), {});
   });

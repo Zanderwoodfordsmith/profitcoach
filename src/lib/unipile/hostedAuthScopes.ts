@@ -7,6 +7,10 @@ import type { UnipileConnectProvider } from "./providers";
  *
  * `google_scopes` must be full Google URLs. Short names like `gmail.send`
  * are rejected (HTTP 400) and the connect falls back to Gmail-only.
+ *
+ * `microsoft_scopes` must be Graph scope names only. Unipile rejects OIDC
+ * scopes like `offline_access` (HTTP 400, "Expected union value"), which
+ * blocks every Outlook connect; it adds refresh access itself.
  */
 export const UNIPILE_GOOGLE_MAIL_AND_CALENDAR_SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
@@ -25,7 +29,6 @@ export const UNIPILE_MICROSOFT_MAIL_AND_CALENDAR_SCOPES = [
   "Calendars.ReadWrite",
   "Calendars.Read.Shared",
   "Calendars.ReadWrite.Shared",
-  "offline_access",
   "User.Read",
 ].join(",");
 
