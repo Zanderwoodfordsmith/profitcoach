@@ -54,4 +54,21 @@ describe("buildSupportReplyEmailHtml", () => {
     assert.match(html, />Profit Coach Support</);
     assert.doesNotMatch(html, /<script>/);
   });
+
+  it("renders bold and markdown links instead of the raw markers", () => {
+    const html = buildSupportReplyEmailHtml({
+      replyBody:
+        "Hi Alastair,\n\n**Email access** is restored.\n\nBook here: [Book a support call](https://theprofitcoach.com/support-call-pam).",
+      signatureName: "Zander",
+      supportUrl: "https://www.theprofitcoach.com/coach/support",
+    });
+    assert.match(html, /<strong>Email access<\/strong>/);
+    assert.doesNotMatch(html, /\*\*/);
+    assert.match(
+      html,
+      /<a href="https:\/\/theprofitcoach\.com\/support-call-pam"/
+    );
+    assert.match(html, />Book a support call</);
+    assert.doesNotMatch(html, /\[Book a support call\]/);
+  });
 });

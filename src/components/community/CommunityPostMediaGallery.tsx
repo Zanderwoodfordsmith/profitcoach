@@ -2,19 +2,34 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Mic, Play, X } from "lucide-react";
+import { FileText, Mic, Play, X } from "lucide-react";
 import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import { inferCommunityPostMediaKindFromUrl } from "@/lib/communityPostMedia";
 
+function isFileItem(item: CommunityPostMediaItem): boolean {
+  return (
+    item.kind === "file" ||
+    inferCommunityPostMediaKindFromUrl(item.url) === "file"
+  );
+}
+
+function fileLabel(item: CommunityPostMediaItem): string {
+  const named = item.name?.trim();
+  if (named) return named;
+  const path = decodeURIComponent((item.url.split("?")[0] || "").split("/").pop() || "");
+  return path || "Document";
+}
+
 function isVideoItem(item: CommunityPostMediaItem): boolean {
+  if (isFileItem(item) || item.kind === "audio") return false;
   return (
     item.kind === "video" ||
-    (item.kind !== "audio" &&
-      inferCommunityPostMediaKindFromUrl(item.url) === "video")
+    inferCommunityPostMediaKindFromUrl(item.url) === "video"
   );
 }
 
 function isAudioItem(item: CommunityPostMediaItem): boolean {
+  if (isFileItem(item)) return false;
   return (
     item.kind === "audio" ||
     inferCommunityPostMediaKindFromUrl(item.url) === "audio"
@@ -43,11 +58,22 @@ export function CommunityPostMediaThumb({
 }: ThumbProps) {
   const video = isVideoItem(item);
   const audio = isAudioItem(item);
+  const file = isFileItem(item);
   const playClass =
     playIconSize === "sm"
       ? "h-7 w-7 rounded-md"
       : "h-9 w-9 rounded-lg";
   const playIconClass = playIconSize === "sm" ? "h-3 w-3" : "h-4 w-4";
+
+  if (file) {
+    return (
+      <div
+        className={`relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200 ${className}`}
+      >
+        <FileText className="h-5 w-5 text-slate-500" strokeWidth={1.75} />
+      </div>
+    );
+  }
 
   if (audio) {
     return (
@@ -217,7 +243,27 @@ export function CommunityPostMediaGallery({
   if (items.length === 0) return null;
 
   const audioItems = items.filter(isAudioItem);
-  const visualItems = items.filter((item) => !isAudioItem(item));
+  const fileItems = items.filter((item) => isFileItem(item) && !isAudioItem(item));
+  const visualItems = items.filter((item) => !isAudioItem(item) && !isFileItem(item));
+
+  const fileRow =
+    fileItems.length > 0 ? (
+      <ul className="space-y-2">
+        {fileItems.map((item, index) => (
+          <li key={`${item.url}-file-${index}`}>
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-sky-800 hover:bg-slate-50"
+            >
+              <FileText className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={1.75} />
+              <span className="min-w-0 truncate">{fileLabel(item)}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : null;
 
   const audioRow =
     audioItems.length > 0 ? (
@@ -238,6 +284,7 @@ export function CommunityPostMediaGallery({
     return (
       <>
         <div className="space-y-2">
+          {fileRow}
           {audioRow}
           {visualItems.length > 0 ? (
             <div className="flex flex-wrap gap-2">
@@ -277,6 +324,7 @@ export function CommunityPostMediaGallery({
   return (
     <>
       <div className="space-y-2">
+        {fileRow}
         {audioRow}
         {visualItems.length > 0 ? (
           <div className={`flex gap-2 ${rowHeight}`}>

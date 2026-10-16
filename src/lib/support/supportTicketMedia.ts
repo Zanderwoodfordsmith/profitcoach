@@ -18,6 +18,7 @@ export function supportComposerFallbackBody(input: {
   voice?: boolean;
   video?: boolean;
   imageCount?: number;
+  fileCount?: number;
 }): string {
   const text = input.text.trim();
   if (text) return text;
@@ -26,6 +27,9 @@ export function supportComposerFallbackBody(input: {
   const images = input.imageCount ?? 0;
   if (images === 1) return "Sent an image";
   if (images > 1) return "Sent images";
+  const files = input.fileCount ?? 0;
+  if (files === 1) return "Sent a document";
+  if (files > 1) return "Sent documents";
   return "";
 }
 
@@ -38,11 +42,14 @@ export function supportReplyBodyForEmail(
   const imageCount = media.filter((item) => item.kind === "image").length;
   const hasAudio = media.some((item) => item.kind === "audio");
   const hasVideo = media.some((item) => item.kind === "video");
+  const fileCount = media.filter((item) => item.kind === "file").length;
   const notes: string[] = [];
   if (imageCount === 1) notes.push("Image attached.");
   if (imageCount > 1) notes.push("Images attached.");
   if (hasAudio) notes.push("Voice note attached.");
   if (hasVideo) notes.push("Video attached.");
+  if (fileCount === 1) notes.push("Document attached.");
+  if (fileCount > 1) notes.push("Documents attached.");
 
   if (!trimmed) return notes.join(" ");
   if (notes.length === 0) return trimmed;
@@ -55,6 +62,9 @@ export function supportReplyBodyForEmail(
     if (note.startsWith("Video") && /video attached|sent a video/i.test(trimmed)) {
       return false;
     }
+    if (note.startsWith("Document") && /document attached|sent a document/i.test(trimmed)) {
+      return false;
+    }
     return true;
   });
   if (extra.length === 0) return trimmed;
@@ -65,9 +75,12 @@ export function supportEmailAttachmentFilename(
   item: CommunityPostMediaItem,
   index: number
 ): string {
+  const named = item.name?.trim();
+  if (named) return named.slice(0, 120);
   const path = (item.url.split("?")[0] || "").split("/").pop() || "";
   if (path && /\.[a-z0-9]{2,8}$/i.test(path)) return path.slice(0, 120);
   if (item.kind === "audio") return `voice-note-${index + 1}.webm`;
   if (item.kind === "video") return `video-${index + 1}.mp4`;
+  if (item.kind === "file") return `document-${index + 1}`;
   return `image-${index + 1}.jpg`;
 }

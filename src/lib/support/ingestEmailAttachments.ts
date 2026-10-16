@@ -4,6 +4,8 @@ import {
   COMMUNITY_POST_MEDIA_MAX,
   COMMUNITY_POST_MAX_AUDIO_BYTES,
   COMMUNITY_POST_MAX_IMAGE_BYTES,
+  SUPPORT_MAX_DOCUMENT_BYTES,
+  supportDocumentName,
   EXT_BY_MIME,
   mediaKindForMime,
   resolveMediaMimeFromName,
@@ -62,6 +64,7 @@ export function isInlineEmailAttachment(
 function maxBytesForEmailAttachment(kind: CommunityPostMediaKind): number {
   if (kind === "video") return EMAIL_MAX_VIDEO_BYTES;
   if (kind === "audio") return COMMUNITY_POST_MAX_AUDIO_BYTES;
+  if (kind === "file") return SUPPORT_MAX_DOCUMENT_BYTES;
   return COMMUNITY_POST_MAX_IMAGE_BYTES;
 }
 
@@ -100,8 +103,11 @@ async function uploadSupportEmailMedia(input: {
   bytes: Uint8Array;
   mime: string;
   kind: CommunityPostMediaKind;
+  name?: string;
 }): Promise<CommunityPostMediaItem | null> {
-  const ext = EXT_BY_MIME[input.mime] ?? (input.kind === "video" ? "mp4" : "jpg");
+  const ext =
+    EXT_BY_MIME[input.mime] ??
+    (input.kind === "video" ? "mp4" : input.kind === "file" ? "bin" : "jpg");
   const path = `support-mail/${storageFolderFromEmailId(input.emailId)}/${randomUUID()}.${ext}`;
   const { error } = await supabaseAdmin.storage
     .from("community-posts")
@@ -116,7 +122,9 @@ async function uploadSupportEmailMedia(input: {
   const { data } = supabaseAdmin.storage.from("community-posts").getPublicUrl(path);
   const url = data.publicUrl?.trim();
   if (!url) return null;
-  return { url, kind: input.kind };
+  return input.name
+    ? { url, kind: input.kind, name: input.name }
+    : { url, kind: input.kind };
 }
 
 export type IngestedSupportEmailAttachments = {
@@ -183,6 +191,10 @@ export async function ingestSupportEmailAttachments(input: {
       bytes: downloaded.data.bytes,
       mime: classified.mime,
       kind: classified.kind,
+      name:
+        classified.kind === "file"
+          ? supportDocumentName(attachment.name)
+          : undefined,
     });
     if (!item) {
       skippedNames.push(attachment.name);

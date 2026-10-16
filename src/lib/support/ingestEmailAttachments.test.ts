@@ -51,7 +51,7 @@ describe("classifySupportEmailAttachment", () => {
     assert.deepEqual(result, { ingest: false, reason: "inline" });
   });
 
-  it("skips pdfs for the thread gallery", () => {
+  it("ingests a pdf document", () => {
     const result = classifySupportEmailAttachment({
       id: "1",
       name: "invoice.pdf",
@@ -59,7 +59,8 @@ describe("classifySupportEmailAttachment", () => {
       size: 40_000,
       inline: false,
     });
-    assert.deepEqual(result, { ingest: false, reason: "unsupported" });
+    assert.equal(result.ingest, true);
+    if (result.ingest) assert.equal(result.kind, "file");
   });
 });
 

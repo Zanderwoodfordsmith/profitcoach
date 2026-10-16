@@ -9,6 +9,7 @@ import {
   supportEmailAttachmentFilename,
   supportReplyBodyForEmail,
 } from "@/lib/support/supportTicketMedia";
+import { supportMarkdownToEmailInnerHtml } from "@/lib/support/supportMessageHtml";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { SupportTicketSource } from "@/lib/support/tickets";
 import {
@@ -156,7 +157,7 @@ export function buildSupportReplyEmailHtml(input: {
   supportUrl: string;
 }): string {
   const preview = input.replyBody.trim().slice(0, 2000);
-  const bodyHtml = escapeHtml(preview).replace(/\n/g, "<br>");
+  const bodyHtml = supportMarkdownToEmailInnerHtml(preview);
   const signature = input.signatureName?.trim() || "Profit Coach Support";
   return `<p style="margin:0 0 20px;">${bodyHtml}</p>
 <p style="color:#334155;font-size:14px;margin:0 0 20px;">You can reply to this email or <a href="${escapeHtml(

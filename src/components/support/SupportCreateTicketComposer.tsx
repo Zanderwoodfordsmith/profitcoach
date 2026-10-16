@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDown, ImagePlus, Video, X } from "lucide-react";
+import { ChevronDown, FileText, ImagePlus, Video, X } from "lucide-react";
+import { SupportDocumentAttachButton } from "@/components/support/SupportDocumentAttach";
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -272,14 +273,17 @@ export function SupportCreateTicketComposer({
       pendingMedia.map((p) => ({
         key: p.key,
         previewUrl: p.previewUrl,
-        kind:
-          p.file.type.startsWith("video/") ||
-          inferCommunityPostMediaKindFromUrl(p.file.name) === "video"
-            ? ("video" as const)
-            : p.file.type.startsWith("audio/") ||
-                inferCommunityPostMediaKindFromUrl(p.file.name) === "audio"
-              ? ("audio" as const)
-              : ("image" as const),
+        kind: (() => {
+          const validated = validateSupportMediaFile(p.file);
+          if (!("error" in validated)) return validated.kind;
+          if (
+            p.file.type.startsWith("video/") ||
+            inferCommunityPostMediaKindFromUrl(p.file.name) === "video"
+          ) {
+            return "video" as const;
+          }
+          return "image" as const;
+        })(),
         name: p.file.name,
       })),
     [pendingMedia]
@@ -607,6 +611,13 @@ export function SupportCreateTicketComposer({
                     </span>
                     <audio controls src={p.previewUrl} className="h-8 w-full" />
                   </div>
+                ) : p.kind === "file" ? (
+                  <div className="flex h-16 max-w-52 items-center gap-2 rounded-lg bg-slate-50 px-2 ring-1 ring-slate-200">
+                    <FileText className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={1.75} />
+                    <span className="truncate text-xs font-medium text-slate-700">
+                      {p.name}
+                    </span>
+                  </div>
                 ) : (
                   <PreviewableMedia
                     url={p.previewUrl}
@@ -676,6 +687,10 @@ export function SupportCreateTicketComposer({
                     }}
                   />
                 </label>
+                <SupportDocumentAttachButton
+                  disabled={saving || pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
+                  onPick={(files) => addPendingFiles(Array.from(files ?? []))}
+                />
                 {micButton}
               </div>
               <div className="flex min-w-0 items-center gap-2">

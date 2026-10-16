@@ -1,6 +1,12 @@
 "use client";
 
 import { Bold, ImagePlus, Link as LinkIcon, Minus, Send, Video, X } from "lucide-react";
+import {
+  SupportDocumentAttachButton,
+  SupportPendingDocuments,
+  takeSupportDocuments,
+  type PendingSupportDocument,
+} from "@/components/support/SupportDocumentAttach";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   CommentImagePreviews,
@@ -17,6 +23,7 @@ import {
 } from "@/components/support/SupportVoiceRecorder";
 import { COMMUNITY_COMMENT_MEDIA_MAX } from "@/lib/communityCommentMedia";
 import {
+  COMMUNITY_POST_MEDIA_MAX,
   uploadSupportMediaFile,
   validateSupportMediaFile,
   type CommunityPostMediaItem,
@@ -63,6 +70,7 @@ export function SupportTicketChat({
     file: File;
     url: string;
   } | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<PendingSupportDocument[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notifyEmail, setNotifyEmail] = useState(
@@ -78,7 +86,11 @@ export function SupportTicketChat({
 
   const resolved = ticket.status === "resolved";
   const canSend = Boolean(
-    draft.trim() || pendingImages.length > 0 || pendingVoice || pendingVideo
+    draft.trim() ||
+      pendingImages.length > 0 ||
+      pendingFiles.length > 0 ||
+      pendingVoice ||
+      pendingVideo
   );
 
   useEffect(() => {
@@ -201,6 +213,21 @@ export function SupportTicketChat({
     setPendingVideo({ file, url: URL.createObjectURL(file) });
   }
 
+  function addPendingDocuments(files: FileList | null) {
+    const room =
+      COMMUNITY_POST_MEDIA_MAX -
+      (pendingImages.length +
+        pendingFiles.length +
+        (pendingVideo ? 1 : 0) +
+        (pendingVoice ? 1 : 0));
+    const { accepted, error: fileError } = takeSupportDocuments(files, room);
+    if (fileError) setError(fileError);
+    else setError(null);
+    if (accepted.length > 0) {
+      setPendingFiles((current) => [...current, ...accepted]);
+    }
+  }
+
   async function sendReply(e?: FormEvent) {
     e?.preventDefault();
     if (busy || !canSend) return;
@@ -210,6 +237,11 @@ export function SupportTicketChat({
     try {
       const uploaded: CommunityPostMediaItem[] = [];
       for (const item of pendingImages) {
+        const up = await uploadSupportMediaFile(item.file);
+        if ("error" in up) throw new Error(up.error);
+        uploaded.push(up.media);
+      }
+      for (const item of pendingFiles) {
         const up = await uploadSupportMediaFile(item.file);
         if ("error" in up) throw new Error(up.error);
         uploaded.push(up.media);
@@ -232,6 +264,7 @@ export function SupportTicketChat({
         voice: Boolean(pendingVoice),
         video: Boolean(pendingVideo),
         imageCount: pendingImages.length,
+        fileCount: pendingFiles.length,
       });
 
       const { data, error: insertError } = await supabaseClient
@@ -266,6 +299,7 @@ export function SupportTicketChat({
       setDraft("");
       clearPendingCommentImages(pendingImages);
       setPendingImages([]);
+      setPendingFiles([]);
       revokePendingSupportVoice(pendingVoice);
       setPendingVoice(null);
       if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
@@ -340,6 +374,17 @@ export function SupportTicketChat({
                 pending={pendingImages}
                 onChange={setPendingImages}
                 disabled={busy}
+              />
+            ) : null}
+            {pendingFiles.length > 0 ? (
+              <SupportPendingDocuments
+                files={pendingFiles}
+                disabled={busy}
+                onRemove={(key) =>
+                  setPendingFiles((current) =>
+                    current.filter((item) => item.key !== key)
+                  )
+                }
               />
             ) : null}
             {pendingVideo ? (
@@ -476,6 +521,17 @@ export function SupportTicketChat({
                       >
                         <Video className="h-4 w-4" strokeWidth={1.75} />
                       </button>
+                      <SupportDocumentAttachButton
+                        disabled={
+                          busy ||
+                          pendingImages.length +
+                            pendingFiles.length +
+                            (pendingVideo ? 1 : 0) +
+                            (pendingVoice ? 1 : 0) >=
+                            COMMUNITY_POST_MEDIA_MAX
+                        }
+                        onPick={addPendingDocuments}
+                      />
                       {micButton}
                     </div>
                     <div className="flex min-w-0 items-center gap-2">

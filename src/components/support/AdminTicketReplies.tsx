@@ -54,10 +54,17 @@ import {
   COMMUNITY_COMMENT_MEDIA_MAX,
 } from "@/lib/communityCommentMedia";
 import {
+  COMMUNITY_POST_MEDIA_MAX,
   uploadSupportMediaFile,
   validateSupportMediaFile,
   type CommunityPostMediaItem,
 } from "@/lib/communityPostMedia";
+import {
+  SupportDocumentAttachButton,
+  SupportPendingDocuments,
+  takeSupportDocuments,
+  type PendingSupportDocument,
+} from "@/components/support/SupportDocumentAttach";
 import {
   parseSupportReplyMedia,
   parseSupportTicketMedia,
@@ -233,6 +240,7 @@ export function AdminTicketReplies({
     file: File;
     url: string;
   } | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<PendingSupportDocument[]>([]);
   const [busyKind, setBusyKind] = useState<
     null | "send" | "schedule" | "note"
   >(null);
@@ -530,6 +538,7 @@ export function AdminTicketReplies({
     setPendingVoice(null);
     if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
     setPendingVideo(null);
+    setPendingFiles([]);
 
     void loadAdminReplyDraft(reportId).then((restored) => {
       if (generation !== draftLoadGenerationRef.current) return;
@@ -621,6 +630,7 @@ export function AdminTicketReplies({
       setPendingVoice(null);
       if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
       setPendingVideo(null);
+      setPendingFiles([]);
     }
   }
 
@@ -799,11 +809,33 @@ export function AdminTicketReplies({
     setPendingVideo({ file, url: URL.createObjectURL(file) });
   }
 
+  function attachmentSlotsUsed() {
+    return (
+      pendingImages.length +
+      pendingFiles.length +
+      (pendingVideo ? 1 : 0) +
+      (pendingVoice ? 1 : 0)
+    );
+  }
+
+  function addPendingDocuments(files: FileList | null) {
+    const room = COMMUNITY_POST_MEDIA_MAX - attachmentSlotsUsed();
+    const { accepted, error: fileError } = takeSupportDocuments(files, room);
+    if (fileError) setError(fileError);
+    else setError(null);
+    if (accepted.length > 0) {
+      setPendingFiles((current) => [...current, ...accepted]);
+    }
+  }
+
   async function sendReply() {
     const body = draft.trim();
     const authorId = sendAsId ?? userId;
     const hasMedia =
-      pendingImages.length > 0 || Boolean(pendingVoice) || Boolean(pendingVideo);
+      pendingImages.length > 0 ||
+      pendingFiles.length > 0 ||
+      Boolean(pendingVoice) ||
+      Boolean(pendingVideo);
     if ((!body && !hasMedia) || busy || !authorId) return;
     setBusyKind("send");
     setError(null);
@@ -811,6 +843,11 @@ export function AdminTicketReplies({
     try {
       const uploaded: CommunityPostMediaItem[] = [];
       for (const item of pendingImages) {
+        const up = await uploadSupportMediaFile(item.file);
+        if ("error" in up) throw new Error(up.error);
+        uploaded.push(up.media);
+      }
+      for (const item of pendingFiles) {
         const up = await uploadSupportMediaFile(item.file);
         if ("error" in up) throw new Error(up.error);
         uploaded.push(up.media);
@@ -833,6 +870,7 @@ export function AdminTicketReplies({
         voice: Boolean(pendingVoice),
         video: Boolean(pendingVideo),
         imageCount: pendingImages.length,
+        fileCount: pendingFiles.length,
       });
 
       const emailed = Boolean(canEmailNotify && emailNotify && replyBody);
@@ -856,6 +894,7 @@ export function AdminTicketReplies({
       void clearAdminReplyDraft(reportId);
       clearPendingCommentImages(pendingImages);
       setPendingImages([]);
+      setPendingFiles([]);
       revokePendingSupportVoice(pendingVoice);
       setPendingVoice(null);
       if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
@@ -945,7 +984,10 @@ export function AdminTicketReplies({
     const body = draft.trim();
     const authorId = sendAsId ?? userId;
     const hasMedia =
-      pendingImages.length > 0 || Boolean(pendingVoice) || Boolean(pendingVideo);
+      pendingImages.length > 0 ||
+      pendingFiles.length > 0 ||
+      Boolean(pendingVoice) ||
+      Boolean(pendingVideo);
     if ((!body && !hasMedia) || busy || !authorId) return;
 
     let when: Date;
@@ -968,6 +1010,11 @@ export function AdminTicketReplies({
         if ("error" in up) throw new Error(up.error);
         uploaded.push(up.media);
       }
+      for (const item of pendingFiles) {
+        const up = await uploadSupportMediaFile(item.file);
+        if ("error" in up) throw new Error(up.error);
+        uploaded.push(up.media);
+      }
       if (pendingVoice) {
         const up = await uploadSupportMediaFile(
           pendingSupportVoiceToFile(pendingVoice)
@@ -986,6 +1033,7 @@ export function AdminTicketReplies({
         voice: Boolean(pendingVoice),
         video: Boolean(pendingVideo),
         imageCount: pendingImages.length,
+        fileCount: pendingFiles.length,
       });
       const willEmail = Boolean(canEmailNotify && emailNotify && replyBody);
 
@@ -1014,6 +1062,7 @@ export function AdminTicketReplies({
       void clearAdminReplyDraft(reportId);
       clearPendingCommentImages(pendingImages);
       setPendingImages([]);
+      setPendingFiles([]);
       revokePendingSupportVoice(pendingVoice);
       setPendingVoice(null);
       if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
@@ -1146,6 +1195,7 @@ export function AdminTicketReplies({
       : Boolean(
           draft.trim() ||
             pendingImages.length > 0 ||
+            pendingFiles.length > 0 ||
             pendingVoice ||
             pendingVideo
         );
@@ -1479,6 +1529,16 @@ export function AdminTicketReplies({
               />
             ) : null}
 
+            {composerMode === "reply" && pendingFiles.length > 0 ? (
+              <SupportPendingDocuments
+                files={pendingFiles}
+                disabled={busy}
+                onRemove={(key) =>
+                  setPendingFiles((current) => current.filter((item) => item.key !== key))
+                }
+              />
+            ) : null}
+
             {composerMode === "reply" && pendingVideo ? (
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
                 <PreviewableMedia
@@ -1527,12 +1587,6 @@ export function AdminTicketReplies({
                   rows={composerExpanded ? undefined : 4}
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void sendReply();
-                    }
-                  }}
                   autoFocus
                   placeholder="Write a message, or jot notes and tap ✨ to draft it..."
                   className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 pr-12 pb-10 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
@@ -1689,6 +1743,10 @@ export function AdminTicketReplies({
                     >
                       <Video className="h-4 w-4" strokeWidth={1.75} />
                     </button>
+                    <SupportDocumentAttachButton
+                      disabled={busy || attachmentSlotsUsed() >= COMMUNITY_POST_MEDIA_MAX}
+                      onPick={addPendingDocuments}
+                    />
                     {micButton}
                     <div className="relative" ref={emojiWrapRef}>
                       <button
@@ -1812,6 +1870,13 @@ export function AdminTicketReplies({
             onChange={setPendingImages}
             disabled={busy}
           />
+          <SupportPendingDocuments
+            files={pendingFiles}
+            disabled={busy}
+            onRemove={(key) =>
+              setPendingFiles((current) => current.filter((item) => item.key !== key))
+            }
+          />
           <div className="flex flex-wrap items-center gap-3">
             {sendAsSelect}
             {notifyToggle}
@@ -1821,12 +1886,6 @@ export function AdminTicketReplies({
               rows={2}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void sendReply();
-                }
-              }}
               placeholder="Reply to the coach…"
               className="min-h-[2.5rem] flex-1 resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             />
@@ -1836,6 +1895,10 @@ export function AdminTicketReplies({
               disabled={busy}
               onError={setError}
               size="sm"
+            />
+            <SupportDocumentAttachButton
+              disabled={busy || attachmentSlotsUsed() >= COMMUNITY_POST_MEDIA_MAX}
+              onPick={addPendingDocuments}
             />
             <div className="flex shrink-0">
               <button

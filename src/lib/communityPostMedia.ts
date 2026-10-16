@@ -1,11 +1,13 @@
 import { resolveSupabaseBrowserSession } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-export type CommunityPostMediaKind = "image" | "video" | "audio";
+export type CommunityPostMediaKind = "image" | "video" | "audio" | "file";
 
 export type CommunityPostMediaItem = {
   url: string;
   kind: CommunityPostMediaKind;
+  /** Original filename for documents. Omitted for images, video, and audio. */
+  name?: string;
 };
 
 export const COMMUNITY_POST_MEDIA_MAX = 6;
@@ -13,6 +15,10 @@ export const COMMUNITY_POST_MEDIA_MAX = 6;
 export const COMMUNITY_POST_MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 export const COMMUNITY_POST_MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB
 export const COMMUNITY_POST_MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25MB
+export const SUPPORT_MAX_DOCUMENT_BYTES = 20 * 1024 * 1024; // 20MB
+
+export const SUPPORT_DOCUMENT_ACCEPT =
+  ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv,application/rtf";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"] as const;
@@ -42,6 +48,20 @@ export const EXT_BY_MIME: Record<string, string> = {
   "audio/x-m4a": "m4a",
   "audio/aac": "aac",
   "audio/mp3": "mp3",
+  "application/pdf": "pdf",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "docx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+    "pptx",
+  "text/plain": "txt",
+  "text/csv": "csv",
+  "application/csv": "csv",
+  "application/rtf": "rtf",
+  "text/rtf": "rtf",
 };
 
 export const MIME_BY_EXT: Record<string, string> = {
@@ -58,6 +78,16 @@ export const MIME_BY_EXT: Record<string, string> = {
   ogg: "audio/ogg",
   wav: "audio/wav",
   aac: "audio/aac",
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  txt: "text/plain",
+  csv: "text/csv",
+  rtf: "application/rtf",
 };
 
 export function mediaKindForMime(mime: string): CommunityPostMediaKind | null {
@@ -66,6 +96,9 @@ export function mediaKindForMime(mime: string): CommunityPostMediaKind | null {
   if ((VIDEO_TYPES as readonly string[]).includes(base)) return "video";
   if ((AUDIO_TYPES as readonly string[]).includes(base)) return "audio";
   if (base.startsWith("audio/")) return "audio";
+  if (base in EXT_BY_MIME && !base.startsWith("image/") && !base.startsWith("video/") && !base.startsWith("audio/")) {
+    return "file";
+  }
   return null;
 }
 
@@ -73,6 +106,7 @@ export function maxBytesForCommunityPostMime(mime: string): number {
   const kind = mediaKindForMime(mime);
   if (kind === "video") return COMMUNITY_POST_MAX_VIDEO_BYTES;
   if (kind === "audio") return COMMUNITY_POST_MAX_AUDIO_BYTES;
+  if (kind === "file") return SUPPORT_MAX_DOCUMENT_BYTES;
   return COMMUNITY_POST_MAX_IMAGE_BYTES;
 }
 
@@ -105,7 +139,7 @@ export function validateCommunityPostMediaFile(
   }
   const kind = mediaKindForMime(mime)!;
   // Community feed posts stay image/video only; support uses validateSupportMediaFile.
-  if (kind === "audio") {
+  if (kind !== "image" && kind !== "video") {
     return {
       error:
         "File must be an image (JPEG, PNG, WebP) or video (MP4, WebM, MOV).",
@@ -119,7 +153,13 @@ export function validateCommunityPostMediaFile(
   return { mime, kind };
 }
 
-/** Images, video, and audio — used by support tickets/replies. */
+/** Safe display name for a support document. */
+export function supportDocumentName(filename: string): string {
+  const base = filename.split(/[/\\]/).pop()?.trim() || "Document";
+  return base.replace(/[\r\n\t]/g, " ").slice(0, 180);
+}
+
+/** Images, video, audio, and documents — used by support tickets/replies. */
 export function validateSupportMediaFile(
   file: File
 ): { mime: string; kind: CommunityPostMediaKind } | { error: string } {
@@ -127,7 +167,7 @@ export function validateSupportMediaFile(
   if (!mime) {
     return {
       error:
-        "File must be an image, video (MP4, WebM, MOV), or audio (WebM, M4A, MP3, WAV).",
+        "File must be an image, video (MP4, WebM, MOV), audio, or a document (PDF, Word, Excel, PowerPoint, text).",
     };
   }
   const kind = mediaKindForMime(mime)!;
@@ -141,6 +181,7 @@ export function validateSupportMediaFile(
 
 export function inferCommunityPostMediaKindFromUrl(url: string): CommunityPostMediaKind {
   const path = url.split("?")[0]?.toLowerCase() ?? "";
+  if (/\.(pdf|docx?|xlsx?|pptx?|txt|csv|rtf)(\s|$)/i.test(path)) return "file";
   if (/\.(m4a|mp3|wav|ogg|aac)(\s|$)/i.test(path)) return "audio";
   // Prefer video for ambiguous .webm when no kind is stored.
   if (/\.(mp4|webm|mov|m4v|ogv)(\s|$)/i.test(path)) return "video";
@@ -148,7 +189,13 @@ export function inferCommunityPostMediaKindFromUrl(url: string): CommunityPostMe
 }
 
 function isMediaKind(k: unknown): k is CommunityPostMediaKind {
-  return k === "image" || k === "video" || k === "audio";
+  return k === "image" || k === "video" || k === "audio" || k === "file";
+}
+
+function storedMediaName(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const name = supportDocumentName(raw);
+  return name && name !== "Document" ? name : undefined;
 }
 
 /**
@@ -166,7 +213,8 @@ export function parseStoredCommunityPostMedia(raw: unknown): CommunityPostMediaI
     const kind = isMediaKind(kindRaw)
       ? kindRaw
       : inferCommunityPostMediaKindFromUrl(url);
-    out.push({ url: url.trim(), kind });
+    const name = storedMediaName((el as { name?: unknown }).name);
+    out.push(name ? { url: url.trim(), kind, name } : { url: url.trim(), kind });
     if (out.length >= COMMUNITY_POST_MEDIA_MAX) break;
   }
   return out.length > 0 ? out : null;
@@ -227,7 +275,9 @@ async function uploadValidatedMediaFile(
       ? "mp4"
       : validated.kind === "audio"
         ? "webm"
-        : "jpg");
+        : validated.kind === "file"
+          ? "bin"
+          : "jpg");
   const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
   const { error: uploadError } = await supabaseClient.storage
@@ -241,10 +291,13 @@ async function uploadValidatedMediaFile(
     return { error: uploadError.message ?? "Upload failed." };
   }
 
+  const name =
+    validated.kind === "file" ? supportDocumentName(file.name) : undefined;
   return {
     media: {
       url: communityPostMediaPublicUrl(path),
       kind: validated.kind,
+      ...(name ? { name } : {}),
     },
   };
 }
