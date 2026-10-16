@@ -247,10 +247,10 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
  * with the last hub tab from this session.
  */
 /**
- * Coaches' Blueprint link in the sidebar. Off while the blueprint is being
- * finalised; coaches can still open /coach/practice directly.
+ * Coaches' Blueprint link in the sidebar. Shown locally, hidden in production
+ * while the blueprint is being finalised. Set to true to release it.
  */
-const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = false;
+const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = process.env.NODE_ENV !== "production";
 
 export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   // Admins reach every coach's blueprint from Admin → Blueprint instead.
