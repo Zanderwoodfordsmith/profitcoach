@@ -66,7 +66,9 @@ describe("blueprint blocks", () => {
 describe("blueprint map", () => {
   it("has a skill for every We build section, and no stray skills", () => {
     const build = BLUEPRINT_SECTIONS.filter((r) => r.section.source === "we_build").map((r) => r.key).sort();
-    assert.deepEqual(Object.keys(SECTION_SKILLS).sort(), build);
+    // Skills for hidden pages (Grow) are kept for later.
+    const visible = Object.keys(SECTION_SKILLS).filter((key) => sectionByKey(key));
+    assert.deepEqual(visible.sort(), build);
   });
 
   it("orders builds after what they need", () => {
@@ -102,7 +104,7 @@ describe("exports and handoff", () => {
       { coachName: "Pam Woodford" }
     );
     assert.match(md, /^# The Practice Blueprint: Pam Woodford/);
-    assert.ok(md.indexOf("# Foundation") < md.indexOf("# Get calls"));
+    assert.ok(md.indexOf("# About You") > -1 && md.indexOf("# About You") < md.indexOf("# Get Calls"));
     assert.match(md, /Site-Tied Steve/);
     assert.match(md, /_Not written yet._/);
   });
@@ -169,6 +171,6 @@ describe("decisions", () => {
     const md = blueprintMarkdown(row(), { coachName: "Pam Woodford", decision });
     assert.match(md, /Agreed on the Decision Call/);
     assert.match(md, /\*\*Market:\*\* Dental practices/);
-    assert.ok(md.indexOf("Your Decisions") < md.indexOf("# Foundation"));
+    assert.ok(md.indexOf("# Your Decisions") < md.indexOf("# About You"));
   });
 });

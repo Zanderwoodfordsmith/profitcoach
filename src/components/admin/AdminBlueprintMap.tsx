@@ -10,6 +10,7 @@ import {
   BLUEPRINT_PAGES,
   SECTION_SOURCES,
   type SectionSource,
+  sectionKey,
 } from "@/lib/practiceKnowledge/blueprint";
 
 const SOURCE_KEYS = Object.keys(SECTION_SOURCES) as SectionSource[];
@@ -180,7 +181,7 @@ export function AdminBlueprintMap() {
                         </td>
                       </tr>
                       {sections.map((section) => {
-                        const key = `${page.slug}:${section.id}`;
+                        const key = sectionKey(page, section);
                         const cov = coverageFor(key);
                         const isOpen = expanded === key;
                         return (

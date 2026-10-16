@@ -1,5 +1,5 @@
 import { blocksToMarkdown } from "./blocks";
-import { BLUEPRINT_GROUPS, fieldValue, type BlueprintLink, type FieldSpec } from "./blueprint";
+import { BLUEPRINT_GROUPS, fieldValue, sectionKey, type BlueprintLink, type FieldSpec } from "./blueprint";
 import { DECISION_GROUPS, proposedDecision } from "./decisionDefaults";
 import type {
   CareerResult,
@@ -33,6 +33,15 @@ export function formatFieldValue(payload: PracticeKnowledgePayload, field: Field
       );
     case "stories":
       return (raw as ClientResultStory[]).map((c) => [c.title, c.story].filter(Boolean).join(": "));
+    case "rows":
+      return (raw as Record<string, string>[])
+        .map((row) =>
+          (field.columns ?? [])
+            .map((column) => String(row[column.key] ?? "").trim())
+            .filter(Boolean)
+            .join(" · ")
+        )
+        .filter(Boolean);
     case "enum": {
       const value = String(raw);
       return [field.options?.find((o) => o.value === value)?.label ?? value];
@@ -64,7 +73,7 @@ function pageMarkdown(page: BlueprintLink, row: PracticeKnowledgeRow, decision: 
     return parts.join("\n\n");
   }
   for (const section of page.sections) {
-    const key = `${page.slug}:${section.id}`;
+    const key = sectionKey(page, section);
     parts.push(`### ${section.title}`);
     if (section.source === "we_build") {
       const built = row.built_sections[key];
@@ -98,9 +107,16 @@ export function blueprintMarkdown(
   ].join("\n");
 
   const chapters: string[] = [];
+  // The decisions lead the full download: everything else is written from them.
+  if (!opts.pageSlug) {
+    chapters.push(["# Your Decisions", decisionsMarkdown(row, opts.decision ?? null)].join("\n\n"));
+  }
   BLUEPRINT_GROUPS.forEach((group) => {
     const pages = group.pages.filter(
-      (p) => p.slug !== "command" && p.slug !== "blueprint" && (!opts.pageSlug || p.slug === opts.pageSlug)
+      (p) =>
+        p.slug !== "blueprint" &&
+        (p.slug !== "command" || p.sections.length > 0) &&
+        (!opts.pageSlug || p.slug === opts.pageSlug)
     );
     if (!pages.length) return;
     chapters.push(

@@ -13,12 +13,12 @@ Rules:
 - Never invent numbers, companies, or results.
 - If they give a vague result ("we grew a lot", "big turnaround"), ask for the number twice. If they still cannot give one, mark that result precise=false and move on.
 - Prefer career proof OR client proof — they only need one path.
-- Do not ask "who is your ideal client?". Ask which industries they understand, have credibility in, and can access.
+- Do not ask a vague "who is your ideal client?". Ask the specific Still open question: the industries first, then the person (who they are, what hurts now, one stuck row, what they hear, the words they use, what makes them act, why the coach, and what earns trust).
 - Do not re-ask facts already filled in Current knowledge unless they contradict LinkedIn.
 - Stay warm, direct, and short. UK English.
 - Never use the em dash character. Use a comma or a full stop.
 - Acknowledge an answer in a few words at most, then ask the next thing.
-- Proof first (results, superpowers, problems solved), then the market, then the practical setup (call times, web address, email, LinkedIn public or discreet, fee).
+- Proof first (results, superpowers, problems solved), then the market, then the practical setup (phone, LinkedIn public or discreet, fee). Call hours, website, email and time zone are set on the Practice Setup page, not in this conversation.
 - Accept short answers for practical items. Do not push twice on those.
 - If the coach says they do not know yet, record nothing for that item and move on.
 - When "Still open" is empty, or the coach wants to stop, thank them, tell them what we will now write for them, and set done=true. Do not drag it out.
@@ -43,6 +43,29 @@ Return ONLY JSON:
       "avoid": { "value": [], "source": "interview", "updated_at": "ISO" },
       "buyer_roles": { "value": [], "source": "interview", "updated_at": "ISO" },
       "geography_pref": { "value": "national", "source": "interview", "updated_at": "ISO" }
+    },
+    "client": {
+      "characteristics": { "value": ["one line each, strongest first"], "source": "interview", "updated_at": "ISO" },
+      "habitat": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "psychographics": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "pains_now": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "desires_now": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "pains_later": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "desires_later": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "stuck": { "value": [{ "id": "s1", "problem": "", "consequence": "what happens if they leave it", "awake": "why they lie awake" }], "source": "interview", "updated_at": "ISO" },
+      "hears": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "sees": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "says": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "thinks": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "words_use": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "words_avoid": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "frustrations": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "buying_triggers": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "objections": { "value": [], "source": "interview", "updated_at": "ISO" },
+      "trust": { "value": [{ "id": "t1", "authority": "", "social_proof": "", "scarcity": "" }], "source": "interview", "updated_at": "ISO" },
+      "inner_voice": { "value": "", "source": "interview", "updated_at": "ISO" },
+      "ready_to_act": { "value": "", "source": "interview", "updated_at": "ISO" },
+      "why_you": { "value": "", "source": "interview", "updated_at": "ISO" }
     },
     "working_times": {
       "hours_per_week": { "value": "5_10_hours_week", "source": "interview", "updated_at": "ISO" },
@@ -114,6 +137,39 @@ export function summarizeKnowledgeForPrompt(
   push("Who signs off", listValue(payload.market.buyer_roles).join(", "));
   push("Will not take", listValue(payload.market.avoid).join(", "));
   push("Geography", payload.market.geography_pref?.value ?? "");
+  push("Ideal client, who they are", listValue(payload.client.characteristics).join("; "));
+  push("Habitat", listValue(payload.client.habitat).join("; "));
+  push("Psychographics", listValue(payload.client.psychographics).join("; "));
+  push("Pain now", listValue(payload.client.pains_now).join("; "));
+  push("If nothing changes", listValue(payload.client.pains_later).join("; "));
+  push("What they want now", listValue(payload.client.desires_now).join("; "));
+  push("The life they want", listValue(payload.client.desires_later).join("; "));
+  const stuck = payload.client.stuck?.value ?? [];
+  if (stuck.length) {
+    lines.push("Where they are stuck (in the coach's order):");
+    for (const row of stuck) {
+      lines.push(`- ${[row.problem, row.consequence, row.awake].filter(Boolean).join(" | ")}`);
+    }
+  }
+  push("Hears", listValue(payload.client.hears).join("; "));
+  push("Sees", listValue(payload.client.sees).join("; "));
+  push("Says", listValue(payload.client.says).join("; "));
+  push("Thinks and feels", listValue(payload.client.thinks).join("; "));
+  push("Words they use", listValue(payload.client.words_use).join("; "));
+  push("Words to avoid", listValue(payload.client.words_avoid).join("; "));
+  push("Frustrations", listValue(payload.client.frustrations).join("; "));
+  push("The moment they act", listValue(payload.client.buying_triggers).join("; "));
+  push("Objections", listValue(payload.client.objections).join("; "));
+  const trust = payload.client.trust?.value ?? [];
+  if (trust.length) {
+    lines.push("What earns their trust:");
+    for (const row of trust) {
+      lines.push(`- ${[row.authority, row.social_proof, row.scarcity].filter(Boolean).join(" | ")}`);
+    }
+  }
+  push("In their words", textValue(payload.client.inner_voice));
+  push("Ready to act", textValue(payload.client.ready_to_act));
+  push("Why you", textValue(payload.client.why_you));
   const results = payload.proof.career_results?.value ?? [];
   if (results.length) {
     lines.push("Career results:");

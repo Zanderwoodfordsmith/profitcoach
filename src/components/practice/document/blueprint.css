@@ -5,7 +5,7 @@
   --bp-body: #1f2d3d;
   --bp-muted: #55657a;
   --bp-faint: #8595a8;
-  --bp-rule: #dde5ee;
+  --bp-rule: #e8edf3;
   --bp-navy: #051e36;
   --bp-blue: #0c5290;
   --bp-sky: #1a8fd4;
@@ -182,4 +182,9 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/* Answer boxes draw their own focus ring, so skip the generic outline. */
+.bp-doc .bp-input:focus-visible {
+  outline: none;
 }

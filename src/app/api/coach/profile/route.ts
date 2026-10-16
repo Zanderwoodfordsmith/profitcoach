@@ -14,6 +14,7 @@ import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { sanitizeLandingCopyOverrides } from "@/lib/landingCopy";
 import { formatPersonName } from "@/lib/formatPersonName";
 import { resolveAccountTimezoneToPersist } from "@/lib/accountProfileTimezones";
+import { patchPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { geocodeLocation, reverseGeocodeLocation } from "@/lib/geocodeLocation";
 import { clipReplyCopilotNotes } from "@/lib/messaging/replyCopilot";
@@ -826,6 +827,7 @@ export async function PATCH(request: Request) {
     .from("profiles")
     .update(updates)
     .eq("id", coachId);
+  const linkedinPersisted = !result.error && updates.linkedin_url !== undefined;
 
   if (result.error?.code === "42703") {
     const minimalUpdates: Record<string, unknown> = {};
@@ -860,6 +862,20 @@ export async function PATCH(request: Request) {
         ? "Some profile fields are not available yet. Run database migrations, or try saving only name and business."
         : (result.error as { message?: string }).message ?? "Could not update profile";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+
+  if (linkedinPersisted) {
+    try {
+      await patchPracticeKnowledge({
+        coachId,
+        linkedinUrl: (updates.linkedin_url as string | null) ?? null,
+      });
+    } catch (err) {
+      console.error(
+        "practice LinkedIn blueprint mirror:",
+        err instanceof Error ? err.message : "failed"
+      );
+    }
   }
 
   // Re-geocode when location actually changed. Failures must never break the save.

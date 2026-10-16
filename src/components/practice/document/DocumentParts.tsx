@@ -8,12 +8,13 @@ import {
   BLUEPRINT_GROUPS,
   BLUEPRINT_SECTIONS,
   buildOrder,
-  sectionState,
   stillNeeded,
   type BlueprintGroup,
   type BlueprintLink,
+  sectionKey,
 } from "@/lib/practiceKnowledge/blueprint";
 import { blueprintFileName, blueprintMarkdown } from "@/lib/practiceKnowledge/exportMarkdown";
+import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { DecisionRecordView } from "../DecisionRecord";
 import { usePractice } from "../PracticeProvider";
@@ -21,22 +22,24 @@ import { SectionView } from "./SectionView";
 
 /** Pages that belong in the document (not the Command Center or the whole-document page). */
 export function documentPages(group: BlueprintGroup): BlueprintLink[] {
-  return group.pages.filter((p) => p.slug !== "command" && p.slug !== "blueprint");
+  return group.pages.filter((p) => p.slug !== "blueprint" && (p.slug !== "command" || p.sections.length > 0));
 }
 
 export const DOCUMENT_GROUPS = BLUEPRINT_GROUPS.filter((g) => documentPages(g).length > 0);
 
 export function useBlueprintProgress() {
-  const { knowledge, payload } = usePractice();
+  const { knowledge, payload, viewer } = usePractice();
   if (!knowledge || !payload) return null;
   const row = { ...knowledge, payload };
   const build = buildOrder();
   const written = build.filter((k) => knowledge.built_sections[k]).length;
   const needed = stillNeeded(row);
-  const approvals = payload.review.approved_sections?.value ?? {};
-  const reviewable = BLUEPRINT_SECTIONS.filter((r) => sectionState(r, row) === "ready");
-  const approved = reviewable.filter((r) => approvals[r.key]).length;
-  return { written, toWrite: build.length, needed, approved, reviewable: reviewable.length };
+  const queue = workflowQueue(row);
+  const mine = viewer === "bca" ? "bca" : "coach";
+  const yoursTodo = queue.filter((item) => item.work.status === "todo" && item.work.owner === mine).length;
+  const yoursReview = queue.filter((item) => item.work.status === "review" && item.work.owner === mine).length;
+  const done = queue.filter((item) => item.work.status === "done").length;
+  return { written, toWrite: build.length, needed, yoursTodo, yoursReview, done, tracked: queue.length };
 }
 
 /** A small key to the two looks, so a coach knows what is theirs to fill and what BCA wrote. */
@@ -82,6 +85,26 @@ function ClassroomLinks({ page }: { page: BlueprintLink }) {
   );
 }
 
+/** The page name is the title. The old headline leads the description, then the summary follows. */
+export function PageBlurb({
+  page,
+  className,
+}: {
+  page: Pick<BlueprintLink, "heading" | "summary">;
+  className?: string;
+}) {
+  const heading = page.heading.trim();
+  const lead = heading && !/[.!?]$/.test(heading) ? `${heading}.` : heading;
+  if (!lead && !page.summary) return null;
+  return (
+    <p className={className}>
+      {lead ? <strong className="font-semibold">{lead}</strong> : null}
+      {lead && page.summary ? " " : null}
+      {page.summary}
+    </p>
+  );
+}
+
 export function PageView({ page, showTitle = true }: { page: BlueprintLink; showTitle?: boolean }) {
   return (
     <div id={`p-${page.slug}`} className="scroll-mt-20">
@@ -90,21 +113,21 @@ export function PageView({ page, showTitle = true }: { page: BlueprintLink; show
           <h2 className="text-[1.625rem] font-semibold leading-tight tracking-[-0.025em] text-[var(--bp-ink)] @2xl:text-[1.875rem]">
             {page.title}
           </h2>
-          <p className="mt-2 max-w-[60ch] text-[1.0625rem] leading-[1.6] text-[var(--bp-muted)]">{page.summary}</p>
+          <PageBlurb page={page} className="mt-2 max-w-[60ch] text-[1.0625rem] leading-[1.6] text-[var(--bp-muted)]" />
         </header>
       ) : null}
       {page.slug === "decisions" ? (
         <DecisionRecordView />
       ) : (
-        <div className="space-y-14">
-          {page.sections.map((section) => (
+        <div className="space-y-12">
+          {page.sections.filter((section) => section.face !== "stored").map((section) => (
             <SectionView
               key={section.id}
               sectionRef={{
                 group: BLUEPRINT_GROUPS.find((g) => g.pages.includes(page))!,
                 page,
                 section,
-                key: `${page.slug}:${section.id}`,
+                key: sectionKey(page, section),
               }}
             />
           ))}
@@ -312,7 +335,7 @@ export function StillNeeded() {
               scroll={stayOnPage ? false : undefined}
               className="group grid grid-cols-[0.75rem_1fr_auto] items-baseline gap-2 rounded-md py-1 text-sm text-[#6b4a10] hover:text-[#3d2800]"
             >
-              <span aria-hidden className="h-1.5 w-1.5 -translate-y-px rounded-full bg-[#d99a2b]" />
+              <span aria-hidden className="h-1.5 w-1.5 -translate-y-px rounded-full bg-[#d4534a]" />
               <span className="min-w-0 font-medium">{ref.section.title}</span>
               <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-[#a8894f]">
                 {ref.page.title}
@@ -326,12 +349,39 @@ export function StillNeeded() {
   );
 }
 
-export function BlueprintCover() {
+export function BlueprintCover({ flush = false }: { flush?: boolean }) {
   const { coachName, payload } = usePractice();
   const progress = useBlueprintProgress();
   if (!progress || !payload) return null;
   const date = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const location = payload.identity.location?.value?.trim();
+  const summary = (
+    <>
+      {progress.written} of {progress.toWrite} sections written
+      <span className="mx-2 text-white/35">·</span>
+      {progress.yoursTodo ? `${progress.yoursTodo} to do` : "Nothing to do"}
+    </>
+  );
+
+  // The landing page: a compact band, so the contents start above the fold.
+  if (flush) {
+    return (
+      <header className="bp-cover px-6 pb-9 pt-12 text-white @2xl:px-12 @2xl:pb-10 @2xl:pt-16">
+        <h1 className="bp-display text-[2.75rem] font-medium leading-[0.98] tracking-[-0.035em] @2xl:text-[3.75rem]">
+          The Practice
+          <br />
+          <span className="italic font-normal text-[#bfe2fb]">Blueprint</span>
+        </h1>
+        <p className="mt-5 max-w-[42ch] text-[1.0625rem] leading-[1.55] text-white/80">
+          Your proof, your market, your messages and your plan. Everything we need to launch your practice, in one place.
+        </p>
+        <div className="mt-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-white/20 pt-4">
+          <p className="text-[1.125rem] font-semibold tracking-[-0.01em]">{coachName || "Your practice"}</p>
+          <p className="bp-num text-sm text-white/80">{summary}</p>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="bp-cover rounded-[28px] px-7 pb-9 pt-10 text-white @2xl:px-12 @2xl:pb-12 @2xl:pt-14">
@@ -345,22 +395,13 @@ export function BlueprintCover() {
           <br />
           <span className="italic font-normal text-[#bfe2fb]">Blueprint</span>
         </h1>
-        <p className="mt-6 max-w-[34ch] text-[1.0625rem] leading-[1.55] text-white/80">
-          Your proof, your market, your messages and your plan. Everything we need to launch your practice, in one document.
-        </p>
       </div>
       <div className="mt-14 flex flex-wrap items-end justify-between gap-6 border-t border-white/20 pt-5">
         <div>
           <p className="text-[1.375rem] font-semibold tracking-[-0.01em]">{coachName || "Your practice"}</p>
           {location ? <p className="mt-0.5 text-sm text-white/65">{location}</p> : null}
         </div>
-        <p className="bp-num text-sm text-white/80">
-          {progress.written} of {progress.toWrite} sections written
-          <span className="mx-2 text-white/35">·</span>
-          {progress.needed.length ? `${progress.needed.length} still needed from you` : "Nothing needed from you"}
-          <span className="mx-2 text-white/35">·</span>
-          {progress.approved} approved
-        </p>
+        <p className="bp-num text-sm text-white/80">{summary}</p>
       </div>
     </header>
   );

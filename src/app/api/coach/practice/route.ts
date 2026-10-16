@@ -15,6 +15,19 @@ import {
   syncPracticeToBrain,
 } from "@/lib/practiceKnowledge/store";
 
+/** BCA sign-off is stored on the payload, and only an admin may move it. */
+async function callerIsAdmin(request: Request): Promise<boolean> {
+  const authHeader = request.headers.get("authorization") ?? "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : null;
+  if (!token) return false;
+  const {
+    data: { user },
+  } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return false;
+  const { data } = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  return data?.role === "admin";
+}
+
 async function auth(request: Request) {
   const check = await requireCoachRequest(request, { allowAdminSelf: true });
   if (check.error || !check.userId) {
@@ -31,10 +44,11 @@ export async function GET(request: Request) {
       hydratePracticeFromProfile(a.coachId),
       listIntakeAssets(a.coachId),
       getLatestDecisionRecord(a.coachId),
-      supabaseAdmin.from("profiles").select("full_name").eq("id", a.coachId).maybeSingle(),
+      supabaseAdmin.from("profiles").select("full_name, avatar_url").eq("id", a.coachId).maybeSingle(),
     ]);
     const coach_name = (profile.data?.full_name as string | null)?.trim() || "";
-    return NextResponse.json({ knowledge, assets, decision, coach_name });
+    const coach_avatar_url = (profile.data?.avatar_url as string | null)?.trim() || null;
+    return NextResponse.json({ knowledge, assets, decision, coach_name, coach_avatar_url });
   } catch (err) {
     console.error("practice GET:", err instanceof Error ? err.message : "failed");
     return NextResponse.json({ error: "Could not load practice knowledge." }, { status: 500 });
@@ -53,6 +67,9 @@ export async function PATCH(request: Request) {
   }
   const rec = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   const payloadPatch = sanitizePayloadPatch(rec.payload, "coach_edit");
+  if (payloadPatch?.review && !(await callerIsAdmin(request))) {
+    delete (payloadPatch.review as { bca_approved_sections?: unknown }).bca_approved_sections;
+  }
   const status = sanitizeStatus(rec.status);
   if (status && !COACH_WRITABLE_STATUSES.includes(status)) {
     return NextResponse.json({ error: "That status is admin-only." }, { status: 403 });

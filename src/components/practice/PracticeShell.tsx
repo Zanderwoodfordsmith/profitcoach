@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { MessageCircle, MessageSquare, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { MessageCircle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
-import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES, stillNeeded } from "@/lib/practiceKnowledge/blueprint";
+import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES } from "@/lib/practiceKnowledge/blueprint";
+import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { BlueprintAssistant } from "./BlueprintAssistant";
-import { DownloadMenu, InputOutputKey } from "./document/DocumentParts";
-import { PracticeComments } from "./PracticeComments";
+import { DownloadMenu, PageBlurb } from "./document/DocumentParts";
+import { PageIcon } from "./pageIcons";
 import { usePractice } from "./PracticeProvider";
 import "./document/blueprint.css";
 
@@ -124,14 +125,6 @@ function NavResizer({
   );
 }
 
-function DocIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true" className="mt-px h-4 w-4 shrink-0">
-      <path d="M6.5 3.5h7l4 4v12a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z" strokeLinejoin="round" />
-      <path d="M13.5 3.5v4h4M9 12h6M9 15.5h4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 export function PracticeShell({
   children,
@@ -148,30 +141,27 @@ export function PracticeShell({
   path?: string;
 }) {
   const pathname = usePathname();
-  const { loading, error, knowledge, payload, approvePage, href, assistantOpen, setAssistantOpen, stayOnPage } = usePractice();
+  const { loading, error, knowledge, payload, href, assistantOpen, setAssistantOpen, stayOnPage, viewer } = usePractice();
   const rootRef = useRef<HTMLDivElement>(null);
   const here = path ?? pathname;
-  const [commentsOpen, setCommentsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(true);
   const wide = useWideScreen();
   const [navWidth, setNavWidth] = useState(NAV_WIDTH_DEFAULT);
   const page =
     BLUEPRINT_PAGES.find((item) => (path ? item.href === here : href(item.href) === here)) ?? null;
-  const group =
-    BLUEPRINT_GROUPS.find((item) =>
-      item.pages.some((entry) => (path ? entry.href === here : href(entry.href) === here))
-    ) ?? null;
-  const canApprove = Boolean(page && page.slug !== "command" && page.slug !== "blueprint");
-  const pageApproved = Boolean(page && payload?.review.approved_pages?.value?.[page.slug]);
-  const noteCount = page
-    ? (payload?.review.notes?.value ?? []).filter((note) => note.page === page.slug).length
-    : 0;
   const ready = !loading && payload && knowledge;
   const isDocument = page?.slug === "blueprint";
+  // The landing page draws its own full-width cover, with no page header.
+  const isHome = page?.slug === "command";
   // With the assistant open on a normal laptop, fold the contents to a rail so the document keeps its width.
   const showNav = navOpen && (wide || !assistantOpen || !ready);
+  const mine = viewer === "bca" ? "bca" : "coach";
   const openPages = new Set(
-    ready ? stillNeeded({ ...knowledge, payload }).map((ref) => ref.page.slug) : []
+    ready
+      ? workflowQueue({ ...knowledge, payload })
+          .filter((item) => item.work.owner === mine)
+          .map((item) => item.ref.page.slug)
+      : []
   );
 
   useEffect(() => {
@@ -221,12 +211,12 @@ export function PracticeShell({
                         : "text-[#334155] hover:bg-[#eef2f7] hover:text-[#0f172a] [&_svg]:text-[#94a3b8]"
                     }`}
                   >
-                    <DocIcon />
+                    <PageIcon slug={item.slug} className="mt-0.5 h-4 w-4 shrink-0" />
                     <span className="min-w-0 flex-1">{item.title}</span>
                     {openPages.has(item.slug) ? (
                       <span
-                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#d99a2b]"
-                        title="Needs something from you"
+                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#d4534a]"
+                        title={viewer === "bca" ? "Waiting on BCA" : "Waiting on you"}
                       />
                     ) : null}
                   </Link>
@@ -242,10 +232,10 @@ export function PracticeShell({
   return (
     <div
       ref={rootRef}
-      className={`bp-doc ${
+      className={`bp-doc app-canvas-bg print:bg-white ${
         embedded
-          ? "flex h-full min-h-0 flex-col overflow-y-auto bg-white lg:flex-row lg:items-stretch lg:overflow-hidden"
-          : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col bg-white md:-mx-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px+28rem)] lg:flex-row lg:items-stretch"
+          ? "flex h-full min-h-0 flex-col overflow-y-auto lg:flex-row lg:items-stretch lg:overflow-hidden"
+          : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col md:-mx-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px+28rem)] lg:flex-row lg:items-stretch"
       }`}
       style={{ "--practice-nav-w": `${navWidth}px` } as CSSProperties}
     >
@@ -253,7 +243,7 @@ export function PracticeShell({
         className={`relative shrink-0 border-slate-200/70 bg-[#f8fafc] lg:border-r ${
           embedded
             ? "lg:h-full lg:min-h-0 lg:overflow-hidden"
-            : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"
+            : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)] lg:self-start"
         } ${
           showNav ? "w-full border-b lg:w-[var(--practice-nav-w)] lg:border-b-0" : "w-14 border-b lg:border-b-0"
         }`}
@@ -264,7 +254,7 @@ export function PracticeShell({
             switcher ? (
               <div className="min-w-0 flex-1">{switcher}</div>
             ) : (
-              <p className="text-[0.8125rem] font-semibold text-[#0f172a]">Blueprint</p>
+              <p className="text-[0.8125rem] font-semibold text-[#0f172a]">My Blueprint</p>
             )
           ) : null}
           <button
@@ -282,7 +272,10 @@ export function PracticeShell({
         {showNav ? <NavResizer width={navWidth} onChange={setNavWidth} /> : null}
       </aside>
 
-      <section className={`bp-print-root min-w-0 flex-1 bg-white ${embedded ? "lg:min-h-0 lg:overflow-y-auto" : ""}`}>
+      <section className={`bp-print-root @container min-w-0 flex-1 print:bg-white ${embedded ? "lg:min-h-0 lg:overflow-y-auto" : ""}`}>
+        {isHome ? (
+          ready ? children : <p className="px-5 py-8 text-sm text-slate-600 md:px-10">{error || "Opening your blueprint…"}</p>
+        ) : (
         <div className="@container mx-auto w-full max-w-[54rem] px-5 py-8 md:px-10 md:py-10">
         {isDocument ? (
           <div className="bp-no-print mb-5 flex flex-wrap items-center justify-end gap-2">
@@ -290,10 +283,7 @@ export function PracticeShell({
             {ready && !assistantOpen ? (
               <button
                 type="button"
-                onClick={() => {
-                  setCommentsOpen(false);
-                  setAssistantOpen(true);
-                }}
+                onClick={() => setAssistantOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
               >
                 <MessageCircle className="h-4 w-4" aria-hidden />
@@ -302,69 +292,24 @@ export function PracticeShell({
             ) : null}
           </div>
         ) : (
-        <header className="border-b border-slate-200/70 pb-6">
-          {group ? (
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-[#0369a1]">
-              {group.label}
-            </p>
-          ) : null}
+        <header className="pb-2">
           <div className="flex flex-wrap items-start justify-between gap-4">
           <h1 className="min-w-0 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-[#0f172a] md:text-[2rem]">
-            {page?.heading ?? "Blueprint"}
+            {page?.title ?? "Blueprint"}
           </h1>
-          {ready && page ? (
-            <div className="flex shrink-0 items-center gap-2">
-              {canApprove ? (
-              <button
-                type="button"
-                aria-pressed={pageApproved}
-                onClick={() => approvePage(page.slug)}
-                className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
-                  pageApproved
-                    ? "bg-[#0c5290] text-white"
-                    : "bg-white text-slate-800 ring-1 ring-slate-300"
-                }`}
-              >
-                {pageApproved ? "Page approved" : "Approve page"}
-              </button>
-              ) : null}
-              <DownloadMenu pageSlug={page.slug === "command" ? undefined : page.slug} />
-              {assistantOpen ? null : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCommentsOpen(false);
-                    setAssistantOpen(true);
-                  }}
-                  className="bp-no-print inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
-                >
-                  <MessageCircle className="h-4 w-4" aria-hidden />
-                  Talk it through
-                </button>
-              )}
-              {commentsOpen ? null : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAssistantOpen(false);
-                    setCommentsOpen(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 ring-1 ring-slate-300"
-                >
-                  <MessageSquare className="h-4 w-4" aria-hidden />
-                  Comments{noteCount ? ` ${noteCount}` : ""}
-                </button>
-              )}
-            </div>
+          {ready && page && !assistantOpen ? (
+            <button
+              type="button"
+              onClick={() => setAssistantOpen(true)}
+              className="bp-no-print inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden />
+              Talk it through
+            </button>
           ) : null}
           </div>
-          {page?.summary ? (
-            <p className="mt-2.5 text-lg leading-[1.55] text-[#475569]">{page.summary}</p>
-          ) : null}
-          {page && page.slug !== "command" ? (
-            <div className="mt-4">
-              <InputOutputKey />
-            </div>
+          {page ? (
+            <PageBlurb page={page} className="mt-2.5 text-lg leading-[1.55] text-[#475569]" />
           ) : null}
         </header>
         )}
@@ -376,25 +321,17 @@ export function PracticeShell({
           )}
         </div>
         </div>
+        )}
       </section>
 
-      {ready && commentsOpen && page && payload ? (
-        <PracticeComments
-          page={page.slug}
-          notes={payload.review.notes?.value ?? []}
-          onClose={() => setCommentsOpen(false)}
-          fill={embedded}
-        />
-      ) : null}
-
-      {ready && assistantOpen && !commentsOpen ? (
+      {ready && assistantOpen ? (
         <>
           <aside
             aria-label="Talk it through"
             className={`bp-no-print hidden w-[23rem] shrink-0 flex-col border-l border-slate-200 lg:flex ${
               embedded
                 ? "lg:h-full lg:min-h-0"
-                : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"
+                : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)] lg:self-start"
             }`}
           >
             <BlueprintAssistant onClose={() => setAssistantOpen(false)} />
@@ -410,10 +347,7 @@ export function PracticeShell({
       {ready && !assistantOpen ? (
         <button
           type="button"
-          onClick={() => {
-            setCommentsOpen(false);
-            setAssistantOpen(true);
-          }}
+          onClick={() => setAssistantOpen(true)}
           className="bp-no-print fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-[var(--bp-navy)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_-12px_rgba(5,30,54,0.7)] lg:hidden"
         >
           <MessageCircle className="h-4 w-4" aria-hidden />

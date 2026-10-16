@@ -1,3 +1,4 @@
+import { patchPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /** Placeholder login email. The `.invalid` domain can never receive mail. */
@@ -44,6 +45,16 @@ export async function removeCoachAccess(
     return {
       removedAt: null,
       error: "Login is blocked, but their contact details could not be cleared.",
+    };
+  }
+
+  try {
+    await patchPracticeKnowledge({ coachId, linkedinUrl: null });
+  } catch (err) {
+    console.error("removeCoachAccess blueprint LinkedIn:", err);
+    return {
+      removedAt: null,
+      error: "Login is blocked, but their LinkedIn address could not be cleared.",
     };
   }
 

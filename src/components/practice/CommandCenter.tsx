@@ -6,6 +6,7 @@ import { ArrowRight, MessageCircle } from "lucide-react";
 import { BLUEPRINT_SECTIONS, commandCenter } from "@/lib/practiceKnowledge/blueprint";
 
 import { BuildBar, StillNeeded, useBlueprintProgress } from "./document/DocumentParts";
+import { SectionView } from "./document/SectionView";
 import { usePractice } from "./PracticeProvider";
 
 function Stage({ label, value, detail, pct }: { label: string; value: string; detail: string; pct: number }) {
@@ -37,7 +38,7 @@ export function CommandCenter() {
     .sort((a, b) => (b[1].generated_at || "").localeCompare(a[1].generated_at || ""))
     .slice(0, 4)
     .map(([key, built]) => ({ ref: BLUEPRINT_SECTIONS.find((r) => r.key === key), built }))
-    .filter((r) => r.ref);
+    .filter((r) => r.ref && r.ref.section.face !== "stored");
 
   return (
     <article className="space-y-10">
@@ -58,7 +59,7 @@ export function CommandCenter() {
             </button>
           ) : null}
           <Link
-            href={href("/coach/practice/blueprint")}
+            href={href("/coach/blueprint/blueprint")}
             scroll={stayOnPage ? false : undefined}
             className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[var(--bp-ink)] ring-1 ring-[var(--bp-rule)] hover:ring-[var(--bp-sky)]"
           >
@@ -82,10 +83,10 @@ export function CommandCenter() {
           pct={(progress.written / Math.max(1, progress.toWrite)) * 100}
         />
         <Stage
-          label="Approved by you"
-          value={`${progress.approved} of ${progress.reviewable}`}
-          detail="Read each section and approve it, or tell us what is off."
-          pct={(progress.approved / Math.max(1, progress.reviewable)) * 100}
+          label="Done"
+          value={`${progress.done} of ${progress.tracked}`}
+          detail="Signed off on this version."
+          pct={(progress.done / Math.max(1, progress.tracked)) * 100}
         />
       </section>
 
@@ -129,6 +130,13 @@ export function CommandCenter() {
         <dt className="font-semibold text-[var(--bp-muted)]">Since you joined</dt>
         <dd className="text-[var(--bp-ink)]">{model.progress.join(". ")}.</dd>
       </dl>
+
+      {/* Sections that live on the overview, such as the 90-day plan. */}
+      {BLUEPRINT_SECTIONS.filter((ref) => ref.page.slug === "command").map((ref) => (
+        <div key={ref.key} className="mt-12">
+          <SectionView sectionRef={ref} />
+        </div>
+      ))}
     </article>
   );
 }

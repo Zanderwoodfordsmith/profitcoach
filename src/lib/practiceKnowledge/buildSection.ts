@@ -8,6 +8,7 @@ import {
 } from "@/lib/firstCampaign/loadCoachContext";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+import { sectionByKey } from "./blueprint";
 import { sanitizeBlocks } from "./blocks";
 import { SECTION_SKILLS, skillSystemPrompt, skillUserPrompt } from "./skills";
 import { listValue } from "./sourced";
@@ -39,7 +40,8 @@ function focusIndustry(row: PracticeKnowledgeRow, decision: DecisionRecordPayloa
 }
 
 export function isBuildableSection(key: string): boolean {
-  return Boolean(SECTION_SKILLS[key]);
+  // Sections on hidden pages keep their skill but are not written.
+  return Boolean(SECTION_SKILLS[key] && sectionByKey(key));
 }
 
 /**

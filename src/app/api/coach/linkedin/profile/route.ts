@@ -9,6 +9,7 @@ import {
   type LinkedInProfileSnapshot,
 } from "@/lib/apify/linkedinProfile";
 import { applyLinkedInPhotoAsAvatarIfMissing } from "@/lib/apify/applyLinkedInAvatar";
+import { patchPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 
 type StoredRow = {
   linkedin_url: string;
@@ -175,6 +176,18 @@ export async function POST(request: Request) {
       .from("profiles")
       .update({ linkedin_url: result.linkedinUrl })
       .eq("id", coachId);
+
+    try {
+      await patchPracticeKnowledge({
+        coachId,
+        linkedinUrl: result.linkedinUrl,
+      });
+    } catch (err) {
+      console.error(
+        "practice LinkedIn blueprint mirror:",
+        err instanceof Error ? err.message : "failed"
+      );
+    }
 
     const avatarResult = await applyLinkedInPhotoAsAvatarIfMissing(
       coachId,

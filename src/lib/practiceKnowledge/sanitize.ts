@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import type {
   CareerResult,
   ClientResultStory,
+  ClientStuckRow,
+  ClientTrustRow,
   DecisionRecordPayload,
   DeliveryFormat,
   DeliveryModel,
@@ -73,7 +75,7 @@ function asStringList(value: unknown): string[] | null {
     .map((v) => clip(v, SHORT))
     .filter(Boolean)
     .slice(0, LIST);
-  return list.length ? list : null;
+  return list;
 }
 
 function asProofType(value: unknown): ProofType {
@@ -103,6 +105,46 @@ function asCareerResults(value: unknown): CareerResult[] | null {
   return rows.length ? rows : null;
 }
 
+function asStuckRows(value: unknown): ClientStuckRow[] | null {
+  if (!Array.isArray(value)) return null;
+  const rows: ClientStuckRow[] = [];
+  for (const item of value.slice(0, 12)) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    const problem = clip(r.problem, SHORT);
+    const consequence = clip(r.consequence, SHORT);
+    const awake = clip(r.awake, SHORT);
+    if (!problem && !consequence && !awake) continue;
+    rows.push({
+      id: clip(r.id, 64) || randomUUID(),
+      problem,
+      consequence,
+      awake,
+    });
+  }
+  return rows;
+}
+
+function asTrustRows(value: unknown): ClientTrustRow[] | null {
+  if (!Array.isArray(value)) return null;
+  const rows: ClientTrustRow[] = [];
+  for (const item of value.slice(0, 12)) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    const authority = clip(r.authority, SHORT);
+    const social_proof = clip(r.social_proof, SHORT);
+    const scarcity = clip(r.scarcity, SHORT);
+    if (!authority && !social_proof && !scarcity) continue;
+    rows.push({
+      id: clip(r.id, 64) || randomUUID(),
+      authority,
+      social_proof,
+      scarcity,
+    });
+  }
+  return rows;
+}
+
 function asNotes(value: unknown): PracticeNote[] | null {
   if (!Array.isArray(value)) return null;
   const rows: PracticeNote[] = [];
@@ -112,11 +154,13 @@ function asNotes(value: unknown): PracticeNote[] | null {
     const body = clip(rec.body, TEXT);
     const page = clip(rec.page, 40);
     if (!body || !page) continue;
+    const section = clip(rec.section, 80);
     rows.push({
       id: clip(rec.id, 64) || randomUUID(),
       body,
       at: clip(rec.at, 40) || new Date().toISOString(),
       page,
+      ...(section ? { section } : {}),
     });
   }
   return rows;
@@ -169,6 +213,7 @@ export function sanitizePayloadPatch(
   const working = rec.working_times as Record<string, unknown> | undefined;
   const practice = rec.practice as Record<string, unknown> | undefined;
   const market = rec.market as Record<string, unknown> | undefined;
+  const client = rec.client as Record<string, unknown> | undefined;
   const proof = rec.proof as Record<string, unknown> | undefined;
   const review = rec.review as Record<string, unknown> | undefined;
 
@@ -276,6 +321,32 @@ export function sanitizePayloadPatch(
       buyer_roles: asSourced(market.buyer_roles, asStringList, fallback),
     };
   }
+  if (client) {
+    const list = (key: string) => asSourced(client[key], asStringList, fallback);
+    patch.client = {
+      characteristics: list("characteristics"),
+      habitat: list("habitat"),
+      psychographics: list("psychographics"),
+      pains_now: list("pains_now"),
+      desires_now: list("desires_now"),
+      pains_later: list("pains_later"),
+      desires_later: list("desires_later"),
+      stuck: asSourced(client.stuck, asStuckRows, fallback),
+      hears: list("hears"),
+      sees: list("sees"),
+      says: list("says"),
+      thinks: list("thinks"),
+      words_use: list("words_use"),
+      words_avoid: list("words_avoid"),
+      frustrations: list("frustrations"),
+      buying_triggers: list("buying_triggers"),
+      objections: list("objections"),
+      trust: asSourced(client.trust, asTrustRows, fallback),
+      inner_voice: asSourced(client.inner_voice, (v) => clip(v, TEXT) || null, fallback),
+      ready_to_act: asSourced(client.ready_to_act, (v) => clip(v, TEXT) || null, fallback),
+      why_you: asSourced(client.why_you, (v) => clip(v, TEXT) || null, fallback),
+    };
+  }
   if (proof) {
     patch.proof = {
       career_results: asSourced(proof.career_results, asCareerResults, fallback),
@@ -314,6 +385,8 @@ export function sanitizePayloadPatch(
       notes: asSourced(review.notes, asNotes, fallback),
       approved_pages: asSourced(review.approved_pages, asStampMap, fallback),
       approved_sections: asSourced(review.approved_sections, asStampMap, fallback),
+      bca_approved_sections: asSourced(review.bca_approved_sections, asStampMap, fallback),
+      section_status: asSourced(review.section_status, asStampMap, fallback),
     };
   }
 

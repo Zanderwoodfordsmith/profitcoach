@@ -17,7 +17,8 @@ export type UnipileConnectReturnTo =
   | "campaigns"
   | "lead-finder"
   | "calls"
-  | "support";
+  | "support"
+  | "practice";
 
 export function parseUnipileConnectReturnTo(
   raw: unknown
@@ -27,11 +28,35 @@ export function parseUnipileConnectReturnTo(
     raw === "lead-finder" ||
     raw === "calls" ||
     raw === "support" ||
+    raw === "practice" ||
     raw === "settings"
   ) {
     return raw;
   }
   return "settings";
+}
+
+/** Send a Gmail or Outlook connect back to Practice Setup, including an admin blueprint tab. */
+function practiceSetupReturn(request: Request, flag: string): string {
+  const referer = request.headers.get("referer") || "";
+  try {
+    const url = new URL(referer);
+    const onCoachSetup =
+      url.pathname.startsWith("/coach/blueprint/setup") ||
+      url.pathname.startsWith("/coach/practice/setup");
+    const onAdminSetup =
+      url.pathname.startsWith("/admin/coaches/") && url.searchParams.get("doc") === "setup";
+    if (onCoachSetup || onAdminSetup) {
+      url.searchParams.set("connected", flag);
+      const query = url.searchParams.toString();
+      return query ? `${url.pathname}?${query}` : url.pathname;
+    }
+  } catch {
+    /* use the coach setup path */
+  }
+  const prefix = settingsReturnPrefix(request);
+  if (prefix === "/coach") return `/coach/blueprint/setup?connected=${flag}`;
+  return `${prefix}/account?tab=profile&connected=${flag}`;
 }
 
 function settingsReturnPrefix(request: Request): "/coach" | "/admin" {
@@ -72,6 +97,8 @@ export async function createProviderConnectLink(
         ? `${returnPrefix}/calls?tab=settings&connected=${provider}`
       : returnTo === "support"
         ? `/admin/support?tab=settings&connected=${provider}`
+      : returnTo === "practice"
+        ? practiceSetupReturn(request, provider)
       : returnPrefix === "/coach"
         ? `${returnPrefix}/settings?tab=profile&connected=${provider}`
         : `${returnPrefix}/account?tab=profile&connected=${provider}`;
@@ -84,6 +111,8 @@ export async function createProviderConnectLink(
         ? `${returnPrefix}/calls?tab=settings&connected=failed`
       : returnTo === "support"
         ? "/admin/support?tab=settings&connected=failed"
+      : returnTo === "practice"
+        ? practiceSetupReturn(request, "failed")
       : returnPrefix === "/coach"
         ? `${returnPrefix}/settings?tab=profile&connected=failed`
         : `${returnPrefix}/account?tab=profile&connected=failed`;

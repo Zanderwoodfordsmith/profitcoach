@@ -100,6 +100,22 @@ export type ClientResultStory = {
   story: string;
 };
 
+/** One problem for the ideal client. The three cells are the same problem, seen three ways. */
+export type ClientStuckRow = {
+  id: string;
+  problem: string;
+  consequence: string;
+  awake: string;
+};
+
+/** One row of the trust table. A cell can be empty. The columns do not have to tell one story. */
+export type ClientTrustRow = {
+  id: string;
+  authority: string;
+  social_proof: string;
+  scarcity: string;
+};
+
 export type PracticeKnowledgePayload = {
   identity: {
     phone: Sourced<string> | null;
@@ -149,6 +165,30 @@ export type PracticeKnowledgePayload = {
     geography_pref: Sourced<GeographyPref> | null;
     buyer_roles: Sourced<string[]> | null;
   };
+  /** The person every message is written to. Filled on Who You Help. */
+  client: {
+    characteristics: Sourced<string[]> | null;
+    habitat: Sourced<string[]> | null;
+    psychographics: Sourced<string[]> | null;
+    pains_now: Sourced<string[]> | null;
+    desires_now: Sourced<string[]> | null;
+    pains_later: Sourced<string[]> | null;
+    desires_later: Sourced<string[]> | null;
+    stuck: Sourced<ClientStuckRow[]> | null;
+    hears: Sourced<string[]> | null;
+    sees: Sourced<string[]> | null;
+    says: Sourced<string[]> | null;
+    thinks: Sourced<string[]> | null;
+    words_use: Sourced<string[]> | null;
+    words_avoid: Sourced<string[]> | null;
+    frustrations: Sourced<string[]> | null;
+    buying_triggers: Sourced<string[]> | null;
+    objections: Sourced<string[]> | null;
+    trust: Sourced<ClientTrustRow[]> | null;
+    inner_voice: Sourced<string> | null;
+    ready_to_act: Sourced<string> | null;
+    why_you: Sourced<string> | null;
+  };
   proof: {
     career_results: Sourced<CareerResult[]> | null;
     client_results: Sourced<ClientResultStory[]> | null;
@@ -163,7 +203,12 @@ export type PracticeKnowledgePayload = {
     decision_call_booked_at: Sourced<string> | null;
     notes: Sourced<PracticeNote[]> | null;
     approved_pages: Sourced<Record<string, string>> | null;
+    /** Coach sign-off time per section key. Valid while it is at or after the section's revision. */
     approved_sections: Sourced<Record<string, string>> | null;
+    /** BCA sign-off time for sections that go out to prospects. Coaches cannot change this. */
+    bca_approved_sections: Sourced<Record<string, string>> | null;
+    /** Manual To do / Review / Done choice per section, stored as "status|time". */
+    section_status: Sourced<Record<string, string>> | null;
   };
 };
 
@@ -172,6 +217,8 @@ export type PracticeNote = {
   body: string;
   at: string;
   page: string;
+  /** The section a change request is about ("page:id"). */
+  section?: string;
 };
 
 export type InterviewTurn = {

@@ -28,6 +28,7 @@ import { formatPersonName } from "@/lib/formatPersonName";
 import { splitFullName } from "@/lib/splitFullName";
 import { loadLastActiveAtByUserId } from "@/lib/admin/loadLastActiveAtByUserId";
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
+import { patchPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const LEVELS = new Set(["certified", "professional", "elite"]);
@@ -640,6 +641,19 @@ export async function PATCH(
           { error: "Unable to update coach ladder fields." },
           { status: 500 }
         );
+      }
+      if (profileUpdates.linkedin_url !== undefined) {
+        try {
+          await patchPracticeKnowledge({
+            coachId,
+            linkedinUrl: (profileUpdates.linkedin_url as string | null) ?? null,
+          });
+        } catch (err) {
+          console.error(
+            "practice LinkedIn blueprint mirror:",
+            err instanceof Error ? err.message : "failed"
+          );
+        }
       }
     }
 

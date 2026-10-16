@@ -3,8 +3,7 @@ import { isFilledSourced, listValue } from "./sourced";
 
 export const MISSING_FIELD_LABELS: Record<string, string> = {
   "identity.linkedin_url": "LinkedIn URL",
-  "working_times.hours_per_week": "Hours per week",
-  "working_times.prospect_call_hours": "Hours they will take prospect calls",
+  "working_times.prospect_call_hours": "Hours they will take calls",
   "practice.delivery_model": "Coaching, consulting, or hybrid",
   "market.industries_worked": "Industries they have worked in",
   "market.avoid": "Who they will not work with",
@@ -20,7 +19,6 @@ export function labelMissingField(field: string): string {
 
 export const COMPLETENESS_FIELDS = [
   "identity.linkedin_url",
-  "working_times.hours_per_week",
   "working_times.prospect_call_hours",
   "practice.delivery_model",
   "market.industries_worked",
@@ -50,9 +48,6 @@ export function computeCompleteness(payload: PracticeKnowledgePayload): {
 
   if (!isFilledSourced(payload.identity.linkedin_url)) {
     missing.push("identity.linkedin_url");
-  }
-  if (!isFilledSourced(payload.working_times.hours_per_week)) {
-    missing.push("working_times.hours_per_week");
   }
   if (!isFilledSourced(payload.working_times.prospect_call_hours)) {
     missing.push("working_times.prospect_call_hours");
@@ -98,9 +93,7 @@ export function sectionCompleteness(payload: PracticeKnowledgePayload): {
   practice: boolean;
 } {
   return {
-    form:
-      isFilledSourced(payload.working_times.hours_per_week) &&
-      isFilledSourced(payload.practice.delivery_model),
+    form: isFilledSourced(payload.practice.delivery_model),
     career: !computeCompleteness(payload).missing_fields.includes(
       "proof.career_results"
     ),

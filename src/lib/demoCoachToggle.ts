@@ -107,8 +107,44 @@ function isCoachOnlyPath(pathname: string): boolean {
   return COACH_ONLY_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 }
 
+const ADMIN_BLUEPRINT_COACH = "/admin/blueprint/coach";
+const COACH_BLUEPRINT = "/coach/blueprint";
+/** Earlier coach URL. Still recognised so an old tab maps back to the same page. */
+const COACH_BLUEPRINT_LEGACY = "/coach/practice";
+
+/**
+ * Admin Blueprint document ↔ the coach's own Blueprint.
+ * Records and the map stay admin-only, so those land on the coach home.
+ */
+function coachBlueprintPath(pathname: string): string | null {
+  if (pathname === "/admin/blueprint" || pathname === ADMIN_BLUEPRINT_COACH) {
+    return COACH_BLUEPRINT;
+  }
+  if (pathname.startsWith(`${ADMIN_BLUEPRINT_COACH}/`)) {
+    return `${COACH_BLUEPRINT}${pathname.slice(ADMIN_BLUEPRINT_COACH.length)}`;
+  }
+  if (matchesPrefix(pathname, "/admin/blueprint")) return COACH_BLUEPRINT;
+  return null;
+}
+
+function coachBlueprintSuffix(pathname: string): string | null {
+  for (const base of [COACH_BLUEPRINT, COACH_BLUEPRINT_LEGACY]) {
+    if (pathname === base) return "";
+    if (pathname.startsWith(`${base}/`)) return pathname.slice(base.length);
+  }
+  return null;
+}
+
+function adminBlueprintPath(pathname: string): string | null {
+  const suffix = coachBlueprintSuffix(pathname);
+  if (suffix === null) return null;
+  return `${ADMIN_BLUEPRINT_COACH}${suffix}`;
+}
+
 function remapPath(pathname: string, target: "admin" | "coach"): string | null {
   if (target === "coach") {
+    const blueprint = coachBlueprintPath(pathname);
+    if (blueprint) return blueprint;
     if (matchesPrefix(pathname, "/admin/account")) {
       return `/coach/settings${pathname.slice("/admin/account".length)}`;
     }
@@ -118,6 +154,8 @@ function remapPath(pathname: string, target: "admin" | "coach"): string | null {
     return null;
   }
 
+  const blueprint = adminBlueprintPath(pathname);
+  if (blueprint) return blueprint;
   if (matchesPrefix(pathname, "/coach/settings")) {
     return `/admin/account${pathname.slice("/coach/settings".length)}`;
   }

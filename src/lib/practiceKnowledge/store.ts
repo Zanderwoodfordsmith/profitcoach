@@ -3,10 +3,18 @@ import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContex
 import { sanitizeBuiltSections } from "./blocks";
 import { computeCompleteness } from "./completeness";
 import {
+  coachLinkedInUrl,
+  mirrorLinkedInUrlToProfile,
+  sameCoachLinkedInUrl,
+} from "./linkedinSync";
+import {
   emptyPracticePayload,
   mergePracticePayload,
   normalizePracticePayload,
+  sourced,
+  textValue,
 } from "./sourced";
+import { signOffFreshAnswers } from "./sectionWorkflow";
 import { mergePracticeIntoBrain } from "./syncBrain";
 import type {
   BuiltSection,
@@ -94,6 +102,8 @@ export async function ensurePracticeKnowledge(
 export async function patchPracticeKnowledge(opts: {
   coachId: string;
   payloadPatch?: Partial<PracticeKnowledgePayload>;
+  /** Replaces the blueprint LinkedIn URL, including clearing it. */
+  linkedinUrl?: string | null;
   status?: PracticeStatus;
   linkedinSeeded?: boolean;
   formCompleted?: boolean;
@@ -103,9 +113,20 @@ export async function patchPracticeKnowledge(opts: {
   report?: PracticeReportPayload | null;
 }): Promise<PracticeKnowledgeRow> {
   const current = await ensurePracticeKnowledge(opts.coachId);
-  const payload = opts.payloadPatch
+  if (linkedinMirrorOnly(opts) && sameCoachLinkedInUrl(
+    textValue(current.payload.identity.linkedin_url),
+    opts.linkedinUrl
+  )) {
+    return current;
+  }
+  let merged = opts.payloadPatch
     ? mergePracticePayload(current.payload, opts.payloadPatch)
     : current.payload;
+  merged = applyLinkedInUrl(current.payload, merged, opts.linkedinUrl);
+  const payload =
+    opts.payloadPatch || opts.linkedinUrl !== undefined
+      ? signOffFreshAnswers(current.payload, merged)
+      : merged;
   const completeness = computeCompleteness(payload);
   const now = new Date().toISOString();
 
@@ -136,7 +157,79 @@ export async function patchPracticeKnowledge(opts: {
   if (error || !data) {
     throw new Error(error?.message ?? "Could not update practice knowledge.");
   }
+
+  const prevUrl = textValue(current.payload.identity.linkedin_url);
+  const nextUrl = textValue(payload.identity.linkedin_url);
+  if (!sameCoachLinkedInUrl(prevUrl, nextUrl)) {
+    try {
+      await mirrorLinkedInUrlToProfile(opts.coachId, nextUrl || null);
+    } catch (err) {
+      console.error(
+        "practice LinkedIn profile mirror:",
+        err instanceof Error ? err.message : "failed"
+      );
+    }
+  }
+
   return mapKnowledgeRow(data as Record<string, unknown>);
+}
+
+function linkedinMirrorOnly(opts: {
+  payloadPatch?: Partial<PracticeKnowledgePayload>;
+  linkedinUrl?: string | null;
+  status?: PracticeStatus;
+  linkedinSeeded?: boolean;
+  formCompleted?: boolean;
+  interviewCompleted?: boolean;
+  coachReviewed?: boolean;
+  adminReviewed?: boolean;
+  report?: PracticeReportPayload | null;
+}): boolean {
+  return (
+    opts.linkedinUrl !== undefined &&
+    !opts.payloadPatch &&
+    !opts.status &&
+    !opts.linkedinSeeded &&
+    !opts.formCompleted &&
+    !opts.interviewCompleted &&
+    !opts.coachReviewed &&
+    !opts.adminReviewed &&
+    opts.report === undefined
+  );
+}
+
+/** Puts one LinkedIn URL on the blueprint, and keeps a newly typed URL in its canonical form. */
+function applyLinkedInUrl(
+  prev: PracticeKnowledgePayload,
+  payload: PracticeKnowledgePayload,
+  linkedinUrl: string | null | undefined
+): PracticeKnowledgePayload {
+  if (linkedinUrl !== undefined) {
+    const canonical = coachLinkedInUrl(linkedinUrl);
+    return {
+      ...payload,
+      identity: {
+        ...payload.identity,
+        linkedin_url: canonical ? sourced(canonical, "form") : null,
+      },
+    };
+  }
+  const current = payload.identity.linkedin_url;
+  const previous = prev.identity.linkedin_url;
+  if (!current) return payload;
+  const raw = textValue(current);
+  const unchanged =
+    textValue(previous) === raw && previous?.updated_at === current.updated_at;
+  if (unchanged) return payload;
+  const canonical = coachLinkedInUrl(raw);
+  if (!canonical || canonical === raw) return payload;
+  return {
+    ...payload,
+    identity: {
+      ...payload.identity,
+      linkedin_url: sourced(canonical, current.source, current.updated_at),
+    },
+  };
 }
 
 /**

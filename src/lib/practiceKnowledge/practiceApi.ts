@@ -19,6 +19,7 @@ export type PracticeLoad = {
   assets: Array<IntakeAssetRow & { signed_url?: string | null }>;
   decision: DecisionRecordRow | null;
   coach_name?: string;
+  coach_avatar_url?: string | null;
 };
 
 export type InterviewResponse = {

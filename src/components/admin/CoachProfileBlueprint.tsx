@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 
 import { BlueprintDocument } from "@/components/practice/BlueprintDocument";
 import { BlueprintTopic } from "@/components/practice/BlueprintTopic";
-import { CommandCenter } from "@/components/practice/CommandCenter";
+import { BlueprintHome } from "@/components/practice/BlueprintHome";
 import { PRACTICE_BASE, PracticeProvider } from "@/components/practice/PracticeProvider";
 import { PracticeShell } from "@/components/practice/PracticeShell";
 import { blueprintPage } from "@/lib/practiceKnowledge/blueprint";
@@ -30,7 +30,7 @@ function practicePathForDoc(doc: string | null): string {
 }
 
 function BlueprintBody({ doc }: { doc: string | null }) {
-  if (!doc || doc === "command" || !blueprintPage(doc)) return <CommandCenter />;
+  if (!doc || doc === "command" || !blueprintPage(doc)) return <BlueprintHome />;
   if (doc === "blueprint") return <BlueprintDocument />;
   return <BlueprintTopic slug={doc} />;
 }

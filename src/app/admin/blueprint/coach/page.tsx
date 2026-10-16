@@ -1,7 +1,7 @@
 "use client";
 
-import { CommandCenter } from "@/components/practice/CommandCenter";
+import { BlueprintHome } from "@/components/practice/BlueprintHome";
 
 export default function AdminBlueprintCommandPage() {
-  return <CommandCenter />;
+  return <BlueprintHome />;
 }

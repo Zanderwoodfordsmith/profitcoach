@@ -25,6 +25,7 @@ export async function seedPracticeFromLinkedIn(
     opts?.linkedinUrl?.trim() ||
     (profile.data?.linkedin_url as string | null | undefined)?.trim() ||
     "";
+  let linkedinForBlueprint = urlInput;
 
   if (opts?.scrape && urlInput) {
     const normalized = normalizeLinkedInProfileUrl(urlInput);
@@ -53,6 +54,7 @@ export async function seedPracticeFromLinkedIn(
             },
             { onConflict: "coach_id" }
           );
+          linkedinForBlueprint = result.linkedinUrl;
           await supabaseAdmin
             .from("profiles")
             .update({ linkedin_url: result.linkedinUrl })
@@ -79,8 +81,7 @@ export async function seedPracticeFromLinkedIn(
   const knowledge = await patchPracticeKnowledge({
     coachId,
     payloadPatch: seedPayloadFromLinkedIn(snapshot, {
-      linkedinUrl:
-        (profile.data?.linkedin_url as string | null | undefined) || urlInput,
+      linkedinUrl: linkedinForBlueprint,
       location: (profile.data?.location as string | null | undefined) ?? null,
     }),
     linkedinSeeded: Boolean(snapshot) || scraped,

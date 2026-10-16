@@ -10,7 +10,8 @@ import {
   type ReactNode,
 } from "react";
 
-import { buildOrder, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
+import { buildOrder, sectionByKey, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
+import { sectionWorkflow, type WorkflowStatus } from "@/lib/practiceKnowledge/sectionWorkflow";
 import type { BuildJob } from "@/lib/practiceKnowledge/buildJobs";
 import { readyForRecommendation } from "@/lib/practiceKnowledge/brief";
 import { emptyPracticePayload, mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
@@ -61,8 +62,15 @@ type PracticeContextValue = {
   upload: (file: File) => void;
   approvePage: (slug: string) => void;
   approveSection: (key: string) => void;
-  addNote: (body: string, page: string) => void;
-  /** Maps a /coach/practice href onto wherever these pages are mounted. */
+  /** Sign off the current version. Coach sign-off, or BCA sign-off when this view is the academy. */
+  markSectionDone: (key: string) => void;
+  /** Set the section's To do / Review / Done switch. */
+  setSectionStatus: (key: string, status: WorkflowStatus) => void;
+  /** Admin blueprint preview. The tab counts are BCA's queue. */
+  viewer: "coach" | "bca";
+  coachAvatarUrl: string | null;
+  addNote: (body: string, page: string, section?: string) => void;
+  /** Maps a /coach/blueprint href onto wherever these pages are mounted. */
   href: (path: string) => string;
   /** Keep the window where it is when moving between blueprint pages. */
   stayOnPage: boolean;
@@ -85,6 +93,8 @@ type PracticeContextValue = {
   saveDecision: (payload: DecisionRecordPayload, lock: boolean) => Promise<boolean>;
   /** An empty blueprint to look at. Nothing is saved or written. */
   sample: boolean;
+  /** Auth for coach APIs. Admin blueprint preview acts as that coach. */
+  authHeaders: () => Promise<Record<string, string> | null>;
   /** Right-hand assistant panel. */
   assistantOpen: boolean;
   setAssistantOpen: (open: boolean) => void;
@@ -123,7 +133,7 @@ function buildStateFromJob(job: BuildJob): BuildState {
 }
 const ASSISTANT_KEY = "practice-assistant-open";
 
-export const PRACTICE_BASE = "/coach/practice";
+export const PRACTICE_BASE = "/coach/blueprint";
 
 const PracticeContext = createContext<PracticeContextValue | null>(null);
 
@@ -195,6 +205,7 @@ export function PracticeProvider({
   const [ttsOn, setTtsOn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [coachName, setCoachName] = useState("");
+  const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(null);
   const [decision, setDecision] = useState<DecisionRecordRow | null>(null);
   const [building, setBuilding] = useState<BuildState>(IDLE_BUILD);
   /** The server job this page is following, while it is open. */
@@ -215,6 +226,7 @@ export function PracticeProvider({
       setKnowledge(row);
       setDraft(row.payload);
       setCoachName("New coach");
+      setCoachAvatarUrl(null);
       setLoading(false);
       return;
     }
@@ -228,6 +240,7 @@ export function PracticeProvider({
     setDraft(res.data.knowledge.payload);
     setAssets(res.data.assets);
     setCoachName(res.data.coach_name ?? "");
+    setCoachAvatarUrl(res.data.coach_avatar_url ?? null);
     setDecision(res.data.decision ?? null);
     const interview = await loadInterview(coachId);
     if (interview.ok && interview.data?.session) setSession(interview.data.session);
@@ -460,7 +473,57 @@ export function PracticeProvider({
       setDraft(next);
       void persist(next);
     },
-    addNote: (body, page) => {
+    setSectionStatus: (key, status) => {
+      const base = draftRef.current;
+      if (!base || !key) return;
+      const at = new Date().toISOString();
+      const current = { ...(base.review.section_status?.value ?? {}) };
+      current[key] = `${status}|${at}`;
+      const review = {
+        ...base.review,
+        section_status: sourced(current, coachId ? "admin" : "coach_edit"),
+      };
+      if (status === "done") {
+        const stamps = { ...(base.review.approved_sections?.value ?? {}) };
+        stamps[key] = at;
+        review.approved_sections = sourced(stamps, "coach_edit");
+      }
+      const next = mergePracticePayload(base, { review });
+      draftRef.current = next;
+      setDraft(next);
+      void persist(next);
+    },
+    markSectionDone: (key) => {
+      const base = draftRef.current;
+      const ref = sectionByKey(key);
+      if (!base || !knowledge || !ref) return;
+      const work = sectionWorkflow(ref, { ...knowledge, payload: base });
+      if (work.status !== "review" || !work.owner) return;
+      const forBca = work.owner === "bca";
+      if (forBca && !coachId) return;
+      const at = new Date().toISOString();
+      const stamp = work.revision && work.revision > at ? work.revision : at;
+      if (forBca) {
+        const current = { ...(base.review.bca_approved_sections?.value ?? {}) };
+        current[key] = stamp;
+        const next = mergePracticePayload(base, {
+          review: { ...base.review, bca_approved_sections: sourced(current, "admin") },
+        });
+        draftRef.current = next;
+        setDraft(next);
+        void persist(next);
+        return;
+      }
+      const current = { ...(base.review.approved_sections?.value ?? {}) };
+      current[key] = stamp;
+      const next = mergePracticePayload(base, {
+        review: { ...base.review, approved_sections: sourced(current, "coach_edit") },
+      });
+      draftRef.current = next;
+      setDraft(next);
+      void persist(next);
+    },
+    addNote: (body, page, section) => {
       const base = draftRef.current;
       const text = body.trim();
       if (!base || !text || !page) return;
@@ -470,6 +533,7 @@ export function PracticeProvider({
         body: text,
         at: new Date().toISOString(),
         page,
+        ...(section ? { section } : {}),
       });
       const next = mergePracticePayload(base, {
         review: { ...base.review, notes: sourced(notes, "coach_edit") },
@@ -491,6 +555,8 @@ export function PracticeProvider({
     },
     transcribe,
     coachName,
+    coachAvatarUrl,
+    viewer: coachId && !sample ? "bca" : "coach",
     building,
     build: (key) => {
       if (building.active.length) return;
@@ -549,6 +615,7 @@ export function PracticeProvider({
       return true;
     },
     sample,
+    authHeaders: () => practiceHeaders(coachId),
     sendCampaign: async (variant) => {
       if (sample) return { error: "This is an empty preview." };
       const res = await sendBlueprintCampaign(variant, coachId);

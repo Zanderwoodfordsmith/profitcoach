@@ -44,6 +44,16 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: "/coach/practice",
+        destination: "/coach/blueprint",
+        permanent: false,
+      },
+      {
+        source: "/coach/practice/:path*",
+        destination: "/coach/blueprint/:path*",
+        permanent: false,
+      },
+      {
         source: "/coach/workshop",
         destination: "/coach/boss-pro",
         permanent: true,

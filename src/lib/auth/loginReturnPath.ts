@@ -72,6 +72,15 @@ export function coachEquivalentOfAdminPath(path: string): string | null {
   if (pathname.startsWith("/admin/account")) {
     return `/coach/settings${pathname.slice("/admin/account".length)}${query}`;
   }
+  if (pathname === "/admin/blueprint" || pathname === "/admin/blueprint/coach") {
+    return `/coach/blueprint${query}`;
+  }
+  if (pathname.startsWith("/admin/blueprint/coach/")) {
+    return `/coach/blueprint${pathname.slice("/admin/blueprint/coach".length)}${query}`;
+  }
+  if (pathname.startsWith("/admin/blueprint/")) {
+    return `/coach/blueprint${query}`;
+  }
   const rest = pathname.startsWith("/admin/")
     ? pathname.slice("/admin/".length)
     : "";

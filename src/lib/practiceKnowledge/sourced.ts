@@ -48,6 +48,29 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       geography_pref: null,
       buyer_roles: null,
     },
+    client: {
+      characteristics: null,
+      habitat: null,
+      psychographics: null,
+      pains_now: null,
+      desires_now: null,
+      pains_later: null,
+      desires_later: null,
+      stuck: null,
+      hears: null,
+      sees: null,
+      says: null,
+      thinks: null,
+      words_use: null,
+      words_avoid: null,
+      frustrations: null,
+      buying_triggers: null,
+      objections: null,
+      trust: null,
+      inner_voice: null,
+      ready_to_act: null,
+      why_you: null,
+    },
     proof: {
       career_results: null,
       client_results: null,
@@ -63,6 +86,8 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       notes: null,
       approved_pages: null,
       approved_sections: null,
+      bca_approved_sections: null,
+      section_status: null,
     },
   };
 }
@@ -95,7 +120,10 @@ function mergeSourced<T>(
 ): Sourced<T> | null {
   if (next === undefined) return prev;
   if (next === null) return prev;
-  if (!isFilledSourced(next) && isFilledSourced(prev)) return prev;
+  // A coach or admin edit can clear a field. An import or interview that sends
+  // an empty value must not wipe something already written.
+  const explicit = next.source === "coach_edit" || next.source === "admin";
+  if (!explicit && !isFilledSourced(next) && isFilledSourced(prev)) return prev;
   return next;
 }
 
@@ -127,6 +155,7 @@ export function mergePracticePayload(
     working_times: mergeGroup(prev.working_times, patch.working_times),
     practice: mergeGroup(prev.practice, patch.practice),
     market: mergeGroup(prev.market, patch.market),
+    client: mergeGroup(prev.client, patch.client),
     proof: mergeGroup(prev.proof, patch.proof),
     review: mergeGroup(prev.review, patch.review),
   };

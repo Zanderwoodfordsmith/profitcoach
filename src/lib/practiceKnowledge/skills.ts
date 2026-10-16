@@ -71,7 +71,7 @@ Blocks, in this order:
   "market:avatar": {
     file: "avatar.md",
     maxTokens: 6000,
-    task: `Write the avatar for the recommended core client. Use the market options section above for the market.
+    task: `Write the avatar walkthrough for the recommended core client. When the coach has filled the ideal client sections (who they are, pains and desires, where they are stuck, what they see and hear, their words, what makes them act, what earns trust, and why you), those lines are the source of truth. Use them in the order the coach put them, and do not swap in a different person. Use the market options section for the market when those sections are still thin.
 Blocks, in this order:
 1. lede: the persona headline, for example "Site-Bound Steve: MD of a 30-person scaffolding firm in Yorkshire".
 2. pairs: Name, Age, Location, Business, Revenue, Team, Role, Time in the business.
@@ -88,7 +88,7 @@ Blocks, in this order:
   "market:pains": {
     file: "pain-points.md",
     maxTokens: 6000,
-    task: `Write the pain points for the avatar above.
+    task: `Write the pain points for the avatar above. When the coach has filled pains and desires, where they are stuck, and what makes them act, use those lines in the coach's order. Do not invent a different problem.
 Blocks, in this order:
 1. lede: the one pain that sits under all the others, in the owner's words.
 2. table with columns Pain, What they say out loud, What it costs, What they want instead, Lever. Five to seven rows, most common first.

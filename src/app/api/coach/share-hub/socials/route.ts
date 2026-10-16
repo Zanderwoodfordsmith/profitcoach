@@ -7,7 +7,41 @@ import {
   type SocialLinks,
   type SocialNetwork,
 } from "@/lib/shareLinks/socials";
+import { patchPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
+export async function GET(request: Request) {
+  const auth = await requireShareCoach(request);
+  if (auth.error || !auth.coachId) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("linkedin_url, social_links")
+    .eq("id", auth.coachId)
+    .maybeSingle();
+
+  if (error?.code === "42703") {
+    const fallback = await supabaseAdmin
+      .from("profiles")
+      .select("linkedin_url")
+      .eq("id", auth.coachId)
+      .maybeSingle();
+    return NextResponse.json({
+      linkedin_url: fallback.data?.linkedin_url ?? null,
+      social_links: {},
+    });
+  }
+  if (error) {
+    return NextResponse.json({ error: "Could not load socials." }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    linkedin_url: data?.linkedin_url ?? null,
+    social_links: parseSocialLinks(data?.social_links),
+  });
+}
 
 export async function PATCH(request: Request) {
   const auth = await requireShareCoach(request);
@@ -77,6 +111,20 @@ export async function PATCH(request: Request) {
   }
   if (error) {
     return NextResponse.json({ error: "Could not save socials." }, { status: 500 });
+  }
+
+  if (profileUpdates.linkedin_url !== undefined) {
+    try {
+      await patchPracticeKnowledge({
+        coachId: auth.coachId,
+        linkedinUrl: (profileUpdates.linkedin_url as string | null) ?? null,
+      });
+    } catch (err) {
+      console.error(
+        "practice LinkedIn blueprint mirror:",
+        err instanceof Error ? err.message : "failed"
+      );
+    }
   }
 
   return NextResponse.json({

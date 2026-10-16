@@ -258,8 +258,8 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
     prefix === "/admin" || SHOW_BLUEPRINT_IN_COACH_SIDEBAR
     ? [
         {
-          href: prefix === "/coach" ? "/coach/practice" : "/admin/blueprint/coach",
-          label: "Blueprint",
+          href: prefix === "/coach" ? "/coach/blueprint" : "/admin/blueprint/coach",
+          label: "My Blueprint",
           icon: IconBlueprint,
         },
       ]

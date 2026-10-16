@@ -11,7 +11,7 @@ const HEADER_BLEED = "px-4 md:px-6";
 export default function AdminBlueprintLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <StickyPageHeader title="Blueprint" bleedInset={HEADER_BLEED} />
+      <StickyPageHeader title="My Blueprint" bleedInset={HEADER_BLEED} />
       <div className="min-h-0 flex-1 overflow-hidden bg-white">{children}</div>
     </div>
   );

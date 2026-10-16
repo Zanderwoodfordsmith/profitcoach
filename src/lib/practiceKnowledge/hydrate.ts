@@ -2,12 +2,14 @@ import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { loadDecisionCallBookedAt } from "./decisionCallBooked";
 import { payloadFromWelcomeIntake } from "./ingestWelcome";
+import { mirrorLinkedInUrlToProfile } from "./linkedinSync";
 import { seedPayloadFromLinkedIn } from "./seedFromLinkedIn";
 import {
   emptyPracticePayload,
   isFilledSourced,
   mergePracticePayload,
   sourced,
+  textValue,
 } from "./sourced";
 import { ensurePracticeKnowledge, patchPracticeKnowledge } from "./store";
 import type { PracticeKnowledgePayload, PracticeKnowledgeRow } from "./types";
@@ -81,9 +83,15 @@ export async function hydratePracticeFromProfile(
     Boolean(bookedAt) &&
     !isFilledSourced(knowledge.payload.review.decision_call_booked_at);
 
-  if (!shouldWelcome && !shouldSeedLi && !shouldBooked && !shouldPhone) return knowledge;
+  if (!shouldWelcome && !shouldSeedLi && !shouldBooked && !shouldPhone) {
+    return copyBlueprintLinkedInWhenProfileEmpty(
+      coachId,
+      knowledge,
+      profile.data?.linkedin_url as string | null | undefined
+    );
+  }
 
-  return patchPracticeKnowledge({
+  const saved = await patchPracticeKnowledge({
     coachId,
     payloadPatch: mergePracticePayload(
       mergePracticePayload(
@@ -106,4 +114,28 @@ export async function hydratePracticeFromProfile(
     ),
     linkedinSeeded: shouldSeedLi,
   });
+  return copyBlueprintLinkedInWhenProfileEmpty(
+    coachId,
+    saved,
+    profile.data?.linkedin_url as string | null | undefined
+  );
+}
+
+/** The blueprint already has a LinkedIn URL and the account does not. Keep the one they filled in. */
+async function copyBlueprintLinkedInWhenProfileEmpty(
+  coachId: string,
+  knowledge: PracticeKnowledgeRow,
+  profileUrl: string | null | undefined
+): Promise<PracticeKnowledgeRow> {
+  const blueprintUrl = textValue(knowledge.payload.identity.linkedin_url);
+  if (!blueprintUrl || profileUrl?.trim()) return knowledge;
+  try {
+    await mirrorLinkedInUrlToProfile(coachId, blueprintUrl);
+  } catch (err) {
+    console.error(
+      "practice LinkedIn profile mirror:",
+      err instanceof Error ? err.message : "failed"
+    );
+  }
+  return knowledge;
 }
