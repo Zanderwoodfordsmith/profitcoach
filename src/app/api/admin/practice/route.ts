@@ -22,12 +22,19 @@ export async function GET(request: Request) {
     if (error) throw new Error(error.message);
 
     const ids = (rows ?? []).map((r) => r.coach_id as string);
-    const profiles = ids.length
-      ? await supabaseAdmin
-          .from("profiles")
-          .select("id, full_name, first_name, last_name, slug, avatar_url, coach_business_name")
-          .in("id", ids)
-      : { data: [] as Record<string, unknown>[] };
+    // slug lives on coaches, not profiles: asking profiles for it fails the whole query.
+    const [profiles, coachSlugs] = ids.length
+      ? await Promise.all([
+          supabaseAdmin
+            .from("profiles")
+            .select("id, full_name, first_name, last_name, avatar_url, coach_business_name")
+            .in("id", ids),
+          supabaseAdmin.from("coaches").select("id, slug").in("id", ids),
+        ])
+      : [{ data: [] as Record<string, unknown>[] }, { data: [] as Record<string, unknown>[] }];
+    const slugById = new Map(
+      (coachSlugs.data ?? []).map((c) => [String((c as { id: string }).id), (c as { slug?: string | null }).slug ?? null])
+    );
 
     const sessions = ids.length
       ? await supabaseAdmin
@@ -56,7 +63,6 @@ export async function GET(request: Request) {
             full_name?: string | null;
             first_name?: string | null;
             last_name?: string | null;
-            slug?: string | null;
             avatar_url?: string | null;
             coach_business_name?: string | null;
           }
@@ -71,7 +77,7 @@ export async function GET(request: Request) {
           profile?.full_name ||
           [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
           "Coach",
-        slug: profile?.slug ?? row.coach_id,
+        slug: slugById.get(row.coach_id as string) ?? row.coach_id,
         avatar_url: profile?.avatar_url ?? null,
         coach_business_name: profile?.coach_business_name ?? null,
         last_session_at: session?.started_at ?? null,

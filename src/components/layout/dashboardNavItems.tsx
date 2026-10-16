@@ -1,6 +1,7 @@
 import type React from "react";
 import {
   CalendarDays,
+  DraftingCompass,
   FileDown,
   LayoutGrid,
   Library,
@@ -34,6 +35,10 @@ export type AdminSectionNavItem = DashboardNavItem & {
   /** Practice Blueprint: coach view, records, and the page map. */
   blueprintHub?: boolean;
 };
+
+function IconBlueprint({ className }: { className?: string }) {
+  return <DraftingCompass className={className} strokeWidth={1.5} />;
+}
 
 function IconBriefcase({ className }: { className?: string }) {
   return (
@@ -242,7 +247,13 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
  * with the last hub tab from this session.
  */
 export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
+  // Admins reach every coach's blueprint from Admin → Blueprint instead.
+  const blueprint: DashboardNavItem[] =
+    prefix === "/coach"
+      ? [{ href: "/coach/practice", label: "Blueprint", icon: IconBlueprint }]
+      : [];
   return [
+    ...blueprint,
     {
       href: `${prefix}/conversations`,
       label: "Get Clients",
