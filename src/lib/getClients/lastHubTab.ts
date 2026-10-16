@@ -11,7 +11,8 @@ export type GetClientsLastTabKey =
   | "calls"
   | "prospects"
   | "content"
-  | "links";
+  | "links"
+  | "toolkit";
 
 export const GET_CLIENTS_LAST_TAB_KEYS: readonly GetClientsLastTabKey[] = [
   "campaigns",
@@ -20,6 +21,7 @@ export const GET_CLIENTS_LAST_TAB_KEYS: readonly GetClientsLastTabKey[] = [
   "prospects",
   "content",
   "links",
+  "toolkit",
 ] as const;
 
 const LAST_TAB_KEY_SET = new Set<string>(GET_CLIENTS_LAST_TAB_KEYS);
@@ -34,6 +36,7 @@ const TAB_HREF: Record<GetClientsLastTabKey, (prefix: HubPrefix) => string> = {
   prospects: (prefix) => `${prefix}/prospects`,
   content: (prefix) => `${prefix}/linkedin`,
   links: (prefix) => `${prefix}/share`,
+  toolkit: (prefix) => `${prefix}/toolkit`,
 };
 
 export type StorageLike = {

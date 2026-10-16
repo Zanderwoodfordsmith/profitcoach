@@ -355,6 +355,10 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
     href: `${prefix}/share`,
     label: "Links",
   });
+  items.push({
+    href: `${prefix}/toolkit`,
+    label: "Toolkit",
+  });
   return items;
 }
 

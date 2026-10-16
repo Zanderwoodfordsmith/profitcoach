@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { AREAS } from "@/lib/bossData";
+import { AREA_TRANSFORMATIONS, PILLAR_TAGLINES } from "@/lib/profitSystemCopy";
 
 /**
  * Shared data for the Profit System graphics components. Names come straight
@@ -42,21 +43,21 @@ export const PILLARS: Record<
 > = {
   vision: {
     label: "Vision",
-    tagline: "Clarity about the future",
+    tagline: PILLAR_TAGLINES.vision,
     color: "#0c5290",
     colorDark: "#093f70",
     icon: Eye,
   },
   velocity: {
     label: "Velocity",
-    tagline: "Speed of profit & growth",
+    tagline: PILLAR_TAGLINES.velocity,
     color: "#42a1ee",
     colorDark: "#2b86d3",
     icon: Gauge,
   },
   value: {
     label: "Value",
-    tagline: "Long-term value of the business",
+    tagline: PILLAR_TAGLINES.value,
     color: "#1ca0c2",
     colorDark: "#14829f",
     icon: Gem,
@@ -87,17 +88,7 @@ const AREA_ICONS: Record<number, DiagramIcon> = {
   9: Users,
 };
 
-const AREA_TRANSFORMATIONS: Record<number, { from: string; to: string }> = {
-  1: { from: "Foggy future", to: "Clear direction" },
-  2: { from: "Busy tactics", to: "Deliberate strategy" },
-  3: { from: "Endless to-dos", to: "90-day rhythm" },
-  4: { from: "Tight cash", to: "Reliable margin" },
-  5: { from: "Feast or famine", to: "Predictable demand" },
-  6: { from: "Owner-dependent", to: "Runs without you" },
-  7: { from: "Gut feel", to: "Numbers you trust" },
-  8: { from: "Daily heroics", to: "Repeatable systems" },
-  9: { from: "Doing it all", to: "Team runs the machine" },
-};
+// AREA_TRANSFORMATIONS lives in @/lib/profitSystemCopy so the print pack shares it.
 
 export const ACCELERATORS: Accelerator[] = AREAS.filter(
   (a) => a.pillar === "vision" || a.pillar === "velocity" || a.pillar === "value"

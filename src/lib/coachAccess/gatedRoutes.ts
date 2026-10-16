@@ -81,6 +81,13 @@ export const GATED_ROUTES: GatedRoute[] = [
       "Copy and send your assessments, booking pages, reports, and socials from one place.",
   },
   {
+    prefix: "/coach/toolkit",
+    feature: "nav.marketing",
+    title: "Toolkit",
+    description:
+      "Posts, banners and print files with your name and your own QR code, ready to share or send to a printer.",
+  },
+  {
     prefix: "/coach/links",
     feature: "nav.marketing",
     title: "Links",
