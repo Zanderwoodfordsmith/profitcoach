@@ -247,10 +247,9 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
  * with the last hub tab from this session.
  */
 /**
- * Coaches' Blueprint link in the sidebar. Shown locally, hidden in production
- * while the blueprint is being finalised. Set to true to release it.
+ * Blueprint link at the top of Tools, for coaches and admins.
  */
-const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = process.env.NODE_ENV !== "production";
+const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = true;
 
 export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   // Admins open the coach view, where they can page through every coach's blueprint.
@@ -487,12 +486,6 @@ export function coachClientsTabActive(
 
 export const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
-  {
-    href: "/admin/blueprint",
-    label: "Blueprint",
-    icon: IconBookOpen,
-    blueprintHub: true,
-  },
   {
     href: "/admin/payments",
     label: "Financials",
