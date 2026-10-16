@@ -21,3 +21,11 @@ Coaches can adjust (Ashley Maile does one half day a month plus a short call).
 
 ## Output
 The positioning line, the gap in this market (current vs ideal), three key messages written about the buyer's problems (not the product), the offer name, what is included, the format, the price options, and a short proof stack.
+
+## Your offer in three lengths
+One idea, said three ways. Each length has a job, so label where it is used.
+- Short (6 to 12 words): the headline. "I help building services owners find the cash they cannot see." No method names, no jargon.
+- Medium (one or two sentences): the answer to "what do you do?". Who, the gap you close, and how you are different.
+- Long (a paragraph): who it is for, the gap, how you close it, and the best proof with a number. Ends on what working together looks like.
+All three say the same thing. Never promise income or results. If there is a guarantee, write it short ("Love it or leave it at 60 days") and medium ("Try it for 60 days. If it is not right, stop and pay nothing more."), from the coach's own terms only.
+

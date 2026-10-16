@@ -25,7 +25,7 @@ function Stage({ label, value, detail, pct }: { label: string; value: string; de
 }
 
 export function CommandCenter() {
-  const { knowledge, payload, href, setAssistantOpen } = usePractice();
+  const { knowledge, payload, href, setAssistantOpen, stayOnPage } = usePractice();
   const progress = useBlueprintProgress();
   if (!knowledge || !payload || !progress) return null;
   const model = commandCenter(knowledge);
@@ -59,6 +59,7 @@ export function CommandCenter() {
           ) : null}
           <Link
             href={href("/coach/practice/blueprint")}
+            scroll={stayOnPage ? false : undefined}
             className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[var(--bp-ink)] ring-1 ring-[var(--bp-rule)] hover:ring-[var(--bp-sky)]"
           >
             Open your blueprint
@@ -99,6 +100,7 @@ export function CommandCenter() {
               <li key={ref!.key}>
                 <Link
                   href={`${href(ref!.page.href)}#s-${ref!.key.replace(":", "-")}`}
+                  scroll={stayOnPage ? false : undefined}
                   className="group flex items-center justify-between gap-4 py-3"
                 >
                   <span className="min-w-0">

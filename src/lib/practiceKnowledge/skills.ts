@@ -158,6 +158,17 @@ Blocks, in this order:
 5. heading "The offer", then pairs: Name, Promise, Who it is for, What is included, Format, Proof.
 6. heading "Why you", then bullets (proof stack from their record only).`,
   },
+  "offer:lines": {
+    file: "offer.md",
+    task: `Write the coach's offer in three lengths, each marked with where to use it, using "Your offer in three lengths" in the method.
+Blocks, in this order:
+1. lede: the one idea every version carries, in one sentence.
+2. heading "Short", then a message block (label "Short line") of 6 to 12 words, with a note "Use in: LinkedIn headline, introductions, email signature".
+3. heading "Medium", then a message block (label "Medium") of one or two sentences, with a note "Use in: when someone asks what you do, the first line of a message, the top of your About section".
+4. heading "Long", then a message block (label "Paragraph") of 60 to 100 words: who it is for, the gap you close, how, and the best proof, with a note "Use in: LinkedIn About, your one-page profile, the opening of a proposal".
+5. If the coach has a guarantee (not "none"), heading "Your guarantee", then two message blocks (labels "Guarantee, short" and "Guarantee, medium") written from their terms. If they have none, skip this.
+6. heading "Price and terms", then pairs: Price, How clients pay, Minimum term, Guarantee. Use only what the record says; write "To agree on the Decision Call" where it is missing.`,
+  },
   "offer:payment": {
     file: "offer.md",
     task: `Write the proposal and payment options for this coach.

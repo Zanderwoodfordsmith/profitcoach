@@ -30,6 +30,8 @@ export function seedPayloadFromLinkedIn(
   const location = snapshot?.location?.trim() || extras?.location?.trim() || "";
   const linkedinUrl =
     snapshot?.linkedinUrl?.trim() || extras?.linkedinUrl?.trim() || "";
+  const headline = snapshot?.headline?.trim() || "";
+  const about = snapshot?.about?.trim() || "";
 
   return {
     identity: {
@@ -42,6 +44,8 @@ export function seedPayloadFromLinkedIn(
       linkedin_visibility: null,
       location: location ? sourced(location, "linkedin", at) : null,
       linkedin_url: linkedinUrl ? sourced(linkedinUrl, "linkedin", at) : null,
+      linkedin_headline: headline ? sourced(headline, "linkedin", at) : null,
+      linkedin_about: about ? sourced(about, "linkedin", at) : null,
     },
     market: {
       industries_worked: industries.length

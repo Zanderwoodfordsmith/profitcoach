@@ -67,6 +67,10 @@ export type GeographyPref = (typeof GEOGRAPHY_PREFS)[number];
 export const LINKEDIN_VISIBILITIES = ["public", "discreet"] as const;
 export type LinkedInVisibility = (typeof LINKEDIN_VISIBILITIES)[number];
 
+/** Whether the coach offers a guarantee, and which kind. */
+export const GUARANTEE_TYPES = ["none", "trial", "results"] as const;
+export type GuaranteeType = (typeof GUARANTEE_TYPES)[number];
+
 export const PROOF_TYPES = ["career", "client"] as const;
 export type ProofType = (typeof PROOF_TYPES)[number];
 
@@ -110,6 +114,9 @@ export type PracticeKnowledgePayload = {
     practice_email: Sourced<string> | null;
     /** Public about coaching on LinkedIn, or discreet (still employed, non-compete). */
     linkedin_visibility: Sourced<LinkedInVisibility> | null;
+    /** Their LinkedIn headline and About today, imported so the rewrite has a before. */
+    linkedin_headline: Sourced<string> | null;
+    linkedin_about: Sourced<string> | null;
   };
   working_times: {
     hours_per_week: Sourced<string> | null;
@@ -122,6 +129,12 @@ export type PracticeKnowledgePayload = {
     delivery_format: Sourced<DeliveryFormat> | null;
     min_fee: Sourced<string> | null;
     capacity: Sourced<string> | null;
+    /** Monthly, upfront, minimum term: how clients pay. */
+    payment_terms: Sourced<string> | null;
+    guarantee: Sourced<GuaranteeType> | null;
+    guarantee_terms: Sourced<string> | null;
+    /** How often sessions run, if different from the BCA format. */
+    session_rhythm: Sourced<string> | null;
     more_of: Sourced<string> | null;
     less_of: Sourced<string> | null;
     worth_building: Sourced<string> | null;
@@ -189,6 +202,7 @@ export type DecisionRecordPayload = {
   problem: string;
   offer: string;
   price: string;
+  guarantee: string;
   delivery_model: string;
   geography: string;
   campaign_angle: string;

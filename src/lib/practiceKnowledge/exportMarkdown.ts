@@ -1,14 +1,13 @@
 import { blocksToMarkdown } from "./blocks";
-import {
-  BLUEPRINT_GROUPS,
-  fieldValue,
-  SECTION_SOURCES,
-  type BlueprintLink,
-  type FieldSpec,
-} from "./blueprint";
-import { guidePage, type GuidePage } from "./clientSessions";
-import { STANDARD_SECTIONS } from "./standard";
-import type { CareerResult, ClientResultStory, PracticeKnowledgePayload, PracticeKnowledgeRow } from "./types";
+import { BLUEPRINT_GROUPS, fieldValue, type BlueprintLink, type FieldSpec } from "./blueprint";
+import { DECISION_GROUPS, proposedDecision } from "./decisionDefaults";
+import type {
+  CareerResult,
+  ClientResultStory,
+  DecisionRecordRow,
+  PracticeKnowledgePayload,
+  PracticeKnowledgeRow,
+} from "./types";
 
 /**
  * The Practice Blueprint as one Markdown file, in document order. Written so
@@ -43,67 +42,59 @@ export function formatFieldValue(payload: PracticeKnowledgePayload, field: Field
   }
 }
 
-function guideMarkdown(guide: GuidePage): string {
-  const parts: string[] = [];
-  for (const card of guide.cards) {
-    parts.push(`### ${card.title}${card.time ? ` (${card.time})` : ""}`);
-    if (card.lede) parts.push(card.lede);
-    for (const section of card.sections) {
-      parts.push(`#### ${section.heading}`);
-      for (const p of section.paragraphs ?? []) parts.push(p);
-      if (section.bullets?.length) parts.push(section.bullets.map((b) => `- ${b}`).join("\n"));
-      if (section.rows?.length) {
-        parts.push(
-          ["| Item | Detail | Ask |", "| --- | --- | --- |", ...section.rows.map((r) => `| ${r.name} | ${r.detail} | ${r.ask} |`)].join("\n")
-        );
-      }
-      if (section.links?.length) parts.push(section.links.map((l) => `- [${l.label}](${l.href})`).join("\n"));
-    }
+function decisionsMarkdown(row: PracticeKnowledgeRow, decision: DecisionRecordRow | null): string {
+  const locked = Boolean(decision?.locked_at);
+  const values = decision ? decision.payload : proposedDecision(row);
+  const parts: string[] = [
+    locked ? "_Agreed on the Decision Call._" : "_Proposed by BCA. Agreed on the Decision Call._",
+  ];
+  for (const group of DECISION_GROUPS) {
+    const lines = group.fields
+      .filter((f) => values[f.key]?.trim())
+      .map((f) => `- **${f.label}:** ${values[f.key].trim()}`);
+    if (lines.length) parts.push(`### ${group.label}`, lines.join("\n"));
   }
   return parts.join("\n\n");
 }
 
-function pageMarkdown(page: BlueprintLink, row: PracticeKnowledgeRow): string {
+function pageMarkdown(page: BlueprintLink, row: PracticeKnowledgeRow, decision: DecisionRecordRow | null): string {
   const parts: string[] = [`## ${page.title}`, `_${page.summary}_`];
-  const guide = guidePage(page.slug);
-  if (guide) {
-    parts.push(guideMarkdown(guide));
+  if (page.slug === "decisions") {
+    parts.push(decisionsMarkdown(row, decision));
     return parts.join("\n\n");
   }
   for (const section of page.sections) {
     const key = `${page.slug}:${section.id}`;
     parts.push(`### ${section.title}`);
-    if (section.source === "imported" || section.source === "from_you") {
-      const lines: string[] = [];
-      for (const field of section.fields ?? []) {
-        const values = formatFieldValue(row.payload, field);
-        if (!values.length) continue;
-        lines.push(values.length === 1 ? `- **${field.label}:** ${values[0]}` : `- **${field.label}:**\n${values.map((v) => `  - ${v}`).join("\n")}`);
-      }
-      parts.push(lines.length ? lines.join("\n") : "_Still open._");
-    } else if (section.source === "we_build") {
+    if (section.source === "we_build") {
       const built = row.built_sections[key];
       parts.push(built ? blocksToMarkdown(built.blocks, 4) : "_Not written yet._");
-    } else if (section.source === "standard") {
-      const blocks = STANDARD_SECTIONS[key];
-      if (blocks) parts.push(blocksToMarkdown(blocks, 4));
-    } else {
-      parts.push(`_${SECTION_SOURCES.live.hint}_`);
+      continue;
     }
+    const lines: string[] = [];
+    for (const field of section.fields ?? []) {
+      const values = formatFieldValue(row.payload, field);
+      if (!values.length) continue;
+      lines.push(values.length === 1 ? `- **${field.label}:** ${values[0]}` : `- **${field.label}:**\n${values.map((v) => `  - ${v}`).join("\n")}`);
+    }
+    parts.push(lines.length ? lines.join("\n") : "_Still open._");
+  }
+  if (page.learn?.length) {
+    parts.push(`### In the Classroom\n\n${page.learn.map((l) => `- ${l.label}`).join("\n")}`);
   }
   return parts.join("\n\n");
 }
 
 export function blueprintMarkdown(
   row: PracticeKnowledgeRow,
-  opts: { coachName: string; pageSlug?: string }
+  opts: { coachName: string; pageSlug?: string; decision?: DecisionRecordRow | null }
 ): string {
   const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const header = [
     `# The Practice Blueprint: ${opts.coachName}`,
     `_Prepared by Business Coach Academy · ${date}_`,
     "",
-    "This file is your whole practice in one place: your proof, your market, your avatar and their pain points, your offer, your messages and your plan. Give it to any AI assistant as context and it will write in your voice, to your market.",
+    "This file is your whole practice in one place: your decisions, your proof, your market, your avatar and their pain points, your offer, your messages and your plan. Give it to any AI assistant as context and it will write in your voice, to your market.",
   ].join("\n");
 
   const chapters: string[] = [];
@@ -113,7 +104,7 @@ export function blueprintMarkdown(
     );
     if (!pages.length) return;
     chapters.push(
-      [`# ${group.label}`, `_${group.intro}_`, ...pages.map((p) => pageMarkdown(p, row))].join("\n\n")
+      [`# ${group.label}`, `_${group.intro}_`, ...pages.map((p) => pageMarkdown(p, row, opts.decision ?? null))].join("\n\n")
     );
   });
   return `${header}\n\n---\n\n${chapters.join("\n\n---\n\n")}\n`;

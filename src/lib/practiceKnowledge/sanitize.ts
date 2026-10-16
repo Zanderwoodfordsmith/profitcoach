@@ -20,6 +20,7 @@ import {
   DELIVERY_FORMATS,
   DELIVERY_MODELS,
   GEOGRAPHY_PREFS,
+  GUARANTEE_TYPES,
   LINKEDIN_VISIBILITIES,
   NOTIFICATION_CHANNELS,
   PRACTICE_KNOWLEDGE_SOURCES,
@@ -192,6 +193,8 @@ export function sanitizePayloadPatch(
         (v) => pickEnum(v, LINKEDIN_VISIBILITIES),
         fallback
       ),
+      linkedin_headline: asSourced(identity.linkedin_headline, (v) => clip(v, 400) || null, fallback),
+      linkedin_about: asSourced(identity.linkedin_about, (v) => clip(v, 3000) || null, fallback),
     };
   }
   if (working) {
@@ -232,6 +235,10 @@ export function sanitizePayloadPatch(
       ),
       min_fee: asSourced(practice.min_fee, (v) => clip(v, 80) || null, fallback),
       capacity: asSourced(practice.capacity, (v) => clip(v, 80) || null, fallback),
+      payment_terms: asSourced(practice.payment_terms, (v) => clip(v, SHORT) || null, fallback),
+      guarantee: asSourced(practice.guarantee, (v) => pickEnum(v, GUARANTEE_TYPES), fallback),
+      guarantee_terms: asSourced(practice.guarantee_terms, (v) => clip(v, TEXT) || null, fallback),
+      session_rhythm: asSourced(practice.session_rhythm, (v) => clip(v, SHORT) || null, fallback),
       more_of: asSourced(practice.more_of, (v) => clip(v, TEXT) || null, fallback),
       less_of: asSourced(practice.less_of, (v) => clip(v, TEXT) || null, fallback),
       worth_building: asSourced(
@@ -334,6 +341,7 @@ export function sanitizeDecisionRecord(raw: unknown): DecisionRecordPayload {
     problem: field("problem"),
     offer: field("offer"),
     price: field("price"),
+    guarantee: field("guarantee"),
     delivery_model: field("delivery_model"),
     geography: field("geography"),
     campaign_angle: field("campaign_angle"),

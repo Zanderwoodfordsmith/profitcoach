@@ -18,6 +18,8 @@ export function payloadFromWelcomeIntake(opts: {
       web_address: null,
       practice_email: null,
       linkedin_visibility: null,
+      linkedin_headline: null,
+      linkedin_about: null,
       location: null,
       linkedin_url: linkedinUrl ? sourced(linkedinUrl, "form", at) : null,
     },

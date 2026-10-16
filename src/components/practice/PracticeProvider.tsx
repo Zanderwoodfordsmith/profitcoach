@@ -12,7 +12,7 @@ import {
 
 import { buildOrder, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
 import { readyForRecommendation } from "@/lib/practiceKnowledge/brief";
-import { mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
+import { emptyPracticePayload, mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
 import {
   buildPracticeSection,
   saveBuiltBlocks,
@@ -29,6 +29,9 @@ import {
   uploadPracticeAsset,
 } from "@/lib/practiceKnowledge/practiceApi";
 import type {
+  BlueprintBlock,
+  DecisionRecordPayload,
+  DecisionRecordRow,
   IntakeAssetRow,
   IntakeSessionRow,
   PracticeKnowledgePayload,
@@ -58,6 +61,8 @@ type PracticeContextValue = {
   addNote: (body: string, page: string) => void;
   /** Maps a /coach/practice href onto wherever these pages are mounted. */
   href: (path: string) => string;
+  /** Keep the window where it is when moving between blueprint pages. */
+  stayOnPage: boolean;
   coachName: string;
   /** Sections being written right now, and progress for "write everything". */
   building: BuildState;
@@ -68,6 +73,15 @@ type PracticeContextValue = {
   sendCampaign: (variant: "connector" | "conversation") => Promise<{ campaignId?: string; error?: string }>;
   /** Replace the body of one message block in a written section. */
   editMessage: (key: string, index: number, body: string) => Promise<boolean>;
+  /** Replace every block of a written section with an edited copy. */
+  saveBlocks: (key: string, blocks: BlueprintBlock[]) => Promise<boolean>;
+  /** The Decision Record from the Decision Call, once one is saved. */
+  decision: DecisionRecordRow | null;
+  /** Admins can fill in and lock the Decision Record on the page. */
+  canEditDecision: boolean;
+  saveDecision: (payload: DecisionRecordPayload, lock: boolean) => Promise<boolean>;
+  /** An empty blueprint to look at. Nothing is saved or written. */
+  sample: boolean;
   /** Right-hand assistant panel. */
   assistantOpen: boolean;
   setAssistantOpen: (open: boolean) => void;
@@ -98,15 +112,54 @@ function bufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+/** A blank practice record for the empty preview. */
+function emptyRow(): PracticeKnowledgeRow {
+  const now = new Date().toISOString();
+  return {
+    coach_id: "sample",
+    status: "capturing",
+    payload: emptyPracticePayload(),
+    linkedin_seeded_at: null,
+    form_completed_at: null,
+    interview_completed_at: null,
+    coach_reviewed_at: null,
+    admin_reviewed_at: null,
+    completeness_score: 0,
+    missing_fields: [],
+    report_payload: null,
+    report_generated_at: null,
+    built_sections: {},
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+function isPracticePath(path: string) {
+  return (
+    path === PRACTICE_BASE ||
+    path.startsWith(`${PRACTICE_BASE}/`) ||
+    path.startsWith(`${PRACTICE_BASE}#`)
+  );
+}
+
 export function PracticeProvider({
   children,
   coachId = null,
   basePath = PRACTICE_BASE,
+  toHref,
+  stayOnPage = false,
+  sample = false,
 }: {
   children: ReactNode;
   /** Admin preview: act as this coach instead of the signed-in one. */
   coachId?: string | null;
   basePath?: string;
+  /** Replace the default basePath rewrite for practice links. */
+  toHref?: (practicePath: string) => string;
+  /** Profile embed: blueprint links stay on this page. */
+  stayOnPage?: boolean;
+  /** Show an empty blueprint. Edits stay on screen and nothing is saved or written. */
+  sample?: boolean;
 }) {
   const [knowledge, setKnowledge] = useState<PracticeKnowledgeRow | null>(null);
   const [draft, setDraft] = useState<PracticeKnowledgePayload | null>(null);
@@ -117,6 +170,7 @@ export function PracticeProvider({
   const [ttsOn, setTtsOn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [coachName, setCoachName] = useState("");
+  const [decision, setDecision] = useState<DecisionRecordRow | null>(null);
   const [building, setBuilding] = useState<BuildState>(IDLE_BUILD);
   const stopRef = useRef(false);
   const [assistantOpen, setAssistantOpenState] = useState(false);
@@ -129,6 +183,14 @@ export function PracticeProvider({
 
   const load = useCallback(async () => {
     setError(null);
+    if (sample) {
+      const row = emptyRow();
+      setKnowledge(row);
+      setDraft(row.payload);
+      setCoachName("New coach");
+      setLoading(false);
+      return;
+    }
     const res = await loadPractice(coachId);
     if (!res.ok || !res.data) {
       setError(res.error || "Could not load your practice blueprint.");
@@ -139,15 +201,16 @@ export function PracticeProvider({
     setDraft(res.data.knowledge.payload);
     setAssets(res.data.assets);
     setCoachName(res.data.coach_name ?? "");
+    setDecision(res.data.decision ?? null);
     const interview = await loadInterview(coachId);
     if (interview.ok && interview.data?.session) setSession(interview.data.session);
     setLoading(false);
-  }, [coachId]);
+  }, [coachId, sample]);
 
   useEffect(() => {
     void load();
-    void ttsAvailable(coachId).then(setTtsOn);
-  }, [load, coachId]);
+    if (!sample) void ttsAvailable(coachId).then(setTtsOn);
+  }, [load, coachId, sample]);
 
   useEffect(() => {
     try {
@@ -170,6 +233,10 @@ export function PracticeProvider({
 
   async function runBuilds(keys: string[]) {
     if (!keys.length) return;
+    if (sample) {
+      setError("This is an empty preview. Choose a coach to write sections.");
+      return;
+    }
     stopRef.current = false;
     setBuilding({ active: [], queue: keys, done: 0, total: keys.length, failed: [] });
     for (const key of keys) {
@@ -188,6 +255,8 @@ export function PracticeProvider({
   }
 
   const persist = useCallback(async (next: PracticeKnowledgePayload) => {
+    // The empty preview keeps edits on screen only.
+    if (sample) return;
     const gen = ++persistGen.current;
     const res = await savePractice({ payload: next }, coachId);
     if (gen !== persistGen.current) return;
@@ -198,10 +267,10 @@ export function PracticeProvider({
     setKnowledge(res.data.knowledge);
     setDraft(res.data.knowledge.payload);
     draftRef.current = res.data.knowledge.payload;
-  }, [coachId]);
+  }, [coachId, sample]);
 
   useEffect(() => {
-    if (!payload || !knowledge || knowledge.report_payload || reportAttempted.current) return;
+    if (sample || !payload || !knowledge || knowledge.report_payload || reportAttempted.current) return;
     if (!readyForRecommendation(payload)) return;
     reportAttempted.current = true;
     void (async () => {
@@ -213,9 +282,13 @@ export function PracticeProvider({
         setDraft(res.data.knowledge.payload);
       }
     })();
-  }, [payload, knowledge, coachId]);
+  }, [payload, knowledge, coachId, sample]);
 
   async function handleInterview(start: boolean, message?: string) {
+    if (sample) {
+      setError("This is an empty preview. Choose a coach to try the conversation.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const res = await sendInterviewTurn(start ? { start: true } : { message }, coachId);
@@ -246,6 +319,23 @@ export function PracticeProvider({
     });
     const data = (await res.json().catch(() => null)) as { text?: string } | null;
     return data?.text?.trim() || null;
+  }
+
+  async function saveBlocks(key: string, blocks: BlueprintBlock[]): Promise<boolean> {
+    const built = knowledge?.built_sections[key];
+    if (!built || !knowledge) return false;
+    if (sample) {
+      const at = new Date().toISOString();
+      setKnowledge({ ...knowledge, built_sections: { ...knowledge.built_sections, [key]: { ...built, blocks, edited_at: at } } });
+      return true;
+    }
+    const res = await saveBuiltBlocks(key, blocks, coachId);
+    if (!res.ok || !res.data) {
+      setError(res.error || "Could not save your edit.");
+      return false;
+    }
+    setKnowledge(res.data.knowledge);
+    return true;
   }
 
   const value: PracticeContextValue = {
@@ -359,26 +449,46 @@ export function PracticeProvider({
       const built = knowledge?.built_sections[key];
       const block = built?.blocks[index];
       if (!built || !block || block.type !== "message") return false;
-      const blocks = built.blocks.map((b, i) => (i === index && b.type === "message" ? { ...b, body } : b));
-      const res = await saveBuiltBlocks(key, blocks, coachId);
-      if (!res.ok || !res.data) {
-        setError(res.error || "Could not save your edit.");
+      return saveBlocks(
+        key,
+        built.blocks.map((b, i) => (i === index && b.type === "message" ? { ...b, body } : b))
+      );
+    },
+    saveBlocks: (key, blocks) => saveBlocks(key, blocks),
+    decision,
+    canEditDecision: Boolean(coachId) && !sample,
+    saveDecision: async (next, lock) => {
+      const headers = await practiceHeaders(coachId);
+      if (!headers || !coachId) return false;
+      const res = await fetch(`/api/admin/practice/${coachId}/decision`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ payload: next, lock }),
+      });
+      const body = (await res.json().catch(() => null)) as { decision?: DecisionRecordRow; error?: string } | null;
+      if (!res.ok || !body?.decision) {
+        setError(body?.error || "Could not save the Decision Record.");
         return false;
       }
-      setKnowledge(res.data.knowledge);
+      setDecision(body.decision);
       return true;
     },
+    sample,
     sendCampaign: async (variant) => {
+      if (sample) return { error: "This is an empty preview." };
       const res = await sendBlueprintCampaign(variant, coachId);
       return res.ok && res.data ? { campaignId: res.data.campaign_id } : { error: res.error || "Could not create the campaign." };
     },
     assistantOpen,
     setAssistantOpen,
-    href: (path) =>
-      path === PRACTICE_BASE || path.startsWith(`${PRACTICE_BASE}/`) || path.startsWith(`${PRACTICE_BASE}#`)
-        ? `${basePath}${path.slice(PRACTICE_BASE.length)}`
-        : path,
+    stayOnPage,
+    href: (path) => {
+      if (!isPracticePath(path)) return path;
+      if (toHref) return toHref(path);
+      return `${basePath}${path.slice(PRACTICE_BASE.length)}`;
+    },
     pullLinkedIn: () => {
+      if (sample) return;
       setBusy(true);
       setError(null);
       void seedPracticeLinkedIn(coachId).then((res) => {
@@ -392,6 +502,7 @@ export function PracticeProvider({
       });
     },
     upload: (file) => {
+      if (sample) return;
       void uploadPracticeAsset(file, "other", coachId).then((res) => {
         if (!res.ok || !res.data) {
           setError(res.error || "Upload failed.");

@@ -18,12 +18,11 @@ const SOURCE_CLASS: Record<SectionSource, string> = {
   imported: "bg-amber-50 text-amber-800 ring-amber-200",
   from_you: "bg-sky-50 text-sky-800 ring-sky-200",
   we_build: "bg-violet-50 text-violet-800 ring-violet-200",
-  standard: "bg-slate-50 text-slate-700 ring-slate-200",
-  live: "bg-emerald-50 text-emerald-800 ring-emerald-200",
 };
 
 const PAGE_NOTES: Record<string, string> = {
   command: "Reads from every page and picks the one next action.",
+  decisions: "The Decision Record. BCA proposes it from the pre-read, an admin fills it in and locks it on the Decision Call.",
   blueprint: "The whole document: every chapter below, with a cover, contents, downloads and print to PDF.",
 };
 
@@ -67,8 +66,8 @@ export function AdminBlueprintMap() {
     })();
   }, []);
 
-  function coverageFor(key: string, source: SectionSource) {
-    if (!coverage || source === "standard" || source === "live") return null;
+  function coverageFor(key: string) {
+    if (!coverage) return null;
     const done = coverage.filter((c) => c.states[key] === "ready");
     return { done, total: coverage.length };
   }
@@ -182,7 +181,7 @@ export function AdminBlueprintMap() {
                       </tr>
                       {sections.map((section) => {
                         const key = `${page.slug}:${section.id}`;
-                        const cov = coverageFor(key, section.source);
+                        const cov = coverageFor(key);
                         const isOpen = expanded === key;
                         return (
                         <Fragment key={section.id}>

@@ -6,10 +6,9 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import { MessageCircle, MessageSquare, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES, stillNeeded } from "@/lib/practiceKnowledge/blueprint";
-import { guidePage } from "@/lib/practiceKnowledge/clientSessions";
 
 import { BlueprintAssistant } from "./BlueprintAssistant";
-import { DownloadMenu } from "./document/DocumentParts";
+import { DownloadMenu, InputOutputKey } from "./document/DocumentParts";
 import { PracticeComments } from "./PracticeComments";
 import { usePractice } from "./PracticeProvider";
 import "./document/blueprint.css";
@@ -137,20 +136,29 @@ function DocIcon() {
 export function PracticeShell({
   children,
   embedded = false,
+  path,
 }: {
   children: ReactNode;
   /** Admin blueprint: fill the page under the header, flush to the app sidebar. */
   embedded?: boolean;
+  /** Practice path to treat as the open page, when this shell is not on its own route. */
+  path?: string;
 }) {
   const pathname = usePathname();
-  const { loading, error, knowledge, payload, approvePage, href, assistantOpen, setAssistantOpen } = usePractice();
+  const { loading, error, knowledge, payload, approvePage, href, assistantOpen, setAssistantOpen, stayOnPage } = usePractice();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const here = path ?? pathname;
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(true);
   const wide = useWideScreen();
   const [navWidth, setNavWidth] = useState(NAV_WIDTH_DEFAULT);
-  const page = BLUEPRINT_PAGES.find((item) => href(item.href) === pathname) ?? null;
-  const group = BLUEPRINT_GROUPS.find((item) => item.pages.some((entry) => href(entry.href) === pathname)) ?? null;
-  const canApprove = Boolean(page && !guidePage(page.slug) && page.slug !== "command" && page.slug !== "blueprint");
+  const page =
+    BLUEPRINT_PAGES.find((item) => (path ? item.href === here : href(item.href) === here)) ?? null;
+  const group =
+    BLUEPRINT_GROUPS.find((item) =>
+      item.pages.some((entry) => (path ? entry.href === here : href(entry.href) === here))
+    ) ?? null;
+  const canApprove = Boolean(page && page.slug !== "command" && page.slug !== "blueprint");
   const pageApproved = Boolean(page && payload?.review.approved_pages?.value?.[page.slug]);
   const noteCount = page
     ? (payload?.review.notes?.value ?? []).filter((note) => note.page === page.slug).length
@@ -168,6 +176,13 @@ export function PracticeShell({
     const stored = Number(window.localStorage.getItem(NAV_WIDTH_KEY));
     if (Number.isFinite(stored) && stored > 0) setNavWidth(clampNavWidth(stored));
   }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    root.scrollTo(0, 0);
+    root.querySelector("section")?.scrollTo(0, 0);
+  }, [here]);
 
   function toggleNav() {
     if (navOpen && !showNav) {
@@ -190,11 +205,12 @@ export function PracticeShell({
           </p>
           <ul>
             {section.pages.map((item) => {
-              const current = pathname === href(item.href);
+              const current = path ? item.href === here : pathname === href(item.href);
               return (
                 <li key={item.slug}>
                   <Link
                     href={href(item.href)}
+                    scroll={stayOnPage ? false : undefined}
                     aria-current={current ? "page" : undefined}
                     className={`flex items-start gap-2 rounded-[7px] px-2.5 py-1.5 text-sm leading-snug ${
                       current
@@ -222,6 +238,7 @@ export function PracticeShell({
 
   return (
     <div
+      ref={rootRef}
       className={`bp-doc ${
         embedded
           ? "flex h-full min-h-0 flex-col overflow-y-auto bg-white lg:flex-row lg:items-stretch lg:overflow-hidden"
@@ -334,6 +351,11 @@ export function PracticeShell({
           </div>
           {page?.summary ? (
             <p className="mt-2.5 text-lg leading-[1.55] text-[#475569]">{page.summary}</p>
+          ) : null}
+          {page && page.slug !== "command" ? (
+            <div className="mt-4">
+              <InputOutputKey />
+            </div>
           ) : null}
         </header>
         )}

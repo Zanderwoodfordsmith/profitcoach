@@ -10,7 +10,7 @@ import {
   sourced,
 } from "./sourced";
 import { ensurePracticeKnowledge, patchPracticeKnowledge } from "./store";
-import type { PracticeKnowledgeRow } from "./types";
+import type { PracticeKnowledgePayload, PracticeKnowledgeRow } from "./types";
 
 type ProgrammeIntake = {
   linkedin_url?: string | null;
@@ -56,7 +56,24 @@ export async function hydratePracticeFromProfile(
   const shouldWelcome =
     (hoursEmpty && Boolean(welcomePatch.working_times?.hours_per_week)) ||
     (urlEmpty && Boolean(welcomePatch.identity?.linkedin_url));
-  const shouldSeedLi = Boolean(linkedin.snapshot) && !knowledge.linkedin_seeded_at;
+  // Records seeded before the headline and About were kept get them on the next open.
+  const profileMissing =
+    Boolean(linkedin.snapshot?.headline?.trim() || linkedin.snapshot?.about?.trim()) &&
+    !isFilledSourced(knowledge.payload.identity.linkedin_headline) &&
+    !isFilledSourced(knowledge.payload.identity.linkedin_about);
+  const seedFull = Boolean(linkedin.snapshot) && !knowledge.linkedin_seeded_at;
+  const shouldSeedLi = seedFull || profileMissing;
+  // Already seeded: add only the headline and About, never re-import fields the coach may have edited.
+  const liPatch: Partial<PracticeKnowledgePayload> =
+    !seedFull && profileMissing
+      ? {
+          identity: {
+            ...emptyPracticePayload().identity,
+            linkedin_headline: linkedinPatch.identity?.linkedin_headline ?? null,
+            linkedin_about: linkedinPatch.identity?.linkedin_about ?? null,
+          },
+        }
+      : linkedinPatch;
   const profilePhone = String((profile.data as { phone?: string | null } | null)?.phone ?? "").trim();
   const shouldPhone = Boolean(profilePhone) && !isFilledSourced(knowledge.payload.identity.phone);
   const bookedAt = booked.get(coachId);
@@ -71,7 +88,7 @@ export async function hydratePracticeFromProfile(
     payloadPatch: mergePracticePayload(
       mergePracticePayload(
         mergePracticePayload(emptyPracticePayload(), welcomePatch),
-        linkedinPatch
+        liPatch
       ),
       {
         ...(shouldBooked && bookedAt

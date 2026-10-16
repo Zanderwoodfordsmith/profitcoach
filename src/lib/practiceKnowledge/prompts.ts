@@ -58,7 +58,10 @@ Return ONLY JSON:
     "practice": {
       "delivery_model": { "value": "coaching", "source": "interview", "updated_at": "ISO" },
       "min_fee": { "value": "", "source": "interview", "updated_at": "ISO" },
-      "capacity": { "value": "", "source": "interview", "updated_at": "ISO" }
+      "capacity": { "value": "", "source": "interview", "updated_at": "ISO" },
+      "payment_terms": { "value": "monthly, 6-month minimum | 6 months upfront", "source": "interview", "updated_at": "ISO" },
+      "guarantee": { "value": "none", "source": "interview", "updated_at": "ISO" },
+      "guarantee_terms": { "value": "", "source": "interview", "updated_at": "ISO" }
     }
   }
 }
@@ -67,7 +70,8 @@ Only include extraction keys you actually learned this turn. Omit empty groups.
 hours_per_week must be one of: under_2_hours, 2_5_hours_week, 5_10_hours_week, 10_15_hours_week, 15_plus_hours_week.
 delivery_model must be coaching, consulting, advisory, or hybrid.
 geography_pref must be local, national, or international.
-linkedin_visibility must be public or discreet.`;
+linkedin_visibility must be public or discreet.
+guarantee must be none, trial (they can stop after a first period) or results (a promise tied to doing the work). Never suggest guaranteeing income.`;
 
 export function summarizeKnowledgeForPrompt(
   payload: PracticeKnowledgePayload
@@ -90,6 +94,18 @@ export function summarizeKnowledgeForPrompt(
   push("Delivery model", payload.practice.delivery_model?.value ?? "");
   push("Minimum fee", textValue(payload.practice.min_fee));
   push("Capacity", textValue(payload.practice.capacity));
+  push("Payment terms", textValue(payload.practice.payment_terms));
+  const guarantee = payload.practice.guarantee?.value;
+  push(
+    "Guarantee",
+    guarantee === "none"
+      ? "none"
+      : [guarantee === "trial" ? "trial period" : guarantee === "results" ? "results-based" : "", textValue(payload.practice.guarantee_terms)]
+          .filter(Boolean)
+          .join(": ")
+  );
+  push("Session rhythm", textValue(payload.practice.session_rhythm));
+  push("LinkedIn headline today", textValue(payload.identity.linkedin_headline));
   push("Roles", listValue(payload.market.roles_held).join(", "));
   push("Industries worked", listValue(payload.market.industries_worked).join(", "));
   push("Credibility in", listValue(payload.market.industries_credibility).join(", "));

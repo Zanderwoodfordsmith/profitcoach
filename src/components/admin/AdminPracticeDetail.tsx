@@ -222,7 +222,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
             </button>
             {detail?.profile?.slug ? (
               <Link
-                href={`/admin/coaches/${detail.profile.slug}?tab=practice`}
+                href={`/admin/coaches/${detail.profile.slug}?tab=blueprint`}
                 className="text-sm text-sky-700"
               >
                 Coach record

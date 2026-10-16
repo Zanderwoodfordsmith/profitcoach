@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { blocksToMarkdown, sanitizeBlocks, sanitizeBuiltSections } from "./blocks";
 import { BLUEPRINT_SECTIONS, buildOrder, openQuestions, sectionByKey, sectionState, stillNeeded } from "./blueprint";
 import { campaignStepsFromSection, toCampaignTokens } from "./campaignHandoff";
+import { proposedDecision } from "./decisionDefaults";
 import { blueprintMarkdown } from "./exportMarkdown";
 import { SECTION_SKILLS } from "./skills";
 import { emptyPracticePayload, sourced } from "./sourced";
@@ -125,5 +126,49 @@ describe("exports and handoff", () => {
     assert.deepEqual(plan.steps.map((s) => s.step_type), ["invite", "wait", "message"]);
     assert.equal(plan.steps[0].body, "Hi {{first_name}}, I see you run...");
     assert.equal(plan.steps[2].send_mode, "remind");
+  });
+});
+
+describe("decisions", () => {
+  it("proposes the record from the pre-read and the coach's own terms", () => {
+    const payload = emptyPracticePayload();
+    payload.practice.min_fee = sourced("£1,500 a month", "interview");
+    payload.practice.payment_terms = sourced("six-month minimum", "interview");
+    payload.practice.guarantee = sourced("none", "interview");
+    const proposal = proposedDecision(
+      row({
+        payload,
+        report_payload: {
+          experience_summary: "",
+          proof_inventory: "",
+          market_hypotheses: [{ industry: "Building services", buyer: "Owner-MD", problem: "Cash is tight", score_notes: "" }],
+          offer_direction: "",
+          positioning: "Profit coaching for building services owners",
+          campaign_angle: "Find the cash you are owed",
+          missing_info: [],
+          decision_questions: [],
+        },
+      })
+    );
+    assert.equal(proposal.target_market, "Building services");
+    assert.equal(proposal.price, "From £1,500 a month, six-month minimum");
+    assert.equal(proposal.guarantee, "No guarantee");
+    assert.equal(proposal.campaign_angle, "Find the cash you are owed");
+  });
+
+  it("puts the locked decisions first in the export", () => {
+    const decision = {
+      id: "d1",
+      coach_id: "c1",
+      payload: { ...proposedDecision(row()), target_market: "Dental practices" },
+      locked_at: "2026-10-14T10:00:00Z",
+      locked_by: null,
+      created_at: "",
+      updated_at: "",
+    };
+    const md = blueprintMarkdown(row(), { coachName: "Pam Woodford", decision });
+    assert.match(md, /Agreed on the Decision Call/);
+    assert.match(md, /\*\*Market:\*\* Dental practices/);
+    assert.ok(md.indexOf("Your Decisions") < md.indexOf("# Foundation"));
   });
 });

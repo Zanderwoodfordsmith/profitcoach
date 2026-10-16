@@ -15,6 +15,8 @@ import { PracticeShell } from "@/components/practice/PracticeShell";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const PREVIEW_KEY = "blueprint-preview-coach";
+/** Picker value for a blank blueprint: what a brand new coach sees. Nothing is saved. */
+const EMPTY_PREVIEW = "empty";
 
 type CoachRow = {
   id: string;
@@ -112,13 +114,18 @@ export function BlueprintCoachPreview({ children }: { children: ReactNode }) {
           className="min-w-[16rem] rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm"
         >
           <option value="">Choose a coach…</option>
+          <option value={EMPTY_PREVIEW}>Empty blueprint (preview, nothing saves)</option>
           {coaches.map((c) => (
             <option key={c.id} value={c.id}>
               {coachName(c)}
             </option>
           ))}
         </select>
-        <p className="text-xs text-slate-500">Edits and approvals save to this coach&apos;s blueprint.</p>
+        <p className="text-xs text-slate-500">
+          {coachId === EMPTY_PREVIEW
+            ? "A blank blueprint. Try the boxes: nothing is saved."
+            : "Edits and approvals save to this coach's blueprint."}
+        </p>
       </div>
     );
     return () => setToolbar(null);
@@ -127,7 +134,11 @@ export function BlueprintCoachPreview({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {error ? <p className="px-4 py-2 text-sm text-rose-600 md:px-6">{error}</p> : null}
-      {coachId ? (
+      {coachId === EMPTY_PREVIEW ? (
+        <PracticeProvider key={EMPTY_PREVIEW} sample basePath="/admin/blueprint/coach">
+          <PracticeShell embedded>{children}</PracticeShell>
+        </PracticeProvider>
+      ) : coachId ? (
         <PracticeProvider key={coachId} coachId={coachId} basePath="/admin/blueprint/coach">
           <PracticeShell embedded>{children}</PracticeShell>
         </PracticeProvider>

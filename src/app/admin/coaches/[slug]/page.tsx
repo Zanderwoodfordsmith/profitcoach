@@ -13,6 +13,7 @@ import {
   AdminCoachLinkedInPanel,
   type AdminCoachLinkedInProfile,
 } from "@/components/admin/AdminCoachLinkedInPanel";
+import { CoachProfileBlueprint } from "@/components/admin/CoachProfileBlueprint";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { formatDateDisplay } from "@/lib/formatDateDisplay";
@@ -111,7 +112,7 @@ type CoachPayment = {
   billing_kind_override: PaymentBillingKind | null;
 };
 
-type TabId = "overview" | "linkedin" | "practice" | "payments";
+type TabId = "overview" | "linkedin" | "blueprint" | "payments";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
 
@@ -215,8 +216,8 @@ export default function AdminCoachDetailPage({
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "payments" || tab === "linkedin" || tab === "practice") {
-      setActiveTab(tab);
+    if (tab === "payments" || tab === "linkedin" || tab === "blueprint" || tab === "practice") {
+      setActiveTab(tab === "practice" ? "blueprint" : tab);
     } else if (!tab) {
       setActiveTab("overview");
     }
@@ -260,9 +261,12 @@ export default function AdminCoachDetailPage({
       setLoading(false);
 
       if (loadedCoach && loadedCoach.slug !== coachRef) {
-        const tab = searchParams.get("tab");
-        const query = tab ? `?tab=${encodeURIComponent(tab)}` : "";
-        router.replace(`/admin/coaches/${encodeURIComponent(loadedCoach.slug)}${query}`);
+        const params = new URLSearchParams(searchParams.toString());
+        if (params.get("tab") === "practice") params.set("tab", "blueprint");
+        const query = params.toString();
+        router.replace(
+          `/admin/coaches/${encodeURIComponent(loadedCoach.slug)}${query ? `?${query}` : ""}`
+        );
       }
     }
 
@@ -446,18 +450,7 @@ export default function AdminCoachDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <StickyPageHeader
-        title={loading ? "Coach" : displayName}
-        tabs={<CoachesHubTabs />}
-        leading={
-          <Link
-            href="/admin"
-            className="text-xs font-medium text-sky-600 hover:text-sky-700"
-          >
-            ← All coaches
-          </Link>
-        }
-      />
+      <StickyPageHeader title="Coaches" tabs={<CoachesHubTabs />} />
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -469,50 +462,40 @@ export default function AdminCoachDetailPage({
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
       {!loading && coach ? (
-        <div className="space-y-8">
-          <header className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm md:p-8">
-            <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-              <div className="flex items-start gap-4">
-                {coach.avatar_url ? (
-                  <img
-                    src={coach.avatar_url}
-                    alt=""
-                    className="h-16 w-16 rounded-full object-cover ring-2 ring-slate-200"
-                  />
-                ) : (
-                  <div
-                    className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-sm font-medium text-slate-400 ring-2 ring-slate-200"
-                    aria-hidden
-                  >
-                    {displayName.slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0 space-y-2">
-                  <h1 className="text-3xl font-bold tracking-[-0.02em] text-slate-900 md:text-4xl">
-                    {displayName}
-                  </h1>
-                  {coach.coach_business_name?.trim() &&
-                  coach.coach_business_name.trim() !== coach.full_name?.trim() ? (
-                    <p className="text-lg text-slate-600">{coach.coach_business_name}</p>
+        <div className="space-y-4">
+          <header className="space-y-3">
+            <Link
+              href="/admin"
+              className="inline-flex text-sm font-medium text-sky-600 hover:text-sky-700"
+            >
+              ← All coaches
+            </Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+                  {displayName}
+                </h1>
+                {coach.coach_business_name?.trim() &&
+                coach.coach_business_name.trim() !== coach.full_name?.trim() ? (
+                  <p className="mt-0.5 text-sm text-slate-600">{coach.coach_business_name}</p>
+                ) : null}
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                  <span>@{coach.slug}</span>
+                  {coach.email ? <span>{coach.email}</span> : null}
+                  {coach.joined_at ? (
+                    <span>Joined {formatIsoDate(coach.joined_at)}</span>
                   ) : null}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
-                    <span>@{coach.slug}</span>
-                    {coach.email ? <span>{coach.email}</span> : null}
-                    {coach.joined_at ? (
-                      <span>Joined {formatIsoDate(coach.joined_at)}</span>
-                    ) : null}
-                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 sm:shrink-0">
                 <button
                   type="button"
                   onClick={() => {
                     setImpersonatingCoachId(coach.id);
                     router.push("/coach");
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
                 >
                   View as coach
                   <ArrowRight className="h-4 w-4" aria-hidden />
@@ -521,7 +504,7 @@ export default function AdminCoachDetailPage({
                   href={`/landing/a?coach=${encodeURIComponent(coach.slug)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
                 >
                   Landing page
                   <ExternalLink className="h-4 w-4" aria-hidden />
@@ -531,7 +514,7 @@ export default function AdminCoachDetailPage({
                     href={`${CRM_LOCATION_BASE_URL}/${coach.crm_location_id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
                   >
                     Open CRM
                     <ExternalLink className="h-4 w-4" aria-hidden />
@@ -545,7 +528,7 @@ export default function AdminCoachDetailPage({
             <nav className="-mb-px flex flex-wrap gap-x-8 gap-y-1" aria-label="Coach sections">
               {tabButton("overview", "Overview")}
               {tabButton("linkedin", "LinkedIn")}
-              {tabButton("practice", "Practice")}
+              {tabButton("blueprint", "Blueprint")}
               {tabButton("payments", `Payments (${paymentSummary.succeededCount})`)}
             </nav>
           </div>
@@ -941,19 +924,10 @@ export default function AdminCoachDetailPage({
             />
           ) : null}
 
-          {activeTab === "practice" ? (
-            <SectionCard
-              title="Practice Installation"
-              description="Knowledge capture, interview, Decision Call report, and Decision Record."
-            >
-              <Link
-                href={`/admin/practice/${coach.id}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0a4478]"
-              >
-                Open practice record
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </SectionCard>
+          {activeTab === "blueprint" ? (
+            <div className="h-[calc(100dvh-11.5rem)] min-h-[32rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <CoachProfileBlueprint coachId={coach.id} coachSlug={coach.slug} />
+            </div>
           ) : null}
 
           {activeTab === "payments" ? (

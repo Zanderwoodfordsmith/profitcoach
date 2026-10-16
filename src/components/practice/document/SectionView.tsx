@@ -2,30 +2,23 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowUpRight, Check, Loader2, MessageCircle, Pencil, RotateCw, Sparkles } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, Lightbulb, Loader2, MessageCircle, Pencil, RotateCw, Sparkles } from "lucide-react";
 
 import {
-  SECTION_SOURCES,
   fieldValue,
   sectionByKey,
   sectionState,
+  type BlueprintSection,
   type FieldSpec,
   type SectionRef,
 } from "@/lib/practiceKnowledge/blueprint";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
 import { formatFieldValue } from "@/lib/practiceKnowledge/exportMarkdown";
-import { STANDARD_SECTIONS } from "@/lib/practiceKnowledge/standard";
 
 import { usePractice } from "../PracticeProvider";
+import { BlockEditor } from "./BlockEditor";
 import { Blocks } from "./Blocks";
-
-const SOURCE_DOT: Record<string, string> = {
-  imported: "bg-[#c99a2e]",
-  from_you: "bg-[var(--bp-sky)]",
-  we_build: "bg-[#6d4fd6]",
-  standard: "bg-[#8595a8]",
-  live: "bg-[#1f9d6b]",
-};
+import { InfoTip } from "./InfoTip";
 
 function formatDate(iso: string | undefined | null) {
   if (!iso) return "";
@@ -35,14 +28,50 @@ function formatDate(iso: string | undefined | null) {
     : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** What a section is for, and where it comes from and goes. Shown behind the info icon. */
+function SectionAbout({ section }: { section: BlueprintSection }) {
+  return (
+    <>
+      {section.about ? <span className="block">{section.about}</span> : null}
+      {section.from?.length ? (
+        <span className="block text-white/75">
+          <span className="font-semibold text-white">Built from:</span> {section.from.join(", ")}
+        </span>
+      ) : null}
+      {section.feeds ? (
+        <span className="block text-white/75">
+          <span className="font-semibold text-white">Used for:</span> {section.feeds}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+const SOURCE_TAG: Record<string, string> = {
+  linkedin: "From LinkedIn",
+  form: "From sign-up",
+  interview: "From the conversation",
+};
+
+/** The empty-box hint: the example (lists one per line become a comma list), or a fixed placeholder. */
+function hint(field: FieldSpec): string {
+  if (field.placeholder) return field.placeholder;
+  return field.example ? `e.g. ${field.example.split("\n").join(", ")}` : "Type here";
+}
+
+/** Long imported text (a LinkedIn About) folds to a few lines until opened. */
+const LONG = 420;
+
+/** The look of something the coach fills in: a white box with an edge, like a form field. */
+const INPUT_BOX =
+  "w-full rounded-xl border border-[#cdd8e4] bg-white px-3.5 py-2.5 text-left text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] shadow-[inset_0_1px_2px_rgba(5,30,54,0.05)]";
+
 function FieldEditor({ field, onDone }: { field: FieldSpec; onDone: () => void }) {
   const { payload, saveField } = usePractice();
   const current = payload ? fieldValue(payload, field.path)?.value : null;
   const [value, setValue] = useState(() =>
     field.kind === "list" ? ((current as string[] | null) ?? []).join("\n") : String(current ?? "")
   );
-  const inputClass =
-    "w-full rounded-lg border border-[var(--bp-rule)] bg-white px-3 py-2 text-[0.9375rem] text-[var(--bp-ink)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]";
 
   function save() {
     if (field.kind === "list") {
@@ -53,28 +82,25 @@ function FieldEditor({ field, onDone }: { field: FieldSpec; onDone: () => void }
     onDone();
   }
 
+  const rows = field.kind === "text" ? 1 : Math.min(14, Math.max(3, value.split("\n").length + Math.floor(value.length / 80)));
   return (
     <div className="space-y-2">
-      {field.kind === "enum" ? (
-        <select className={inputClass} value={value} onChange={(e) => setValue(e.target.value)}>
-          <option value="">Choose…</option>
-          {field.options?.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      ) : field.kind === "list" ? (
-        <textarea
-          className={`${inputClass} min-h-24`}
-          value={value}
-          placeholder="One per line"
-          onChange={(e) => setValue(e.target.value)}
-        />
-      ) : (
-        <textarea className={`${inputClass} min-h-11`} rows={2} value={value} onChange={(e) => setValue(e.target.value)} />
-      )}
-      <div className="flex gap-2">
+      <textarea
+        autoFocus
+        className={`${INPUT_BOX} resize-y border-[var(--bp-sky)] outline-none ring-2 ring-[#cfe6f8]`}
+        rows={rows}
+        value={value}
+        placeholder={hint(field)}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onDone();
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey || field.kind === "text")) {
+            e.preventDefault();
+            save();
+          }
+        }}
+      />
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={save}
@@ -85,95 +111,149 @@ function FieldEditor({ field, onDone }: { field: FieldSpec; onDone: () => void }
         <button type="button" onClick={onDone} className="rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--bp-muted)] hover:bg-[var(--bp-tint)]">
           Cancel
         </button>
+        {field.kind === "list" ? <span className="text-xs text-[var(--bp-faint)]">One per line</span> : null}
       </div>
     </div>
   );
 }
 
-function Fields({ refKey }: { refKey: string }) {
-  const { payload, setAssistantOpen, readOnly } = usePracticeReadOnly();
-  const [editing, setEditing] = useState<string | null>(null);
-  const ref = sectionByKey(refKey);
-  if (!ref || !payload) return null;
-  const fields = ref.section.fields ?? [];
-
+function EnumBox({ field }: { field: FieldSpec }) {
+  const { payload, saveField } = usePractice();
+  const current = payload ? String(fieldValue(payload, field.path)?.value ?? "") : "";
   return (
-    <dl className="grid gap-x-8 gap-y-4 @xl:grid-cols-[minmax(8rem,12rem)_1fr]">
-      {fields.map((field) => {
-        const values = formatFieldValue(payload, field);
-        const editable = !readOnly && field.kind !== "results" && field.kind !== "stories";
-        return (
-          <div key={field.path} className="contents">
-            <dt className="pt-0.5 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">
-              {field.label}
-              {field.required ? null : <span className="font-normal text-[var(--bp-faint)]"> · optional</span>}
-            </dt>
-            <dd className="group min-w-0">
-              {editing === field.path ? (
-                <FieldEditor field={field} onDone={() => setEditing(null)} />
-              ) : values.length ? (
-                <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1 space-y-1.5 text-[1.0078rem] leading-[1.6] text-[var(--bp-ink)]">
-                    {values.map((v, i) => (
-                      <p key={i}>{v}</p>
-                    ))}
-                  </div>
-                  {editable ? (
-                    <button
-                      type="button"
-                      onClick={() => setEditing(field.path)}
-                      aria-label={`Edit ${field.label}`}
-                      className="bp-no-print rounded-md p-1 text-[var(--bp-faint)] opacity-0 transition-opacity hover:bg-[var(--bp-tint)] hover:text-[var(--bp-blue)] focus:opacity-100 group-hover:opacity-100"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-[#fff4e0] px-2.5 py-0.5 text-xs font-semibold text-[#8a5300]">Still open</span>
-                  {readOnly ? null : (
-                    <>
-                      {field.ask ? (
-                        <button
-                          type="button"
-                          onClick={() => setAssistantOpen(true)}
-                          className="bp-no-print inline-flex items-center gap-1 text-xs font-semibold text-[var(--bp-blue)] hover:underline"
-                        >
-                          <MessageCircle className="h-3.5 w-3.5" aria-hidden />
-                          Tell us
-                        </button>
-                      ) : null}
-                      {editable ? (
-                        <button
-                          type="button"
-                          onClick={() => setEditing(field.path)}
-                          className="bp-no-print text-xs font-semibold text-[var(--bp-muted)] hover:text-[var(--bp-blue)] hover:underline"
-                        >
-                          Type it in
-                        </button>
-                      ) : null}
-                    </>
-                  )}
-                </div>
-              )}
-            </dd>
-          </div>
-        );
-      })}
-    </dl>
+    <div className="relative">
+      <select
+        aria-label={field.label}
+        value={current}
+        onChange={(e) => {
+          if (e.target.value) saveField(field, e.target.value);
+        }}
+        className={`${INPUT_BOX} appearance-none pr-10 outline-none hover:border-[var(--bp-sky)] focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8] ${
+          current ? "" : "text-[var(--bp-faint)]"
+        }`}
+      >
+        <option value="">Choose…</option>
+        {field.options?.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--bp-faint)]" aria-hidden />
+    </div>
   );
 }
 
-/** usePractice plus a read-only flag (admin records and exports reuse these views). */
-function usePracticeReadOnly() {
-  const ctx = usePractice();
-  return { ...ctx, readOnly: false };
+function Field({ field }: { field: FieldSpec }) {
+  const { payload, setAssistantOpen, sample } = usePractice();
+  const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  if (!payload) return null;
+  const values = formatFieldValue(payload, field);
+  const long = values.join("\n").length > LONG;
+  const filled = values.length > 0;
+  const source = fieldValue(payload, field.path)?.source;
+  // Results and stories have structure (from, to, timeframe), so the conversation captures them.
+  const structured = field.kind === "results" || field.kind === "stories";
+
+  return (
+    <div className="min-w-0">
+      <div className="mb-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        <span className="text-[0.8125rem] font-semibold text-[var(--bp-muted)]">{field.label}</span>
+        {field.help ? <InfoTip label={field.label}>{field.help}</InfoTip> : null}
+        {!filled && field.required ? (
+          <span className="rounded-full bg-[#fff4e0] px-2 py-px text-[0.6875rem] font-semibold text-[#8a5300]">Needed</span>
+        ) : null}
+        {filled && source && SOURCE_TAG[source] ? (
+          <span className="text-[0.6875rem] font-medium text-[var(--bp-faint)]">{SOURCE_TAG[source]}</span>
+        ) : null}
+      </div>
+
+      {field.kind === "enum" ? (
+        <EnumBox field={field} />
+      ) : editing ? (
+        <FieldEditor field={field} onDone={() => setEditing(false)} />
+      ) : structured ? (
+        <div className={INPUT_BOX}>
+          {filled ? (
+            <ul className="space-y-1.5">
+              {values.map((v, i) => (
+                <li key={i}>{v}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[var(--bp-faint)]">{hint(field)}</p>
+          )}
+          {sample ? null : (
+            <button
+              type="button"
+              onClick={() => setAssistantOpen(true)}
+              className="bp-no-print mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--bp-blue)] hover:underline"
+            >
+              <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+              {filled ? "Add another in the conversation" : "Tell us in the conversation"}
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label={`Edit ${field.label}`}
+          className={`${INPUT_BOX} group block cursor-text transition-colors hover:border-[var(--bp-sky)] focus-visible:border-[var(--bp-sky)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cfe6f8]`}
+        >
+          {filled ? (
+            <span
+              className={`block space-y-1 ${
+                long && !expanded
+                  ? "max-h-[8.5rem] overflow-hidden [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+                  : ""
+              }`}
+            >
+              {values.map((v, i) => (
+                <span key={i} className="block whitespace-pre-line">
+                  {v}
+                </span>
+              ))}
+            </span>
+          ) : (
+            <span className="block text-[var(--bp-faint)]">{hint(field)}</span>
+          )}
+        </button>
+        {long ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="bp-no-print mt-1.5 text-xs font-semibold text-[var(--bp-blue)] hover:underline"
+          >
+            {expanded ? "Show less" : "Show all"}
+          </button>
+        ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Fields({ section }: { section: BlueprintSection }) {
+  const fields = section.fields ?? [];
+  const wide = (f: FieldSpec) => f.kind === "longtext" || f.kind === "results" || f.kind === "stories";
+  return (
+    <div className="grid gap-x-5 gap-y-5 @xl:grid-cols-2">
+      {fields.map((field) => (
+        <div key={field.path} className={wide(field) || fields.length === 1 ? "@xl:col-span-2" : undefined}>
+          <Field field={field} />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function WriteButton({ refKey, label }: { refKey: string; label: string }) {
-  const { build, building } = usePractice();
+  const { build, building, sample } = usePractice();
   const busy = building.active.length > 0;
+  if (sample) return null;
   return (
     <button
       type="button"
@@ -188,8 +268,9 @@ function WriteButton({ refKey, label }: { refKey: string; label: string }) {
 }
 
 function SendToCampaigns() {
-  const { sendCampaign, href } = usePractice();
+  const { sendCampaign, href, sample } = usePractice();
   const [state, setState] = useState<{ busy?: string; done?: { id: string; label: string }; error?: string }>({});
+  if (sample) return null;
 
   async function send(variant: "connector" | "conversation", label: string) {
     setState({ busy: variant });
@@ -198,10 +279,11 @@ function SendToCampaigns() {
   }
 
   return (
-    <div className="bp-no-print bp-tinted mt-8 rounded-2xl bg-[var(--bp-tint)] px-5 py-4">
-      <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">Send to Get Clients</p>
+    <div className="bp-no-print mt-6 rounded-xl border border-[var(--bp-rule)] bg-white px-5 py-4">
+      <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">Happy with it? Send it to Get Clients</p>
       <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">
-        Creates a draft campaign with these messages and the timings above. Nothing sends until prospects are added and the campaign is started.
+        Creates a draft campaign with these messages and timings. From then on, change it in Get Clients, not here.
+        Nothing sends until prospects are added and the campaign is started.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
@@ -235,23 +317,25 @@ function SendToCampaigns() {
   );
 }
 
-function Built({ refKey }: { refKey: string }) {
-  const { knowledge, building, build, editMessage } = usePractice();
-  const ref = sectionByKey(refKey);
+/** The look of something BCA wrote: a soft grey panel. Edits are one click away, but quiet. */
+function Output({ refKey, section }: { refKey: string; section: BlueprintSection }) {
+  const { knowledge, building, build, editMessage, saveBlocks, href } = usePractice();
+  const [editing, setEditing] = useState(false);
   const built = knowledge?.built_sections[refKey];
   const writing = building.active.includes(refKey);
   const queued = building.queue.includes(refKey);
+  const panel = "bp-tinted bp-output rounded-2xl bg-[#f3f5f8] px-5 py-5 @2xl:px-7 @2xl:py-6";
 
   if (writing) {
     return (
-      <div className="space-y-3" aria-live="polite">
+      <div className={panel} aria-live="polite">
         <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--bp-blue)]">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          Writing this section from your blueprint…
+          Writing this from your blueprint…
         </p>
-        <div className="space-y-2.5">
+        <div className="mt-4 space-y-2.5">
           {[92, 100, 76, 88].map((w, i) => (
-            <div key={i} className="h-3 animate-pulse rounded-full bg-[var(--bp-tint-strong)]" style={{ width: `${w}%` }} />
+            <div key={i} className="h-3 animate-pulse rounded-full bg-[#e2e7ee]" style={{ width: `${w}%` }} />
           ))}
         </div>
       </div>
@@ -259,22 +343,23 @@ function Built({ refKey }: { refKey: string }) {
   }
 
   if (!built) {
-    const needs = (ref?.section.needs ?? [])
+    const needs = (section.needs ?? [])
       .filter((k) => !knowledge?.built_sections[k])
       .map((k) => sectionByKey(k)?.section.title)
       .filter(Boolean);
     return (
-      <div className="bp-tinted rounded-2xl border border-dashed border-[#c7d7e8] bg-[var(--bp-tint)] px-5 py-5">
-        <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">
-          {queued ? "Queued. BCA writes this next." : "Not written yet."}
+      <div className={`${panel} border border-dashed border-[#d3dae3]`}>
+        <p className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-[var(--bp-ink)]">
+          <Sparkles className="h-4 w-4 text-[var(--bp-faint)]" aria-hidden />
+          {queued ? "Queued. BCA writes this next." : "BCA writes this for you."}
         </p>
         <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">
-          Built from {ref?.section.from?.join(", ").toLowerCase() || "your blueprint"}.
+          From {section.from?.join(", ").toLowerCase() || "your blueprint"}.
           {needs.length ? ` Best written after ${needs.join(" and ").toLowerCase()}.` : ""}
         </p>
         {queued ? null : (
           <div className="mt-3">
-            <WriteButton refKey={refKey} label="Write this section" />
+            <WriteButton refKey={refKey} label="Write it now" />
           </div>
         )}
       </div>
@@ -282,116 +367,114 @@ function Built({ refKey }: { refKey: string }) {
   }
 
   return (
-    <div className="bp-written">
-      <Blocks blocks={built.blocks} onSaveMessage={(index, body) => editMessage(refKey, index, body)} />
-      {refKey === "campaigns:messaging" ? <SendToCampaigns /> : null}
-      <div className="bp-no-print mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--bp-rule)] pt-3 text-xs text-[var(--bp-faint)]">
-        <span>
+    <div className={panel}>
+      <div className="bp-no-print mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-[var(--bp-faint)]">
+        <span className="inline-flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
           Written by BCA {formatDate(built.generated_at)}
           {built.edited_at ? `, edited ${formatDate(built.edited_at)}` : ""}
         </span>
-        <button
-          type="button"
-          disabled={building.active.length > 0}
-          onClick={() => {
-            if (built.edited_at && !window.confirm("Rewriting replaces your edits to this section. Carry on?")) return;
-            build(refKey);
-          }}
-          className="inline-flex items-center gap-1 font-semibold text-[var(--bp-muted)] hover:text-[var(--bp-blue)] disabled:opacity-40"
-        >
-          <RotateCw className="h-3.5 w-3.5" aria-hidden />
-          Rewrite
-        </button>
-        <button
-          type="button"
-          onClick={() => void navigator.clipboard?.writeText(blocksToMarkdown(built.blocks, 3))}
-          className="font-semibold text-[var(--bp-muted)] hover:text-[var(--bp-blue)]"
-        >
-          Copy as text
-        </button>
+        {editing ? null : (
+          <span className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-1 font-semibold text-[var(--bp-muted)] hover:text-[var(--bp-blue)]"
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+              Edit
+            </button>
+            <button
+              type="button"
+              disabled={building.active.length > 0}
+              onClick={() => {
+                if (built.edited_at && !window.confirm("Rewriting replaces your edits to this section. Carry on?")) return;
+                build(refKey);
+              }}
+              className="inline-flex items-center gap-1 font-semibold text-[var(--bp-muted)] hover:text-[var(--bp-blue)] disabled:opacity-40"
+            >
+              <RotateCw className="h-3.5 w-3.5" aria-hidden />
+              Rewrite
+            </button>
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(blocksToMarkdown(built.blocks, 3))}
+              className="font-semibold text-[var(--bp-muted)] hover:text-[var(--bp-blue)]"
+            >
+              Copy
+            </button>
+          </span>
+        )}
       </div>
+      {editing ? (
+        <BlockEditor blocks={built.blocks} onSave={(blocks) => saveBlocks(refKey, blocks)} onCancel={() => setEditing(false)} />
+      ) : (
+        <Blocks blocks={built.blocks} onSaveMessage={(index, body) => editMessage(refKey, index, body)} />
+      )}
+      {refKey === "campaigns:messaging" && !editing ? <SendToCampaigns /> : null}
+      {section.link && !editing ? (
+        <p className="bp-no-print mt-5 border-t border-[#e1e6ec] pt-3 text-sm">
+          <Link href={href(section.link.href)} className="inline-flex items-center gap-1 font-semibold text-[var(--bp-blue)] hover:underline">
+            {section.link.label}
+            <ArrowUpRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }
 
 export function SectionView({ sectionRef }: { sectionRef: SectionRef }) {
-  const { knowledge, payload, approveSection, href } = usePractice();
+  const { knowledge, payload, approveSection } = usePractice();
   const { section, key } = sectionRef;
   if (!knowledge || !payload) return null;
   const row = { ...knowledge, payload };
   const state = sectionState(sectionRef, row);
   const approved = Boolean(payload.review.approved_sections?.value?.[key]);
-  const canApprove = section.source !== "live" && section.source !== "standard" && state === "ready";
-
-  const stateLabel =
-    state === "open"
-      ? "Needs you"
-      : state === "building"
-        ? "Not written yet"
-        : state === "live"
-          ? "Fills when live"
-          : approved
-            ? "Approved"
-            : section.source === "standard"
-              ? "BCA standard"
-              : "Ready to review";
+  const isOutput = section.source === "we_build";
+  // Nothing to approve in a section that is still empty.
+  const anyFilled = (section.fields ?? []).some((f) => formatFieldValue(payload, f).length > 0);
+  const canApprove = state === "ready" && (isOutput || anyFilled);
 
   return (
     <section id={`s-${key.replace(":", "-")}`} className="bp-section scroll-mt-24">
-      <header className="mb-5">
-        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-          <h3 className="min-w-0 text-[1.3125rem] font-semibold leading-snug tracking-[-0.02em] text-[var(--bp-ink)]">
+      <header className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h3 className="min-w-0 text-[1.25rem] font-semibold leading-snug tracking-[-0.02em] text-[var(--bp-ink)]">
             {section.title}
           </h3>
-          {canApprove ? (
-            <button
-              type="button"
-              aria-pressed={approved}
-              onClick={() => approveSection(key)}
-              className={`bp-no-print inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                approved
-                  ? "bg-[var(--bp-navy)] text-white"
-                  : "bg-white text-[var(--bp-ink)] ring-1 ring-[var(--bp-rule)] hover:ring-[var(--bp-sky)]"
-              }`}
-            >
-              {approved ? <Check className="h-3.5 w-3.5" aria-hidden /> : null}
-              {approved ? "Approved" : "Approve"}
-            </button>
-          ) : null}
+          <InfoTip label={section.title}>
+            <SectionAbout section={section} />
+          </InfoTip>
         </div>
-        <div className="bp-rule-short mt-2.5" />
-        <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--bp-muted)]">
-          <span className="inline-flex items-center gap-1.5 font-semibold" title={SECTION_SOURCES[section.source].hint}>
-            <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${SOURCE_DOT[section.source]}`} />
-            {SECTION_SOURCES[section.source].label}
-          </span>
-          <span aria-hidden className="text-[var(--bp-rule)]">/</span>
-          <span className={state === "open" ? "font-semibold text-[#8a5300]" : undefined}>{stateLabel}</span>
-        </p>
+        {canApprove ? (
+          <button
+            type="button"
+            aria-pressed={approved}
+            onClick={() => approveSection(key)}
+            className={`bp-no-print inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+              approved
+                ? "bg-[var(--bp-navy)] text-white"
+                : "bg-white text-[var(--bp-ink)] ring-1 ring-[var(--bp-rule)] hover:ring-[var(--bp-sky)]"
+            }`}
+          >
+            {approved ? <Check className="h-3.5 w-3.5" aria-hidden /> : null}
+            {approved ? "Approved" : isOutput ? "Approve" : "Looks right"}
+          </button>
+        ) : null}
       </header>
 
-      {section.source === "imported" || section.source === "from_you" ? (
-        <Fields refKey={key} />
-      ) : section.source === "we_build" ? (
-        <Built refKey={key} />
-      ) : section.source === "standard" ? (
-        STANDARD_SECTIONS[key] ? <Blocks blocks={STANDARD_SECTIONS[key]} /> : null
-      ) : (
-        <div className="bp-tinted flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#effaf5] px-5 py-4">
-          <p className="text-sm leading-6 text-[#1d5a43]">
-            {SECTION_SOURCES.live.hint} Nothing here is invented.
-          </p>
-          {section.link ? (
-            <Link
-              href={href(section.link.href)}
-              className="bp-no-print inline-flex items-center gap-1 text-sm font-semibold text-[#146b4b] hover:underline"
-            >
-              {section.link.label}
-              <ArrowUpRight className="h-4 w-4" aria-hidden />
-            </Link>
-          ) : null}
-        </div>
-      )}
+      {section.tip ? (
+        <p className="bp-tinted mb-5 flex gap-2.5 rounded-xl bg-[#eef6fd] px-4 py-3 text-[0.9375rem] leading-[1.6] text-[#0b3f6b]">
+          <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[var(--bp-sky)]" aria-hidden />
+          <span>
+            <span className="font-semibold">BCA recommends: </span>
+            {section.tip}
+          </span>
+        </p>
+      ) : null}
+
+      {isOutput ? <Output refKey={key} section={section} /> : <Fields section={section} />}
     </section>
   );
 }

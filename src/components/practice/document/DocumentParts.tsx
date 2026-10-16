@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Download, FileText, Loader2, MessageCircle, Printer, Sparkles, Square } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Download, FileText, GraduationCap, Loader2, MessageCircle, Printer, Sparkles, Square } from "lucide-react";
 
 import {
   BLUEPRINT_GROUPS,
@@ -13,11 +13,10 @@ import {
   type BlueprintGroup,
   type BlueprintLink,
 } from "@/lib/practiceKnowledge/blueprint";
-import { guidePage } from "@/lib/practiceKnowledge/clientSessions";
 import { blueprintFileName, blueprintMarkdown } from "@/lib/practiceKnowledge/exportMarkdown";
 
+import { DecisionRecordView } from "../DecisionRecord";
 import { usePractice } from "../PracticeProvider";
-import { SessionGuide } from "../SessionGuide";
 import { SectionView } from "./SectionView";
 
 /** Pages that belong in the document (not the Command Center or the whole-document page). */
@@ -35,15 +34,55 @@ export function useBlueprintProgress() {
   const written = build.filter((k) => knowledge.built_sections[k]).length;
   const needed = stillNeeded(row);
   const approvals = payload.review.approved_sections?.value ?? {};
-  const reviewable = BLUEPRINT_SECTIONS.filter(
-    (r) => r.section.source !== "live" && r.section.source !== "standard" && sectionState(r, row) === "ready"
-  );
+  const reviewable = BLUEPRINT_SECTIONS.filter((r) => sectionState(r, row) === "ready");
   const approved = reviewable.filter((r) => approvals[r.key]).length;
   return { written, toWrite: build.length, needed, approved, reviewable: reviewable.length };
 }
 
+/** A small key to the two looks, so a coach knows what is theirs to fill and what BCA wrote. */
+export function InputOutputKey() {
+  return (
+    <p className="bp-no-print flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-[var(--bp-muted)]">
+      <span className="inline-flex items-center gap-2">
+        <span aria-hidden className="h-3.5 w-5 rounded-[4px] border border-[#cdd8e4] bg-white" />
+        You tell us
+      </span>
+      <span className="inline-flex items-center gap-2">
+        <span aria-hidden className="h-3.5 w-5 rounded-[4px] bg-[#e6eaf0]" />
+        BCA writes it, you can edit it
+      </span>
+    </p>
+  );
+}
+
+function ClassroomLinks({ page }: { page: BlueprintLink }) {
+  const { href } = usePractice();
+  if (!page.learn?.length) return null;
+  return (
+    <aside className="bp-keep rounded-2xl border border-[var(--bp-rule)] px-5 py-5">
+      <p className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-[var(--bp-ink)]">
+        <GraduationCap className="h-4 w-4 text-[var(--bp-sky)]" aria-hidden />
+        How to do it, in the Classroom
+      </p>
+      <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">The same for every coach, so it lives in one place and stays up to date.</p>
+      <ul className="mt-3 grid gap-x-6 gap-y-1.5 @xl:grid-cols-2">
+        {page.learn.map((link) => (
+          <li key={link.href}>
+            <Link
+              href={href(link.href)}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline"
+            >
+              {link.label}
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
 export function PageView({ page, showTitle = true }: { page: BlueprintLink; showTitle?: boolean }) {
-  const guide = guidePage(page.slug);
   return (
     <div id={`p-${page.slug}`} className="scroll-mt-20">
       {showTitle ? (
@@ -54,8 +93,8 @@ export function PageView({ page, showTitle = true }: { page: BlueprintLink; show
           <p className="mt-2 max-w-[60ch] text-[1.0625rem] leading-[1.6] text-[var(--bp-muted)]">{page.summary}</p>
         </header>
       ) : null}
-      {guide ? (
-        <SessionGuide guide={guide} />
+      {page.slug === "decisions" ? (
+        <DecisionRecordView />
       ) : (
         <div className="space-y-14">
           {page.sections.map((section) => (
@@ -69,6 +108,7 @@ export function PageView({ page, showTitle = true }: { page: BlueprintLink; show
               }}
             />
           ))}
+          <ClassroomLinks page={page} />
         </div>
       )}
     </div>
@@ -159,7 +199,7 @@ export function BuildBar({ compact = false }: { compact?: boolean }) {
 }
 
 export function DownloadMenu({ pageSlug }: { pageSlug?: string }) {
-  const { knowledge, payload, coachName } = usePractice();
+  const { knowledge, payload, coachName, decision } = usePractice();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -182,7 +222,7 @@ export function DownloadMenu({ pageSlug }: { pageSlug?: string }) {
   const name = coachName || "Coach";
 
   function download(slug?: string) {
-    const md = blueprintMarkdown(row, { coachName: name, pageSlug: slug });
+    const md = blueprintMarkdown(row, { coachName: name, pageSlug: slug, decision });
     const url = URL.createObjectURL(new Blob([md], { type: "text/markdown;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
@@ -245,7 +285,7 @@ export function DownloadMenu({ pageSlug }: { pageSlug?: string }) {
 }
 
 export function StillNeeded() {
-  const { knowledge, payload, setAssistantOpen, href } = usePractice();
+  const { knowledge, payload, setAssistantOpen, href, stayOnPage } = usePractice();
   if (!knowledge || !payload) return null;
   const needed = stillNeeded({ ...knowledge, payload });
   if (!needed.length) return null;
@@ -269,6 +309,7 @@ export function StillNeeded() {
           <li key={ref.key}>
             <Link
               href={`${href(ref.page.href)}#s-${ref.key.replace(":", "-")}`}
+              scroll={stayOnPage ? false : undefined}
               className="group grid grid-cols-[0.75rem_1fr_auto] items-baseline gap-2 rounded-md py-1 text-sm text-[#6b4a10] hover:text-[#3d2800]"
             >
               <span aria-hidden className="h-1.5 w-1.5 -translate-y-px rounded-full bg-[#d99a2b]" />
@@ -326,7 +367,7 @@ export function BlueprintCover() {
 }
 
 export function Contents() {
-  const { href } = usePractice();
+  const { href, stayOnPage } = usePractice();
   return (
     <nav aria-label="Contents" className="bp-keep">
       <h2 className="text-[0.8125rem] font-semibold text-[var(--bp-muted)]">Contents</h2>
@@ -339,7 +380,7 @@ export function Contents() {
             <ul className="mt-2 space-y-1">
               {documentPages(group).map((page) => (
                 <li key={page.slug}>
-                  <Link href={href(page.href)} className="text-sm text-[var(--bp-muted)] hover:text-[var(--bp-blue)] hover:underline">
+                  <Link href={href(page.href)} scroll={stayOnPage ? false : undefined} className="text-sm text-[var(--bp-muted)] hover:text-[var(--bp-blue)] hover:underline">
                     {page.title}
                   </Link>
                 </li>
