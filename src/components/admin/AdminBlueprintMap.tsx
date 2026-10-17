@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
@@ -109,10 +110,16 @@ export function AdminBlueprintMap() {
             <span className="opacity-60">{allSections.filter((s) => s.source === key).length}</span>
           </button>
         ))}
+        <Link
+          href="/admin/blueprint/flow"
+          className="ml-auto rounded-full px-3 py-1.5 text-sm font-medium text-sky-700 hover:underline"
+        >
+          Flow map
+        </Link>
         <button
           type="button"
           onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(BLUEPRINT_GROUPS.map((g) => g.label)))}
-          className="ml-auto rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
+          className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
         >
           {allCollapsed ? "Expand all" : "Collapse all"}
         </button>

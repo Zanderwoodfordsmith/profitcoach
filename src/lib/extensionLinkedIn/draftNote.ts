@@ -1,4 +1,5 @@
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
+import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
 import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContext";
 
@@ -43,9 +44,10 @@ export async function draftLinkedInNotesForProspect(opts: {
   kind: DraftNoteKind;
   profile: DraftNoteProfile;
 }): Promise<{ variants: DraftNoteVariant[] }> {
-  const [brain, linkedIn] = await Promise.all([
+  const [brain, linkedIn, blueprint] = await Promise.all([
     loadCoachAiContextRow(opts.coachId),
     loadCoachLinkedInSummary(opts.coachId),
+    loadBlueprintContext(opts.coachId),
   ]);
 
   const firstName =
@@ -76,7 +78,7 @@ ${JSON.stringify(brain ?? {}, null, 2)}
 
 Coach LinkedIn / proof summary:
 ${linkedIn.summary || "(none)"}
-
+${blueprint ? `\n${blueprint}\n` : ""}
 Write 2 ${opts.kind} variants addressed to ${firstName}.`;
 
   const { data, error } = await generateCampaignJson<{

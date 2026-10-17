@@ -14,10 +14,12 @@ Keep labels to 1–3 words (Direct, Proof-led, Specific, Warm).`;
 export const PROFILE_REWRITE_DEFAULT_VOICE = `You rewrite a BCA coach's LinkedIn profile so the right business owners recognise themselves and want to talk.
 
 Rules:
-- Write copy the coach can paste into LinkedIn. Never invent client results, numbers, or proof — use only what the brain / current profile supplies. If proof is missing, write without fake metrics.
+- Write copy the coach can paste into LinkedIn. Never invent client results, numbers, or proof. Use only what the Practice Blueprint, the brain or the current profile supplies. If proof is missing, write without fake metrics.
+- The Practice Blueprint is the source of truth: write to its ideal client, in its voice and tone, with its offer. If it says the coach is discreet about coaching, keep the profile discreet.
+- How they want to be known, and the kind of coach they are (boot camp, hugs, a mix), should be readable in the About. Owners must recognise what working with them will feel like. Use values they named. Do not invent a hobby, book or film, and do not force those onto the profile.
 - Owner language, not coach-speak. Not “Business Coach | Helping leaders transform”.
 - Headline: who they help + the outcome. Scannable. 3–5 variants. LinkedIn max 220 characters.
-- About: written TO the ideal client (you/your), not a CV. Pain in their words → mechanism (BOSS as a system, not therapy) → proof from the brain → clear next step (connect, newsletter, or a call). Short paragraphs. 2–3 variants.
+- About: written TO the ideal client (you/your), not a CV. Pain in their words → mechanism (BOSS as a system, not therapy) → the kind of coach they are → proof from the Blueprint → clear next step (connect, newsletter, or a call). Short paragraphs. 2–3 variants.
 - Experience: current role framed as client outcomes, not job history. 2–3 variants of the description (and title if the current title is generic).
 - Banner: words only (who + result). Do not describe image layouts in detail. 3 short lines they can put on a banner.
 - Featured: what to pin on the profile (newsletter, a proof post, a lead magnet / case). 2–3 variants. Each variant.text is a short numbered list of what to feature and why — not image generation.`;
@@ -26,9 +28,13 @@ export const PROFILE_REWRITE_SYSTEM = `${PROFILE_REWRITE_DEFAULT_VOICE}
 
 ${PROFILE_REWRITE_JSON_CONTRACT}`;
 
-export function composeRewriteSystem(adminVoice: string | null): string {
+/** Admin voice, then the method (content/practice-skills/linkedin-profile.md), then the fixed JSON contract. */
+export function composeRewriteSystem(adminVoice: string | null, method = ""): string {
   const voice = adminVoice?.trim() || PROFILE_REWRITE_DEFAULT_VOICE;
-  return `${voice}\n\n${PROFILE_REWRITE_JSON_CONTRACT}`;
+  const methodPart = method.trim()
+    ? `# Method\n\nUse the parts of this method that fit the section you are asked to rewrite. The section instructions and the JSON format win on format.\n\n${method.trim()}\n\n`
+    : "";
+  return `${voice}\n\n${methodPart}${PROFILE_REWRITE_JSON_CONTRACT}`;
 }
 
 function clip(value: string, max: number): string {
@@ -107,6 +113,8 @@ export function buildRewriteUser(opts: {
   linkedInSummary: string;
   instruction: string | null;
   experienceIndex: number;
+  /** The Practice Blueprint section. Wins over the brain and the old profile. */
+  blueprint?: string;
 }): string {
   const sectionGuide: Record<ProfileSectionId, string> = {
     headline: "Rewrite the HEADLINE only. Each variant.text is the full headline.",
@@ -134,5 +142,5 @@ ${opts.linkedInSummary}
 
 Coach brain:
 ${formatBrain(opts.brain)}
-${extra}`;
+${opts.blueprint ? `\n${opts.blueprint}\n` : ""}${extra}`;
 }

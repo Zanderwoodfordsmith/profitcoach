@@ -33,22 +33,32 @@ async function auth(request: Request) {
   if (check.error || !check.userId) {
     return { error: NextResponse.json({ error: check.error ?? "Unauthorized" }, { status: 401 }) };
   }
-  return { coachId: check.userId };
+  return { coachId: check.userId, callerId: check.callerId };
 }
 
 export async function GET(request: Request) {
   const a = await auth(request);
   if ("error" in a) return a.error;
   try {
-    const [knowledge, assets, decision, profile] = await Promise.all([
+    const [knowledge, assets, decision, profile, caller] = await Promise.all([
       hydratePracticeFromProfile(a.coachId),
       listIntakeAssets(a.coachId),
       getLatestDecisionRecord(a.coachId),
       supabaseAdmin.from("profiles").select("full_name, avatar_url").eq("id", a.coachId).maybeSingle(),
+      supabaseAdmin.from("profiles").select("full_name").eq("id", a.callerId).maybeSingle(),
     ]);
     const coach_name = (profile.data?.full_name as string | null)?.trim() || "";
     const coach_avatar_url = (profile.data?.avatar_url as string | null)?.trim() || null;
-    return NextResponse.json({ knowledge, assets, decision, coach_name, coach_avatar_url });
+    const viewer_name = (caller.data?.full_name as string | null)?.trim() || "";
+    return NextResponse.json({
+      knowledge,
+      assets,
+      decision,
+      coach_name,
+      coach_avatar_url,
+      viewer_id: a.callerId,
+      viewer_name,
+    });
   } catch (err) {
     console.error("practice GET:", err instanceof Error ? err.message : "failed");
     return NextResponse.json({ error: "Could not load practice knowledge." }, { status: 500 });

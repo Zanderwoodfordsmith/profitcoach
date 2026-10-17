@@ -1,3 +1,4 @@
+import { CAMPAIGN_HANDOFFS } from "@/lib/practiceKnowledge/campaignHandoff";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getOkLinkedInAccount } from "@/lib/unipile/outreachAccounts";
 
@@ -122,6 +123,7 @@ export const coreTools: AgentToolDef[] = [
         blueprint: {
           targeting: Boolean(built["market:criteria"] || built["market:avatar"]),
           campaign_messaging: Boolean(built["campaigns:messaging"]),
+          campaigns_written: CAMPAIGN_HANDOFFS.filter((h) => built[h.section]).map((h) => h.id),
         },
       };
     },

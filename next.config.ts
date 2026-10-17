@@ -44,6 +44,17 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        // The Profile Optimizer now lives in the Blueprint's LinkedIn page.
+        source: "/coach/linkedin-profile",
+        destination: "/coach/blueprint/linkedin",
+        permanent: false,
+      },
+      {
+        source: "/admin/linkedin-profile",
+        destination: "/admin/blueprint/coach/linkedin",
+        permanent: false,
+      },
+      {
         source: "/coach/practice",
         destination: "/coach/blueprint",
         permanent: false,

@@ -31,6 +31,85 @@
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/*
+ * Section title strip: dark, with white text. Swap --bp-head to change the look.
+ * Brand blue (current): linear-gradient(100deg, #0a3f70 0%, #0c5290 45%, #1670b8 100%)
+ * Cool slate:           linear-gradient(100deg, #1c2836 0%, #2c3b4d 55%, #3e5167 100%)
+ */
+.bp-doc {
+  --bp-head: linear-gradient(100deg, #0a3f70 0%, #0c5290 45%, #1670b8 100%);
+}
+
+.bp-head {
+  background: var(--bp-head);
+  --bp-ink: #ffffff;
+  --bp-muted: rgba(255, 255, 255, 0.82);
+  --bp-faint: rgba(255, 255, 255, 0.72);
+  --bp-tint: rgba(255, 255, 255, 0.14);
+}
+
+/* Popups opened from the strip keep the page colours. */
+.bp-head .bp-pop {
+  --bp-ink: #0b1b2e;
+  --bp-muted: #55657a;
+  --bp-faint: #8595a8;
+  --bp-tint: #f2f7fc;
+}
+
+.bp-head :focus-visible {
+  outline-color: #ffffff;
+}
+
+/* A bar inside a section. Same full width as the navy header, in grey. */
+.bp-subhead {
+  background: #e7eef5;
+}
+
+/* The newsletter itself needs more room than a short answer. */
+.bp-issue-body textarea {
+  min-height: 11rem;
+}
+
+/* Inline answers: label on the left, the box or value on the right, one line each. */
+.bp-inline > div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: center;
+}
+.bp-inline > div > :first-child {
+  margin-bottom: 0;
+}
+.bp-inline > div > :nth-child(n + 3) {
+  grid-column: 2;
+}
+.bp-inline .bp-input {
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+/* One-line answers do not need the drag-to-resize handle. */
+.bp-inline textarea[rows="1"] + button {
+  display: none;
+}
+.bp-inline:has(textarea[rows="4"]) > div,
+.bp-inline:has(ul) > div,
+.bp-inline:has(p > button) > div {
+  align-items: start;
+}
+.bp-inline:has(textarea[rows="4"]) > div > :first-child,
+.bp-inline:has(ul) > div > :first-child {
+  padding-top: 0.45rem;
+}
+@container (max-width: 30rem) {
+  .bp-inline > div {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.375rem;
+  }
+  .bp-inline > div > :nth-child(n + 3) {
+    grid-column: 1;
+  }
+}
+
 /* The thin gradient rule under chapter and section titles. */
 .bp-rule {
   height: 2px;
@@ -177,6 +256,12 @@
   .bp-keep {
     break-inside: avoid;
   }
+  .bp-head {
+    background: none;
+    --bp-ink: #0b1b2e;
+    --bp-muted: #55657a;
+    --bp-faint: #8595a8;
+  }
   .bp-table th,
   .bp-tinted {
     -webkit-print-color-adjust: exact;
@@ -187,4 +272,27 @@
 /* Answer boxes draw their own focus ring, so skip the generic outline. */
 .bp-doc .bp-input:focus-visible {
   outline: none;
+}
+
+@keyframes bp-status-guide-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.bp-status-guide-dialog {
+  animation: bp-status-guide-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-status-guide-dialog {
+    animation: none;
+  }
 }

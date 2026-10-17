@@ -5,7 +5,7 @@ import type { KnowledgeSource, Sourced } from "./types";
 export const BRIEF_SECTIONS = [
   { id: "experience", title: "Your experience and proof" },
   { id: "market", title: "Market and buyer" },
-  { id: "offer", title: "Offer and positioning" },
+  { id: "offer", title: "The offer" },
   { id: "calls", title: "Get calls" },
   { id: "win", title: "Win clients" },
   { id: "serve", title: "Serve clients" },
@@ -306,8 +306,26 @@ export function buildPracticeBrief(
       "text",
       textValue(payload.practice.capacity)
     ),
-    prose("practice.more_of", textValue(payload.practice.more_of), payload.practice.more_of, "text"),
-    prose("practice.less_of", textValue(payload.practice.less_of), payload.practice.less_of, "text"),
+    prose(
+      "practice.offer_outcome",
+      payload.practice.offer_outcome?.value
+        ? payload.practice.offer_outcome.value === "money"
+          ? "Leads with money"
+          : payload.practice.offer_outcome.value === "time"
+            ? "Leads with time"
+            : "Leads with team"
+        : "",
+      payload.practice.offer_outcome,
+      "text"
+    ),
+    prose("practice.more_of", listValue(payload.practice.more_of).join("; "), payload.practice.more_of, "text"),
+    prose("practice.less_of", listValue(payload.practice.less_of).join("; "), payload.practice.less_of, "text"),
+    prose(
+      "practice.help_with",
+      listValue(payload.practice.help_with).join("; "),
+      payload.practice.help_with,
+      "text"
+    ),
   ].filter((b): b is BriefBlock => Boolean(b));
   if (!workBlocks.length) {
     workBlocks.push({
@@ -335,12 +353,14 @@ export function buildPracticeBrief(
     ...askedBlocks,
   ];
   const offerBlocks = take(workBlocks, [
+    "practice.offer_outcome",
+    "practice.more_of",
+    "practice.less_of",
+    "practice.help_with",
     "practice.delivery_model",
     "practice.delivery_format",
     "practice.min_fee",
     "practice.capacity",
-    "practice.more_of",
-    "practice.less_of",
   ]);
   const callBlocks = [
     ...take(whoBlocks, ["identity.linkedin_url", "identity.website", "identity.phone"]),
@@ -364,7 +384,7 @@ export function buildPracticeBrief(
     },
     {
       id: "offer",
-      title: "Offer and positioning",
+      title: "The offer",
       filled: offerBlocks.length > 0 || Boolean(report?.offer_direction),
       blocks: offerBlocks.length
         ? offerBlocks
@@ -542,10 +562,46 @@ export function patchFromBriefEdit(
           capacity: sourced(value.replace(/^Capacity\s*/i, "").trim(), "coach_edit"),
         },
       };
+    case "practice.offer_outcome":
+      return {
+        practice: {
+          ...payload.practice,
+          offer_outcome:
+            value === "money" || value === "time" || value === "team"
+              ? sourced(value, "coach_edit")
+              : payload.practice.offer_outcome,
+        },
+      };
     case "practice.more_of":
-      return { practice: { ...payload.practice, more_of: text } };
+      return {
+        practice: {
+          ...payload.practice,
+          more_of: sourced(
+            value.split(/;|\n/).map((item) => item.trim()).filter(Boolean),
+            "coach_edit"
+          ),
+        },
+      };
     case "practice.less_of":
-      return { practice: { ...payload.practice, less_of: text } };
+      return {
+        practice: {
+          ...payload.practice,
+          less_of: sourced(
+            value.split(/;|\n/).map((item) => item.trim()).filter(Boolean),
+            "coach_edit"
+          ),
+        },
+      };
+    case "practice.help_with":
+      return {
+        practice: {
+          ...payload.practice,
+          help_with: sourced(
+            value.split(/;|\n/).map((item) => item.trim()).filter(Boolean),
+            "coach_edit"
+          ),
+        },
+      };
     default:
       return {};
   }

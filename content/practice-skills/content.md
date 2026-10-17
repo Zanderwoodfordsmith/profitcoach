@@ -10,7 +10,9 @@ Post types that work:
 - A framework in plain words (the five levers, the five levels).
 - A question post that invites owners to answer.
 
-Rules: a strong first line, short paragraphs, one idea, a soft CTA (the BOSS Scorecard or the value session). Aim for four posts a month minimum.
+Rules: a strong first line, short paragraphs, one idea, a soft CTA (the BOSS Scorecard or the value session). Aim for four posts a month minimum. Write in the kind of coach they are (boot camp, hugs, a mix). If they named a book, film, hobby or story, make that one of the pillars or several of the twelve ideas. Analogies only from what they named.
 
 ## Newsletter
-A monthly or fortnightly email or LinkedIn newsletter to owners in the market. Name it after the outcome for this market. Each issue: one idea, one story or example, one practical action, and a gentle CTA to the value session or the scorecard. End every issue with the value session offer. Keep it under 500 words.
+The LinkedIn newsletter method lives in `linkedin-newsletter.md`. Posts on this page still come from the pillars below: they can stand alone, or they can stretch one issue (one strategy a day, a carousel from the checklist).
+
+When they named a favourite book, film, hobby, sport or a story they would share, use that as the analogy or the opening story. That is how the newsletter sounds like them. Never invent a hobby, a book, a film or a scene from their life. If they gave none, stay with the avatar's world and their proof.

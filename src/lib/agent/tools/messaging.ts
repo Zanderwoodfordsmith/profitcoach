@@ -1,10 +1,13 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
 import { blocksToMarkdown, sanitizeBuiltSections } from "@/lib/practiceKnowledge/blocks";
 import {
-  campaignMessagesFromSection,
-  campaignStepsFromSection,
+  CAMPAIGN_HANDOFFS,
+  campaignMessages,
+  campaignPlan,
+  handoffById,
   toCampaignTokens,
-  type HandoffVariant,
+  type CampaignHandoff,
 } from "@/lib/practiceKnowledge/campaignHandoff";
 import { replaceCampaignSteps, type CampaignStepInput } from "@/lib/unipile/campaigns";
 
@@ -104,22 +107,22 @@ async function stepsGate(
   };
 }
 
-async function blueprintSteps(coachId: string, variant: HandoffVariant) {
+async function blueprintSteps(coachId: string, handoff: CampaignHandoff) {
   const { data } = await supabaseAdmin
     .from("coach_practice_knowledge")
     .select("built_sections")
     .eq("coach_id", coachId)
     .maybeSingle();
-  const section = sanitizeBuiltSections(data?.built_sections ?? {})["campaigns:messaging"];
-  if (!section) throw new AgentToolError("The coach's blueprint has no campaign messaging yet.");
-  const messages = campaignMessagesFromSection(section, variant);
-  const plan = campaignStepsFromSection(section, variant);
+  const section = sanitizeBuiltSections(data?.built_sections ?? {})[handoff.section];
+  if (!section) throw new AgentToolError(`The coach's blueprint has no ${handoff.id.replace("_", " ")} campaign written yet.`);
+  const messages = campaignMessages(handoff, section);
+  const plan = campaignPlan(handoff, section);
   if (!plan || !messages.length) {
-    throw new AgentToolError(`The blueprint has no ${variant} messages. Try the other variant.`);
+    throw new AgentToolError(`The blueprint's ${handoff.id.replace("_", " ")} campaign has no messages. Rewrite that section first.`);
   }
   // The hand-off cuts long notes mid-word. Never save a cut note: hand the
   // messages back so the agent can shorten the note and use write_campaign_steps.
-  const note = variant === "connector" ? toCampaignTokens(messages[0] ?? "") : "";
+  const note = handoff.invite === "note" ? toCampaignTokens(messages[0] ?? "") : "";
   if (note.length > INVITE_NOTE_MAX) {
     throw new AgentToolError(
       `The blueprint's connection note is ${note.length} characters; LinkedIn allows ${INVITE_NOTE_MAX}. ` +
@@ -131,8 +134,11 @@ async function blueprintSteps(coachId: string, variant: HandoffVariant) {
   return plan.steps as CampaignStepInput[];
 }
 
-function variantOf(input: AgentToolInput): HandoffVariant {
-  return str(input, "variant") === "conversation" ? "conversation" : "connector";
+/** Which Blueprint campaign to use. `variant` is the name used before the campaigns were split. */
+function handoffOf(input: AgentToolInput): CampaignHandoff {
+  const handoff = handoffById(str(input, "campaign") || str(input, "variant") || "connection");
+  if (!handoff) throw new AgentToolError(`Unknown campaign. Use one of: ${CAMPAIGN_HANDOFFS.map((h) => h.id).join(", ")}.`);
+  return handoff;
 }
 
 function trimmed(text: unknown, max: number): string | null {
@@ -146,13 +152,14 @@ export const messagingTools: AgentToolDef[] = [
     label: "Reading what we know about the coach",
     needsCoach: true,
     description:
-      "What we know about the active coach for writing: ideal client, pain language, hooks, proof, superpowers, client results, and the blueprint's avatar, pain points and campaign messaging.",
+      "What we know about the active coach for writing. The Practice Blueprint (their answers, voice and tone, offer, proof, and written guides) is the source of truth; the older brain fields fill gaps.",
     input_schema: { type: "object", properties: {} },
     run: async (_input, ctx) => {
       const coach = coachOf(ctx);
-      const [{ data: profile }, { data: practice }] = await Promise.all([
+      const [{ data: profile }, { data: practice }, blueprint] = await Promise.all([
         supabaseAdmin.from("profiles").select("ai_context, full_name, location").eq("id", coach.id).maybeSingle(),
         supabaseAdmin.from("coach_practice_knowledge").select("built_sections").eq("coach_id", coach.id).maybeSingle(),
+        loadBlueprintContext(coach.id),
       ]);
       const brain = (profile?.ai_context ?? {}) as Record<string, unknown>;
       const built = sanitizeBuiltSections(practice?.built_sections ?? {});
@@ -177,6 +184,11 @@ export const messagingTools: AgentToolDef[] = [
         blueprint_avatar: section("market:avatar"),
         blueprint_pain_points: section("market:pains"),
         blueprint_campaign_messaging: section("campaigns:messaging"),
+        blueprint_messaging_campaign: section("campaigns:conversation"),
+        blueprint_reactivation: section("campaigns:reactivation"),
+        blueprint_nurture: section("campaigns:nurture"),
+        blueprint_reply_interested: section("campaigns:interested"),
+        blueprint: blueprint || null,
       };
     },
   },
@@ -185,23 +197,23 @@ export const messagingTools: AgentToolDef[] = [
     label: "Bringing in the blueprint messages",
     needsCoach: true,
     description:
-      'Replace a campaign\'s steps with the messages from the coach\'s Practice Blueprint. variant "connector" (proof-led connection note and five follow-ups) or "conversation" (blank invite, softer conversation into the BOSS Scorecard). Follow-ups go on remind.',
+      'Replace a campaign\'s steps with one of the coach\'s Practice Blueprint campaigns. campaign: "connection" (connection note and five follow-ups, for new 2nd and 3rd degree owners), "messaging" (messages only, a conversation into the BOSS Scorecard for connections who fit), "reactivation" (messages only, for people the coach already knows), "nurture" (a useful message every two weeks), or "reply_interested" (for people who said yes). Messages go on remind.',
     input_schema: {
       type: "object",
       properties: {
         campaign_id: { type: "string" },
-        variant: { type: "string", enum: ["connector", "conversation"] },
+        campaign: { type: "string", enum: CAMPAIGN_HANDOFFS.map((h) => h.id) },
       },
-      required: ["campaign_id", "variant"],
+      required: ["campaign_id", "campaign"],
     },
     gate: async (input, ctx) => {
-      const steps = await blueprintSteps(coachOf(ctx).id, variantOf(input));
+      const steps = await blueprintSteps(coachOf(ctx).id, handoffOf(input));
       return stepsGate(ctx, str(input, "campaign_id"), steps);
     },
     run: async (input, ctx) => {
       const coach = coachOf(ctx);
       const campaign = await loadCampaignRow(coach.id, str(input, "campaign_id"));
-      const steps = await blueprintSteps(coach.id, variantOf(input));
+      const steps = await blueprintSteps(coach.id, handoffOf(input));
       await replaceCampaignSteps(campaign.id, steps);
       return { campaign: campaign.name, steps: steps.length, summary: summariseSteps(steps) };
     },

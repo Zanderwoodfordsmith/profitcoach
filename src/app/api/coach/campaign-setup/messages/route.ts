@@ -5,6 +5,7 @@ import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
 import { MESSAGES_SYSTEM, buildMessagesUser } from "@/lib/firstCampaign/prompts";
 import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContext";
+import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
 import type { AvatarPayload, CampaignMessageDraft } from "@/lib/firstCampaign/types";
 import { mapMessageRowsToDrafts, mapMessageRowsToState } from "@/lib/firstCampaign/mapApi";
 
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const [{ data: icp }, { data: setup }, { summary: linkedInSummary }, brain] = await Promise.all([
+  const [{ data: icp }, { data: setup }, { summary: linkedInSummary }, brain, blueprint] = await Promise.all([
     supabaseAdmin.from("coach_icps").select("*").eq("id", icpId).eq("coach_id", coachId).maybeSingle(),
     supabaseAdmin
       .from("coach_campaign_setup")
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
       .maybeSingle(),
     loadCoachLinkedInSummary(coachId),
     loadCoachAiContextRow(coachId),
+    loadBlueprintContext(coachId),
   ]);
 
   if (!icp) {
@@ -92,12 +94,17 @@ export async function POST(request: Request) {
 
   const { data, error } = await generateCampaignJson<{ messages: CampaignMessageDraft[] }>({
     system: MESSAGES_SYSTEM,
-    user: buildMessagesUser({
-      icp,
-      avatarSummary: buildAvatarSummary(avatarPayload),
-      brain: brain ?? {},
-      linkedInSummary,
-    }),
+    user: [
+      buildMessagesUser({
+        icp,
+        avatarSummary: buildAvatarSummary(avatarPayload),
+        brain: brain ?? {},
+        linkedInSummary,
+      }),
+      blueprint,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
     maxTokens: 2048,
   });
 

@@ -8,7 +8,7 @@ import { PracticeShell } from "@/components/practice/PracticeShell";
 export default function PracticeLayout({ children }: { children: ReactNode }) {
   return (
     <PracticeProvider>
-      <PracticeShell>{children}</PracticeShell>
+      <PracticeShell embedded>{children}</PracticeShell>
     </PracticeProvider>
   );
 }

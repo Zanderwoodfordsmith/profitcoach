@@ -26,4 +26,16 @@ describe("call hour summary", () => {
       "Mon, 09:00 to 12:00; Wed, 18:00 to 20:00"
     );
   });
+
+  it("lists more than one slot in a day, in time order", () => {
+    assert.equal(
+      summarizeCallHours([
+        { weekday: 2, start_time: "15:00", end_time: "16:00" },
+        { weekday: 2, start_time: "09:00", end_time: "11:00" },
+        { weekday: 3, start_time: "09:00", end_time: "11:00" },
+        { weekday: 3, start_time: "15:00", end_time: "16:00" },
+      ]),
+      "Tue to Wed, 09:00 to 11:00 and 15:00 to 16:00"
+    );
+  });
 });

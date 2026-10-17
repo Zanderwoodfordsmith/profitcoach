@@ -22,11 +22,14 @@ import {
   type SocialNetwork,
 } from "@/lib/shareLinks/socials";
 
+import { getCountries, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
+import { TONE_DIMENSIONS, TONE_MIDDLE, asVoiceTone, type VoiceTone } from "@/lib/practiceKnowledge/voiceTone";
+
 import { usePractice } from "../PracticeProvider";
 import { InfoTip } from "./InfoTip";
 
 const INPUT =
-  "bp-input w-full rounded-xl border border-[#e6eaf0] bg-[#f4f6f9] px-3.5 py-2.5 text-left text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] transition-[background-color,border-color,box-shadow] placeholder:text-[#9aa8b8] hover:border-[#dbe1e9] hover:bg-[#eff2f6] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)] focus:outline-none";
+  "bp-input w-full rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-2.5 text-left text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] transition-[background-color,border-color,box-shadow] placeholder:text-[#9aa8b8] hover:border-[#d3dce6] hover:bg-[#f0f4f8] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)] focus:outline-none";
 
 const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -68,21 +71,6 @@ function browserZone(): string {
   }
 }
 
-function zoneCity(iana: string): string {
-  const city = iana.split("/").pop()?.replaceAll("_", " ") || iana;
-  try {
-    const off = new Intl.DateTimeFormat("en-GB", {
-      timeZone: iana,
-      timeZoneName: "shortOffset",
-    })
-      .formatToParts(new Date())
-      .find((part) => part.type === "timeZoneName")?.value;
-    return off ? `${city}, ${off}` : city;
-  } catch {
-    return city;
-  }
-}
-
 function pickZone(input: {
   stored: string;
   profile: string;
@@ -97,23 +85,24 @@ function pickZone(input: {
 
 /** Mon to Fri, 09:00 to 17:00 */
 export function summarizeCallHours(rules: AvailabilityRuleRow[]): string {
-  const byDay = new Map(rules.map((rule) => [rule.weekday, rule]));
-  const groups: { days: number[]; start: string; end: string }[] = [];
+  // Each day's slots in time order, e.g. "09:00 to 11:00 and 15:00 to 16:00".
+  const timesFor = (day: number) =>
+    rules
+      .filter((rule) => rule.weekday === day)
+      .map((rule) => ({ start: rule.start_time.slice(0, 5), end: rule.end_time.slice(0, 5) }))
+      .sort((a, b) => a.start.localeCompare(b.start))
+      .map((slot) => `${slot.start} to ${slot.end}`)
+      .join(" and ");
+  const groups: { days: number[]; times: string }[] = [];
   for (const day of DAY_ORDER) {
-    const rule = byDay.get(day);
-    if (!rule) continue;
-    const start = rule.start_time.slice(0, 5);
-    const end = rule.end_time.slice(0, 5);
+    const times = timesFor(day);
+    if (!times) continue;
     const prev = groups[groups.length - 1];
     const prevDay = prev?.days[prev.days.length - 1];
     const consecutive =
-      prev &&
-      prevDay !== undefined &&
-      DAY_ORDER.indexOf(day) === DAY_ORDER.indexOf(prevDay) + 1 &&
-      prev.start === start &&
-      prev.end === end;
+      prev && prevDay !== undefined && DAY_ORDER.indexOf(day) === DAY_ORDER.indexOf(prevDay) + 1 && prev.times === times;
     if (consecutive && prev) prev.days.push(day);
-    else groups.push({ days: [day], start, end });
+    else groups.push({ days: [day], times });
   }
   return groups
     .map((group) => {
@@ -121,7 +110,7 @@ export function summarizeCallHours(rules: AvailabilityRuleRow[]): string {
         group.days.length === 1
           ? DAY[group.days[0]]
           : `${DAY[group.days[0]]} to ${DAY[group.days[group.days.length - 1]]}`;
-      return `${names}, ${group.start} to ${group.end}`;
+      return `${names}, ${group.times}`;
     })
     .join("; ");
 }
@@ -154,15 +143,130 @@ function FieldLabel({
   );
 }
 
+const COUNTRY_NAMES = typeof Intl !== "undefined" && "DisplayNames" in Intl ? new Intl.DisplayNames(["en-GB"], { type: "region" }) : null;
+
+function flagOf(country: string): string {
+  return String.fromCodePoint(...[...country.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+}
+
+const DIAL_OPTIONS = getCountries()
+  .map((country) => ({ country, code: getCountryCallingCode(country), name: COUNTRY_NAMES?.of(country) ?? country }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+/** A stored number split into its country and the rest, so the picker and the box can show it. */
+function splitPhone(value: string): { country: CountryCode; national: string } {
+  const parsed = value ? parsePhoneNumberFromString(value, "GB") : undefined;
+  if (parsed?.country) return { country: parsed.country, national: parsed.formatNational() };
+  return { country: "GB", national: value.replace(/^\+\d+\s*/, "") };
+}
+
+/** The number in one form everywhere: +44 7700 900123. */
+function joinPhone(country: CountryCode, national: string): string {
+  const trimmed = national.trim();
+  if (!trimmed) return "";
+  const parsed = parsePhoneNumberFromString(trimmed, country);
+  return parsed ? parsed.formatInternational() : `+${getCountryCallingCode(country)} ${trimmed}`;
+}
+
+/** Country code picker and number, the same for phone and WhatsApp. Saves when you leave the box. */
+function PhoneInput({
+  label,
+  value,
+  placeholder,
+  disabled,
+  onCommit,
+}: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  disabled?: boolean;
+  onCommit: (value: string) => void;
+}) {
+  const split = splitPhone(value);
+  const [country, setCountry] = useState<CountryCode>(split.country);
+  const [national, setNational] = useState(split.national);
+  const [seen, setSeen] = useState(value);
+  // A number saved elsewhere (WhatsApp following the phone) replaces what is on screen.
+  if (seen !== value) {
+    setSeen(value);
+    setCountry(split.country);
+    setNational(split.national);
+  }
+
+  function commit(nextCountry = country, nextNational = national) {
+    const joined = joinPhone(nextCountry, nextNational);
+    if (joined !== value) onCommit(joined);
+  }
+
+  return (
+    <div className="flex min-w-0 gap-2">
+      <div className="relative shrink-0">
+        <span
+          aria-hidden
+          className={`${INPUT} pointer-events-none flex items-center gap-1.5 whitespace-nowrap pr-8`}
+        >
+          <span>{flagOf(country)}</span>+{getCountryCallingCode(country)}
+        </span>
+        <select
+          aria-label={`${label} country code`}
+          value={country}
+          disabled={disabled}
+          onChange={(e) => {
+            const next = e.target.value as CountryCode;
+            setCountry(next);
+            commit(next);
+          }}
+          className="absolute inset-0 w-full cursor-pointer opacity-0"
+        >
+          {DIAL_OPTIONS.map((o) => (
+            <option key={o.country} value={o.country}>
+              {o.name} (+{o.code})
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--bp-faint)]" aria-hidden />
+      </div>
+      <input
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel-national"
+        aria-label={label}
+        value={national}
+        placeholder={placeholder}
+        disabled={disabled}
+        onChange={(e) => setNational(e.target.value)}
+        onBlur={() => commit()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+        className={`${INPUT} min-w-0 flex-1`}
+      />
+    </div>
+  );
+}
+
+function PhoneRow({ field, changed }: { field: FieldSpec; changed?: boolean }) {
+  const { payload, saveField, sample } = usePractice();
+  const current = payload ? textAt(payload, field.path) : "";
+  return (
+    <div>
+      <FieldLabel label={field.label} help={field.help} mark={changed ? "Changed" : current ? undefined : field.required ? "Needed" : undefined} />
+      <PhoneInput label={field.label} value={current} placeholder={field.example} disabled={sample} onCommit={(v) => saveField(field, v)} />
+    </div>
+  );
+}
+
+/** WhatsApp: the same box as the phone, filled in from it until the coach changes it. */
 function WhatsAppRow({ field }: { field: FieldSpec }) {
   const { payload, saveField, sample } = usePractice();
   const phone = payload ? textAt(payload, "identity.phone") : "";
   const current = payload ? textAt(payload, field.path) : "";
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(current);
   const lastPhone = useRef(phone);
   const saveRef = useRef(saveField);
-  saveRef.current = saveField;
+
+  useEffect(() => {
+    saveRef.current = saveField;
+  });
 
   useEffect(() => {
     if (sample || !phone) {
@@ -175,59 +279,16 @@ function WhatsAppRow({ field }: { field: FieldSpec }) {
     if (followsPhone && current !== phone) saveRef.current(field, phone);
   }, [phone, current, sample, field]);
 
-  const custom = Boolean(current && phone && current !== phone);
-
-  function commit(next: string) {
-    const value = next.trim();
-    setEditing(false);
-    if (!value || value === phone) {
-      if (phone && current !== phone) saveField(field, phone);
-      return;
-    }
-    if (value !== current) saveField(field, value);
-  }
-
   return (
     <div>
       <FieldLabel label="WhatsApp" help={field.help} />
-      {editing ? (
-        <input
-          autoFocus
-          value={draft}
-          placeholder={phone || "WhatsApp number"}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => commit(draft)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-            if (e.key === "Escape") {
-              setDraft(current || phone);
-              setEditing(false);
-            }
-          }}
-          className={INPUT}
-          aria-label="WhatsApp number"
-        />
-      ) : (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-0.5 text-[0.9375rem] leading-6 text-[var(--bp-body)]">
-          <span>
-            {custom ? current : phone ? `Same as your phone, ${phone}` : "Add a phone number above, or set a WhatsApp number."}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              if (custom && phone) {
-                saveField(field, phone);
-                return;
-              }
-              setDraft(custom ? current : "");
-              setEditing(true);
-            }}
-            className="text-xs font-semibold text-[var(--bp-blue)] hover:underline"
-          >
-            {custom ? "Use your phone number" : phone ? "Use a different number" : "Set a number"}
-          </button>
-        </p>
-      )}
+      <PhoneInput
+        label="WhatsApp"
+        value={current || phone}
+        placeholder="Same as your phone"
+        disabled={sample}
+        onCommit={(v) => saveField(field, v || phone)}
+      />
     </div>
   );
 }
@@ -235,7 +296,6 @@ function WhatsAppRow({ field }: { field: FieldSpec }) {
 function TimezoneRow({ field }: { field: FieldSpec }) {
   const { payload, saveField, sample, authHeaders, viewer } = usePractice();
   const stored = payload ? textAt(payload, field.path) : "";
-  const [changing, setChanging] = useState(false);
   const [zone, setZone] = useState(stored);
   const saveRef = useRef(saveField);
   saveRef.current = saveField;
@@ -295,7 +355,6 @@ function TimezoneRow({ field }: { field: FieldSpec }) {
 
   function choose(next: string) {
     setZone(next);
-    setChanging(false);
     if (next !== stored) saveField(field, next);
     if (sample || viewer !== "coach") return;
     void authHeaders().then((headers) => {
@@ -311,36 +370,22 @@ function TimezoneRow({ field }: { field: FieldSpec }) {
   return (
     <div>
       <FieldLabel label="Time zone" help={field.help} />
-      {changing ? (
-        <div className="relative">
-          <select
-            autoFocus
-            value={shown}
-            onChange={(e) => choose(e.target.value)}
-            onBlur={() => setChanging(false)}
-            className={`${INPUT} cursor-pointer appearance-none pr-10`}
-            aria-label="Time zone"
-          >
-            {options.map((item) => (
-              <option key={item} value={item}>
-                {accountTimezoneOptionLabel(item)}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--bp-faint)]" aria-hidden />
-        </div>
-      ) : (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-0.5 text-[0.9375rem] leading-6 text-[var(--bp-body)]">
-          <span>{zoneCity(shown)}</span>
-          <button
-            type="button"
-            onClick={() => setChanging(true)}
-            className="text-xs font-semibold text-[var(--bp-blue)] hover:underline"
-          >
-            Change
-          </button>
-        </p>
-      )}
+      <div className="relative">
+        <select
+          value={shown}
+          disabled={sample}
+          onChange={(e) => choose(e.target.value)}
+          className={`${INPUT} cursor-pointer appearance-none pr-10`}
+          aria-label="Time zone"
+        >
+          {options.map((item) => (
+            <option key={item} value={item}>
+              {accountTimezoneOptionLabel(item)}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--bp-faint)]" aria-hidden />
+      </div>
     </div>
   );
 }
@@ -472,6 +517,7 @@ function CallHours({ field, changed }: { field: FieldSpec; changed?: boolean }) 
           onRulesChange={setRules}
           onSave={() => void save()}
           saving={saving}
+          multiple
         />
       )}
       {error ? <p className="mt-2 text-sm text-[#9b1c1c]">{error}</p> : null}
@@ -578,17 +624,17 @@ function EmailConnect({ field }: { field: FieldSpec }) {
           Checking Gmail and Outlook…
         </p>
       ) : (
-        <ul className="divide-y divide-[#eceff3] border-y border-[#eceff3]">
+        <ul className="space-y-1.5">
           {rows.map((row) => {
             const account = accountFor(row.provider);
             const email = account?.display_name?.trim() || "";
             const connected = Boolean(account) || justConnected === row.provider;
             return (
-              <li key={row.provider} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">{row.title}</p>
-                  {email ? <p className="truncate text-sm text-[var(--bp-muted)]">{email}</p> : null}
-                </div>
+              <li key={row.provider} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-1.5">
+                <p className="min-w-0 truncate text-[0.9375rem] text-[var(--bp-ink)]">
+                  <span className="font-semibold">{row.title}</span>
+                  {email ? <span className="text-[var(--bp-muted)]"> · {email}</span> : null}
+                </p>
                 {connected ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#b6f3cc] px-2.5 py-1 text-xs font-semibold text-[#0e6a36]">
                     <Check className="h-3 w-3" aria-hidden />
@@ -626,20 +672,27 @@ function SocialField({
   onCommit: () => void;
 }) {
   const meta = SOCIAL_NETWORK_META[network];
+  const id = `social-${network}`;
+  // One line, like the contact details: the network on the left, the handle or link on the right.
   return (
-    <label className="block min-w-0">
-      <span className="mb-1.5 block px-0.5 text-[0.875rem] font-semibold text-[var(--bp-ink)]">{meta.label}</span>
-      <input
-        value={value}
-        placeholder={meta.placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onCommit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") e.currentTarget.blur();
-        }}
-        className={INPUT}
-      />
-    </label>
+    <div className="bp-inline">
+      <div>
+        <label htmlFor={id} className="px-0.5 text-[0.875rem] font-semibold text-[var(--bp-ink)]">
+          {meta.label}
+        </label>
+        <input
+          id={id}
+          value={value}
+          placeholder={meta.placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onCommit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          className={INPUT}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -727,9 +780,8 @@ export function SetupSocials() {
   const moreLeft = MORE_SOCIALS.filter((network) => !extra.includes(network) && !values[network]);
 
   return (
-    <div>
-      <FieldLabel label="Socials" help="Where owners can find you. A handle is enough, or paste the full link." />
-      <div className="grid gap-x-4 gap-y-5 @xl:grid-cols-2">
+    <div className="space-y-3">
+      <div className="grid gap-y-3">
         {PRIMARY_SOCIALS.map((network) => (
           <SocialField
             key={network}
@@ -750,7 +802,7 @@ export function SetupSocials() {
         ))}
       </div>
       {moreLeft.length ? (
-        <div className="relative mt-3">
+        <div className="relative pl-[calc(9rem+0.75rem)] max-[30rem]:pl-0">
           <button
             type="button"
             onClick={() => setPicking((open) => !open)}
@@ -759,7 +811,7 @@ export function SetupSocials() {
             Add YouTube, TikTok or X
           </button>
           {picking ? (
-            <div className="absolute left-0 z-10 mt-1 w-40 rounded-xl border border-[#e3e8ef] bg-white p-1 shadow-lg">
+            <div className="absolute left-[calc(9rem+0.75rem)] z-10 mt-1 w-40 rounded-xl border border-[#e3e8ef] bg-white p-1 shadow-lg">
               {moreLeft.map((network) => (
                 <button
                   key={network}
@@ -782,10 +834,85 @@ export function SetupSocials() {
   );
 }
 
+/** Your Voice: five 1 to 5 sliders. Saves when you let go. */
+function ToneSliders({ field, changed }: { field: FieldSpec; changed?: boolean }) {
+  const { payload, saveField, sample } = usePractice();
+  const stored = payload ? asVoiceTone(fieldValue(payload, field.path)?.value) : null;
+  const [tone, setTone] = useState<VoiceTone>(stored ?? TONE_MIDDLE);
+  const [saved, setSaved] = useState(false);
+  const storedKey = JSON.stringify(stored);
+  const [seen, setSeen] = useState(storedKey);
+  // A new tone from BCA (or another tab) replaces what is on screen.
+  if (seen !== storedKey) {
+    setSeen(storedKey);
+    if (stored) setTone(stored);
+  }
+
+  function commit(next: VoiceTone) {
+    if (sample || JSON.stringify(next) === storedKey) return;
+    saveField(field, next);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  }
+
+  return (
+    <div>
+      {changed ? <FieldLabel label={field.label} mark="Changed" /> : null}
+      {stored ? null : (
+        <p className="mb-3 px-0.5 text-sm text-[var(--bp-muted)]">Not set yet. BCA sets these from your call, or move them yourself.</p>
+      )}
+      <div className="space-y-4 rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-4 py-4 @xl:px-5">
+        {TONE_DIMENSIONS.map((d) => {
+          const value = tone[d.key];
+          const id = `tone-${d.key}`;
+          return (
+            <div key={d.key}>
+              <div className="mb-1 flex items-baseline justify-between gap-3 text-[0.8125rem]">
+                <span className="font-medium text-[var(--bp-muted)]">{d.left}</span>
+                <label htmlFor={id} className={`font-semibold ${stored ? "text-[var(--bp-ink)]" : "text-[var(--bp-faint)]"}`}>
+                  {d.stops[value - 1]}
+                </label>
+                <span className="font-medium text-[var(--bp-muted)]">{d.right}</span>
+              </div>
+              <input
+                id={id}
+                type="range"
+                min={1}
+                max={5}
+                step={1}
+                value={value}
+                disabled={sample}
+                aria-valuetext={d.stops[value - 1]}
+                onChange={(e) => setTone((t) => ({ ...t, [d.key]: Number(e.target.value) }))}
+                onPointerUp={(e) => commit({ ...tone, [d.key]: Number(e.currentTarget.value) })}
+                onKeyUp={(e) => commit({ ...tone, [d.key]: Number(e.currentTarget.value) })}
+                className="block w-full cursor-pointer accent-[var(--bp-blue)]"
+              />
+              <div aria-hidden className="mt-0.5 flex justify-between px-[7px]">
+                {d.stops.map((_, i) => (
+                  <span key={i} className={`h-1.5 w-px ${i + 1 === value ? "bg-[var(--bp-blue)]" : "bg-[#c6d1de]"}`} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p
+        aria-live="polite"
+        className={`mt-1.5 inline-flex items-center gap-1 px-0.5 text-xs font-medium text-[#17663a] transition-opacity ${saved ? "opacity-100" : "opacity-0"}`}
+      >
+        <Check className="h-3 w-3" aria-hidden /> Saved
+      </p>
+    </div>
+  );
+}
+
 export function SetupWidget({ field, changed }: { field: FieldSpec; changed?: boolean }) {
+  if (field.widget === "phone") return <PhoneRow field={field} changed={changed} />;
   if (field.widget === "whatsapp") return <WhatsAppRow field={field} />;
   if (field.widget === "timezone") return <TimezoneRow field={field} />;
   if (field.widget === "hours") return <CallHours field={field} changed={changed} />;
   if (field.widget === "email") return <EmailConnect field={field} />;
+  if (field.widget === "tone") return <ToneSliders field={field} changed={changed} />;
   return null;
 }

@@ -37,7 +37,7 @@ export type IcpFitResult = {
   whyFit: string[];
   whyNot: string[];
   talkingPoints: string[];
-  icpSource: "avatar" | "icp" | "brain" | null;
+  icpSource: "blueprint" | "avatar" | "icp" | "brain" | null;
 };
 
 export type IcpFitProfile = DraftNoteProfile & {

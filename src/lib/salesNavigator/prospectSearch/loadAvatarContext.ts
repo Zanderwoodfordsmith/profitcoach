@@ -1,4 +1,7 @@
 import type { AvatarPayload } from "@/lib/firstCampaign/types";
+import { blueprintIdealClientFromRow } from "@/lib/practiceKnowledge/blueprintContext";
+import { listValue } from "@/lib/practiceKnowledge/sourced";
+import { findPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -7,7 +10,7 @@ export type ProspectSearchAvatarContext = {
   industryHint: string | null;
   /** Richer context block for the model. */
   avatarSummary: string | null;
-  source: "avatar" | "icp" | "brain" | null;
+  source: "blueprint" | "avatar" | "icp" | "brain" | null;
 };
 
 function buildAvatarSummary(avatar: AvatarPayload): string {
@@ -48,20 +51,32 @@ function buildAvatarSummary(avatar: AvatarPayload): string {
 }
 
 /**
- * Load ideal-avatar / ICP / AI-brain context for Sales Nav search suggestions.
- * Prefers First Campaign selected avatar, then ICP, then AI brain ideal_client.
+ * Load ideal-client context for Sales Nav search suggestions and fit scoring.
+ * The Practice Blueprint comes first, then the First Campaign avatar, the ICP,
+ * and finally the AI brain ideal_client.
  */
 export async function loadProspectSearchAvatarContext(
   userId: string
 ): Promise<ProspectSearchAvatarContext> {
-  const [brain, setupRes] = await Promise.all([
+  const [brain, blueprintRow, setupRes] = await Promise.all([
     loadCoachAiContextRow(userId),
+    findPracticeKnowledge(userId).catch(() => null),
     supabaseAdmin
       .from("coach_campaign_setup")
       .select("selected_avatar_id, selected_icp_id")
       .eq("coach_id", userId)
       .maybeSingle(),
   ]);
+
+  const blueprint = blueprintRow ? blueprintIdealClientFromRow(blueprintRow) : "";
+  if (blueprint) {
+    const industries = blueprintRow ? listValue(blueprintRow.payload.market.industries_credibility) : [];
+    return {
+      industryHint: industries[0]?.slice(0, 120) || null,
+      avatarSummary: blueprint,
+      source: "blueprint",
+    };
+  }
 
   const avatarId = setupRes.data?.selected_avatar_id as string | null;
   const icpId = setupRes.data?.selected_icp_id as string | null;

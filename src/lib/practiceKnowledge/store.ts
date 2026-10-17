@@ -37,7 +37,7 @@ function isPracticeStatus(value: unknown): value is PracticeStatus {
   );
 }
 
-function mapKnowledgeRow(raw: Record<string, unknown>): PracticeKnowledgeRow {
+export function mapKnowledgeRow(raw: Record<string, unknown>): PracticeKnowledgeRow {
   return {
     coach_id: String(raw.coach_id),
     status: isPracticeStatus(raw.status) ? raw.status : "capturing",
@@ -57,6 +57,19 @@ function mapKnowledgeRow(raw: Record<string, unknown>): PracticeKnowledgeRow {
     created_at: String(raw.created_at ?? ""),
     updated_at: String(raw.updated_at ?? ""),
   };
+}
+
+/** The coach's Blueprint if they have one. Read only: never creates a row. */
+export async function findPracticeKnowledge(
+  coachId: string
+): Promise<PracticeKnowledgeRow | null> {
+  const { data, error } = await supabaseAdmin
+    .from("coach_practice_knowledge")
+    .select("*")
+    .eq("coach_id", coachId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return mapKnowledgeRow(data as Record<string, unknown>);
 }
 
 export async function ensurePracticeKnowledge(

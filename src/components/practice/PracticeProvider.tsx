@@ -11,11 +11,13 @@ import {
 } from "react";
 
 import { buildOrder, sectionByKey, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
+import { isNewsletterLibraryKey } from "@/lib/practiceKnowledge/newsletters";
 import { sectionWorkflow, type WorkflowStatus } from "@/lib/practiceKnowledge/sectionWorkflow";
 import type { BuildJob } from "@/lib/practiceKnowledge/buildJobs";
 import { readyForRecommendation } from "@/lib/practiceKnowledge/brief";
 import { emptyPracticePayload, mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
 import {
+  buildPracticeSection,
   cancelPracticeBuild,
   loadPracticeBuild,
   saveBuiltBlocks,
@@ -42,6 +44,9 @@ import type {
   PracticeKnowledgeRow,
 } from "@/lib/practiceKnowledge/types";
 
+import { SectionCommentsProvider } from "./comments/SectionCommentsContext";
+import { playSpeech, primeCallAudio } from "./ava/callAudio";
+
 type PracticeContextValue = {
   loading: boolean;
   busy: boolean;
@@ -57,6 +62,9 @@ type PracticeContextValue = {
   start: () => void;
   reply: (text: string) => void;
   speak: (text: string) => void;
+  /** True while Ava's voice is playing. */
+  avaSpeaking: boolean;
+  playAva: (text: string) => Promise<boolean>;
   transcribe: (blob: Blob) => Promise<string | null>;
   pullLinkedIn: () => void;
   upload: (file: File) => void;
@@ -81,11 +89,15 @@ type PracticeContextValue = {
   buildAll: (opts?: { onlyMissing?: boolean }) => void;
   stopBuild: () => void;
   saveField: (field: FieldSpec, value: unknown) => void;
-  sendCampaign: (variant: "connector" | "conversation") => Promise<{ campaignId?: string; error?: string }>;
+  sendCampaign: (section: string) => Promise<{ campaignId?: string; error?: string }>;
   /** Replace the body of one message block in a written section. */
   editMessage: (key: string, index: number, body: string) => Promise<boolean>;
   /** Replace every block of a written section with an edited copy. */
   saveBlocks: (key: string, blocks: BlueprintBlock[]) => Promise<boolean>;
+  /** Create or replace a coach-stored newsletter. These are not written by Ava. */
+  putLibrarySection: (key: string, blocks: BlueprintBlock[]) => Promise<boolean>;
+  /** Remove one coach-stored newsletter section. */
+  clearLibrarySection: (key: string) => Promise<boolean>;
   /** The Decision Record from the Decision Call, once one is saved. */
   decision: DecisionRecordRow | null;
   /** Admins can fill in and lock the Decision Record on the page. */
@@ -93,11 +105,18 @@ type PracticeContextValue = {
   saveDecision: (payload: DecisionRecordPayload, lock: boolean) => Promise<boolean>;
   /** An empty blueprint to look at. Nothing is saved or written. */
   sample: boolean;
+  /** The coach being shown, when an admin is previewing someone. Null means the signed-in coach. */
+  coachId: string | null;
   /** Auth for coach APIs. Admin blueprint preview acts as that coach. */
   authHeaders: () => Promise<Record<string, string> | null>;
+  /** Fetch the blueprint again, after Ava (or anyone) changed it on the server. */
+  reload: () => void;
   /** Right-hand assistant panel. */
   assistantOpen: boolean;
   setAssistantOpen: (open: boolean) => void;
+  /** Bumps when the overview asks Ava's panel to open on the call. */
+  callNonce: number;
+  openAvaCall: () => void;
 };
 
 export type BuildState = {
@@ -203,15 +222,20 @@ export function PracticeProvider({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ttsOn, setTtsOn] = useState(false);
+  const [avaSpeaking, setAvaSpeaking] = useState(false);
+  const speakingGen = useRef(0);
   const [loading, setLoading] = useState(true);
   const [coachName, setCoachName] = useState("");
   const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(null);
+  const [viewerId, setViewerId] = useState("");
+  const [viewerName, setViewerName] = useState("");
   const [decision, setDecision] = useState<DecisionRecordRow | null>(null);
   const [building, setBuilding] = useState<BuildState>(IDLE_BUILD);
   /** The server job this page is following, while it is open. */
   const [jobId, setJobId] = useState<string | null>(null);
   const seenDone = useRef(0);
   const [assistantOpen, setAssistantOpenState] = useState(false);
+  const [callNonce, setCallNonce] = useState(0);
   const reportAttempted = useRef(false);
   const draftRef = useRef<PracticeKnowledgePayload | null>(null);
   const persistGen = useRef(0);
@@ -241,6 +265,8 @@ export function PracticeProvider({
     setAssets(res.data.assets);
     setCoachName(res.data.coach_name ?? "");
     setCoachAvatarUrl(res.data.coach_avatar_url ?? null);
+    setViewerId(res.data.viewer_id ?? "");
+    setViewerName(res.data.viewer_name ?? "");
     setDecision(res.data.decision ?? null);
     const interview = await loadInterview(coachId);
     if (interview.ok && interview.data?.session) setSession(interview.data.session);
@@ -271,6 +297,28 @@ export function PracticeProvider({
     }
   }
 
+  function openAvaCall() {
+    if (sample) return;
+    primeCallAudio();
+    setAssistantOpen(true);
+    setCallNonce((n) => n + 1);
+  }
+
+  async function playAva(text: string): Promise<boolean> {
+    const said = text.trim();
+    if (!said) return false;
+    const gen = ++speakingGen.current;
+    setAvaSpeaking(true);
+    try {
+      const blob = await speakInterviewText(said, coachId);
+      if (!blob || gen !== speakingGen.current) return false;
+      await playSpeech(blob);
+      return true;
+    } finally {
+      if (gen === speakingGen.current) setAvaSpeaking(false);
+    }
+  }
+
   async function runBuilds(keys: string[]) {
     if (!keys.length) return;
     if (sample) {
@@ -292,6 +340,16 @@ export function PracticeProvider({
     const res = await loadPractice(coachId);
     if (res.ok && res.data) setKnowledge(res.data.knowledge);
   }, [coachId]);
+
+  // Ava saved answers or copy on the server: show them, as the old conversation did.
+  const reload = useCallback(() => {
+    if (sample) return;
+    void loadPractice(coachId).then((res) => {
+      if (!res.ok || !res.data) return;
+      setKnowledge(res.data.knowledge);
+      setDraft(res.data.knowledge.payload);
+    });
+  }, [coachId, sample]);
 
   // Follow a job started here, or one already running when the page opened.
   useEffect(() => {
@@ -385,12 +443,7 @@ export function PracticeProvider({
     setKnowledge(res.data.knowledge);
     setDraft(res.data.knowledge.payload);
     setSession(res.data.session);
-    if (ttsOn && res.data.assistant_message) {
-      void speakInterviewText(res.data.assistant_message, coachId).then(async (blob) => {
-        if (!blob) return;
-        void new Audio(URL.createObjectURL(blob)).play().catch(() => {});
-      });
-    }
+    if (res.data.assistant_message) void playAva(res.data.assistant_message);
   }
 
   async function transcribe(blob: Blob): Promise<string | null> {
@@ -417,6 +470,48 @@ export function PracticeProvider({
     const res = await saveBuiltBlocks(key, blocks, coachId);
     if (!res.ok || !res.data) {
       setError(res.error || "Could not save your edit.");
+      return false;
+    }
+    setKnowledge(res.data.knowledge);
+    return true;
+  }
+
+  async function putLibrarySection(key: string, blocks: BlueprintBlock[]): Promise<boolean> {
+    if (!isNewsletterLibraryKey(key) || !knowledge) return false;
+    const at = new Date().toISOString();
+    if (sample) {
+      const current = knowledge.built_sections[key];
+      setKnowledge({
+        ...knowledge,
+        built_sections: {
+          ...knowledge.built_sections,
+          [key]: current
+            ? { ...current, blocks, edited_at: at }
+            : { blocks, generated_at: at, model: "coach", edited_at: at },
+        },
+      });
+      return true;
+    }
+    const res = await saveBuiltBlocks(key, blocks, coachId);
+    if (!res.ok || !res.data) {
+      setError(res.error || "Could not save the newsletter.");
+      return false;
+    }
+    setKnowledge(res.data.knowledge);
+    return true;
+  }
+
+  async function clearLibrarySection(key: string): Promise<boolean> {
+    if (!isNewsletterLibraryKey(key) || !knowledge) return false;
+    if (sample) {
+      const next = { ...knowledge.built_sections };
+      delete next[key];
+      setKnowledge({ ...knowledge, built_sections: next });
+      return true;
+    }
+    const res = await buildPracticeSection(key, coachId, true);
+    if (!res.ok || !res.data) {
+      setError(res.error || "Could not remove the newsletter.");
       return false;
     }
     setKnowledge(res.data.knowledge);
@@ -475,13 +570,28 @@ export function PracticeProvider({
     },
     setSectionStatus: (key, status) => {
       const base = draftRef.current;
-      if (!base || !key) return;
+      const ref = sectionByKey(key);
+      if (!base || !key || !knowledge || !ref) return;
+      const from = sectionWorkflow(ref, { ...knowledge, payload: base }).status;
+      if (from === status) return;
       const at = new Date().toISOString();
       const current = { ...(base.review.section_status?.value ?? {}) };
       current[key] = `${status}|${at}`;
+      const log = [...(base.review.status_log?.value ?? [])];
+      log.push({
+        id: crypto.randomUUID(),
+        section: key,
+        from,
+        to: status,
+        at,
+        actor_id: viewerId,
+        actor_name: viewerName || (coachId ? "BCA" : coachName || "Coach"),
+        actor_side: coachId && !sample ? "bca" : "coach",
+      });
       const review = {
         ...base.review,
         section_status: sourced(current, coachId ? "admin" : "coach_edit"),
+        status_log: sourced(log, coachId ? "admin" : "coach_edit"),
       };
       if (status === "done") {
         const stamps = { ...(base.review.approved_sections?.value ?? {}) };
@@ -548,15 +658,19 @@ export function PracticeProvider({
     start: () => void handleInterview(true),
     reply: (text) => void handleInterview(false, text),
     speak: (text) => {
-      void speakInterviewText(text, coachId).then(async (blob) => {
-        if (!blob) return;
-        void new Audio(URL.createObjectURL(blob)).play().catch(() => {});
-      });
+      primeCallAudio();
+      void playAva(text);
+    },
+    avaSpeaking,
+    playAva: (text) => {
+      primeCallAudio();
+      return playAva(text);
     },
     transcribe,
     coachName,
     coachAvatarUrl,
     viewer: coachId && !sample ? "bca" : "coach",
+    coachId: coachId ?? null,
     building,
     build: (key) => {
       if (building.active.length) return;
@@ -596,6 +710,8 @@ export function PracticeProvider({
       );
     },
     saveBlocks: (key, blocks) => saveBlocks(key, blocks),
+    putLibrarySection,
+    clearLibrarySection,
     decision,
     canEditDecision: Boolean(coachId) && !sample,
     saveDecision: async (next, lock) => {
@@ -615,14 +731,17 @@ export function PracticeProvider({
       return true;
     },
     sample,
+    reload,
     authHeaders: () => practiceHeaders(coachId),
-    sendCampaign: async (variant) => {
+    sendCampaign: async (section) => {
       if (sample) return { error: "This is an empty preview." };
-      const res = await sendBlueprintCampaign(variant, coachId);
+      const res = await sendBlueprintCampaign(section, coachId);
       return res.ok && res.data ? { campaignId: res.data.campaign_id } : { error: res.error || "Could not create the campaign." };
     },
     assistantOpen,
     setAssistantOpen,
+    callNonce,
+    openAvaCall,
     stayOnPage,
     href: (path) => {
       if (!isPracticePath(path)) return path;
@@ -655,7 +774,13 @@ export function PracticeProvider({
     },
   };
 
-  return <PracticeContext.Provider value={value}>{children}</PracticeContext.Provider>;
+  return (
+    <PracticeContext.Provider value={value}>
+      <SectionCommentsProvider coachId={coachId} enabled={!sample}>
+        {children}
+      </SectionCommentsProvider>
+    </PracticeContext.Provider>
+  );
 }
 
 export function usePractice(): PracticeContextValue {

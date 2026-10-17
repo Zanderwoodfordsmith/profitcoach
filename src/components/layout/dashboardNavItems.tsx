@@ -506,6 +506,11 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
     icon: IconBrand,
   },
   {
+    href: "/admin/ava",
+    label: "Ava",
+    icon: IconSparkles,
+  },
+  {
     href: "/admin/campaign-library",
     label: "Campaign library",
     icon: IconCampaignLibrary,

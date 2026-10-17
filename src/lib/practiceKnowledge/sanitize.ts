@@ -1,4 +1,6 @@
 import { randomUUID } from "crypto";
+
+import { asVoiceTone } from "./voiceTone";
 import type {
   CareerResult,
   ClientResultStory,
@@ -14,6 +16,7 @@ import type {
   PracticeKnowledgePayload,
   PracticeNote,
   PracticeStatus,
+  SectionStatusEvent,
   ProofType,
   Sourced,
 } from "./types";
@@ -24,6 +27,8 @@ import {
   GEOGRAPHY_PREFS,
   GUARANTEE_TYPES,
   LINKEDIN_VISIBILITIES,
+  OFFER_OUTCOMES,
+  NEWSLETTER_CADENCES,
   NOTIFICATION_CHANNELS,
   PRACTICE_KNOWLEDGE_SOURCES,
   PRACTICE_STATUSES,
@@ -54,11 +59,14 @@ function asSourced<T>(
 ): Sourced<T> | null {
   if (!raw || typeof raw !== "object") return null;
   const rec = raw as { value?: unknown; source?: unknown; updated_at?: unknown };
-  const value = map(rec.value);
+  const source = asSource(rec.source, fallback);
+  // A coach or admin who empties a text box means it: keep the empty answer so the old one is cleared.
+  const cleared = rec.value === "" && (source === "coach_edit" || source === "admin");
+  const value = cleared ? ("" as T) : map(rec.value);
   if (value == null) return null;
   return {
     value,
-    source: asSource(rec.source, fallback),
+    source,
     updated_at:
       typeof rec.updated_at === "string" && rec.updated_at
         ? rec.updated_at
@@ -67,15 +75,12 @@ function asSourced<T>(
 }
 
 function asStringList(value: unknown): string[] | null {
-  if (!Array.isArray(value)) {
-    const one = clip(value, SHORT);
-    return one ? [one] : null;
-  }
-  const list = value
+  const raw = Array.isArray(value) ? value : String(value ?? "").split(/\n+/);
+  const list = raw
     .map((v) => clip(v, SHORT))
     .filter(Boolean)
     .slice(0, LIST);
-  return list;
+  return list.length ? list : null;
 }
 
 function asProofType(value: unknown): ProofType {
@@ -166,6 +171,41 @@ function asNotes(value: unknown): PracticeNote[] | null {
   return rows;
 }
 
+const STATUS_IDS = new Set(["todo", "review", "done"]);
+
+function asStatusLog(value: unknown): SectionStatusEvent[] | null {
+  if (!Array.isArray(value)) return null;
+  const out: SectionStatusEvent[] = [];
+  for (const row of value) {
+    if (!row || typeof row !== "object") continue;
+    const event = row as Partial<SectionStatusEvent>;
+    if (
+      typeof event.id !== "string" ||
+      typeof event.section !== "string" ||
+      typeof event.at !== "string" ||
+      typeof event.actor_id !== "string" ||
+      typeof event.actor_name !== "string" ||
+      (event.actor_side !== "coach" && event.actor_side !== "bca") ||
+      !STATUS_IDS.has(event.from ?? "") ||
+      !STATUS_IDS.has(event.to ?? "") ||
+      event.from === event.to
+    ) {
+      continue;
+    }
+    out.push({
+      id: clip(event.id, 80),
+      section: clip(event.section, 80),
+      from: event.from as SectionStatusEvent["from"],
+      to: event.to as SectionStatusEvent["to"],
+      at: clip(event.at, 40),
+      actor_id: clip(event.actor_id, 80),
+      actor_name: clip(event.actor_name, 80),
+      actor_side: event.actor_side,
+    });
+  }
+  return out.length ? out.slice(-200) : null;
+}
+
 function asStampMap(value: unknown): Record<string, string> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const out: Record<string, string> = {};
@@ -226,6 +266,10 @@ export function sanitizePayloadPatch(
       website: asSourced(identity.website, (v) => clip(v, 400) || null, fallback),
       timezone: asSourced(identity.timezone, (v) => clip(v, 80) || null, fallback),
       location: asSourced(identity.location, (v) => clip(v, SHORT) || null, fallback),
+      address: asSourced(identity.address, (v) => clip(v, SHORT) || null, fallback),
+      address_line2: asSourced(identity.address_line2, (v) => clip(v, SHORT) || null, fallback),
+      postcode: asSourced(identity.postcode, (v) => clip(v, 20) || null, fallback),
+      country: asSourced(identity.country, (v) => clip(v, 80) || null, fallback),
       linkedin_url: asSourced(
         identity.linkedin_url,
         (v) => clip(v, 400) || null,
@@ -284,13 +328,46 @@ export function sanitizePayloadPatch(
       guarantee: asSourced(practice.guarantee, (v) => pickEnum(v, GUARANTEE_TYPES), fallback),
       guarantee_terms: asSourced(practice.guarantee_terms, (v) => clip(v, TEXT) || null, fallback),
       session_rhythm: asSourced(practice.session_rhythm, (v) => clip(v, SHORT) || null, fallback),
-      more_of: asSourced(practice.more_of, (v) => clip(v, TEXT) || null, fallback),
-      less_of: asSourced(practice.less_of, (v) => clip(v, TEXT) || null, fallback),
+      offer_outcome: asSourced(practice.offer_outcome, (v) => pickEnum(v, OFFER_OUTCOMES), fallback),
+      more_of: asSourced(practice.more_of, asStringList, fallback),
+      less_of: asSourced(practice.less_of, asStringList, fallback),
+      help_with: asSourced(practice.help_with, asStringList, fallback),
+      offer_timeframe: asSourced(practice.offer_timeframe, (v) => clip(v, SHORT) || null, fallback),
       worth_building: asSourced(
         practice.worth_building,
         (v) => clip(v, TEXT) || null,
         fallback
       ),
+      tone: asSourced(practice.tone, asVoiceTone, fallback),
+      voice_sounds_like: asSourced(practice.voice_sounds_like, (v) => clip(v, TEXT) || null, fallback),
+      voice_never: asSourced(practice.voice_never, (v) => clip(v, TEXT) || null, fallback),
+      voice_notes: asSourced(practice.voice_notes, (v) => clip(v, TEXT) || null, fallback),
+      voice_known_for: asSourced(practice.voice_known_for, (v) => clip(v, TEXT) || null, fallback),
+      voice_coaching_style: asSourced(practice.voice_coaching_style, (v) => clip(v, TEXT) || null, fallback),
+      voice_values: asSourced(practice.voice_values, asStringList, fallback),
+      voice_qualities: asSourced(practice.voice_qualities, asStringList, fallback),
+      voice_like_in_people: asSourced(practice.voice_like_in_people, asStringList, fallback),
+      voice_dislike_in_people: asSourced(practice.voice_dislike_in_people, asStringList, fallback),
+      voice_pet_peeves: asSourced(practice.voice_pet_peeves, asStringList, fallback),
+      voice_favourite_book: asSourced(practice.voice_favourite_book, (v) => clip(v, SHORT) || null, fallback),
+      voice_favourite_film: asSourced(practice.voice_favourite_film, (v) => clip(v, SHORT) || null, fallback),
+      voice_hobbies: asSourced(practice.voice_hobbies, asStringList, fallback),
+      voice_stories: asSourced(practice.voice_stories, (v) => clip(v, TEXT) || null, fallback),
+      newsletter_cadence: asSourced(
+        practice.newsletter_cadence,
+        (v) => pickEnum(v, NEWSLETTER_CADENCES),
+        fallback
+      ),
+      newsletter_name: asSourced(practice.newsletter_name, (v) => clip(v, SHORT) || null, fallback),
+      newsletter_description: asSourced(practice.newsletter_description, (v) => clip(v, TEXT) || null, fallback),
+      newsletter_audience: asSourced(practice.newsletter_audience, (v) => clip(v, SHORT) || null, fallback),
+      newsletter_cta: asSourced(practice.newsletter_cta, (v) => clip(v, TEXT) || null, fallback),
+      newsletter_added: asSourced(practice.newsletter_added, (v) => {
+        const list = asStringList(v);
+        if (!list) return null;
+        // Keep an empty list. Null would not clear a list the coach just removed.
+        return list.filter((id) => /^[a-z0-9]{6,12}$/.test(id));
+      }, fallback),
     };
   }
   if (market) {
@@ -387,6 +464,7 @@ export function sanitizePayloadPatch(
       approved_sections: asSourced(review.approved_sections, asStampMap, fallback),
       bca_approved_sections: asSourced(review.bca_approved_sections, asStampMap, fallback),
       section_status: asSourced(review.section_status, asStampMap, fallback),
+      status_log: asSourced(review.status_log, asStatusLog, fallback),
     };
   }
 

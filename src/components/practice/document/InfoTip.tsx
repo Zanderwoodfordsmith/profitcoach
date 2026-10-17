@@ -13,8 +13,10 @@ export function InfoTip({ label, children }: { label: string; children: ReactNod
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
+      {/* Out of the Tab order: Tab goes from answer to answer. Hover or tap opens it. */}
       <button
         type="button"
+        tabIndex={-1}
         aria-label={`About ${label}`}
         aria-expanded={open}
         aria-describedby={open ? id : undefined}

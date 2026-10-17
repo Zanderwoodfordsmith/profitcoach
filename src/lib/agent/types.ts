@@ -32,6 +32,8 @@ export type GateDecision =
       details: ActionDetail[];
       /** Shown on the card, e.g. "Adds people to a running campaign: invites start today." */
       warning?: string;
+      /** Markdown shown on the card, e.g. the new version of a section to accept. */
+      preview?: string;
     }
   /** The input is not valid: tell the model instead of making a card. */
   | { error: string };
@@ -74,6 +76,7 @@ export type AgentActionView = {
   title: string;
   details: ActionDetail[];
   warning?: string | null;
+  preview?: string | null;
   coachName: string | null;
   status: AgentActionStatus;
   result: unknown;
@@ -88,6 +91,8 @@ export type AgentStreamEvent =
   | { type: "text"; delta: string }
   | { type: "tool_start"; id: string; name: string; label: string }
   | { type: "tool_end"; id: string; name: string; ok: boolean; note?: string }
+  /** The chat's title, written by Ava from what it covered. */
+  | { type: "title"; title: string }
   | { type: "capability"; id: string; title: string }
   | { type: "action"; action: AgentActionView }
   | { type: "link"; link: AgentLink }
@@ -100,7 +105,8 @@ export type AgentDisplayItem =
   | { type: "user"; text: string }
   | { type: "assistant"; text: string }
   | { type: "app_event"; text: string }
-  | { type: "tool"; id: string; name: string; label: string; ok: boolean | null }
+  /** note: what a finished tool did, e.g. "Saved to Story · Results". */
+  | { type: "tool"; id: string; name: string; label: string; ok: boolean | null; note?: string }
   | { type: "capability"; id: string; title: string }
   | { type: "action"; action: AgentActionView }
   | { type: "link"; link: AgentLink };

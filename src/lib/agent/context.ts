@@ -1,7 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { BLOCKS_SCHEMA_PROMPT } from "@/lib/practiceKnowledge/blocks";
 import { PROSPECT_SEARCH_PLAYBOOK } from "@/lib/salesNavigator/prospectSearch/playbook";
+import { peekAgentOverride } from "./agentOverrides";
 import type { AgentMode } from "./types";
 
 /**
@@ -12,16 +14,19 @@ import type { AgentMode } from "./types";
  */
 
 const CONTENT_ROOT = path.join(process.cwd(), "content");
-const AGENT_ROOT = path.join(process.cwd(), "content", "agent");
 const CAPABILITIES_ROOT = path.join(process.cwd(), "content", "agent", "capabilities");
 
 const REFERENCE_MAX_CHARS = 14_000;
 
 /** References that live in code rather than in a Markdown file. */
-const CODE_REFERENCES: Record<string, { name: string; text: () => string }> = {
+export const CODE_REFERENCES: Record<string, { name: string; text: () => string }> = {
   "prospect-search-playbook": {
     name: "Sales Navigator prospect search playbook",
     text: () => PROSPECT_SEARCH_PLAYBOOK,
+  },
+  "blueprint-blocks": {
+    name: "Blueprint block format (for propose_copy, send the blocks array itself)",
+    text: () => BLOCKS_SCHEMA_PROMPT,
   },
 };
 
@@ -32,6 +37,8 @@ export type Capability = {
   tools: string[];
   references: string[];
   modes: AgentMode[];
+  /** "blueprint": open to every coach. Other capabilities need the agent switched on. */
+  group: string | null;
   body: string;
 };
 
@@ -69,11 +76,35 @@ function readText(file: string): string {
   return fs.readFileSync(file, "utf8").trim();
 }
 
+/** Repo file, or the admin override when one is loaded for this process. */
+function readContent(rel: string): string {
+  const override = peekAgentOverride(rel);
+  if (override !== undefined) return override.trim();
+  return readText(path.join(CONTENT_ROOT, rel));
+}
+
 // Re-read in development so edits to the Markdown apply without a restart.
 const shouldCache = process.env.NODE_ENV === "production";
 let cachedCapabilities: Capability[] | null = null;
 
-export function loadCapabilities(): Capability[] {
+function capabilityFromRaw(dir: string, raw: string): Capability {
+  const { meta, body } = parseFrontmatter(raw);
+  const modes = asList(meta.modes).filter(
+    (mode): mode is AgentMode => mode === "admin" || mode === "coach"
+  );
+  return {
+    id: asString(meta.id) || dir,
+    title: asString(meta.title) || dir,
+    summary: asString(meta.summary),
+    tools: asList(meta.tools),
+    references: asList(meta.references),
+    modes: modes.length ? modes : ["admin", "coach"],
+    group: asString(meta.group) || null,
+    body,
+  };
+}
+
+function loadCapabilitiesFromDisk(): Capability[] {
   if (shouldCache && cachedCapabilities) return cachedCapabilities;
   const ids = fs
     .readdirSync(CAPABILITIES_ROOT, { withFileTypes: true })
@@ -84,22 +115,17 @@ export function loadCapabilities(): Capability[] {
   for (const dir of ids) {
     const file = path.join(CAPABILITIES_ROOT, dir, "CONTEXT.md");
     if (!fs.existsSync(file)) continue;
-    const { meta, body } = parseFrontmatter(readText(file));
-    const modes = asList(meta.modes).filter(
-      (mode): mode is AgentMode => mode === "admin" || mode === "coach"
-    );
-    capabilities.push({
-      id: asString(meta.id) || dir,
-      title: asString(meta.title) || dir,
-      summary: asString(meta.summary),
-      tools: asList(meta.tools),
-      references: asList(meta.references),
-      modes: modes.length ? modes : ["admin", "coach"],
-      body,
-    });
+    capabilities.push(capabilityFromRaw(dir, readText(file)));
   }
   if (shouldCache) cachedCapabilities = capabilities;
   return capabilities;
+}
+
+export function loadCapabilities(): Capability[] {
+  return loadCapabilitiesFromDisk().map((cap) => {
+    const override = peekAgentOverride(`agent/capabilities/${cap.id}/CONTEXT.md`);
+    return override ? capabilityFromRaw(cap.id, override) : cap;
+  });
 }
 
 export function getCapability(id: string, mode: AgentMode): Capability | null {
@@ -112,12 +138,17 @@ export function capabilitiesForMode(mode: AgentMode): Capability[] {
   return loadCapabilities().filter((cap) => cap.modes.includes(mode));
 }
 
+/** What this person may open: a limited coach gets the Blueprint group only. */
+export function capabilitiesForActor(mode: AgentMode, limited: boolean): Capability[] {
+  return capabilitiesForMode(mode).filter((cap) => !limited || cap.group === "blueprint");
+}
+
 export function loadIdentity(): string {
-  return readText(path.join(AGENT_ROOT, "AGENT.md"));
+  return readContent("agent/AGENT.md");
 }
 
 export function loadRouter(): string {
-  return readText(path.join(AGENT_ROOT, "ROUTER.md"));
+  return readContent("agent/ROUTER.md");
 }
 
 /**
@@ -129,9 +160,12 @@ export function resolveReference(ref: string): { name: string; text: string } | 
     const entry = CODE_REFERENCES[ref.slice("code:".length)];
     return entry ? { name: entry.name, text: entry.text() } : null;
   }
+  const override = peekAgentOverride(ref);
   const full = path.resolve(CONTENT_ROOT, ref);
-  if (!full.startsWith(CONTENT_ROOT + path.sep) || !fs.existsSync(full)) return null;
-  const text = readText(full);
+  if (override === undefined && (!full.startsWith(CONTENT_ROOT + path.sep) || !fs.existsSync(full))) {
+    return null;
+  }
+  const text = (override ?? readText(full)).trim();
   return {
     name: path.basename(ref),
     text:

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
 import { NextResponse } from "next/server";
 
 import {
@@ -171,7 +172,7 @@ export async function POST(request: Request) {
   // excerpt can use edited content from Admin → Brand → Core brain.
   const brandOverrides = await loadBrandKnowledgeOverrides();
 
-  const [brain, compassText, playbookExcerptText, priorCountRes] =
+  const [brain, compassText, playbookExcerptText, priorCountRes, blueprint] =
     await Promise.all([
       loadCoachAiContextRow(coachId),
       loadCompassSummaryForUser(coachId),
@@ -180,6 +181,7 @@ export async function POST(request: Request) {
         .from("profit_coach_ai_messages")
         .select("id", { count: "exact", head: true })
         .eq("chat_id", chatId!),
+      loadBlueprintContext(coachId),
     ]);
 
   const priorMessageCount = priorCountRes.count ?? 0;
@@ -201,6 +203,10 @@ export async function POST(request: Request) {
       { error: "Could not build system prompt." },
       { status: 500 }
     );
+  }
+
+  if (blueprint) {
+    system = `${system}\n\n---\n\n${blueprint}`;
   }
 
   if (toolsEnabled) {

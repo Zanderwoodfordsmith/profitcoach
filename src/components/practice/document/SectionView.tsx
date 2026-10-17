@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { ArrowUpRight, Check, ChevronDown, ChevronUp, Lightbulb, Loader2, MoreHorizontal, Plus, Sparkles, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpRight, Check, ChevronDown, ChevronUp, GripVertical, Lightbulb, Loader2, MoreHorizontal, Plus, Sparkles, X } from "lucide-react";
 
 import {
+  fieldFilled,
   fieldValue,
   sectionByKey,
   type BlueprintSection,
@@ -13,12 +14,19 @@ import {
 } from "@/lib/practiceKnowledge/blueprint";
 import { sectionWorkflow, type SectionWorkflow } from "@/lib/practiceKnowledge/sectionWorkflow";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
+import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
+import { handoffForSection } from "@/lib/practiceKnowledge/campaignHandoff";
+import { isNewsletterOverviewKey, stripStandingFacts } from "@/lib/practiceKnowledge/newsletters";
 import { formatFieldValue } from "@/lib/practiceKnowledge/exportMarkdown";
 
+import { useSectionComments } from "../comments/SectionCommentsContext";
+import { CommentButton } from "../comments/SectionCommentsUI";
 import { OwnerMark } from "../OwnerMark";
 import { usePractice } from "../PracticeProvider";
-import { BlockEditor } from "./BlockEditor";
+import { BlockBoxes } from "./BlockEditor";
 import { Blocks } from "./Blocks";
+import { LinkedInProfileSection } from "./LinkedInProfileSection";
+import { StatusSwitch } from "./StatusMenu";
 import { InfoTip } from "./InfoTip";
 import { SetupSocials, SetupWidget } from "./SetupPanels";
 
@@ -35,6 +43,9 @@ function SectionAbout({ section }: { section: BlueprintSection }) {
   return (
     <>
       {section.about ? <span className="block">{section.about}</span> : null}
+      {section.fields?.length === 1 && section.fields[0].help && !lineHintOnly(section.fields[0].help) ? (
+        <span className="block">{section.fields[0].help}</span>
+      ) : null}
       {section.from?.length ? (
         <span className="block text-white/75">
           <span className="font-semibold text-white">Built from:</span> {section.from.join(", ")}
@@ -57,7 +68,7 @@ function hint(field: FieldSpec): string {
 
 /** The look of something the coach fills in: a light grey box with a soft edge that turns white while you type. */
 const INPUT_BOX =
-  "bp-input w-full rounded-xl border border-[#e6eaf0] bg-[#f4f6f9] px-3.5 py-2.5 text-left text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] transition-[background-color,border-color,box-shadow] placeholder:text-[#9aa8b8] hover:border-[#dbe1e9] hover:bg-[#eff2f6] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)]";
+  "bp-input w-full rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-2.5 text-left text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] transition-[background-color,border-color,box-shadow] placeholder:text-[#9aa8b8] hover:border-[#d3dce6] hover:bg-[#f0f4f8] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)]";
 
 /** How tall an empty box starts, so its size says how much to write. */
 const EMPTY_ROWS: Partial<Record<FieldSpec["kind"], number>> = { text: 1, list: 3, longtext: 4 };
@@ -78,6 +89,7 @@ function ResizeGrip({ onResize }: { onResize: (height: number) => void }) {
       type="button"
       aria-label="Drag to make taller"
       title="Drag to make taller"
+      tabIndex={-1}
       className="bp-no-print absolute bottom-1 right-1 z-10 flex h-4 w-4 cursor-ns-resize touch-none items-center justify-center text-[#b0bcc8] hover:text-[#5e7082]"
       onPointerDown={(event) => {
         if (event.button !== 0) return;
@@ -181,17 +193,18 @@ function AnswerBox({ field }: { field: FieldSpec }) {
 function EnumBox({ field }: { field: FieldSpec }) {
   const { payload, saveField } = usePractice();
   const current = payload ? String(fieldValue(payload, field.path)?.value ?? "") : "";
+  const shown = current || field.assume || "";
   return (
     <div className="relative">
       <select
         id={`f-${field.path}`}
-        value={current}
+        value={shown}
         onChange={(e) => {
           if (e.target.value) saveField(field, e.target.value);
         }}
-        className={`${INPUT_BOX} cursor-pointer appearance-none pr-10 ${current ? "" : "text-[#9aa8b8]"}`}
+        className={`${INPUT_BOX} cursor-pointer appearance-none pr-10 ${shown ? "" : "text-[#9aa8b8]"}`}
       >
-        <option value="">Choose…</option>
+        {field.assume ? null : <option value="">Choose…</option>}
         {field.options?.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -395,24 +408,196 @@ function RowsEditor({ field }: { field: FieldSpec }) {
   );
 }
 
+type LineDraft = { id: string; text: string };
+
+function newLine(): LineDraft {
+  return { id: crypto.randomUUID(), text: "" };
+}
+
+function asLineList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  const text = String(value ?? "").trim();
+  return text ? text.split(/\n+/).map((item) => item.trim()).filter(Boolean) : [];
+}
+
+/** Addable, reorderable lines. Used for paired more/less lists, not every list field. */
+function LineListEditor({ field }: { field: FieldSpec }) {
+  const { payload, saveField } = usePractice();
+  const stored = asLineList(payload ? fieldValue(payload, field.path)?.value : null);
+  const storedKey = JSON.stringify(stored);
+  const [items, setItems] = useState<LineDraft[]>(() =>
+    stored.length ? stored.map((text) => ({ id: crypto.randomUUID(), text })) : [newLine()]
+  );
+  const [seen, setSeen] = useState(storedKey);
+  const [focus, setFocus] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  if (storedKey !== seen && !focus) {
+    setSeen(storedKey);
+    setItems(stored.length ? stored.map((text) => ({ id: crypto.randomUUID(), text })) : [newLine()]);
+  }
+
+  function persist(next: LineDraft[]) {
+    const lines = next.map((item) => item.text.trim()).filter(Boolean);
+    setItems(next.length ? next : [newLine()]);
+    if (JSON.stringify(lines) === storedKey) return;
+    setSeen(JSON.stringify(lines));
+    saveField(field, lines);
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 1800);
+  }
+
+  function move(index: number, dir: -1 | 1) {
+    const target = index + dir;
+    if (target < 0 || target >= items.length) return;
+    const next = items.slice();
+    const [row] = next.splice(index, 1);
+    next.splice(target, 0, row);
+    persist(next);
+  }
+
+  const examples = (field.example ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="relative">
+      <ul className="flex flex-col gap-1.5">
+        {items.map((item, index) => (
+          <li
+            key={item.id}
+            onDragOver={(event) => {
+              event.preventDefault();
+              if (!dragId || dragId === item.id) return;
+              const from = items.findIndex((row) => row.id === dragId);
+              if (from < 0 || from === index) return;
+              const next = items.slice();
+              const [row] = next.splice(from, 1);
+              next.splice(index, 0, row);
+              setItems(next);
+            }}
+            className={`flex items-center gap-1 ${dragId === item.id ? "opacity-50" : ""}`}
+          >
+            <button
+              type="button"
+              draggable
+              aria-label="Drag to reorder"
+              className={`${NUDGE} cursor-grab active:cursor-grabbing`}
+              onDragStart={(event) => {
+                setDragId(item.id);
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", item.id);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                persist(itemsRef.current);
+              }}
+            >
+              <GripVertical className="h-3.5 w-3.5" aria-hidden />
+            </button>
+            <input
+              id={index === 0 ? `f-${field.path}` : undefined}
+              value={item.text}
+              placeholder={examples[index] ? `e.g. ${examples[index]}` : "Type here"}
+              onChange={(event) => {
+                const text = event.target.value;
+                setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, text } : row)));
+              }}
+              onFocus={() => setFocus(true)}
+              onBlur={(event) => {
+                setFocus(false);
+                persist(itemsRef.current.map((row) => (row.id === item.id ? { ...row, text: event.target.value } : row)));
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                const next = itemsRef.current.slice();
+                next.splice(index + 1, 0, newLine());
+                setItems(next);
+              }}
+              className={`${INPUT_BOX} py-2`}
+            />
+            <div className="flex shrink-0 flex-col items-center">
+              <button type="button" className={NUDGE} aria-label="Move up" disabled={index === 0} onClick={() => move(index, -1)}>
+                <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                className={NUDGE}
+                aria-label="Move down"
+                disabled={index === items.length - 1}
+                onClick={() => move(index, 1)}
+              >
+                <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                className={NUDGE}
+                aria-label="Remove line"
+                onClick={() => persist(items.filter((row) => row.id !== item.id))}
+              >
+                <X className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setItems((prev) => [...prev, newLine()])}
+          className="inline-flex items-center gap-1 px-0.5 text-xs font-semibold text-[var(--bp-blue)] hover:underline"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden />
+          Add
+        </button>
+        <span
+          aria-live="polite"
+          className={`inline-flex items-center gap-1 text-xs font-medium text-[#17663a] transition-opacity ${
+            saved ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {saved ? (
+            <>
+              <Check className="h-3 w-3" aria-hidden /> Saved
+            </>
+          ) : null}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** One answer. A section with a single box uses its own title, so the box is not labelled again. */
 function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; solo?: boolean }) {
   const { payload } = usePractice();
   if (!payload) return null;
   const filled = formatFieldValue(payload, field).length > 0;
   const structured = field.kind === "results" || field.kind === "stories";
-  const list = field.kind === "list";
+  const paired = Boolean(field.pair);
+  const list = field.kind === "list" && !paired;
   const showHelp = Boolean(field.help) && !lineHintOnly(field.help);
   const mark = changed ? (
     <span className="rounded-full bg-[#fff4e0] px-2 py-px text-[0.6875rem] font-semibold text-[#8a5300]">Changed</span>
   ) : !filled && field.required ? (
     <span className="rounded-full bg-[#fde8e6] px-2 py-px text-[0.6875rem] font-semibold text-[#9b2c2c]">Needed</span>
   ) : null;
+  const cue =
+    field.cue === "more" ? (
+      <ArrowUp className="h-3.5 w-3.5 text-[#2f8a55]" aria-hidden />
+    ) : field.cue === "less" ? (
+      <ArrowDown className="h-3.5 w-3.5 text-[#2f8a55]" aria-hidden />
+    ) : null;
 
   return (
     <div className="min-w-0">
       <div className={solo ? undefined : "mb-1.5 flex items-center gap-1.5 px-0.5"}>
-        <label htmlFor={`f-${field.path}`} className={solo ? "sr-only" : "text-[0.875rem] font-semibold text-[var(--bp-ink)]"}>
+        <label htmlFor={`f-${field.path}`} className={solo ? "sr-only" : "inline-flex items-center gap-1 text-[0.875rem] font-semibold text-[var(--bp-ink)]"}>
+          {cue}
           {field.label}
         </label>
         {solo ? null : (
@@ -426,16 +611,17 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
         <EnumBox field={field} />
       ) : field.kind === "rows" ? (
         <RowsEditor field={field} />
+      ) : paired && field.kind === "list" ? (
+        <LineListEditor field={field} />
       ) : structured ? (
         <StructuredBox field={field} />
       ) : (
         <AnswerBox field={field} />
       )}
-      {list || (solo && (showHelp || mark)) ? (
+      {list || (solo && changed) ? (
         <div className="mt-1.5 flex items-center gap-2 px-0.5">
           {list ? <span className="text-xs text-[var(--bp-faint)]">One per line</span> : null}
-          {solo && showHelp ? <InfoTip label={field.label}>{field.help}</InfoTip> : null}
-          {solo && mark ? <span className="ml-auto">{mark}</span> : null}
+          {solo && changed ? <span className="ml-auto">{mark}</span> : null}
         </div>
       ) : null}
     </div>
@@ -443,36 +629,58 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
 }
 
 function Fields({ section, changedFields }: { section: BlueprintSection; changedFields: string[] }) {
-  const fields = section.fields ?? [];
+  const { payload } = usePractice();
+  const fields = (section.fields ?? []).filter((f) => {
+    if (!f.showIf || !payload) return true;
+    const answer = fieldValue(payload, f.showIf.path)?.value;
+    return typeof answer === "string" && f.showIf.in.includes(answer);
+  });
   // Short answers sit two to a row. Widgets and long answers take the full width.
-  const short = (f: FieldSpec) => !f.widget && (f.kind === "text" || f.kind === "enum");
+  // Paired lists (more/less) sit on their own row, not next to a picker.
+  const short = (f: FieldSpec) => !f.widget && !f.pair && (f.kind === "text" || f.kind === "enum");
   const shortCount = fields.filter(short).length;
   const showSocials = section.extras?.includes("socials");
+  const inline = section.layout === "inline";
+  const cells: { key: string; wide: boolean; nodes: FieldSpec[] }[] = [];
+  for (const field of fields) {
+    if (field.pair && cells.at(-1)?.nodes[0]?.pair) {
+      cells.at(-1)!.nodes.push(field);
+      continue;
+    }
+    const wide = !inline && (Boolean(field.widget) || field.pair || !short(field) || shortCount < 2);
+    cells.push({ key: field.path, wide, nodes: [field] });
+  }
   return (
-    <div className="grid gap-x-4 gap-y-5 @xl:grid-cols-2">
-      {fields.map((field) => {
-        const wide = Boolean(field.widget) || !short(field) || shortCount < 2;
-        return (
-          <Fragment key={field.path}>
-            {showSocials && field.widget === "email" ? (
-              <div className="@xl:col-span-2">
-                <SetupSocials />
-              </div>
-            ) : null}
-            <div className={wide ? "@xl:col-span-2" : undefined}>
-              {field.widget ? (
-                <SetupWidget field={field} changed={changedFields.includes(field.path)} />
+    <div className={inline ? "grid gap-y-3" : "grid gap-x-4 gap-y-5 @xl:grid-cols-2"}>
+      {cells.map((cell) => (
+        <Fragment key={cell.key}>
+          <div
+            className={
+              [
+                cell.wide ? "@xl:col-span-2" : "",
+                inline ? "bp-inline" : "",
+                cell.nodes.length > 1 ? "grid grid-cols-1 gap-x-4 gap-y-5 min-[22rem]:grid-cols-2" : "",
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+          >
+            {cell.nodes.map((field) =>
+              field.widget ? (
+                <SetupWidget key={field.path} field={field} changed={changedFields.includes(field.path)} />
               ) : (
                 <Field
+                  key={field.path}
                   field={field}
                   changed={changedFields.includes(field.path)}
-                  solo={fields.length === 1}
+                  solo={fields.length === 1 && !inline}
                 />
-              )}
-            </div>
-          </Fragment>
-        );
-      })}
+              )
+            )}
+          </div>
+        </Fragment>
+      ))}
+      {showSocials ? <SetupSocials /> : null}
     </div>
   );
 }
@@ -494,15 +702,15 @@ function WriteButton({ refKey, label }: { refKey: string; label: string }) {
   );
 }
 
-function SendToCampaigns() {
+function SendToCampaigns({ sectionKey, name }: { sectionKey: string; name: string }) {
   const { sendCampaign, href, sample } = usePractice();
-  const [state, setState] = useState<{ busy?: string; done?: { id: string; label: string }; error?: string }>({});
+  const [state, setState] = useState<{ busy?: boolean; done?: string; error?: string }>({});
   if (sample) return null;
 
-  async function send(variant: "connector" | "conversation", label: string) {
-    setState({ busy: variant });
-    const res = await sendCampaign(variant);
-    setState(res.campaignId ? { done: { id: res.campaignId, label } } : { error: res.error });
+  async function send() {
+    setState({ busy: true });
+    const res = await sendCampaign(sectionKey);
+    setState(res.campaignId ? { done: res.campaignId } : { error: res.error });
   }
 
   return (
@@ -516,25 +724,17 @@ function SendToCampaigns() {
         <button
           type="button"
           disabled={Boolean(state.busy)}
-          onClick={() => void send("connector", "Connector campaign")}
+          onClick={() => void send()}
           className="rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
         >
-          {state.busy === "connector" ? "Creating…" : "Connector campaign"}
-        </button>
-        <button
-          type="button"
-          disabled={Boolean(state.busy)}
-          onClick={() => void send("conversation", "Scorecard conversation")}
-          className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-[var(--bp-ink)] ring-1 ring-[var(--bp-rule)] hover:ring-[var(--bp-sky)] disabled:opacity-50"
-        >
-          {state.busy === "conversation" ? "Creating…" : "Scorecard conversation"}
+          {state.busy ? "Creating…" : `Create the ${name.toLowerCase()}`}
         </button>
         {state.done ? (
           <Link
-            href={href(`/coach/campaigns/${state.done.id}`)}
+            href={href(`/coach/campaigns/${state.done}`)}
             className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline"
           >
-            {state.done.label} created. Open it
+            Draft created. Open it
             <ArrowUpRight className="h-4 w-4" aria-hidden />
           </Link>
         ) : null}
@@ -561,7 +761,7 @@ function MoreMenu({ items, note }: { items: MenuItem[]; note?: string }) {
         <MoreHorizontal className="h-4 w-4" aria-hidden />
       </button>
       {open ? (
-        <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-[#e3e8ef] bg-white p-1 shadow-lg">
+        <div className="bp-pop absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-[#e3e8ef] bg-white p-1 shadow-lg">
           {note ? <p className="px-2.5 pb-1 pt-1.5 text-xs text-[var(--bp-faint)]">{note}</p> : null}
           {items.map((item) => (
             <button
@@ -584,20 +784,38 @@ function MoreMenu({ items, note }: { items: MenuItem[]; note?: string }) {
   );
 }
 
+/** Older newsletter drafts planned the next six issues inside the issue. That list is not part of the issue. */
+function dropPlannedIssues(key: string, blocks: BlueprintBlock[]): BlueprintBlock[] {
+  if (key !== "content:newsletter" && key !== "content:analogy") return blocks;
+  const out: BlueprintBlock[] = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    if (block.type === "heading" && /next six issues/i.test(block.text)) {
+      if (blocks[i + 1]?.type === "table") i += 1;
+      continue;
+    }
+    out.push(block);
+  }
+  return out;
+}
+
 /** What BCA wrote, in a soft grey panel. */
 function OutputBody({
   refKey,
   section,
-  editing,
-  setEditing,
+  emptyHint,
+  canWrite = true,
 }: {
   refKey: string;
   section: BlueprintSection;
-  editing: boolean;
-  setEditing: (v: boolean) => void;
+  emptyHint?: string;
+  canWrite?: boolean;
 }) {
-  const { knowledge, building, editMessage, saveBlocks, href } = usePractice();
+  const { knowledge, building, saveBlocks, href } = usePractice();
   const built = knowledge?.built_sections[refKey];
+  const blocks = built
+    ? (isNewsletterOverviewKey(refKey) ? stripStandingFacts(dropPlannedIssues(refKey, built.blocks)) : dropPlannedIssues(refKey, built.blocks))
+    : [];
   const writing = building.active.includes(refKey);
   const queued = building.queue.includes(refKey);
   const panel = "bp-output rounded-xl border border-[#e6eaf0] bg-white px-5 py-5 @2xl:px-6";
@@ -623,6 +841,18 @@ function OutputBody({
       .filter((k) => !knowledge?.built_sections[k])
       .map((k) => sectionByKey(k)?.section.title)
       .filter(Boolean);
+    if (emptyHint) {
+      return (
+        <div>
+          <p className="text-sm leading-6 text-[var(--bp-muted)]">{queued ? "Queued. This is next." : emptyHint}</p>
+          {canWrite && !queued ? (
+            <div className="mt-3">
+              <WriteButton refKey={refKey} label="Write it now" />
+            </div>
+          ) : null}
+        </div>
+      );
+    }
     return (
       <div className={panel}>
         <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">
@@ -642,14 +872,16 @@ function OutputBody({
   }
 
   return (
-    <div className={panel}>
-      {editing ? (
-        <BlockEditor blocks={built.blocks} onSave={(blocks) => saveBlocks(refKey, blocks)} onCancel={() => setEditing(false)} />
-      ) : (
-        <Blocks blocks={built.blocks} onSaveMessage={(index, body) => editMessage(refKey, index, body)} />
-      )}
-      {refKey === "campaigns:messaging" && !editing ? <SendToCampaigns /> : null}
-      {section.link && !editing ? (
+    <div className="bp-output">
+      {/* key: a rewrite brings fresh text into the boxes. */}
+      <div className="bp-no-print">
+        <BlockBoxes key={built.generated_at} blocks={blocks} onSave={(next) => saveBlocks(refKey, next)} />
+      </div>
+      <div className="hidden print:block">
+        <Blocks blocks={blocks} />
+      </div>
+      {handoffForSection(refKey) ? <SendToCampaigns sectionKey={refKey} name={section.title} /> : null}
+      {section.link ? (
         <p className="bp-no-print mt-5 border-t border-[#e1e6ec] pt-3 text-sm">
           <Link href={href(section.link.href)} className="inline-flex items-center gap-1 font-semibold text-[var(--bp-blue)] hover:underline">
             {section.link.label}
@@ -666,62 +898,70 @@ function OutputBody({
  * status, actions) over a light rule, then the content. Inputs are grey boxes
  * to write in; outputs sit in a white panel with a light edge.
  */
-const STATUS_OPTIONS: { id: SectionWorkflow["status"]; label: string }[] = [
-  { id: "todo", label: "To do" },
-  { id: "review", label: "Review" },
-  { id: "done", label: "Done" },
-];
 
-const SELECTED: Record<SectionWorkflow["status"], string> = {
-  todo: "bg-[#fde8e6] text-[#9b2c2c] shadow-[0_1px_2px_rgba(5,30,54,0.08)]",
-  review: "bg-[#ffe14a] text-[#6b4500] shadow-[0_1px_2px_rgba(5,30,54,0.08)]",
-  done: "bg-[#b6f3cc] text-[#0e6a36] shadow-[0_1px_2px_rgba(5,30,54,0.08)]",
-};
-
-/** To do, Review, and Done, with the current one selected. */
-function StatusSwitch({
-  label,
-  status,
-  onChange,
-}: {
-  label: string;
-  status: SectionWorkflow["status"];
-  onChange: (status: SectionWorkflow["status"]) => void;
-}) {
+/** BCA's recommendation, one quiet line until the coach wants it. */
+function TipToggle({ tip }: { tip: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div role="group" aria-label={`${label} status`} className="inline-flex rounded-full bg-[#f1f4f8] p-0.5">
-      {STATUS_OPTIONS.map((option) => {
-        const selected = status === option.id;
-        return (
-          <button
-            key={option.id}
-            type="button"
-            aria-pressed={selected}
-            onClick={() => {
-              if (!selected) onChange(option.id);
-            }}
-            className={`rounded-full px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a8fd4] ${
-              selected
-                ? `font-semibold ${SELECTED[option.id]}`
-                : "font-medium text-[#5e7082] hover:text-[#3e4e60]"
-            }`}
-          >
-            {option.label}
-          </button>
-        );
-      })}
+    <div className="bp-no-print mb-4">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--bp-blue)] hover:underline"
+      >
+        <Lightbulb className="h-3.5 w-3.5 text-[var(--bp-sky)]" aria-hidden />
+        {open ? "Hide what BCA recommends" : "What BCA recommends"}
+      </button>
+      {open ? (
+        <p className="mt-2 rounded-xl bg-[var(--bp-tint)] px-4 py-3 text-[0.9375rem] leading-[1.6] text-[#0b3f6b]">{tip}</p>
+      ) : null}
     </div>
   );
 }
 
-export function SectionView({ sectionRef }: { sectionRef: SectionRef }) {
+export function SectionView({
+  sectionRef,
+  asLine = false,
+  lineTitle,
+  showAbout = false,
+  bare = false,
+  quiet = false,
+  emptyHint,
+  canWrite = true,
+  startOpen,
+  roomy = false,
+}: {
+  sectionRef: SectionRef;
+  /** An expandable line. Used for the pieces inside a newsletter. */
+  asLine?: boolean;
+  lineTitle?: string;
+  /** A short description under the title. Inner pieces leave this off. */
+  showAbout?: boolean;
+  /** The body only. The parent already has the title. */
+  bare?: boolean;
+  /** A line with a title and a chevron, and no status row. */
+  quiet?: boolean;
+  /** Replaces the empty "BCA writes this" panel. */
+  emptyHint?: string;
+  /** Offer the Write button. Coach-stored newsletters leave this off. */
+  canWrite?: boolean;
+  /** Open on first paint. */
+  startOpen?: boolean;
+  /** Taller writing boxes. Used for the newsletter issue itself. */
+  roomy?: boolean;
+}) {
   const { knowledge, payload, setSectionStatus, addNote, building, build, href } = usePractice();
-  const [editing, setEditing] = useState(false);
+  const focusKey = useSectionComments()?.openKey ?? null;
+  const discussing = focusKey === sectionRef.key;
+  // While one section is being discussed, the rest step back. Hover brings one forward to read.
+  const receded = Boolean(focusKey && !discussing && sectionByKey(focusKey));
   const [asking, setAsking] = useState(false);
   const [ask, setAsk] = useState("");
   const { section, key, page } = sectionRef;
-  const folded = section.face === "closed";
-  const [open, setOpen] = useState(!folded);
+  const folded = asLine || section.face === "closed";
+  const [open, setOpen] = useState(startOpen ?? !folded);
+  const title = lineTitle ?? section.title;
   if (!knowledge || !payload) return null;
 
   const row = { ...knowledge, payload };
@@ -734,6 +974,9 @@ export function SectionView({ sectionRef }: { sectionRef: SectionRef }) {
   const lastRequest = requests[requests.length - 1];
   const changeAsked = work.status === "todo" && work.owner === "bca" && Boolean(lastRequest);
   const selected = work.tracked ? work.status : "todo";
+  const only = section.fields?.length === 1 ? section.fields[0] : null;
+  const solo = only && section.layout !== "inline" && (!only.widget || only.widget === "tone") ? only : null;
+  const soloNeeded = Boolean(solo?.required && !fieldFilled(payload, solo));
 
   function chooseStatus(status: SectionWorkflow["status"]) {
     setSectionStatus(key, status);
@@ -742,7 +985,6 @@ export function SectionView({ sectionRef }: { sectionRef: SectionRef }) {
 
   const menu: MenuItem[] = built
     ? [
-        { label: "Edit", onClick: () => setEditing(true) },
         {
           label: "Rewrite",
           disabled: busy,
@@ -763,49 +1005,90 @@ export function SectionView({ sectionRef }: { sectionRef: SectionRef }) {
     setAsking(false);
   }
 
+  if (bare) {
+    return (
+      <div id={`s-${key.replace(":", "-")}`} className={`px-5 py-5 ${roomy ? "bp-issue-body" : ""}`}>
+        <OutputBody refKey={key} section={section} emptyHint={emptyHint} canWrite={canWrite} />
+      </div>
+    );
+  }
+
   return (
     <section
       id={`s-${key.replace(":", "-")}`}
-      className="bp-section scroll-mt-24"
+      className={
+        asLine
+          ? `scroll-mt-24 border-b border-[#e6eaf0] bg-white last:border-b-0 print:border-0 print:opacity-100 ${receded ? "opacity-50 hover:opacity-100" : ""}`
+          : `bp-section scroll-mt-24 rounded-2xl border bg-white transition-[opacity,box-shadow] duration-200 print:rounded-none print:border-0 print:opacity-100 print:shadow-none ${
+              discussing
+                ? "border-[#9cc9ec] shadow-[0_18px_40px_-18px_rgba(12,82,144,0.45)] ring-2 ring-[#cfe6f8]"
+                : `border-[#dbe3ec] shadow-[0_1px_2px_rgba(5,30,54,0.05)] ${receded ? "opacity-50 hover:opacity-100" : ""}`
+            }`
+      }
     >
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[#eceff3] pb-3">
+      <header
+        className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 print:px-0 ${
+          asLine ? "px-4 py-3" : `bp-head px-5 py-3 @2xl:px-6 ${open ? "rounded-t-2xl" : "rounded-2xl"}`
+        }`}
+      >
         <div className="flex min-w-0 items-center gap-1.5">
           {folded ? (
             <button
               type="button"
               aria-expanded={open}
               onClick={() => setOpen((value) => !value)}
-              className="inline-flex min-w-0 items-center gap-1.5 text-left"
+              className="inline-flex min-w-0 items-start gap-1.5 text-left"
             >
-              <ChevronDown className={`h-4 w-4 shrink-0 text-[var(--bp-faint)] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
-              <h3 className="min-w-0 text-[1.125rem] font-semibold leading-snug tracking-[-0.01em] text-[var(--bp-ink)]">
-                {section.title}
-              </h3>
+              <ChevronDown
+                className={`mt-1 h-4 w-4 shrink-0 text-[var(--bp-faint)] transition-transform ${
+                  quiet ? (open ? "" : "-rotate-90") : open ? "rotate-180" : ""
+                }`}
+                aria-hidden
+              />
+              <span className="min-w-0">
+                <span className="block text-[1.0625rem] font-semibold leading-snug tracking-[-0.01em] text-[var(--bp-ink)]">
+                  {title}
+                </span>
+                {showAbout && section.about ? (
+                  <span className="mt-0.5 block text-sm leading-5 text-[var(--bp-muted)]">{section.about}</span>
+                ) : null}
+              </span>
             </button>
           ) : (
-            <h3 className="min-w-0 text-[1.125rem] font-semibold leading-snug tracking-[-0.01em] text-[var(--bp-ink)]">
-              {section.title}
+            <h3 className="min-w-0 text-[1.0625rem] font-semibold leading-snug tracking-[-0.01em] text-[var(--bp-ink)]">
+              {title}
             </h3>
           )}
-          <InfoTip label={section.title}>
-            <SectionAbout section={section} />
-          </InfoTip>
+          {quiet ? null : (
+            <InfoTip label={section.title}>
+              <SectionAbout section={section} />
+            </InfoTip>
+          )}
+          {soloNeeded ? (
+            <span className="ml-1 rounded-full bg-[#fde8e6] px-2 py-px text-[0.6875rem] font-semibold text-[#9b2c2c]">Needed</span>
+          ) : null}
         </div>
-        <div className="bp-no-print ml-auto flex shrink-0 items-center gap-2">
+        <div className={`bp-no-print ml-auto flex shrink-0 items-center gap-2 ${quiet ? "hidden" : ""}`}>
           {writing ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bp-muted)]" aria-label="Writing" /> : null}
-          {work.owner ? <OwnerMark owner={work.owner} size="sm" /> : null}
-          {menu.length && !editing ? (
+          {work.owner ? (
+            <span className="inline-flex rounded-full ring-2 ring-white/85">
+              <OwnerMark owner={work.owner} size="sm" />
+            </span>
+          ) : null}
+          {menu.length ? (
             <MoreMenu
               items={menu}
               note={built ? `Written ${formatDate(built.generated_at)}${built.edited_at ? `, edited ${formatDate(built.edited_at)}` : ""}` : undefined}
             />
           ) : null}
+          <CommentButton sectionKey={key} title={section.title} />
           <StatusSwitch label={section.title} status={selected} onChange={chooseStatus} />
         </div>
       </header>
 
-      {folded && !open ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3">
+
+      {folded && !open && !asLine ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pb-4 pt-1 @2xl:px-6">
           <p className="text-sm leading-6 text-[var(--bp-muted)]">{section.about}</p>
           {section.link ? (
             <Link href={href(section.link.href)} className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline">
@@ -816,8 +1099,8 @@ export function SectionView({ sectionRef }: { sectionRef: SectionRef }) {
         </div>
       ) : null}
 
-      {open ? (
-      <div className="pt-5">
+      {open || folded ? (
+      <div className={`${asLine ? "bg-[#f8fafc] px-4" : "px-5 @2xl:px-6"} pb-5 pt-4 print:block print:px-0 ${open ? "" : "hidden"}`}>
         {asking ? (
           <div className="bp-no-print mb-4 space-y-2">
             <textarea
@@ -858,18 +1141,12 @@ export function SectionView({ sectionRef }: { sectionRef: SectionRef }) {
           <p className="mb-4 text-sm text-[#8a5300]">Changed since this was signed off.</p>
         ) : null}
 
-        {section.tip ? (
-          <p className="mb-5 flex gap-2.5 rounded-xl bg-[var(--bp-tint)] px-4 py-3 text-[0.9375rem] leading-[1.6] text-[#0b3f6b]">
-            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[var(--bp-sky)]" aria-hidden />
-            <span>
-              <span className="font-semibold">BCA recommends: </span>
-              {section.tip}
-            </span>
-          </p>
-        ) : null}
+        {section.tip ? <TipToggle tip={section.tip} /> : null}
 
-        {isOutput ? (
-          <OutputBody refKey={key} section={section} editing={editing} setEditing={setEditing} />
+        {section.custom === "linkedin" ? (
+          <LinkedInProfileSection />
+        ) : isOutput ? (
+          <OutputBody refKey={key} section={section} emptyHint={emptyHint} canWrite={canWrite} />
         ) : (
           <Fields section={section} changedFields={work.changedFields} />
         )}

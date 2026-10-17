@@ -12,7 +12,14 @@ import { usePractice } from "./PracticeProvider";
  * The AI conversation that fills the blueprint. It asks only for what is
  * still open, one question at a time, and every answer lands in the document.
  */
-export function BlueprintAssistant({ onClose }: { onClose: () => void }) {
+export function BlueprintAssistant({
+  onClose,
+  tabbed = false,
+}: {
+  onClose: () => void;
+  /** Under the panel's mode switch: the switch names it and holds the close button. */
+  tabbed?: boolean;
+}) {
   const { knowledge, payload, session, busy, error, ttsOn, start, reply, speak, transcribe } = usePractice();
   const [text, setText] = useState("");
   const [recording, setRecording] = useState(false);
@@ -75,6 +82,13 @@ export function BlueprintAssistant({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white">
+      {tabbed ? (
+        <p className="border-b border-[var(--bp-rule)] px-5 py-2.5 text-xs leading-5 text-[var(--bp-muted)]">
+          {open.length
+            ? `${open.length} ${open.length === 1 ? "question" : "questions"} left. Type or speak, whatever is quicker.`
+            : "Everything we need is captured."}
+        </p>
+      ) : (
       <header className="flex items-start justify-between gap-3 border-b border-[var(--bp-rule)] px-5 py-4">
         <div>
           <h2 className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">Talk it through</h2>
@@ -93,6 +107,7 @@ export function BlueprintAssistant({ onClose }: { onClose: () => void }) {
           <X className="h-4 w-4" />
         </button>
       </header>
+      )}
 
       <div ref={scrollRef} className="bp-scroll min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-5">
         {turns.length === 0 ? (

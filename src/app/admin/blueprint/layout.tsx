@@ -12,7 +12,7 @@ export default function AdminBlueprintLayout({ children }: { children: ReactNode
   return (
     <div className="flex h-full min-h-0 flex-col">
       <StickyPageHeader title="My Blueprint" bleedInset={HEADER_BLEED} />
-      <div className="min-h-0 flex-1 overflow-hidden bg-white">{children}</div>
+      <div className="app-canvas-bg flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
     </div>
   );
 }

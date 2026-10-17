@@ -6,6 +6,7 @@ import { findAuthUserIdByEmail } from "@/lib/auth/findAuthUserIdByEmail";
 import { allocateCoachSlug } from "@/lib/coachSlug";
 import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
 import { notifyBcaNewMember } from "@/lib/membership/notifyBcaNewMember";
+import { scheduleOnboardingIngest } from "@/lib/practiceKnowledge/ingestOnboarding";
 import { notifyProgrammeJoinGhl } from "@/lib/membership/notifyProgrammeJoinGhl";
 import {
   linkStripeCustomerToCoach,
@@ -169,6 +170,7 @@ async function ensureCoachRecords(input: {
   const createdCoach = !existingCoach?.id;
   if (createdCoach) {
     await notifyBcaNewMember(input.userId);
+    scheduleOnboardingIngest(input.userId);
   }
 
   return {

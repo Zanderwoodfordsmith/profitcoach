@@ -21,8 +21,10 @@ Avoid vague labels (consultant, strategist), generic outcomes (driving growth), 
    - What most owners in this market actually want.
    - Who it is for (four short bullets).
    - How the coach fixes it (the method in plain words, the five levers where useful).
+   - The kind of coach they are, in their words: how they want to be known (fun, serious, kick up the backside, hugs, a mix). Owners should recognise what working with them will feel like.
    - Proof: two or three specific results.
    - A clear call to action (the BOSS Scorecard or the value session).
+   Write the About as this coach, not a generic adviser. Values they named can colour a line. Do not force a hobby, book or film onto the profile. Those belong in newsletters.
 3. Core skills: four skills tied to the problems we message about, each with a one-line description.
 4. Key milestones: three or four specific career milestones.
 5. Banner line: one short line and a proof point for the background image.

@@ -1,4 +1,5 @@
 import { labelMissingField } from "./completeness";
+import { BLUEPRINT_OUTPUTS, type BlueprintOutput } from "./outputs";
 import { isFilledSourced } from "./sourced";
 import type { PracticeKnowledgePayload, PracticeKnowledgeRow, Sourced } from "./types";
 
@@ -50,13 +51,33 @@ export type FieldSpec = {
   /** Behind the info icon: why we ask, and where it is used. */
   help?: string;
   options?: { value: string; label: string }[];
+  /** Selected in a dropdown when nothing is stored yet. */
+  assume?: string;
   /**
    * A control that is not a text box: the same hours as Calls, WhatsApp
    * following the phone number, a detected time zone, or a connected inbox.
    */
-  widget?: "whatsapp" | "timezone" | "hours" | "email";
+  widget?: "phone" | "whatsapp" | "timezone" | "hours" | "email" | "tone";
+  /** Only shown when another answer is one of these values, e.g. guarantee terms once there is a guarantee. */
+  showIf?: { path: FieldSpec["path"]; in: string[] };
   /** Columns for a rows field. Each row stores these keys, plus an id. */
   columns?: { key: string; label: string; placeholder?: string }[];
+  /** Sit half-width next to the other paired field. Uses a line list, not a box. */
+  pair?: boolean;
+  /** Quiet arrow on the label: more of goes up, less of goes down. */
+  cue?: "more" | "less";
+};
+
+/** Material a writer reads besides the coach's answers. The Decision Record always goes in. */
+export type WriterSource = "linkedin" | "transcript" | "preread" | "library";
+
+/**
+ * A writer's contract: the coach's answers and the other material it reads.
+ * Only these reach its prompt, so the flow map and "what is missing" stay true.
+ */
+export type SectionUses = {
+  fields: FieldSpec["path"][];
+  sources?: WriterSource[];
 };
 
 export type BlueprintSection = {
@@ -77,8 +98,14 @@ export type BlueprintSection = {
   fields?: FieldSpec[];
   /** Written sections: other sections ("page:id") that should exist first. */
   needs?: string[];
+  /** Written sections: the answers and material the writer reads. With `needs`, its contract. */
+  uses?: SectionUses;
   /** Where this runs once it is live, so it is never copied in two places. */
   link?: { href: string; label: string };
+  /** inline: each answer on one line, label on the left. For short contact details. */
+  layout?: "inline";
+  /** A section with its own editor instead of boxes. linkedin: the profile lookalike. */
+  custom?: "linkedin";
   /** Extra controls that are not a single stored answer, such as social profiles. */
   extras?: ("socials")[];
   /**
@@ -88,6 +115,20 @@ export type BlueprintSection = {
    */
   face?: "page" | "closed" | "stored";
 };
+
+/** How they want to be known and the kind of coach they are. Word choice in every message. */
+export const VOICE_STYLE_PATHS: FieldSpec["path"][] = [
+  "practice.voice_known_for",
+  "practice.voice_coaching_style",
+];
+
+/** Book, film, hobbies and stories. Analogies where there is room: newsletters, posts, nurture. */
+export const VOICE_COLOUR_PATHS: FieldSpec["path"][] = [
+  "practice.voice_favourite_book",
+  "practice.voice_favourite_film",
+  "practice.voice_hobbies",
+  "practice.voice_stories",
+];
 
 export type BlueprintGroup = {
   label: string;
@@ -140,7 +181,7 @@ const GROUPS: BlueprintGroup[] = [
         title: "Your Story and Proof",
         href: "/coach/blueprint/story",
         heading: "Turn your experience into commercial credibility",
-        summary: "The evidence we use to position you, and the documents that carry it.",
+        summary: "The evidence we use to position you: results, stories, and the documents that carry it to partners and owners.",
         sections: [
           {
             id: "experience",
@@ -197,16 +238,116 @@ const GROUPS: BlueprintGroup[] = [
         title: "Your Voice",
         href: "/coach/blueprint/voice",
         heading: "Sound like you in everything we write",
-        summary: "How you talk, so the LinkedIn rewrite, campaigns, and newsletters read like you wrote them.",
+        summary: "How you talk, the kind of coach you are, and the colour that makes marketing sound like you, not a template.",
         sections: [
+          {
+            id: "tone",
+            title: "Your tone",
+            source: "from_you",
+            about: "Five sliders for how you come across. BCA sets them from how you talk on your call. Move any that feel off.",
+            from: ["Conversation transcript"],
+            feeds: "Every message BCA writes for you",
+            fields: [
+              { path: "practice.tone", label: "Tone", kind: "text", widget: "tone", required: true, help: "Each slider becomes a plain instruction for the writers, so small moves matter." },
+            ],
+          },
+          {
+            id: "sounds",
+            title: "Sounds like you",
+            source: "from_you",
+            about: "A short message you would actually send. The writers copy its rhythm and words.",
+            feeds: "Every message BCA writes for you",
+            fields: [
+              { path: "practice.voice_sounds_like", label: "Sounds like you", kind: "longtext", required: true, example: "Hi Dave, saw the new depot opening, congrats. Quick one: are you finding the extra site is eating the margin, or is it holding up?", help: "A message, a post, or a few lines you would write to an owner. Paste one you have sent if you like.", ask: "Could you write, or paste, a short message you would send to an owner, in your own words?" },
+            ],
+          },
+          {
+            id: "never",
+            title: "Never sounds like you",
+            source: "from_you",
+            about: "Phrases, styles or habits you never want in your name.",
+            feeds: "Every message BCA writes for you",
+            fields: [
+              { path: "practice.voice_never", label: "Never sounds like you", kind: "longtext", example: "I hope this email finds you well. Unlock your potential. Exclamation marks everywhere.", help: "Anything that would make you wince if it went out with your name on it.", ask: "Is there anything you never want to sound like?" },
+            ],
+          },
+          {
+            id: "known",
+            title: "How you want to be known",
+            source: "from_you",
+            about: "How you want to be perceived, and what type of coach you are. Prospects need to recognise you so you attract people you will work with for a long time.",
+            feeds: "LinkedIn rewrite, campaign messaging, newsletters",
+            fields: [
+              { path: "practice.voice_known_for", label: "How you want to be known", kind: "longtext", required: true, example: "The practical MD who has sat in their chair. Straight with the numbers, never a cheerleader.", help: "What you want to be known for. This is how we differentiate you.", ask: "How do you want to be perceived, and what do you want to be known for?" },
+              { path: "practice.voice_coaching_style", label: "The kind of coach you are", kind: "longtext", required: true, example: "Kick up the backside first, then hugs once they have done the work. Not a boot camp, not all cuddles.", help: "Fun, serious, strict, nurturing, kick up the backside, boot camp, hugs and cuddles, or a mix of those.", ask: "These might seem a bit odd, but they help us write things that sound like you. What type of coach are you: fun, serious, strict, nurturing, kick up the backside, boot camp, hugs and cuddles, or a mix?" },
+            ],
+          },
+          {
+            id: "stand",
+            title: "What you stand for",
+            source: "from_you",
+            about: "Values, pet peeves, and the people you click with. We use this so copy takes your side, not a generic coach's.",
+            feeds: "Every message BCA writes for you",
+            fields: [
+              { path: "practice.voice_values", label: "Values that matter to you", kind: "list", example: "Graft\nSay it straight\nLook after your people", help: "One per line.", ask: "What values are important to you?" },
+              { path: "practice.voice_qualities", label: "Qualities that matter to you", kind: "list", example: "Reliability\nHumour under pressure\nNo drama", help: "One per line. In yourself, and in the people you work with.", ask: "Which qualities matter to you?" },
+              { path: "practice.voice_like_in_people", label: "What you like in a person", kind: "list", example: "Gets stuck in\nOwns a mistake\nCan take a joke", help: "One per line.", ask: "What do you like in a person?" },
+              { path: "practice.voice_dislike_in_people", label: "What you do not like in a person", kind: "list", example: "Blame shifting\nAll talk\nTreating staff as a cost", help: "One per line.", ask: "What do you not like in a person?" },
+              { path: "practice.voice_pet_peeves", label: "Pet peeves", kind: "list", example: "Jargon for the sake of it\nMeetings with no decision\nPeople who say they have no time but live in the weeds", help: "One per line. The things that make you wince, in business or in people.", ask: "What are your pet peeves?" },
+            ],
+          },
+          {
+            id: "colour",
+            title: "What you draw on",
+            source: "from_you",
+            about: "A favourite book, a film, hobbies, a story. We use them as analogies in newsletters and lessons, so the writing has your colour, not ours.",
+            feeds: "Newsletters, posts, lessons",
+            fields: [
+              { path: "practice.voice_favourite_book", label: "Favourite book", kind: "text", example: "The Very Hungry Caterpillar", help: "Any book. Childhood, recent, does not matter. We use it for analogies, not as a reading list.", ask: "What is your favourite book? It can be one from when you were six, or one you have just finished. Any favourite book." },
+              { path: "practice.voice_favourite_film", label: "Favourite film", kind: "text", example: "The Shawshank Redemption", help: "Used for analogies in newsletters.", ask: "What is your favourite film?" },
+              { path: "practice.voice_hobbies", label: "Hobbies and sports", kind: "list", example: "Rugby\nFell walking\nRestoring old motorbikes", help: "One per line. Analogies in newsletters come from these.", ask: "What hobbies and sports are you interested in?" },
+              { path: "practice.voice_stories", label: "A story you would share", kind: "longtext", example: "The Friday I found we had two weeks of cash left. I still use that when an owner says they are a bit tight.", help: "Optional. Anything interesting that has happened, that we can put in a newsletter or a lesson.", ask: "Is there a story you would like us to use in a newsletter or a lesson?" },
+            ],
+          },
+          {
+            id: "notes",
+            title: "Anything else",
+            source: "from_you",
+            about: "Optional. Anything else about how you come across, such as phrases you use or a regional flavour.",
+            feeds: "Every message BCA writes for you",
+            fields: [
+              { path: "practice.voice_notes", label: "Anything else", kind: "longtext", example: "Yorkshire, so plain and direct. I say \"right then\" a lot. Football analogies are fine.", help: "Optional." },
+            ],
+          },
           {
             id: "sound",
             title: "How you sound",
             source: "we_build",
-            about: "Your voice guide. Every message BCA writes for you follows it.",
-            from: ["Conversation transcript", "LinkedIn About and posts"],
+            face: "stored",
+            about: "Your voice guide, written from your tone, the kind of coach you are, and how you talk. Kept for the writers. The boxes above are the working copy.",
+            from: ["Your tone", "Sounds like you", "How you want to be known", "What you stand for", "What you draw on", "Conversation transcript", "LinkedIn About and posts"],
             feeds: "LinkedIn rewrite, campaign messaging, newsletters",
             needs: [],
+            uses: {
+              fields: [
+                "practice.tone",
+                "practice.voice_sounds_like",
+                "practice.voice_never",
+                "practice.voice_notes",
+                "practice.voice_known_for",
+                "practice.voice_coaching_style",
+                "practice.voice_values",
+                "practice.voice_qualities",
+                "practice.voice_like_in_people",
+                "practice.voice_dislike_in_people",
+                "practice.voice_pet_peeves",
+                "practice.voice_favourite_book",
+                "practice.voice_favourite_film",
+                "practice.voice_hobbies",
+                "practice.voice_stories",
+              ],
+              sources: ["linkedin", "transcript"],
+            },
           },
         ],
       },
@@ -215,7 +356,7 @@ const GROUPS: BlueprintGroup[] = [
         title: "One-page Profile",
         href: "/coach/blueprint/profile",
         heading: "One page that says who you are and who you help",
-        summary: "The page you send to accountants, banks and partners, and the short bio that goes with it.",
+        summary: "The page you send to accountants, banks and partners, plus the short bio for LinkedIn and introductions.",
         sections: [
           {
             id: "onepager",
@@ -226,6 +367,7 @@ const GROUPS: BlueprintGroup[] = [
             from: ["Proof summary", "Your avatar", "Your offer"],
             feeds: "Partners, recruiters, accountants, banks, events",
             needs: ["story:bio", "market:avatar"],
+            uses: { fields: ["proof.problems_asked", "practice.delivery_format", "practice.session_rhythm", "identity.linkedin_url", "identity.website", ...VOICE_STYLE_PATHS], sources: ["linkedin"] },
           },
           {
             id: "bio",
@@ -236,6 +378,7 @@ const GROUPS: BlueprintGroup[] = [
             from: ["Story and proof sections above"],
             feeds: "LinkedIn About, introductions, newsletter sign-off",
             needs: [],
+            uses: { fields: ["proof.career_results", "proof.client_results", "proof.superpowers", "proof.uniqueness", "proof.proudest", "proof.problems_asked", "market.roles_held", "market.industries_worked", "market.industries_credibility", ...VOICE_STYLE_PATHS], sources: ["linkedin", "transcript"] },
           },
         ],
       },
@@ -244,20 +387,39 @@ const GROUPS: BlueprintGroup[] = [
         title: "Practice Setup",
         href: "/coach/blueprint/setup",
         heading: "The basics we need to set you up",
-        summary: "How clients reach you, when you take calls, and where your practice lives online.",
+        summary: "How clients reach you, when you take calls, and the website and profiles where owners find your practice.",
         sections: [
           {
             id: "contact",
             title: "Phone and contact",
             source: "imported",
+            layout: "inline",
             about: "How BCA and your clients reach you. Your phone is pulled from sign-up. WhatsApp uses that same number, and the time zone comes from your account.",
             from: ["Sign-up form: phone", "Your account time zone", "LinkedIn: location"],
             feeds: "Booking page, reminders, BCA team",
             fields: [
-              { path: "identity.phone", label: "Phone", kind: "text", required: true, example: "07700 900123", help: "For booking reminders and for the BCA team. Never shown on your public pages.", ask: "What is the best mobile number for us and for booking reminders?" },
-              { path: "identity.location", label: "Location", kind: "text", example: "Leeds, UK", help: "Used for your booking page and to target owners near you if you want local clients." },
-              { path: "identity.whatsapp", label: "WhatsApp", kind: "text", widget: "whatsapp", help: "Uses your phone number. Change it only if WhatsApp is a different number." },
+              { path: "identity.phone", label: "Phone", kind: "text", widget: "phone", required: true, example: "7700 900123", help: "For booking reminders and for the BCA team. Never shown on your public pages.", ask: "What is the best mobile number for us and for booking reminders?" },
+              { path: "identity.whatsapp", label: "WhatsApp", kind: "text", widget: "whatsapp", help: "Filled in from your phone. Change it if WhatsApp is on a different number." },
+              { path: "identity.practice_email", label: "Email", kind: "text", widget: "email", help: "Connect Gmail or Outlook. Practice emails go out from it, and the address appears here once it is connected." },
               { path: "identity.timezone", label: "Time zone", kind: "text", widget: "timezone", help: "Taken from your account, or from this browser if your account does not have one yet. Booked calls use it." },
+              { path: "identity.address", label: "Address", kind: "text", example: "Unit 4, Wellington Court", help: "Where BCA can send things, and for your website or booking page if you want it shown." },
+              { path: "identity.address_line2", label: "Address line 2", kind: "text", placeholder: "Optional" },
+              { path: "identity.location", label: "Town or city", kind: "text", example: "Leeds", help: "Also used to target owners near you if you want local clients." },
+              { path: "identity.postcode", label: "Postcode", kind: "text", example: "LS1 4AP" },
+              { path: "identity.country", label: "Country", kind: "text", example: "United Kingdom" },
+            ],
+          },
+          {
+            id: "online",
+            title: "Website and socials",
+            source: "from_you",
+            layout: "inline",
+            about: "Your website if you have one, and the social profiles owners can find you on.",
+            from: ["Your website", "Social profiles"],
+            feeds: "Campaign links, your public page",
+            extras: ["socials"],
+            fields: [
+              { path: "identity.website", label: "Website", kind: "text", placeholder: "yoursite.com, or leave blank and we use your Profit Coach page", help: "Your site, if you have one. Leave this blank and campaigns link to your Profit Coach page." },
             ],
           },
           {
@@ -269,19 +431,6 @@ const GROUPS: BlueprintGroup[] = [
             feeds: "Booking page calendar",
             fields: [
               { path: "working_times.prospect_call_hours", label: "Hours", kind: "text", required: true, widget: "hours", help: "Tick the days and set the times. Saving here updates Calls." },
-            ],
-          },
-          {
-            id: "online",
-            title: "Website, email and socials",
-            source: "from_you",
-            about: "Your website if you have one, the inbox practice emails come from, and the social profiles owners can find you on.",
-            from: ["Your website", "Gmail or Outlook", "Social profiles"],
-            feeds: "Campaign links, practice emails, your public page",
-            extras: ["socials"],
-            fields: [
-              { path: "identity.website", label: "Website", kind: "text", placeholder: "yoursite.com, or leave blank and we use your Profit Coach page", help: "Your site, if you have one. Leave this blank and campaigns link to your Profit Coach page." },
-              { path: "identity.practice_email", label: "Email", kind: "text", widget: "email", help: "Connect Gmail or Outlook. The address appears here once it is connected." },
             ],
           },
         ],
@@ -297,31 +446,19 @@ const GROUPS: BlueprintGroup[] = [
         title: "Who You Help",
         href: "/coach/blueprint/market",
         heading: "Know exactly who you are built to help",
-        summary: "The boxes on this page are the person. Campaigns, the profile and the prospect list are pulled from here.",
+        summary: "The person you help. Campaigns, the profile rewrite and the prospect list are pulled from the boxes on this page.",
         sections: [
           {
             id: "credibility",
-            title: "Where you already have credibility",
+            title: "Your market",
             source: "from_you",
-            about: "The industries where your results will impress owners. We use these to recommend your market.",
-            from: ["LinkedIn: industries worked", "Conversation: industries you understand and can access"],
-            feeds: "Market options",
+            about: "Where your results will impress owners, who signs off, and who you will not take. We use this to recommend your market and build your prospect list.",
+            from: ["LinkedIn: industries worked", "Conversation: industries you understand and can reach", "Conversation: clients to avoid"],
+            feeds: "Market options, prospect list",
             fields: [
-              { path: "market.industries_credibility", label: "Credibility in", kind: "list", required: true, example: "Building services\nM&E contractors", help: "Where would owners be most impressed by your results? One per line.", ask: "Which industries would be most impressed by your results?" },
-              { path: "market.industries_understand", label: "Understand from the inside", kind: "list", example: "Construction\nFacilities management", help: "Industries where you know the language and the numbers." },
-              { path: "market.industries_access", label: "Can reach easily", kind: "list", example: "Yorkshire contractors through the local CIOB branch", help: "Where you already have contacts, groups or a reputation." },
+              { path: "market.industries_credibility", label: "Where you have credibility", kind: "list", required: true, example: "Building services\nM&E contractors\nYorkshire contractors through the local CIOB branch", help: "Industries where owners would be impressed by your results, where you know the language, or where you already have contacts. One per line.", ask: "Which industries would be most impressed by your results, and where do you already know people?" },
               { path: "market.buyer_roles", label: "Who signs off", kind: "list", example: "Owner-MD\nFinance Director", help: "The person who says yes to hiring you.", ask: "In those businesses, who signs off on hiring someone like you?" },
-            ],
-          },
-          {
-            id: "avoid",
-            title: "Who you will not take",
-            source: "from_you",
-            about: "Owners you would rather not work with. They are left off your prospect lists.",
-            from: ["Conversation: clients to avoid"],
-            feeds: "Prospect criteria",
-            fields: [
-              { path: "market.avoid", label: "Will not take", kind: "list", required: true, example: "Start-ups with no revenue\nAnyone looking for a quick fix", help: "One per line.", ask: "Who will you not work with, whatever they pay?" },
+              { path: "market.avoid", label: "Who you will not take", kind: "list", required: true, example: "Start-ups with no revenue\nAnyone looking for a quick fix", help: "Left off your prospect lists. One per line.", ask: "Who will you not work with, whatever they pay?" },
             ],
           },
           {
@@ -330,78 +467,40 @@ const GROUPS: BlueprintGroup[] = [
             source: "we_build",
             face: "closed",
             about: "Two or three markets, scored, with BCA's recommendation. You choose one on the Decision Call. Open this when you want the scores.",
-            from: ["Story and proof", "Where you already have credibility"],
+            from: ["Story and proof", "Your market"],
             feeds: "Decision Call, your avatar",
             needs: [],
+            uses: { fields: ["market.industries_credibility", "market.industries_worked", "market.roles_held", "market.buyer_roles", "market.avoid", "proof.career_results", "proof.client_results", "proof.problems_asked", "proof.superpowers"], sources: ["linkedin", "transcript", "preread"] },
           },
           {
             id: "persona",
             title: "Who they are",
             source: "from_you",
-            about: "Who they are, where they spend their time, and how they think.",
+            about: "The person every message is written to: who they are, where they spend their time, and how they think.",
             feeds: "The walkthrough, campaign messaging",
             fields: [
-              { path: "client.characteristics", label: "Characteristics", kind: "list", required: true, example: "Late 40s, married, two children\nSales or marketing director\nEarning well into six figures", help: "Age, role, family, and money. Strongest first.", ask: "Describe the person you most want to help. Age, role, family, and what they earn, in a few short lines." },
-              { path: "client.habitat", label: "Habitat", kind: "list", example: "On LinkedIn most days\nReads about business and personal growth\nPlays golf or something like it at the weekend", help: "Where they spend time, what they read, and how they live." },
-              { path: "client.psychographics", label: "Psychographics", kind: "list", example: "Ambitious, and wants to be seen as successful\nStrong work ethic\nWants financial freedom without losing the family", help: "How they think, what they value, and what they are striving for." },
+              { path: "client.characteristics", label: "Who they are", kind: "list", required: true, example: "Late 40s, sales director, earning well into six figures\nOn LinkedIn most days, plays golf at the weekend\nAmbitious, and wants financial freedom without losing the family", help: "Age, role, family and money, where they spend their time, and what they value. Strongest first.", ask: "Describe the person you most want to help. Age, role, family, what they earn, and how they spend their time, in a few short lines." },
             ],
           },
           {
             id: "grid",
-            title: "Pains and desires",
+            title: "What they are going through",
             source: "from_you",
-            about: "What hurts and what they want, now and later. One box each.",
+            about: "What they want less of, and what they want more of. Today and later both go in the same box.",
             feeds: "Pain points, campaign messaging, call script",
             fields: [
-              { path: "client.pains_now", label: "Pain now", kind: "list", required: true, example: "No say over his own week\nMisses the things that matter at home\nThe job has started to feel like a trap", help: "What hurts today, in their words.", ask: "What hurts for this person right now, in their words? A few lines, strongest first." },
-              { path: "client.pains_later", label: "If nothing changes", kind: "list", example: "Another five years of the same week\nThe children grow up while he is away\nHe resents a job he used to be proud of", help: "The future pain if they leave it." },
-              { path: "client.desires_now", label: "What they want now", kind: "list", example: "A week he can plan himself\nTo be home for dinner\nWork that uses what he is already good at", help: "What they want to feel or have soon." },
-              { path: "client.desires_later", label: "The life they want", kind: "list", example: "His own practice, earning properly\nTime with his family in the week\nProud of how he spends his days", help: "The future they picture once this is solved." },
-            ],
-          },
-          {
-            id: "stuck",
-            title: "Where they are stuck",
-            source: "from_you",
-            about: "Each row is one problem. What it is, what happens if they leave it, and why they lie awake. The last column is the feeling, which is what people actually respond to.",
-            feeds: "Pain points, campaign messaging",
-            fields: [
-              {
-                path: "client.stuck",
-                label: "Where they are stuck",
-                kind: "rows",
-                required: true,
-                help: "For example: has no say over his week, so he feels trapped, and lies awake resenting it. Use the arrows to put the strongest row first.",
-                ask: "Pick their biggest problem. What is it, what happens if they leave it, and what keeps them awake at night?",
-                columns: [
-                  { key: "problem", label: "The problem", placeholder: "Has no say over his week" },
-                  { key: "consequence", label: "Consequences of not solving it", placeholder: "He feels trapped" },
-                  { key: "awake", label: "Why they lie awake", placeholder: "He is unfulfilled and resentful" },
-                ],
-              },
+              { path: "client.pains_now", label: "Less of", kind: "list", required: true, example: "No say over his own week\nThe job has started to feel like a trap\nAnother five years of the same if nothing changes", help: "What they want less of: what hurts today, the daily frustrations, and what happens if they leave it. In their words, strongest first.", ask: "What does this person want less of right now, and what happens if they leave it? A few lines, strongest first." },
+              { path: "client.desires_now", label: "More of", kind: "list", example: "A week he can plan himself\nTo be home for dinner\nHis own practice, earning properly", help: "What they want more of: what they want soon, and the life they picture once this is solved.", ask: "What does this person want more of instead, soon and in the life they picture?" },
             ],
           },
           {
             id: "world",
-            title: "What they see and hear",
+            title: "In their words",
             source: "from_you",
-            about: "The world around them. What they hear, what they see, what they say out loud, and what they think.",
-            feeds: "The walkthrough, campaign messaging",
+            about: "How this person talks: what they say and think, and the words that would put them off.",
+            feeds: "Campaign messaging, LinkedIn, newsletters, call script",
             fields: [
-              { path: "client.hears", label: "Hears", kind: "list", required: true, example: "You should be grateful for this job\nEveryone at this level works these hours", help: "From a boss, a partner, peers, or the industry.", ask: "What does this person keep hearing from a boss, a partner, or people like them?" },
-              { path: "client.sees", label: "Sees", kind: "list", example: "A friend who left and looks happier\nHis children asleep when he gets home", help: "What is in front of them on an ordinary day." },
-              { path: "client.says", label: "Says", kind: "list", example: "I just need to get through this quarter\nI would go on my own if I knew where to start", help: "What they say out loud." },
-              { path: "client.thinks", label: "Thinks and feels", kind: "list", example: "What will people think if I fail?\nWhat if I cannot provide for my family?", help: "The private thoughts, including the fear." },
-            ],
-          },
-          {
-            id: "words",
-            title: "How they talk",
-            source: "from_you",
-            about: "How this person talks: the words they use, and the words that would put them off.",
-            feeds: "Campaign messaging, LinkedIn, newsletters",
-            fields: [
-              { path: "client.words_use", label: "Words they use", kind: "list", required: true, example: "Trapped\nAutonomy\nProve it works before I leave", help: "Their language, not marketing language.", ask: "What words does this person actually use about their situation?" },
+              { path: "client.says", label: "What they say and think", kind: "list", required: true, example: "I just need to get through this quarter\nI would go on my own if I knew where to start\nWhat if I cannot provide for my family?", help: "What they say out loud, what they think in private, and what they keep hearing from others. Their words, not marketing language.", ask: "What does this person say, think, and keep hearing from a boss or people like them? Their actual words." },
               { path: "client.words_avoid", label: "Words to avoid", kind: "list", example: "Guru\nHustle\nPassive income", help: "Words that sound like everyone else, or that this person would not trust." },
             ],
           },
@@ -409,55 +508,21 @@ const GROUPS: BlueprintGroup[] = [
             id: "triggers",
             title: "What makes them act",
             source: "from_you",
-            about: "What frustrates them, the moment they decide to get help, and what they say when they are interested and still hesitate.",
+            about: "The moment they decide to get help, and what they say when they are interested and still hesitate.",
             feeds: "Campaign messaging, call script",
             fields: [
-              { path: "client.frustrations", label: "Frustrations", kind: "list", example: "Not enough say at work\nThe workload never lets up\nDoes not know how to start", help: "The daily irritations, strongest first." },
               { path: "client.buying_triggers", label: "The moment they act", kind: "list", required: true, example: "Misses something important at home\nA boss who will not respect a boundary\nSees a friend with the life he wants", help: "The event that finally makes them say enough.", ask: "What event finally makes this person decide to get help?" },
               { path: "client.objections", label: "Objections", kind: "list", example: "I cannot afford to drop the salary\nI have tried to start before and stalled\nWhat if it does not replace my income?", help: "What they say when they are interested and still hesitate." },
-            ],
-          },
-          {
-            id: "trust",
-            title: "What earns their trust",
-            source: "from_you",
-            about: "Authority, social proof, and scarcity. Unlike the stuck table, a row does not have to fill every column. Add a row for each point.",
-            feeds: "Campaign messaging, the site",
-            fields: [
-              {
-                path: "client.trust",
-                label: "What earns their trust",
-                kind: "rows",
-                required: true,
-                help: "A true limit only. Do not invent a fake one.",
-                ask: "What gives you authority with this person, what social proof do you have, and is there a real reason they should not wait?",
-                columns: [
-                  { key: "authority", label: "Authority", placeholder: "Built a 7-figure practice" },
-                  { key: "social_proof", label: "Social proof", placeholder: "Owners like them who have already done this" },
-                  { key: "scarcity", label: "Scarcity", placeholder: "Only a few new clients at a time" },
-                ],
-              },
-            ],
-          },
-          {
-            id: "voice",
-            title: "In their words",
-            source: "from_you",
-            about: "Two lines in their voice. What they say to themselves, and what they say when they are ready to act.",
-            feeds: "Campaign messaging, call script",
-            fields: [
-              { path: "client.inner_voice", label: "To themselves", kind: "longtext", example: "I would go on my own if I knew where to start, but I cannot risk the salary.", help: "The private line, first person." },
-              { path: "client.ready_to_act", label: "Ready to act", kind: "longtext", example: "Show me how to prove this works before I resign.", help: "What they say out loud once they have decided to look for help." },
             ],
           },
           {
             id: "why",
             title: "Why you",
             source: "from_you",
-            about: "Why they would pick you rather than do it alone, or hire someone else.",
+            about: "Why they would pick you rather than do it alone or hire someone else, and what earns their trust.",
             feeds: "The offer, campaign messaging",
             fields: [
-              { path: "client.why_you", label: "Why you", kind: "longtext", required: true, example: "You have done their job, and you have the whole path ready, so they do not have to figure out the business and leave the salary on the same day.", help: "The difference they would actually care about.", ask: "Why would they pick you, rather than do it alone or hire someone else?" },
+              { path: "client.why_you", label: "Why you", kind: "longtext", required: true, example: "You have done their job, and you have the whole path ready, so they do not have to figure out the business and leave the salary on the same day.", help: "The difference they would care about: your authority, proof from owners like them, and any real limit on how many clients you take. Never invent a limit.", ask: "Why would they pick you, rather than do it alone or hire someone else? What proof would they trust?" },
             ],
           },
           {
@@ -466,19 +531,21 @@ const GROUPS: BlueprintGroup[] = [
             source: "we_build",
             face: "stored",
             about: "A written picture pulled from the boxes on this page. Kept for campaigns. The boxes are the working copy.",
-            from: ["Who they are", "Pains and desires", "Where they are stuck", "Market options"],
+            from: ["Who they are", "What they are going through", "In their words", "Market options"],
             feeds: "Pain points, then campaign messaging",
             needs: ["market:options"],
+            uses: { fields: ["client.characteristics", "client.pains_now", "client.desires_now", "client.says", "client.words_avoid", "client.buying_triggers", "client.objections", "client.why_you", "market.buyer_roles", "market.industries_credibility", "proof.career_results"], sources: ["library", "transcript", "preread"] },
           },
           {
             id: "pains",
             title: "Pain points",
             source: "we_build",
             face: "stored",
-            about: "Written from the pains, the stuck rows, and the triggers. Kept for campaigns. The boxes above are the working copy.",
-            from: ["Pains and desires", "Where they are stuck", "What makes them act"],
+            about: "Written from the pains and what makes them act. Kept for campaigns. The boxes above are the working copy.",
+            from: ["What they are going through", "What makes them act"],
             feeds: "Campaign messaging, newsletters, call script",
             needs: ["market:avatar"],
+            uses: { fields: ["client.pains_now", "client.desires_now", "client.says", "client.buying_triggers", "client.objections"], sources: ["library", "transcript"] },
           },
           {
             id: "criteria",
@@ -486,9 +553,10 @@ const GROUPS: BlueprintGroup[] = [
             source: "we_build",
             face: "closed",
             about: "Built from this page and used in Get Clients. Open it for the list rules the team works from.",
-            from: ["The walkthrough", "Who you will not take"],
+            from: ["The walkthrough", "Your market"],
             feeds: "Get Clients prospect pool",
             needs: ["market:avatar"],
+            uses: { fields: ["market.industries_credibility", "market.buyer_roles", "market.avoid", "client.characteristics"], sources: ["library"] },
             link: { href: "/coach/prospects", label: "Open your prospects" },
           },
         ],
@@ -498,12 +566,13 @@ const GROUPS: BlueprintGroup[] = [
         title: "LinkedIn Profile",
         href: "/coach/blueprint/linkedin",
         heading: "Look credible before someone replies",
-        summary: "Your profile today, and the rewrite that carries your proof. Copy the new version across when you are happy with it.",
+        summary: "Your LinkedIn as owners see it today, and the new version written from your Blueprint, ready to copy across.",
         sections: [
           {
             id: "profile",
             title: "Your profile today",
             source: "imported",
+            face: "stored",
             about: "What owners see now. Imported from LinkedIn so the rewrite has a before.",
             from: ["LinkedIn import"],
             feeds: "Profile rewrite",
@@ -537,12 +606,12 @@ const GROUPS: BlueprintGroup[] = [
           },
           {
             id: "rewrite",
-            title: "Your new profile",
-            source: "we_build",
-            about: "Headline options, a new About section, skills, banner and a checklist. Copy each part into LinkedIn.",
-            from: ["Story and proof", "Avatar and pain points", "Your offer", "Your voice"],
+            title: "Your profile",
+            source: "from_you",
+            custom: "linkedin",
+            about: "Your LinkedIn as owners see it. Switch between today and the new version, click any part to rewrite it from your Blueprint, then copy it across to LinkedIn.",
+            from: ["LinkedIn import", "Your voice", "Who you help", "Your offer", "Story and proof"],
             feeds: "The coach's LinkedIn profile",
-            needs: ["story:bio", "market:pains", "voice:sound"],
           },
         ],
       },
@@ -551,28 +620,289 @@ const GROUPS: BlueprintGroup[] = [
         title: "Campaigns",
         href: "/coach/blueprint/campaigns",
         heading: "Create a repeatable flow of conversations",
-        summary: "What to say to your avatar. Draft and approve it here, then it runs in Get Clients.",
+        summary: "What to say to your avatar, from the first message to the booked call. Approve it here, then it runs in Get Clients.",
         sections: [
           {
-            id: "messaging",
-            title: "Campaign messaging",
+            id: "connection",
+            key: "campaigns:messaging",
+            title: "Connection campaign",
             source: "we_build",
-            about: "Your outreach messages. Comment and approve them here. Once sent to Get Clients, that is where the campaign runs and changes.",
+            about: "For new owners from your list, 2nd and 3rd degree. A connection request with a short note, then five follow-ups over two weeks. The main way coaches get calls.",
             from: ["Pain points", "Commercial achievements", "Your voice"],
-            feeds: "Get Clients campaign builder",
+            feeds: "Get Clients connection campaign",
             needs: ["market:pains", "voice:sound"],
+            uses: { fields: ["proof.career_results", "proof.client_results", "market.industries_credibility", "client.says", "client.words_avoid", ...VOICE_STYLE_PATHS], sources: ["library", "preread"] },
+            link: { href: "/coach/campaigns", label: "Open your campaigns" },
+          },
+          {
+            id: "conversation",
+            title: "Messaging campaign",
+            source: "we_build",
+            about: "For owners you can message without a connection request: connections who fit but you have never spoken to, and open InMail. A short conversation that leads to the BOSS Scorecard. Cold email can come later as an option.",
+            from: ["Pain points", "Commercial achievements", "Your voice"],
+            feeds: "Get Clients message campaign",
+            needs: ["market:pains", "voice:sound"],
+            uses: { fields: ["proof.career_results", "proof.client_results", "market.industries_credibility", "client.says", "client.words_avoid", ...VOICE_STYLE_PATHS], sources: ["library", "preread"] },
+            link: { href: "/coach/campaigns", label: "Open your campaigns" },
+          },
+          {
+            id: "reactivation",
+            title: "Reactivation campaign",
+            source: "we_build",
+            about: "For people you already know: past colleagues, old contacts, and anyone who connected or replied before and went quiet. Up to three short messages that restart the conversation.",
+            from: ["Experience", "Commercial achievements", "Short bio", "Your voice"],
+            feeds: "Get Clients reactivation campaign",
+            needs: ["story:bio", "voice:sound"],
+            uses: { fields: ["market.roles_held", "market.industries_worked", "proof.career_results", "proof.client_results", "proof.superpowers", ...VOICE_STYLE_PATHS, "practice.voice_stories", "practice.voice_hobbies"], sources: ["linkedin"] },
+            link: { href: "/coach/campaigns", label: "Open your campaigns" },
+          },
+          {
+            id: "nurture",
+            title: "Ongoing nurture",
+            source: "we_build",
+            about: "For connections who are not ready yet. A message every two weeks that gives them something useful: a tool, an insight or the BOSS Scorecard.",
+            from: ["Pain points", "Your voice"],
+            feeds: "Get Clients nurture campaign",
+            needs: ["market:pains", "voice:sound"],
+            uses: { fields: ["client.pains_now", "client.desires_now", "client.words_avoid", "practice.voice_values", ...VOICE_STYLE_PATHS, ...VOICE_COLOUR_PATHS], sources: ["library"] },
             link: { href: "/coach/campaigns", label: "Open your campaigns" },
           },
           {
             id: "followup",
             key: "conversations:followup",
-            title: "Replies and nurture",
+            title: "Replies",
             source: "we_build",
-            about: "Ready answers to the replies you will get, and a nurture rhythm for people who are not ready yet.",
-            from: ["Campaign messaging", "Pain points", "Your voice"],
-            feeds: "Get Clients sequences, reply co-pilot",
+            about: "Ready answers to the replies you will get: questions, objections and not now. Each one moves to a single next step.",
+            from: ["Connection campaign", "Pain points", "Price and terms", "Your voice"],
+            feeds: "Your replies in Conversations",
             needs: ["campaigns:messaging"],
+            uses: { fields: ["client.objections", "client.words_avoid", "practice.min_fee", "working_times.prospect_call_hours"] },
             link: { href: "/coach/conversations", label: "Open your conversations" },
+          },
+          {
+            id: "interested",
+            title: "Reply interested",
+            source: "we_build",
+            about: "When someone says yes or shows interest. Quick, personal replies that move them to your value session or the scorecard, then confirm the call and remind them.",
+            from: ["Connection campaign", "Your value session", "When you take calls", "Your voice"],
+            feeds: "Get Clients reply interested campaign",
+            needs: ["campaigns:messaging", "sales:value"],
+            uses: { fields: ["working_times.prospect_call_hours", "identity.timezone"] },
+            link: { href: "/coach/campaigns", label: "Open your campaigns" },
+          },
+        ],
+      },
+      {
+        slug: "content",
+        title: "LinkedIn Newsletter",
+        href: "/coach/blueprint/content",
+        heading: "The facts, then each issue",
+        summary: "The standing facts for the newsletter, then each issue: the piece itself, the cover, the inbox note and the feed post.",
+        sections: [
+          {
+            id: "info",
+            title: "Newsletter info",
+            source: "from_you",
+            layout: "inline",
+            about: "The standing facts for this newsletter. Every issue uses these.",
+            fields: [
+              {
+                path: "practice.newsletter_cadence",
+                label: "How often",
+                kind: "enum",
+                assume: "fortnightly",
+                options: [
+                  { value: "weekly", label: "Weekly" },
+                  { value: "fortnightly", label: "Fortnightly" },
+                  { value: "monthly", label: "Monthly" },
+                ],
+              },
+              { path: "practice.newsletter_name", label: "Name", kind: "text", placeholder: "Scaffolding Profit Notes" },
+              {
+                path: "practice.newsletter_description",
+                label: "Description",
+                kind: "longtext",
+                placeholder: "A note for owners who want cash in the business, not just turnover.",
+              },
+              { path: "practice.newsletter_audience", label: "Who it's for", kind: "text", placeholder: "Scaffolding company owners" },
+              {
+                path: "practice.newsletter_cta",
+                label: "Call to action",
+                kind: "text",
+                placeholder: "If you want a hand with this, book a Discovery call.",
+                help: "The wording that goes on the end of every issue.",
+              },
+            ],
+          },
+          {
+            id: "checklist",
+            title: "How to run it",
+            source: "we_build",
+            face: "stored",
+            about: "The weekly habit: publish, send the inbox note to your top 100, and stay visible on LinkedIn.",
+            from: ["Who you help", "Your voice"],
+            feeds: "Your LinkedIn habit",
+            needs: ["market:pains"],
+            uses: { fields: ["market.industries_credibility", "client.characteristics"] },
+          },
+          {
+            id: "newsletter",
+            title: "Newsletter",
+            source: "we_build",
+            about: "Five strategies, three things to avoid, a seven-point checklist, and a call to book a Discovery call.",
+            from: ["Pain points", "Commercial achievements", "Your voice", "Your value session"],
+            feeds: "LinkedIn newsletter",
+            needs: ["market:pains", "voice:sound"],
+            uses: {
+              fields: [
+                "proof.career_results",
+                "proof.client_results",
+                "identity.phone",
+                "identity.website",
+                "client.pains_now",
+                "client.says",
+                "client.words_avoid",
+                "market.industries_credibility",
+                "practice.newsletter_cadence",
+                "practice.newsletter_name",
+                "practice.newsletter_description",
+                "practice.newsletter_audience",
+                "practice.newsletter_cta",
+                "practice.voice_values",
+                ...VOICE_STYLE_PATHS,
+                ...VOICE_COLOUR_PATHS,
+              ],
+            },
+          },
+          {
+            id: "cover",
+            title: "Cover",
+            source: "we_build",
+            about: "The banner for this issue: the headline, the line under it, and what the picture shows.",
+            from: ["Newsletter"],
+            feeds: "The newsletter header image",
+            needs: ["content:newsletter"],
+            uses: { fields: ["market.industries_credibility", ...VOICE_STYLE_PATHS] },
+          },
+          {
+            id: "inbox",
+            title: "Inbox",
+            source: "we_build",
+            about: "The note to your top 100. The first line is theirs to personalise from one of that person's posts.",
+            from: ["Newsletter", "Your voice"],
+            feeds: "LinkedIn inbox",
+            needs: ["content:newsletter"],
+            uses: { fields: ["identity.phone", "identity.website", "client.words_avoid", ...VOICE_STYLE_PATHS] },
+          },
+          {
+            id: "post",
+            title: "Post",
+            source: "we_build",
+            about: "A feed post on the three things to avoid, pointing people at the newsletter.",
+            from: ["Newsletter", "Your voice"],
+            feeds: "LinkedIn feed",
+            needs: ["content:newsletter"],
+            uses: { fields: ["client.words_avoid", ...VOICE_STYLE_PATHS] },
+          },
+          {
+            id: "inmail",
+            title: "InMail",
+            source: "we_build",
+            face: "stored",
+            about: "An InMail that names the five strategies, links the issue, and offers a call.",
+            from: ["Newsletter", "Your voice"],
+            feeds: "LinkedIn InMail",
+            needs: ["content:newsletter"],
+            uses: { fields: ["identity.phone", "identity.website", "client.words_avoid", ...VOICE_STYLE_PATHS] },
+          },
+          {
+            id: "article",
+            title: "Article",
+            source: "we_build",
+            face: "stored",
+            about: "A longer piece on the same topic. It points back to the newsletter and the Discovery call.",
+            from: ["Newsletter", "Pain points", "Your voice"],
+            feeds: "LinkedIn articles",
+            needs: ["content:newsletter"],
+            uses: {
+              fields: ["identity.phone", "identity.website", "proof.career_results", "client.pains_now", ...VOICE_STYLE_PATHS, ...VOICE_COLOUR_PATHS],
+            },
+          },
+          {
+            id: "analogy",
+            title: "Analogy",
+            source: "we_build",
+            about: "The same 5-3-7 shape, taught through a sport, hobby, book or film they already named.",
+            from: ["Who you help", "Your voice"],
+            feeds: "A later LinkedIn newsletter",
+            needs: ["market:pains", "voice:sound"],
+            uses: {
+              fields: [
+                "market.industries_credibility",
+                "client.characteristics",
+                "client.pains_now",
+                "proof.career_results",
+                "identity.phone",
+                "identity.website",
+                "practice.voice_favourite_book",
+                "practice.voice_favourite_film",
+                "practice.voice_hobbies",
+                "practice.voice_stories",
+              ],
+              sources: ["transcript"],
+            },
+          },
+          {
+            id: "kpis",
+            title: "KPIs",
+            source: "we_build",
+            about: "What a good week looks like in the hobby, set next to what a good week looks like in the business.",
+            from: ["Pain points", "Your voice"],
+            feeds: "A later LinkedIn newsletter",
+            needs: ["market:pains", "voice:sound"],
+            uses: {
+              fields: [
+                "market.industries_credibility",
+                "client.pains_now",
+                "client.desires_now",
+                "proof.career_results",
+                "identity.phone",
+                "identity.website",
+                "practice.voice_favourite_book",
+                "practice.voice_favourite_film",
+                "practice.voice_hobbies",
+              ],
+            },
+          },
+        ],
+      },
+      {
+        slug: "posts",
+        title: "Content",
+        href: "/coach/blueprint/posts",
+        heading: "Posts that stand on their own",
+        summary: "Content pillars, twelve ideas, and two posts ready to publish. A post that points at a newsletter lives with it.",
+        sections: [
+          {
+            id: "kit",
+            key: "content:posts",
+            title: "Posts",
+            source: "we_build",
+            about: "Content pillars, twelve post ideas, and two posts ready to go.",
+            from: ["Story and proof", "Pain points", "Your voice"],
+            feeds: "LinkedIn posts",
+            needs: ["market:pains", "voice:sound"],
+            uses: {
+              fields: [
+                "proof.career_results",
+                "proof.client_results",
+                "proof.superpowers",
+                "practice.voice_values",
+                ...VOICE_STYLE_PATHS,
+                ...VOICE_COLOUR_PATHS,
+              ],
+              sources: ["transcript"],
+            },
           },
         ],
       },
@@ -580,14 +910,14 @@ const GROUPS: BlueprintGroup[] = [
   },
   {
     label: "Win Clients",
-    intro: "What you sell, how you price it, and what you say on the call.",
+    intro: "What you sell, how you describe it, how you price it, and what you say on the call.",
     pages: [
       {
         slug: "offer",
         title: "Your Offer",
         href: "/coach/blueprint/offer",
-        heading: "Make your value easy to understand and easy to buy",
-        summary: "Your price, your terms, and how you describe what you do, in a line, a sentence and a paragraph.",
+        heading: "Make the destination clear, then make it easy to buy",
+        summary: "Where this offer leads, what you help with in your words, then the written offer they buy. Price comes last.",
         learn: [
           { label: "Set up a new client", href: `${CLASSROOM}/coach-clients/coach-clients-client-onboarding-how-to-setup-a-new-client` },
           { label: "Session 1: Profit system and dashboard", href: `${CLASSROOM}/coach-clients/coach-clients-client-onboarding-session-1-profit-systems-dashboard` },
@@ -599,81 +929,43 @@ const GROUPS: BlueprintGroup[] = [
         ],
         sections: [
           {
-            id: "fee",
-            title: "Price and terms",
+            id: "destination",
+            title: "The destination",
             source: "from_you",
-            about: "What you charge and how clients pay. BCA proposes the final price, and you agree it on the Decision Call.",
-            tip: "Most BCA coaches start at £1,450 a month and add £500 every two to four clients. Offer six months upfront as the alternative to monthly.",
-            from: ["Conversation: minimum fee, payment terms, how many clients you want"],
-            feeds: "Your offer, proposal and payment, 90-day plan",
+            about: "The BOSS score ends on Money, Time and Team. Pick the one this offer leads with, then say it in your words.",
+            tip: "James Baker leads with Money (the weekly number). John McCarthy leads with Time (hours back) and Money together. Will Walsh leads with Time at the critical juncture. One lead. The others can still show up in delivery.",
+            from: ["Conversation: money, time or team, and what they get more of and less of"],
+            feeds: "The written offer, three lengths, call script",
             fields: [
-              { path: "practice.min_fee", label: "Minimum monthly fee", kind: "text", required: true, example: "£1,500 a month", help: "The least that makes a client worth it for you. We never price you below it.", ask: "What is the least you would take per client per month?" },
-              { path: "practice.payment_terms", label: "How clients pay", kind: "text", example: "Monthly with a six-month minimum, or six months upfront", help: "Monthly, upfront, and any minimum term.", ask: "How would you like clients to pay: monthly, upfront, or both, and is there a minimum term?" },
-              { path: "practice.capacity", label: "Clients you want", kind: "text", example: "Six at once", help: "How many clients you can serve well at the same time.", ask: "How many clients do you want at once?" },
               {
-                path: "practice.delivery_model",
-                label: "How you like to work",
+                path: "practice.offer_outcome",
+                label: "This offer leads with",
                 kind: "enum",
-                help: "Coaching helps owners do it themselves. Consulting does it for them. Advisory sits in between.",
+                required: true,
+                help: "The three things at the end of the BOSS score. Income, Impact and Freedom stay with the academy.",
+                ask: "Does this offer lead with money (profit and income), time (their week back), or team (a business that runs without them)?",
                 options: [
-                  { value: "coaching", label: "Coaching" },
-                  { value: "consulting", label: "Consulting" },
-                  { value: "advisory", label: "Advisory" },
-                  { value: "hybrid", label: "A mix" },
+                  { value: "money", label: "Money: more profit and income" },
+                  { value: "time", label: "Time: more of their week back" },
+                  { value: "team", label: "Team: a business that can run without them" },
                 ],
               },
+              { path: "practice.more_of", label: "They get more of", kind: "list", required: true, pair: true, cue: "more", example: "A weekly number the team actually hits\nA Friday they can leave on", help: "Short lines, in your words. Strongest first. Not a system name.", ask: "In your words, what do owners get more of when they work with you? A few short lines, strongest first." },
+              { path: "practice.less_of", label: "They get less of", kind: "list", required: true, pair: true, cue: "less", example: "Chasing the team\nBeing the one who holds every job", help: "What goes away. Same idea as Jon Street: more of, less of.", ask: "And what do they get less of? A few short lines, strongest first." },
             ],
           },
           {
-            id: "guarantee",
-            title: "Guarantee",
+            id: "help",
+            title: "What you help with",
             source: "from_you",
-            about: "Whether you take some of the risk of saying yes. You do not need one. If you have one, keep it simple.",
-            tip: "Never guarantee income or results you do not control. A short trial period (\"try it for 60 days, stop if it is not right\") is the simplest kind.",
-            from: ["Conversation: guarantee or not, and the terms"],
-            feeds: "Your offer, call script, proposal",
+            about: "The specific work, in your language. Write it. Do not pick from a list of Profit System areas.",
+            tip: "James: the weekly number, the 90-day plan, roles so the MD is not chasing. John: cash and margin first, then the team so the hours do not snap back. Will: get through the make-or-break stretch with a plan.",
+            from: ["Conversation: what they actually help with, and how long until a first result"],
+            feeds: "The written offer, call script",
             fields: [
-              {
-                path: "practice.guarantee",
-                label: "Guarantee",
-                kind: "enum",
-                help: "Trial: they can stop after a first period. Results: a promise tied to doing the work.",
-                ask: "Would you offer a guarantee, such as a trial period they can stop after, or would you rather not?",
-                options: [
-                  { value: "none", label: "No guarantee" },
-                  { value: "trial", label: "Trial period: stop if it is not right" },
-                  { value: "results", label: "Results-based, if they do the work" },
-                ],
-              },
-              { path: "practice.guarantee_terms", label: "The terms", kind: "longtext", example: "Try it for 60 days. If it is not right for you, stop and pay nothing more.", help: "In your words. We write the short and medium versions from it." },
+              { path: "practice.help_with", label: "What you help with", kind: "list", required: true, example: "The weekly number the team actually reviews\nA 90-day plan that sticks\nRoles so the MD is not chasing everyone", help: "Three to six lines, their words. Things that are not on the Profit System list are fine.", ask: "What do you actually help owners with? A few short lines, in your own words." },
+              { path: "practice.offer_timeframe", label: "First result they can point to", kind: "text", example: "A number they trust within 90 days", help: "How long until something has changed that they can point at. Leave blank if you would rather not name a clock.", ask: "How long until they can point at a first result? Leave this if you would rather not name a clock." },
             ],
-          },
-          {
-            id: "lines",
-            title: "Your offer in three lengths",
-            source: "we_build",
-            about: "How you describe what you do in a line, a sentence and a paragraph, each marked with where to use it.",
-            from: ["Offer and positioning", "Price and terms", "Guarantee", "Your voice"],
-            feeds: "LinkedIn headline and About, introductions, messages, proposals",
-            needs: ["offer:direction"],
-          },
-          {
-            id: "direction",
-            title: "Offer and positioning",
-            source: "we_build",
-            about: "The gap you close for owners, why they buy, and what is in the offer.",
-            from: ["Story and proof", "Avatar and pain points", "Price and terms"],
-            feeds: "Decision Call, call script, LinkedIn rewrite",
-            needs: ["market:pains", "story:bio"],
-          },
-          {
-            id: "payment",
-            title: "Proposal and payment",
-            source: "we_build",
-            about: "Your price options, what to say if they ask early, how to close, and a one-page proposal outline.",
-            from: ["Offer and positioning", "Price and terms", "Guarantee"],
-            feeds: "Proposal and payment link",
-            needs: ["offer:direction"],
           },
           {
             id: "format",
@@ -697,7 +989,103 @@ const GROUPS: BlueprintGroup[] = [
                 ],
               },
               { path: "practice.session_rhythm", label: "Session rhythm", kind: "text", example: "Weekly for six weeks, then every other Tuesday", help: "Only if you work differently from the BCA format above." },
+              {
+                path: "practice.delivery_model",
+                label: "How you like to work",
+                kind: "enum",
+                help: "Coaching helps owners do it themselves. Consulting does it for them. Advisory sits in between.",
+                options: [
+                  { value: "coaching", label: "Coaching" },
+                  { value: "consulting", label: "Consulting" },
+                  { value: "advisory", label: "Advisory" },
+                  { value: "hybrid", label: "A mix" },
+                ],
+              },
             ],
+          },
+          {
+            id: "guarantee",
+            title: "Guarantee",
+            source: "from_you",
+            about: "Whether you take some of the risk of saying yes. You do not need one. If you have one, keep it simple.",
+            tip: "Taki's diamond: the guarantee removes risk after the promise is clear. Never guarantee income or results you do not control. A short trial (\"try it for 60 days, stop if it is not right\") is the simplest kind.",
+            from: ["Conversation: guarantee or not, and the terms"],
+            feeds: "Your offer, call script, proposal",
+            fields: [
+              {
+                path: "practice.guarantee",
+                label: "Guarantee",
+                kind: "enum",
+                help: "Trial: they can stop after a first period. Results: a promise tied to doing the work.",
+                ask: "Would you offer a guarantee, such as a trial period they can stop after, or would you rather not?",
+                options: [
+                  { value: "none", label: "No guarantee" },
+                  { value: "trial", label: "Trial period: stop if it is not right" },
+                  { value: "results", label: "Results-based, if they do the work" },
+                ],
+              },
+              { path: "practice.guarantee_terms", label: "The terms", kind: "longtext", showIf: { path: "practice.guarantee", in: ["trial", "results"] }, example: "Try it for 60 days. If it is not right for you, stop and pay nothing more.", help: "In your words. We write the short and medium versions from it." },
+            ],
+          },
+          {
+            id: "fee",
+            title: "Price and terms",
+            source: "from_you",
+            about: "What you charge and how clients pay. BCA proposes the final price, and you agree it on the Decision Call.",
+            tip: "Taki puts payment after the promise and the guarantee. Most BCA coaches start at £1,450 a month and add £500 every two to four clients. Offer six months upfront as the alternative to monthly.",
+            from: ["Conversation: minimum fee, payment terms, how many clients you want"],
+            feeds: "Your offer, proposal and payment, 90-day plan",
+            fields: [
+              { path: "practice.min_fee", label: "Minimum monthly fee", kind: "text", required: true, example: "£1,500 a month", help: "The least that makes a client worth it for you. We never price you below it.", ask: "What is the least you would take per client per month?" },
+              { path: "practice.payment_terms", label: "How clients pay", kind: "text", example: "Monthly with a six-month minimum, or six months upfront", help: "Monthly, upfront, and any minimum term.", ask: "How would you like clients to pay: monthly, upfront, or both, and is there a minimum term?" },
+              { path: "practice.capacity", label: "Clients you want", kind: "text", example: "Six at once", help: "How many clients you can serve well at the same time.", ask: "How many clients do you want at once?" },
+            ],
+          },
+          {
+            id: "direction",
+            title: "The offer",
+            source: "we_build",
+            face: "closed",
+            about: "The one-page offer: who you help, the promise, the strategy, the guarantee, and what working together is. Price stays in the section above.",
+            tip: "Same skeleton as Imperium's finalised offer. The words should sound like James Baker, John McCarthy or Will Walsh, not like EasyGrow.",
+            from: ["The destination", "What you help with", "Who you help", "Story and proof", "Guarantee"],
+            feeds: "Decision Call, call script, LinkedIn rewrite, three lengths",
+            needs: ["market:pains", "story:bio"],
+            uses: {
+              fields: [
+                "practice.offer_outcome",
+                "practice.more_of",
+                "practice.less_of",
+                "practice.help_with",
+                "practice.offer_timeframe",
+                "practice.guarantee",
+                "practice.guarantee_terms",
+                "practice.delivery_model",
+                "practice.delivery_format",
+                "practice.session_rhythm",
+                "proof.superpowers",
+                "proof.uniqueness",
+                "proof.problems_asked",
+                "proof.career_results",
+                "proof.client_results",
+                "client.why_you",
+                "client.characteristics",
+                "client.pains_now",
+                "client.desires_now",
+                "market.avoid",
+              ],
+              sources: ["preread"],
+            },
+          },
+          {
+            id: "lines",
+            title: "Your offer in three lengths",
+            source: "we_build",
+            about: "How you describe what you do in a line, a sentence and a paragraph, each marked with where to use it.",
+            from: ["The offer", "The destination", "Guarantee", "Your voice"],
+            feeds: "LinkedIn headline and About, introductions, messages, proposals",
+            needs: ["offer:direction"],
+            uses: { fields: ["practice.offer_outcome", "practice.more_of", "practice.less_of", "practice.help_with", "practice.guarantee", "practice.guarantee_terms", "proof.career_results", "proof.client_results"] },
           },
         ],
       },
@@ -706,7 +1094,7 @@ const GROUPS: BlueprintGroup[] = [
         title: "Your Sales Conversation",
         href: "/coach/blueprint/sales",
         heading: "Know exactly what to say when a prospect is interested",
-        summary: "A value session that earns the call, and a script built around your avatar's pain.",
+        summary: "A value session that earns the Discovery call, and a pitch script built around your avatar's pain and objections.",
         learn: [
           { label: "What is a value session", href: `${CLASSROOM}/win-clients/win-clients-getting-paid-clients-using-value-sessions-what-is-a-value-session` },
           { label: "How to deliver a value session", href: `${CLASSROOM}/win-clients/win-clients-getting-paid-clients-using-value-sessions-how-to-deliver-a-value-session` },
@@ -721,6 +1109,7 @@ const GROUPS: BlueprintGroup[] = [
             from: ["Superpowers", "Pain points", "Your voice"],
             feeds: "Booking messages, newsletter sign-off, LinkedIn",
             needs: ["market:pains", "voice:sound"],
+            uses: { fields: ["proof.superpowers", "proof.problems_asked", "client.desires_now", "client.objections"], sources: ["library"] },
           },
           {
             id: "script",
@@ -730,7 +1119,19 @@ const GROUPS: BlueprintGroup[] = [
             from: ["BCA sales conversation", "Your avatar", "Pain points", "Your offer"],
             feeds: "Your sales calls",
             needs: ["offer:direction", "market:pains"],
+            uses: { fields: ["proof.career_results", "proof.client_results", "client.objections", "practice.min_fee"] },
             link: { href: "/coach/calls", label: "Open your call reviews" },
+          },
+          {
+            id: "payment",
+            key: "offer:payment",
+            title: "Proposal and payment",
+            source: "we_build",
+            about: "Your price options, what to say if they ask early, how to close, and a one-page proposal outline.",
+            from: ["The offer", "Price and terms", "Guarantee"],
+            feeds: "Proposal and payment link",
+            needs: ["offer:direction"],
+            uses: { fields: ["practice.min_fee", "practice.payment_terms", "practice.capacity", "practice.delivery_model", "practice.guarantee", "practice.guarantee_terms"] },
           },
         ],
       },
@@ -757,40 +1158,7 @@ const GROUPS: BlueprintGroup[] = [
             from: ["Your offer", "Price and terms", "When you take calls"],
             feeds: "Your weekly check-ins with BCA",
             needs: ["offer:direction"],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Grow Your Practice",
-    hidden: true,
-    intro: "Visible trust that keeps owners coming to you.",
-    pages: [
-      {
-        slug: "content",
-        title: "Content and Newsletters",
-        href: "/coach/blueprint/content",
-        heading: "Turn your experience into visible trust",
-        summary: "Posts, newsletters, and proof drawn from the blueprint, not a blank page.",
-        sections: [
-          {
-            id: "posts",
-            title: "Posts and proof",
-            source: "we_build",
-            about: "Content pillars, twelve post ideas, and two posts ready to go.",
-            from: ["Story and proof", "Pain points", "Your voice"],
-            feeds: "LinkedIn posts",
-            needs: ["market:pains", "voice:sound"],
-          },
-          {
-            id: "newsletter",
-            title: "Newsletter",
-            source: "we_build",
-            about: "Your newsletter's name and promise, the first issue, and the next six subject lines.",
-            from: ["Pain points", "Commercial achievements", "Your voice", "Your value session"],
-            feeds: "Newsletter tool",
-            needs: ["market:pains", "voice:sound"],
+            uses: { fields: ["practice.min_fee", "practice.capacity", "working_times.prospect_call_hours"] },
           },
         ],
       },
@@ -883,12 +1251,51 @@ export function stillNeeded(row: PracticeKnowledgeRow): SectionRef[] {
   );
 }
 
-/** Conversation order: proof first, then the market, the offer, and the practical setup last. */
+/** Every answer a written section reads, its own and through the sections it needs. */
+export function sectionReads(key: string, seen: Set<string> = new Set()): Set<string> {
+  const out = new Set<string>();
+  if (seen.has(key)) return out;
+  seen.add(key);
+  const section = sectionByKey(key)?.section;
+  for (const path of section?.uses?.fields ?? []) out.add(path);
+  for (const need of section?.needs ?? []) for (const path of sectionReads(need, seen)) out.add(path);
+  return out;
+}
+
+/** Answers every writer is given, whatever its contract says. */
+export const ALWAYS_READS: FieldSpec["path"][] = ["identity.linkedin_visibility", "identity.location"];
+
+/** Every answer an output reads, through its contract and everything under it. */
+export function outputReads(output: BlueprintOutput): Set<string> {
+  const own = output.section ? sectionByKey(output.section)?.section : undefined;
+  const out = new Set<string>([...ALWAYS_READS, ...((own?.uses ?? output.uses)?.fields ?? [])]);
+  for (const need of own?.needs ?? output.needs ?? []) for (const path of sectionReads(need)) out.add(path);
+  return out;
+}
+
+let reachCache: Map<string, number> | null = null;
+
+/** How many of the outputs the coach gets read this answer. Higher means ask for it sooner. */
+export function answerReach(path: string): number {
+  if (!reachCache) {
+    reachCache = new Map();
+    for (const output of BLUEPRINT_OUTPUTS) {
+      for (const read of outputReads(output)) reachCache.set(read, (reachCache.get(read) ?? 0) + 1);
+    }
+  }
+  return reachCache.get(path) ?? 0;
+}
+
+/** Page order breaks ties: proof first, then the market, the offer, and the practical setup last. */
 const ASK_ORDER = ["story", "market", "offer", "linkedin", "voice", "setup"];
 
-/** Open fields with the question to ask, for the AI conversation agenda. */
+/**
+ * Open fields with the question to ask, for the AI conversation agenda. The
+ * answers most outputs depend on come first, so a short conversation still
+ * captures what matters.
+ */
 export function openQuestions(row: PracticeKnowledgeRow): { path: string; label: string; ask: string }[] {
-  const out: { path: string; label: string; ask: string }[] = [];
+  const out: { path: string; label: string; ask: string; reach: number }[] = [];
   const ordered = [...BLUEPRINT_SECTIONS].sort(
     (a, b) =>
       (ASK_ORDER.indexOf(a.page.slug) + 1 || 99) - (ASK_ORDER.indexOf(b.page.slug) + 1 || 99)
@@ -896,10 +1303,10 @@ export function openQuestions(row: PracticeKnowledgeRow): { path: string; label:
   for (const ref of ordered) {
     for (const field of ref.section.fields ?? []) {
       if (!field.ask || fieldFilled(row.payload, field)) continue;
-      out.push({ path: field.path, label: `${ref.section.title}: ${field.label}`, ask: field.ask });
+      out.push({ path: field.path, label: `${ref.section.title}: ${field.label}`, ask: field.ask, reach: answerReach(field.path) });
     }
   }
-  return out;
+  return out.sort((a, b) => b.reach - a.reach).map(({ path, label, ask }) => ({ path, label, ask }));
 }
 
 export type CommandCenterModel = {

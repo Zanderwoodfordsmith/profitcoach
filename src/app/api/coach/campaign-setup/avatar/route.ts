@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
@@ -98,19 +99,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const [{ summary: linkedInSummary }, libraryMatch] = await Promise.all([
+  const [{ summary: linkedInSummary }, libraryMatch, blueprint] = await Promise.all([
     loadCoachLinkedInSummary(coachId),
     findLibraryMatch(icp.industry as string),
+    loadBlueprintContext(coachId),
   ]);
 
   const avatarResult = await generateCampaignJson<unknown>({
     system: AVATAR_SYSTEM,
-    user: buildAvatarUser({
-      profile: profilePayload,
-      linkedInSummary,
-      libraryContext: buildLibraryContextText(libraryMatch),
-      vocabulary: buildVocabularyText(libraryMatch),
-    }),
+    user: [
+      buildAvatarUser({
+        profile: profilePayload,
+        linkedInSummary,
+        libraryContext: buildLibraryContextText(libraryMatch),
+        vocabulary: buildVocabularyText(libraryMatch),
+      }),
+      blueprint,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
     maxTokens: 8192,
   });
 

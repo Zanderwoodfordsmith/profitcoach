@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { MessageCircle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
 
-import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES } from "@/lib/practiceKnowledge/blueprint";
+import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES, sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
-import { BlueprintAssistant } from "./BlueprintAssistant";
+import { useSectionComments } from "./comments/SectionCommentsContext";
+import { CommentsButton, PageCommentBadge } from "./comments/SectionCommentsUI";
+import { SidePanel } from "./SidePanel";
 import { DownloadMenu, PageBlurb } from "./document/DocumentParts";
 import { PageIcon } from "./pageIcons";
 import { usePractice } from "./PracticeProvider";
@@ -150,11 +152,19 @@ export function PracticeShell({
   const page =
     BLUEPRINT_PAGES.find((item) => (path ? item.href === here : href(item.href) === here)) ?? null;
   const ready = !loading && payload && knowledge;
+  const comments = useSectionComments();
+  // The right-hand column holds one thing: a section's comments, or the conversation.
+  const discussing = comments?.openKey && sectionByKey(comments.openKey) ? comments.openKey : null;
+  const side = ready && comments?.panelOpen ? "comments" : ready && assistantOpen ? "assistant" : null;
+  function openAssistant() {
+    comments?.close();
+    setAssistantOpen(true);
+  }
   const isDocument = page?.slug === "blueprint";
   // The landing page draws its own full-width cover, with no page header.
   const isHome = page?.slug === "command";
   // With the assistant open on a normal laptop, fold the contents to a rail so the document keeps its width.
-  const showNav = navOpen && (wide || !assistantOpen || !ready);
+  const showNav = navOpen && (wide || !side);
   const mine = viewer === "bca" ? "bca" : "coach";
   const openPages = new Set(
     ready
@@ -176,6 +186,26 @@ export function PracticeShell({
     root.scrollTo(0, 0);
     root.querySelector("section")?.scrollTo(0, 0);
   }, [here]);
+
+  // The open panel follows the page. A thread from the page you just left returns to that page's list.
+  const openKey = comments?.openKey ?? null;
+  const panelOpen = comments?.panelOpen ?? false;
+  const openList = comments?.openList;
+  useEffect(() => {
+    if (!panelOpen || !page?.slug || !openKey || !openList) return;
+    const open = sectionByKey(openKey);
+    if (open && open.page.slug !== page.slug) openList();
+  }, [panelOpen, page?.slug, openKey, openList]);
+
+  // A link to a section (#s-page-id) lands before the blueprint has loaded, so scroll once it is on screen.
+  const shown = Boolean(ready);
+  useEffect(() => {
+    if (!shown) return;
+    const id = window.location.hash.slice(1);
+    if (!id.startsWith("s-")) return;
+    const frame = window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [shown]);
 
   function toggleNav() {
     if (navOpen && !showNav) {
@@ -219,6 +249,7 @@ export function PracticeShell({
                         title={viewer === "bca" ? "Waiting on BCA" : "Waiting on you"}
                       />
                     ) : null}
+                    <PageCommentBadge pageSlug={item.slug} />
                   </Link>
                 </li>
               );
@@ -230,11 +261,14 @@ export function PracticeShell({
   );
 
   return (
+    // contain:paint keeps the document column's overflow from lengthening the
+    // window. Without it, scrolling to the last card slides the page up and
+    // leaves an empty white block where the contents column used to be.
     <div
       ref={rootRef}
       className={`bp-doc app-canvas-bg print:bg-white ${
         embedded
-          ? "flex h-full min-h-0 flex-col overflow-y-auto lg:flex-row lg:items-stretch lg:overflow-hidden"
+          ? "flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none [contain:paint] lg:flex-row lg:items-stretch lg:overflow-hidden"
           : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col md:-mx-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px+28rem)] lg:flex-row lg:items-stretch"
       }`}
       style={{ "--practice-nav-w": `${navWidth}px` } as CSSProperties}
@@ -248,7 +282,7 @@ export function PracticeShell({
           showNav ? "w-full border-b lg:w-[var(--practice-nav-w)] lg:border-b-0" : "w-14 border-b lg:border-b-0"
         }`}
       >
-        <div className="lg:h-full lg:overflow-y-auto">
+        <div className="lg:h-full lg:overflow-y-auto lg:overscroll-y-none">
         <div className={`flex items-center gap-2 border-b border-slate-200/70 px-3 py-3 ${showNav ? "justify-between" : "justify-center"}`}>
           {showNav ? (
             switcher ? (
@@ -272,22 +306,23 @@ export function PracticeShell({
         {showNav ? <NavResizer width={navWidth} onChange={setNavWidth} /> : null}
       </aside>
 
-      <section className={`bp-print-root @container min-w-0 flex-1 print:bg-white ${embedded ? "lg:min-h-0 lg:overflow-y-auto" : ""}`}>
+      <section className={`bp-print-root app-canvas-bg @container flex min-w-0 flex-1 flex-col print:block print:bg-white ${embedded ? "lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-none lg:[contain:paint]" : ""}`}>
         {isHome ? (
           ready ? children : <p className="px-5 py-8 text-sm text-slate-600 md:px-10">{error || "Opening your blueprint…"}</p>
         ) : (
-        <div className="@container mx-auto w-full max-w-[54rem] px-5 py-8 md:px-10 md:py-10">
+        <div className="@container mx-auto w-full max-w-[54rem] px-5 pt-8 pb-10 md:px-10 md:pt-10 print:p-0">
         {isDocument ? (
           <div className="bp-no-print mb-5 flex flex-wrap items-center justify-end gap-2">
             {ready ? <DownloadMenu /> : null}
-            {ready && !assistantOpen ? (
+            {ready && side !== "comments" ? <CommentsButton /> : null}
+            {ready && side !== "assistant" ? (
               <button
                 type="button"
-                onClick={() => setAssistantOpen(true)}
+                onClick={openAssistant}
                 className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
               >
-                <MessageCircle className="h-4 w-4" aria-hidden />
-                Talk it through
+                <Sparkles className="h-4 w-4" aria-hidden />
+                Ask Ava
               </button>
             ) : null}
           </div>
@@ -297,15 +332,20 @@ export function PracticeShell({
           <h1 className="min-w-0 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-[#0f172a] md:text-[2rem]">
             {page?.title ?? "Blueprint"}
           </h1>
-          {ready && page && !assistantOpen ? (
-            <button
-              type="button"
-              onClick={() => setAssistantOpen(true)}
-              className="bp-no-print inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
-            >
-              <MessageCircle className="h-4 w-4" aria-hidden />
-              Talk it through
-            </button>
+          {ready && page ? (
+            <div className="bp-no-print flex shrink-0 items-center gap-2">
+              {side !== "comments" ? <CommentsButton /> : null}
+              {side !== "assistant" ? (
+                <button
+                  type="button"
+                  onClick={openAssistant}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
+                >
+                  <Sparkles className="h-4 w-4" aria-hidden />
+                  Ask Ava
+                </button>
+              ) : null}
+            </div>
           ) : null}
           </div>
           {page ? (
@@ -324,34 +364,34 @@ export function PracticeShell({
         )}
       </section>
 
-      {ready && assistantOpen ? (
+      {side ? (
         <>
           <aside
-            aria-label="Talk it through"
+            aria-label={side === "comments" ? "Comments" : "Ava"}
             className={`bp-no-print hidden w-[23rem] shrink-0 flex-col border-l border-slate-200 lg:flex ${
               embedded
                 ? "lg:h-full lg:min-h-0"
                 : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)] lg:self-start"
             }`}
           >
-            <BlueprintAssistant onClose={() => setAssistantOpen(false)} />
+            <SidePanel mode={side} sectionKey={discussing} page={page} />
           </aside>
           <div className="bp-no-print fixed inset-0 z-50 flex flex-col justify-end bg-[#051e36]/35 lg:hidden">
             <div className="h-[85dvh] overflow-hidden rounded-t-3xl shadow-[0_-20px_50px_-20px_rgba(5,30,54,0.6)]">
-              <BlueprintAssistant onClose={() => setAssistantOpen(false)} />
+              <SidePanel mode={side} sectionKey={discussing} page={page} />
             </div>
           </div>
         </>
       ) : null}
 
-      {ready && !assistantOpen ? (
+      {ready && !side ? (
         <button
           type="button"
-          onClick={() => setAssistantOpen(true)}
+          onClick={openAssistant}
           className="bp-no-print fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-[var(--bp-navy)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_-12px_rgba(5,30,54,0.7)] lg:hidden"
         >
-          <MessageCircle className="h-4 w-4" aria-hidden />
-          Talk it through
+          <Sparkles className="h-4 w-4" aria-hidden />
+          Ask Ava
         </button>
       ) : null}
     </div>

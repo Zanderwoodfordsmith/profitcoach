@@ -467,7 +467,7 @@ export function CallsCalendarSettings({
     !hideCalendars && selectedSlug
       ? calendars.find((c) => c.slug.toLowerCase() === selectedSlug) ?? null
       : null;
-  const activeDays = rules.length;
+  const activeDays = new Set(rules.map((r) => r.weekday)).size;
 
   if (loading) {
     return <p className="text-sm text-slate-600">Loading calendars…</p>;
@@ -683,6 +683,7 @@ export function CallsCalendarSettings({
                 onRulesChange={setRules}
                 onSave={() => void saveShared()}
                 saving={saving}
+                multiple
               />
             ) : null}
             {sidebarBottom}

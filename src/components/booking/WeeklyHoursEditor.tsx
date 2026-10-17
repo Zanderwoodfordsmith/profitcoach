@@ -5,6 +5,7 @@ import {
   accountTimezoneOptionLabel,
 } from "@/lib/accountProfileTimezones";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
+import { Plus, X } from "lucide-react";
 
 export const WEEKDAYS = [
   { value: 1, label: "Mon" },
@@ -30,6 +31,7 @@ export function WeeklyHoursEditor({
   defaultEndTime = "17:00",
   hideTimezone = false,
   plain = false,
+  multiple = false,
 }: {
   title: string;
   hint?: string;
@@ -46,6 +48,8 @@ export function WeeklyHoursEditor({
   hideTimezone?: boolean;
   /** No card, title, or full-width button. For a page that already has a heading. */
   plain?: boolean;
+  /** More than one time slot a day, e.g. 09:00 to 11:00 and 15:00 to 16:00. */
+  multiple?: boolean;
 }) {
   function toggleWeekday(weekday: number) {
     const has = rules.some((r) => r.weekday === weekday);
@@ -65,14 +69,30 @@ export function WeeklyHoursEditor({
     );
   }
 
-  function patchDay(
-    weekday: number,
+  function patchSlot(
+    index: number,
     patch: Partial<Pick<AvailabilityRuleRow, "start_time" | "end_time">>
   ) {
-    onRulesChange(
-      rules.map((r) => (r.weekday === weekday ? { ...r, ...patch } : r))
-    );
+    onRulesChange(rules.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }
+
+  function removeSlot(index: number) {
+    onRulesChange(rules.filter((_, i) => i !== index));
+  }
+
+  /** A new slot an hour long, starting where the day's last slot ends. */
+  function addSlot(weekday: number) {
+    const day = rules.filter((r) => r.weekday === weekday);
+    const last = day[day.length - 1];
+    const [h, m] = (last?.end_time ?? defaultEndTime).slice(0, 5).split(":").map(Number);
+    const startMin = Math.min(h * 60 + m + 60, 22 * 60);
+    const fmt = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+    onRulesChange([...rules, { weekday, start_time: fmt(startMin), end_time: fmt(startMin + 60) }]);
+  }
+
+  const timeClass = `w-full min-w-0 rounded border border-slate-200 text-slate-900 ${
+    plain ? "px-2 py-1.5 text-sm" : "px-1.5 py-1 text-xs"
+  }`;
 
   return (
     <div className={plain ? "" : "rounded-xl border border-slate-200/80 bg-white p-4"}>
@@ -100,51 +120,79 @@ export function WeeklyHoursEditor({
 
       <ul className={`${hideTimezone ? "mt-1" : "mt-3"} space-y-1.5`}>
         {WEEKDAYS.map((day) => {
-          const rule = rules.find((r) => r.weekday === day.value);
+          const slots = rules
+            .map((rule, index) => ({ rule, index }))
+            .filter(({ rule }) => rule.weekday === day.value);
           return (
             <li
               key={day.value}
-              className="flex flex-wrap items-center gap-2 rounded-lg px-1 py-1"
+              className="flex flex-wrap items-start gap-2 rounded-lg px-1 py-1"
             >
               <label
                 className={`inline-flex items-center gap-2 font-semibold text-slate-700 ${
-                  plain ? "w-16 text-sm" : "w-10 gap-1.5 text-xs"
+                  plain ? "w-16 py-1.5 text-sm" : "w-10 gap-1.5 py-1 text-xs"
                 }`}
               >
                 <input
                   type="checkbox"
                   className={`rounded border-slate-300 text-sky-600 ${plain ? "h-4 w-4" : "h-3.5 w-3.5"}`}
-                  checked={Boolean(rule)}
+                  checked={slots.length > 0}
                   onChange={() => toggleWeekday(day.value)}
                 />
                 {day.label}
               </label>
-              {rule ? (
-                <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <input
-                    type="time"
-                    className={`w-full min-w-0 rounded border border-slate-200 text-slate-900 ${
-                      plain ? "px-2 py-1.5 text-sm" : "px-1.5 py-1 text-xs"
-                    }`}
-                    value={rule.start_time.slice(0, 5)}
-                    onChange={(e) =>
-                      patchDay(day.value, { start_time: e.target.value })
-                    }
-                  />
-                  <span className="text-xs text-slate-400">to</span>
-                  <input
-                    type="time"
-                    className={`w-full min-w-0 rounded border border-slate-200 text-slate-900 ${
-                      plain ? "px-2 py-1.5 text-sm" : "px-1.5 py-1 text-xs"
-                    }`}
-                    value={rule.end_time.slice(0, 5)}
-                    onChange={(e) =>
-                      patchDay(day.value, { end_time: e.target.value })
-                    }
-                  />
+              {slots.length ? (
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  {slots.map(({ rule, index }) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        aria-label={`${day.label} from`}
+                        className={timeClass}
+                        value={rule.start_time.slice(0, 5)}
+                        onChange={(e) => patchSlot(index, { start_time: e.target.value })}
+                      />
+                      <span className="text-xs text-slate-400">to</span>
+                      <input
+                        type="time"
+                        aria-label={`${day.label} to`}
+                        className={timeClass}
+                        value={rule.end_time.slice(0, 5)}
+                        onChange={(e) => patchSlot(index, { end_time: e.target.value })}
+                      />
+                      {multiple ? (
+                        <span className="flex w-14 shrink-0 items-center gap-0.5">
+                          {slots.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() => removeSlot(index)}
+                              aria-label={`Remove this ${day.label} time`}
+                              title="Remove this time"
+                              className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            >
+                              <X className="h-4 w-4" aria-hidden />
+                            </button>
+                          ) : (
+                            <span aria-hidden className="w-7" />
+                          )}
+                          {index === slots[slots.length - 1].index ? (
+                            <button
+                              type="button"
+                              onClick={() => addSlot(day.value)}
+                              aria-label={`Add another ${day.label} time`}
+                              title="Add another time"
+                              className="flex h-7 w-7 items-center justify-center rounded-full text-sky-700 hover:bg-sky-50"
+                            >
+                              <Plus className="h-4 w-4" aria-hidden />
+                            </button>
+                          ) : null}
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <span className={plain ? "text-sm text-slate-400" : "text-[11px] text-slate-400"}>Off</span>
+                <span className={plain ? "py-1.5 text-sm text-slate-400" : "py-1 text-[11px] text-slate-400"}>Off</span>
               )}
             </li>
           );

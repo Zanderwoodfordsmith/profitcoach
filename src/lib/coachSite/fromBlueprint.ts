@@ -117,20 +117,34 @@ function readGap(blocks: BlueprintBlock[]): CoachSiteGapRow[] {
     .filter((r) => r.today && r.want);
 }
 
+function paragraphUnder(blocks: BlueprintBlock[], heading: string): string | null {
+  return clean(first(underHeading(blocks, heading), "paragraph")?.text ?? null);
+}
+
 function readOffer(blocks: BlueprintBlock[]): CoachSiteOffer | null {
   const pairs = first(underHeading(blocks, "The offer"), "pairs");
-  if (!pairs) return null;
-  const get = (label: string) =>
-    clean(pairs.items.find((p) => p.label.trim().toLowerCase() === label)?.value ?? null);
-  // Price options and proof are left out on purpose: prices stay off marketing pages,
-  // and proof has its own section.
+  if (pairs) {
+    const get = (label: string) =>
+      clean(pairs.items.find((p) => p.label.trim().toLowerCase() === label)?.value ?? null);
+    // Price options and proof are left out on purpose: prices stay off marketing pages,
+    // and proof has its own section.
+    const offer: CoachSiteOffer = {
+      name: get("name"),
+      promise: get("promise"),
+      whoFor: get("who it is for"),
+      included: get("what is included"),
+      format: get("format"),
+    };
+    if (Object.values(offer).some(Boolean)) return offer;
+  }
   const offer: CoachSiteOffer = {
-    name: get("name"),
-    promise: get("promise"),
-    whoFor: get("who it is for"),
-    included: get("what is included"),
-    format: get("format"),
+    name: null,
+    promise: paragraphUnder(blocks, "Our promise"),
+    whoFor: paragraphUnder(blocks, "Who we help"),
+    included: cleanList(first(underHeading(blocks, "Our strategy"), "numbered")?.items).join(" "),
+    format: paragraphUnder(blocks, "Think of this as"),
   };
+  offer.included = offer.included || null;
   return Object.values(offer).some(Boolean) ? offer : null;
 }
 
@@ -236,7 +250,7 @@ export function coachSiteFromBlueprint(input: CoachSiteInput): CoachSite {
     place: readPlace(input, onepager),
     linkedinUrl: linkedin && /^https:\/\/([a-z]+\.)?linkedin\.com\//i.test(linkedin) ? linkedin : null,
 
-    positioning: clean(first(direction, "lede")?.text),
+    positioning: clean(first(direction, "lede")?.text) ?? paragraphUnder(direction, "Our promise"),
     shortLine: three.short,
     mediumLine: three.medium,
     longLine: three.long,
@@ -244,7 +258,12 @@ export function coachSiteFromBlueprint(input: CoachSiteInput): CoachSite {
     whoIHelp: clean(first(underHeading(onepager, "Who I help"), "paragraph")?.text),
     ownerWords,
     gap: readGap(direction),
-    keyMessages: cleanList(first(underHeading(direction, "Key messages"), "numbered")?.items),
+    keyMessages: (() => {
+      const legacy = cleanList(first(underHeading(direction, "Key messages"), "numbered")?.items);
+      return legacy.length
+        ? legacy
+        : cleanList(first(underHeading(direction, "Our strategy"), "numbered")?.items);
+    })(),
     method: readSteps(underHeading(onepager, "How I work")),
     offer: readOffer(direction),
     whyMe: cleanList(first(underHeading(direction, "Why you"), "bullets")?.items),

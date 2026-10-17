@@ -14,5 +14,5 @@ export async function GET(request: Request) {
   const { actor } = auth;
   const defaultCoachId = actor.mode === "coach" ? actor.actorUserId : actor.impersonatedCoachId;
   const coach = defaultCoachId ? await loadAgentCoach(defaultCoachId) : null;
-  return NextResponse.json({ enabled: true, mode: actor.mode, coach });
+  return NextResponse.json({ enabled: !actor.limited, ava: true, mode: actor.mode, coach });
 }

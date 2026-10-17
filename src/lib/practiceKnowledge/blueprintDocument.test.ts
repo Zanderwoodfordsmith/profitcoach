@@ -3,10 +3,10 @@ import { describe, it } from "node:test";
 
 import { blocksToMarkdown, sanitizeBlocks, sanitizeBuiltSections } from "./blocks";
 import { BLUEPRINT_SECTIONS, buildOrder, openQuestions, sectionByKey, sectionState, stillNeeded } from "./blueprint";
-import { campaignStepsFromSection, toCampaignTokens } from "./campaignHandoff";
+import { CAMPAIGN_HANDOFFS, campaignPlan, handoffById, toCampaignTokens } from "./campaignHandoff";
 import { proposedDecision } from "./decisionDefaults";
 import { blueprintMarkdown } from "./exportMarkdown";
-import { SECTION_SKILLS } from "./skills";
+import { SECTION_SKILLS, skillUserPrompt } from "./skills";
 import { emptyPracticePayload, sourced } from "./sourced";
 import type { PracticeKnowledgeRow } from "./types";
 
@@ -66,7 +66,7 @@ describe("blueprint blocks", () => {
 describe("blueprint map", () => {
   it("has a skill for every We build section, and no stray skills", () => {
     const build = BLUEPRINT_SECTIONS.filter((r) => r.section.source === "we_build").map((r) => r.key).sort();
-    // Skills for hidden pages (Grow) are kept for later.
+    // Skills for hidden pages (90 days) are kept for later.
     const visible = Object.keys(SECTION_SKILLS).filter((key) => sectionByKey(key));
     assert.deepEqual(visible.sort(), build);
   });
@@ -95,6 +95,28 @@ describe("blueprint map", () => {
     assert.equal(sectionState(ref, row({ payload })), "ready");
     assert.ok(!stillNeeded(row({ payload })).some((r) => r.key === "story:problems"));
   });
+
+  it("puts marketing authenticity on Your Voice, and the voice writer reads it", () => {
+    const paths = ["voice:known", "voice:stand", "voice:colour"].flatMap(
+      (key) => sectionByKey(key)?.section.fields?.map((f) => f.path) ?? []
+    );
+    for (const path of [
+      "practice.voice_known_for",
+      "practice.voice_coaching_style",
+      "practice.voice_pet_peeves",
+      "practice.voice_like_in_people",
+      "practice.voice_values",
+      "practice.voice_favourite_book",
+      "practice.voice_favourite_film",
+      "practice.voice_hobbies",
+      "practice.voice_stories",
+    ]) {
+      assert.ok(paths.some((p) => p === path), path);
+    }
+    const uses = sectionByKey("voice:sound")?.section.uses?.fields ?? [];
+    assert.ok(uses.some((p) => p === "practice.voice_known_for"));
+    assert.ok(uses.some((p) => p === "practice.voice_hobbies"));
+  });
 });
 
 describe("exports and handoff", () => {
@@ -109,9 +131,10 @@ describe("exports and handoff", () => {
     assert.match(md, /_Not written yet._/);
   });
 
-  it("converts tokens and builds connector steps with waits", () => {
+  it("converts tokens and builds connection steps with waits, from a section written before the split", () => {
     assert.equal(toCampaignTokens("Hi {first_name} at {company}"), "Hi {{first_name}} at {{company}}");
-    const plan = campaignStepsFromSection(
+    const plan = campaignPlan(
+      handoffById("connection")!,
       {
         blocks: [
           { type: "heading", text: "Campaign A: Connector" },
@@ -122,12 +145,67 @@ describe("exports and handoff", () => {
         ],
         generated_at: "",
         model: "",
-      },
-      "connector"
+      }
     )!;
-    assert.deepEqual(plan.steps.map((s) => s.step_type), ["invite", "wait", "message"]);
+    assert.deepEqual(plan.steps.map((step) => step.step_type), ["invite", "wait", "message"]);
     assert.equal(plan.steps[0].body, "Hi {{first_name}}, I see you run...");
     assert.equal(plan.steps[2].send_mode, "remind");
+  });
+});
+
+describe("campaigns and contracts", () => {
+  it("builds message-only campaigns for people already connected", () => {
+    const plan = campaignPlan(handoffById("reactivation")!, {
+      blocks: [
+        { type: "heading", text: "Who gets it" },
+        { type: "heading", text: "The sequence" },
+        { type: "message", label: "Reconnect", body: "Hi {first_name}, [shared history]" },
+        { type: "message", label: "What I do now", body: "These days I help..." },
+      ],
+      generated_at: "",
+      model: "",
+    })!;
+    assert.deepEqual(plan.steps.map((step) => step.step_type), ["message", "wait", "message"]);
+    assert.equal(plan.steps[0].body, "Hi {{first_name}}, [shared history]");
+    assert.equal(plan.steps[1].wait_hours, 120);
+  });
+
+  it("keeps the old agent names working", () => {
+    assert.equal(handoffById("connector")?.id, "connection");
+    assert.equal(handoffById("conversation")?.id, "messaging");
+  });
+
+  it("sends every campaign from a written section that exists", () => {
+    for (const handoff of CAMPAIGN_HANDOFFS) {
+      assert.ok(sectionByKey(handoff.section), handoff.section);
+      assert.ok(SECTION_SKILLS[handoff.section], `${handoff.section} has a writer`);
+    }
+  });
+
+  it("only lists answers that exist in a writer's contract", () => {
+    const paths = new Set(BLUEPRINT_SECTIONS.flatMap((ref) => (ref.section.fields ?? []).map((f) => f.path)));
+    for (const ref of BLUEPRINT_SECTIONS) {
+      for (const path of ref.section.uses?.fields ?? []) assert.ok(paths.has(path), `${ref.key} reads ${path}`);
+      if (ref.section.source === "we_build") assert.ok(ref.section.uses, `${ref.key} has a contract`);
+    }
+  });
+
+  it("gives a writer only the answers its contract lists", () => {
+    const payload = emptyPracticePayload();
+    payload.practice.min_fee = sourced("£1,500 a month", "interview");
+    payload.client.pains_now = sourced(["Cash is always tight"], "interview");
+    const user = skillUserPrompt({
+      key: "offer:payment",
+      row: row({ payload }),
+      coachName: "Pam",
+      linkedinSummary: "",
+      turns: [{ role: "user", content: "secret transcript line", at: "" }],
+      decision: "",
+      library: "",
+    });
+    assert.match(user, /£1,500 a month/);
+    assert.doesNotMatch(user, /Cash is always tight/);
+    assert.doesNotMatch(user, /secret transcript line/);
   });
 });
 

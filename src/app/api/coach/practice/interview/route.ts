@@ -1,46 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
-import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import { runIntakeTurn } from "@/lib/practiceKnowledge/runIntakeTurn";
 import {
-  createIntakeSession,
   ensurePracticeKnowledge,
-  getActiveIntakeSession,
   getLatestIntakeSession,
-  patchPracticeKnowledge,
-  saveIntakeSession,
 } from "@/lib/practiceKnowledge/store";
-import {
-  buildInterviewUser,
-  PRACTICE_INTERVIEW_SYSTEM,
-} from "@/lib/practiceKnowledge/prompts";
-import { openQuestions } from "@/lib/practiceKnowledge/blueprint";
-import { sanitizePayloadPatch } from "@/lib/practiceKnowledge/sanitize";
-import type {
-  InterviewTurn,
-  PracticeKnowledgePayload,
-} from "@/lib/practiceKnowledge/types";
 
 export const maxDuration = 60;
-
-const MAX_TURNS = 80;
-const MAX_MESSAGE = 8000;
-
-type InterviewModelOut = {
-  assistant_message?: string;
-  done?: boolean;
-  extraction?: Partial<PracticeKnowledgePayload>;
-  /** Keys the model sometimes uses instead of assistant_message. */
-  question?: string;
-  message?: string;
-  reply?: string;
-};
-
-function spoken(out: InterviewModelOut | null): string {
-  const text = out?.assistant_message || out?.question || out?.message || out?.reply || "";
-  return typeof text === "string" ? text.trim() : "";
-}
 
 export async function GET(request: Request) {
   const check = await requireCoachRequest(request, { allowAdminSelf: true });
@@ -72,84 +39,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const userText = String(body.message ?? "").trim().slice(0, MAX_MESSAGE);
-  const starting = body.start === true || !userText;
-
   try {
-    const knowledge = await ensurePracticeKnowledge(check.userId);
-    let session = await getActiveIntakeSession(check.userId);
-    if (!session) session = await createIntakeSession(check.userId);
-
-    const turns: InterviewTurn[] = [...(session.turns ?? [])];
-    if (turns.length >= MAX_TURNS) {
-      return NextResponse.json(
-        { error: "This interview has reached its turn limit." },
-        { status: 429 }
-      );
-    }
-
-    if (userText && !starting) {
-      turns.push({
-        role: "user",
-        content: userText,
-        at: new Date().toISOString(),
-      });
-    }
-
-    const { summary } = await loadCoachLinkedInSummary(check.userId);
-    const ask = () =>
-      generateCampaignJson<InterviewModelOut>({
-        system: PRACTICE_INTERVIEW_SYSTEM,
-        user: buildInterviewUser({
-          linkedinSummary: summary,
-          knowledge: knowledge.payload,
-          turns,
-          userMessage: starting ? null : userText,
-          stillOpen: openQuestions(knowledge),
-        }),
-        maxTokens: 3000,
-      });
-    // One retry: a busy model occasionally returns nothing usable.
-    let { data, error } = await ask();
-    if (!spoken(data)) ({ data, error } = await ask());
-    if (data && spoken(data)) {
-      data.assistant_message = spoken(data).replace(/\s*\u2014\s*/g, ", ");
-    }
-
-    if (!data?.assistant_message) {
-      return NextResponse.json(
-        { error: error || "The interviewer could not reply. Try again." },
-        { status: 502 }
-      );
-    }
-
-    turns.push({
-      role: "assistant",
-      content: data.assistant_message.slice(0, MAX_MESSAGE),
-      at: new Date().toISOString(),
-    });
-
-    const extraction = sanitizePayloadPatch(data.extraction ?? {}, "interview");
-    const saved = await saveIntakeSession({
-      sessionId: session.id,
+    const result = await runIntakeTurn({
       coachId: check.userId,
-      turns,
-      extraction,
-      status: data.done ? "completed" : "active",
+      message: body.message,
+      start: body.start,
+      medium: "text",
     });
-
-    const nextKnowledge = await patchPracticeKnowledge({
-      coachId: check.userId,
-      payloadPatch: extraction,
-      interviewCompleted: data.done === true,
-      status: data.done ? "extracted" : knowledge.status,
-    });
-
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
     return NextResponse.json({
-      knowledge: nextKnowledge,
-      session: saved,
-      assistant_message: data.assistant_message,
-      done: Boolean(data.done),
+      knowledge: result.knowledge,
+      session: result.session,
+      assistant_message: result.assistant_message,
+      done: result.done,
     });
   } catch (err) {
     console.error("practice interview POST:", err instanceof Error ? err.message : "failed");

@@ -1,4 +1,5 @@
 import { BLUEPRINT_SECTIONS, fieldFilled, fieldValue, type SectionRef } from "./blueprint";
+import { CAMPAIGN_HANDOFFS } from "./campaignHandoff";
 import { sourced } from "./sourced";
 import type { PracticeKnowledgePayload, PracticeKnowledgeRow } from "./types";
 
@@ -26,7 +27,7 @@ export type SectionWorkflow = {
 };
 
 /** Written sections a coach can sign off, which then wait for BCA before they can be sent. */
-const BCA_GATE = new Set(["linkedin:rewrite", "campaigns:messaging"]);
+const BCA_GATE = new Set(["linkedin:rewrite", ...CAMPAIGN_HANDOFFS.map((h) => h.section)]);
 
 function stampAt(payload: PracticeKnowledgePayload, key: string, which: "coach" | "bca"): string | null {
   const map =

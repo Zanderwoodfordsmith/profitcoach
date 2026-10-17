@@ -28,6 +28,10 @@ import {
   PROGRAMME_ORIENTATION_JOIN_URL,
 } from "@/config/programmeOrientationCalendar";
 import {
+  ADVISORY_BLUEPRINT_CALENDAR_SLUG,
+  advisoryBlueprintEventTitle,
+} from "@/config/advisoryBlueprintCalendar";
+import {
   SUPPORT_CALL_CALENDAR_SLUG,
   supportCallEventTitle,
 } from "@/lib/support/supportCallHosts";
@@ -262,6 +266,8 @@ export async function createCalendarBooking(
   let eventTitle = calendar.name;
   if (calendar.slug === SUPPORT_CALL_CALENDAR_SLUG) {
     eventTitle = supportCallEventTitle(coachSlug, guestName) ?? calendar.name;
+  } else if (calendar.slug === ADVISORY_BLUEPRINT_CALENDAR_SLUG) {
+    eventTitle = advisoryBlueprintEventTitle(guestName);
   } else if (orientation) {
     eventTitle = orientationEventTitle(guestName);
     meetingJoinUrl = PROGRAMME_ORIENTATION_JOIN_URL;

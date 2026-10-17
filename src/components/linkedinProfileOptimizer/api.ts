@@ -1,4 +1,4 @@
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type {
   ProfileOptimizerDraft,
   ProfileOptimizerPayload,
@@ -14,21 +14,11 @@ export type ApiResult<T> = {
   error: string | null;
 };
 
+/** Same coach as the Blueprint: an explicit id, else the admin's "View as" coach, else the signed-in coach. */
 export async function optimizerHeaders(
   impersonatingCoachId?: string | null
 ): Promise<Record<string, string> | null> {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session?.access_token) return null;
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
-  if (impersonatingCoachId) {
-    headers["x-impersonate-coach-id"] = impersonatingCoachId;
-  }
-  return headers;
+  return getCoachAuthHeaders(impersonatingCoachId ?? null);
 }
 
 async function request<T>(

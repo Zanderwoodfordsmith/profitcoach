@@ -12,6 +12,10 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       website: null,
       timezone: null,
       location: null,
+      address: null,
+      address_line2: null,
+      postcode: null,
+      country: null,
       linkedin_url: null,
       web_address: null,
       practice_email: null,
@@ -34,9 +38,33 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       guarantee: null,
       guarantee_terms: null,
       session_rhythm: null,
+      offer_outcome: null,
       more_of: null,
       less_of: null,
+      help_with: null,
+      offer_timeframe: null,
       worth_building: null,
+      tone: null,
+      voice_sounds_like: null,
+      voice_never: null,
+      voice_notes: null,
+      voice_known_for: null,
+      voice_coaching_style: null,
+      voice_values: null,
+      voice_qualities: null,
+      voice_like_in_people: null,
+      voice_dislike_in_people: null,
+      voice_pet_peeves: null,
+      voice_favourite_book: null,
+      voice_favourite_film: null,
+      voice_hobbies: null,
+      voice_stories: null,
+      newsletter_cadence: null,
+      newsletter_name: null,
+      newsletter_description: null,
+      newsletter_audience: null,
+      newsletter_cta: null,
+      newsletter_added: null,
     },
     market: {
       industries_worked: null,
@@ -88,6 +116,7 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       approved_sections: null,
       bca_approved_sections: null,
       section_status: null,
+      status_log: null,
     },
   };
 }
@@ -166,7 +195,117 @@ export function normalizePracticePayload(
 ): PracticeKnowledgePayload {
   const base = emptyPracticePayload();
   if (!isPlainObject(raw)) return base;
-  return mergePracticePayload(base, raw as Partial<PracticeKnowledgePayload>);
+  return foldRetiredAnswers(mergePracticePayload(base, raw as Partial<PracticeKnowledgePayload>));
+}
+
+type AnyField = Sourced<unknown> | null | undefined;
+
+/** Answers as lines: lists stay lists, text is one line, table rows become one line each. */
+function linesOf(field: AnyField, row?: (r: Record<string, unknown>) => string): string[] {
+  const v = field?.value;
+  if (typeof v === "string") return v.trim() ? [v.trim()] : [];
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((item) => (item && typeof item === "object" ? (row ? row(item as Record<string, unknown>) : "") : String(item ?? "")))
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const cells = (...keys: string[]) => (r: Record<string, unknown>) =>
+  keys.map((k) => String(r[k] ?? "").trim()).filter(Boolean).join(". ");
+
+/**
+ * Who You Help used to ask for the same person in 26 boxes. It now asks in 11.
+ * Answers in a retired box move into the box that replaced it, once, and the
+ * retired box is cleared with an explicit edit so the next save removes it.
+ * Lines already in the kept box are not added twice, so this is safe to rerun.
+ */
+const FOLDS: {
+  into: [keyof PracticeKnowledgePayload, string];
+  kind: "list" | "text";
+  from: { path: [keyof PracticeKnowledgePayload, string]; row?: (r: Record<string, unknown>) => string; empty: unknown }[];
+}[] = [
+  {
+    into: ["market", "industries_credibility"],
+    kind: "list",
+    from: [
+      { path: ["market", "industries_understand"], empty: [] },
+      { path: ["market", "industries_access"], empty: [] },
+    ],
+  },
+  {
+    into: ["client", "characteristics"],
+    kind: "list",
+    from: [
+      { path: ["client", "habitat"], empty: [] },
+      { path: ["client", "psychographics"], empty: [] },
+    ],
+  },
+  {
+    into: ["client", "pains_now"],
+    kind: "list",
+    from: [
+      { path: ["client", "pains_later"], empty: [] },
+      { path: ["client", "frustrations"], empty: [] },
+      { path: ["client", "stuck"], row: cells("problem", "consequence", "awake"), empty: [] },
+    ],
+  },
+  {
+    into: ["client", "desires_now"],
+    kind: "list",
+    from: [{ path: ["client", "desires_later"], empty: [] }],
+  },
+  {
+    into: ["client", "says"],
+    kind: "list",
+    from: [
+      { path: ["client", "hears"], empty: [] },
+      { path: ["client", "sees"], empty: [] },
+      { path: ["client", "thinks"], empty: [] },
+      { path: ["client", "words_use"], empty: [] },
+      { path: ["client", "inner_voice"], empty: "" },
+      { path: ["client", "ready_to_act"], empty: "" },
+    ],
+  },
+  {
+    into: ["client", "why_you"],
+    kind: "text",
+    from: [{ path: ["client", "trust"], row: cells("authority", "social_proof", "scarcity"), empty: [] }],
+  },
+];
+
+export function foldRetiredAnswers(payload: PracticeKnowledgePayload): PracticeKnowledgePayload {
+  let out = payload;
+  for (const fold of FOLDS) {
+    const groupOf = (g: keyof PracticeKnowledgePayload) => out[g] as unknown as Record<string, AnyField>;
+    const moving = fold.from.filter((f) => linesOf(groupOf(f.path[0])[f.path[1]], f.row).length > 0);
+    if (!moving.length) continue;
+
+    const kept = groupOf(fold.into[0])[fold.into[1]];
+    const lines = linesOf(kept);
+    const seen = new Set(lines.map((l) => l.toLowerCase()));
+    let latest = kept?.updated_at ?? "";
+    let source = kept && isFilledSourced(kept) ? kept.source : undefined;
+    const patch: Record<string, Record<string, Sourced<unknown>>> = {};
+    for (const f of moving) {
+      const field = groupOf(f.path[0])[f.path[1]]!;
+      for (const line of linesOf(field, f.row)) {
+        if (seen.has(line.toLowerCase())) continue;
+        seen.add(line.toLowerCase());
+        lines.push(line);
+      }
+      if (field.updated_at > latest) latest = field.updated_at;
+      source ??= field.source;
+      (patch[f.path[0]] ??= {})[f.path[1]] = sourced(f.empty, "coach_edit", field.updated_at);
+    }
+    (patch[fold.into[0]] ??= {})[fold.into[1]] = sourced(
+      fold.kind === "text" ? lines.join("\n") : lines,
+      source ?? "coach_edit",
+      latest || new Date().toISOString()
+    );
+    out = mergePracticePayload(out, patch as Partial<PracticeKnowledgePayload>);
+  }
+  return out;
 }
 
 export function textValue(field: Sourced<string> | null | undefined): string {

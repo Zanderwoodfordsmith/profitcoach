@@ -1,3 +1,4 @@
+import { ADVISORY_BLUEPRINT_CALENDAR_SLUG } from "@/config/advisoryBlueprintCalendar";
 import { PROGRAMME_ORIENTATION_CALENDAR_SLUG } from "@/config/programmeOrientationCalendar";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -35,7 +36,7 @@ export async function loadDecisionCallBookedAt(
     supabaseAdmin
       .from("bookings")
       .select("prospect_email, prospect_phone, starts_at, kind, status")
-      .eq("kind", PROGRAMME_ORIENTATION_CALENDAR_SLUG)
+      .in("kind", [ADVISORY_BLUEPRINT_CALENDAR_SLUG, PROGRAMME_ORIENTATION_CALENDAR_SLUG])
       .eq("status", "booked")
       .order("starts_at", { ascending: false })
       .limit(500),

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { Check, ChevronDown } from "lucide-react";
 
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 
+/** Same grey click-in box as the answer fields, so written sections edit the same way. */
 const FIELD =
-  "w-full rounded-lg border border-[var(--bp-rule)] bg-white px-3 py-2 text-[0.9375rem] leading-[1.6] text-[var(--bp-ink)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]";
+  "bp-input w-full rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-2.5 text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] outline-none transition-[background-color,border-color,box-shadow] hover:border-[#d3dce6] hover:bg-[#f0f4f8] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)]";
 
 function Area({
   value,
@@ -53,17 +55,18 @@ function Line({
 }
 
 function Caption({ children }: { children: ReactNode }) {
-  return <p className="mb-1 text-xs font-semibold text-[var(--bp-muted)]">{children}</p>;
+  return <p className="mb-1.5 text-[0.875rem] font-semibold text-[var(--bp-ink)]">{children}</p>;
 }
 
-function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void): ReactNode {
+function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, underHeading = false): ReactNode {
   switch (block.type) {
     case "lede":
       return <Area value={block.text} onChange={(text) => set({ ...block, text })} className="bp-display text-[1.125rem]" />;
     case "paragraph":
       return <Area value={block.text} onChange={(text) => set({ ...block, text })} />;
     case "heading":
-      return <Line value={block.text} onChange={(text) => set({ ...block, text })} className="font-semibold" />;
+      // A heading inside a written section is the label for the boxes under it.
+      return <h4 className="pt-3 text-[1rem] font-semibold tracking-[-0.01em] text-[var(--bp-ink)]">{block.text}</h4>;
     case "bullets":
     case "numbered":
       return (
@@ -152,7 +155,7 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void): 
     case "message":
       return (
         <div>
-          <Caption>{block.label || "Message"}</Caption>
+          {underHeading ? null : <Caption>{block.label || "Message"}</Caption>}
           <Area value={block.body} onChange={(body) => set({ ...block, body })} />
         </div>
       );
@@ -212,46 +215,93 @@ function tidy(blocks: BlueprintBlock[]): BlueprintBlock[] {
   );
 }
 
-/** Every block of a written section as plain boxes, so any part of it can be changed. */
-export function BlockEditor({
+/** One message in a sequence. Closed until you open it, so a campaign is a list of lines. */
+function MessageLine({
+  block,
+  onChange,
+}: {
+  block: Extract<BlueprintBlock, { type: "message" }>;
+  onChange: (next: BlueprintBlock) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="overflow-hidden rounded-xl border border-[#e3e9f0] bg-white">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-start gap-2 px-3.5 py-2.5 text-left"
+      >
+        <ChevronDown
+          className={`mt-0.5 h-4 w-4 shrink-0 text-[#94a3b8] transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        />
+        <span className="min-w-0">
+          <span className="block text-[0.9375rem] font-semibold text-[var(--bp-ink)]">{block.label || "Message"}</span>
+          {block.note ? <span className="mt-0.5 block truncate text-sm text-[var(--bp-muted)]">{block.note}</span> : null}
+        </span>
+      </button>
+      <div className={open ? "border-t border-[#e6eaf0] px-3.5 py-3" : "hidden print:block border-t border-[#e6eaf0] px-3.5 py-3"}>
+        <Area value={block.body} onChange={(body) => onChange({ ...block, body })} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A written section as click-in boxes. A run of messages starts closed, one
+ * line each, so you open the one you want. A single message stays open.
+ */
+export function BlockBoxes({
   blocks,
   onSave,
-  onCancel,
 }: {
   blocks: BlueprintBlock[];
   onSave: (blocks: BlueprintBlock[]) => Promise<boolean>;
-  onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<BlueprintBlock[]>(blocks);
-  const [saving, setSaving] = useState(false);
+  const stored = useRef(JSON.stringify(blocks));
+  const [saved, setSaved] = useState(false);
+  const collapseMessages = draft.filter((block) => block.type === "message").length > 1;
+
+  async function save() {
+    const next = tidy(draft);
+    const json = JSON.stringify(next);
+    if (json === stored.current) return;
+    stored.current = json;
+    if (await onSave(next)) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+    }
+  }
 
   return (
-    <div className="space-y-4">
-      {draft.map((block, i) => (
-        <div key={i}>{editorFor(block, (next) => setDraft((d) => d.map((b, j) => (j === i ? next : b))))}</div>
-      ))}
-      <div className="sticky bottom-3 z-10 flex gap-2 pt-2">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={async () => {
-            setSaving(true);
-            const ok = await onSave(tidy(draft));
-            setSaving(false);
-            if (ok) onCancel();
-          }}
-          className="rounded-full bg-[var(--bp-navy)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-14px_rgba(5,30,54,0.8)] hover:bg-[var(--bp-blue)] disabled:opacity-50"
-        >
-          {saving ? "Saving…" : "Save changes"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[var(--bp-muted)] ring-1 ring-[var(--bp-rule)] hover:text-[var(--bp-ink)]"
-        >
-          Cancel
-        </button>
-      </div>
+    <div className="relative space-y-4" onBlur={save}>
+      {draft.map((block, i) =>
+        collapseMessages && block.type === "message" ? (
+          <MessageLine
+            key={i}
+            block={block}
+            onChange={(next) => setDraft((d) => d.map((b, j) => (j === i ? next : b)))}
+          />
+        ) : (
+          <div key={i}>
+            {editorFor(block, (next) => setDraft((d) => d.map((b, j) => (j === i ? next : b))), draft[i - 1]?.type === "heading")}
+          </div>
+        )
+      )}
+      <p
+        aria-live="polite"
+        className={`pointer-events-none sticky bottom-3 ml-auto inline-flex w-fit items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[#17663a] shadow-sm transition-opacity ${
+          saved ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {saved ? (
+          <>
+            <Check className="h-3 w-3" aria-hidden /> Saved
+          </>
+        ) : null}
+      </p>
     </div>
   );
 }

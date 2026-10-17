@@ -151,9 +151,9 @@ export function calendarToBookingSettings(
   location_phone: string | null;
   location_custom: string | null;
 } {
-  // Support calls are 20 min but offer starts on :00 / :30.
+  // 20-minute calls still start on :00 / :30 so they don't overlap the next one.
   const slotInterval =
-    calendar.slug === "support"
+    calendar.slug === "support" || calendar.slug === "advisory-blueprint"
       ? 30
       : calendar.meeting_duration_minutes;
 

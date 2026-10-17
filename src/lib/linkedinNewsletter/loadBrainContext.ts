@@ -1,3 +1,6 @@
+import { blueprintContextFromRow } from "@/lib/practiceKnowledge/blueprintContext";
+import { foldRetiredAnswers, listValue } from "@/lib/practiceKnowledge/sourced";
+import { findPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
@@ -53,7 +56,7 @@ function extractIndustryLabel(brain: CoachAiContext): string | null {
 export async function loadNewsletterBrainBundle(
   userId: string
 ): Promise<NewsletterBrainBundle> {
-  const [brainRow, { summary: linkedInSummary }, setup] = await Promise.all([
+  const [brainRow, { summary: linkedInSummary }, setup, blueprintRow] = await Promise.all([
     loadCoachAiContextRow(userId),
     loadCoachLinkedInSummary(userId),
     supabaseAdmin
@@ -61,11 +64,15 @@ export async function loadNewsletterBrainBundle(
       .select("selected_avatar_id, selected_icp_id")
       .eq("coach_id", userId)
       .maybeSingle(),
+    findPracticeKnowledge(userId).catch(() => null),
   ]);
 
   const brain = brainRow ?? {};
+  // The Practice Blueprint is the source of truth; the brain and avatar fill gaps.
+  const blueprint = blueprintRow ? blueprintContextFromRow(blueprintRow) : "";
+  const blueprintPayload = blueprintRow ? foldRetiredAnswers(blueprintRow.payload) : null;
   const avatarHooks: string[] = [];
-  const painLines: string[] = [];
+  const painLines: string[] = blueprintPayload ? listValue(blueprintPayload.client.pains_now).slice(0, 8) : [];
 
   const avatarId = setup.data?.selected_avatar_id as string | null;
   if (avatarId) {
@@ -98,9 +105,11 @@ export async function loadNewsletterBrainBundle(
 
   return {
     brain,
-    brainText: formatBrain(brain),
+    brainText: [formatBrain(brain), blueprint].filter(Boolean).join("\n\n"),
     linkedInSummary: linkedInSummary || "(no LinkedIn scrape)",
-    industryLabel: extractIndustryLabel(brain),
+    industryLabel:
+      (blueprintPayload ? listValue(blueprintPayload.market.industries_credibility)[0]?.slice(0, 120) : null) ||
+      extractIndustryLabel(brain),
     avatarHooks,
     painLines,
   };

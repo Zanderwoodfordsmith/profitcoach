@@ -1,4 +1,5 @@
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
+import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
 import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { DraftNoteVariant } from "@/lib/extensionLinkedIn/draftNote";
@@ -45,9 +46,10 @@ export async function draftLinkedInEngage(opts: {
     );
   }
 
-  const [brain, linkedIn] = await Promise.all([
+  const [brain, linkedIn, blueprint] = await Promise.all([
     loadCoachAiContextRow(opts.coachId),
     loadCoachLinkedInSummary(opts.coachId),
+    loadBlueprintContext(opts.coachId),
   ]);
 
   const user = `kind: ${opts.kind}
@@ -78,7 +80,7 @@ ${JSON.stringify(brain ?? {}, null, 2)}
 
 Coach LinkedIn / proof:
 ${linkedIn.summary || "(none)"}
-
+${blueprint ? `\n${blueprint}\n` : ""}
 Write 2 ${opts.kind} variants.`;
 
   const { data, error } = await generateCampaignJson<{

@@ -1,5 +1,6 @@
 import { formatPersonName } from "@/lib/formatPersonName";
 import { notifyBcaNewMember } from "@/lib/membership/notifyBcaNewMember";
+import { scheduleOnboardingIngest } from "@/lib/practiceKnowledge/ingestOnboarding";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type CreateCoachRecordsInput = {
@@ -112,6 +113,7 @@ async function createCoachProfileAndRowViaBootstrap(
 
   void seedDefaultCampaigns(normalized.userId);
   await notifyBcaNewMember(normalized.userId);
+  scheduleOnboardingIngest(normalized.userId);
   return null;
 }
 
@@ -151,5 +153,6 @@ export async function createCoachProfileAndRow(
 
   void seedDefaultCampaigns(normalized.userId);
   await notifyBcaNewMember(normalized.userId);
+  scheduleOnboardingIngest(normalized.userId);
   return null;
 }

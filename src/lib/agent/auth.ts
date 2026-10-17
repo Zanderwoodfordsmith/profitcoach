@@ -3,9 +3,10 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { AgentMode } from "./types";
 
 /**
- * Who is talking to the agent, and in which mode. Admins always get admin
- * mode (any coach). Coaches get coach mode on their own account, only when
- * an admin has switched the agent on for them.
+ * Who is talking to Ava, and in which mode. Admins always get admin mode (any
+ * coach). Coaches get coach mode on their own account: every coach has the
+ * Blueprint skills, and the rest (campaigns, lists, imports) once an admin has
+ * switched the agent on for them.
  */
 
 export type AgentActor = {
@@ -14,6 +15,8 @@ export type AgentActor = {
   mode: AgentMode;
   /** Admin viewing as a coach: the default active coach for a new chat. */
   impersonatedCoachId: string | null;
+  /** Coach without the agent switched on: Blueprint skills only. */
+  limited: boolean;
 };
 
 const UUID_RE =
@@ -50,6 +53,7 @@ export async function resolveAgentActor(
         isAdmin: true,
         mode: "admin",
         impersonatedCoachId: UUID_RE.test(impersonate) ? impersonate : null,
+        limited: false,
       },
     };
   }
@@ -60,17 +64,15 @@ export async function resolveAgentActor(
       .select("ai_agent_enabled")
       .eq("id", user.id)
       .maybeSingle();
-    if (coach?.ai_agent_enabled === true) {
-      return {
-        ok: true,
-        actor: { actorUserId: user.id, isAdmin: false, mode: "coach", impersonatedCoachId: null },
-      };
-    }
     return {
-      ok: false,
-      status: 403,
-      error: "The agent is not switched on for your account yet.",
-      signedIn: true,
+      ok: true,
+      actor: {
+        actorUserId: user.id,
+        isAdmin: false,
+        mode: "coach",
+        impersonatedCoachId: null,
+        limited: coach?.ai_agent_enabled !== true,
+      },
     };
   }
 

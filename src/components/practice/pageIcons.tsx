@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Linkedin,
   Newspaper,
+  PenLine,
   Send,
   Settings2,
   Target,
@@ -29,6 +30,7 @@ const PAGE_ICONS: Record<string, LucideIcon> = {
   sales: Handshake,
   ninety: CalendarRange,
   content: Newspaper,
+  posts: PenLine,
 };
 
 export function PageIcon({ slug, className }: { slug: string; className?: string }) {

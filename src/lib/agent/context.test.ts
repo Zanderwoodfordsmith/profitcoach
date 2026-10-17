@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  capabilitiesForActor,
   capabilitiesForMode,
   capabilityContract,
   loadCapabilities,
@@ -10,7 +11,7 @@ import {
   parseFrontmatter,
   resolveReference,
 } from "./context";
-import { AGENT_TOOLS, anthropicToolsForMode, getAgentTool, toolAllowedInMode } from "./tools";
+import { AGENT_TOOLS, anthropicToolsForMode, getAgentTool, toolAllowedForActor, toolAllowedInMode } from "./tools";
 
 describe("agent context (ICM wiring)", () => {
   it("parses frontmatter scalars and lists", () => {
@@ -23,7 +24,7 @@ describe("agent context (ICM wiring)", () => {
   it("loads identity and router, and keeps them short", () => {
     const identity = loadIdentity();
     const router = loadRouter();
-    assert.ok(identity.includes("# Profit Coach Agent"));
+    assert.ok(identity.includes("# Ava"));
     assert.ok(router.includes("# Router"));
     // ICM: the always-loaded layers stay small.
     assert.ok(identity.split("\n").length < 80, "AGENT.md is getting long");
@@ -70,6 +71,19 @@ describe("agent context (ICM wiring)", () => {
         if (tool.core || !toolAllowedInMode(tool, mode)) continue;
         assert.ok(reachable.has(tool.name), `${tool.name} cannot be opened in ${mode} mode`);
       }
+    }
+  });
+
+  it("a coach without the agent gets the Blueprint skills and nothing else", () => {
+    const ids = capabilitiesForActor("coach", true).map((cap) => cap.id).sort();
+    assert.deepEqual(ids, ["escalate-to-bca", "fill-the-gaps", "improve-section", "linkedin-marketing", "practice-ready"]);
+    const names = anthropicToolsForMode("coach", true).map((tool) => tool.name);
+    for (const name of ["save_answer", "propose_copy", "blueprint_questions", "read_section", "hand_to_bca"]) {
+      assert.ok(names.includes(name), `${name} should be available`);
+    }
+    for (const name of ["create_campaign", "add_list_to_campaign", "write_blueprint_section", "find_coach"]) {
+      const tool = getAgentTool(name);
+      if (tool) assert.ok(!toolAllowedForActor(tool, "coach", true), `${name} should be off`);
     }
   });
 

@@ -1,7 +1,9 @@
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import {
+  BANNER_TEMPLATES,
   FIELD_LIMITS,
   PROFILE_SECTIONS,
+  type BannerTemplateId,
   type ExperienceDraft,
   type ProfileOptimizerDraft,
   type ProfileSectionId,
@@ -95,6 +97,35 @@ export function normalizeOptimizerDraft(raw: unknown): ProfileOptimizerDraft {
   const experiences = normalizeExperiences(rec.experiences);
   if (experiences) draft.experiences = experiences;
 
+  if (Array.isArray(rec.featuredPlan)) {
+    const plan = rec.featuredPlan.slice(0, 3).map((item) => {
+      const row = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+      const url = asTrimmedString(row.url, FIELD_LIMITS.featuredUrl) ?? "";
+      return {
+        title: asTrimmedString(row.title, FIELD_LIMITS.featuredTitle) ?? "",
+        // Links only: anything else (javascript:, data:) is dropped.
+        url: /^https?:\/\//i.test(url) ? url : "",
+      };
+    });
+    if (plan.some((p) => p.title || p.url)) draft.featuredPlan = plan;
+  }
+
+  if (typeof rec.bannerTemplate === "string" && (BANNER_TEMPLATES as readonly string[]).includes(rec.bannerTemplate)) {
+    draft.bannerTemplate = rec.bannerTemplate as BannerTemplateId;
+  } else if (rec.bannerTemplate === null) {
+    draft.bannerTemplate = null;
+  }
+
+  if (rec.partStatus && typeof rec.partStatus === "object") {
+    const raw = rec.partStatus as Record<string, unknown>;
+    const out: NonNullable<ProfileOptimizerDraft["partStatus"]> = {};
+    for (const key of PROFILE_SECTIONS) {
+      const v = raw[key];
+      if (v === "todo" || v === "review" || v === "done") out[key] = v;
+    }
+    if (Object.keys(out).length) draft.partStatus = out;
+  }
+
   const copiedAt = normalizeCopiedAt(rec.copiedAt);
   if (copiedAt) draft.copiedAt = copiedAt;
 
@@ -104,6 +135,10 @@ export function normalizeOptimizerDraft(raw: unknown): ProfileOptimizerDraft {
   return draft;
 }
 
+export function hasFeaturedPlan(draft: ProfileOptimizerDraft): boolean {
+  return (draft.featuredPlan ?? []).some((p) => p.title || p.url);
+}
+
 export function emptyDraft(value: unknown): boolean {
   const d = normalizeOptimizerDraft(value);
   return (
@@ -111,6 +146,8 @@ export function emptyDraft(value: unknown): boolean {
     !d.about &&
     !d.bannerCopy &&
     !d.featuredNotes &&
+    !hasFeaturedPlan(d) &&
+    !d.bannerTemplate &&
     !(d.experiences && d.experiences.length > 0)
   );
 }
@@ -157,12 +194,12 @@ export function sectionStatus(
     return "current";
   }
   if (section === "banner") {
-    if (differs(draft.bannerCopy, null)) return "draft";
+    if (draft.bannerTemplate || differs(draft.bannerCopy, null)) return "draft";
     if (!snapshot.bannerUrl) return "needs-work";
     return "current";
   }
   if (section === "featured") {
-    if (differs(draft.featuredNotes, null)) return "draft";
+    if (hasFeaturedPlan(draft) || differs(draft.featuredNotes, null)) return "draft";
     if ((snapshot.featured ?? []).length === 0) return "needs-work";
     return "current";
   }
@@ -224,6 +261,12 @@ export function textForSection(
     return (draft.bannerCopy ?? "").trim();
   }
   if (section === "featured") {
+    if (hasFeaturedPlan(draft)) {
+      return (draft.featuredPlan ?? [])
+        .filter((p) => p.title || p.url)
+        .map((p, i) => `${i + 1}. ${[p.title, p.url].filter(Boolean).join(" ")}`)
+        .join("\n");
+    }
     const notes = (draft.featuredNotes ?? "").trim();
     if (notes) return notes;
     const items = snapshot.featured ?? [];

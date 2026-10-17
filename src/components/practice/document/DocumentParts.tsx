@@ -11,6 +11,7 @@ import {
   stillNeeded,
   type BlueprintGroup,
   type BlueprintLink,
+  type BlueprintSection,
   sectionKey,
 } from "@/lib/practiceKnowledge/blueprint";
 import { blueprintFileName, blueprintMarkdown } from "@/lib/practiceKnowledge/exportMarkdown";
@@ -18,6 +19,7 @@ import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { DecisionRecordView } from "../DecisionRecord";
 import { usePractice } from "../PracticeProvider";
+import { NewsletterPage } from "./NewsletterPage";
 import { SectionView } from "./SectionView";
 
 /** Pages that belong in the document (not the Command Center or the whole-document page). */
@@ -105,6 +107,15 @@ export function PageBlurb({
   );
 }
 
+function sectionRefFor(page: BlueprintLink, section: BlueprintSection) {
+  return {
+    group: BLUEPRINT_GROUPS.find((g) => g.pages.includes(page))!,
+    page,
+    section,
+    key: sectionKey(page, section),
+  };
+}
+
 export function PageView({ page, showTitle = true }: { page: BlueprintLink; showTitle?: boolean }) {
   return (
     <div id={`p-${page.slug}`} className="scroll-mt-20">
@@ -118,19 +129,18 @@ export function PageView({ page, showTitle = true }: { page: BlueprintLink; show
       ) : null}
       {page.slug === "decisions" ? (
         <DecisionRecordView />
+      ) : page.slug === "content" ? (
+        <div className="space-y-5">
+          <NewsletterPage page={page} />
+          <ClassroomLinks page={page} />
+        </div>
       ) : (
-        <div className="space-y-12">
-          {page.sections.filter((section) => section.face !== "stored").map((section) => (
-            <SectionView
-              key={section.id}
-              sectionRef={{
-                group: BLUEPRINT_GROUPS.find((g) => g.pages.includes(page))!,
-                page,
-                section,
-                key: sectionKey(page, section),
-              }}
-            />
-          ))}
+        <div className="space-y-5">
+          {page.sections
+            .filter((section) => section.face !== "stored")
+            .map((section) => (
+              <SectionView key={section.id} sectionRef={sectionRefFor(page, section)} />
+            ))}
           <ClassroomLinks page={page} />
         </div>
       )}

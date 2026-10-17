@@ -102,7 +102,8 @@ export function sectionCompleteness(payload: PracticeKnowledgePayload): {
       isFilledSourced(payload.proof.uniqueness),
     market:
       listValue(payload.market.industries_worked).length > 0 ||
-      listValue(payload.market.industries_understand).length > 0,
+      listValue(payload.market.industries_understand).length > 0 ||
+      listValue(payload.market.industries_credibility).length > 0,
     practice: isFilledSourced(payload.practice.delivery_model),
   };
 }

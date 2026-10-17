@@ -9,13 +9,16 @@ import {
   type AgentChatRow,
   type StoredMessage,
 } from "./chatStore";
+import { refreshAgentContextOverrides } from "./agentOverrides";
 import { loadAgentCoach } from "./coaches";
+import { blueprintPage } from "@/lib/practiceKnowledge/blueprint";
+
 import {
-  capabilitiesForMode,
+  capabilitiesForActor,
   capabilityContract,
-  getCapability,
   loadIdentity,
   loadRouter,
+  type Capability,
 } from "./context";
 import {
   agentModel,
@@ -25,7 +28,7 @@ import {
   modelSupportsToolChanges,
   TOOL_CHANGES_BETA,
 } from "./model";
-import { anthropicToolsForMode, getAgentTool, toolAllowedInMode } from "./tools";
+import { anthropicToolsForMode, getAgentTool, toolAllowedForActor } from "./tools";
 import { OPEN_CAPABILITY_TOOL } from "./tools/core";
 import { AgentToolError } from "./tools/util";
 import type {
@@ -52,13 +55,87 @@ export type AgentTurnInput =
 
 type Emit = (event: AgentStreamEvent) => void;
 
-function systemPrompt(mode: AgentChatRow["mode"]): string {
-  const ids = capabilitiesForMode(mode).map((cap) => cap.id);
-  return [
-    loadIdentity(),
-    loadRouter(),
-    `# This session\nMode: ${mode}. Capabilities you can open: ${ids.join(", ")}.`,
-  ].join("\n\n---\n\n");
+function systemPrompt(mode: AgentChatRow["mode"], limited: boolean): string {
+  const ids = capabilitiesForActor(mode, limited).map((cap) => cap.id);
+  const session = [
+    `# This session`,
+    `Mode: ${mode}. Capabilities you can open: ${ids.join(", ")}.`,
+    ...(limited
+      ? [
+          "This coach has your Blueprint skills only. If they ask for campaigns, lists or imports, say BCA can switch those on for them, and carry on with the Blueprint.",
+        ]
+      : []),
+  ].join("\n");
+  return [loadIdentity(), loadRouter(), session].join("\n\n---\n\n");
+}
+
+/** "Offer (offer)" when the page open is a Blueprint page, coach or admin view. */
+function blueprintPageOpen(screenPath: string | null): string | null {
+  const match = screenPath?.match(/\/blueprint(?:\/coach)?\/([a-z0-9-]+)\/?$/);
+  const page = match ? blueprintPage(match[1]) : null;
+  return page ? `${page.title} (${page.slug})` : null;
+}
+
+const TITLE_MODEL = "claude-haiku-5-5";
+/** Ava retitles the chat after these many messages from the person, as it moves on. */
+const TITLE_AFTER = new Set([1, 3, 6, 10, 16]);
+
+/** Messages the person typed (not tool results, not confirm or cancel events). */
+function personTurns(messages: StoredMessage[]): number {
+  return messages.filter(
+    (m) =>
+      m.role === "user" &&
+      Array.isArray(m.content) &&
+      (m.content as Array<{ type?: string; text?: string }>).some(
+        (b) =>
+          b.type === "text" &&
+          !b.text?.startsWith(`<${WORKING_STATE_TAG}>`) &&
+          !b.text?.startsWith(`<${APP_EVENT_TAG}>`)
+      )
+  ).length;
+}
+
+/** The visible conversation as plain text, newest last, for writing a title. */
+function plainTranscript(messages: StoredMessage[], max = 6_000): string {
+  const lines: string[] = [];
+  for (const m of messages) {
+    if (m.role === "system" || !Array.isArray(m.content)) continue;
+    for (const block of m.content as Array<{ type?: string; text?: string }>) {
+      if (block.type !== "text" || !block.text?.trim()) continue;
+      const text = block.text.trim();
+      if (text.startsWith(`<${WORKING_STATE_TAG}>`) || text.startsWith(`<${APP_EVENT_TAG}>`)) continue;
+      lines.push(`${m.role === "user" ? "Person" : "Ava"}: ${text}`);
+    }
+  }
+  const all = lines.join("\n");
+  return all.length > max ? all.slice(-max) : all;
+}
+
+/** A short title naming what the chat covered, or null if the model is unavailable. */
+async function writeTitle(client: Anthropic, messages: StoredMessage[]): Promise<string | null> {
+  const transcript = plainTranscript(messages);
+  if (!transcript) return null;
+  try {
+    const reply = await client.messages.create({
+      model: TITLE_MODEL,
+      max_tokens: 200,
+      // A title needs no reasoning; Haiku thinks by default and would spend the budget on it.
+      thinking: { type: "disabled" },
+      system:
+        "Write a title for this conversation in 2 to 6 words, naming what it covered, like \"Results and offer\" or \"Connection message rewrite\". Sentence case, UK English. No quotes, no full stop, no em dashes.",
+      messages: [{ role: "user", content: transcript }],
+    });
+    const text = reply.content
+      .map((b) => (b.type === "text" ? b.text : ""))
+      .join("")
+      .replace(/["\u201c\u201d.]/g, "")
+      .replace(/\s*\u2014\s*/g, ", ")
+      .trim();
+    return text ? text.slice(0, 72) : null;
+  } catch (err) {
+    console.error("agent title failed:", err instanceof Error ? err.message : err);
+    return null;
+  }
 }
 
 function workingState(opts: {
@@ -74,10 +151,12 @@ function workingState(opts: {
     year: "numeric",
     timeZone: "Europe/London",
   });
+  const blueprint = blueprintPageOpen(opts.screenPath);
   const lines = [
     `Mode: ${opts.mode}`,
     `Active coach: ${opts.coach ? opts.coach.name : opts.mode === "admin" ? "none chosen yet" : "you (the coach)"}`,
     `Page open: ${opts.screenPath ?? "unknown"}`,
+    ...(blueprint ? [`Blueprint page open: ${blueprint}`] : []),
     `Capabilities already open: ${opts.opened.length ? opts.opened.join(", ") : "none"}`,
     `Today: ${today}`,
   ];
@@ -124,7 +203,11 @@ export async function runAgentTurn(opts: {
   emit: Emit;
 }): Promise<void> {
   const { actor, chat, emit } = opts;
+  await refreshAgentContextOverrides();
   const mode = chat.mode;
+  const limited = actor.limited;
+  const capabilityFor = (id: string): Capability | null =>
+    capabilitiesForActor(mode, limited).find((cap) => cap.id === id) ?? null;
   const model = agentModel();
   const toolChanges = modelSupportsToolChanges(model);
 
@@ -141,9 +224,9 @@ export async function runAgentTurn(opts: {
     (chat.opened_capabilities ?? []).filter(
       (id) =>
         !toolChanges ||
-        (getCapability(id, mode)?.tools ?? []).every((name) => {
+        (capabilityFor(id)?.tools ?? []).every((name) => {
           const tool = getAgentTool(name);
-          return !tool || tool.core || !toolAllowedInMode(tool, mode) || revealed.has(name);
+          return !tool || tool.core || !toolAllowedForActor(tool, mode, limited) || revealed.has(name);
         })
     )
   );
@@ -177,14 +260,14 @@ export async function runAgentTurn(opts: {
     },
   };
 
-  const tools = anthropicToolsForMode(mode).map((tool) =>
+  const tools = anthropicToolsForMode(mode, limited).map((tool) =>
     toolChanges ? tool : { ...tool, defer_loading: undefined }
   );
   const betas = [
     ...(toolChanges ? [TOOL_CHANGES_BETA] : []),
     ...(modelSupportsDefaultFallback(model) ? [DEFAULT_FALLBACK_BETA] : []),
   ];
-  const system = systemPrompt(mode);
+  const system = systemPrompt(mode, limited);
   const client = new Anthropic();
 
   async function runTool(block: Anthropic.Beta.Messages.BetaToolUseBlock): Promise<{
@@ -196,14 +279,14 @@ export async function runAgentTurn(opts: {
 
     if (block.name === OPEN_CAPABILITY_TOOL) {
       const id = typeof input.id === "string" ? input.id.trim() : "";
-      const capability = getCapability(id, mode);
+      const capability = capabilityFor(id);
       if (!capability) {
-        const ids = capabilitiesForMode(mode).map((cap) => cap.id).join(", ");
+        const ids = capabilitiesForActor(mode, limited).map((cap) => cap.id).join(", ");
         return { content: `No capability "${id}". Open one of: ${ids}.`, isError: true, additions: [] };
       }
       const additions = capability.tools.filter((name) => {
         const tool = getAgentTool(name);
-        return tool && !tool.core && toolAllowedInMode(tool, mode) && !revealed.has(name);
+        return tool && !tool.core && toolAllowedForActor(tool, mode, limited) && !revealed.has(name);
       });
       additions.forEach((name) => revealed.add(name));
       const wasOpen = opened.has(capability.id);
@@ -219,7 +302,7 @@ export async function runAgentTurn(opts: {
     }
 
     const tool = getAgentTool(block.name);
-    if (!tool || !toolAllowedInMode(tool, mode)) {
+    if (!tool || !toolAllowedForActor(tool, mode, limited)) {
       return { content: `Unknown tool ${block.name}.`, isError: true, additions: [] };
     }
     if (!tool.core && toolChanges && !revealed.has(tool.name)) {
@@ -256,6 +339,7 @@ export async function runAgentTurn(opts: {
             title: decision.title,
             details: decision.details,
             warning: decision.warning,
+            preview: decision.preview,
           });
           emit({ type: "tool_end", id: block.id, name: tool.name, ok: true });
           emit({ type: "action", action });
@@ -271,7 +355,8 @@ export async function runAgentTurn(opts: {
         }
       }
       const result = await tool.run(input, ctx);
-      emit({ type: "tool_end", id: block.id, name: tool.name, ok: true });
+      const note = (result as { _note?: unknown } | null)?._note;
+      emit({ type: "tool_end", id: block.id, name: tool.name, ok: true, ...(typeof note === "string" ? { note } : {}) });
       const link = (result as { _link?: { href?: unknown; label?: unknown } } | null)?._link;
       if (link && typeof link.href === "string") {
         emit({ type: "link", link: { href: link.href, label: String(link.label ?? "Open") } });
@@ -368,16 +453,25 @@ export async function runAgentTurn(opts: {
     });
   } finally {
     // Keep only complete steps, so the next turn sends a valid transcript.
+    const kept = messages.slice(0, committed);
     const firstUserText = opts.input.kind === "message" ? opts.input.text : "";
+    // Ava names the chat from what it covered, and renames it as it moves on.
+    const title =
+      opts.input.kind === "message" && TITLE_AFTER.has(personTurns(kept))
+        ? await writeTitle(client, kept)
+        : null;
+    const fallback =
+      chat.api_messages.length === 0 && firstUserText
+        ? firstUserText.slice(0, 72) + (firstUserText.length > 72 ? "…" : "")
+        : null;
     await saveChat(chat.id, {
-      api_messages: messages.slice(0, committed),
+      api_messages: kept,
       opened_capabilities: [...opened],
       coach_id: mode === "admin" ? (coach?.id ?? null) : actor.actorUserId,
       model,
-      ...(chat.api_messages.length === 0 && firstUserText
-        ? { title: firstUserText.slice(0, 72) + (firstUserText.length > 72 ? "…" : "") }
-        : {}),
+      ...(title || fallback ? { title: (title || fallback)! } : {}),
     }).catch((err) => console.error("agent saveChat failed:", err));
+    if (title || fallback) emit({ type: "title", title: (title || fallback)! });
     emit({ type: "done" });
   }
 }

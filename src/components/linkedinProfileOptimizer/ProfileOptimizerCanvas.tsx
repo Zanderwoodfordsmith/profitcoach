@@ -15,6 +15,7 @@ import {
 import {
   FIELD_LIMITS,
   PROFILE_SECTIONS,
+  type FeaturedPlanItem,
   type ProfileOptimizerDraft,
   type ProfileSectionId,
 } from "@/lib/linkedinProfileOptimizer/types";
@@ -274,6 +275,13 @@ export function ProfileOptimizerCanvas({
   onBannerCopy,
   onFeaturedNotes,
   onExperience,
+  statusFor,
+  bannerImage,
+  bannerNode,
+  afterTop,
+  bannerCopyEditable = true,
+  featuredPlan,
+  onFeaturedPlan,
 }: {
   snapshot: LinkedInProfileSnapshot;
   draft: ProfileOptimizerDraft;
@@ -284,7 +292,31 @@ export function ProfileOptimizerCanvas({
   onBannerCopy: (next: string) => void;
   onFeaturedNotes: (next: string) => void;
   onExperience: (patch: { title?: string; description?: string }) => void;
+  /** Replaces the Draft / Live chip, e.g. the Blueprint's To do / Review / Done. Return null to hide it. */
+  statusFor?: (id: ProfileSectionId) => ReactNode;
+  /** A chosen banner (e.g. from the Toolkit) shown in place of the imported one. */
+  bannerImage?: string | null;
+  /** Shown straight under the banner and headline card, e.g. a banner chooser. */
+  afterTop?: ReactNode;
+  /** A drawn banner (inline SVG) shown in place of any image. */
+  bannerNode?: ReactNode;
+  /** False when the banner is a finished design, so no text sits on top of it. */
+  bannerCopyEditable?: boolean;
+  /** The three Featured slots the coach plans, edited in place. */
+  featuredPlan?: FeaturedPlanItem[];
+  onFeaturedPlan?: (next: FeaturedPlanItem[]) => void;
 }) {
+  const chip = (id: ProfileSectionId) =>
+    statusFor ? statusFor(id) : <StatusChip status={sectionStatus(id, snapshot, draft)} />;
+  // A custom status can be its own control, so it must not sit inside a button.
+  const chipButton = (id: ProfileSectionId) =>
+    statusFor ? (
+      <span className="shrink-0">{statusFor(id)}</span>
+    ) : (
+      <button type="button" onClick={() => onSelect(id)}>
+        {chip(id)}
+      </button>
+    );
   const headline = draft.headline ?? snapshot.headline ?? "";
   const about = draft.about ?? snapshot.about ?? "";
   const bannerCopy = draft.bannerCopy ?? "";
@@ -313,10 +345,12 @@ export function ProfileOptimizerCanvas({
           <div
             className={`relative w-full overflow-hidden bg-[#d9d9d9] ${COVER_ASPECT}`}
           >
-            {snapshot.bannerUrl ? (
+            {bannerNode ? (
+              <div className="absolute inset-0 [&>svg]:h-full [&>svg]:w-full">{bannerNode}</div>
+            ) : bannerImage || snapshot.bannerUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- remote LinkedIn CDN URL
               <img
-                src={snapshot.bannerUrl}
+                src={bannerImage || snapshot.bannerUrl || ""}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
               />
@@ -331,7 +365,7 @@ export function ProfileOptimizerCanvas({
               }`}
               aria-label="Edit banner copy"
             />
-            {bannerCopy || activeSection === "banner" ? (
+            {bannerCopyEditable && (bannerCopy || activeSection === "banner") ? (
               <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center bg-black/30 px-6">
                 {activeSection === "banner" ? (
                   <div className="pointer-events-auto w-full max-w-xl">
@@ -350,8 +384,8 @@ export function ProfileOptimizerCanvas({
                 )}
               </div>
             ) : null}
-            <div className="pointer-events-none absolute right-3 top-3 z-[3]">
-              <StatusChip status={sectionStatus("banner", snapshot, draft)} />
+            <div className="pointer-events-none absolute right-3 top-3 z-[3] [&>*]:pointer-events-auto">
+              {chip("banner")}
             </div>
           </div>
         </div>
@@ -384,11 +418,7 @@ export function ProfileOptimizerCanvas({
                 <h2 className="text-[22px] font-semibold leading-tight tracking-[-0.01em] text-[#191919] sm:text-[24px]">
                   {snapshot.fullName ?? "LinkedIn profile"}
                 </h2>
-                <button type="button" onClick={() => onSelect("headline")}>
-                  <StatusChip
-                    status={sectionStatus("headline", snapshot, draft)}
-                  />
-                </button>
+                {chipButton("headline")}
               </div>
               {activeSection === "headline" ? (
                 <AutoTextarea
@@ -451,6 +481,8 @@ export function ProfileOptimizerCanvas({
         </div>
       </div>
 
+      {afterTop}
+
       <SectionCard
         sectionId="about"
         active={activeSection === "about"}
@@ -460,9 +492,7 @@ export function ProfileOptimizerCanvas({
             <h3 className="text-[16px] font-semibold leading-snug text-[#191919]">
               About
             </h3>
-            <button type="button" onClick={() => onSelect("about")}>
-              <StatusChip status={sectionStatus("about", snapshot, draft)} />
-            </button>
+            {chipButton("about")}
           </div>
           {activeSection === "about" ? (
             <AutoTextarea
@@ -501,26 +531,35 @@ export function ProfileOptimizerCanvas({
             <h3 className="text-[16px] font-semibold leading-snug text-[#191919]">
               Featured
             </h3>
-            <button type="button" onClick={() => onSelect("featured")}>
-              <StatusChip status={sectionStatus("featured", snapshot, draft)} />
-            </button>
+            {chipButton("featured")}
           </div>
           <ul className="mt-4 grid grid-cols-3 gap-2">
-            {FEATURED_SLOTS.map((slot, i) => (
-              <FeaturedCard
-                key={slot}
-                item={featuredItems[i] ?? null}
-                emptyLabel={slot}
-                onSelect={() => onSelect("featured")}
-              />
-            ))}
+            {FEATURED_SLOTS.map((slot, i) => {
+              const planned = featuredPlan?.[i];
+              const item =
+                onFeaturedPlan && planned && (planned.title || planned.url)
+                  ? { title: planned.title || slot, subtitle: planned.url ? hostOf(planned.url) : null, url: null, imageUrl: null }
+                  : (featuredItems[i] ?? null);
+              return (
+                <FeaturedCard
+                  key={slot}
+                  item={item as LinkedInFeaturedItem | null}
+                  emptyLabel={slot}
+                  onSelect={() => onSelect("featured")}
+                />
+              );
+            })}
           </ul>
           {featuredItems.length > 3 ? (
             <p className="mt-2 text-center text-[13px] font-semibold text-[#191919]">
               Show all {featuredItems.length} featured →
             </p>
           ) : null}
-          {activeSection === "featured" ? (
+          {onFeaturedPlan ? (
+            activeSection === "featured" ? (
+              <FeaturedPlanEditor plan={featuredPlan ?? []} onChange={onFeaturedPlan} />
+            ) : null
+          ) : activeSection === "featured" ? (
             <AutoTextarea
               value={featuredNotes}
               onChange={onFeaturedNotes}
@@ -559,9 +598,7 @@ export function ProfileOptimizerCanvas({
             <h3 className="text-[16px] font-semibold leading-snug text-[#191919]">
               Experience
             </h3>
-            <button type="button" onClick={() => onSelect("experience")}>
-              <StatusChip status={sectionStatus("experience", snapshot, draft)} />
-            </button>
+            {chipButton("experience")}
           </div>
           <div className="mt-4 flex gap-3">
             <LogoMark label={current?.company ?? currentTitle ?? "?"} />
@@ -651,6 +688,54 @@ export function ProfileOptimizerCanvas({
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+/** The three Featured slots, each with what to pin and its link. */
+function FeaturedPlanEditor({
+  plan,
+  onChange,
+}: {
+  plan: FeaturedPlanItem[];
+  onChange: (next: FeaturedPlanItem[]) => void;
+}) {
+  const rows = FEATURED_SLOTS.map((_, i) => plan[i] ?? { title: "", url: "" });
+  const set = (i: number, patch: Partial<FeaturedPlanItem>) =>
+    onChange(rows.map((row, j) => (j === i ? { ...row, ...patch } : row)));
+  const input =
+    "w-full min-w-0 rounded-md border border-[#d0d0d0] bg-white px-2.5 py-1.5 text-[13px] text-[#191919] outline-none focus:border-[#0a66c2]";
+  return (
+    <div className="mt-4 space-y-2.5">
+      {FEATURED_SLOTS.map((slot, i) => (
+        <div key={slot} className="grid gap-1.5 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1fr)] sm:items-center">
+          <span className="text-[13px] font-semibold text-[#191919]">{slot}</span>
+          <input
+            value={rows[i].title}
+            maxLength={FIELD_LIMITS.featuredTitle}
+            placeholder={i === 0 ? "e.g. The Profit Letter" : i === 1 ? "e.g. How Dave added £180k profit" : "e.g. Free BOSS Scorecard"}
+            aria-label={`${slot}: what to pin`}
+            onChange={(e) => set(i, { title: e.target.value })}
+            className={input}
+          />
+          <input
+            value={rows[i].url}
+            maxLength={FIELD_LIMITS.featuredUrl}
+            placeholder="https://"
+            aria-label={`${slot}: link`}
+            onChange={(e) => set(i, { url: e.target.value })}
+            className={input}
+          />
+        </div>
+      ))}
     </div>
   );
 }

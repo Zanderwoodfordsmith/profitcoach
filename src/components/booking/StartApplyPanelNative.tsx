@@ -16,9 +16,12 @@ type Props = {
   enableLeadCapture?: boolean;
   /**
    * `discovery` — sales qualify questions (default).
-   * `support` — single call-topic notes field.
+   * `support` — a short form, with an optional notes field.
    */
   intent?: "discovery" | "support";
+  title?: string;
+  lead?: string;
+  showNotes?: boolean;
 };
 
 /**
@@ -29,12 +32,18 @@ export function StartApplyPanelNative({
   slug,
   calendarSlug = "discovery",
   intent = "discovery",
+  title,
+  lead,
+  showNotes,
   ...rest
 }: Props) {
   return (
     <StartApplyPanel
       {...rest}
       intent={intent}
+      title={title}
+      lead={lead}
+      showNotes={showNotes}
       calendar={{ type: "native", slug, calendarSlug }}
     />
   );

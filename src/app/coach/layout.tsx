@@ -187,8 +187,11 @@ export default function CoachLayout({
   /** Inbox-style workspaces: panes run to the header and the shell edges. */
   const edgeToEdgeInbox =
     conversationsPage || supportPage || prospectWorkspacePage;
+  /** Blueprint scrolls inside the page. The window must not scroll, or the
+   * contents column unsticks at the bottom and leaves a white gap. */
+  const blueprintPage = pathname.startsWith("/coach/blueprint");
   const fullHeightPage =
-    edgeToEdgeInbox || prospectsListPage || campaignsListPage;
+    edgeToEdgeInbox || prospectsListPage || campaignsListPage || blueprintPage;
   const fullBleed = isPlaybooksReaderPath(pathname) || membershipPage;
   const playbooksReader = fullBleed;
   const sidebarExpanded = sidebarOpen && !playbooksReader;
@@ -327,6 +330,12 @@ export default function CoachLayout({
               ? "min-h-screen px-0 pb-0"
               : playbooksReader
               ? "min-h-screen px-0 pb-10"
+              : blueprintPage
+              ? `h-dvh overflow-hidden px-0 ${
+                  sidebarExpanded
+                    ? "pb-0 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                    : "pb-0"
+                }`
               : `min-h-screen px-4 md:px-[60px] ${
                   sidebarExpanded
                     ? "pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
@@ -350,7 +359,7 @@ export default function CoachLayout({
                 bleedInset={
                   membershipPage
                     ? "px-4 md:px-[60px]"
-                    : edgeToEdgeInbox
+                    : edgeToEdgeInbox || blueprintPage
                       ? "px-4 md:px-6"
                       : undefined
                 }

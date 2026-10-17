@@ -34,6 +34,8 @@ export const FIELD_LIMITS = {
   experienceDescription: 2_000,
   bannerCopy: 400,
   featuredNotes: 1_200,
+  featuredTitle: 120,
+  featuredUrl: 500,
   instruction: 500,
   maxExperienceDrafts: 20,
 } as const;
@@ -46,12 +48,26 @@ export type ExperienceDraft = {
   description?: string;
 };
 
+/** One Featured slot the coach plans to pin: what it is, and its link. */
+export type FeaturedPlanItem = { title: string; url: string };
+
+/** The LinkedIn banners in the Toolkit a coach can choose from. */
+export const BANNER_TEMPLATES = ["p-li-score", "p-li-dark", "p-li-levels", "p-li-compass"] as const;
+export type BannerTemplateId = (typeof BANNER_TEMPLATES)[number];
+
+export type PartStatus = "todo" | "review" | "done";
+
 export type ProfileOptimizerDraft = {
   headline?: string | null;
   about?: string | null;
   bannerCopy?: string | null;
   featuredNotes?: string | null;
   experiences?: ExperienceDraft[];
+  /** Three Featured slots: newsletter, proof, lead magnet. */
+  featuredPlan?: FeaturedPlanItem[];
+  bannerTemplate?: BannerTemplateId | null;
+  /** The coach's own status for a part, when they set one. Otherwise it is worked out. */
+  partStatus?: Partial<Record<ProfileSectionId, PartStatus>>;
   copiedAt?: Partial<Record<ProfileSectionId, string>>;
   updatedAt?: string | null;
 };

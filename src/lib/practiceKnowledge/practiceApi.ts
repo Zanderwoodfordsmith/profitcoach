@@ -20,6 +20,9 @@ export type PracticeLoad = {
   decision: DecisionRecordRow | null;
   coach_name?: string;
   coach_avatar_url?: string | null;
+  /** The signed-in person, which can differ from the blueprint coach. */
+  viewer_id?: string;
+  viewer_name?: string;
 };
 
 export type InterviewResponse = {
@@ -133,12 +136,12 @@ export function saveBuiltBlocks(section: string, blocks: BlueprintBlock[], coach
   return post<{ knowledge: PracticeKnowledgeRow }>("/api/coach/practice/build", coachId, { section, blocks });
 }
 
-/** Create a draft Get Clients campaign from the blueprint's campaign messaging. */
-export function sendBlueprintCampaign(variant: "connector" | "conversation", coachId?: PracticeCoachId) {
+/** Create a draft Get Clients campaign from one written Blueprint campaign section. */
+export function sendBlueprintCampaign(section: string, coachId?: PracticeCoachId) {
   return post<{ campaign_id: string; name: string; steps: number }>(
     "/api/coach/practice/send-campaign",
     coachId,
-    { variant }
+    { section }
   );
 }
 

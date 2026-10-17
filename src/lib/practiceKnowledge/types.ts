@@ -5,7 +5,7 @@
  * - AuthN: existing Supabase Bearer session (`requireCoachRequest` / `requireAdmin`).
  * - AuthZ: coach_id is taken from the session (or admin impersonation header),
  *   never from the request body. Admins use `/api/admin/practice*`.
- * - PII: phone, WhatsApp, location, transcripts, proof stories, uploads.
+ * - PII: phone, WhatsApp, location, address, transcripts, proof stories, uploads.
  *   Supabase at-rest encryption. Cascade-delete with the profile.
  * - Mass assignment: PATCH allowlists fields. Status transitions to
  *   admin_reviewed / decision_recorded / ready_to_build are admin-only.
@@ -23,6 +23,8 @@ export const PRACTICE_KNOWLEDGE_SOURCES = [
 ] as const;
 
 export type KnowledgeSource = (typeof PRACTICE_KNOWLEDGE_SOURCES)[number];
+
+import type { VoiceTone } from "./voiceTone";
 
 export type Sourced<T> = {
   value: T;
@@ -53,6 +55,9 @@ export type DeliveryModel = (typeof DELIVERY_MODELS)[number];
 export const DELIVERY_FORMATS = ["one_to_one", "group", "hybrid"] as const;
 export type DeliveryFormat = (typeof DELIVERY_FORMATS)[number];
 
+export const NEWSLETTER_CADENCES = ["weekly", "fortnightly", "monthly"] as const;
+export type NewsletterCadence = (typeof NEWSLETTER_CADENCES)[number];
+
 export const NOTIFICATION_CHANNELS = [
   "email",
   "whatsapp",
@@ -70,6 +75,10 @@ export type LinkedInVisibility = (typeof LINKEDIN_VISIBILITIES)[number];
 /** Whether the coach offers a guarantee, and which kind. */
 export const GUARANTEE_TYPES = ["none", "trial", "results"] as const;
 export type GuaranteeType = (typeof GUARANTEE_TYPES)[number];
+
+/** The BOSS score destination this offer leads with. */
+export const OFFER_OUTCOMES = ["money", "time", "team"] as const;
+export type OfferOutcome = (typeof OFFER_OUTCOMES)[number];
 
 export const PROOF_TYPES = ["career", "client"] as const;
 export type ProofType = (typeof PROOF_TYPES)[number];
@@ -123,6 +132,11 @@ export type PracticeKnowledgePayload = {
     website: Sourced<string> | null;
     timezone: Sourced<string> | null;
     location: Sourced<string> | null;
+    /** Postal address, first line. With the lines below, where BCA can send things. Never sent to the AI writers. */
+    address: Sourced<string> | null;
+    address_line2: Sourced<string> | null;
+    postcode: Sourced<string> | null;
+    country: Sourced<string> | null;
     linkedin_url: Sourced<string> | null;
     /** Own domain, or a Profit Coach page at their name. */
     web_address: Sourced<string> | null;
@@ -151,9 +165,49 @@ export type PracticeKnowledgePayload = {
     guarantee_terms: Sourced<string> | null;
     /** How often sessions run, if different from the BCA format. */
     session_rhythm: Sourced<string> | null;
-    more_of: Sourced<string> | null;
-    less_of: Sourced<string> | null;
+    /** BOSS score destination this offer leads with: money, time or team. */
+    offer_outcome: Sourced<OfferOutcome> | null;
+    /** What owners get more of, in the coach's words. */
+    more_of: Sourced<string[]> | null;
+    /** What owners get less of, in the coach's words. */
+    less_of: Sourced<string[]> | null;
+    /** What they actually help with, in their language. Not a system picker. */
+    help_with: Sourced<string[]> | null;
+    /** How long until the first result they can point to. */
+    offer_timeframe: Sourced<string> | null;
     worth_building: Sourced<string> | null;
+    /** Your Voice: five sliders, 1 to 5. BCA sets them from the conversation, the coach moves them. */
+    tone: Sourced<VoiceTone> | null;
+    /** Your Voice: a short message in their own words. */
+    voice_sounds_like: Sourced<string> | null;
+    /** Your Voice: what they never want to sound like. */
+    voice_never: Sourced<string> | null;
+    /** Your Voice: anything else about how they come across. */
+    voice_notes: Sourced<string> | null;
+    /** Your Voice: how they want to be perceived and what they want to be known for. */
+    voice_known_for: Sourced<string> | null;
+    /** Your Voice: fun, serious, boot camp, hugs, or a mix. */
+    voice_coaching_style: Sourced<string> | null;
+    voice_values: Sourced<string[]> | null;
+    voice_qualities: Sourced<string[]> | null;
+    voice_like_in_people: Sourced<string[]> | null;
+    voice_dislike_in_people: Sourced<string[]> | null;
+    voice_pet_peeves: Sourced<string[]> | null;
+    voice_favourite_book: Sourced<string> | null;
+    voice_favourite_film: Sourced<string> | null;
+    voice_hobbies: Sourced<string[]> | null;
+    /** A story they are happy for us to use in a newsletter or lesson. */
+    voice_stories: Sourced<string> | null;
+    /** How often a LinkedIn newsletter goes out. Unset means fortnightly. */
+    newsletter_cadence: Sourced<NewsletterCadence> | null;
+    /** The name of the newsletter, on the tin. */
+    newsletter_name: Sourced<string> | null;
+    newsletter_description: Sourced<string> | null;
+    newsletter_audience: Sourced<string> | null;
+    /** The sentence that closes every issue. */
+    newsletter_cta: Sourced<string> | null;
+    /** Extra issues the coach added, besides the first. */
+    newsletter_added: Sourced<string[]> | null;
   };
   market: {
     industries_worked: Sourced<string[]> | null;
@@ -209,7 +263,21 @@ export type PracticeKnowledgePayload = {
     bca_approved_sections: Sourced<Record<string, string>> | null;
     /** Manual To do / Review / Done choice per section, stored as "status|time". */
     section_status: Sourced<Record<string, string>> | null;
+    /** Manual status moves, oldest first. Wording edits are not logged. */
+    status_log: Sourced<SectionStatusEvent[]> | null;
   };
+};
+
+/** One manual status move, shown in that section's comment thread. */
+export type SectionStatusEvent = {
+  id: string;
+  section: string;
+  from: "todo" | "review" | "done";
+  to: "todo" | "review" | "done";
+  at: string;
+  actor_id: string;
+  actor_name: string;
+  actor_side: "coach" | "bca";
 };
 
 export type PracticeNote = {

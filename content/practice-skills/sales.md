@@ -26,14 +26,29 @@ Name it for what it does (Pam's: Quick Wins Profit Maximiser). Write, in the coa
 - Calendar page description: four lines.
 Limited spots (for example five a month) is fine because it is true: a coach only has so many hours.
 
-## The pitch (tailored call script)
-- Transition statement, then "For you specifically, here is the game plan."
-- Reflect back two or three of their pains in their words.
-- A simple three-step system as the bridge from where they are to where they want to be. Pause for questions after each step.
-- Results they can expect, with proof.
+## The pitch you learn (then adapt)
+
+The Profit System does not change. Vision, Velocity, Value, and the nine steps stay in the same order every call. What changes is the story running through them: this owner's number-one problem.
+
+**Learn these (same every call, so they can practise):**
+- Opening: reflect their outcome, problem, impact, desired future and personal why. "Have I understood that correctly?" Then pause.
+- The pillars: Vision (where we are going), Velocity (profitable growth), Value (a business that works without them).
+- The nine step names, in order: Alignment Accelerator, Detailed Strategy, Dynamic Planning, Profit and Cash, Revenue and Marketing, Operations and Product, Financials and KPIs, Innovation and Management, Team and Leadership.
+- Three-link rhythm on every step: because you told me / what we will do / which means.
+- Close: "How do you feel about the structure and approach specifically?"
+
+**Adapt these (this owner only):**
+- The Golden Thread (their priority)
+- The "for you" line in each step
+- Their words, their number, their personal why
+
+Write the Blueprint script as the learnable core, already flavoured for this coach's avatar, with clear brackets for the lines they swap on the call. Do not invent a new three-step system. The nine steps are the game plan.
+
+Speak in absolutes. Slow down. Sell the outcome, not a tour of the programme. If a paragraph could be said to a different owner with a different problem, it is still too generic.
+
+## After the pitch
+- Results they can expect, with the coach's real proof only.
 - How to get started and the price (monthly or six months).
-- 80% of the pitch is the same every time. 20% is tailored to this owner.
-- Speak in absolutes. Slow down. Sell the outcome, not the features.
 
 ## Objections
 Find the real objection first. Cover money, time to think, partner, timing and fear with calm, respectful answers that go back to the cost of standing still.

@@ -247,9 +247,15 @@ type Props = {
   calendar?: StartApplyCalendarEngine;
   /**
    * `discovery` — sales qualify questions (default).
-   * `support` — single “what is this call about?” notes field.
+   * `support` — a short form, with an optional notes field.
    */
   intent?: "discovery" | "support";
+  /** Replaces the form heading. */
+  title?: string;
+  /** Replaces the line under the form heading. */
+  lead?: string;
+  /** Support forms ask what the call is about. Set false when the call already has a name. */
+  showNotes?: boolean;
 };
 
 /**
@@ -264,6 +270,9 @@ export function StartApplyPanel({
   enableLeadCapture = false,
   calendar = { type: "ghl" },
   intent = "discovery",
+  title,
+  lead,
+  showNotes = true,
 }: Props) {
   const isSupport = intent === "support";
   const seeded = seedFromPrefill(prefillProp);
@@ -668,12 +677,13 @@ export function StartApplyPanel({
         <div className="start-panel__split">
           <form className="start-panel__form" onSubmit={onContinue} noValidate>
             <h2 className="start-panel__title">
-              {isSupport ? "Book a support call" : <>Let&apos;s Talk</>}
+              {title ?? (isSupport ? "Book a support call" : <>Let&apos;s Talk</>)}
             </h2>
             <p className="start-panel__lead">
-              {isSupport
-                ? "20 minutes — share what you need help with so we can prepare."
-                : "Ready to see if the Academy is the right next step?"}
+              {lead ??
+                (isSupport
+                  ? "20 minutes — share what you need help with so we can prepare."
+                  : "Ready to see if the Academy is the right next step?")}
             </p>
 
             <div>
@@ -794,7 +804,7 @@ export function StartApplyPanel({
                   />
                 </div>
 
-                {isSupport ? (
+                {isSupport && showNotes ? (
                   <div className="start-panel__field">
                     <label className="start-panel__label" htmlFor={ids.topic}>
                       What would you like this call to be about?

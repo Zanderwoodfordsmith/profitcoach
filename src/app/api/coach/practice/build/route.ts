@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { buildSection, isBuildableSection } from "@/lib/practiceKnowledge/buildSection";
 import { sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
+import { isNewsletterLibraryKey } from "@/lib/practiceKnowledge/newsletters";
 import { ensurePracticeKnowledge, saveBuiltSection } from "@/lib/practiceKnowledge/store";
 
 /**
@@ -25,6 +26,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
   const key = String(body.section ?? "");
+  if (isNewsletterLibraryKey(key)) {
+    try {
+      if (body.clear === true) {
+        const knowledge = await saveBuiltSection({ coachId: check.userId, key, section: null });
+        return NextResponse.json({ knowledge });
+      }
+      if (body.blocks === undefined) {
+        return NextResponse.json({ error: "That section is not one we write." }, { status: 400 });
+      }
+      const blocks = sanitizeBlocks(body.blocks);
+      if (!blocks.length) {
+        return NextResponse.json({ error: "Nothing to save." }, { status: 400 });
+      }
+      const current = (await ensurePracticeKnowledge(check.userId)).built_sections[key];
+      const at = new Date().toISOString();
+      const knowledge = await saveBuiltSection({
+        coachId: check.userId,
+        key,
+        section: current
+          ? { ...current, blocks, edited_at: at }
+          : { blocks, generated_at: at, model: "coach", edited_at: at },
+      });
+      return NextResponse.json({ knowledge });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "failed";
+      console.error("practice build:", message);
+      return NextResponse.json({ error: "Could not save this newsletter. Try again." }, { status: 502 });
+    }
+  }
   if (!isBuildableSection(key)) {
     return NextResponse.json({ error: "That section is not one we write." }, { status: 400 });
   }

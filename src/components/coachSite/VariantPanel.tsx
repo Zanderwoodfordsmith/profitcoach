@@ -12,7 +12,7 @@ import {
 import type { CoachSiteSource } from "@/lib/coachSite/types";
 
 const SOURCE_LABEL: Record<CoachSiteSource, string> = {
-  "offer:direction": "Offer and positioning",
+  "offer:direction": "The offer",
   "offer:lines": "Your offer in three lengths",
   "story:onepager": "One-page profile",
   "story:bio": "Short bio",

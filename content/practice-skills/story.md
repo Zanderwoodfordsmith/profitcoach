@@ -7,8 +7,8 @@ Turn the coach's career into commercial credibility a business owner trusts in t
 1. Lead with the most impressive, most specific result. Numbers first.
 2. Name the kind of business they know from the inside (industry, size, role).
 3. Say what they now help owners do, in the buyer's words.
-4. Keep the short bio to 60 to 90 words, first person. Write a one-line version for introductions and a third-person version for partners and events.
+4. Keep the short bio to 60 to 90 words, first person. How they want to be known, and the kind of coach they are, should be readable without naming labels unless they would. Write a one-line version for introductions and a third-person version for partners and events.
 5. List the proof inventory as a table: result, where, timeframe, how (the mechanism), and whether it is precise. Flag any result that still needs a number.
 
 ## One-pager (for partners, recruiters, accountants, banks)
-A single page someone can forward. Sections: who they are (two lines), who they help, the problems they fix, proof (three results as stats), how they work (format), and how to get in touch. It must read well to a stranger. No jargon.
+A single page someone can forward. Sections: who they are (two lines, including the kind of coach they are), who they help, the problems they fix, proof (three results as stats), how they work (format, and what working with them feels like), and how to get in touch. It must read well to a stranger. No jargon.

@@ -13,7 +13,7 @@ Coach pages start with `/coach`. Admin pages show the coach the admin is viewing
 | `prospects` | Get Clients → **Prospects** | The pipeline: people who replied or showed interest, with their stage |
 | `content` | Get Clients → **Content** | LinkedIn posts and scheduling |
 | `links` | Get Clients → **Links** | Share links: scorecard, booking page, lead magnets |
-| `blueprint` | **Practice** (Blueprint) | The coach's Practice Blueprint: avatar, pain points, campaign messaging |
+| `blueprint` | **Practice** (Blueprint) | The coach's Practice Blueprint: avatar, pain points, campaign messaging, LinkedIn newsletter |
 | `first-campaign` | **First Campaign** | The guided setup for a first campaign: ICP, avatar, messages, starter list |
 
 ## How-tos

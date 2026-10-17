@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
-import { campaignStepsFromSection, type HandoffVariant } from "@/lib/practiceKnowledge/campaignHandoff";
+import { campaignPlan, handoffById, handoffForSection } from "@/lib/practiceKnowledge/campaignHandoff";
+import { sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 import { ensurePracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { createCampaign, replaceCampaignSteps } from "@/lib/unipile/campaigns";
 
 /**
- * Creates a DRAFT Get Clients campaign from the blueprint's campaign messaging.
+ * Creates a DRAFT Get Clients campaign from one written Blueprint campaign.
  * Nothing sends until the coach (or BCA) adds prospects and starts it.
  */
 export async function POST(request: Request) {
@@ -14,16 +15,23 @@ export async function POST(request: Request) {
   if (check.error || !check.userId) {
     return NextResponse.json({ error: check.error ?? "Unauthorized" }, { status: 401 });
   }
-  const body = (await request.json().catch(() => ({}))) as { variant?: string };
-  const variant: HandoffVariant = body.variant === "conversation" ? "conversation" : "connector";
+  const body = (await request.json().catch(() => ({}))) as { section?: string; variant?: string };
+  // `variant` is the older body ("connector" or "conversation"), kept for open tabs.
+  const handoff =
+    (typeof body.section === "string" ? handoffForSection(body.section) : null) ??
+    handoffById(typeof body.variant === "string" ? body.variant : "connection");
+  if (!handoff) {
+    return NextResponse.json({ error: "That section does not go to Get Clients." }, { status: 400 });
+  }
 
   try {
     const row = await ensurePracticeKnowledge(check.userId);
-    const section = row.built_sections["campaigns:messaging"];
+    const section = row.built_sections[handoff.section];
     if (!section) {
-      return NextResponse.json({ error: "Write the campaign messaging first." }, { status: 400 });
+      const title = sectionByKey(handoff.section)?.section.title ?? "the campaign";
+      return NextResponse.json({ error: `Write the ${title.toLowerCase()} first.` }, { status: 400 });
     }
-    const plan = campaignStepsFromSection(section, variant);
+    const plan = campaignPlan(handoff, section);
     if (!plan) {
       return NextResponse.json({ error: "No messages found for that campaign. Rewrite the section and try again." }, { status: 400 });
     }

@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
 import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContext";
+import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { normalizeOptimizerDraft } from "@/lib/linkedinProfileOptimizer/draft";
 import { loadRewriteSystemPrompt } from "@/lib/linkedinProfileOptimizer/loadRewriteSystem";
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
       ? Math.min(body.experienceIndex, 30)
       : 0;
 
-  const [{ data: row, error: loadError }, { summary }, brain] = await Promise.all([
+  const [{ data: row, error: loadError }, { summary }, brain, blueprint] = await Promise.all([
     supabaseAdmin
       .from("coach_linkedin_profiles")
       .select("snapshot, optimizer_draft, optimizer_rewritten_at")
@@ -113,6 +114,7 @@ export async function POST(request: Request) {
       .maybeSingle(),
     loadCoachLinkedInSummary(coachId),
     loadCoachAiContextRow(coachId),
+    loadBlueprintContext(coachId),
   ]);
 
   if (loadError) {
@@ -160,6 +162,7 @@ export async function POST(request: Request) {
       linkedInSummary: summary,
       instruction: instruction || null,
       experienceIndex,
+      blueprint,
     }),
     maxTokens: section === "about" ? 3072 : 1536,
   });

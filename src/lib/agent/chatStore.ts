@@ -71,6 +71,28 @@ export async function saveChat(
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Every chat about one coach, newest first: the coach's own and BCA's.
+ * For the admin Blueprint, so BCA can read what the coach worked through.
+ */
+export async function listCoachChats(coachId: string, limit = 40) {
+  const { data, error } = await supabaseAdmin
+    .from("ai_agent_chats")
+    .select("id, title, coach_id, actor_user_id, mode, updated_at")
+    .eq("coach_id", coachId)
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+/** Admin only: any chat, to read. Writing still needs the chat's own actor. */
+export async function loadChatForAdmin(chatId: string): Promise<AgentChatRow | null> {
+  const { data, error } = await supabaseAdmin.from("ai_agent_chats").select(CHAT_SELECT).eq("id", chatId).maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as AgentChatRow | null) ?? null;
+}
+
 export async function listChats(actorUserId: string, mode: AgentMode, limit = 30) {
   const { data, error } = await supabaseAdmin
     .from("ai_agent_chats")
@@ -147,7 +169,12 @@ export function displayItems(
         item.ok = raw.is_error !== true;
         const text = resultText(raw);
         try {
-          const parsed = JSON.parse(text) as { action_id?: string; _link?: { href: string; label: string } };
+          const parsed = JSON.parse(text) as {
+            action_id?: string;
+            _link?: { href: string; label: string };
+            _note?: unknown;
+          };
+          if (typeof parsed._note === "string" && item.ok) item.note = parsed._note;
           const action = parsed.action_id ? actions.get(parsed.action_id) : null;
           if (action) items.push({ type: "action", action });
           if (parsed._link?.href) items.push({ type: "link", link: parsed._link });

@@ -271,7 +271,7 @@ export function Offer({ site, preview }: P & { preview: boolean }) {
     return preview ? (
       <section className="cs-section">
         <div className="cs-wrap">
-          <Needs what="Offer and positioning" preview />
+          <Needs what="The offer" preview />
         </div>
       </section>
     ) : null;

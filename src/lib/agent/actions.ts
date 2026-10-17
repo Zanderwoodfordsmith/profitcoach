@@ -2,7 +2,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { actorMayActOn, type AgentActor } from "./auth";
 import { loadAgentCoach } from "./coaches";
-import { getAgentTool, toolAllowedInMode } from "./tools";
+import { getAgentTool, toolAllowedForActor } from "./tools";
 import { AgentToolError } from "./tools/util";
 import type {
   ActionDetail,
@@ -26,7 +26,12 @@ type ActionRow = {
   tool: string;
   input: AgentToolInput;
   title: string;
-  details: { rows?: ActionDetail[]; warning?: string | null; coach_name?: string | null } | null;
+  details: {
+    rows?: ActionDetail[];
+    warning?: string | null;
+    preview?: string | null;
+    coach_name?: string | null;
+  } | null;
   status: AgentActionStatus;
   result: unknown;
   error: string | null;
@@ -49,6 +54,7 @@ export function actionView(row: ActionRow): AgentActionView {
     title: row.title,
     details: row.details?.rows ?? [],
     warning: row.details?.warning ?? null,
+    preview: row.details?.preview ?? null,
     coachName: row.details?.coach_name ?? null,
     status: row.status,
     result: row.result,
@@ -66,6 +72,7 @@ export async function createPendingAction(opts: {
   title: string;
   details: ActionDetail[];
   warning?: string;
+  preview?: string;
 }): Promise<AgentActionView> {
   const { data, error } = await supabaseAdmin
     .from("ai_agent_actions")
@@ -76,7 +83,12 @@ export async function createPendingAction(opts: {
       tool: opts.tool,
       input: opts.input,
       title: opts.title.slice(0, 300),
-      details: { rows: opts.details, warning: opts.warning ?? null, coach_name: opts.coachName },
+      details: {
+        rows: opts.details,
+        warning: opts.warning ?? null,
+        preview: opts.preview ? opts.preview.slice(0, 12_000) : null,
+        coach_name: opts.coachName,
+      },
     })
     .select(ACTION_SELECT)
     .single();
@@ -168,7 +180,7 @@ export async function decideAction(opts: {
 
   const tool = getAgentTool(row.tool);
   const coach = await loadAgentCoach(row.coach_id);
-  if (!tool || !tool.gate || !toolAllowedInMode(tool, opts.actor.mode) || !coach) {
+  if (!tool || !tool.gate || !toolAllowedForActor(tool, opts.actor.mode, opts.actor.limited) || !coach) {
     return {
       action: await finish(row.id, { status: "failed", error: "This action can no longer run." }),
       chatId: row.chat_id,

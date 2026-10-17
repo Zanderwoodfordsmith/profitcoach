@@ -20,7 +20,14 @@ export async function requireCoachRequest(
         | "Admin must pass x-impersonate-coach-id for this resource.";
       userId: null;
     }
-  | { error: null; userId: string }
+  | {
+      error: null;
+      /** The coach being acted on: the caller, or the coach an admin is acting as. */
+      userId: string;
+      /** Who is signed in. */
+      callerId: string;
+      callerIsAdmin: boolean;
+    }
 > {
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ")
@@ -67,5 +74,10 @@ export async function requireCoachRequest(
     };
   }
 
-  return { error: null, userId: effectiveId as string };
+  return {
+    error: null,
+    userId: effectiveId as string,
+    callerId: user.id,
+    callerIsAdmin: profile.role === "admin",
+  };
 }

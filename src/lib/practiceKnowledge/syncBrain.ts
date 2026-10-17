@@ -1,7 +1,7 @@
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { PracticeKnowledgePayload } from "./types";
-import { listValue, textValue } from "./sourced";
+import { foldRetiredAnswers, listValue, textValue } from "./sourced";
 
 function formatCareerStories(payload: PracticeKnowledgePayload): Array<{
   title: string;
@@ -28,8 +28,9 @@ function formatCareerStories(payload: PracticeKnowledgePayload): Array<{
 }
 
 export function brainPatchFromPractice(
-  payload: PracticeKnowledgePayload
+  raw: PracticeKnowledgePayload
 ): Partial<CoachAiContext> {
+  const payload = foldRetiredAnswers(raw);
   const patch: Partial<CoachAiContext> = {};
   const superpowers = textValue(payload.proof.superpowers);
   if (superpowers) patch.superpowers = superpowers;
@@ -46,14 +47,29 @@ export function brainPatchFromPractice(
   if (results.length) patch.client_results = results;
 
   const industries = [
-    ...listValue(payload.market.industries_understand),
     ...listValue(payload.market.industries_credibility),
     ...listValue(payload.market.industries_worked),
   ];
   const uniqueIndustries = Array.from(new Set(industries));
-  if (uniqueIndustries.length) {
-    patch.ideal_client = uniqueIndustries.slice(0, 4).join(", ");
+  // Who You Help is the ideal client. The industries line stays first: tools read it as the niche.
+  const ideal = [
+    uniqueIndustries.length ? uniqueIndustries.slice(0, 4).join(", ") : "",
+    listValue(payload.market.buyer_roles).length ? `Who signs off: ${listValue(payload.market.buyer_roles).join(", ")}` : "",
+    listValue(payload.client.characteristics).length ? `Who they are: ${listValue(payload.client.characteristics).join("; ")}` : "",
+  ].filter(Boolean);
+  if (ideal.length) patch.ideal_client = ideal.join("\n");
+
+  const pains = listValue(payload.client.pains_now);
+  if (pains.length) patch.pain_language = pains.join("\n");
+
+  const says = listValue(payload.client.says);
+  const avoid = listValue(payload.client.words_avoid);
+  if (says.length || avoid.length) {
+    patch.industry_vocabulary = [says.join("\n"), avoid.length ? `Avoid: ${avoid.join(", ")}` : ""].filter(Boolean).join("\n");
   }
+
+  const hooks = [...listValue(payload.client.buying_triggers), textValue(payload.client.why_you)].filter(Boolean);
+  if (hooks.length) patch.messaging_hooks = hooks.join("\n");
 
   return patch;
 }

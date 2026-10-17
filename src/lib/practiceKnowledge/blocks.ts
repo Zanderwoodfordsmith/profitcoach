@@ -10,7 +10,7 @@ const TEXT = 4000;
 const SHORT = 400;
 const ITEMS = 24;
 const ROWS = 30;
-const BLOCKS = 40;
+const BLOCKS = 50;
 
 function clip(value: unknown, max: number): string {
   return String(value ?? "")

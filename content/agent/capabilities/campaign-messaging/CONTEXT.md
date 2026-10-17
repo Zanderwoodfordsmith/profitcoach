@@ -3,18 +3,18 @@ id: campaign-messaging
 title: Campaign messaging
 summary: Write or rewrite a campaign's sequence, or bring in the messages from the coach's Practice Blueprint.
 tools: [get_campaign, get_coach_brain, use_blueprint_messaging, write_campaign_steps]
-references: [ai-knowledge/writing-rules.md, practice-skills/_shared.md, practice-skills/campaigns.md]
+references: [ai-knowledge/writing-rules.md, practice-skills/_shared.md, practice-skills/campaigns.md, practice-skills/nurture.md]
 modes: [admin, coach]
 ---
 
 # Campaign messaging
 
 ## What this is
-The words a campaign sends: the connection request note, then wait and message steps. You write them in the coach's voice, for their avatar, with their real proof.
+The words a campaign sends: the connection request note, then wait and message steps. You write them in the coach's voice, for their avatar, with their real proof. Match the kind of coach they are (boot camp, hugs, a mix). Connection notes stay short and proof-led: word choice only, no hobbies or stories. Reactivation and ongoing nurture have more room: "what I do now" and nurture messages can use a story, book, film or hobby they named on Your Voice. Never invent one.
 
 ## Before you write
 1. `get_campaign` for the current steps and channel.
-2. `get_coach_brain` for the ideal client, pain language, proof and the blueprint's campaign messaging. If the blueprint already has campaign messaging, prefer it: `use_blueprint_messaging` puts it into the campaign as it is (connector or conversation variant). Rewrite only when they ask for something different.
+2. `get_coach_brain` for the ideal client, pain language, proof and the blueprint's campaign messaging. If the blueprint already has the campaign written, prefer it: `use_blueprint_messaging` puts it into the campaign as it is. Pick the one that matches the campaign: connection (new 2nd and 3rd degree owners), messaging (connections who fit but have never spoken), reactivation (people they already know), nurture (not ready yet) or reply_interested (said yes). Rewrite only when they ask for something different.
 3. If there is no real proof (a client result with a number), say so and leave a clear placeholder in square brackets. Never invent a result, a client or a number.
 
 ## Sequence shape (connector, from the classroom)

@@ -10,6 +10,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { sectionByKey } from "./blueprint";
 import { sanitizeBlocks } from "./blocks";
+import { listOnboardingTranscripts, onboardingTranscriptText } from "./ingestOnboarding";
 import { SECTION_SKILLS, skillSystemPrompt, skillUserPrompt } from "./skills";
 import { listValue } from "./sourced";
 import {
@@ -45,19 +46,25 @@ export function isBuildableSection(key: string): boolean {
 }
 
 /**
- * Write one "We build" section for a coach and save it. Used by the build
- * route and by admin scripts. Throws with a readable message on failure.
+ * Everything one writer is sent for one coach, exactly as the build sends it.
+ * The admin flow map shows this so the prompts can be read and improved.
+ * Pass `existing` to read without creating a Blueprint row.
  */
-export async function buildSection(coachId: string, key: string): Promise<PracticeKnowledgeRow> {
+export async function sectionPrompt(
+  coachId: string,
+  key: string,
+  existing?: PracticeKnowledgeRow
+): Promise<{ row: PracticeKnowledgeRow; system: string; user: string; maxTokens: number }> {
   const system = skillSystemPrompt(key);
   if (!system) throw new Error("That section is not one we write.");
 
-  const [row, linkedin, session, decisionRow, profile] = await Promise.all([
-    ensurePracticeKnowledge(coachId),
+  const [row, linkedin, session, decisionRow, profile, onboarding] = await Promise.all([
+    existing ?? ensurePracticeKnowledge(coachId),
     loadCoachLinkedInSummary(coachId),
     getLatestIntakeSession(coachId),
     getLatestDecisionRecord(coachId).catch(() => null),
     supabaseAdmin.from("profiles").select("full_name").eq("id", coachId).maybeSingle(),
+    listOnboardingTranscripts(coachId).catch(() => []),
   ]);
   const decision = decisionRow?.payload ?? null;
   const industry = focusIndustry(row, decision);
@@ -66,19 +73,26 @@ export async function buildSection(coachId: string, key: string): Promise<Practi
     .filter(Boolean)
     .join("\n\n");
 
-  const { data, error } = await generateCampaignJson<{ blocks?: unknown }>({
-    system,
-    user: skillUserPrompt({
-      key,
-      row,
-      coachName: (profile.data?.full_name as string | null) || "the coach",
-      linkedinSummary: linkedin.summary,
-      turns: session?.turns ?? [],
-      decision: decisionText(decision),
-      library,
-    }),
-    maxTokens: SECTION_SKILLS[key].maxTokens ?? 4096,
+  const user = skillUserPrompt({
+    key,
+    row,
+    coachName: (profile.data?.full_name as string | null) || "the coach",
+    linkedinSummary: linkedin.summary,
+    turns: session?.turns ?? [],
+    decision: decisionText(decision),
+    library,
+    onboardingTranscript: onboardingTranscriptText(onboarding),
   });
+  return { row, system, user, maxTokens: SECTION_SKILLS[key].maxTokens ?? 4096 };
+}
+
+/**
+ * Write one "We build" section for a coach and save it. Used by the build
+ * route and by admin scripts. Throws with a readable message on failure.
+ */
+export async function buildSection(coachId: string, key: string): Promise<PracticeKnowledgeRow> {
+  const { system, user, maxTokens } = await sectionPrompt(coachId, key);
+  const { data, error } = await generateCampaignJson<{ blocks?: unknown }>({ system, user, maxTokens });
 
   const blocks = sanitizeBlocks(data?.blocks);
   if (!blocks.length) throw new Error(error || "The section came back empty. Try again.");

@@ -8,6 +8,7 @@ import type {
   PracticeKnowledgePayload,
   PracticeKnowledgeRow,
 } from "./types";
+import { TONE_DIMENSIONS, asVoiceTone } from "./voiceTone";
 
 /**
  * The Practice Blueprint as one Markdown file, in document order. Written so
@@ -17,9 +18,15 @@ import type {
 export function formatFieldValue(payload: PracticeKnowledgePayload, field: FieldSpec): string[] {
   const raw = fieldValue(payload, field.path)?.value;
   if (raw == null) return [];
+  if (field.widget === "tone") {
+    const tone = asVoiceTone(raw);
+    return tone ? TONE_DIMENSIONS.map((d) => `${d.left} to ${d.right}: ${d.stops[tone[d.key] - 1]}`) : [];
+  }
   switch (field.kind) {
-    case "list":
-      return (raw as string[]).map(String).filter((v) => v.trim());
+    case "list": {
+      const items = Array.isArray(raw) ? raw : String(raw).split(/\n+/);
+      return items.map(String).map((v) => v.trim()).filter(Boolean);
+    }
     case "results":
       return (raw as CareerResult[]).map((r) =>
         [

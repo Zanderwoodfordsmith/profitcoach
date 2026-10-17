@@ -48,6 +48,7 @@ export type CoachTableColumnVisibility = {
   directorySummary: boolean;
   directoryBio: boolean;
   landing: boolean;
+  blueprint: boolean;
 };
 
 export type CoachTableViewSettings = {
@@ -156,6 +157,7 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   "joinDate",
   "lastActive",
   "linkedinProfile",
+  "blueprint",
   "accessTier",
   "recurringPayment",
   "recurringActive",
@@ -207,6 +209,7 @@ export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   directorySummary: false,
   directoryBio: false,
   landing: false,
+  blueprint: true,
 };
 
 export function createDefaultCoachTableViewSettings(): CoachTableViewSettings {

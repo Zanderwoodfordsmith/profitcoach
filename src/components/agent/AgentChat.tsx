@@ -15,13 +15,9 @@ import {
 } from "lucide-react";
 
 import { ProfitCoachAiMarkdown } from "@/components/profitCoachAi/ProfitCoachAiMarkdown";
-import type {
-  AgentActionView,
-  AgentCoach,
-  AgentDisplayItem,
-  AgentMode,
-  AgentStreamEvent,
-} from "@/lib/agent/types";
+import type { AgentActionView, AgentCoach, AgentMode } from "@/lib/agent/types";
+
+import { useAgentConversation } from "./useAgentConversation";
 
 /**
  * The AI Agent chat: it does the work in Get Clients. Anything that could
@@ -80,6 +76,11 @@ function ActionCard({
               </div>
             ))}
         </dl>
+      ) : null}
+      {action.preview ? (
+        <div className="mt-2.5 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+          <ProfitCoachAiMarkdown content={action.preview} className="text-[13px] leading-relaxed text-slate-800" />
+        </div>
       ) : null}
       {action.warning && !settled ? (
         <p className="mt-2.5 flex gap-1.5 rounded-lg bg-amber-50 px-2.5 py-2 text-[13px] text-amber-900">
@@ -145,213 +146,40 @@ export function AgentChat({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [items, setItems] = useState<AgentDisplayItem[]>([]);
-  const [chatId, setChatId] = useState<string | null>(null);
-  const [coach, setCoach] = useState<AgentCoach | null>(defaultCoach);
+  const refresh = useCallback(() => router.refresh(), [router]);
+  const { items, chatId, coach, streaming, deciding, error, send: sendMessage, decide, openChat, newChat: resetChat } =
+    useAgentConversation({ authHeaders, screenPath: pathname, defaultCoach, onWrote: refresh });
   const [input, setInput] = useState("");
-  const [streaming, setStreaming] = useState(false);
-  const [deciding, setDeciding] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [recent, setRecent] = useState<ChatSummary[] | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (!chatId) setCoach(defaultCoach);
-  }, [defaultCoach, chatId]);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [items, streaming]);
 
-  const loadRecent = useCallback(async () => {
-    const headers = await authHeaders();
-    if (!headers) return;
-    const res = await fetch("/api/agent/chats", { headers });
-    if (!res.ok) return;
-    const body = (await res.json()) as { chats?: ChatSummary[] };
-    setRecent(body.chats ?? []);
-  }, [authHeaders]);
-
   useEffect(() => {
-    if (!chatId && items.length === 0) void loadRecent();
-  }, [chatId, items.length, loadRecent]);
-
-  const apply = useCallback((event: AgentStreamEvent) => {
-    switch (event.type) {
-      case "chat":
-        setChatId(event.chatId);
-        setCoach(event.coach);
-        return;
-      case "coach":
-        setCoach(event.coach);
-        return;
-      case "error":
-        setError(event.message);
-        return;
-      case "done":
-        return;
-    }
-    setItems((prev) => {
-      const next = [...prev];
-      const last = next[next.length - 1];
-      switch (event.type) {
-        case "text":
-          if (last?.type === "assistant") next[next.length - 1] = { ...last, text: last.text + event.delta };
-          else next.push({ type: "assistant", text: event.delta });
-          return next;
-        case "tool_start":
-          next.push({ type: "tool", id: event.id, name: event.name, label: event.label, ok: null });
-          return next;
-        case "tool_end":
-          return next.map((item) =>
-            item.type === "tool" && item.id === event.id ? { ...item, ok: event.ok } : item
-          );
-        case "capability":
-          next.push({ type: "capability", id: event.id, title: event.title });
-          return next;
-        case "action":
-          next.push({ type: "action", action: event.action });
-          return next;
-        case "link":
-          next.push({ type: "link", link: event.link });
-          return next;
-      }
-      return next;
-    });
-  }, []);
-
-  const runTurn = useCallback(
-    async (body: { message?: string; actionId?: string }, currentChatId: string | null) => {
-      setError(null);
-      setStreaming(true);
-      let wrote = false;
-      try {
-        const headers = await authHeaders();
-        if (!headers) {
-          setError("Please sign in again.");
-          return;
-        }
-        const res = await fetch("/api/agent/chat", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ ...body, chatId: currentChatId, screenPath: pathname }),
-        });
-        if (!res.ok || !res.body) {
-          const payload = (await res.json().catch(() => ({}))) as { error?: string };
-          setError(payload.error || "Something went wrong. Try again.");
-          return;
-        }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          let newline = buffer.indexOf("\n");
-          while (newline >= 0) {
-            const line = buffer.slice(0, newline).trim();
-            buffer = buffer.slice(newline + 1);
-            newline = buffer.indexOf("\n");
-            if (!line) continue;
-            try {
-              const event = JSON.parse(line) as AgentStreamEvent;
-              if (event.type === "tool_end" && event.ok) wrote = true;
-              apply(event);
-            } catch {
-              // Ignore a malformed line rather than dropping the turn.
-            }
-          }
-        }
-      } catch {
-        setError("Connection dropped. Try again.");
-      } finally {
-        setStreaming(false);
-        if (wrote) router.refresh();
-      }
-    },
-    [apply, authHeaders, pathname, router]
-  );
-
-  const send = useCallback(
-    (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed || streaming) return;
-      setItems((prev) => [...prev, { type: "user", text: trimmed }]);
-      setInput("");
-      void runTurn({ message: trimmed }, chatId);
-    },
-    [chatId, runTurn, streaming]
-  );
-
-  const decide = useCallback(
-    async (action: AgentActionView, decision: "confirm" | "cancel") => {
-      if (deciding || streaming) return;
-      setDeciding(action.id);
-      setError(null);
-      const update = (next: AgentActionView) =>
-        setItems((prev) =>
-          prev.map((item) =>
-            item.type === "action" && item.action.id === next.id ? { ...item, action: next } : item
-          )
-        );
-      try {
-        if (decision === "confirm") update({ ...action, status: "running" });
-        const headers = await authHeaders();
-        if (!headers) {
-          setError("Please sign in again.");
-          update(action);
-          return;
-        }
-        const res = await fetch(`/api/agent/actions/${action.id}`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ decision }),
-        });
-        const body = (await res.json().catch(() => ({}))) as { action?: AgentActionView; error?: string };
-        if (!res.ok || !body.action) {
-          setError(body.error || "Could not do that. Try again.");
-          update(action);
-          return;
-        }
-        update(body.action);
-        if (decision === "confirm") router.refresh();
-        // Let the agent carry on from the result.
-        await runTurn({ actionId: body.action.id }, chatId);
-      } finally {
-        setDeciding(null);
-      }
-    },
-    [authHeaders, chatId, deciding, router, runTurn, streaming]
-  );
-
-  const openChat = useCallback(
-    async (id: string) => {
-      const headers = await authHeaders();
+    if (chatId || items.length) return;
+    let live = true;
+    void authHeaders().then(async (headers) => {
       if (!headers) return;
-      const res = await fetch(`/api/agent/chats/${id}`, { headers });
-      if (!res.ok) {
-        setError("Could not open that chat.");
-        return;
-      }
-      const body = (await res.json()) as {
-        chat: { id: string; coach: AgentCoach | null };
-        items: AgentDisplayItem[];
-      };
-      setChatId(body.chat.id);
-      setCoach(body.chat.coach);
-      setItems(body.items);
-    },
-    [authHeaders]
-  );
+      const res = await fetch("/api/agent/chats", { headers });
+      if (!res.ok || !live) return;
+      const body = (await res.json()) as { chats?: ChatSummary[] };
+      if (live) setRecent(body.chats ?? []);
+    });
+    return () => {
+      live = false;
+    };
+  }, [authHeaders, chatId, items.length]);
+
+  function send(text: string) {
+    if (sendMessage(text)) setInput("");
+  }
 
   function newChat() {
-    setItems([]);
-    setChatId(null);
-    setCoach(defaultCoach);
-    setError(null);
+    resetChat();
     textareaRef.current?.focus();
   }
 
@@ -456,7 +284,7 @@ export function AgentChat({
                         ) : (
                           <X className="h-3.5 w-3.5 text-rose-500" aria-hidden />
                         )}
-                        {item.label}
+                        {item.note ?? item.label}
                       </p>
                     );
                   case "capability":

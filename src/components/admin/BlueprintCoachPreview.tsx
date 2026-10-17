@@ -197,7 +197,10 @@ export function BlueprintCoachPreview({ children }: { children: ReactNode }) {
   // Admin pages render only after the session check, so this runs client-side.
   const [coachId, setCoachId] = useState<string>(() => {
     try {
-      return window.sessionStorage.getItem(PREVIEW_KEY) || DEMO_COACH_ID;
+      // Links from the Coaches → Blueprint overview name the coach.
+      const linked = new URLSearchParams(window.location.search).get("coach");
+      if (linked) window.sessionStorage.setItem(PREVIEW_KEY, linked);
+      return linked || window.sessionStorage.getItem(PREVIEW_KEY) || DEMO_COACH_ID;
     } catch {
       return DEMO_COACH_ID;
     }

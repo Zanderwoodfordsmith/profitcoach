@@ -29,6 +29,7 @@ import {
 import type { CoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
 import type { ProgrammeShortfall } from "@/lib/admin/programmeShortfall";
 import { ProgrammeShortfallInfo } from "@/components/admin/ProgrammeShortfallInfo";
+import { BlueprintMiniBar, useBlueprintCounts } from "@/components/admin/BlueprintMiniBar";
 import {
   COACH_SORT_FIELD_OPTIONS,
   coachSortOrderOptions,
@@ -378,6 +379,7 @@ type CoachTableColumnVisibility = {
   directorySummary: boolean;
   directoryBio: boolean;
   landing: boolean;
+  blueprint: boolean;
 };
 
 type PersistedCoachTableSettings = {
@@ -427,6 +429,7 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "linkedinProfile", label: "LinkedIn", category: "member" },
   { key: "lastLogin", label: "Last login", category: "member" },
   { key: "lastActive", label: "Last active", category: "member" },
+  { key: "blueprint", label: "Blueprint", category: "member" },
   { key: "goalLevel", label: "Goal", category: "ladder" },
   { key: "currentLevel", label: "Current level", category: "ladder" },
   { key: "goalBy", label: "Goal by", category: "ladder" },
@@ -766,6 +769,7 @@ export default function AdminPage() {
   const [columnOrder, setColumnOrder] = useState<
     Array<keyof CoachTableColumnVisibility>
   >([...DEFAULT_COACH_TABLE_COLUMN_ORDER]);
+  const blueprintCounts = useBlueprintCounts(columnVisibility.blueprint);
   const createDefaultViewSettings = useCallback(
     () => createDefaultCoachTableViewSettings(),
     []
@@ -1670,6 +1674,9 @@ export default function AdminPage() {
         />
       );
     }
+    if (key === "blueprint") {
+      return <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Blueprint</th>;
+    }
     return null;
   }
 
@@ -2167,6 +2174,13 @@ export default function AdminPage() {
             complete={coach.has_directory_bio}
             label="Directory bio"
           />
+        </td>
+      );
+    }
+    if (key === "blueprint") {
+      return (
+        <td className="px-2 py-2 align-middle text-xs">
+          <BlueprintMiniBar counts={blueprintCounts.get(coach.id)} />
         </td>
       );
     }
