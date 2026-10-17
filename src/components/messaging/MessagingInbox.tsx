@@ -121,6 +121,7 @@ import {
 import { NewConversationPicker } from "@/components/messaging/NewConversationPicker";
 import { ReplySnippetPicker } from "@/components/messaging/ReplySnippetPicker";
 import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
+import { AvaDraftBar } from "@/components/messaging/AvaDraftBar";
 import { ReplyCopilotButton } from "@/components/messaging/ReplyCopilotButton";
 import { ScorecardInsertButtons } from "@/components/messaging/ScorecardInsertButtons";
 import {
@@ -3423,6 +3424,16 @@ export function MessagingInbox({
     }
   }, [prospectMode, replyChannel]);
 
+  // Deep link from Ava's alerts: /coach/conversations?conversation=<id>
+  const avaDeepLinkRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = (searchParams.get("conversation") || "").trim();
+    if (!/^[0-9a-f-]{36}$/i.test(id) || avaDeepLinkRef.current === id) return;
+    avaDeepLinkRef.current = id;
+    const t = setTimeout(() => openConversation(id), 0);
+    return () => clearTimeout(t);
+  }, [searchParams, openConversation]);
+
   const composeAppliedRef = useRef<string | null>(null);
   const [campaignCompose, setCampaignCompose] = useState<{
     key: string;
@@ -6031,6 +6042,16 @@ export function MessagingInbox({
                       </div>
                     ) : null}
 
+                    {selected?.id && replyChannel !== "comment" ? (
+                      <AvaDraftBar
+                        conversationId={selected.id}
+                        getHeaders={authHeaders}
+                        onUseDraft={(text) => {
+                          setReplyBody(text);
+                          replyTextareaRef.current?.focus();
+                        }}
+                      />
+                    ) : null}
                     <div
                       className={`relative flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-sky-400 ${
                         composerExpanded ? "flex-1" : ""

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { AvaRepliesCard } from "@/components/today/AvaRepliesCard";
 
 type HabitDay = { day: string; posts: number; comments: number; conversations: number; postsLogged: number };
 type Signal = {
@@ -110,6 +111,7 @@ export function TodayHub() {
 
   return (
     <div className="space-y-8">
+      <AvaRepliesCard />
       <section>
         <h2 className="text-lg font-semibold text-slate-900">Your daily 1-10-10</h2>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">

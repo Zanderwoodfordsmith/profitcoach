@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import { unipileEmailBodyText } from "@/lib/messaging/emailBody";
 import { getUnipileEmail } from "@/lib/unipile/client";
@@ -530,7 +531,30 @@ export async function handleUnipileMessageReceived(
     });
   }
 
+  if (!isSender && channel === "linkedin" && text) {
+    scheduleAvaTriage(coachId, conversationId);
+  }
+
   return `message:${conversationId}`;
+}
+
+/**
+ * Run Ava (classify, draft, alert, maybe autopilot) straight after the webhook
+ * responds, so alerts land within seconds instead of at the next inbox sync.
+ */
+function scheduleAvaTriage(coachId: string, conversationId: string): void {
+  const run = async () => {
+    const { triageLatestInbound } = await import("@/lib/ava/replyAlert");
+    await triageLatestInbound({ coachId, conversationId }).catch((err) => {
+      console.error("ava triage (webhook):", err instanceof Error ? err.message : err);
+    });
+  };
+  try {
+    after(run);
+  } catch {
+    // Outside a request (scripts, tests): run it without waiting.
+    void run();
+  }
 }
 
 function emailThreadKey(threadId: string | null | undefined, emailId: string) {
