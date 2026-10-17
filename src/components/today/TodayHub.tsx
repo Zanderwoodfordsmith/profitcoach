@@ -46,7 +46,6 @@ export function TodayHub() {
         setError("Sign in again to load Today.");
         return;
       }
-      if (refresh) setRefreshing(true);
       const res = await fetch(`/api/coach/today${refresh ? "?refresh=1" : ""}`, { headers });
       const body = (await res.json().catch(() => null)) as (TodayData & { error?: string }) | null;
       if (!res.ok || !body?.habit) setError(body?.error ?? "Could not load Today.");
@@ -60,8 +59,23 @@ export function TodayHub() {
   );
 
   useEffect(() => {
-    void load(true);
-  }, [load]);
+    let cancelled = false;
+    void (async () => {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers || cancelled) return;
+      const res = await fetch("/api/coach/today?refresh=1", { headers });
+      const body = (await res.json().catch(() => null)) as (TodayData & { error?: string }) | null;
+      if (cancelled) return;
+      if (!res.ok || !body?.habit) setError(body?.error ?? "Could not load Today.");
+      else {
+        setError(body.refreshError);
+        setData(body);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [impersonatingCoachId]);
 
   const patch = async (payload: Record<string, unknown>) => {
     const headers = await getCoachAuthHeaders(impersonatingCoachId);
@@ -176,7 +190,10 @@ export function TodayHub() {
           <h2 className="text-lg font-semibold text-slate-900">People showing interest</h2>
           <button
             type="button"
-            onClick={() => load(true)}
+            onClick={() => {
+              setRefreshing(true);
+              void load(true);
+            }}
             disabled={refreshing}
             className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm disabled:opacity-50"
           >

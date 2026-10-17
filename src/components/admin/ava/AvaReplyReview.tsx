@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
@@ -61,29 +61,32 @@ export function AvaReplyReview() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const headers = await adminHeaders();
-    if (!headers) {
-      setError("Sign in again to load replies.");
-      setLoading(false);
-      return;
-    }
-    const res = await fetch(`/api/admin/ava/replies?view=${view}`, { headers });
-    const body = (await res.json().catch(() => null)) as { rows?: Row[]; stats?: Stats; error?: string } | null;
-    if (!res.ok || !body?.rows) {
-      setError(body?.error ?? "Could not load replies.");
-    } else {
-      setError(null);
-      setRows(body.rows);
-      setStats(body.stats ?? null);
-    }
-    setLoading(false);
-  }, [view]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+    void (async () => {
+      const headers = await adminHeaders();
+      if (cancelled) return;
+      if (!headers) {
+        setError("Sign in again to load replies.");
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(`/api/admin/ava/replies?view=${view}`, { headers });
+      const body = (await res.json().catch(() => null)) as { rows?: Row[]; stats?: Stats; error?: string } | null;
+      if (cancelled) return;
+      if (!res.ok || !body?.rows) setError(body?.error ?? "Could not load replies.");
+      else {
+        setError(null);
+        setRows(body.rows);
+        setStats(body.stats ?? null);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [view]);
 
   const label = async (row: Row, disposition: Disposition, nextStep: NextStep, note: string) => {
     const headers = await adminHeaders();
@@ -148,7 +151,10 @@ export function AvaReplyReview() {
           <button
             key={v}
             type="button"
-            onClick={() => setView(v)}
+            onClick={() => {
+              setLoading(true);
+              setView(v);
+            }}
             className={`rounded-md border px-3 py-1.5 text-sm ${view === v ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"}`}
           >
             {v === "todo" ? "To review" : v === "labelled" ? "Reviewed" : "All"}
