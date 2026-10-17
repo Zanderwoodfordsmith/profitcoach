@@ -42,8 +42,10 @@ const ENROL_CHUNK = 2_500;
 const PAGE_SIZE = 1_000;
 
 /**
- * Campaigns contact people in the order they are added, so load them in
- * Sales Nav order (newest import first, best match first), then date added.
+ * Campaigns contact people in the order they are added, so load them
+ * newest import first, then active LinkedIn users first (Open Profile, then
+ * Premium: in our 110k-invite data they accepted and replied about twice as
+ * often), then Sales Nav's own best-match order, then date added.
  */
 function listItemsInSalesNavOrder(coachId: string, listId: string) {
   return supabaseAdmin
@@ -52,6 +54,8 @@ function listItemsInSalesNavOrder(coachId: string, listId: string) {
     .eq("coach_id", coachId)
     .eq("list_id", listId)
     .order("source_ranked_at", { ascending: false, nullsFirst: false })
+    .order("open_profile", { ascending: false, nullsFirst: false })
+    .order("linkedin_premium", { ascending: false, nullsFirst: false })
     .order("source_rank", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });

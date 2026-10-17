@@ -682,6 +682,12 @@ export async function processOutreachJobsTick(): Promise<{
           abAssignments: lead.ab_assignments,
           preferredVariantKey: scorecardVars?.business_level_number || null,
         });
+        // Never send a placeholder nothing fills in (e.g. {{market_observation}}) as a blank.
+        const { unknownTokens } = await import("@/lib/campaigns/launchCheck");
+        const unfilled = unknownTokens(picked.body);
+        if (unfilled.length) {
+          throw new Error(`Write your own words in place of ${unfilled.join(", ")} before this step can send.`);
+        }
         return {
           text: buildMessageBody(picked.body, leadForMessage, templateExtras),
           variantKey: picked.variantKey,

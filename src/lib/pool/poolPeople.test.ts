@@ -233,4 +233,19 @@ describe("comparePoolPeople Sales Nav order", () => {
       .map((row) => row.id);
     assert.deepEqual(sorted, ["new-0", "new-2", "manual", "old-1"]);
   });
+
+  it("puts active LinkedIn users first within an import, then Sales Nav rank", () => {
+    const at = "2026-10-10T00:00:00Z";
+    const rows = [
+      person({ id: "rank0", source_rank: 0, source_ranked_at: at }),
+      person({ id: "premium", source_rank: 5, source_ranked_at: at, linkedin_premium: true }),
+      person({ id: "open", source_rank: 9, source_ranked_at: at, open_profile: true }),
+      person({ id: "rank1", source_rank: 1, source_ranked_at: at }),
+    ];
+    const sorted = rows
+      .slice()
+      .sort((a, b) => comparePoolPeople(a, b, "import_order", "asc"))
+      .map((row) => row.id);
+    assert.deepEqual(sorted, ["open", "premium", "rank0", "rank1"]);
+  });
 });

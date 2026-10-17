@@ -105,6 +105,17 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
     if (typeof body.status === "string") {
       const nextStatus = body.status as CampaignStatus;
+      if (nextStatus === "running") {
+        // Don't let a campaign go live with something prospects would see broken.
+        const { checkCampaignById } = await import("@/lib/campaigns/launchCheck");
+        const blockers = (await checkCampaignById(auth.coachId, id)).filter((i) => i.level === "blocker");
+        if (blockers.length) {
+          return NextResponse.json(
+            { error: blockers.map((b) => b.message).join(" "), issues: blockers },
+            { status: 422 }
+          );
+        }
+      }
       if ("outreach_account_id" in body) {
         await updateCampaign(auth.coachId, id, {
           outreach_account_id: body.outreach_account_id,
