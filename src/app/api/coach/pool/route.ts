@@ -32,7 +32,7 @@ import {
 import { normalizeProspectTags } from "@/lib/prospects/tags";
 
 const POOL_ITEM_SELECT =
-  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id, team_size, industry, location, source_rank, source_ranked_at";
+  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id, team_size, industry, location, source_rank, source_ranked_at, open_profile, linkedin_premium";
 
 const POOL_PREVIEW_MAX = 50;
 
@@ -95,6 +95,13 @@ function mapPoolItem(
     city: place.city,
     postcode: place.postcode,
     team_size: teamSize,
+    open_profile: item.open_profile === true ? true : item.open_profile === false ? false : null,
+    linkedin_premium:
+      item.linkedin_premium === true
+        ? true
+        : item.linkedin_premium === false
+          ? false
+          : null,
     industry: poolIndustryFromSources(
       typeof item.industry === "string" ? item.industry : null,
       item.raw

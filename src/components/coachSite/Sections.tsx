@@ -37,7 +37,7 @@ export function OwnerWords({ site, preview }: P & { preview: boolean }) {
     return preview ? (
       <section className="cs-section">
         <div className="cs-wrap">
-          <Needs what="the One-page Profile" preview />
+          <Needs what="Problems repeatedly solved" preview />
         </div>
       </section>
     ) : null;
@@ -188,7 +188,7 @@ export function Method({ site, preview }: P & { preview: boolean }) {
     return preview ? (
       <section className="cs-section" id="how">
         <div className="cs-wrap">
-          <Needs what="How I work (One-page Profile)" preview />
+          <Needs what="Your offer (how you work)" preview />
         </div>
       </section>
     ) : null;

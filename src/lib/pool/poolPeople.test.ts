@@ -35,6 +35,8 @@ function person(partial: Partial<PoolPerson>): PoolPerson {
     city: null,
     postcode: null,
     team_size: null,
+    open_profile: null,
+    linkedin_premium: null,
     industry: null,
     place_id: null,
     source: "manual",

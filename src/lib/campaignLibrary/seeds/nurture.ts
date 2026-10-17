@@ -58,6 +58,24 @@ The Time Value Tracker lists what you do into £10, £100 and £1,000 jobs. In a
 If useful:
 https://docs.google.com/spreadsheets/d/13lch5WGPGQZCcdfMztwgO0MahjYvy-SwsegorDF0M0I/edit?usp=sharing`;
 
+const LEVERS = `Hi {{first_name}}, a quick bit of maths I share with owners.
+
+There are five numbers behind revenue: leads, conversion, average sale, how often people buy, and margin. Improve each by 10% and revenue grows by about 61%, because they multiply.
+
+Most owners only work on the first one. Which of the five do you think has the most room in your business?`;
+
+const LEVEL = `Hi {{first_name}}, one thing I've noticed after a lot of these conversations.
+
+Owners tend to sit at one of five levels: overwhelmed, overworked, organised, overseer, owner. The jump that changes life most is usually from overworked to organised, when the business stops needing you for every decision.
+
+Where would you put yourself right now? Happy to share what usually unlocks the next level.`;
+
+const NINETY_DAYS = `Hi {{first_name}}, it's been a few months since we first spoke, so I thought I'd check in properly.
+
+If it's useful, I can send you the 3-minute BOSS Score. It shows where the business is relying on you most and what to fix first. No call needed, the report comes straight to you.
+
+Either way, how has the last quarter gone?`;
+
 export const NURTURE_LIBRARY_SEED: CampaignLibrarySeed = {
   sourceKey: "nurture",
   itemType: "template",
@@ -65,7 +83,7 @@ export const NURTURE_LIBRARY_SEED: CampaignLibrarySeed = {
   name: "Ongoing nurture",
   previousNames: ["Nurture"],
   description:
-    "After Connection or Reactivation goes quiet. Value tools every two weeks: prioritising, revenue, cash, profit, then time. Stop when they reply.",
+    "After Connection or Reactivation goes quiet. Give something every two weeks for about four months: prioritising, revenue, cash, profit, time, the five levers, the five levels, then a 90-day check-in. Never a bare 'just checking'. Stop when they reply.",
   status: "published",
   settings: { stop_on_reply: true },
   steps: spaced([
@@ -82,6 +100,12 @@ export const NURTURE_LIBRARY_SEED: CampaignLibrarySeed = {
     messageStep(EXPENSES),
     waitStep(TWO_WEEKS),
     messageStep(TIME),
+    waitStep(TWO_WEEKS),
+    messageStep(LEVERS),
+    waitStep(TWO_WEEKS),
+    messageStep(LEVEL),
+    waitStep(TWO_WEEKS),
+    messageStep(NINETY_DAYS),
   ]),
 };
 

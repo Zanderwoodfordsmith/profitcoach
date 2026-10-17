@@ -42,9 +42,9 @@ export type CoachSiteOffer = {
 export type CoachSiteSource =
   | "offer:direction"
   | "offer:lines"
-  | "story:onepager"
   | "story:bio"
   | "proof.client_results"
+  | "proof.problems_asked"
   | "photo"
   | "location";
 
@@ -63,17 +63,17 @@ export type CoachSite = {
   shortLine: string | null;
   mediumLine: string | null;
   longLine: string | null;
-  /** story:onepager lede, third person. */
+  /** story:bio "For partners", else a stored one-pager lede if one still exists. */
   intro: string | null;
-  /** story:onepager "Who I help". */
+  /** offer:direction "Who it is for", else avatar, else a stored one-pager. */
   whoIHelp: string | null;
-  /** story:onepager "The problems I fix": the owner's own words. */
+  /** Problems owners already ask, else a stored one-pager. */
   ownerWords: string[];
   /** offer:direction "The gap". */
   gap: CoachSiteGapRow[];
   /** offer:direction "Key messages". */
   keyMessages: string[];
-  /** story:onepager "How I work". */
+  /** How the work runs: offer format, or a stored one-pager if one still exists. */
   method: CoachSiteStep[];
   /** offer:direction "The offer", without price. */
   offer: CoachSiteOffer | null;
@@ -81,11 +81,11 @@ export type CoachSite = {
   whyMe: string[];
   /** story:bio "Short bio", first person. */
   bio: string | null;
-  /** story:bio stats, else story:onepager stats. */
+  /** story:bio stats, else a stored one-pager if one still exists. */
   facts: CoachSiteFact[];
   /** Named client testimonials from the Blueprint. */
   testimonials: CoachSiteQuote[];
-  /** story:onepager "Results" that are not testimonials. */
+  /** Career results, else a stored one-pager "Results" that are not testimonials. */
   results: string[];
 
   links: {

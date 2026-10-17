@@ -4,6 +4,7 @@ import {
   csvFilenameStem,
   downloadCsvFile,
 } from "@/lib/exportCsv";
+import { csvLeadFlag } from "@/lib/salesNavigator/leadFlags";
 
 export const SALES_NAV_LEAD_CSV_HEADERS = [
   "full_name",
@@ -18,6 +19,8 @@ export const SALES_NAV_LEAD_CSV_HEADERS = [
   "about",
   "tenure",
   "photo_url",
+  "premium",
+  "open_profile",
 ] as const;
 
 export function salesNavLeadsToCsvRows(
@@ -36,6 +39,8 @@ export function salesNavLeadsToCsvRows(
     l.about,
     l.tenureLabel,
     l.photoUrl,
+    csvLeadFlag(l.premium),
+    csvLeadFlag(l.openProfile),
   ]);
 }
 

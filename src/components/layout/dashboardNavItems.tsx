@@ -341,6 +341,7 @@ export type CoachClientsTabItem = {
  */
 export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
   const items: ToolsHubTabItem[] = [
+    { href: `${prefix}/today`, label: "Today" },
     {
       href: `${prefix}/campaigns`,
       label: "Campaigns",

@@ -1629,6 +1629,11 @@ function SalesNavLeadRow({
               Premium
             </span>
           ) : null}
+          {lead.openProfile ? (
+            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-sky-700">
+              Open profile
+            </span>
+          ) : null}
         </div>
 
         {titleCompany ? (

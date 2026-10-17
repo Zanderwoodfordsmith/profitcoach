@@ -98,6 +98,55 @@ describe("coach site from Blueprint", () => {
     assert.equal(site.place?.label, "Hull, Yorkshire");
     assert.equal(site.links.score, "/score/jo");
     assert.ok(site.missing.includes("story:bio"));
+    assert.ok(!site.missing.includes("story:onepager" as never));
+  });
+
+  it("fills the site from bio, offer and problems when no one-pager exists", () => {
+    const { "story:onepager": _dropped, ...without } = BUILT;
+    const r = row({
+      ...without,
+      "story:bio": [
+        { type: "lede", text: "Jo is a profit coach." },
+        { type: "heading", text: "Short bio" },
+        { type: "paragraph", text: "I help trade MDs keep the margin." },
+        { type: "heading", text: "For partners and events" },
+        { type: "paragraph", text: "Jo Bloggs helps trade MDs keep the margin." },
+        { type: "stats", items: [{ value: "28", label: "Years in business" }] },
+      ],
+    });
+    r.payload.proof.problems_asked = sourced(["Where has the cash gone?"], "interview");
+    r.payload.proof.career_results = sourced(
+      [
+        {
+          id: "r1",
+          company: "Harlow",
+          role: "FD",
+          metric_from: "4%",
+          metric_to: "11%",
+          timeframe: "12 months",
+          mechanism: "Weekly number",
+          proof_type: "career",
+          precise: true,
+        },
+      ],
+      "interview"
+    );
+    r.payload.practice.delivery_format = sourced("one_to_one", "interview");
+    r.payload.practice.offer_timeframe = sourced("A number they trust in 90 days", "interview");
+    const site = coachSiteFromBlueprint({
+      slug: "jo",
+      name: "Jo Bloggs",
+      avatarUrl: null,
+      lat: null,
+      lng: null,
+      profileLocation: "Hull, Yorkshire",
+      row: r,
+    });
+    assert.equal(site.intro, "Jo Bloggs helps trade MDs keep the margin.");
+    assert.deepEqual(site.ownerWords, ["Where has the cash gone?"]);
+    assert.equal(site.method[0]?.title, "Start with the score");
+    assert.match(site.results[0] ?? "", /4% to 11%/);
+    assert.ok(!site.missing.includes("story:bio"));
   });
 
   it("never carries private fields or prices", () => {

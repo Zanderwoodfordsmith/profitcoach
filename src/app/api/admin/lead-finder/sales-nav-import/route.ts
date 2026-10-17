@@ -79,11 +79,15 @@ async function saveLeadsAsList(opts: {
     team_size: null,
     revenue_range: null,
     industry: null,
+    open_profile: lead.openProfile,
+    linkedin_premium: lead.premium,
     match_reason: "Sales Navigator import",
     raw: {
       ...(lead.raw ?? {}),
       location: lead.location,
       headline: lead.headline,
+      openProfile: lead.openProfile,
+      premium: lead.premium,
     },
   }));
 

@@ -34,19 +34,6 @@ Blocks, in this order:
 6. heading "For partners and events", then a paragraph: the same bio in the third person.
 7. If a result needs a number, a callout (tone "note") saying exactly what to add.`,
   },
-  "story:onepager": {
-    file: "story.md",
-    task: `Write the coach's one-page profile: the page they can hand to a partner, recruiter, accountant or bank. How they want to be known and the kind of coach they are should be clear in "How I work".
-Blocks, in this order:
-1. lede: who they are, the kind of coach they are, and who they help, two sentences, third person.
-2. stats: their three strongest proof points as numbers (only real ones).
-3. heading "Who I help", then a paragraph naming the core client and the avatar in plain words.
-4. heading "The problems I fix", then bullets (four, in the owner's words).
-5. heading "How I work", then steps (three steps from first conversation to results).
-6. heading "Results", then bullets (two or three, specific).
-7. heading "Working together", then a paragraph for referral partners: who to introduce, and why it helps their clients.
-8. pairs with contact details you know (LinkedIn, website, location). Leave out anything missing.`,
-  },
   "voice:sound": {
     file: "voice.md",
     task: `Write the coach's voice guide. The coach's own tone sliders, their "Sounds like" example, their "Never sounds like" notes, how they want to be known and the kind of coach they are, are the source of truth: follow them over anything you infer. Use the conversation transcript and their LinkedIn text for words and rhythm. Use their values, likes, dislikes, pet peeves, book, film, hobbies and stories only as they gave them. Never invent a hobby, a book, a film or a scene from their life.
@@ -197,7 +184,7 @@ Blocks, in this order:
 Blocks, in this order:
 1. heading "Short", then a message block (label "Short line") of 6 to 12 words, with a note "Use in: LinkedIn headline, introductions, email signature".
 2. heading "Medium", then a message block (label "Medium") of one or two sentences, with a note "Use in: when someone asks what you do, the first line of a message, the top of your About section".
-3. heading "Long", then a message block (label "Paragraph") of 60 to 100 words: who it is for, the gap you close, how, and the best proof, with a note "Use in: LinkedIn About, your one-page profile, the opening of a proposal".
+3. heading "Long", then a message block (label "Paragraph") of 60 to 100 words: who it is for, the gap you close, how, and the best proof, with a note "Use in: LinkedIn About, the 90-day brochure, the opening of a proposal".
 4. If the coach has a guarantee (not "none"), heading "Your guarantee", then two message blocks (labels "Guarantee, short" and "Guarantee, medium") written from their terms. If they have none, skip this.`,
   },
   "offer:payment": {

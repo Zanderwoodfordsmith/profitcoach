@@ -1,6 +1,10 @@
+import { listValue, textValue } from "@/lib/practiceKnowledge/sourced";
 import type {
   BlueprintBlock,
   BuiltSection,
+  CareerResult,
+  DeliveryFormat,
+  PracticeKnowledgePayload,
   PracticeKnowledgeRow,
 } from "@/lib/practiceKnowledge/types";
 import type {
@@ -208,23 +212,77 @@ function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] || name;
 }
 
+function formatDelivery(format: DeliveryFormat | ""): string | null {
+  if (format === "one_to_one") return "One to one";
+  if (format === "group") return "Group sessions";
+  if (format === "hybrid") return "One to one and group";
+  return null;
+}
+
+function formatCareer(result: CareerResult): string | null {
+  const from = result.metric_from.trim();
+  const to = result.metric_to.trim();
+  const range = from && to ? `${from} to ${to}` : from || to;
+  const when = result.timeframe.trim();
+  const where = [result.role.trim(), result.company.trim()].filter(Boolean).join(" at ");
+  const line = [range, when, where].filter(Boolean).join(", ");
+  return clean(line);
+}
+
+function careerResults(payload: PracticeKnowledgePayload | undefined): string[] {
+  return (payload?.proof.career_results?.value ?? [])
+    .map(formatCareer)
+    .filter((line): line is string => Boolean(line));
+}
+
+function defaultMethod(
+  payload: PracticeKnowledgePayload | undefined,
+  offer: CoachSiteOffer | null
+): CoachSiteStep[] {
+  const format = formatDelivery(payload?.practice.delivery_format?.value ?? "");
+  const rhythm = textValue(payload?.practice.session_rhythm);
+  const clock = textValue(payload?.practice.offer_timeframe);
+  const included = offer?.included?.trim() || "";
+  const work =
+    [format, rhythm].filter(Boolean).join(". ") ||
+    "Weekly sessions on the numbers that matter this quarter.";
+  const steps: CoachSiteStep[] = [
+    {
+      title: "Start with the score",
+      detail: "A 15-minute BOSS Scorecard so you can see where the business actually stands.",
+    },
+    { title: "Ninety days of work", detail: work },
+  ];
+  if (clock) steps.push({ title: "A result you can point to", detail: clock });
+  else if (included) steps.push({ title: "What you leave with", detail: included });
+  return steps;
+}
+
 /* ---------- The mapper ---------- */
 
 export function coachSiteFromBlueprint(input: CoachSiteInput): CoachSite {
   const approvedOnly = Boolean(input.approvedOnly);
+  const payload = input.row?.payload;
   const direction = sectionBlocks(input.row, "offer:direction", approvedOnly);
   const lines = sectionBlocks(input.row, "offer:lines", approvedOnly);
   const onepager = sectionBlocks(input.row, "story:onepager", approvedOnly);
   const bioBlocks = sectionBlocks(input.row, "story:bio", approvedOnly);
+  const avatar = sectionBlocks(input.row, "market:avatar", approvedOnly);
 
   const three = readLines(lines);
   const testimonials = readTestimonials(input.row);
-  const results = cleanList(first(underHeading(onepager, "Results"), "bullets")?.items).filter(
-    (r) => !isTestimonialEcho(r, testimonials)
+  const fromCareer = careerResults(payload);
+  const fromOnepagerResults = cleanList(
+    first(underHeading(onepager, "Results"), "bullets")?.items
+  ).filter((r) => !isTestimonialEcho(r, testimonials));
+  const results = fromCareer.length ? fromCareer : fromOnepagerResults;
+  const fromPayloadProblems = listValue(payload?.proof.problems_asked).map(unquote).map(clean).filter(
+    (line): line is string => Boolean(line)
   );
-  const ownerWords = cleanList(
+  const fromOnepagerProblems = cleanList(
     first(underHeading(onepager, "The problems I fix"), "bullets")?.items
   ).map(unquote);
+  const ownerWords = fromPayloadProblems.length ? fromPayloadProblems : fromOnepagerProblems;
 
   const photo =
     input.photo ??
@@ -240,6 +298,14 @@ export function coachSiteFromBlueprint(input: CoachSiteInput): CoachSite {
 
   const linkedin = input.row?.payload.identity.linkedin_url?.value?.trim() || null;
   const slug = encodeURIComponent(input.slug);
+  const offer = readOffer(direction);
+  const storedMethod = readSteps(underHeading(onepager, "How I work"));
+  const hasOfferShape = Boolean(
+    offer ||
+      payload?.practice.delivery_format?.value ||
+      textValue(payload?.practice.offer_timeframe) ||
+      textValue(payload?.practice.session_rhythm)
+  );
 
   const site: CoachSite = {
     slug: input.slug,
@@ -254,8 +320,14 @@ export function coachSiteFromBlueprint(input: CoachSiteInput): CoachSite {
     shortLine: three.short,
     mediumLine: three.medium,
     longLine: three.long,
-    intro: clean(first(onepager, "lede")?.text),
-    whoIHelp: clean(first(underHeading(onepager, "Who I help"), "paragraph")?.text),
+    intro:
+      paragraphUnder(bioBlocks, "For partners and events") ??
+      clean(first(onepager, "lede")?.text) ??
+      clean(first(bioBlocks, "lede")?.text),
+    whoIHelp:
+      offer?.whoFor ??
+      paragraphUnder(onepager, "Who I help") ??
+      clean(first(avatar, "lede")?.text),
     ownerWords,
     gap: readGap(direction),
     keyMessages: (() => {
@@ -264,8 +336,8 @@ export function coachSiteFromBlueprint(input: CoachSiteInput): CoachSite {
         ? legacy
         : cleanList(first(underHeading(direction, "Our strategy"), "numbered")?.items);
     })(),
-    method: readSteps(underHeading(onepager, "How I work")),
-    offer: readOffer(direction),
+    method: storedMethod.length ? storedMethod : hasOfferShape ? defaultMethod(payload, offer) : [],
+    offer,
     whyMe: cleanList(first(underHeading(direction, "Why you"), "bullets")?.items),
     bio: clean(first(underHeading(bioBlocks, "Short bio"), "paragraph")?.text),
     facts: readFacts(bioBlocks, onepager),
@@ -284,8 +356,8 @@ export function coachSiteFromBlueprint(input: CoachSiteInput): CoachSite {
   const missing: CoachSiteSource[] = [];
   if (!direction.length) missing.push("offer:direction");
   if (!lines.length) missing.push("offer:lines");
-  if (!onepager.length) missing.push("story:onepager");
   if (!bioBlocks.length) missing.push("story:bio");
+  if (!ownerWords.length) missing.push("proof.problems_asked");
   if (!testimonials.length) missing.push("proof.client_results");
   if (!site.photo) missing.push("photo");
   if (!site.place) missing.push("location");

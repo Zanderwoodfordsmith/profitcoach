@@ -5,6 +5,7 @@
 
 import { normalizeLinkedInProfileUrl } from "@/lib/apify/linkedinProfile";
 import type { SalesNavImportedLead } from "@/lib/apify/salesNavigatorTypes";
+import { optionalLeadFlag } from "@/lib/salesNavigator/leadFlags";
 import { yearsAtCompanyBucketFromMonths } from "@/lib/salesNavigator/tenure";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -145,7 +146,12 @@ export function mapUnipileSearchItem(
       asString(rec.profile_picture_url) ??
       asString(rec.picture_url) ??
       asString(rec.profile_picture_url_large),
-    premium: Boolean(rec.premium ?? rec.is_premium),
+    premium: optionalLeadFlag(rec.premium, rec.is_premium) ?? false,
+    openProfile: optionalLeadFlag(
+      rec.is_open_profile,
+      rec.open_profile,
+      rec.openProfile
+    ),
     tenureLabel,
     monthsAtCompany,
     monthsInRole,

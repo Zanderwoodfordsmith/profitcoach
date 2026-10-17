@@ -47,6 +47,24 @@ describe("audience lists", () => {
     assert.equal(people[0]?.first_name, "Ada");
     assert.equal(people[0]?.last_name, "Lovelace");
     assert.equal(people[0]?.source, "search");
+    assert.equal(people[0]?.open_profile, null);
+  });
+
+  it("keeps Sales Nav open profile on mapped people", () => {
+    const people = mapAudiencePeopleInput(
+      [
+        {
+          linkedin_url: "https://www.linkedin.com/in/open-lead",
+          first_name: "Pat",
+          last_name: "Lee",
+          open_profile: true,
+          linkedin_premium: true,
+        },
+      ],
+      "sales_nav"
+    );
+    assert.equal(people[0]?.open_profile, true);
+    assert.equal(people[0]?.linkedin_premium, true);
   });
 
   it("sorts blacklist above other lists", () => {

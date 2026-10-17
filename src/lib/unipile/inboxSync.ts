@@ -982,6 +982,11 @@ async function syncMessagingAccount(input: {
         coachId: input.coachId,
         contactId: linkedContactId,
       });
+      if (input.channel === "linkedin") {
+        // Ava copilot: classify the reply, draft an answer, alert the coach. Never sends.
+        const { triageLatestInboundSafe } = await import("@/lib/ava/replyAlert");
+        triageLatestInboundSafe({ coachId: input.coachId, conversationId });
+      }
     }
   }
 

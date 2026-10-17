@@ -5,6 +5,7 @@ import {
 import {
   resolveUnipileUser,
   sendUnipileInvitation,
+  startUnipileChat,
   commentUnipilePost,
   reactUnipilePost,
   listUnipileUserPosts,
@@ -18,6 +19,15 @@ import {
   isLinkedInOutreachStep,
   messageSendConfigFrom,
 } from "@/lib/unipile/campaignStepTypes";
+import {
+  campaignLeadIsOpenProfile,
+  inviteOpenProfileInmailFrom,
+  isInmailRejected,
+  openInmailText,
+  openProfileSendRef,
+  shouldSendOpenProfileInmail,
+  unipileProfileIsOpen,
+} from "@/lib/unipile/openProfileInvite";
 import {
   engageInstagramLatestPost,
   followInstagramUser,
@@ -49,6 +59,7 @@ import {
   jitterSeconds,
   recordSuccessfulOutreachSend,
   sendKindFromStepType,
+  type OutreachSendSafetyDecision,
 } from "@/lib/unipile/outreachSendSafety";
 import { normalizeUnipileProvider } from "@/lib/unipile/providers";
 
@@ -124,9 +135,11 @@ async function resolveProviderId(
     title?: string | null;
     metadata: Record<string, unknown> | null;
   },
-  accountId: string
+  accountId: string,
+  opts?: { forceProfile?: boolean }
 ): Promise<{
   providerId: string | null;
+  openProfile: boolean | null;
   lead: OutreachLeadFields & {
     id: string;
     linkedin_provider_id?: string | null;
@@ -157,8 +170,12 @@ async function resolveProviderId(
         )
     );
 
-  if (!needsProfile) {
-    return { providerId: lead.linkedin_provider_id, lead: enriched };
+  if (!needsProfile && !opts?.forceProfile) {
+    return {
+      providerId: lead.linkedin_provider_id,
+      openProfile: null,
+      lead: enriched,
+    };
   }
 
   const pub =
@@ -166,16 +183,21 @@ async function resolveProviderId(
     (lead.linkedin_url ? linkedInPublicIdentifier(lead.linkedin_url) : null);
 
   if (!pub && !lead.linkedin_provider_id) {
-    return { providerId: null, lead: enriched };
+    return { providerId: null, openProfile: null, lead: enriched };
   }
 
   const identifier = pub || lead.linkedin_provider_id!;
   const resolved = await resolveUnipileUser(identifier, accountId);
   if (!resolved.ok || !resolved.data) {
-    return { providerId: lead.linkedin_provider_id, lead: enriched };
+    return {
+      providerId: lead.linkedin_provider_id,
+      openProfile: null,
+      lead: enriched,
+    };
   }
 
   const data = resolved.data as Record<string, unknown>;
+  const openProfile = unipileProfileIsOpen(data);
   const providerId =
     (data.provider_id as string | undefined) ||
     (data.id as string | undefined) ||
@@ -217,12 +239,14 @@ async function resolveProviderId(
           city: enriched.city,
           location: enriched.location,
           public_identifier: publicIdentifier,
+          ...(openProfile != null ? { open_profile: openProfile } : {}),
         },
+        ...(openProfile != null ? { open_profile: openProfile } : {}),
       })
       .eq("id", lead.id);
   }
 
-  return { providerId, lead: enriched };
+  return { providerId, openProfile, lead: enriched };
 }
 
 export async function advanceLeadAfterStep(input: {
@@ -456,7 +480,11 @@ export async function processOutreachJobsTick(): Promise<{
       }
 
       const stepType = step.step_type as string;
-      const sendKind = sendKindFromStepType(stepType);
+      let sendKind = sendKindFromStepType(stepType);
+      let inviteSafetyFail: Extract<
+        OutreachSendSafetyDecision,
+        { ok: false }
+      > | null = null;
 
       const safety = await checkOutreachSendSafety({
         coachId: job.coach_id,
@@ -473,15 +501,23 @@ export async function processOutreachJobsTick(): Promise<{
       });
       sendAccount = safety.sendAccount;
       if (!safety.result.ok) {
-        await supabaseAdmin
-          .from("linkedin_send_jobs")
-          .update({
-            status: "pending",
-            scheduled_for: safety.result.deferUntil.toISOString(),
-            last_error: safety.result.reason,
-          })
-          .eq("id", job.id);
-        continue;
+        // Invite quota is full — still try Open Profile InMail (message quota).
+        if (
+          stepType === "invite" &&
+          inviteOpenProfileInmailFrom(step.config)
+        ) {
+          inviteSafetyFail = safety.result;
+        } else {
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "pending",
+              scheduled_for: safety.result.deferUntil.toISOString(),
+              last_error: safety.result.reason,
+            })
+            .eq("id", job.id);
+          continue;
+        }
       }
 
       const linkedInAccountId = sendAccount?.unipile_account_id;
@@ -547,6 +583,9 @@ export async function processOutreachJobsTick(): Promise<{
 
       let providerId: string | null = lead.linkedin_provider_id as string | null;
       let leadForMessage = lead;
+      let openProfile = campaignLeadIsOpenProfile(
+        lead as { open_profile?: unknown; metadata?: unknown }
+      );
       if (needsLinkedIn) {
         const resolved = await resolveProviderId(
           lead as {
@@ -559,9 +598,16 @@ export async function processOutreachJobsTick(): Promise<{
             title?: string | null;
             metadata: Record<string, unknown> | null;
           },
-          accountId
+          accountId,
+          {
+            forceProfile:
+              stepType === "invite" &&
+              inviteOpenProfileInmailFrom(step.config) &&
+              openProfile == null,
+          }
         );
         providerId = resolved.providerId;
+        if (resolved.openProfile != null) openProfile = resolved.openProfile;
         if (!providerId) {
           // Soft-fail: keep the lead queued and try someone else next tick.
           // Hard-failing here burned whole lists when the wrong account was wired.
@@ -647,53 +693,138 @@ export async function processOutreachJobsTick(): Promise<{
 
       if (step.step_type === "invite") {
         const { text: note } = await renderedStepBody();
-        const res = await sendUnipileInvitation({
-          account_id: accountId,
-          provider_id: providerId as string,
-          message: note || undefined,
-        });
-        if (!res.ok) {
-          // already connected → treat as success path into messaging
-          if (
-            String(res.error || "").includes("already_connected") ||
-            (res.raw as { type?: string })?.type === "errors/already_connected"
-          ) {
+        let sentOpenProfile = false;
+        if (
+          shouldSendOpenProfileInmail({
+            stepType,
+            config: step.config,
+            openProfile,
+            note,
+          })
+        ) {
+          const inmailText = openInmailText(note);
+          const messageSafety = await checkOutreachSendSafety({
+            coachId: job.coach_id,
+            campaign: {
+              id: String(campaign.id),
+              timezone: campaign.timezone as string | null,
+              send_rules: campaign.send_rules,
+              daily_invite_limit: campaign.daily_invite_limit as number | null,
+              daily_message_limit: campaign.daily_message_limit as number | null,
+              outreach_account_id: campaign.outreach_account_id as string | null,
+            },
+            kind: "message",
+            sendAccount,
+          });
+          sendAccount = messageSafety.sendAccount;
+          if (!messageSafety.result.ok) {
+            await supabaseAdmin
+              .from("linkedin_send_jobs")
+              .update({
+                status: "pending",
+                scheduled_for: messageSafety.result.deferUntil.toISOString(),
+                last_error: messageSafety.result.reason,
+              })
+              .eq("id", job.id);
+            continue;
+          }
+          const res = await startUnipileChat({
+            account_id: accountId,
+            attendees_ids: [providerId as string],
+            text: inmailText as string,
+            inmail: true,
+          });
+          if (res.ok) {
+            sentOpenProfile = true;
+            sendKind = "message";
+            const chatId = res.data?.chat_id ?? null;
+            providerRef = openProfileSendRef(
+              chatId,
+              res.data?.message_id ?? null
+            );
+            const metadata = {
+              ...((lead.metadata as Record<string, unknown>) || {}),
+              open_profile_sent: true,
+              open_profile: true,
+            };
             await advanceLeadAfterStep({
               lead,
               campaignId: job.campaign_id,
               coachId: job.coach_id,
               nextPosition: (step.position as number) + 1,
-              patch: { status: "connected" },
+              patch: {
+                status: "in_sequence",
+                metadata,
+                open_profile: true,
+                ...(chatId ? { unipile_chat_id: chatId } : {}),
+              },
             });
+          } else if (!isInmailRejected(res)) {
+            throw new Error(res.error || "Open Profile message failed");
+          }
+        }
+
+        if (!sentOpenProfile) {
+          if (inviteSafetyFail) {
             await supabaseAdmin
               .from("linkedin_send_jobs")
-              .update({ status: "succeeded", provider_ref: "already_connected" })
+              .update({
+                status: "pending",
+                scheduled_for: inviteSafetyFail.deferUntil.toISOString(),
+                last_error: inviteSafetyFail.reason,
+              })
               .eq("id", job.id);
-            succeeded += 1;
             continue;
           }
-          throw new Error(res.error || "Invite failed");
+          const res = await sendUnipileInvitation({
+            account_id: accountId,
+            provider_id: providerId as string,
+            message: note || undefined,
+          });
+          if (!res.ok) {
+            // already connected → treat as success path into messaging
+            if (
+              String(res.error || "").includes("already_connected") ||
+              (res.raw as { type?: string })?.type === "errors/already_connected"
+            ) {
+              await advanceLeadAfterStep({
+                lead,
+                campaignId: job.campaign_id,
+                coachId: job.coach_id,
+                nextPosition: (step.position as number) + 1,
+                patch: { status: "connected" },
+              });
+              await supabaseAdmin
+                .from("linkedin_send_jobs")
+                .update({ status: "succeeded", provider_ref: "already_connected" })
+                .eq("id", job.id);
+              succeeded += 1;
+              continue;
+            }
+            throw new Error(res.error || "Invite failed");
+          }
+          providerRef = res.data?.invitation_id ?? null;
+          const noConnect = inviteNoConnectFrom(step.config);
+          const timeoutAt =
+            noConnect.on_no_connect === "other_campaign" &&
+            noConnect.no_connect_wait_hours
+              ? new Date(
+                  Date.now() + noConnect.no_connect_wait_hours * 3600 * 1000
+                ).toISOString()
+              : null;
+          // Stay on invite step until new_relation webhook (accept) advances,
+          // or the no-connect wait fires.
+          await supabaseAdmin
+            .from("linkedin_campaign_leads")
+            .update({
+              status: "invited",
+              invitation_id: providerRef,
+              last_error: null,
+              ...(openProfile != null ? { open_profile: openProfile } : {}),
+              next_action_at: timeoutAt,
+            })
+            .eq("id", lead.id);
         }
-        providerRef = res.data?.invitation_id ?? null;
-        const noConnect = inviteNoConnectFrom(step.config);
-        const timeoutAt =
-          noConnect.on_no_connect === "other_campaign" &&
-          noConnect.no_connect_wait_hours
-            ? new Date(
-                Date.now() + noConnect.no_connect_wait_hours * 3600 * 1000
-              ).toISOString()
-            : null;
-        // Stay on invite step until new_relation webhook (accept) advances,
-        // or the no-connect wait fires.
-        await supabaseAdmin
-          .from("linkedin_campaign_leads")
-          .update({
-            status: "invited",
-            invitation_id: providerRef,
-            next_action_at: timeoutAt,
-            last_error: null,
-          })
-          .eq("id", lead.id);
       } else if (step.step_type === "message") {
         const { text, variant } = await renderedStepBody();
         const sent = await sendCampaignLinkedInMessage({

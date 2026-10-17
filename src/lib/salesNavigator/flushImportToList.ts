@@ -20,6 +20,8 @@ type CachedFirmographics = {
   industry: string | null;
   revenue_range: string | null;
   location: string | null;
+  open_profile: boolean | null;
+  linkedin_premium: boolean | null;
 };
 
 function asText(value: unknown): string | null {
@@ -43,7 +45,9 @@ async function loadFirmographics(
   for (const chunk of toChunks(keys, 40)) {
     const { data, error } = await supabaseAdmin
       .from("leadrocks_leads")
-      .select("linkedin_url, team_size, industry, revenue_range, location")
+      .select(
+        "linkedin_url, team_size, industry, revenue_range, location, open_profile, linkedin_premium"
+      )
       .in("linkedin_url", chunk);
     if (error || !data) continue;
     for (const row of data) {
@@ -54,6 +58,13 @@ async function loadFirmographics(
         industry: asText(row.industry),
         revenue_range: asText(row.revenue_range),
         location: asText(row.location),
+        open_profile: row.open_profile === true ? true : row.open_profile === false ? false : null,
+        linkedin_premium:
+          row.linkedin_premium === true
+            ? true
+            : row.linkedin_premium === false
+              ? false
+              : null,
       });
     }
   }
@@ -88,6 +99,8 @@ export async function flushSalesNavSnapshotToList(opts: {
         industry: cached?.industry ?? null,
         revenue_range: cached?.revenue_range ?? null,
         location: row.location ?? cached?.location ?? null,
+        open_profile: row.openProfile ?? cached?.open_profile ?? null,
+        linkedin_premium: row.premium,
       };
     }),
     "sales_nav",

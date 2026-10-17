@@ -178,6 +178,7 @@ describe("invite no-connect", () => {
       on_no_connect: "none",
       no_connect_wait_hours: null,
       no_connect_campaign_id: null,
+      open_profile_inmail: true,
     });
   });
 
@@ -192,6 +193,7 @@ describe("invite no-connect", () => {
       on_no_connect: "other_campaign",
       no_connect_wait_hours: 48,
       no_connect_campaign_id: id,
+      open_profile_inmail: true,
     });
   });
 });

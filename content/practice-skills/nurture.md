@@ -14,3 +14,11 @@ Send 2 to 4 a month, about every two weeks. Always personalise the first line. M
 
 ## Nurture rhythm
 A light cadence for people who said "not now": value every 2 to 3 weeks (a post, a playbook, a scorecard insight), and a check-in at 90 days.
+
+## Why nurture matters most
+A booked call usually takes many messages over one to four months (Matt Lakajev's analysis of his own DMs averaged 26, 13 each way). Only a few percent of owners are ready now. So nurture is where most calls come from, not the first sequence.
+
+Rules:
+- Every message gives something: a tool, a number, an insight, a question about them. Never a bare "just checking in".
+- Keep going for about four months, then a 90-day check-in.
+- If they reply, stop the sequence and have a real conversation.

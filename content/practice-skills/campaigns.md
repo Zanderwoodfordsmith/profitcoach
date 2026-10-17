@@ -13,12 +13,13 @@ Career proof: "I ask because during my {X} years at {Company} I used a simple sy
 
 Write the sequence in their kind of coach (a boot camp coach is more direct than hugs). Do not add hobbies, books or stories here. There is not room.
 
-Follow-ups:
-- Message 1 (30 minutes after connecting): repeat the proof, name the big problem, say many businesses in the {industry} industry struggle with it ("They're {main problem} instead of {main desire}"), the PROFIT System removed it, the result, "And I believe with the right system in place, your business can do the same." Close: "Are you looking to {main desire}? Would you be interested in learning more?"
-- Message 2 (1 day): short check-in.
-- Message 3 (2 days): acknowledge they are busy or jaded by coach messages. "It never hurts to have a conversation."
-- Message 4 (4 days): ask about the call.
-- Message 5 (2 weeks): final, light urgency, tied to the main desire.
+Follow-ups (every one gives something; none just "checks in"):
+- Message 1 (1 day after connecting): under 300 characters. Thank them, name one problem owners like them describe in their own words, ask if it is true for them. Never write "as I mentioned in my connection message": many invites go out blank.
+- Message 2 (3 days): one specific insight with a number, tied to the proof ("from X to Y in Z"). Ask if they have looked at theirs.
+- Message 3 (5 days): offer one useful thing (a tool, a benchmark, the BOSS Score after they reply). One question.
+- Message 4 (14 days): a polite close that leaves the door open. Then move them into Ongoing nurture.
+
+Never use: "Free Coaching Discovery Call", "still a few calls left this week" (fake scarcity), "jaded by all the other coaches", "just checking if you saw my last message". Never put a link in a connection note: in our data it cut acceptance to 4 to 6%.
 
 ## B. Messaging campaign (conversation into the BOSS Scorecard)
 For owners the coach can message without a connection request: connections who fit the avatar but have never spoken to them, and open InMail. Softer than the connection campaign.

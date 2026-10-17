@@ -323,6 +323,8 @@ export async function startUnipileChat(input: {
   account_id: string;
   attendees_ids: string[];
   text: string;
+  /** LinkedIn InMail / Open Profile (does not require a 1st-degree connection). */
+  inmail?: boolean;
 }) {
   return unipileFetch<{ object?: string; chat_id?: string; message_id?: string }>(
     "POST",
@@ -331,6 +333,7 @@ export async function startUnipileChat(input: {
       account_id: input.account_id,
       attendees_ids: input.attendees_ids,
       text: input.text,
+      ...(input.inmail ? { linkedin: { inmail: true } } : {}),
     }
   );
 }
@@ -526,6 +529,32 @@ export async function cancelSentInvitation(input: {
     "DELETE",
     `/api/v1/users/invite/sent/${encodeURIComponent(input.invitation_id)}?${qs.toString()}`
   );
+}
+
+/** Own profile of a connected account (LinkedIn provider id, public identifier). */
+export async function getUnipileOwnProfile(accountId: string) {
+  const qs = new URLSearchParams({ account_id: accountId });
+  return unipileFetch<Record<string, unknown>>("GET", `/api/v1/users/me?${qs.toString()}`);
+}
+
+/** Connection requests other people sent to this account and it has not answered. */
+export async function listReceivedInvitations(input: {
+  account_id: string;
+  limit?: number;
+  cursor?: string | null;
+}) {
+  const qs = new URLSearchParams({
+    account_id: input.account_id,
+    limit: String(Math.min(100, Math.max(1, Math.floor(input.limit ?? 100)))),
+  });
+  if (input.cursor) qs.set("cursor", input.cursor);
+  return unipileFetch<{
+    object?: string;
+    items?: Array<Record<string, unknown>>;
+    cursor?: string | null;
+  }>("GET", `/api/v1/users/invite/received?${qs.toString()}`, undefined, {
+    timeoutMs: 12_000,
+  });
 }
 
 /** Publish a LinkedIn (or other) post via Unipile multipart API. */

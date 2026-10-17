@@ -253,6 +253,8 @@ export async function upsertSalesNavLeadsToCache(opts: {
       if (lead.yearsAtCompanyBucket) {
         patch.years_at_company_bucket = lead.yearsAtCompanyBucket;
       }
+      if (lead.openProfile != null) patch.open_profile = lead.openProfile;
+      patch.linkedin_premium = lead.premium;
 
       toUpdate.push({ id: match.id, patch });
       continue;
@@ -280,6 +282,8 @@ export async function upsertSalesNavLeadsToCache(opts: {
       months_at_company: lead.monthsAtCompany,
       months_in_role: lead.monthsInRole,
       years_at_company_bucket: lead.yearsAtCompanyBucket,
+      open_profile: lead.openProfile,
+      linkedin_premium: lead.premium,
       source: "sales_nav",
       first_seen_at: now,
       last_seen_at: now,

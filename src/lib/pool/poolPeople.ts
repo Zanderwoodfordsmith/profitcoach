@@ -26,6 +26,10 @@ export type PoolPerson = {
   postcode: string | null;
   /** Company headcount band, e.g. "11-50". */
   team_size: string | null;
+  /** LinkedIn Open Profile from Sales Nav import. */
+  open_profile: boolean | null;
+  /** Prospect has LinkedIn Premium from Sales Nav import. */
+  linkedin_premium: boolean | null;
   /** Lead industry, or the Google Maps category when industry is blank. */
   industry: string | null;
   place_id: string | null;

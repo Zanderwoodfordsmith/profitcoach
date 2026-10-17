@@ -66,7 +66,10 @@ function structureNav(): NavSection[] {
     {
       id: "coach",
       label: "This coach",
-      pages: [{ id: "flow", label: "Blueprint flow", href: "/admin/ava?tab=flow" }],
+      pages: [
+        { id: "flow", label: "Blueprint flow", href: "/admin/ava?tab=flow" },
+        { id: "replies", label: "Reply review", href: "/admin/ava/replies" },
+      ],
     },
   ];
 }

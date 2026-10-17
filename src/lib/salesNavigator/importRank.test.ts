@@ -24,6 +24,7 @@ function lead(slug: string, title = "Owner"): SalesNavImportedLead {
     monthsInRole: null,
     yearsAtCompanyBucket: null,
     premium: false,
+    openProfile: null,
     raw: {},
   };
 }

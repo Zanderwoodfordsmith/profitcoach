@@ -35,5 +35,10 @@ export type SalesNavImportedLead = {
   /** LinkedIn CDN profile photo when Short scrape includes it. */
   photoUrl: string | null;
   premium: boolean;
+  /**
+   * LinkedIn Open Profile (free InMail from anyone). Null when the provider
+   * did not include the flag — Unipile search usually omits it.
+   */
+  openProfile: boolean | null;
   raw: Record<string, unknown>;
 };

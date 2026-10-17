@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { NURTURE_LIBRARY_SEED, nurtureLibrarySteps } from "./nurture";
 
 describe("ongoing nurture library template", () => {
-  it("is a published nurture template with tools every two weeks", () => {
+  it("is a published nurture template that gives something every two weeks for about four months", () => {
     assert.equal(NURTURE_LIBRARY_SEED.kind, "nurture");
     assert.equal(NURTURE_LIBRARY_SEED.name, "Ongoing nurture");
     assert.equal(NURTURE_LIBRARY_SEED.itemType, "template");
@@ -19,12 +19,16 @@ describe("ongoing nurture library template", () => {
       steps
         .filter((step) => step.step_type === "wait")
         .map((step) => step.wait_hours),
-      [336, 336, 72, 336, 72, 336]
+      [336, 336, 72, 336, 72, 336, 336, 336, 336]
     );
 
     const messages = steps.filter((step) => step.step_type === "message");
-    assert.equal(messages.length, 7);
+    assert.equal(messages.length, 10);
     assert.ok(String(messages[0]?.body).includes("Pairwise Prioritising"));
     assert.ok(String(messages[6]?.body).includes("Time Value Tracker"));
+    assert.ok(String(messages[9]?.body).includes("BOSS Score"));
+    for (const message of messages) {
+      assert.equal(/just checking|saw my last message/i.test(String(message.body)), false);
+    }
   });
 });

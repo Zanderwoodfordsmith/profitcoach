@@ -29,6 +29,19 @@ describe("mapUnipileSearchItem", () => {
     );
     assert.equal(lead!.jobTitle, "Director");
     assert.equal(lead!.company, "A Kane Electrical");
+    assert.equal(lead!.openProfile, null);
+  });
+
+  it("maps Unipile is_open_profile when the search row includes it", () => {
+    const lead = mapUnipileSearchItem({
+      name: "Open Person",
+      public_identifier: "open-person",
+      is_open_profile: true,
+      is_premium: true,
+    });
+    assert.ok(lead);
+    assert.equal(lead!.openProfile, true);
+    assert.equal(lead!.premium, true);
   });
 
   it("falls back to role description when summary is missing", () => {

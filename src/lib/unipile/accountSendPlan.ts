@@ -22,6 +22,10 @@ import {
   DEFAULT_CAMPAIGN_SEND_RULES,
   parseCampaignSendRules,
 } from "@/lib/unipile/campaignSendWindow";
+import {
+  isOpenProfileSendRef,
+  jobUsesInviteQuota,
+} from "@/lib/unipile/openProfileInvite";
 
 export type AccountSendSettings = {
   id: string;
@@ -84,7 +88,7 @@ export async function countInvitesInRollingDays(
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
   const { data: jobs } = await supabaseAdmin
     .from("linkedin_send_jobs")
-    .select("id, step_id")
+    .select("id, step_id, provider_ref")
     .eq("coach_id", coachId)
     .eq("status", "succeeded")
     .gte("updated_at", since);
@@ -94,12 +98,15 @@ export async function countInvitesInRollingDays(
     .from("linkedin_campaign_steps")
     .select("id, step_type")
     .in("id", stepIds);
-  const inviteIds = new Set(
-    (steps ?? [])
-      .filter((s) => s.step_type === "invite" || s.step_type === "instagram_follow")
-      .map((s) => s.id as string)
+  const stepTypeById = new Map(
+    (steps ?? []).map((s) => [s.id as string, String(s.step_type)])
   );
-  return jobs.filter((j) => inviteIds.has(j.step_id as string)).length;
+  return jobs.filter((j) =>
+    jobUsesInviteQuota(
+      stepTypeById.get(j.step_id as string) ?? "",
+      j.provider_ref as string | null
+    )
+  ).length;
 }
 
 export async function countSucceededActionToday(
@@ -112,7 +119,7 @@ export async function countSucceededActionToday(
   const start = startOfZonedDay(new Date(), timeZone || "Europe/London");
   let query = supabaseAdmin
     .from("linkedin_send_jobs")
-    .select("id, step_id")
+    .select("id, step_id, provider_ref")
     .eq("coach_id", coachId)
     .eq("status", "succeeded")
     .gte("updated_at", start.toISOString());
@@ -126,12 +133,16 @@ export async function countSucceededActionToday(
     .from("linkedin_campaign_steps")
     .select("id, step_type")
     .in("id", stepIds);
-  const match = new Set(
-    (steps ?? [])
-      .filter((s) => stepTypes.includes(String(s.step_type)))
-      .map((s) => s.id as string)
+  const stepTypeById = new Map(
+    (steps ?? []).map((s) => [s.id as string, String(s.step_type)])
   );
-  return jobs.filter((j) => match.has(j.step_id as string)).length;
+  const countingMessages = stepTypes.includes("message");
+  return jobs.filter((j) => {
+    const stepType = stepTypeById.get(j.step_id as string) ?? "";
+    const ref = j.provider_ref as string | null;
+    if (isOpenProfileSendRef(ref)) return countingMessages;
+    return stepTypes.includes(stepType);
+  }).length;
 }
 
 /** Acceptance over last 50 invite outcomes (or fewer). */

@@ -58,13 +58,35 @@ export async function fireCoachWatchRules(input: FireWatchInput): Promise<void> 
   const who = input.personName?.trim() || "Someone";
   const subject = `${who} — ${label}`;
   const body = [subject, input.detail?.trim()].filter(Boolean).join("\n\n");
+  await notifyCoach({
+    coachId: input.coachId,
+    subject,
+    body,
+    email: wantsEmail,
+    whatsapp: wantsWhatsApp,
+  });
+}
+
+/**
+ * Send the coach a note from their own connected accounts (email to themselves,
+ * WhatsApp to their own phone). Used by watch rules and Ava reply alerts.
+ */
+export async function notifyCoach(input: {
+  coachId: string;
+  subject: string;
+  body: string;
+  email: boolean;
+  whatsapp: boolean;
+}): Promise<{ email: boolean; whatsapp: boolean }> {
+  const sent = { email: false, whatsapp: false };
+  const { subject, body } = input;
   const targets = await coachNotifyTargets(input.coachId);
 
-  if (wantsEmail && targets.email) {
+  if (input.email && targets.email) {
     try {
       const accountId = await resolveAccountIdForChannel(input.coachId, "email");
       if (accountId) {
-        const sent = await sendUnipileEmail({
+        const result = await sendUnipileEmail({
           account_id: accountId,
           to: [
             {
@@ -75,41 +97,44 @@ export async function fireCoachWatchRules(input: FireWatchInput): Promise<void> 
           subject,
           body,
         });
-        if (!sent.ok) {
-          console.error("watch email:", sent.error);
+        if (!result.ok) {
+          console.error("coach notify email:", result.error);
+        } else {
+          sent.email = true;
         }
       }
     } catch (err) {
-      console.error("watch email:", err);
+      console.error("coach notify email:", err);
     }
   }
 
-  if (wantsWhatsApp && targets.phone) {
+  if (input.whatsapp && targets.phone) {
     try {
-      const accountId = await resolveAccountIdForChannel(
-        input.coachId,
-        "whatsapp"
-      );
+      const accountId = await resolveAccountIdForChannel(input.coachId, "whatsapp");
       if (accountId) {
         const started = await startUnipileChat({
           account_id: accountId,
           attendees_ids: [targets.phone],
           text: body,
         });
-        if (!started.ok && started.data?.chat_id) {
+        if (started.ok) {
+          sent.whatsapp = true;
+        } else if (started.data?.chat_id) {
           await sendUnipileChatMessage({
             chat_id: started.data.chat_id,
             account_id: accountId,
             text: body,
           });
-        } else if (!started.ok) {
-          console.error("watch whatsapp:", started.error);
+          sent.whatsapp = true;
+        } else {
+          console.error("coach notify whatsapp:", started.error);
         }
       }
     } catch (err) {
-      console.error("watch whatsapp:", err);
+      console.error("coach notify whatsapp:", err);
     }
   }
+  return sent;
 }
 
 export function fireCoachWatchRulesSafe(input: FireWatchInput): void {

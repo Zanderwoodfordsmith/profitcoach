@@ -11,6 +11,7 @@ import {
   SALES_NAV_MAX_TAKE_PAGES,
   type SalesNavImportedLead,
 } from "@/lib/apify/salesNavigatorTypes";
+import { optionalLeadFlag } from "@/lib/salesNavigator/leadFlags";
 import {
   tenureTotalMonths,
   yearsAtCompanyBucketFromMonths,
@@ -219,7 +220,8 @@ export function normalizeSalesNavItem(item: unknown): SalesNavImportedLead | nul
     headline: asString(rec.headline) ?? asString(rec.summary),
     about: asString(rec.about) ?? asString(rec.summary),
     photoUrl: photoUrl(rec),
-    premium: Boolean(rec.premium),
+    premium: optionalLeadFlag(rec.premium) ?? false,
+    openProfile: optionalLeadFlag(rec.openProfile, rec.open_profile),
     ...tenure,
     raw: rec,
   };

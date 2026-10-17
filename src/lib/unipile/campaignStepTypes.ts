@@ -66,6 +66,8 @@ export type InviteStepConfig = {
   on_no_connect: InviteNoConnectAction;
   no_connect_wait_hours: number | null;
   no_connect_campaign_id: string | null;
+  /** Send a free Open Profile InMail instead of a connection request. Default on. */
+  open_profile_inmail: boolean;
 };
 
 export type CampaignStepConfig = NotifyStepConfig &
@@ -85,6 +87,7 @@ const EMPTY_CONFIG: CampaignStepConfig = {
   on_no_connect: "none",
   no_connect_wait_hours: null,
   no_connect_campaign_id: null,
+  open_profile_inmail: true,
 };
 
 export function defaultStepConfig(type: CampaignStepType): CampaignStepConfig {
@@ -202,6 +205,7 @@ export function sanitizeStepConfig(
           : null,
       no_connect_campaign_id:
         action === "other_campaign" && UUID_RE.test(id) ? id : null,
+      open_profile_inmail: raw.open_profile_inmail !== false,
     };
   }
   return {};
@@ -270,6 +274,7 @@ export function inviteNoConnectFrom(config: unknown): InviteStepConfig {
       typeof sanitized.no_connect_campaign_id === "string"
         ? sanitized.no_connect_campaign_id
         : null,
+    open_profile_inmail: sanitized.open_profile_inmail !== false,
   };
 }
 

@@ -2074,11 +2074,12 @@ export function CampaignPoolHub({
           <div className="flex min-w-0 items-center gap-3">
             <ProspectTableAvatar name={displayName} />
             <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
               {row.contact_id ? (
                 <Link
                   href={poolPersonHref(row.contact_id, isAdmin)}
                   prefetch
-                  className="block w-full min-w-0 truncate text-left text-sm font-medium text-[#0c5290] hover:underline"
+                  className="min-w-0 truncate text-left text-sm font-medium text-[#0c5290] hover:underline"
                   title={`Open ${displayName}`}
                   onPointerDown={() => {
                     const contactId = row.contact_id;
@@ -2090,7 +2091,7 @@ export function CampaignPoolHub({
               ) : (
                 <button
                   type="button"
-                  className={`block w-full min-w-0 truncate text-left text-sm font-medium ${
+                  className={`min-w-0 truncate text-left text-sm font-medium ${
                     canOpen
                       ? "text-[#0c5290] hover:underline"
                       : "cursor-default text-slate-900"
@@ -2106,6 +2107,17 @@ export function CampaignPoolHub({
                   {displayName}
                 </button>
               )}
+              {row.linkedin_premium ? (
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-amber-700">
+                  Premium
+                </span>
+              ) : null}
+              {row.open_profile ? (
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-sky-700">
+                  Open profile
+                </span>
+              ) : null}
+              </div>
               <ProspectLeadSubtitle
                 jobTitle={columnVisibility.title ? null : row.job_title}
                 businessName={leadCompany}

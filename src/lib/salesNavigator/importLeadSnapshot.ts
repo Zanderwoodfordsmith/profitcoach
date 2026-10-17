@@ -16,6 +16,7 @@ export type SalesNavImportLeadSnapshot = {
   monthsAtCompany: number | null;
   yearsAtCompanyBucket: string | null;
   premium: boolean;
+  openProfile: boolean | null;
   /** Which segment of a split import found this person (0 when not split). */
   segment?: number;
 };
@@ -38,6 +39,7 @@ export function toSalesNavImportLeadSnapshot(
     monthsAtCompany: lead.monthsAtCompany ?? null,
     yearsAtCompanyBucket: lead.yearsAtCompanyBucket ?? null,
     premium: lead.premium,
+    openProfile: lead.openProfile,
   };
 }
 
@@ -63,6 +65,8 @@ export function snapshotToSalesNavImportedLead(
       (snap.yearsAtCompanyBucket as SalesNavImportedLead["yearsAtCompanyBucket"]) ??
       null,
     premium: Boolean(snap.premium),
+    openProfile:
+      snap.openProfile === true ? true : snap.openProfile === false ? false : null,
     raw: {},
   };
 }

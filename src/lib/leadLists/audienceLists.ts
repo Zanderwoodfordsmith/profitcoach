@@ -53,6 +53,8 @@ export type AudienceListPerson = {
   industry?: string | null;
   revenue_range?: string | null;
   location?: string | null;
+  open_profile?: boolean | null;
+  linkedin_premium?: boolean | null;
   source: AudienceItemSource;
 };
 
@@ -221,6 +223,18 @@ export function mapAudiencePeopleInput(
           : null,
       location:
         typeof row.location === "string" ? row.location.trim() || null : null,
+      open_profile:
+        row.open_profile === true
+          ? true
+          : row.open_profile === false
+            ? false
+            : null,
+      linkedin_premium:
+        row.linkedin_premium === true
+          ? true
+          : row.linkedin_premium === false
+            ? false
+            : null,
     });
   }
   return people.slice(0, max);
@@ -313,6 +327,8 @@ const LEAD_LIST_ITEM_COPY_FIELDS = [
   "revenue_range",
   "industry",
   "location",
+  "open_profile",
+  "linkedin_premium",
   "match_reason",
   "raw",
   "place_id",
@@ -796,6 +812,8 @@ export async function insertPeopleOnList(opts: {
     industry: person.industry?.trim() || null,
     revenue_range: person.revenue_range?.trim() || null,
     location: person.location?.trim() || null,
+    open_profile: person.open_profile ?? null,
+    linkedin_premium: person.linkedin_premium ?? null,
     identity_key: `li:${person.linkedin_url}`,
     match_reason:
       person.source === "search" ? "LinkedIn search" : "Added to pool",

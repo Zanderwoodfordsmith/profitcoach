@@ -14,9 +14,9 @@ import type { CoachSiteSource } from "@/lib/coachSite/types";
 const SOURCE_LABEL: Record<CoachSiteSource, string> = {
   "offer:direction": "The offer",
   "offer:lines": "Your offer in three lengths",
-  "story:onepager": "One-page profile",
   "story:bio": "Short bio",
   "proof.client_results": "A client testimonial",
+  "proof.problems_asked": "Problems owners ask you to solve",
   photo: "A photo",
   location: "Location",
 };
