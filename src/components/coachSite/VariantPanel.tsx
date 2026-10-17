@@ -82,7 +82,7 @@ export function VariantPanel({ variants, missing, compareHref }: Props) {
         onClick={() => setOpen((v) => !v)}
       >
         {open ? <X aria-hidden="true" /> : <SlidersHorizontal aria-hidden="true" />}
-        {open ? "Close" : "Design options"}
+        <span className="cs-panel__toggle-label">{open ? "Close" : "Design options"}</span>
       </button>
     </div>
   );

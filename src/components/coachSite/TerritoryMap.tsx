@@ -18,7 +18,7 @@ const HOME_CSS = "rgb(196,207,220)";
 const AWAY_CSS = "rgb(229,234,241)";
 
 /** Grid units from the pin that end up lit. */
-const GLOW = 15;
+const GLOW = 20;
 const WAVE_MS = 1700;
 
 function inGrid(grid: DotGrid, lat: number, lng: number): boolean {
@@ -111,7 +111,8 @@ export function TerritoryMap({ lat, lng, place }: Props) {
           const reached = front >= dot.d;
           if (reached) {
             const k = dot.d / GLOW;
-            fill = k < 0.5 ? mix(NAVY, SKY, k * 2) : mix(SKY, HOME, (k - 0.5) * 2);
+            // Navy at the town, sky through the middle distance, back to grey at the edge.
+            fill = k < 0.55 ? mix(NAVY, SKY, k / 0.55) : mix(SKY, HOME, (k - 0.55) / 0.45);
             // A short swell as the wave passes.
             const since = front - dot.d;
             if (since < 2.4) r *= 1 + 0.55 * (1 - since / 2.4);

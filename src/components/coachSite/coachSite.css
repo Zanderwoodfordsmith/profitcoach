@@ -639,6 +639,22 @@ button.cs-link {
   }
 }
 
+@media (max-width: 900px) {
+  .cs-map__label {
+    padding: 8px 12px 9px;
+    border-radius: 10px;
+  }
+
+  .cs-map__label strong {
+    font-size: 0.9375rem;
+  }
+
+  .cs-map__label span:first-child,
+  .cs-map__label span:last-child {
+    font-size: 0.75rem;
+  }
+}
+
 .cs-map__label span:first-child {
   font-size: 0.8125rem;
   color: var(--cs-muted);
@@ -2152,6 +2168,27 @@ button.cs-link {
 .cs-panel__toggle svg {
   width: 18px;
   height: 18px;
+}
+
+@media (max-width: 520px) {
+  .cs-panel {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .cs-panel__toggle {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .cs-panel__toggle-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
 }
 
 .cs-panel__sheet {
