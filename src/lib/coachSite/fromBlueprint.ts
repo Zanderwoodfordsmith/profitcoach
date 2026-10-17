@@ -1,0 +1,276 @@
+import type {
+  BlueprintBlock,
+  BuiltSection,
+  PracticeKnowledgeRow,
+} from "@/lib/practiceKnowledge/types";
+import type {
+  CoachSite,
+  CoachSiteFact,
+  CoachSiteGapRow,
+  CoachSiteOffer,
+  CoachSitePhoto,
+  CoachSiteQuote,
+  CoachSiteSource,
+  CoachSiteStep,
+} from "./types";
+
+export type CoachSiteInput = {
+  slug: string;
+  name: string;
+  avatarUrl: string | null;
+  /** From profiles.latitude / longitude (geocoded from their location). */
+  lat: number | null;
+  lng: number | null;
+  /** Free-text location from the profile, used when the Blueprint has none. */
+  profileLocation: string | null;
+  row: PracticeKnowledgeRow | null;
+  /** Better photos kept in /public for coaches who have them. */
+  photo?: CoachSitePhoto | null;
+  stagePhoto?: CoachSitePhoto | null;
+  /** Live sites read only sections the coach or BCA signed off against the current version. */
+  approvedOnly?: boolean;
+};
+
+/* ---------- Block helpers ---------- */
+
+function signedOff(row: PracticeKnowledgeRow, key: string, built: BuiltSection): boolean {
+  const revision = [built.generated_at, built.edited_at ?? ""].sort().pop() ?? "";
+  const coach = row.payload.review.approved_sections?.value?.[key] ?? "";
+  const bca = row.payload.review.bca_approved_sections?.value?.[key] ?? "";
+  return (coach !== "" && coach >= revision) || (bca !== "" && bca >= revision);
+}
+
+function sectionBlocks(
+  row: PracticeKnowledgeRow | null,
+  key: string,
+  approvedOnly: boolean
+): BlueprintBlock[] {
+  const built = row?.built_sections[key];
+  if (!row || !built) return [];
+  if (approvedOnly && !signedOff(row, key, built)) return [];
+  return built.blocks;
+}
+
+/** Blocks between a heading (matched loosely) and the next heading. */
+function underHeading(blocks: BlueprintBlock[], ...names: string[]): BlueprintBlock[] {
+  const wanted = names.map((n) => n.toLowerCase());
+  const start = blocks.findIndex(
+    (b) => b.type === "heading" && wanted.includes(b.text.trim().toLowerCase())
+  );
+  if (start < 0) return [];
+  const rest = blocks.slice(start + 1);
+  const end = rest.findIndex((b) => b.type === "heading");
+  return end < 0 ? rest : rest.slice(0, end);
+}
+
+function first<T extends BlueprintBlock["type"]>(
+  blocks: BlueprintBlock[],
+  type: T
+): Extract<BlueprintBlock, { type: T }> | null {
+  return (blocks.find((b) => b.type === type) as Extract<BlueprintBlock, { type: T }>) ?? null;
+}
+
+function clean(text: string | null | undefined): string | null {
+  const t = (text ?? "").trim();
+  if (!t) return null;
+  // Writing rules: never an em dash on a public page. The writers sometimes slip " - " in too,
+  // but a range like "£1M - £8M" keeps its hyphen.
+  return t
+    .replace(/\s*—\s*/g, ", ")
+    .replace(/(\S+)\s+-\s+(?=\S)/g, (match, before: string, offset: number, whole: string) => {
+      const after = whole.slice(offset + match.length);
+      return /\d[kKmM%]?$/.test(before) && /^[£$€\d]/.test(after) ? match : `${before}, `;
+    });
+}
+
+function cleanList(items: string[] | undefined): string[] {
+  return (items ?? []).map((i) => clean(i)).filter((i): i is string => Boolean(i));
+}
+
+/** "'The margin looked alright...'" → The margin looked alright... */
+function unquote(text: string): string {
+  return text.replace(/^['"‘“]+|['"’”]+$/g, "").trim();
+}
+
+/* ---------- Field readers ---------- */
+
+function readLines(blocks: BlueprintBlock[]) {
+  const messages = blocks.filter(
+    (b): b is Extract<BlueprintBlock, { type: "message" }> => b.type === "message"
+  );
+  const byLabel = (...labels: string[]) =>
+    clean(
+      messages.find((m) => labels.includes(m.label.trim().toLowerCase()))?.body ?? null
+    );
+  return {
+    short: byLabel("short line", "short"),
+    medium: byLabel("medium"),
+    long: byLabel("paragraph", "long"),
+  };
+}
+
+function readGap(blocks: BlueprintBlock[]): CoachSiteGapRow[] {
+  const table = first(underHeading(blocks, "The gap"), "table");
+  if (!table) return [];
+  return table.rows
+    .map((r) => ({ today: clean(r[0]) ?? "", want: clean(r[1]) ?? "" }))
+    .filter((r) => r.today && r.want);
+}
+
+function readOffer(blocks: BlueprintBlock[]): CoachSiteOffer | null {
+  const pairs = first(underHeading(blocks, "The offer"), "pairs");
+  if (!pairs) return null;
+  const get = (label: string) =>
+    clean(pairs.items.find((p) => p.label.trim().toLowerCase() === label)?.value ?? null);
+  // Price options and proof are left out on purpose: prices stay off marketing pages,
+  // and proof has its own section.
+  const offer: CoachSiteOffer = {
+    name: get("name"),
+    promise: get("promise"),
+    whoFor: get("who it is for"),
+    included: get("what is included"),
+    format: get("format"),
+  };
+  return Object.values(offer).some(Boolean) ? offer : null;
+}
+
+function readFacts(...sources: BlueprintBlock[][]): CoachSiteFact[] {
+  for (const blocks of sources) {
+    const stats = first(blocks, "stats");
+    if (stats?.items.length) {
+      return stats.items
+        .map((s) => ({ value: clean(s.value) ?? "", label: clean(s.label) ?? "" }))
+        .filter((s) => s.value && s.label);
+    }
+  }
+  return [];
+}
+
+function readSteps(blocks: BlueprintBlock[]): CoachSiteStep[] {
+  const steps = first(blocks, "steps");
+  return (steps?.items ?? [])
+    .map((s) => ({ title: clean(s.title) ?? "", detail: clean(s.detail) ?? "" }))
+    .filter((s) => s.title);
+}
+
+/** "John Davy, business owner (testimonial)" → "John Davy, business owner". */
+function citeFromTitle(title: string): string {
+  return title.replace(/\s*\((testimonial|client testimonial)\)\s*$/i, "").trim();
+}
+
+function readTestimonials(row: PracticeKnowledgeRow | null): CoachSiteQuote[] {
+  const stories = row?.payload.proof.client_results?.value ?? [];
+  return stories
+    .map((s) => ({ quote: clean(unquote(s.story)) ?? "", cite: citeFromTitle(s.title) }))
+    .filter((q) => q.quote && q.cite);
+}
+
+/** A Results bullet that is just a testimonial again (starts with the client's name). */
+function isTestimonialEcho(text: string, quotes: CoachSiteQuote[]): boolean {
+  return quotes.some((q) => {
+    const who = q.cite.split(",")[0]?.trim();
+    return Boolean(who && text.startsWith(who));
+  });
+}
+
+function readPlace(input: CoachSiteInput, onepager: BlueprintBlock[]) {
+  const pairs = onepager.filter(
+    (b): b is Extract<BlueprintBlock, { type: "pairs" }> => b.type === "pairs"
+  );
+  const fromProfile = pairs
+    .flatMap((p) => p.items)
+    .find((i) => i.label.trim().toLowerCase() === "location")?.value;
+  const raw =
+    clean(fromProfile) ??
+    clean(input.row?.payload.identity.location?.value ?? null) ??
+    clean(input.profileLocation);
+  if (!raw && input.lat == null) return null;
+  // "Kingston Upon Hull, England, United Kingdom" → "Kingston Upon Hull, England"
+  const label = raw ? raw.split(",").slice(0, 2).join(",").trim() : "";
+  return { label, lat: input.lat, lng: input.lng };
+}
+
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+/* ---------- The mapper ---------- */
+
+export function coachSiteFromBlueprint(input: CoachSiteInput): CoachSite {
+  const approvedOnly = Boolean(input.approvedOnly);
+  const direction = sectionBlocks(input.row, "offer:direction", approvedOnly);
+  const lines = sectionBlocks(input.row, "offer:lines", approvedOnly);
+  const onepager = sectionBlocks(input.row, "story:onepager", approvedOnly);
+  const bioBlocks = sectionBlocks(input.row, "story:bio", approvedOnly);
+
+  const three = readLines(lines);
+  const testimonials = readTestimonials(input.row);
+  const results = cleanList(first(underHeading(onepager, "Results"), "bullets")?.items).filter(
+    (r) => !isTestimonialEcho(r, testimonials)
+  );
+  const ownerWords = cleanList(
+    first(underHeading(onepager, "The problems I fix"), "bullets")?.items
+  ).map(unquote);
+
+  const photo =
+    input.photo ??
+    (input.avatarUrl
+      ? {
+          src: input.avatarUrl,
+          alt: input.name,
+          kind: "avatar" as const,
+          width: 450,
+          height: 450,
+        }
+      : null);
+
+  const linkedin = input.row?.payload.identity.linkedin_url?.value?.trim() || null;
+  const slug = encodeURIComponent(input.slug);
+
+  const site: CoachSite = {
+    slug: input.slug,
+    name: input.name,
+    firstName: firstName(input.name),
+    photo,
+    stagePhoto: input.stagePhoto ?? null,
+    place: readPlace(input, onepager),
+    linkedinUrl: linkedin && /^https:\/\/([a-z]+\.)?linkedin\.com\//i.test(linkedin) ? linkedin : null,
+
+    positioning: clean(first(direction, "lede")?.text),
+    shortLine: three.short,
+    mediumLine: three.medium,
+    longLine: three.long,
+    intro: clean(first(onepager, "lede")?.text),
+    whoIHelp: clean(first(underHeading(onepager, "Who I help"), "paragraph")?.text),
+    ownerWords,
+    gap: readGap(direction),
+    keyMessages: cleanList(first(underHeading(direction, "Key messages"), "numbered")?.items),
+    method: readSteps(underHeading(onepager, "How I work")),
+    offer: readOffer(direction),
+    whyMe: cleanList(first(underHeading(direction, "Why you"), "bullets")?.items),
+    bio: clean(first(underHeading(bioBlocks, "Short bio"), "paragraph")?.text),
+    facts: readFacts(bioBlocks, onepager),
+    testimonials,
+    results,
+
+    links: {
+      score: `/score/${slug}`,
+      assessment: `/assessment/${slug}`,
+      book: `/book/${slug}`,
+    },
+    missing: [],
+    approvedOnly,
+  };
+
+  const missing: CoachSiteSource[] = [];
+  if (!direction.length) missing.push("offer:direction");
+  if (!lines.length) missing.push("offer:lines");
+  if (!onepager.length) missing.push("story:onepager");
+  if (!bioBlocks.length) missing.push("story:bio");
+  if (!testimonials.length) missing.push("proof.client_results");
+  if (!site.photo) missing.push("photo");
+  if (!site.place) missing.push("location");
+  site.missing = missing;
+
+  return site;
+}
