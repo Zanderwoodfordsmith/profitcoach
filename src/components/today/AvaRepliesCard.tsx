@@ -16,6 +16,7 @@ type State = {
   autopilotAvailable: boolean;
   whatsappReady: boolean;
   hasPhone: boolean;
+  phone: string;
   pushKey: string | null;
 };
 
@@ -48,6 +49,10 @@ export function AvaRepliesCard() {
   const [error, setError] = useState<string | null>(null);
   const [pushNote, setPushNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Settings, not daily work: show a one-line summary unless the coach opens it.
+  const [open, setOpen] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState<string | null>(null);
+  const [phoneSaving, setPhoneSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +81,26 @@ export function AvaRepliesCard() {
     }
     setError(null);
     setState({ ...state, settings: { ...state.settings, ...body.settings } });
+  };
+
+  const savePhone = async () => {
+    const headers = await getCoachAuthHeaders(impersonatingCoachId);
+    if (!headers || !state || phoneDraft == null) return;
+    setPhoneSaving(true);
+    const res = await fetch("/api/coach/ava-settings", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ phone: phoneDraft }),
+    });
+    const body = (await res.json().catch(() => null)) as { phone?: string; error?: string } | null;
+    setPhoneSaving(false);
+    if (!res.ok || body?.phone === undefined) {
+      setError(body?.error ?? "Could not save your number.");
+      return;
+    }
+    setError(null);
+    setPhoneDraft(null);
+    setState({ ...state, phone: body.phone, hasPhone: Boolean(body.phone) });
   };
 
   const enablePush = async () => {
@@ -124,9 +149,56 @@ export function AvaRepliesCard() {
   }
   const s = state.settings;
 
+  if (!open) {
+    const channels = [
+      s.notify_push ? "this device" : null,
+      s.notify_whatsapp ? "WhatsApp" : null,
+      s.notify_email ? "email" : null,
+    ].filter(Boolean);
+    const mode = MODES.find((m) => m.id === s.reply_mode)?.label ?? "Off";
+    return (
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm">
+        <p className="text-slate-700">
+          <span className="font-semibold text-slate-900">Ava replies:</span> {mode}
+          {s.reply_mode !== "off"
+            ? channels.length
+              ? `, alerts by ${channels.join(", ")}`
+              : ", no alerts switched on"
+            : ""}
+          {s.reply_mode !== "off" && s.notify_whatsapp && !state.hasPhone ? (
+            <>
+              {" · "}
+              <button type="button" onClick={() => setOpen(true)} className="text-amber-800 underline underline-offset-2">
+                add your mobile for WhatsApp
+              </button>
+            </>
+          ) : null}
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-expanded={false}
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+        >
+          Change
+        </button>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5">
-      <h2 className="text-lg font-semibold text-slate-900">Ava replies</h2>
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">Ava replies</h2>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-expanded
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+        >
+          Done
+        </button>
+      </div>
       <p className="mt-1 max-w-2xl text-sm text-slate-600">
         People who reply within minutes book far more calls. Ava reads every LinkedIn reply as it lands.
       </p>
@@ -151,7 +223,7 @@ export function AvaRepliesCard() {
                   onChange={() => void save({ reply_mode: m.id })}
                 />
                 {m.label}
-                {locked ? <span className="text-xs font-normal text-slate-500">· switched on by BCA</span> : null}
+                {locked ? <span className="text-xs font-normal text-slate-500">· BCA turns this on when you&apos;re ready</span> : null}
               </span>
               <span className="mt-1 text-slate-600">{m.detail}</span>
             </label>
@@ -180,9 +252,37 @@ export function AvaRepliesCard() {
           <label className="flex items-center gap-2">
             <input id="ava-whatsapp" type="checkbox" checked={s.notify_whatsapp} onChange={(e) => void save({ notify_whatsapp: e.target.checked })} />
             WhatsApp from BCA
-            {!state.hasPhone ? <span className="text-amber-800">· add your mobile number in Settings</span> : null}
             {state.hasPhone && !state.whatsappReady ? <span className="text-slate-500">· starting soon</span> : null}
           </label>
+          {s.notify_whatsapp ? (
+            <div className="flex flex-wrap items-center gap-2 pl-6">
+              <label htmlFor="ava-phone" className="text-slate-700">
+                Your mobile
+              </label>
+              <input
+                id="ava-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="+44 7700 900123"
+                value={phoneDraft ?? state.phone}
+                onChange={(e) => setPhoneDraft(e.target.value)}
+                className="w-48 rounded-md border border-slate-300 px-2.5 py-1.5"
+              />
+              {phoneDraft != null && phoneDraft !== state.phone ? (
+                <button
+                  type="button"
+                  onClick={() => void savePhone()}
+                  disabled={phoneSaving}
+                  className="rounded-md bg-sky-700 px-3 py-1.5 font-semibold text-white disabled:opacity-50"
+                >
+                  {phoneSaving ? "Saving…" : "Save"}
+                </button>
+              ) : !state.hasPhone ? (
+                <span className="text-amber-800">Add it so Ava can message you</span>
+              ) : null}
+            </div>
+          ) : null}
           <label className="flex items-center gap-2">
             <input id="ava-email" type="checkbox" checked={s.notify_email} onChange={(e) => void save({ notify_email: e.target.checked })} />
             Email to yourself

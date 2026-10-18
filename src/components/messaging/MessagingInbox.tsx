@@ -4998,7 +4998,7 @@ export function MessagingInbox({
                   ) : null}
                   <li className="px-2.5 py-0.5">
                     <div
-                      className={`flex items-start gap-2 rounded-lg px-2 py-2 ${
+                      className={`relative flex items-start gap-2 rounded-lg px-2 py-2 ${
                         checked
                           ? "bg-sky-50 ring-1 ring-sky-300"
                           : active
@@ -5078,36 +5078,31 @@ export function MessagingInbox({
                                   {c.unread_count}
                                 </span>
                               ) : null}
-                              <span
-                                role="button"
-                                tabIndex={0}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void patchConversation(c.id, {
-                                    starred: !c.starred,
-                                  });
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    void patchConversation(c.id, {
-                                      starred: !c.starred,
-                                    });
-                                  }
-                                }}
-                                className={`text-sm ${
-                                  c.starred
-                                    ? "text-amber-500"
-                                    : "text-slate-300 hover:text-slate-500"
-                                }`}
-                                aria-label={c.starred ? "Unstar" : "Star"}
-                              >
-                                {c.starred ? "★" : "☆"}
+                              {/* Space for the star button, which sits over this
+                                  spot outside the row button (buttons can't nest). */}
+                              <span className="inline-block w-3.5 text-sm" aria-hidden>
+                                {"\u00a0"}
                               </span>
                             </span>
                           </span>
                         </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void patchConversation(c.id, {
+                            starred: !c.starred,
+                          })
+                        }
+                        className={`absolute bottom-2 right-2 w-3.5 text-sm leading-5 ${
+                          c.starred
+                            ? "text-amber-500"
+                            : "text-slate-300 hover:text-slate-500"
+                        }`}
+                        aria-label={c.starred ? `Unstar ${personName}` : `Star ${personName}`}
+                        aria-pressed={Boolean(c.starred)}
+                      >
+                        {c.starred ? "★" : "☆"}
                       </button>
                     </div>
                   </li>

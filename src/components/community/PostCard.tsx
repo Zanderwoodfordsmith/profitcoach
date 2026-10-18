@@ -125,16 +125,10 @@ export function PostCard({
   }, [isScheduledForFuture, post.published_at]);
 
   return (
+    // Click anywhere on the card to open it; keyboard and screen readers use the
+    // title button (a card can't be a button when it also holds like/comment buttons).
     <article
-      role="button"
-      tabIndex={0}
       onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
       className={`flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left transition hover:border-slate-300 hover:shadow ${pinnedChromeClass} ${
         feedCardHasBeenRead && !engagementHoverOpen
           ? post.is_pinned
@@ -206,7 +200,16 @@ export function PostCard({
       <div className="mt-3 flex w-full min-w-0 gap-3">
         <div className={`min-w-0 flex-1 ${post.media.length > 0 ? "pr-2" : ""}`}>
           <h2 className="line-clamp-2 text-xl font-semibold leading-snug tracking-tight text-slate-900">
-            <SearchHighlight html={titleHighlightHtml} fallback={post.title} />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen();
+              }}
+              className="text-left focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            >
+              <SearchHighlight html={titleHighlightHtml} fallback={post.title} />
+            </button>
           </h2>
           <div className="mt-0.5 line-clamp-2 text-base leading-relaxed text-slate-600">
             {bodyHighlightHtml ? (

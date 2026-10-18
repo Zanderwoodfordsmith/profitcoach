@@ -672,13 +672,13 @@ export function BossDashboardSettings({
 
         <ProfileSectionCard
           title="Reply style"
-          description="Optional notes the reply copilot layers on top of the shared prompt — how you sign off, what you never pitch, phrases you like."
+          description="Optional notes for the replies Ava drafts for you: how you sign off, what you never pitch, phrases you like."
         >
           <ProfileFieldRow
             label="Notes"
             htmlFor="reply_copilot_notes"
             alignTop
-            hint="Used when you tap the sparkle in Conversations. Leave blank to use the shared voice only."
+            hint="Used whenever Ava drafts a reply, including the sparkle in Conversations. Leave blank to use the standard voice."
             last
           >
             <ProfileMinimalTextarea

@@ -742,6 +742,7 @@ export function CampaignOverviewHero({
                           onFocus={() => setHoverKey(bar.key)}
                           onBlur={() => setHoverKey((current) => (current === bar.key ? null : current))}
                           tabIndex={0}
+                          role="img"
                           aria-label={
                             bar.cardTitle
                               ? `${bar.cardTitle}: ${bar.invite + bar.message + bar.engagement + bar.planned} total`
@@ -795,7 +796,14 @@ export function CampaignOverviewHero({
                     ) : null}
                   </div>
                   <div className="mt-1.5 flex gap-1 sm:gap-1.5">
-                    {bars.map((bar) => (
+                    {bars.map((bar, i) => {
+                      // Many narrow bars (quarter = 14 weeks): label every few so dates don't collide.
+                      const every = bars.length > 20 ? 4 : bars.length > 8 ? 2 : 1;
+                      const everyPhone = bars.length > 8 ? every * 2 : bars.length > 5 ? 2 : 1;
+                      const thin = range !== "week";
+                      const hideDesktop = thin && !bar.isToday && i % every !== 0;
+                      const hidePhone = thin && !bar.isToday && i % everyPhone !== 0;
+                      return (
                       <span
                         key={bar.key}
                         className={`min-w-0 flex-1 text-center ${
@@ -806,7 +814,7 @@ export function CampaignOverviewHero({
                           range === "week"
                             ? "text-xs sm:text-sm"
                             : "whitespace-nowrap text-[11px] tabular-nums sm:text-xs"
-                        }`}
+                        } ${hidePhone ? "max-sm:invisible" : ""} ${hideDesktop ? "sm:invisible" : ""}`}
                       >
                         {bar.label}
                         {bar.sublabel ? (
@@ -815,7 +823,8 @@ export function CampaignOverviewHero({
                           </span>
                         ) : null}
                       </span>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

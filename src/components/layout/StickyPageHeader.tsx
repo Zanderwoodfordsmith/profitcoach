@@ -108,7 +108,8 @@ export function StickyPageHeader({
       <div
         className={`flex ${nowrap ? "flex-nowrap" : "flex-wrap"} justify-between gap-3 ${tabs ? "items-end" : "items-start"}`}
       >
-        <header className="min-w-0 flex-1 text-left">
+        {/* On phones the sidebar toggle (BossProNavToggle) is pinned top-left: keep the title clear of it. */}
+        <header className={`min-w-0 flex-1 text-left ${includeChrome ? "max-md:pl-7" : ""}`}>
           {leading ? <div className="mb-2">{leading}</div> : null}
           {eyebrow ? (
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
@@ -133,9 +134,12 @@ export function StickyPageHeader({
                 )
               ) : null}
               {description && descriptionPlacement === "info" ? (
-                <PageHeaderDescriptionInfo>
-                  {description}
-                </PageHeaderDescriptionInfo>
+                // Hidden on phones: the title needs the room next to the tabs and icons.
+                <span className="max-sm:hidden">
+                  <PageHeaderDescriptionInfo>
+                    {description}
+                  </PageHeaderDescriptionInfo>
+                </span>
               ) : null}
             </div>
             {tabs ? (

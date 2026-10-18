@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAlertsWhatsAppAccount } from "@/lib/ava/alertsWhatsApp";
+import { getAlertsWhatsAppAccount, whatsappIdForPhone } from "@/lib/ava/alertsWhatsApp";
 import { getAvaSettings, isAutopilotGloballyOn, saveCoachAvaSettings } from "@/lib/ava/settings";
 import { isWebPushConfigured } from "@/lib/push/webPush";
 import { requireShareCoach } from "@/lib/shareLinks/requireShareCoach";
@@ -22,6 +22,7 @@ export async function GET(request: Request) {
     autopilotAvailable: globalOn && settings.autopilot_allowed,
     whatsappReady: Boolean(wa && wa.status === "OK"),
     hasPhone: Boolean((profile?.phone as string | null)?.trim()),
+    phone: ((profile?.phone as string | null) ?? "").trim(),
     pushKey: isWebPushConfigured() ? process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY?.trim() ?? null : null,
   });
 }
@@ -39,12 +40,32 @@ export async function PATCH(request: Request) {
     const v = Number(body[key]);
     if (body[key] !== undefined && Number.isInteger(v) && v >= 0 && v <= 23) patch[key] = v;
   }
+  // The coach's own mobile, for WhatsApp alerts (there was nowhere else to set it).
+  let phone: string | null | undefined;
+  if (typeof body.phone === "string") {
+    const raw = body.phone.trim();
+    if (!raw) phone = null;
+    else {
+      const digits = whatsappIdForPhone(raw);
+      if (!digits) {
+        return NextResponse.json(
+          { error: "That doesn't look like a mobile number. Include the country code, e.g. +44 7700 900123." },
+          { status: 400 }
+        );
+      }
+      phone = `+${digits}`;
+    }
+    const { error } = await supabaseAdmin.from("profiles").update({ phone }).eq("id", auth.coachId);
+    if (error) return NextResponse.json({ error: "Could not save your number." }, { status: 500 });
+  }
   if (patch.reply_mode === "autopilot" && !(await isAutopilotGloballyOn())) {
     return NextResponse.json({ error: "Autopilot isn't available yet." }, { status: 400 });
   }
   try {
-    const settings = await saveCoachAvaSettings(auth.coachId, patch);
-    return NextResponse.json({ settings });
+    const settings = Object.keys(patch).length
+      ? await saveCoachAvaSettings(auth.coachId, patch)
+      : await getAvaSettings(auth.coachId);
+    return NextResponse.json(phone === undefined ? { settings } : { settings, phone: phone ?? "" });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Could not save." }, { status: 400 });
   }

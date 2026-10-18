@@ -137,6 +137,8 @@ function useCommunityMemberDirectoryState() {
   }, [pathname, searchParams]);
 
   const [roster, setRoster] = useState<CommunityRosterMember[]>([]);
+  /** False until the first roster load lands, so counts don't read "0 members" meanwhile. */
+  const [rosterLoaded, setRosterLoaded] = useState(false);
   const [presenceRows, setPresenceRows] = useState<PresenceRow[]>([]);
   const [presenceUnavailable, setPresenceUnavailable] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -186,6 +188,7 @@ function useCommunityMemberDirectoryState() {
     const merged = mergeRoster(plist as StaffProfileRow[], coaches);
     if (!includeLadder) {
       setRoster(merged);
+      setRosterLoaded(true);
       return;
     }
 
@@ -198,6 +201,7 @@ function useCommunityMemberDirectoryState() {
         ladder_level: ladderByUser.get(m.id) ?? null,
       }))
     );
+    setRosterLoaded(true);
   }, []);
 
   const loadPresence = useCallback(async () => {
@@ -273,9 +277,11 @@ function useCommunityMemberDirectoryState() {
           ]);
         } else {
           await loadPresence();
+          // The feed paints first; the (small) roster follows once the page settles,
+          // so the sidebar counts and "Recently active" fill in within a second or two.
           rosterDelayId = window.setTimeout(() => {
             if (!cancelled) void loadRoster({ includeLadder: false });
-          }, 8000);
+          }, 1200);
         }
         if (!cancelled) await touchPresence();
         if (!cancelled) await loadPresence();
@@ -333,5 +339,6 @@ function useCommunityMemberDirectoryState() {
     clock,
     refresh,
     counts,
+    rosterLoaded,
   };
 }
