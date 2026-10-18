@@ -199,8 +199,14 @@ export async function GET(request: Request) {
     const idSet = new Set(ids);
     const lastLoginByUserId = new Map<string, string | null>();
     const emailByUserId = new Map<string, string | null>();
+    const achievementsByUser = new Map<string, Array<{ level_id: string }>>();
+    const clientCountByCoachId = new Map<string, number>();
+    const paymentsByCoachId = new Map<string, PaymentForBillingKind[]>();
+    const linkedinScrapedAtByCoachId = new Map<string, string>();
 
-    if (ids.length > 0) {
+    // Every lookup below only needs the coach ids, so they run together.
+    const loadAuthUsers = async () => {
+      if (ids.length === 0) return;
       const authUsersRes = await supabaseAdmin.auth.admin.listUsers({
         page: 1,
         perPage: 1000,
@@ -213,13 +219,11 @@ export async function GET(request: Request) {
           }
         }
       }
-    }
-
-    const lastActiveByUserId = await loadLastActiveAtByUserId(ids);
+    };
 
     // Pull achievements in one query and group by user.
-    const achievementsByUser = new Map<string, Array<{ level_id: string }>>();
-    if (ids.length > 0) {
+    const loadAchievements = async () => {
+      if (ids.length === 0) return;
       const achRes = await supabaseAdmin
         .from("community_ladder_achievements")
         .select("user_id, level_id")
@@ -233,10 +237,10 @@ export async function GET(request: Request) {
           achievementsByUser.set(r.user_id as string, list);
         }
       }
-    }
+    };
 
-    const clientCountByCoachId = new Map<string, number>();
-    if (ids.length > 0) {
+    const loadClientCounts = async () => {
+      if (ids.length === 0) return;
       const contactsRes = await supabaseAdmin
         .from("contacts")
         .select("coach_id")
@@ -252,10 +256,10 @@ export async function GET(request: Request) {
           );
         }
       }
-    }
+    };
 
-    const paymentsByCoachId = new Map<string, PaymentForBillingKind[]>();
-    if (ids.length > 0) {
+    const loadPayments = async () => {
+      if (ids.length === 0) return;
       const paymentSelect =
         "id, customer_email, coach_id, amount_cents, currency, status, description, paid_at, billing_kind_override";
       const pageSize = 1000;
@@ -287,10 +291,10 @@ export async function GET(request: Request) {
       if (paymentsError && paymentsError.code !== "42P01") {
         paymentsByCoachId.clear();
       }
-    }
+    };
 
-    const linkedinScrapedAtByCoachId = new Map<string, string>();
-    if (ids.length > 0) {
+    const loadLinkedInScrapes = async () => {
+      if (ids.length === 0) return;
       const liRes = await supabaseAdmin
         .from("coach_linkedin_profiles")
         .select("coach_id, scraped_at")
@@ -303,11 +307,19 @@ export async function GET(request: Request) {
           linkedinScrapedAtByCoachId.set(coachId, scrapedAt);
         }
       }
-    }
+    };
 
-    const nativeDiscoveryReady = bookingProviderMissing
-      ? new Map<string, boolean>()
-      : await nativeDiscoveryReadyByCoachIds(ids);
+    const [lastActiveByUserId, nativeDiscoveryReady] = await Promise.all([
+      loadLastActiveAtByUserId(ids),
+      bookingProviderMissing
+        ? Promise.resolve(new Map<string, boolean>())
+        : nativeDiscoveryReadyByCoachIds(ids),
+      loadAuthUsers(),
+      loadAchievements(),
+      loadClientCounts(),
+      loadPayments(),
+      loadLinkedInScrapes(),
+    ]);
 
     const coaches = rows.map((row) => {
       const profRaw = row.profiles as

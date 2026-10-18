@@ -112,16 +112,43 @@ export async function GET(
   const isOlderPage = Boolean(before);
 
   // Opening the thread marks it read. Older pages and the side panel do not.
+  // Runs alongside the message load; awaited before responding.
+  let markRead: PromiseLike<unknown> | null = null;
   if (!isSide && !isOlderPage && (conversation.unread_count as number) > 0) {
-    await supabaseAdmin
-      .from("messaging_conversations")
-      .update({ unread_count: 0 })
-      .eq("id", id)
-      .eq("coach_id", access.coachId);
+    // Promise.resolve starts the query now (builders only run when awaited).
+    markRead = Promise.resolve(
+      supabaseAdmin
+        .from("messaging_conversations")
+        .update({ unread_count: 0 })
+        .eq("id", id)
+        .eq("coach_id", access.coachId)
+    );
     conversation.unread_count = 0;
   }
 
   if (!isSide) {
+    // Header data only needs the conversation row: start it with the messages.
+    const sidePromise = isOlderPage
+      ? null
+      : Promise.all([
+          enrichMessagingConversationPeople([conversation]),
+          resolveConversationLinkedInUrl({
+            conversationId: id,
+            contactId: (conversation.contact_id as string | null) ?? null,
+            unipileChatId: (conversation.unipile_chat_id as string | null) ?? null,
+            existing: (conversation.prospect_linkedin_url as string | null) ?? null,
+            fetchAttendees: false,
+          }),
+          listScheduledForConversation({
+            conversationId: id,
+            coachId: access.coachId,
+          }).catch((err) => {
+            console.error("messaging scheduled list:", err);
+            return [] as Awaited<ReturnType<typeof listScheduledForConversation>>;
+          }),
+        ]);
+    // Don't leave a rejected side load unhandled if we return early below.
+    sidePromise?.catch(() => undefined);
     const page = await loadThreadMessagePage({
       conversationId: id,
       limit,
@@ -129,6 +156,7 @@ export async function GET(
     });
     if (page.error) {
       console.error("messaging messages list:", page.error);
+      await markRead;
       return NextResponse.json({ error: "Could not load messages." }, { status: 500 });
     }
     const hydratePromise = hydratePlaceholderEmailBodies({
@@ -137,7 +165,7 @@ export async function GET(
     }).catch((err) => {
       console.error("hydrate email bodies:", err);
     });
-    if (isOlderPage) {
+    if (isOlderPage || !sidePromise) {
       await hydratePromise;
       const enrichedMessages = await signThreadMessages(page.messages);
       return noStoreJson({
@@ -146,26 +174,10 @@ export async function GET(
       });
     }
 
-    const sidePromise = Promise.all([
-      enrichMessagingConversationPeople([conversation]),
-      resolveConversationLinkedInUrl({
-        conversationId: id,
-        contactId: (conversation.contact_id as string | null) ?? null,
-        unipileChatId: (conversation.unipile_chat_id as string | null) ?? null,
-        existing: (conversation.prospect_linkedin_url as string | null) ?? null,
-        fetchAttendees: false,
-      }),
-      listScheduledForConversation({
-        conversationId: id,
-        coachId: access.coachId,
-      }).catch((err) => {
-        console.error("messaging scheduled list:", err);
-        return [] as Awaited<ReturnType<typeof listScheduledForConversation>>;
-      }),
-    ]);
     await hydratePromise;
     const enrichedMessages = await signThreadMessages(page.messages);
     const [enrichedList, linkedInUrl, scheduled] = await sidePromise;
+    await markRead;
     const enrichedConversation = enrichedList[0];
     if (enrichedConversation && linkedInUrl) {
       enrichedConversation.prospect_linkedin_url = linkedInUrl;
@@ -209,32 +221,22 @@ export async function GET(
     }
   }
 
+  // Backfill the link without holding up the response (awaited below).
+  let saveContactLink: PromiseLike<unknown> | null = null;
   if (
     contactId &&
     contactId !== (conversation.contact_id as string | null)
   ) {
-    await supabaseAdmin
-      .from("messaging_conversations")
-      .update({ contact_id: contactId })
-      .eq("id", id);
+    saveContactLink = Promise.resolve(
+      supabaseAdmin
+        .from("messaging_conversations")
+        .update({ contact_id: contactId })
+        .eq("id", id)
+    );
     conversation.contact_id = contactId;
   }
 
-  let prospect = null;
-  let coachSlug: string | null = null;
-  let activity: Awaited<ReturnType<typeof loadProspectActivity>> = [];
-  if (contactId) {
-    const loaded = await loadEnrichedProspectById(contactId, {
-      coachId: access.coachId,
-    });
-    prospect = loaded?.prospect ?? null;
-    coachSlug = loaded?.coachSlug ?? null;
-    activity = await loadProspectActivity(contactId, {
-      coachId: access.coachId,
-    });
-  }
-
-  let booking: {
+  type BookingSummary = {
     id: string;
     starts_at: string;
     ends_at: string | null;
@@ -242,86 +244,102 @@ export async function GET(
     prospect_timezone: string | null;
     meeting_join_url: string | null;
     meeting_location_type: string | null;
-  } | null = null;
+  };
   const bookingId = conversation.booking_id as string | null;
-  if (bookingId) {
-    const { data: bookingRow } = await supabaseAdmin
-      .from("bookings")
-      .select(
-        "id, starts_at, ends_at, status, prospect_timezone, meeting_join_url, meeting_location_type"
-      )
-      .eq("id", bookingId)
-      .maybeSingle();
-    if (bookingRow) booking = bookingRow;
-  }
 
-  const [enrichedConversation] = await enrichMessagingConversationPeople([
-    conversation,
+  // Everything here only needs the contact id and the conversation row.
+  const [loaded, activity, booking, enrichedList, coachTags, assessmentUrl, replyDisposition] =
+    await Promise.all([
+      contactId
+        ? loadEnrichedProspectById(contactId, { coachId: access.coachId })
+        : Promise.resolve(null),
+      contactId
+        ? loadProspectActivity(contactId, { coachId: access.coachId })
+        : Promise.resolve([] as Awaited<ReturnType<typeof loadProspectActivity>>),
+      bookingId
+        ? (async (): Promise<BookingSummary | null> => {
+            const { data: bookingRow } = await supabaseAdmin
+              .from("bookings")
+              .select(
+                "id, starts_at, ends_at, status, prospect_timezone, meeting_join_url, meeting_location_type"
+              )
+              .eq("id", bookingId)
+              .maybeSingle();
+            return (bookingRow as BookingSummary | null) ?? null;
+          })()
+        : Promise.resolve(null),
+      enrichMessagingConversationPeople([conversation]),
+      coachIdForContact
+        ? listCoachProspectTags(coachIdForContact)
+        : Promise.resolve([] as Awaited<ReturnType<typeof listCoachProspectTags>>),
+      coachIdForContact
+        ? buildLeadAssessmentUrl({ coachId: coachIdForContact }).catch((err) => {
+            console.error("assessment urls:", err);
+            return null;
+          })
+        : Promise.resolve(null),
+      contactId
+        ? (async (): Promise<string | null> => {
+            const { data: dispositionRow, error: dispErr } = await supabaseAdmin
+              .from("contacts")
+              .select("reply_disposition")
+              .eq("id", contactId)
+              .maybeSingle();
+            if (dispErr) return null;
+            const raw = (dispositionRow as { reply_disposition?: string | null } | null)
+              ?.reply_disposition;
+            return raw === "interested" || raw === "neutral" || raw === "not_interested"
+              ? raw
+              : null;
+          })()
+        : Promise.resolve(null),
+    ]);
+  const prospect = loaded?.prospect ?? null;
+  const coachSlug: string | null = loaded?.coachSlug ?? null;
+  const enrichedConversation = enrichedList[0];
+
+  // These two need the prospect record.
+  const prospectRec = prospect as {
+    full_name?: string | null;
+    email?: string | null;
+    business_name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    linkedin_url?: string | null;
+  } | null;
+  const [linkedInUrl, personalisedAssessmentUrl] = await Promise.all([
+    resolveConversationLinkedInUrl({
+      conversationId: id,
+      contactId,
+      unipileChatId: (conversation.unipile_chat_id as string | null) ?? null,
+      existing:
+        (enrichedConversation?.prospect_linkedin_url as string | null) ??
+        (conversation.prospect_linkedin_url as string | null) ??
+        (prospectRec?.linkedin_url ?? null),
+      fetchAttendees:
+        String(conversation.last_channel || "").toLowerCase() === "linkedin",
+    }),
+    coachIdForContact
+      ? (async () => {
+          const names = splitFullName(prospectRec?.full_name || "");
+          return buildLeadAssessmentUrl({
+            coachId: coachIdForContact,
+            contactId,
+            firstName: prospectRec?.first_name || names.first_name,
+            lastName: prospectRec?.last_name || names.last_name,
+            company: prospectRec?.business_name,
+            email: prospectRec?.email,
+          });
+        })().catch((err) => {
+          console.error("assessment urls:", err);
+          return null;
+        })
+      : Promise.resolve(null),
   ]);
-  const linkedInUrl = await resolveConversationLinkedInUrl({
-    conversationId: id,
-    contactId,
-    unipileChatId: (conversation.unipile_chat_id as string | null) ?? null,
-    existing:
-      (enrichedConversation?.prospect_linkedin_url as string | null) ??
-      (conversation.prospect_linkedin_url as string | null) ??
-      ((prospect as { linkedin_url?: string | null } | null)?.linkedin_url ??
-        null),
-    fetchAttendees:
-      String(conversation.last_channel || "").toLowerCase() === "linkedin",
-  });
   if (enrichedConversation && linkedInUrl) {
     enrichedConversation.prospect_linkedin_url = linkedInUrl;
   }
-
-  const coachTags = coachIdForContact
-    ? await listCoachProspectTags(coachIdForContact)
-    : [];
-
-  let replyDisposition: string | null = null;
-  let assessmentUrl: string | null = null;
-  let personalisedAssessmentUrl: string | null = null;
-  if (coachIdForContact) {
-    try {
-      assessmentUrl = await buildLeadAssessmentUrl({ coachId: coachIdForContact });
-      const prospectRec = prospect as {
-        full_name?: string | null;
-        email?: string | null;
-        business_name?: string | null;
-        first_name?: string | null;
-        last_name?: string | null;
-      } | null;
-      const names = splitFullName(prospectRec?.full_name || "");
-      personalisedAssessmentUrl = await buildLeadAssessmentUrl({
-        coachId: coachIdForContact,
-        contactId,
-        firstName: prospectRec?.first_name || names.first_name,
-        lastName: prospectRec?.last_name || names.last_name,
-        company: prospectRec?.business_name,
-        email: prospectRec?.email,
-      });
-    } catch (err) {
-      console.error("assessment urls:", err);
-    }
-  }
-  if (contactId) {
-    const { data: dispositionRow, error: dispErr } = await supabaseAdmin
-      .from("contacts")
-      .select("reply_disposition")
-      .eq("id", contactId)
-      .maybeSingle();
-    if (!dispErr) {
-      const raw = (dispositionRow as { reply_disposition?: string | null } | null)
-        ?.reply_disposition;
-      if (
-        raw === "interested" ||
-        raw === "neutral" ||
-        raw === "not_interested"
-      ) {
-        replyDisposition = raw;
-      }
-    }
-  }
+  await saveContactLink;
 
   return noStoreJson({
     conversation: enrichedConversation ?? conversation,
