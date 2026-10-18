@@ -1,5 +1,6 @@
 "use client";
 
+import { CampaignGroupTestPanel } from "@/components/campaigns/CampaignGroupTestPanel";
 import { CampaignLaunchCheck } from "@/components/campaigns/CampaignLaunchCheck";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -1179,6 +1180,9 @@ export function LinkedInCampaignEditor() {
           refreshKey={steps.map((s) => `${s.position}:${s.step_type}:${(s.body ?? "").length}`).join("|")}
           getHeaders={launchCheckHeaders}
         />
+      ) : null}
+      {campaignId && activeCampaign.status !== "archived" && activeCampaign.channel !== "email" ? (
+        <CampaignGroupTestPanel campaignId={campaignId} getHeaders={launchCheckHeaders} onChanged={() => void load()} />
       ) : null}
 
       {error && !templatePickerOpen ? (

@@ -688,8 +688,23 @@ export async function processOutreachJobsTick(): Promise<{
         if (unfilled.length) {
           throw new Error(`Write your own words in place of ${unfilled.join(", ")} before this step can send.`);
         }
+        let extras: Record<string, string | null | undefined> = templateExtras;
+        if (/\{\{\s*profile_hook\s*\}\}/i.test(picked.body)) {
+          const { profileHookForLead } = await import("@/lib/groupTests/profileHook");
+          const meta = (leadForMessage.metadata ?? null) as Record<string, unknown> | null;
+          const hook = await profileHookForLead({
+            leadId: lead.id as string,
+            accountId: accountId as string,
+            identifier:
+              (leadForMessage.linkedin_provider_id as string | null) ||
+              (typeof meta?.public_identifier === "string" ? meta.public_identifier : null),
+            company: (leadForMessage.company as string | null) ?? null,
+            metadata: meta,
+          });
+          extras = { ...templateExtras, profile_hook: hook };
+        }
         return {
-          text: buildMessageBody(picked.body, leadForMessage, templateExtras),
+          text: buildMessageBody(picked.body, leadForMessage, extras),
           variantKey: picked.variantKey,
           variant: picked.variant,
         };

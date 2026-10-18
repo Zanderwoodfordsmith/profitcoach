@@ -49,3 +49,23 @@ Branch: `ava-copilot` in a separate worktree (`../profit-coach-app-ava`). Nothin
 ## Decisions I made (overturn any of these)
 - Only things prospects would see broken block a launch. Everything else is a warning with the reason from our data.
 - Audience warnings use the first 300 people in the campaign.
+
+## 3. BCA group tests
+
+**What it is:** Admin, Campaign library, **Group tests** tab. A test is one step (the first message after connecting, or the connection note) with two fixed versions, A and B. Coaches join from their campaign editor ("Join a BCA group test"). They fill in only their own slots, for example who they help and what those owners say most, then preview both versions. The step is then locked: the editor shows it read-only, and the server restores the wording if anything tries to change it. Each person gets A or B at random, and results pool across every coach in the test.
+
+**Results** show people, accepted, replied and interested per version, how many coaches are in, and a plain-English verdict. It only calls a winner when the gap is unlikely to be luck (p < 0.05, 200+ people per version); otherwise it says how far it is from the target (default 1,500 per version).
+
+**New merge field `{{profile_hook}}`:** one true sentence Ava writes from the prospect's LinkedIn profile when the message sends. Example from a test profile: "You've taken Hallmark Precision Engineering from 12 staff to 46 since taking over from your father in 2011, which is no small feat." If the profile is thin, it falls back to "I see you're running {company}." It is cached on the lead, and any coach can use it in any message.
+
+**Seeded as drafts (not live):**
+1. "Who you are: tribe or place". A names their tribe ("I work with [[tribe]]"), B names their area ("owners around {{city}}"). Same pain line and question.
+2. "A line from their profile". A tribe callout vs B profile line plus tribe callout.
+
+Tested live on a Zander Demo draft campaign (join, lock, results, leave, then restored exactly).
+
+## Decisions I made (overturn any of these)
+- Two versions per test, not three. The existing A/B system only handles two, and two need half the people of three to reach an answer. Your three ideas became two tests.
+- The test replaces the first message step (or the connection note), so coaches don't have to rebuild their sequence.
+- Leaving a test keeps version A as the coach's own wording.
+- Win rule: p < 0.05 and at least 200 people per version. Target 1,500 per version (adjustable per test).

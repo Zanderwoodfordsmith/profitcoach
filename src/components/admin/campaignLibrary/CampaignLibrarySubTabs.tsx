@@ -9,7 +9,7 @@ export function CampaignLibrarySubTabs({
   active,
   actions,
 }: {
-  active: CampaignLibraryItemType;
+  active: CampaignLibraryItemType | "group_tests";
   actions?: ReactNode;
 }) {
   return (
@@ -39,6 +39,13 @@ export function CampaignLibrarySubTabs({
               href: libraryListHref("step"),
               label: "Steps",
               active: active === "step",
+              scroll: false,
+            },
+            {
+              kind: "link",
+              href: "/admin/campaign-library/group-tests",
+              label: "Group tests",
+              active: active === "group_tests",
               scroll: false,
             },
           ]}

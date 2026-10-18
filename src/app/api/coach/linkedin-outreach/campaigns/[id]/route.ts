@@ -95,9 +95,22 @@ export async function PATCH(request: Request, ctx: Ctx) {
         body.release_wait_position >= 0
           ? body.release_wait_position
           : undefined;
+      // Group test steps keep their fixed wording whatever the editor sends.
+      const { lockedStepsById } = await import("@/lib/groupTests/store");
+      const locked = await lockedStepsById(id);
+      const incoming = (body.steps as CampaignStepInput[]).map((step) => {
+        const fixed = step.id ? locked.get(step.id) : undefined;
+        if (!fixed) return step;
+        return {
+          ...step,
+          body: fixed.body,
+          variants: (fixed.variants as CampaignStepInput["variants"]) ?? null,
+          config: fixed.config,
+        };
+      });
       const steps = await replaceCampaignSteps(
         id,
-        body.steps as CampaignStepInput[],
+        incoming,
         releaseWaitPosition != null ? { releaseWaitPosition } : undefined
       );
       return NextResponse.json({ steps });
