@@ -93,3 +93,24 @@ The rules run in order (`src/lib/coachHealth.ts`, tested): not logging in for 14
 Today's board: 14 "LinkedIn not connected", 6 "not logging in", 5 "not sending", 1 broken connection, 8 "Blueprint not finished".
 
 Ava's daily nudges (from the Ava plan) can read this board directly. It takes about 15 seconds to build, so it's admin-only and on demand for now.
+
+## 6. Client data prep (for next week's entry)
+
+So coaches can enter their clients in one go and we learn what their best clients look like.
+
+**What a coach sees.** On their Clients page:
+- An **Add many** button. They copy their client list from Excel or Google Sheets (header row included) and paste it in. Only Name is required. A button copies the column headings so they can start a sheet in the right shape. Rows that fail say which sheet row and why; the rest still save.
+- A **Your best clients** card. It weights clients they rate 4 or 5 double and shows sector, turnover, team size and how clients found them, plus a one-line summary, for example "Your best clients are mostly £1m to £2m turnover accountancy businesses with 6 to 15 staff, and most found you through referral."
+
+**New client fields:** sector, turnover band, team size, how they found you, the result you got, and fit (1 to 5: "how many more like them would you want?"). These go alongside the fee and dates the roster already had.
+
+**Forgiving input.** Turnover can be typed as "£1m-£3m", "750k", "1,200,000" or "2.5". We take the midpoint and pick the band. Team size works the same way ("10-24", "about 30"). Source understands everyday wording ("referred by Sam" becomes Referral, "saw my LinkedIn posts" becomes LinkedIn posts), and anything it can't place becomes Other rather than failing.
+
+**For you.** Admin, Coaches, Get clients now has a **Coaches' clients across BCA** panel above the board. It shows how clients found their coach, sectors, turnover and team size across every coach, and how many clients are in sectors that rarely answer on LinkedIn. It stays hidden until clients have been entered.
+
+**Tested:** unit tests, plus a live run on Zander Demo that pasted two clients, saved them, read them back and deleted them.
+
+## Decisions I made (overturn any of these)
+- Turnover bands: under £500k, £500k to £1m, £1m to £2m, £2m to £5m, £5m to £10m, £10m+. Team bands: 1 to 5, 6 to 15, 16 to 50, 51 to 200, 200+.
+- At most 300 rows per paste. A row whose LinkedIn URL is already a prospect is refused with a message to convert them from Prospects, the same as the single form.
+- Fit is optional. Without it every client counts equally.

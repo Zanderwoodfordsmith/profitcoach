@@ -6,6 +6,7 @@ import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { useRequireAdminRole } from "@/hooks/useRequireAdminRole";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import type { ClientInsights } from "@/lib/clientRoster/insights";
 import type { CoachHealthRow, HealthLevel } from "@/lib/coachHealth";
 
 const LEVEL_STYLE: Record<HealthLevel, string> = {
@@ -17,6 +18,58 @@ const LEVEL_LABEL: Record<HealthLevel, string> = { red: "Stuck", amber: "Needs h
 
 function pct(v: number | null) {
   return v == null ? "–" : `${Math.round(v * 100)}%`;
+}
+
+type BcaClients = { insights: ClientInsights; coaches_with_clients: number; clients_in_low_linkedin_sectors: number };
+
+/** What coaches' real clients look like across BCA, once they've entered them. */
+function BcaClientsPanel() {
+  const [data, setData] = useState<BcaClients | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const headers = await getCoachAuthHeaders(null);
+      if (!headers || cancelled) return;
+      delete headers["x-impersonate-coach-id"];
+      const res = await fetch("/api/admin/client-insights", { headers });
+      const body = (await res.json().catch(() => null)) as BcaClients | null;
+      if (!cancelled && res.ok && body?.insights) setData(body);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  if (!data || data.insights.clients === 0) return null;
+  const { insights } = data;
+  const list = (title: string, items: ClientInsights["sources"]) =>
+    items.length ? (
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
+        <ul className="mt-1 space-y-0.5 text-sm text-slate-700">
+          {items.slice(0, 5).map((i) => (
+            <li key={i.key} className="flex justify-between gap-2">
+              <span className="truncate">{i.label}</span>
+              <span className="tabular-nums text-slate-500">{Math.round(i.share * 100)}%</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null;
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-slate-900">Coaches&apos; clients across BCA</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        {insights.clients} clients from {data.coaches_with_clients} coaches. {insights.described} described, {insights.best} rated 4 or 5,{" "}
+        {insights.withResults} with a result. {data.clients_in_low_linkedin_sectors} are in sectors that rarely answer on LinkedIn.
+      </p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {list("How they found the coach", insights.sources)}
+        {list("Sector", insights.sectors)}
+        {list("Turnover", insights.revenue)}
+        {list("Team size", insights.team)}
+      </div>
+    </section>
+  );
 }
 
 export default function AdminGetClientsHealthPage() {
@@ -78,6 +131,7 @@ export default function AdminGetClientsHealthPage() {
                 </button>
               ))}
             </div>
+            <BcaClientsPanel />
             {stuckReasons.length ? (
               <p className="text-sm text-slate-600">
                 Most common blockers:{" "}

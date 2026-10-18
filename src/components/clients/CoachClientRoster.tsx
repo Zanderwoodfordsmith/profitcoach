@@ -12,6 +12,8 @@ import {
 import Link from "next/link";
 import { Loader2, Plus, Search } from "lucide-react";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { BestClientsCard } from "@/components/clients/BestClientsCard";
+import { ClientBulkImport } from "@/components/clients/ClientBulkImport";
 import {
   parseClientRosterCreate,
   parseClientRosterPatch,
@@ -547,6 +549,7 @@ export function CoachClientRoster({
   onChanged,
 }: Props) {
   const [adding, setAdding] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -645,6 +648,15 @@ export function CoachClientRoster({
               {filtered.length} matching
             </p>
           ) : null}
+          {!bulkOpen ? (
+            <button
+              type="button"
+              onClick={() => setBulkOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Add many
+            </button>
+          ) : null}
           {!composerOpen ? (
             <button
               type="button"
@@ -659,6 +671,12 @@ export function CoachClientRoster({
       </div>
 
       {notice ? <p className="text-sm text-rose-700">{notice}</p> : null}
+
+      {bulkOpen ? (
+        <ClientBulkImport authHeaders={authHeaders} onDone={onChanged} onClose={() => setBulkOpen(false)} />
+      ) : null}
+
+      {clients.length > 0 ? <BestClientsCard authHeaders={authHeaders} refreshKey={String(clients.length)} /> : null}
 
       {composerOpen ? (
         <AddClientComposer

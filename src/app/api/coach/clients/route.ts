@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
-import {
-  clientRosterToContactPatch,
-  parseClientRosterCreate,
-} from "@/lib/clientRoster/fields";
-import { tryUpdateContactStripping } from "@/lib/contactSchemaSafeInsert";
-import { resolveOrCreateContact } from "@/lib/contacts/resolveOrCreateContact";
+import { parseClientRosterCreate } from "@/lib/clientRoster/fields";
+import { ClientSaveError, saveRosterClient } from "@/lib/clientRoster/save";
 import {
   fetchAllSupabasePages,
   selectContactsWithOptionalPhone,
 } from "@/lib/contactsSchemaSafeSelect";
 import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
-import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type RosterContact = {
@@ -29,6 +24,12 @@ type RosterContact = {
   client_joined_on: string | null;
   client_fee_amount: number | string | null;
   client_problem_notes: string | null;
+  client_sector?: string | null;
+  client_revenue_band?: string | null;
+  client_team_size?: string | null;
+  client_source?: string | null;
+  client_result?: string | null;
+  client_fit?: number | null;
 };
 
 function readFee(value: number | string | null | undefined): number | null {
@@ -75,6 +76,12 @@ export async function GET(request: Request) {
         "client_joined_on",
         "client_fee_amount",
         "client_problem_notes",
+        "client_sector",
+        "client_revenue_band",
+        "client_team_size",
+        "client_source",
+        "client_result",
+        "client_fit",
       ]
     );
 
@@ -111,6 +118,12 @@ export async function GET(request: Request) {
       client_joined_on: extra?.client_joined_on ?? null,
       client_fee_amount: readFee(extra?.client_fee_amount),
       client_problem_notes: extra?.client_problem_notes ?? null,
+      client_sector: extra?.client_sector ?? null,
+      client_revenue_band: extra?.client_revenue_band ?? null,
+      client_team_size: extra?.client_team_size ?? null,
+      client_source: extra?.client_source ?? null,
+      client_result: extra?.client_result ?? null,
+      client_fit: extra?.client_fit ?? null,
     };
   });
 
@@ -144,82 +157,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (fields.linkedinUrl) {
-      const { data: hit, error: hitError } = await supabaseAdmin
-        .from("contacts")
-        .select("id, type")
-        .eq("coach_id", coachId)
-        .eq("linkedin_url", fields.linkedinUrl)
-        .maybeSingle();
-      if (
-        hitError &&
-        hitError.code !== "PGRST116" &&
-        hitError.code !== "42703" &&
-        hitError.code !== "PGRST204"
-      ) {
-        throw new Error("Unable to look up that LinkedIn profile.");
-      }
-      if (hit?.type === "prospect") {
-        return NextResponse.json(
-          {
-            error:
-              "This LinkedIn profile is already a prospect. Convert them from Prospects when they become a client.",
-          },
-          { status: 409 }
-        );
-      }
-    }
-
-    const { first_name, last_name } = splitFullName(fields.fullName);
-    const resolved = await resolveOrCreateContact({
-      coachId,
-      fullName: fields.fullName,
-      firstName: first_name,
-      lastName: last_name,
-      businessName: fields.businessName,
-      linkedinUrl: fields.linkedinUrl,
-      type: "client",
-    });
-
-    const { data: row, error: rowError } = await supabaseAdmin
-      .from("contacts")
-      .select("id, type, coach_id")
-      .eq("id", resolved.contactId)
-      .maybeSingle();
-    if (rowError || !row || row.coach_id !== coachId) {
-      throw new Error("Unable to save client.");
-    }
-    if (row.type === "prospect") {
-      return NextResponse.json(
-        {
-          error:
-            "This person is already a prospect. Convert them from Prospects when they become a client.",
-        },
-        { status: 409 }
-      );
-    }
-
-    const dbPatch = clientRosterToContactPatch(fields);
-    dbPatch.type = "client";
-    if (!resolved.created) {
-      if (!fields.businessName) delete dbPatch.business_name;
-      if (!fields.joinedOn) delete dbPatch.client_joined_on;
-      if (fields.feeAmount == null) delete dbPatch.client_fee_amount;
-      if (!fields.problemNotes) delete dbPatch.client_problem_notes;
-      if (!fields.linkedinUrl) delete dbPatch.linkedin_url;
-    }
-
-    const saved = await tryUpdateContactStripping(resolved.contactId, dbPatch);
-    if (saved.error || !saved.data?.id) {
-      console.error("coach/clients POST", saved.error);
-      throw new Error("Unable to save client.");
-    }
-
+    const saved = await saveRosterClient(coachId, fields);
     return NextResponse.json(
-      { ok: true, contactId: resolved.contactId, created: resolved.created },
-      { status: resolved.created ? 201 : 200 }
+      { ok: true, contactId: saved.contactId, created: saved.created },
+      { status: saved.created ? 201 : 200 }
     );
   } catch (err) {
+    if (err instanceof ClientSaveError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error("coach/clients POST", err);
     const message = err instanceof Error ? err.message : "Unable to save client.";
     const safe = message.startsWith("Unable") ? message : "Unable to save client.";
