@@ -2,7 +2,9 @@
 
 > **Read this first.** The new coach health board (Admin, Coaches, **Get clients**) shows that in the last 30 days only **one** active coach (Mark Hodgkinson) sent invites through Get Clients, and **14 of 34** active coaches haven't connected LinkedIn to the app. Everyone else still runs on Sales Robot. Everything below (Ava alerts and autopilot, launch checks, active-first ordering, group tests) only works on Get Clients campaigns, so **moving coaches from Sales Robot to Get Clients is now the biggest lever.** Suggested next step: a "switch-over week" where BCA connects each coach's LinkedIn and rebuilds their best campaign in Get Clients with them.
 
-Branch: `ava-copilot` in a separate worktree (`../profit-coach-app-ava`). Nothing pushed. Two additive migrations applied to the live database (new tables and columns only).
+> **Also read this.** The app is now much faster (section 7), and the single biggest speed win only lands when this branch is deployed: `vercel.json` now runs our server functions in **London**, next to the database. Until now they ran in Washington DC, so every database query crossed the Atlantic. Two things changed behaviour you should know about: sign-in tokens are now checked locally (a signed-out session keeps working for up to an hour, see 7.2), and six old migrations that had never reached the live database are now applied (7.5).
+
+Branch: `ava-copilot` in a separate worktree (`../profit-coach-app-ava`). Nothing pushed. Database changes are all additive (new tables and columns only): the ones this work needed, plus six older migrations from the repo that had never been applied (listed in 7.5).
 
 ## 1. Ava replies: fast copilot and autopilot
 
@@ -26,7 +28,7 @@ Branch: `ava-copilot` in a separate worktree (`../profit-coach-app-ava`). Nothin
 1. Add to Vercel: `NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY`, `WEB_PUSH_VAPID_PRIVATE_KEY`, `WEB_PUSH_SUBJECT` (values are in `.env.local`).
 2. Connect BCA's WhatsApp: Admin, Ava, Reply review, "Connect BCA WhatsApp (scan QR)".
 3. For GHL times: add `GHL_API_TOKEN` (an agency token that can read every sub-account), or `GHL_LOCATION_TOKENS` as JSON `{ "<locationId>": "<token>" }`.
-4. Coaches need a mobile number on their profile for WhatsApp alerts.
+4. Coaches need a mobile number for WhatsApp alerts. There was nowhere to set one, so the Ava card on Today now has a "Your mobile" field (it saves to their profile).
 5. iPhone push only works once the coach adds the app to their home screen (iOS 16.4+). The card explains this.
 
 ## Decisions I made (overturn any of these)
@@ -114,3 +116,78 @@ So coaches can enter their clients in one go and we learn what their best client
 - Turnover bands: under £500k, £500k to £1m, £1m to £2m, £2m to £5m, £5m to £10m, £10m+. Team bands: 1 to 5, 6 to 15, 16 to 50, 51 to 200, 200+.
 - At most 300 rows per paste. A row whose LinkedIn URL is already a prospect is refused with a message to convert them from Prospects, the same as the single form.
 - Fit is optional. Without it every client counts equally.
+
+## 7. Speed: the whole app
+
+I measured the 13 busiest coach pages (from 30 days of usage: Community, Campaigns, Calendar, Classroom, Playbooks, BOSS Pro, Support, Conversations, Prospects, Settings, Blueprint, Today, Clients) in a production build, signed in as Zander Demo, before and after.
+
+| Page | Before | After |
+|---|---|---|
+| Campaigns | 16.4s | 3.6s |
+| Conversations | 14.6s | 8.1s (list shows at about 2s) |
+| Today | 11.8s | 3.5s |
+| Community | 7.2s | 3.7s |
+| Settings | 4.4s | 2.2s |
+| Playbooks | 3.7s | 1.9s |
+| Support | 3.6s | 1.6s |
+| Classroom | 3.2s | 1.5s |
+| BOSS Pro | 2.5s | 1.4s |
+
+Time until the page stops loading data. Measured from here, where every database call takes about 200ms, so live numbers will be lower still once the London change is deployed. JavaScript per page is down 135 to 270KB (compressed) and API calls per page are down about a third.
+
+### 7.1 Server region (needs a deploy)
+`vercel.json` now has `"regions": ["lhr1"]`. Live response headers showed our functions in Washington (`iad1`) and the database in London (`eu-west-2`). Every query paid about 75ms each way, and most API calls make several queries in a row, so this should cut several hundred milliseconds from most of them. Its own commit, easy to revert.
+
+### 7.2 Sign-in checks (behaviour change)
+Every API call used to ask Supabase Auth "is this token valid?" over the network. Tokens are signed with the project's ES256 key, so they're now checked locally against the public key (`src/lib/auth/verifyAccessToken.ts`, used by all 40 places that checked tokens). Roles are still read fresh from the database on every call. **Trade-off:** if someone signs out on one device, a token already issued keeps working until it expires (at most an hour). That's Supabase's own recommended approach. Revert that one commit if you'd rather keep the network check.
+
+### 7.3 Less repeated work on every page
+- The sidebar, top bar, route guard and pages used to load the same profile, role and coach access 3 to 8 times per page. They now share one request, and the next page paints from the last answer while refreshing.
+- The browser read the signed-in user with a network call in 61 files. It now reads the local session (the server still checks every request).
+- The notification bell loaded twice per page and reloaded everything on every page change. It now keeps what it loaded, pauses in hidden tabs, and only writes read-state back when something changed.
+- The campaigns page paged through every pending LinkedIn invite (about 12 seconds) on every visit, just to show a count. The count is now stored and refreshed in the background.
+- Today waited on a live LinkedIn scan. It now shows straight away and scans afterwards, at most every 15 minutes unless the coach presses "Check again".
+- Messaging checked auth twice for coaches, programme status re-ran on every access check, and several endpoints ran independent queries one after another. All of these now run once or together. The admin coach list's seven per-coach lookups run together; lesson content for 13 courses went from 2.4s to 0.2s.
+- The Blueprint assistant panel and the Get Clients warmups no longer load twice; Settings shows before the LinkedIn import check finishes; the inbox no longer runs cron jobs from the browser (Vercel runs them every minute anyway).
+
+### 7.4 Smaller downloads
+- One menu import pulled Node's crypto library (about 120KB compressed) and the server-only Supabase admin client into **every page**. Fixed, and a new test (`src/lib/clientBundleGuard.test.ts`) fails the build checks if any browser code can reach either again.
+- The notification bell was importing the whole Community feed, so every page carried it. Now loaded only when needed.
+- The AI panel, the Blueprint assistant and the ElevenLabs voice SDK load only when opened.
+
+### 7.5 Database fixes found on the way
+A check of every migration against the live database found six that had never been applied, which I applied:
+- `community_post_favourites` table: starring posts never worked.
+- Community feed indexes. The migration failed as a whole because it also referenced the missing favourites table.
+- `client_playbook_unlocks.status`: unlocking playbooks for clients failed on save. The table was empty, so there was no data to change.
+- `profiles.scorecard_period_start_monday`: the scorecard API asked for a column that didn't exist.
+- `coach_action_items.contact_id` plus an index.
+- `academy_import_overrides` table, for the admin academy import.
+New tonight: `linkedin_outreach_accounts.pending_invites_*` (stored invite count) and `intent_signals_refreshed_at`. One migration is still unapplied on purpose (`sales_nav_import_session`): nothing uses it.
+
+### 7.6 Not done, for later
+- Admin pages (60% of sessions) weren't browser-tested: there's no test admin account and I didn't sign in as a real admin. They share most components and APIs with the coach pages, so they get most of the gains. Worth creating a test admin so this can be measured too.
+- Admin Support loads every ticket (99 today, fine). It will need paging when there are thousands.
+- `/api/profile-role` answers without sign-in: anyone with a user id can get that person's role, name, business name and coach slug. Login depends on it, so I didn't change it tonight. Suggest a security pass (ask me to run Rafter on it).
+
+## 8. UX audit (13 busiest coach pages, desktop and phone)
+
+Screenshots at 1440px and 390px, plus automated accessibility checks (axe, WCAG A and AA).
+
+**Fixed**
+- Community sidebar said "0 members, 0 online, 0 admins" and "No recent activity" for the first 8 seconds of every visit. It now fills in within about a second and shows a dash until then.
+- On phones, the sidebar toggle sat on top of every page title ("Get Clients" read "et Clients"). Titles now clear it, and the small (i) next to the title is hidden on phones to give the title room.
+- The campaign activity chart's quarter view printed 14 overlapping dates. It now labels every other week (every fourth on phones), and always this week.
+- Today opened with Ava's settings card. It's now a one-line summary ("Ava replies: Copilot, alerts by this device, WhatsApp") with Change. Autopilot's locked label read "switched on by BCA" while it was off; now "BCA turns this on when you're ready".
+- Client data prep: the client editor now has sector, turnover, team size, how they found you, result and fit, not just the paste import.
+- Accessibility: all critical issues gone. Post cards and inbox rows no longer put buttons inside buttons (122 to 6). The BOSS Score "Who are you scoring?" picker now works properly with screen readers. Chart bars, online dots and the avatar upload have proper labels.
+- Settings, Reply style: rewritten without jargon or an em dash ("Optional notes for the replies Ava drafts for you: how you sign off, what you never pitch, phrases you like.").
+
+**Your call**
+- **Contrast:** 242 bits of light grey text (`text-slate-400`) fail the WCAG contrast minimum on 9 of the 13 pages: dates, meta lines, placeholders. Moving secondary text to `slate-500` passes but makes the UI a touch heavier. It's a design decision, so I left it.
+- **Em dashes in the UI:** 411 in app and marketing copy against the writing rules. The most are in `admin/brand`, `HorizontalLeadFlowMap`, `how-it-works`, `new-home`, `pam`, and `StepAvatar` (first campaign). Each needs a human rewrite rather than find-and-replace. Some are on live marketing pages, so I didn't touch them.
+- The BOSS Score picker's dropdown hangs below its card. It works, but the card could grow with it.
+- On phones, Conversations opens straight into the first thread instead of the list.
+
+**Note for checking locally:** some fixes use new Tailwind classes (`max-md:pl-7`, `max-sm:hidden`, `max-sm:invisible`). If they look missing on 3002, clear `.next/dev` first (the stale Tailwind cache issue).
+
