@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { Loader2, Shield, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { PROFILE_REWRITE_DEFAULT_VOICE } from "@/lib/linkedinProfileOptimizer/prompts";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 async function authHeaders(): Promise<HeadersInit | null> {
   const {
@@ -36,16 +38,9 @@ export function RewritePromptAdminControl() {
     }
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const body = (await roleRes.json().catch(() => ({}))) as { role?: string };
+      const body = (await fetchProfileRole(user.id)) as { role?: string };
       if (!cancelled) setIsAdmin(body.role === "admin");
     })();
     return () => {

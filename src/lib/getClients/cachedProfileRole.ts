@@ -45,3 +45,15 @@ export async function fetchCachedProfileRole(
     { force: opts?.force, staleMs: STALE_MS }
   );
 }
+
+/**
+ * Like fetchCachedProfileRole, but resolves to {} when the lookup fails, the
+ * way the inline `/api/profile-role` fetches it replaced behaved.
+ */
+export async function fetchProfileRole(userId: string): Promise<CachedProfileRole> {
+  try {
+    return await fetchCachedProfileRole(userId);
+  } catch {
+    return {};
+  }
+}

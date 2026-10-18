@@ -6,6 +6,7 @@
 export type HubPrefix = "/coach" | "/admin";
 
 export type GetClientsLastTabKey =
+  | "today"
   | "campaigns"
   | "conversations"
   | "calls"
@@ -15,6 +16,7 @@ export type GetClientsLastTabKey =
   | "toolkit";
 
 export const GET_CLIENTS_LAST_TAB_KEYS: readonly GetClientsLastTabKey[] = [
+  "today",
   "campaigns",
   "conversations",
   "calls",
@@ -30,6 +32,7 @@ export const GET_CLIENTS_LAST_TAB_STORAGE_PREFIX = "pc-get-clients-last-tab";
 
 /** Keep in sync with `getClientsTabItems` hrefs. */
 const TAB_HREF: Record<GetClientsLastTabKey, (prefix: HubPrefix) => string> = {
+  today: (prefix) => `${prefix}/today`,
   campaigns: (prefix) => `${prefix}/campaigns`,
   conversations: (prefix) => `${prefix}/conversations`,
   calls: (prefix) => `${prefix}/calls`,

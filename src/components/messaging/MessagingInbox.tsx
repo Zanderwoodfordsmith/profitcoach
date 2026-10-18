@@ -74,6 +74,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { PROSPECT_INTERNAL_NOTE_EVENT } from "@/lib/messaging/internalNoteEvent";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 import {
   clearProspectOpenCaches,
   fetchThreadPage,
@@ -86,9 +87,12 @@ import {
   readThreadCache,
   writeThreadCache,
 } from "@/lib/messaging/threadCache";
-import { peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
+import { fetchHubQuery, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
 import { hubQueryKey } from "@/lib/getClients/hubKeys";
-import type { ConversationsHubPayload } from "@/lib/getClients/hubFetchers";
+import {
+  loadConversationsHubPayload,
+  type ConversationsHubPayload,
+} from "@/lib/getClients/hubFetchers";
 import {
   mergeMessagesChronological,
   shouldAutoloadOlder,
@@ -1745,25 +1749,37 @@ export function MessagingInbox({
           if (!silent) setError("Sign in again, then retry.");
           return;
         }
-        const qs =
-          typeof opts?.limit === "number"
-            ? `?limit=${encodeURIComponent(String(opts.limit))}`
-            : "";
-        const res = await fetch(`/api/messaging/conversations${qs}`, { headers });
-        const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          conversations?: ConversationRow[];
-        };
-        if (generation !== listLoadGenerationRef.current) return;
-        if (!res.ok) {
-          if (!silent) {
-            setError(body.error || `Request failed (${res.status}).`);
-            setConversations([]);
+        let list: ConversationRow[];
+        if (opts?.limit === THREAD_LIST_FAST_LIMIT) {
+          // The first page is what the Get Clients warmup fetches: share its
+          // request (or its answer from a moment ago) instead of asking again.
+          const payload = await fetchHubQuery(
+            conversationsCacheKey,
+            loadConversationsHubPayload
+          );
+          if (generation !== listLoadGenerationRef.current) return;
+          list = payload.conversations as unknown as ConversationRow[];
+        } else {
+          const qs =
+            typeof opts?.limit === "number"
+              ? `?limit=${encodeURIComponent(String(opts.limit))}`
+              : "";
+          const res = await fetch(`/api/messaging/conversations${qs}`, { headers });
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            conversations?: ConversationRow[];
+          };
+          if (generation !== listLoadGenerationRef.current) return;
+          if (!res.ok) {
+            if (!silent) {
+              setError(body.error || `Request failed (${res.status}).`);
+              setConversations([]);
+            }
+            return;
           }
-          return;
+          list = Array.isArray(body.conversations) ? body.conversations : [];
+          writeHubQuery(conversationsCacheKey, { conversations: list });
         }
-        const list = Array.isArray(body.conversations) ? body.conversations : [];
-        writeHubQuery(conversationsCacheKey, { conversations: list });
         setConversations(list);
         const pending = peekMessagingComposeDraft();
         const prev = selectedIdRef.current;
@@ -3211,9 +3227,7 @@ export function MessagingInbox({
   useEffect(() => {
     let cancelled = false;
     async function loadCoach() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
       const { data } = await supabaseClient
         .from("profiles")
@@ -3290,11 +3304,30 @@ export function MessagingInbox({
         /* ignore */
       }
     }
-    void tick();
-    const id = window.setInterval(() => void tick(), 30_000);
+    // Vercel cron runs both jobs every minute in production; calling them from
+    // every open inbox only re-ran them for admins (and 401'd for coaches).
+    // Locally there's no cron, so keep the tick there.
+    if (process.env.NODE_ENV !== "production") {
+      void tick();
+      const id = window.setInterval(() => void tick(), 30_000);
+      return () => {
+        cancelled = true;
+        window.clearInterval(id);
+      };
+    }
+    // Coming back to the tab: pick up anything that arrived meanwhile.
+    const onVisible = () => {
+      if (document.hidden || cancelled || contactId) return;
+      if (liSyncingRef.current) {
+        pendingListRefreshRef.current = true;
+        return;
+      }
+      void loadList({ silent: true });
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [authHeaders, contactId, loadList, loadThread]);
 

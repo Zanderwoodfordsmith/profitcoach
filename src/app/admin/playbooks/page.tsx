@@ -8,6 +8,8 @@ import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { PLAYBOOKS } from "@/lib/bossData";
 import type { PlaybookSummary } from "@/lib/playbookContentTypes";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export default function AdminPlaybooksPage() {
   const router = useRouter();
@@ -20,24 +22,17 @@ export default function AdminPlaybooksPage() {
     async function init() {
       setLoading(true);
       setError(null);
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         router.replace("/login");
         return;
       }
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
         error?: string;
       };
       if (cancelled) return;
-      if (!roleRes.ok || !roleBody.role) {
+      if (!roleBody.role) {
         setError("Unable to load your profile.");
         setLoading(false);
         return;

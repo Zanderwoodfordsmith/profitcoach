@@ -6,6 +6,8 @@ import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { TimeTrackerBoard } from "@/components/admin/timeTracker/TimeTrackerBoard";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export default function AdminTimeTrackerPage() {
   const router = useRouter();
@@ -14,21 +16,14 @@ export default function AdminTimeTrackerPage() {
   useEffect(() => {
     let cancelled = false;
     async function check() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
 
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as { role?: string };
+      const roleBody = (await fetchProfileRole(user.id)) as { role?: string };
       if (cancelled) return;
       if (roleBody.role !== "admin") {
         router.replace("/coach");

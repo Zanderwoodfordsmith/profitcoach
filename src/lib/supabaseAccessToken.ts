@@ -1,4 +1,4 @@
-import type { Session } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const EXPIRY_SKEW_MS = 60_000;
@@ -43,4 +43,14 @@ export async function resolveSupabaseBrowserSession(): Promise<Session | null> {
 export async function getValidSupabaseAccessToken(): Promise<string | null> {
   const session = await resolveSupabaseBrowserSession();
   return session?.access_token ?? null;
+}
+
+/**
+ * The signed-in user from the local session (refreshed if expired), without
+ * the network round trip `auth.getUser()` makes. Fine for UI decisions; the
+ * API still verifies the token on every request.
+ */
+export async function getSessionUser(): Promise<User | null> {
+  const session = await resolveSupabaseBrowserSession();
+  return session?.user ?? null;
 }

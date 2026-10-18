@@ -6,6 +6,8 @@ import { LinkedInMirrorInbox } from "@/components/admin/LinkedInMirrorInbox";
 import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export default function AdminLinkedInInboxPage() {
   const router = useRouter();
@@ -14,21 +16,14 @@ export default function AdminLinkedInInboxPage() {
   useEffect(() => {
     let cancelled = false;
     async function check() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
 
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
       };
       if (cancelled) return;

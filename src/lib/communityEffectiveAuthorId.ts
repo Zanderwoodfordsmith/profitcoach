@@ -1,4 +1,5 @@
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 /**
  * Coach impersonation applies only on `/coach/*`. On `/admin/*` we always use the
@@ -39,9 +40,7 @@ export function communityFeedStorageScopeId(
 export async function getCommunityAuthorId(
   coachPersonaId: string | null
 ): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return null;
   return coachPersonaId ?? user.id;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { buildLoginUrl } from "@/lib/auth/loginReturnPath";
+import { clearHubQueries } from "@/lib/getClients/hubQueryCache";
 import { resolveSupabaseBrowserSession } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -41,6 +42,7 @@ export function useRequireSupabaseSession(): boolean {
     const {
       data: { subscription },
     } = supabaseClient.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") clearHubQueries();
       if (event === "SIGNED_OUT" && wasAuthedRef.current) {
         router.replace(buildLoginUrl());
       }

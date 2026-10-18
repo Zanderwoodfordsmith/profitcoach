@@ -14,6 +14,7 @@ import {
   type SupportCallHostSlug,
 } from "@/lib/support/supportCallHosts";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -37,9 +38,7 @@ export function SupportCallPageClient({ hostSlug }: Props) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
 
       const { data: profile } = await supabaseClient

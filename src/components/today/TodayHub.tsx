@@ -47,7 +47,7 @@ export function TodayHub() {
         setError("Sign in again to load Today.");
         return;
       }
-      const res = await fetch(`/api/coach/today${refresh ? "?refresh=1" : ""}`, { headers });
+      const res = await fetch(`/api/coach/today${refresh ? "?refresh=force" : ""}`, { headers });
       const body = (await res.json().catch(() => null)) as (TodayData & { error?: string }) | null;
       if (!res.ok || !body?.habit) setError(body?.error ?? "Could not load Today.");
       else {
@@ -64,13 +64,24 @@ export function TodayHub() {
     void (async () => {
       const headers = await getCoachAuthHeaders(impersonatingCoachId);
       if (!headers || cancelled) return;
-      const res = await fetch("/api/coach/today?refresh=1", { headers });
+      // Paint what we have straight away, then check LinkedIn for new signals
+      // (the server skips that if it checked in the last 15 minutes).
+      const res = await fetch("/api/coach/today", { headers });
       const body = (await res.json().catch(() => null)) as (TodayData & { error?: string }) | null;
       if (cancelled) return;
-      if (!res.ok || !body?.habit) setError(body?.error ?? "Could not load Today.");
-      else {
-        setError(body.refreshError);
-        setData(body);
+      if (!res.ok || !body?.habit) {
+        setError(body?.error ?? "Could not load Today.");
+        return;
+      }
+      setData(body);
+      setRefreshing(true);
+      const fresh = await fetch("/api/coach/today?refresh=1", { headers });
+      const freshBody = (await fresh.json().catch(() => null)) as (TodayData & { error?: string }) | null;
+      if (cancelled) return;
+      setRefreshing(false);
+      if (fresh.ok && freshBody?.habit) {
+        setError(freshBody.refreshError);
+        setData(freshBody);
       }
     })();
     return () => {

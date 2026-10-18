@@ -31,7 +31,7 @@ import {
 import { PROSPECT_INTERNAL_NOTE_EVENT } from "@/lib/messaging/internalNoteEvent";
 import { isStoredReactionEventMessage } from "@/lib/messaging/messageReactions";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { getValidSupabaseAccessToken, getSessionUser } from "@/lib/supabaseAccessToken";
 import type { ProspectNextCall } from "@/lib/prospectNextCall";
 import type { ProspectRow } from "@/lib/prospectRow";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
@@ -284,9 +284,7 @@ export function ProspectJourneyPane({
   useEffect(() => {
     let cancelled = false;
     async function loadAuthor() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
       const { data } = await supabaseClient
         .from("profiles")

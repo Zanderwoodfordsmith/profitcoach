@@ -28,6 +28,8 @@ import {
 import type { SocialNetwork } from "@/lib/shareLinks/socials";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export type ShareTarget =
   | {
@@ -143,9 +145,7 @@ export function ShareToProspectModal({
     async function loadProspects() {
       setProspectsLoading(true);
       setError(null);
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         if (!cancelled) {
           setError("Sign in to load prospects.");
@@ -153,12 +153,7 @@ export function ShareToProspectModal({
         }
         return;
       }
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
       };
       const effectiveId =

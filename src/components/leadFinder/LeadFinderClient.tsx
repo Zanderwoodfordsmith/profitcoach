@@ -70,6 +70,7 @@ import {
 import type { LeadReveal, LeadTeaser } from "@/lib/leadFinder/types";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type SearchResult = {
   leads: LeadTeaser[];
@@ -916,9 +917,7 @@ export function LeadFinderClient() {
 
   useEffect(() => {
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       setAllowed(isLeadFinderAllowedEmail(user?.email));
     })();
   }, []);

@@ -10,6 +10,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { PLAYBOOKS } from "@/lib/bossData";
 import type { PlaybookSummary } from "@/lib/playbookContentTypes";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 export default function CoachPlaybooksPage() {
   const router = useRouter();
@@ -31,17 +32,12 @@ export default function CoachPlaybooksPage() {
         router.replace("/login");
         return;
       }
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: session.user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(session.user.id)) as {
         role?: string;
         error?: string;
       };
       if (cancelled) return;
-      if (!roleRes.ok || !roleBody.role) {
+      if (!roleBody.role) {
         setError("Unable to load your profile.");
         setLoading(false);
         return;

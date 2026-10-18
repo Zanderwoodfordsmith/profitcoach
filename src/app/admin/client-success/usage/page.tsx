@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type UsageOverview = {
   dau: number;
@@ -48,23 +50,16 @@ export default function AdminUsagePage() {
       setLoading(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
       };
-      if (!roleRes.ok || !roleBody.role) {
+      if (!roleBody.role) {
         if (!cancelled) {
           setError("Unable to load your profile.");
           setCheckingRole(false);

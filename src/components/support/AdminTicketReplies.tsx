@@ -75,6 +75,7 @@ import {
   loadAdminReplyDraft,
   saveAdminReplyDraft,
 } from "@/lib/support/adminReplyDrafts";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 import {
   deleteSupportInternalNote,
   insertSupportInternalNote,
@@ -495,9 +496,7 @@ export function AdminTicketReplies({
 
   useEffect(() => {
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       setUserId(user?.id ?? null);
       setSendAsId((current) => current ?? user?.id ?? null);
     })();

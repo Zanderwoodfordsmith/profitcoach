@@ -25,6 +25,8 @@ import {
   coachAccountLabel,
   rememberCoachAccountLabel,
 } from "@/lib/admin/coachDirectoryClient";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export default function CoachLayout({
   children,
@@ -50,16 +52,9 @@ export default function CoachLayout({
     if (!impersonatingCoachId) return;
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (cancelled || !user) return;
-      const res = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { role?: string };
+      const body = (await fetchProfileRole(user.id)) as { role?: string };
       if (cancelled) return;
       if (body.role !== "admin") {
         clearImpersonation();
@@ -79,12 +74,7 @@ export default function CoachLayout({
     const coachId = impersonatingCoachId;
     let cancelled = false;
     async function loadCoachName() {
-      const res = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: coachId }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
+      const data = (await fetchProfileRole(coachId)) as {
         full_name?: string | null;
         coach_business_name?: string | null;
         avatar_url?: string | null;
@@ -119,16 +109,9 @@ export default function CoachLayout({
     if (impersonatingCoachId) return;
     let cancelled = false;
     async function gateSignature() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (cancelled || !user) return;
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
       };
       if (cancelled) return;

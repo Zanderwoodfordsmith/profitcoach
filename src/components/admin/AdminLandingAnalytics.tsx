@@ -20,8 +20,9 @@ import {
   type LandingVariant,
   type LandingVariantStats,
 } from "@/lib/landingAnalytics";
-import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { getValidSupabaseAccessToken, getSessionUser } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 type StatsResponse = LandingAnalyticsResult & {
   coachLabels: Record<string, LandingCoachLabel>;
@@ -132,21 +133,14 @@ export function AdminLandingAnalytics() {
       setCheckingRole(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as { role?: string };
-      if (!roleRes.ok || roleBody.role !== "admin") {
+      const roleBody = (await fetchProfileRole(user.id)) as { role?: string };
+      if (roleBody.role !== "admin") {
         router.replace("/coach");
         return;
       }

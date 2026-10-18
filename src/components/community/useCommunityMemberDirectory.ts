@@ -15,6 +15,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
 import { resolveCommunityBio } from "@/lib/profileBioFields";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export type CommunityRosterMember = {
   id: string;
@@ -224,9 +225,7 @@ function useCommunityMemberDirectoryState() {
 
   const touchPresence = useCallback(async () => {
     if (presenceUnavailable) return;
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const user = await getSessionUser();
     if (!user) return;
 
     const { error } = await supabaseClient.from("community_presence").upsert(

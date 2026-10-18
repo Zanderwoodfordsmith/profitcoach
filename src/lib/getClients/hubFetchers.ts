@@ -446,8 +446,15 @@ export async function loadCallsHubPayload(options: {
   return { calls: rows, coaches };
 }
 
+/**
+ * Background warm-ups skip anything loaded in the last couple of minutes:
+ * the tab revalidates itself when opened, so re-warming every sibling on
+ * each tab switch only added server load.
+ */
+const WARM_SKIP_MS = 2 * 60 * 1000;
+
 function warm<T>(key: string, fetcher: () => Promise<T>) {
-  if (isHubQueryFresh(key)) return;
+  if (isHubQueryFresh(key, WARM_SKIP_MS)) return;
   void fetchHubQuery(key, fetcher).catch(() => {
     /* prefetch is best-effort */
   });

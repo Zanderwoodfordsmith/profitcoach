@@ -1,5 +1,6 @@
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 /**
  * Toggles like. If `community_post_likes` is missing (migration not applied), no-ops.
@@ -8,9 +9,7 @@ export async function toggleCommunityPostLike(
   postId: string,
   currentlyLiked: boolean
 ): Promise<void> {
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return;
 
   if (currentlyLiked) {

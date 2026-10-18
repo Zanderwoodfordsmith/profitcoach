@@ -8,6 +8,7 @@ import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { PLAYBOOKS } from "@/lib/bossData";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type PlaybookStatus = "locked" | "in_progress" | "implemented";
 
@@ -45,9 +46,7 @@ export default function CoachContactPlaybooksPage({
       setLoading(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
 
       if (!user) {
         router.replace("/login");

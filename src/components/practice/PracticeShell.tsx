@@ -14,6 +14,7 @@ import { SidePanel } from "./SidePanel";
 import { DownloadMenu, PageBlurb } from "./document/DocumentParts";
 import { PageIcon } from "./pageIcons";
 import { usePractice } from "./PracticeProvider";
+import { useMatchesBreakpoint } from "@/hooks/useBreakpoint";
 import "./document/blueprint.css";
 
 const NAV_KEY = "practice-nav-open";
@@ -148,6 +149,8 @@ export function PracticeShell({
   const here = path ?? pathname;
   const [navOpen, setNavOpen] = useState(true);
   const wide = useWideScreen();
+  // Mount the assistant once: docked at lg+, as a sheet below (not both, hidden by CSS).
+  const sidePanelDesktop = useMatchesBreakpoint("lg");
   const [navWidth, setNavWidth] = useState(NAV_WIDTH_DEFAULT);
   const page =
     BLUEPRINT_PAGES.find((item) => (path ? item.href === here : href(item.href) === here)) ?? null;
@@ -364,8 +367,7 @@ export function PracticeShell({
         )}
       </section>
 
-      {side ? (
-        <>
+      {side && sidePanelDesktop === true ? (
           <aside
             aria-label={side === "comments" ? "Comments" : "Ava"}
             className={`bp-no-print hidden w-[23rem] shrink-0 flex-col border-l border-slate-200 lg:flex ${
@@ -376,12 +378,13 @@ export function PracticeShell({
           >
             <SidePanel mode={side} sectionKey={discussing} page={page} />
           </aside>
+      ) : null}
+      {side && sidePanelDesktop === false ? (
           <div className="bp-no-print fixed inset-0 z-50 flex flex-col justify-end bg-[#051e36]/35 lg:hidden">
             <div className="h-[85dvh] overflow-hidden rounded-t-3xl shadow-[0_-20px_50px_-20px_rgba(5,30,54,0.6)]">
               <SidePanel mode={side} sectionKey={discussing} page={page} />
             </div>
           </div>
-        </>
       ) : null}
 
       {ready && !side ? (

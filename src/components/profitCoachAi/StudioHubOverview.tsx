@@ -12,6 +12,7 @@ import {
   type StudioHubCard as StudioHubCardConfig,
 } from "@/lib/profitCoachAi/studioHub";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type Props = {
   basePath: string;
@@ -37,9 +38,7 @@ export function StudioHubOverview({
     if (prefix !== "/admin") return;
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!cancelled) {
         setLeadFinderAllowed(isLeadFinderAllowedEmail(user?.email));
       }

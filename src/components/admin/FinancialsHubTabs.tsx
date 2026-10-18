@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { PageHeaderUnderlineTabs } from "@/components/layout";
 import { isCashFlowForecastAllowedEmail } from "@/lib/cashFlowForecastAccess";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export function FinancialsHubTabs() {
   const pathname = usePathname();
@@ -14,9 +15,7 @@ export function FinancialsHubTabs() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!cancelled) {
         setCashFlowAllowed(isCashFlowForecastAllowedEmail(user?.email));
       }

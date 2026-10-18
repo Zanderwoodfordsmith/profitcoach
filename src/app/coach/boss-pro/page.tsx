@@ -16,6 +16,7 @@ import {
   type WorkshopSessionSummary,
 } from "@/components/coach/WorkshopSessionPicker";
 import { isAdminUnscopedBossProView } from "@/lib/isBossWorkshopPath";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type PickRow = {
   id: string;
@@ -143,9 +144,7 @@ function CoachWorkshopPageContent() {
   >(null);
 
   const refreshWorkshopContacts = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const user = await getSessionUser();
     if (!user) return;
 
     const role = await loadProfileRole(user.id);
@@ -226,9 +225,7 @@ function CoachWorkshopPageContent() {
       setLoading(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
 
       if (!user) {
         router.replace("/login");

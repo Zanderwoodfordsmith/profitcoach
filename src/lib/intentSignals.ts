@@ -87,11 +87,33 @@ function dateOf(raw: Record<string, unknown>): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+/** Opening Today re-checks LinkedIn at most this often (the button can force it). */
+const REFRESH_EVERY_MS = 15 * 60 * 1000;
+
 /** Pull fresh signals from LinkedIn for one coach and store new ones. */
-export async function refreshIntentSignals(coachId: string): Promise<{ added: number; error: string | null }> {
+export async function refreshIntentSignals(
+  coachId: string,
+  options?: { force?: boolean }
+): Promise<{ added: number; error: string | null }> {
   const account = await getOkLinkedInAccount(coachId);
   const accountId = account?.unipile_account_id?.trim();
   if (!accountId) return { added: 0, error: "Connect LinkedIn in Settings first." };
+
+  const { data: stamp } = await supabaseAdmin
+    .from("linkedin_outreach_accounts")
+    .select("id, intent_signals_refreshed_at")
+    .eq("coach_id", coachId)
+    .eq("unipile_account_id", accountId)
+    .limit(1)
+    .maybeSingle();
+  const last = stamp?.intent_signals_refreshed_at ? new Date(stamp.intent_signals_refreshed_at as string).getTime() : 0;
+  if (!options?.force && Date.now() - last < REFRESH_EVERY_MS) return { added: 0, error: null };
+  if (stamp?.id) {
+    await supabaseAdmin
+      .from("linkedin_outreach_accounts")
+      .update({ intent_signals_refreshed_at: new Date().toISOString() })
+      .eq("id", stamp.id);
+  }
 
   const me = await getUnipileOwnProfile(accountId);
   const myId = str(obj(me.data).provider_id) || str(obj(me.data).public_identifier);

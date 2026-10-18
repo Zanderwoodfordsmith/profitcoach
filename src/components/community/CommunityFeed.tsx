@@ -35,6 +35,7 @@ import {
 import {
   getValidSupabaseAccessToken,
   resolveSupabaseBrowserSession,
+  getSessionUser,
 } from "@/lib/supabaseAccessToken";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
@@ -463,9 +464,7 @@ async function enrichNormalizedCommunityPosts(
   const postIds = normalized.map((p) => p.id);
   const includeLadderLevel = options?.includeLadderLevel !== false;
 
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
+  const user = await getSessionUser();
   const uid = options?.viewerProfileId ?? user?.id;
 
   const favPromise =
@@ -1407,9 +1406,7 @@ export function CommunityFeed() {
           throw new Error("Community feed pagination range is invalid.");
         }
 
-        const {
-          data: { user },
-        } = await supabaseClient.auth.getUser();
+        const user = await getSessionUser();
 
         const mapFavRows = (data: unknown) => {
           type FavJoinRow = {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { DEMO_COACH_SLUG } from "@/lib/primaryCoach";
 import { demoCoachToggleUserForEmail } from "@/lib/demoCoachToggle";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type Props = {
   enabled: boolean;
@@ -22,9 +23,7 @@ export function CampaignDemoPreviewToggle({
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (cancelled) return;
       const staff = Boolean(demoCoachToggleUserForEmail(user?.email));
       const isZanderDemo =

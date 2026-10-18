@@ -12,6 +12,7 @@ import {
   type CoachClientRosterItem,
 } from "@/components/clients/CoachClientRoster";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 type ApiClient = {
   id: string;
@@ -80,16 +81,11 @@ export default function CoachClientsPage() {
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: session.user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(session.user.id)) as {
         role?: string;
         error?: string;
       };
-      if (!roleRes.ok || !roleBody.role) {
+      if (!roleBody.role) {
         if (!cancelled) {
           setError("Unable to load your profile.");
           setLoading(false);

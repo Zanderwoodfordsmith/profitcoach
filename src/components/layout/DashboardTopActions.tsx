@@ -45,6 +45,7 @@ import {
   type NotificationReadState,
 } from "@/lib/communityNotificationReadState";
 import type { ProspectNotificationItem } from "@/lib/prospectNotifications";
+import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
 
 type DashboardTopActionsProps = {
   variant: "coach" | "admin";
@@ -110,6 +111,9 @@ type NotificationItem = {
 };
 
 const NOTIFICATION_ITEMS_MAX = 40;
+/** The bell remounts on every page; reuse what it loaded for this long. */
+const BELL_TTL_MS = 45_000;
+const READ_STATE_SYNC_MS = 5 * 60_000;
 
 function relativeAgo(iso: string): string {
   const now = Date.now();
@@ -171,11 +175,16 @@ export function DashboardTopActions({
     let cancelled = false;
     void (async () => {
       if (impersonatingCoachId) {
-        const { data } = await supabaseClient
-          .from("profiles")
-          .select("id, created_at")
-          .eq("id", impersonatingCoachId)
-          .maybeSingle();
+        const { data } = await fetchHubQuery(
+          `bell-viewer:${impersonatingCoachId}`,
+          async () =>
+            supabaseClient
+              .from("profiles")
+              .select("id, created_at")
+              .eq("id", impersonatingCoachId)
+              .maybeSingle(),
+          { staleMs: 10 * 60_000 }
+        );
         if (cancelled) return;
         setNotificationViewer(
           data
@@ -213,7 +222,7 @@ export function DashboardTopActions({
       setReadStateReady(true);
     }
     let cancelled = false;
-    void hydrateNotificationReadState(uid).then((resolved) => {
+    void fetchHubQuery(`bell-read:${uid}`, () => hydrateNotificationReadState(uid), { staleMs: READ_STATE_SYNC_MS }).then((resolved) => {
       if (cancelled) return;
       setReadState(resolved);
       setReadStateReady(true);
@@ -226,491 +235,497 @@ export function DashboardTopActions({
   const loadNotifications = useCallback(async () => {
     const uid = notificationViewer?.id;
     if (!uid) return;
-    setLoadingNotifications(true);
+    const cacheKey = `bell:${variant}:${uid}`;
+    const cached = peekHubQuery<NotificationItem[]>(cacheKey);
+    if (cached) setNotifications(cached);
+    else setLoadingNotifications(true);
     try {
-      const [announcementsCategoryId, winsCategoryId] = await Promise.all([
-        resolveCommunityCategoryId("announcements"),
-        variant === "admin"
-          ? resolveCommunityCategoryId("wins")
-          : Promise.resolve(null),
-      ]);
+      const items = await fetchHubQuery(cacheKey, async () => {
+        const [announcementsCategoryId, winsCategoryId] = await Promise.all([
+          resolveCommunityCategoryId("announcements"),
+          variant === "admin"
+            ? resolveCommunityCategoryId("wins")
+            : Promise.resolve(null),
+        ]);
 
-      const repliesPromise = supabaseClient
-        .from("community_post_comments")
-        .select(
-          `
-            id,
-            post_id,
-            body,
-            created_at,
-            author_id,
-            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url ),
-            post:community_posts!post_id (
+        const repliesPromise = supabaseClient
+          .from("community_post_comments")
+          .select(
+            `
               id,
-              title,
+              post_id,
+              body,
+              created_at,
               author_id,
-              post_scope,
-              lesson_path
-            )
-          `
-        )
-        .eq("post.author_id", uid)
-        .neq("author_id", uid)
-        .order("created_at", { ascending: false })
-        .limit(NOTIFICATION_ITEMS_MAX);
-
-      const lessonQaPromise =
-        variant === "admin"
-          ? supabaseClient
-              .from("community_posts")
-              .select(
-                `
-            id,
-            title,
-            body,
-            created_at,
-            published_at,
-            lesson_path,
-            author_id,
-            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
-          `
+              author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url ),
+              post:community_posts!post_id (
+                id,
+                title,
+                author_id,
+                post_scope,
+                lesson_path
               )
-              .eq("post_scope", "lesson_qa")
-              .neq("author_id", uid)
-              .order("created_at", { ascending: false })
-              .limit(NOTIFICATION_ITEMS_MAX)
-          : Promise.resolve({ data: [], error: null });
+            `
+          )
+          .eq("post.author_id", uid)
+          .neq("author_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(NOTIFICATION_ITEMS_MAX);
 
-      const nowIso = new Date().toISOString();
-      const mentionSearchIds = mentionNotificationSearchIds(uid);
-      const mentionBodyOrFilter = mentionNotificationBodyOrFilter(mentionSearchIds);
-
-      const postMentionsPromise = supabaseClient
-        .from("community_posts")
-        .select(
-          `
-            id,
-            title,
-            body,
-            created_at,
-            published_at,
-            author_id,
-            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
-          `
-        )
-        .or(mentionBodyOrFilter)
-        .neq("author_id", uid)
-        .lte("published_at", nowIso)
-        .order("published_at", { ascending: false })
-        .limit(NOTIFICATION_ITEMS_MAX);
-
-      const commentMentionsPromise = supabaseClient
-        .from("community_post_comments")
-        .select(
-          `
-            id,
-            post_id,
-            body,
-            created_at,
-            author_id,
-            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url ),
-            post:community_posts!post_id (
+        const lessonQaPromise =
+          variant === "admin"
+            ? supabaseClient
+                .from("community_posts")
+                .select(
+                  `
               id,
               title,
-              author_id
-            )
-          `
-        )
-        .or(mentionBodyOrFilter)
-        .neq("author_id", uid)
-        .order("created_at", { ascending: false })
-        .limit(NOTIFICATION_ITEMS_MAX);
+              body,
+              created_at,
+              published_at,
+              lesson_path,
+              author_id,
+              author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+            `
+                )
+                .eq("post_scope", "lesson_qa")
+                .neq("author_id", uid)
+                .order("created_at", { ascending: false })
+                .limit(NOTIFICATION_ITEMS_MAX)
+            : Promise.resolve({ data: [], error: null });
 
-      // Only notify about announcements published after the user joined.
-      // Without this, new coaches see every historical announcement as unread.
-      const joinedAt = notificationViewer?.created_at ?? null;
-      let announcementsQuery = announcementsCategoryId
-        ? supabaseClient
-            .from("community_posts")
-            .select(
-              `
-            id,
-            title,
-            body,
-            created_at,
-            published_at,
-            author_id,
-            category:community_categories!category_id ( slug ),
-            author:profiles!author_id ( id, role, full_name, first_name, last_name, avatar_url )
-          `
-            )
-            .eq("category_id", announcementsCategoryId)
-            .neq("author_id", uid)
-            .lte("published_at", nowIso)
-            .order("published_at", { ascending: false })
-            .limit(NOTIFICATION_ITEMS_MAX)
-        : null;
-      if (announcementsQuery && joinedAt) {
-        announcementsQuery = announcementsQuery.gte("published_at", joinedAt);
-      }
-      const announcementsPromise = announcementsQuery
-        ? announcementsQuery
-        : Promise.resolve({ data: [], error: null });
+        const nowIso = new Date().toISOString();
+        const mentionSearchIds = mentionNotificationSearchIds(uid);
+        const mentionBodyOrFilter = mentionNotificationBodyOrFilter(mentionSearchIds);
 
-      const winsPromise =
-        variant === "admin" && winsCategoryId
+        const postMentionsPromise = supabaseClient
+          .from("community_posts")
+          .select(
+            `
+              id,
+              title,
+              body,
+              created_at,
+              published_at,
+              author_id,
+              author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+            `
+          )
+          .or(mentionBodyOrFilter)
+          .neq("author_id", uid)
+          .lte("published_at", nowIso)
+          .order("published_at", { ascending: false })
+          .limit(NOTIFICATION_ITEMS_MAX);
+
+        const commentMentionsPromise = supabaseClient
+          .from("community_post_comments")
+          .select(
+            `
+              id,
+              post_id,
+              body,
+              created_at,
+              author_id,
+              author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url ),
+              post:community_posts!post_id (
+                id,
+                title,
+                author_id
+              )
+            `
+          )
+          .or(mentionBodyOrFilter)
+          .neq("author_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(NOTIFICATION_ITEMS_MAX);
+
+        // Only notify about announcements published after the user joined.
+        // Without this, new coaches see every historical announcement as unread.
+        const joinedAt = notificationViewer?.created_at ?? null;
+        let announcementsQuery = announcementsCategoryId
           ? supabaseClient
               .from("community_posts")
               .select(
                 `
-            id,
-            title,
-            body,
-            created_at,
-            published_at,
-            author_id,
-            category:community_categories!category_id ( slug ),
-            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
-          `
+              id,
+              title,
+              body,
+              created_at,
+              published_at,
+              author_id,
+              category:community_categories!category_id ( slug ),
+              author:profiles!author_id ( id, role, full_name, first_name, last_name, avatar_url )
+            `
               )
-              .eq("category_id", winsCategoryId)
+              .eq("category_id", announcementsCategoryId)
               .neq("author_id", uid)
-              .order("created_at", { ascending: false })
+              .lte("published_at", nowIso)
+              .order("published_at", { ascending: false })
               .limit(NOTIFICATION_ITEMS_MAX)
+          : null;
+        if (announcementsQuery && joinedAt) {
+          announcementsQuery = announcementsQuery.gte("published_at", joinedAt);
+        }
+        const announcementsPromise = announcementsQuery
+          ? announcementsQuery
           : Promise.resolve({ data: [], error: null });
 
-      const [
-        repliesRes,
-        announcementsRes,
-        winsRes,
-        postMentionsRes,
-        commentMentionsRes,
-        lessonQaRes,
-      ] = await Promise.all([
-        repliesPromise,
-        announcementsPromise,
-        winsPromise,
-        postMentionsPromise,
-        commentMentionsPromise,
-        lessonQaPromise,
-      ]);
+        const winsPromise =
+          variant === "admin" && winsCategoryId
+            ? supabaseClient
+                .from("community_posts")
+                .select(
+                  `
+              id,
+              title,
+              body,
+              created_at,
+              published_at,
+              author_id,
+              category:community_categories!category_id ( slug ),
+              author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+            `
+                )
+                .eq("category_id", winsCategoryId)
+                .neq("author_id", uid)
+                .order("created_at", { ascending: false })
+                .limit(NOTIFICATION_ITEMS_MAX)
+            : Promise.resolve({ data: [], error: null });
 
-      type AuthorRow = {
-        id: string;
-        full_name: string | null;
-        first_name: string | null;
-        last_name: string | null;
-        avatar_url: string | null;
-        role?: string | null;
-      };
-      const next: NotificationItem[] = [];
+        const [
+          repliesRes,
+          announcementsRes,
+          winsRes,
+          postMentionsRes,
+          commentMentionsRes,
+          lessonQaRes,
+        ] = await Promise.all([
+          repliesPromise,
+          announcementsPromise,
+          winsPromise,
+          postMentionsPromise,
+          commentMentionsPromise,
+          lessonQaPromise,
+        ]);
 
-      type CommentRow = {
-        id: string;
-        post_id: string;
-        body: string;
-        created_at: string;
-        author_id?: string;
-        author: AuthorRow | AuthorRow[] | null;
-        post:
-          | {
-              id: string;
-              title: string | null;
-              author_id: string;
-              post_scope?: string | null;
-              lesson_path?: string | null;
-            }
-          | Array<{
-              id: string;
-              title: string | null;
-              author_id: string;
-              post_scope?: string | null;
-              lesson_path?: string | null;
-            }>
-          | null;
-      };
+        type AuthorRow = {
+          id: string;
+          full_name: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          avatar_url: string | null;
+          role?: string | null;
+        };
+        const next: NotificationItem[] = [];
 
-      const lessonQaNotificationHref = (lessonPath: string | null | undefined) => {
-        if (!lessonPath?.trim()) return null;
-        let path = lessonPath.trim();
-        if (variant === "admin" && path.startsWith("/coach/")) {
-          path = `/admin/${path.slice("/coach/".length)}`;
-        } else if (variant === "coach" && path.startsWith("/admin/")) {
-          path = `/coach/${path.slice("/admin/".length)}`;
-        }
-        return path.includes("?") ? `${path}&tab=qa` : `${path}?tab=qa`;
-      };
+        type CommentRow = {
+          id: string;
+          post_id: string;
+          body: string;
+          created_at: string;
+          author_id?: string;
+          author: AuthorRow | AuthorRow[] | null;
+          post:
+            | {
+                id: string;
+                title: string | null;
+                author_id: string;
+                post_scope?: string | null;
+                lesson_path?: string | null;
+              }
+            | Array<{
+                id: string;
+                title: string | null;
+                author_id: string;
+                post_scope?: string | null;
+                lesson_path?: string | null;
+              }>
+            | null;
+        };
 
-      const repliedCommentIds = new Set<string>();
-      if (!repliesRes.error) {
-        const rows = (repliesRes.data ?? []) as CommentRow[];
-        for (const row of rows) {
-          const author = Array.isArray(row.author)
-            ? (row.author[0] ?? null)
-            : (row.author ?? null);
-          const post = Array.isArray(row.post)
-            ? (row.post[0] ?? null)
-            : (row.post ?? null);
-          if (!author || !post) continue;
-          const actor = displayNameFromProfile(author);
-          repliedCommentIds.add(row.id);
-          const lessonHref =
-            post.post_scope === "lesson_qa"
-              ? lessonQaNotificationHref(post.lesson_path)
-              : null;
-          next.push({
-            id: `reply:${row.id}`,
-            type: "replies",
-            created_at: row.created_at,
-            actor_name: actor,
-            actor_avatar_url: author.avatar_url ?? null,
-            title:
+        const lessonQaNotificationHref = (lessonPath: string | null | undefined) => {
+          if (!lessonPath?.trim()) return null;
+          let path = lessonPath.trim();
+          if (variant === "admin" && path.startsWith("/coach/")) {
+            path = `/admin/${path.slice("/coach/".length)}`;
+          } else if (variant === "coach" && path.startsWith("/admin/")) {
+            path = `/coach/${path.slice("/admin/".length)}`;
+          }
+          return path.includes("?") ? `${path}&tab=qa` : `${path}?tab=qa`;
+        };
+
+        const repliedCommentIds = new Set<string>();
+        if (!repliesRes.error) {
+          const rows = (repliesRes.data ?? []) as CommentRow[];
+          for (const row of rows) {
+            const author = Array.isArray(row.author)
+              ? (row.author[0] ?? null)
+              : (row.author ?? null);
+            const post = Array.isArray(row.post)
+              ? (row.post[0] ?? null)
+              : (row.post ?? null);
+            if (!author || !post) continue;
+            const actor = displayNameFromProfile(author);
+            repliedCommentIds.add(row.id);
+            const lessonHref =
               post.post_scope === "lesson_qa"
-                ? `${actor} replied on a lesson`
-                : `${actor} replied to your post`,
-            body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
-            href:
-              lessonHref ??
-              communityPostPath(communityHref, {
+                ? lessonQaNotificationHref(post.lesson_path)
+                : null;
+            next.push({
+              id: `reply:${row.id}`,
+              type: "replies",
+              created_at: row.created_at,
+              actor_name: actor,
+              actor_avatar_url: author.avatar_url ?? null,
+              title:
+                post.post_scope === "lesson_qa"
+                  ? `${actor} replied on a lesson`
+                  : `${actor} replied to your post`,
+              body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
+              href:
+                lessonHref ??
+                communityPostPath(communityHref, {
+                  title: post.title ?? "Community post",
+                }),
+            });
+          }
+        }
+
+        if (!lessonQaRes.error && variant === "admin") {
+          const rows = (lessonQaRes.data ?? []) as Array<{
+            id: string;
+            title: string | null;
+            body: string;
+            created_at: string;
+            published_at?: string | null;
+            lesson_path?: string | null;
+            author: AuthorRow | AuthorRow[] | null;
+          }>;
+          for (const row of rows) {
+            const author = Array.isArray(row.author)
+              ? (row.author[0] ?? null)
+              : (row.author ?? null);
+            if (!author) continue;
+            const actor = displayNameFromProfile(author);
+            const lessonHref = lessonQaNotificationHref(row.lesson_path);
+            next.push({
+              id: `lesson-qa:${row.id}`,
+              type: "replies",
+              created_at: row.published_at ?? row.created_at,
+              actor_name: actor,
+              actor_avatar_url: author.avatar_url ?? null,
+              title: `${actor} posted on a lesson`,
+              body: row.title?.trim() || row.body.trim() || "Ask & Share",
+              href: lessonHref ?? communityHref,
+            });
+          }
+        }
+
+        if (!postMentionsRes.error) {
+          const rows = (postMentionsRes.data ?? []) as Array<{
+            id: string;
+            title: string | null;
+            body: string;
+            created_at: string;
+            published_at?: string | null;
+            author: AuthorRow | AuthorRow[] | null;
+          }>;
+          for (const row of rows) {
+            const contentAt = row.published_at ?? row.created_at;
+            const personallyMentioned = bodyMentionsViewerForNotification(
+              row.body,
+              uid,
+              contentAt,
+              extractMentionUserIds
+            );
+            if (
+              !personallyMentioned &&
+              !broadcastMentionNotifiesViewer(row.body, contentAt, joinedAt)
+            ) {
+              continue;
+            }
+            const author = Array.isArray(row.author)
+              ? (row.author[0] ?? null)
+              : (row.author ?? null);
+            if (!author) continue;
+            const actor = displayNameFromProfile(author);
+            next.push({
+              id: `mention-post:${row.id}`,
+              type: "mentions",
+              created_at: contentAt,
+              actor_name: actor,
+              actor_avatar_url: author.avatar_url ?? null,
+              title: communityMentionNotificationTitle(
+                actor,
+                "post",
+                personallyMentioned,
+                extractBroadcastMentionGroups(row.body)
+              ),
+              body: row.body.trim() || row.title?.trim() || "Community post",
+              href: communityPostPath(communityHref, {
+                title: row.title?.trim() || row.body?.trim() || "Community post",
+              }),
+            });
+          }
+        }
+
+        if (!commentMentionsRes.error) {
+          const rows = (commentMentionsRes.data ?? []) as CommentRow[];
+          for (const row of rows) {
+            if (repliedCommentIds.has(row.id)) continue;
+            const personallyMentioned = bodyMentionsViewerForNotification(
+              row.body,
+              uid,
+              row.created_at,
+              extractMentionUserIds
+            );
+            if (
+              !personallyMentioned &&
+              !broadcastMentionNotifiesViewer(row.body, row.created_at, joinedAt)
+            ) {
+              continue;
+            }
+            const author = Array.isArray(row.author)
+              ? (row.author[0] ?? null)
+              : (row.author ?? null);
+            const post = Array.isArray(row.post)
+              ? (row.post[0] ?? null)
+              : (row.post ?? null);
+            if (!author || !post) continue;
+            const actor = displayNameFromProfile(author);
+            next.push({
+              id: `mention-comment:${row.id}`,
+              type: "mentions",
+              created_at: row.created_at,
+              actor_name: actor,
+              actor_avatar_url: author.avatar_url ?? null,
+              title: communityMentionNotificationTitle(
+                actor,
+                "comment",
+                personallyMentioned,
+                extractBroadcastMentionGroups(row.body)
+              ),
+              body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
+              href: communityPostPath(communityHref, {
                 title: post.title ?? "Community post",
               }),
-          });
-        }
-      }
-
-      if (!lessonQaRes.error && variant === "admin") {
-        const rows = (lessonQaRes.data ?? []) as Array<{
-          id: string;
-          title: string | null;
-          body: string;
-          created_at: string;
-          published_at?: string | null;
-          lesson_path?: string | null;
-          author: AuthorRow | AuthorRow[] | null;
-        }>;
-        for (const row of rows) {
-          const author = Array.isArray(row.author)
-            ? (row.author[0] ?? null)
-            : (row.author ?? null);
-          if (!author) continue;
-          const actor = displayNameFromProfile(author);
-          const lessonHref = lessonQaNotificationHref(row.lesson_path);
-          next.push({
-            id: `lesson-qa:${row.id}`,
-            type: "replies",
-            created_at: row.published_at ?? row.created_at,
-            actor_name: actor,
-            actor_avatar_url: author.avatar_url ?? null,
-            title: `${actor} posted on a lesson`,
-            body: row.title?.trim() || row.body.trim() || "Ask & Share",
-            href: lessonHref ?? communityHref,
-          });
-        }
-      }
-
-      if (!postMentionsRes.error) {
-        const rows = (postMentionsRes.data ?? []) as Array<{
-          id: string;
-          title: string | null;
-          body: string;
-          created_at: string;
-          published_at?: string | null;
-          author: AuthorRow | AuthorRow[] | null;
-        }>;
-        for (const row of rows) {
-          const contentAt = row.published_at ?? row.created_at;
-          const personallyMentioned = bodyMentionsViewerForNotification(
-            row.body,
-            uid,
-            contentAt,
-            extractMentionUserIds
-          );
-          if (
-            !personallyMentioned &&
-            !broadcastMentionNotifiesViewer(row.body, contentAt, joinedAt)
-          ) {
-            continue;
+            });
           }
-          const author = Array.isArray(row.author)
-            ? (row.author[0] ?? null)
-            : (row.author ?? null);
-          if (!author) continue;
-          const actor = displayNameFromProfile(author);
-          next.push({
-            id: `mention-post:${row.id}`,
-            type: "mentions",
-            created_at: contentAt,
-            actor_name: actor,
-            actor_avatar_url: author.avatar_url ?? null,
-            title: communityMentionNotificationTitle(
-              actor,
-              "post",
-              personallyMentioned,
-              extractBroadcastMentionGroups(row.body)
-            ),
-            body: row.body.trim() || row.title?.trim() || "Community post",
-            href: communityPostPath(communityHref, {
-              title: row.title?.trim() || row.body?.trim() || "Community post",
-            }),
-          });
         }
-      }
 
-      if (!commentMentionsRes.error) {
-        const rows = (commentMentionsRes.data ?? []) as CommentRow[];
-        for (const row of rows) {
-          if (repliedCommentIds.has(row.id)) continue;
-          const personallyMentioned = bodyMentionsViewerForNotification(
-            row.body,
-            uid,
-            row.created_at,
-            extractMentionUserIds
-          );
-          if (
-            !personallyMentioned &&
-            !broadcastMentionNotifiesViewer(row.body, row.created_at, joinedAt)
-          ) {
-            continue;
+        const mentionIds = new Set<string>();
+        for (const item of next) {
+          if (item.type !== "replies" && item.type !== "mentions") continue;
+          for (const id of extractMentionUserIds(item.body)) mentionIds.add(id);
+        }
+        const mentionNameById =
+          mentionIds.size > 0
+            ? await fetchCommunityMentionNameMap([...mentionIds])
+            : {};
+        for (const item of next) {
+          if (item.type !== "replies" && item.type !== "mentions") continue;
+          item.body = communityPostCardPreview(item.body, mentionNameById);
+        }
+
+        if (!announcementsRes.error) {
+          const rows = (announcementsRes.data ?? []) as Array<{
+            id: string;
+            title: string;
+            body: string;
+            created_at: string;
+            published_at?: string | null;
+            author: AuthorRow | AuthorRow[] | null;
+            category: { slug: string } | { slug: string }[] | null;
+          }>;
+          for (const row of rows) {
+            const category = Array.isArray(row.category)
+              ? (row.category[0] ?? null)
+              : (row.category ?? null);
+            const author = Array.isArray(row.author)
+              ? (row.author[0] ?? null)
+              : (row.author ?? null);
+            if (!category || category.slug !== "announcements" || !author) continue;
+            if (author.role !== "admin") continue;
+            const actor = displayNameFromProfile(author);
+            next.push({
+              id: `announcement:${row.id}`,
+              type: "announcements",
+              created_at: row.published_at ?? row.created_at,
+              actor_name: actor,
+              actor_avatar_url: author.avatar_url ?? null,
+              title: `${actor} posted an announcement`,
+              body: row.title?.trim() || row.body?.trim() || "New announcement",
+              href: communityPostPath(communityHref, {
+                title: row.title?.trim() || row.body?.trim() || "Community post",
+              }),
+            });
           }
-          const author = Array.isArray(row.author)
-            ? (row.author[0] ?? null)
-            : (row.author ?? null);
-          const post = Array.isArray(row.post)
-            ? (row.post[0] ?? null)
-            : (row.post ?? null);
-          if (!author || !post) continue;
-          const actor = displayNameFromProfile(author);
-          next.push({
-            id: `mention-comment:${row.id}`,
-            type: "mentions",
-            created_at: row.created_at,
-            actor_name: actor,
-            actor_avatar_url: author.avatar_url ?? null,
-            title: communityMentionNotificationTitle(
-              actor,
-              "comment",
-              personallyMentioned,
-              extractBroadcastMentionGroups(row.body)
-            ),
-            body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
-            href: communityPostPath(communityHref, {
-              title: post.title ?? "Community post",
-            }),
-          });
         }
-      }
 
-      const mentionIds = new Set<string>();
-      for (const item of next) {
-        if (item.type !== "replies" && item.type !== "mentions") continue;
-        for (const id of extractMentionUserIds(item.body)) mentionIds.add(id);
-      }
-      const mentionNameById =
-        mentionIds.size > 0
-          ? await fetchCommunityMentionNameMap([...mentionIds])
-          : {};
-      for (const item of next) {
-        if (item.type !== "replies" && item.type !== "mentions") continue;
-        item.body = communityPostCardPreview(item.body, mentionNameById);
-      }
-
-      if (!announcementsRes.error) {
-        const rows = (announcementsRes.data ?? []) as Array<{
-          id: string;
-          title: string;
-          body: string;
-          created_at: string;
-          published_at?: string | null;
-          author: AuthorRow | AuthorRow[] | null;
-          category: { slug: string } | { slug: string }[] | null;
-        }>;
-        for (const row of rows) {
-          const category = Array.isArray(row.category)
-            ? (row.category[0] ?? null)
-            : (row.category ?? null);
-          const author = Array.isArray(row.author)
-            ? (row.author[0] ?? null)
-            : (row.author ?? null);
-          if (!category || category.slug !== "announcements" || !author) continue;
-          if (author.role !== "admin") continue;
-          const actor = displayNameFromProfile(author);
-          next.push({
-            id: `announcement:${row.id}`,
-            type: "announcements",
-            created_at: row.published_at ?? row.created_at,
-            actor_name: actor,
-            actor_avatar_url: author.avatar_url ?? null,
-            title: `${actor} posted an announcement`,
-            body: row.title?.trim() || row.body?.trim() || "New announcement",
-            href: communityPostPath(communityHref, {
-              title: row.title?.trim() || row.body?.trim() || "Community post",
-            }),
+        if (variant === "admin" && !winsRes.error) {
+          const rows = (winsRes.data ?? []) as Array<{
+            id: string;
+            title: string;
+            body: string;
+            created_at: string;
+            published_at?: string | null;
+            author: AuthorRow | AuthorRow[] | null;
+            category: { slug: string } | { slug: string }[] | null;
+          }>;
+          const eligibleWinRows = rows.filter((row) => {
+            const category = Array.isArray(row.category)
+              ? (row.category[0] ?? null)
+              : (row.category ?? null);
+            if (!category || category.slug !== "wins") return false;
+            if (
+              !isWinPostVisibleNow(row.published_at ?? null, row.created_at)
+            ) {
+              return false;
+            }
+            return isWinNotificationEligible(
+              row.published_at ?? null,
+              row.created_at,
+              uid
+            );
           });
-        }
-      }
-
-      if (variant === "admin" && !winsRes.error) {
-        const rows = (winsRes.data ?? []) as Array<{
-          id: string;
-          title: string;
-          body: string;
-          created_at: string;
-          published_at?: string | null;
-          author: AuthorRow | AuthorRow[] | null;
-          category: { slug: string } | { slug: string }[] | null;
-        }>;
-        const eligibleWinRows = rows.filter((row) => {
-          const category = Array.isArray(row.category)
-            ? (row.category[0] ?? null)
-            : (row.category ?? null);
-          if (!category || category.slug !== "wins") return false;
-          if (
-            !isWinPostVisibleNow(row.published_at ?? null, row.created_at)
-          ) {
-            return false;
+          const eligibleWinIds = eligibleWinRows.map((row) => row.id);
+          const commentedWinIds = await fetchUserCommentedPostIds(uid, eligibleWinIds);
+          const permanentlySkippedWinIds = loadPermanentlySkippedWinPostIds(uid);
+          for (const row of eligibleWinRows) {
+            if (
+              commentedWinIds.has(row.id) ||
+              permanentlySkippedWinIds.has(row.id)
+            ) {
+              markCommunityNotificationRead(uid, winNotificationIdForPost(row.id));
+              continue;
+            }
+            const author = Array.isArray(row.author)
+              ? (row.author[0] ?? null)
+              : (row.author ?? null);
+            if (!author) continue;
+            const actor = displayNameFromProfile(author);
+            next.push({
+              id: winNotificationIdForPost(row.id),
+              type: "wins",
+              created_at: row.published_at ?? row.created_at,
+              actor_name: actor,
+              actor_avatar_url: author.avatar_url ?? null,
+              title: `${actor} shared a win`,
+              body: row.title?.trim() || row.body?.trim() || "New win",
+              href: communityPostPath(communityHref, {
+                title: row.title?.trim() || row.body?.trim() || "Community post",
+              }),
+            });
           }
-          return isWinNotificationEligible(
-            row.published_at ?? null,
-            row.created_at,
-            uid
-          );
-        });
-        const eligibleWinIds = eligibleWinRows.map((row) => row.id);
-        const commentedWinIds = await fetchUserCommentedPostIds(uid, eligibleWinIds);
-        const permanentlySkippedWinIds = loadPermanentlySkippedWinPostIds(uid);
-        for (const row of eligibleWinRows) {
-          if (
-            commentedWinIds.has(row.id) ||
-            permanentlySkippedWinIds.has(row.id)
-          ) {
-            markCommunityNotificationRead(uid, winNotificationIdForPost(row.id));
-            continue;
-          }
-          const author = Array.isArray(row.author)
-            ? (row.author[0] ?? null)
-            : (row.author ?? null);
-          if (!author) continue;
-          const actor = displayNameFromProfile(author);
-          next.push({
-            id: winNotificationIdForPost(row.id),
-            type: "wins",
-            created_at: row.published_at ?? row.created_at,
-            actor_name: actor,
-            actor_avatar_url: author.avatar_url ?? null,
-            title: `${actor} shared a win`,
-            body: row.title?.trim() || row.body?.trim() || "New win",
-            href: communityPostPath(communityHref, {
-              title: row.title?.trim() || row.body?.trim() || "Community post",
-            }),
-          });
         }
-      }
 
-      next.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setNotifications(next.slice(0, NOTIFICATION_ITEMS_MAX));
+        next.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        return next.slice(0, NOTIFICATION_ITEMS_MAX);
+      }, { staleMs: BELL_TTL_MS });
+      setNotifications(items);
     } finally {
       setLoadingNotifications(false);
     }
@@ -730,16 +745,18 @@ export function DashboardTopActions({
         return;
       }
 
-      const res = await fetch("/api/notifications/prospects", { headers });
-      if (!res.ok) {
-        setProspectNotifications([]);
-        return;
-      }
-
-      const body = (await res.json()) as {
-        notifications?: ProspectNotificationItem[];
-      };
-      setProspectNotifications(body.notifications ?? []);
+      const cacheKey = `bell-prospects:${impersonatingCoachId ?? notificationViewer.id}`;
+      const cached = peekHubQuery<ProspectNotificationItem[]>(cacheKey);
+      if (cached) setProspectNotifications(cached);
+      const items = await fetchHubQuery(cacheKey, async () => {
+        const res = await fetch("/api/notifications/prospects", { headers });
+        if (!res.ok) return [];
+        const body = (await res.json()) as {
+          notifications?: ProspectNotificationItem[];
+        };
+        return body.notifications ?? [];
+      }, { staleMs: BELL_TTL_MS });
+      setProspectNotifications(items);
     } finally {
       setLoadingProspectNotifications(false);
     }
@@ -751,13 +768,19 @@ export function DashboardTopActions({
     if (prospectsEnabled) {
       void loadProspectNotifications();
     }
-    const handle = window.setInterval(() => {
+    const refresh = () => {
+      if (document.hidden) return;
       void loadNotifications();
       if (prospectsEnabled) {
         void loadProspectNotifications();
       }
-    }, 60_000);
-    return () => window.clearInterval(handle);
+    };
+    const handle = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(handle);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, [
     loadNotifications,
     loadProspectNotifications,

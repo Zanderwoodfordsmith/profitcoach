@@ -16,6 +16,8 @@ import {
 } from "@/components/BossGrid";
 import { PLAYBOOKS } from "@/lib/bossData";
 import type { AnswersMap } from "@/lib/bossScores";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 /** Sample answers for previewing all grid variants (mix of 0, 1, 2). */
 function sampleAnswers(): AnswersMap {
@@ -52,19 +54,12 @@ export default function AdminSettingsBossGridPage() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         if (!cancelled) router.replace("/login");
         return;
       }
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const body = (await roleRes.json().catch(() => ({}))) as { role?: string };
+      const body = (await fetchProfileRole(user.id)) as { role?: string };
       if (!cancelled && body.role === "admin") setAllowed(true);
       setChecking(false);
     }

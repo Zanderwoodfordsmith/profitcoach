@@ -56,19 +56,23 @@ async function linkRows<T extends ThreadRow>(
   coachId: string
 ): Promise<T[]> {
   const next = rows.map((row) => ({ ...row }));
-  const stated = await statedEmailsForUnlinked(next);
-  const beyond = await statedEmailsInOtherChannels(coachId);
+  const [stated, beyond] = await Promise.all([
+    statedEmailsForUnlinked(next),
+    statedEmailsInOtherChannels(coachId),
+  ]);
   for (const [conversationId, email] of beyond) {
     if (!stated.has(conversationId)) stated.set(conversationId, email);
   }
   const knownIds = new Set(next.map((row) => row.id).filter(Boolean));
-  const extras = await loadConversations(
-    coachId,
-    [...stated.keys()].filter((id) => !knownIds.has(id))
-  );
-  const work = [...next, ...extras];
   const emails = [...new Set(stated.values())];
-  const contactsByEmail = await contactsForEmails(coachId, emails);
+  const [extras, contactsByEmail] = await Promise.all([
+    loadConversations(
+      coachId,
+      [...stated.keys()].filter((id) => !knownIds.has(id))
+    ),
+    contactsForEmails(coachId, emails),
+  ]);
+  const work = [...next, ...extras];
 
   const rowByEmail = new Map<string, ThreadRow>();
   for (const row of work) {

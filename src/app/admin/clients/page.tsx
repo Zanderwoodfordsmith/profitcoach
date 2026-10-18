@@ -8,6 +8,8 @@ import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton"
 import { AddClientForm } from "@/components/clients/AddClientForm";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type ClientRow = {
   id: string;
@@ -53,19 +55,12 @@ export default function AdminClientsPage() {
     async function init() {
       setLoading(true);
       setError(null);
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         router.replace("/login");
         return;
       }
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
       };
       if (cancelled) return;

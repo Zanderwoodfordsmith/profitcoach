@@ -43,6 +43,7 @@ import type {
   ForecastWeekSummary,
 } from "@/lib/cashFlowForecast/types";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type ForecastPayload = {
   startMonday: string;
@@ -339,9 +340,7 @@ export function CashFlowForecastClient() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         if (!cancelled) setAllowed(false);
         return;

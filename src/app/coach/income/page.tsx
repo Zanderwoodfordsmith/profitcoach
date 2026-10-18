@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 type RevenueLine = {
   id: string;
@@ -102,15 +103,10 @@ async function coachAuthHeaders(): Promise<{
   if (!session?.access_token) {
     return { headers: {}, role: "", error: "Not signed in." };
   }
-  const roleRes = await fetch("/api/profile-role", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: session.user.id }),
-  });
-  const roleBody = (await roleRes.json().catch(() => ({}))) as {
+  const roleBody = (await fetchProfileRole(session.user.id)) as {
     role?: string;
   };
-  if (!roleRes.ok || !roleBody.role) {
+  if (!roleBody.role) {
     return { headers: {}, role: "", error: "Unable to load profile." };
   }
   const headers: Record<string, string> = {

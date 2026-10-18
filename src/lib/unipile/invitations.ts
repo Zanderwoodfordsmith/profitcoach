@@ -168,6 +168,16 @@ export async function listPendingInvitesForCoach(
       inviteSentAt(b.parsed_datetime || b.date)
   );
 
+  // Remember the count so the campaigns page can show it without paging LinkedIn.
+  await supabaseAdmin
+    .from("linkedin_outreach_accounts")
+    .update({
+      pending_invites_total: items.length,
+      pending_invites_has_more: hasMore,
+      pending_invites_counted_at: new Date().toISOString(),
+    })
+    .eq("id", account.id);
+
   const forReturn = items.slice(0, returnLimit);
   const invitationIds = forReturn.map((i) => i.id).filter(Boolean);
   const leadByInvite = await matchLeadsByInviteIds(coachId, invitationIds);
@@ -204,6 +214,33 @@ export async function getInviteWithdrawPolicy(
     .maybeSingle();
   if (error) throw new Error(error.message);
   return parseInviteWithdrawPolicy(data);
+}
+
+/** The last counted pending pile for the coach's LinkedIn account, or null if never counted. */
+export async function getPendingInviteSnapshot(coachId: string): Promise<{
+  account_id: string;
+  total: number;
+  has_more: boolean;
+  counted_at: string;
+  withdraw: InviteWithdrawPolicy;
+} | null> {
+  const { data, error } = await supabaseAdmin
+    .from("linkedin_outreach_accounts")
+    .select(`${ACCOUNT_SELECT}, pending_invites_total, pending_invites_has_more, pending_invites_counted_at`)
+    .eq("coach_id", coachId)
+    .eq("status", "OK")
+    .ilike("provider", "linkedin")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data || data.pending_invites_total == null || !data.pending_invites_counted_at) return null;
+  return {
+    account_id: data.unipile_account_id as string,
+    total: data.pending_invites_total as number,
+    has_more: Boolean(data.pending_invites_has_more),
+    counted_at: data.pending_invites_counted_at as string,
+    withdraw: parseInviteWithdrawPolicy(data),
+  };
 }
 
 export async function saveInviteWithdrawPolicy(

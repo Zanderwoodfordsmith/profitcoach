@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { getValidSupabaseAccessToken, getSessionUser } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { fetchHubQuery, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
@@ -103,9 +103,7 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
 
       try {
         if (scope === "admin") {
-          const {
-            data: { user },
-          } = await supabaseClient.auth.getUser();
+          const user = await getSessionUser();
           if (!user) {
             router.replace("/login");
             return;
