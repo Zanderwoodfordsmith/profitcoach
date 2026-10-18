@@ -69,3 +69,13 @@ Tested live on a Zander Demo draft campaign (join, lock, results, leave, then re
 - The test replaces the first message step (or the connection note), so coaches don't have to rebuild their sequence.
 - Leaving a test keeps version A as the coach's own wording.
 - Win rule: p < 0.05 and at least 200 people per version. Target 1,500 per version (adjustable per test).
+
+## 4. Industry tiers and coach profiles (report + app)
+
+- The report has a new **Industries and profiles** tab: https://claude.ai/artifact/H36bnhh1RuFdvCyBYeGeSH
+- **LinkedIn score by sector** (per prospect, from company name and job title):
+  - **7 to 9:** consulting and professional services 9; IT, software and tech 8; recruitment, accountancy and finance, property, education, marketing 7.
+  - **4:** construction, engineering and manufacturing, trades, logistics, hospitality, automotive.
+  - **3:** health and care.
+- The same scores now live in the app (`src/lib/campaigns/sectorTiers.ts`). The launch check warns when 35%+ of a campaign's people are in a sector scoring 4 or below.
+- **Coach profiles:** a full About section (1,200+ characters) and 1,000+ connections go with 4 to 6 points more acceptance. Headline wording showed no clear effect. Only 37 coaches, so treat this as a signal, not proof.

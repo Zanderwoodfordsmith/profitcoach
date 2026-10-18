@@ -51,4 +51,15 @@ describe("campaign launch check", () => {
     });
     assert.deepEqual(issues, []);
   });
+
+  it("warns when most people are in a sector that rarely answers on LinkedIn", () => {
+    const leads = Array.from({ length: 30 }, (_, i) => ({
+      title: "Managing Director",
+      company: i < 20 ? "Acme Precision Engineering Ltd" : "Blue Sky Software",
+      location: "Coventry, England, United Kingdom",
+    }));
+    const issues = checkCampaign({ steps: [], leads });
+    assert.deepEqual(codes(issues), ["low_linkedin_sector"]);
+    assert.match(issues[0]!.message, /engineering & manufacturing, which scores 4\/10/);
+  });
 });

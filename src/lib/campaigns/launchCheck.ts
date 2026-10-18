@@ -1,3 +1,4 @@
+import { dominantSector } from "@/lib/campaigns/sectorTiers";
 import { resolveMergeField } from "@/lib/unipile/mergeFields";
 
 /**
@@ -138,6 +139,14 @@ export function checkCampaign(input: { steps: CheckStep[]; leads: CheckLead[]; c
         level: "warning",
         code: "trades_audience",
         message: `About ${Math.round(trades * 100)}% of these people look like trades businesses. Trades owners accepted only 2 to 7% of LinkedIn invites in our data. Email, phone or post usually reach them better.`,
+      });
+    }
+    const dom = dominantSector(leads);
+    if (dom && dom.tier.score <= 4 && trades < 0.3) {
+      issues.push({
+        level: "warning",
+        code: "low_linkedin_sector",
+        message: `About ${Math.round(dom.share * 100)}% of these people are in ${dom.tier.sector.toLowerCase()}, which scores ${dom.tier.score}/10 for LinkedIn in our data. Run email, phone or post alongside this campaign.`,
       });
     }
     const owners = share((l) => OWNER_RE.test(l.title ?? ""));
