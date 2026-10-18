@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 type AuthFail = {
   error: "Missing access token." | "Invalid access token." | "Not authorized.";
@@ -25,12 +26,9 @@ export async function requireContentPublisher(
 
   if (!token) return { error: "Missing access token.", userId: null, role: null };
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (userError || !user) {
+  if (!user) {
     return { error: "Invalid access token.", userId: null, role: null };
   }
 

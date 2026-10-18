@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 type AuthResult =
   | { error: "Missing access token." | "Invalid access token." | "Not authorized as client."; userId: null; role: null; impersonateContactId: null }
@@ -16,12 +17,9 @@ async function requireAuth(request: Request): Promise<AuthResult> {
     return { error: "Missing access token." as const, userId: null, role: null, impersonateContactId: null };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return { error: "Invalid access token." as const, userId: null, role: null, impersonateContactId: null };
   }
 

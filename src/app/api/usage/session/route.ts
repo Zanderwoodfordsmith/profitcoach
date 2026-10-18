@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 type Body = {
   sessionId?: string | null;
@@ -33,11 +34,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing access token." }, { status: 401 });
     }
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !user) {
+    const user = await verifyAccessToken(token);
+    if (!user) {
       return NextResponse.json({ error: "Invalid access token." }, { status: 401 });
     }
 

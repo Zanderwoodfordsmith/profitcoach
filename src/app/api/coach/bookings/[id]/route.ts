@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 async function requireSelfOrAdmin(
   request: Request,
@@ -11,11 +12,8 @@ async function requireSelfOrAdmin(
     : null;
   if (!token) return { error: "Missing access token.", userId: null };
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) return { error: "Invalid access token.", userId: null };
+  const user = await verifyAccessToken(token);
+  if (!user) return { error: "Invalid access token.", userId: null };
 
   const { data: profile } = await supabaseAdmin
     .from("profiles")

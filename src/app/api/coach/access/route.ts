@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveCoachAccessForUserId } from "@/lib/coachAccess/resolveCoachAccess";
 import { PREMIUM_EQUIVALENT_FEATURES } from "@/lib/coachAccess/tiers";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization") ?? "";
@@ -13,12 +14,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing access token." }, { status: 401 });
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return NextResponse.json({ error: "Invalid access token." }, { status: 401 });
   }
 

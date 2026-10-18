@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 export async function requireCoachEffectiveId(request: Request): Promise<
   | { error: string; userId: null; viewerIsAdmin?: false }
@@ -13,12 +14,9 @@ export async function requireCoachEffectiveId(request: Request): Promise<
     return { error: "Missing access token.", userId: null };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return { error: "Invalid access token.", userId: null };
   }
 

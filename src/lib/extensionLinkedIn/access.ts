@@ -4,6 +4,7 @@ import {
   type CoachAccessSnapshot,
 } from "@/lib/coachAccess/resolveCoachAccess";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 const DEFAULT_BETA_EMAILS = ["zander@businesscoachacademy.com"];
 
@@ -162,12 +163,9 @@ export async function requireExtensionLinkedInAccess(
     };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return {
       error: "Invalid access token.",
       status: 401,

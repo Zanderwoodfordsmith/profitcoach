@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { encodeLinkedInState } from "@/lib/linkedinOAuth";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 const LINKEDIN_SCOPES = ["openid", "profile", "email", "w_member_social"];
 
@@ -39,11 +40,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing access token." }, { status: 401 });
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (userError || !user) {
+  const user = await verifyAccessToken(token);
+  if (!user) {
     return NextResponse.json({ error: "Invalid access token." }, { status: 401 });
   }
 

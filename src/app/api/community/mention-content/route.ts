@@ -6,6 +6,7 @@ import { flattenSections } from "@/lib/academy/hubCatalog";
 import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
 import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
 import { loadArchiveHub } from "@/lib/academy/archiveHubLoad";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 export type MentionTreeLesson = {
   lessonId: string;
@@ -35,12 +36,9 @@ async function requireStaff(request: Request): Promise<
     return { ok: false, status: 401, message: "Missing access token." };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return { ok: false, status: 401, message: "Invalid access token." };
   }
 

@@ -6,6 +6,7 @@ import {
 import { isCoachClientHubAllowedEmail } from "@/lib/coachClientHubAccess";
 import { coachClientHubEmailForUserId } from "@/lib/coachClientHubAccessServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 async function emailForUserId(userId: string): Promise<string | null> {
   return coachClientHubEmailForUserId(userId);
@@ -21,12 +22,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing access token." }, { status: 401 });
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return NextResponse.json({ error: "Invalid access token." }, { status: 401 });
   }
 

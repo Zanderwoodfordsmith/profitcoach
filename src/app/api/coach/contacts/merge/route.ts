@@ -5,6 +5,7 @@ import {
 } from "@/lib/contacts/mergeContacts";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 type Body = {
   survivorId?: string;
@@ -38,9 +39,7 @@ async function resolveMergeCoachId(
     /^Bearer\s+/i,
     ""
   );
-  const {
-    data: { user },
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
   if (!user) return { error: "Unauthorized", status: 401 };
 
   const { data: profile } = await supabaseAdmin

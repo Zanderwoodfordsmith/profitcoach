@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import type { AgentMode } from "./types";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 /**
  * Who is talking to Ava, and in which mode. Admins always get admin mode (any
@@ -32,17 +33,14 @@ export async function resolveAgentActor(
   const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length) : "";
   if (!token) return { ok: false, status: 401, error: "Missing access token." };
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) return { ok: false, status: 401, error: "Invalid access token." };
+  const user = await verifyAccessToken(token);
+  if (!user) return { ok: false, status: 401, error: "Invalid access token." };
 
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Both lookups at once; the coach row is only used when the role is coach.
+  const [{ data: profile }, { data: coach }] = await Promise.all([
+    supabaseAdmin.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+    supabaseAdmin.from("coaches").select("ai_agent_enabled").eq("id", user.id).maybeSingle(),
+  ]);
 
   if (profile?.role === "admin") {
     const impersonate = request.headers.get("x-impersonate-coach-id")?.trim() ?? "";
@@ -59,11 +57,6 @@ export async function resolveAgentActor(
   }
 
   if (profile?.role === "coach") {
-    const { data: coach } = await supabaseAdmin
-      .from("coaches")
-      .select("ai_agent_enabled")
-      .eq("id", user.id)
-      .maybeSingle();
     return {
       ok: true,
       actor: {

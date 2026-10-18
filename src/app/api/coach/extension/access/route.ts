@@ -9,6 +9,7 @@ import {
   resolveCoachAccessForUserId,
 } from "@/lib/coachAccess/resolveCoachAccess";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 /**
  * Entitlement probe + admin coach picker for the Chrome extension.
@@ -50,9 +51,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const {
-    data: { user },
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
   if (!user) {
     return NextResponse.json(
       {
