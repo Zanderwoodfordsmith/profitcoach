@@ -4,7 +4,7 @@ import { formatPersonName } from "@/lib/formatPersonName";
 import {
   ASSESSMENT_INVITE_PARAM,
   normalizeAssessmentInviteToken,
-} from "@/lib/assessmentInviteToken";
+} from "@/lib/assessmentInviteTokenParam";
 
 export type AssessmentContactFromUrl = {
   firstName: string | null;

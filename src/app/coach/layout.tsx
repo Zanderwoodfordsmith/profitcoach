@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -10,7 +11,6 @@ import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
-import { CoachAiPanel } from "@/components/profitCoachAi/CoachAiPanel";
 import { useCoachAgentAccess } from "@/components/agent/useAgentAccess";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
@@ -27,6 +27,12 @@ import {
 } from "@/lib/admin/coachDirectoryClient";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+
+// Only rendered once the AI panel is opened: keep it (and its markdown renderer) out of every page's bundle.
+const CoachAiPanel = dynamic(
+  () => import("@/components/profitCoachAi/CoachAiPanel").then((m) => m.CoachAiPanel),
+  { ssr: false }
+);
 
 export default function CoachLayout({
   children,

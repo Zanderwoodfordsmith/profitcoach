@@ -49,7 +49,7 @@ import {
 } from "@/components/support/SupportVoiceRecorder";
 import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
 import { ScheduleMessageModal } from "@/components/messaging/ComposerMediaTools";
-import { assertFutureSchedule } from "@/lib/support/scheduledReplies";
+import { assertFutureSchedule } from "@/lib/support/scheduleTime";
 import {
   COMMUNITY_COMMENT_MEDIA_MAX,
 } from "@/lib/communityCommentMedia";
@@ -100,7 +100,7 @@ import {
 import {
   buildSupportCallPrefillQuery,
   type SupportCallContactPrefill,
-} from "@/lib/support/supportCallPrefill";
+} from "@/lib/support/supportCallPrefillQuery";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {

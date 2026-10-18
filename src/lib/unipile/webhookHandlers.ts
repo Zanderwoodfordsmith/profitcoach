@@ -3,13 +3,15 @@ import { conversationActivityPatch } from "@/lib/messaging/conversationActivity"
 import { unipileEmailBodyText } from "@/lib/messaging/emailBody";
 import { getUnipileEmail } from "@/lib/unipile/client";
 import {
-  applyReactionToParentMessage,
   extractReactionEmoji,
   formatReactionPreview,
   isUnipileReactionEvent,
   normalizeReactions,
   parseUnipileMessageFlags,
 } from "@/lib/messaging/messageReactions";
+import {
+  applyReactionToParentMessage,
+} from "@/lib/messaging/messageReactionsStore";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { advanceLeadAfterInviteAccepted } from "@/lib/unipile/worker";
 import {

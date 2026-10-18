@@ -33,7 +33,7 @@ import { useWheelViewMode } from "@/lib/useWheelViewMode";
 import {
   getPrimaryCoachSlug,
   PRIMARY_COACH_CALENDAR_EMBED_CODE,
-} from "@/lib/primaryCoach";
+} from "@/lib/primaryCoachConstants";
 
 const LEVEL_ICONS = [
   "/levels/overwhelm.png",

@@ -16,7 +16,7 @@ import type { LessonProgressMap, LessonProgressStatus } from "@/lib/academy/less
 import {
   lessonChapterProgressKey,
   type LessonChapterProgressMap,
-} from "@/lib/academy/lessonChapterProgress";
+} from "@/lib/academy/lessonChapterProgressKey";
 import { hasReachedWatchCompleteThreshold } from "@/lib/academy/lessonWatchComplete";
 import { supabaseClient } from "@/lib/supabaseClient";
 

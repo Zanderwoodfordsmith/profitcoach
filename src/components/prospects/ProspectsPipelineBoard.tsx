@@ -30,7 +30,7 @@ import {
 import { BookProspectModal } from "@/components/prospects/BookProspectModal";
 import { DeleteProspectsDialog } from "@/components/prospects/DeleteProspectsDialog";
 import { ProspectTagsPopover } from "@/components/prospects/ProspectTagsPopover";
-import { normalizeProspectTag } from "@/lib/prospects/tags";
+import { normalizeProspectTag } from "@/lib/prospects/tagNormalize";
 import {
   buildPipelineBoard,
   pipelineCardPillLabel,
@@ -53,7 +53,7 @@ import {
 import { pipelineCardIdentity } from "@/lib/prospectDisplayFormat";
 import { phoneToTelHref } from "@/lib/formatPhoneDisplay";
 import { prospectStatusBadgeClass } from "@/lib/prospectStatus";
-import { prospectWorkspacePath } from "@/lib/prospects/loadEnrichedProspect";
+import { prospectWorkspacePath } from "@/lib/prospects/workspacePath";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import type { ProspectRow } from "@/lib/prospectRow";
 

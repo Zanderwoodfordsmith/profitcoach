@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEMO_COACH_SLUG } from "@/lib/primaryCoach";
+import { DEMO_COACH_SLUG } from "@/lib/primaryCoachConstants";
 import { demoCoachToggleUserForEmail } from "@/lib/demoCoachToggle";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getSessionUser } from "@/lib/supabaseAccessToken";

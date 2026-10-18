@@ -143,12 +143,4 @@ export async function loadEnrichedProspectById(
   };
 }
 
-export function prospectWorkspacePath(
-  contactId: string,
-  options?: { admin?: boolean }
-): string {
-  const base = options?.admin
-    ? `/admin/prospects/${encodeURIComponent(contactId)}`
-    : `/coach/prospects/${encodeURIComponent(contactId)}`;
-  return base;
-}
+export { prospectWorkspacePath } from "@/lib/prospects/workspacePath";

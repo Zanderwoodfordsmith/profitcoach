@@ -31,7 +31,7 @@ import {
   type RoadmapComment,
   type RoadmapJob,
   type RoadmapStatus,
-} from "@/lib/roadmap/core";
+} from "@/lib/roadmap/types";
 
 const AREA_LABELS: Record<string, string> = {
   "get-clients": "Get Clients · Campaign Builder",

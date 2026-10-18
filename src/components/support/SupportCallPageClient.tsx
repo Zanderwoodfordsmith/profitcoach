@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StartApplyPanelNative } from "@/components/booking/StartApplyPanelNative";
 import type { ApplyPrefill } from "@/lib/booking/bookCallPrefill";
-import { contactToApplyPrefill } from "@/lib/support/supportCallPrefill";
+import { contactToApplyPrefill } from "@/lib/support/supportCallPrefillQuery";
 import {
   SUPPORT_CALL_CALENDAR_SLUG,
   supportCallHostDisplayName,

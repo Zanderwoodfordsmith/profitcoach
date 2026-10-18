@@ -1,21 +1,15 @@
 import { canonicalizeProspectStatus } from "@/lib/prospectStatus";
 import type { InterestOutcome } from "@/lib/unipile/interest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-export const REPLY_DISPOSITIONS = [
-  "interested",
-  "neutral",
-  "not_interested",
-] as const;
-
-export type ReplyDisposition = (typeof REPLY_DISPOSITIONS)[number];
-
-/** Coach-facing labels. Stored values stay interested / neutral / not_interested. */
-export const REPLY_DISPOSITION_LABELS: Record<ReplyDisposition, string> = {
-  interested: "Positive",
-  neutral: "Neutral",
-  not_interested: "Deselect",
-};
+import { type ReplyDisposition } from "@/lib/prospects/replyDispositionInfer";
+export {
+  dispositionFromInterestOutcome,
+  inferReplyDisposition,
+  isReplyDisposition,
+  REPLY_DISPOSITION_LABELS,
+  REPLY_DISPOSITIONS,
+  type ReplyDisposition,
+} from "@/lib/prospects/replyDispositionInfer";
 
 const DISPOSITION_PIPELINE_STATUSES = new Set([
   "interested",
@@ -24,16 +18,6 @@ const DISPOSITION_PIPELINE_STATUSES = new Set([
 ]);
 
 const PIPELINE_LOCK = new Set(["booked", "rebook", "won"]);
-
-export function isReplyDisposition(
-  value: string | null | undefined
-): value is ReplyDisposition {
-  return (
-    value === "interested" ||
-    value === "neutral" ||
-    value === "not_interested"
-  );
-}
 
 export function interestOutcomeForDisposition(
   disposition: ReplyDisposition
@@ -46,16 +30,6 @@ export function interestOutcomeForDisposition(
     case "not_interested":
       return "negative";
   }
-}
-
-export function dispositionFromInterestOutcome(
-  outcome: string | null | undefined
-): ReplyDisposition | null {
-  const key = (outcome || "").toLowerCase();
-  if (key === "positive") return "interested";
-  if (key === "soft") return "neutral";
-  if (key === "negative") return "not_interested";
-  return null;
 }
 
 /** Pipeline column to move into, unless the person is already booked/won. */
@@ -73,21 +47,6 @@ export function prospectStatusForDisposition(
     case "not_interested":
       return "lost";
   }
-}
-
-export function inferReplyDisposition(input: {
-  replyDisposition?: string | null;
-  prospectStatus?: string | null;
-  interestOutcome?: string | null;
-}): ReplyDisposition | null {
-  if (isReplyDisposition(input.replyDisposition)) return input.replyDisposition;
-  const fromOutcome = dispositionFromInterestOutcome(input.interestOutcome);
-  if (fromOutcome) return fromOutcome;
-  const status = canonicalizeProspectStatus(input.prospectStatus);
-  if (status === "interested") return "interested";
-  if (status === "follow_up") return "neutral";
-  if (status === "lost" || status === "abandoned") return "not_interested";
-  return null;
 }
 
 /**

@@ -2,7 +2,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import {
   DEMO_COACH_LABEL,
   DEMO_COACH_SLUG,
-} from "@/lib/primaryCoach";
+} from "@/lib/primaryCoachConstants";
 
 export { DEMO_COACH_LABEL, DEMO_COACH_SLUG };
 

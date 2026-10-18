@@ -9,7 +9,7 @@ import {
   ADVISORY_BLUEPRINT_COACH_SLUG,
 } from "@/config/advisoryBlueprintCalendar";
 import type { ApplyPrefill } from "@/lib/booking/bookCallPrefill";
-import { contactToApplyPrefill } from "@/lib/support/supportCallPrefill";
+import { contactToApplyPrefill } from "@/lib/support/supportCallPrefillQuery";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 

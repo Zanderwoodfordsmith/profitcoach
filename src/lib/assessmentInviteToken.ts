@@ -1,19 +1,10 @@
 import { isMissingColumnError } from "@/lib/contactsSchemaSafeSelect";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Query param on personalised /assessment links. */
-export const ASSESSMENT_INVITE_PARAM = "c";
-
-export function normalizeAssessmentInviteToken(
-  raw: string | null | undefined
-): string | null {
-  const value = (raw ?? "").trim().toLowerCase();
-  if (!value || value.length > 36 || !UUID_RE.test(value)) return null;
-  return value;
-}
+import { normalizeAssessmentInviteToken } from "@/lib/assessmentInviteTokenParam";
+export {
+  ASSESSMENT_INVITE_PARAM,
+  normalizeAssessmentInviteToken,
+} from "@/lib/assessmentInviteTokenParam";
 
 export type AssessmentInviteContact = {
   id: string;

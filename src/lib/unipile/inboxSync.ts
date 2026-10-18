@@ -38,13 +38,15 @@ import {
 } from "@/lib/messaging/emailBody";
 import { prioritizeUnipileChats } from "@/lib/messaging/threadWindow";
 import {
-  applyReactionToParentMessage,
   extractReactionEmoji,
   formatReactionPreview,
   isUnipileReactionEvent,
   parseUnipileMessageFlags,
-  patchMessageReactionsByUnipileId,
 } from "@/lib/messaging/messageReactions";
+import {
+  applyReactionToParentMessage,
+  patchMessageReactionsByUnipileId,
+} from "@/lib/messaging/messageReactionsStore";
 import { markContactRepliedOnInbound } from "@/lib/prospects/markContactReplied";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {

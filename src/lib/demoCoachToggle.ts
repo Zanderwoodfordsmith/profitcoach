@@ -4,7 +4,7 @@ import {
   DEMO_COACH_SLUG,
   PAM_DEMO_COACH_LABEL,
   PAM_DEMO_COACH_SLUG,
-} from "@/lib/primaryCoach";
+} from "@/lib/primaryCoachConstants";
 
 export {
   DEMO_COACH_LABEL,

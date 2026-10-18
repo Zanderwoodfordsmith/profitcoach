@@ -5,8 +5,8 @@ import { isPlaybookSessionNotesKey } from "@/lib/playbookSessionNotes";
 import {
   CONTACTS_SESSION_NOTES_MIGRATION_HINT,
   isMissingColumnError,
-  loadContactForWorkshopSession,
 } from "@/lib/contactsSchemaSafeSelect";
+import { loadContactForWorkshopSession } from "@/lib/contactWorkshopSession";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getTotalScore } from "@/lib/bossScores";
 import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";

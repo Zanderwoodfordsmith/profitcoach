@@ -54,7 +54,7 @@ import {
   type CsvExportScope,
 } from "@/components/table/TableCsvExportButton";
 import { coachSlugFromFullName } from "@/lib/coachSlug";
-import { isSystemCoachSlug } from "@/lib/primaryCoach";
+import { isSystemCoachSlug } from "@/lib/primaryCoachConstants";
 import { exportCoachesToCsv } from "@/lib/exportCoachesCsv";
 import { formatPersonName } from "@/lib/formatPersonName";
 import {

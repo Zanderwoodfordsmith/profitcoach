@@ -6,7 +6,7 @@ import { ChevronDown } from "lucide-react";
 import {
   REPLY_DISPOSITION_LABELS,
   type ReplyDisposition,
-} from "@/lib/prospects/replyDisposition";
+} from "@/lib/prospects/replyDispositionInfer";
 
 const OPTIONS: Array<{
   value: ReplyDisposition;

@@ -12,7 +12,7 @@ import {
 } from "@/lib/landingCopy";
 import { LandingVariantC } from "@/components/landing/LandingVariantC";
 import { LandingVariantD } from "@/components/landing/LandingVariantD";
-import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoachConstants";
 import { LANDING_CONTACT_SESSION_KEY } from "@/lib/assessmentContactParams";
 import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
 

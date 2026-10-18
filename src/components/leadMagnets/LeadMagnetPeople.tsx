@@ -10,7 +10,7 @@ import {
   MAGNET_STAGES,
   type MagnetAudiencePerson,
   type MagnetStage,
-} from "@/lib/leadMagnets/audience";
+} from "@/lib/leadMagnets/audienceTypes";
 import {
   formatProspectLabel,
   formatProspectPersonName,

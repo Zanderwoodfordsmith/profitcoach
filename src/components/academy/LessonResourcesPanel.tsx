@@ -3,7 +3,7 @@ import { ExternalLink } from "lucide-react";
 import {
   ACADEMY_RESOURCE_KIND_LABELS,
   type AcademyResourceRow,
-} from "@/lib/academy/resources";
+} from "@/lib/academy/resourcesCatalog";
 
 type Props = {
   resources: AcademyResourceRow[];

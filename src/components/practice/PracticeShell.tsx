@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
@@ -10,12 +11,14 @@ import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { useSectionComments } from "./comments/SectionCommentsContext";
 import { CommentsButton, PageCommentBadge } from "./comments/SectionCommentsUI";
-import { SidePanel } from "./SidePanel";
 import { DownloadMenu, PageBlurb } from "./document/DocumentParts";
 import { PageIcon } from "./pageIcons";
 import { usePractice } from "./PracticeProvider";
 import { useMatchesBreakpoint } from "@/hooks/useBreakpoint";
 import "./document/blueprint.css";
+
+// Loaded when the assistant or comments open: it carries the chat, markdown and voice SDK.
+const SidePanel = dynamic(() => import("./SidePanel").then((m) => m.SidePanel), { ssr: false });
 
 const NAV_KEY = "practice-nav-open";
 const NAV_WIDTH_KEY = "practice-nav-width";

@@ -1,4 +1,4 @@
-import { audienceItemSourceLabel } from "@/lib/leadLists/audienceLists";
+import { audienceItemSourceLabel } from "@/lib/leadLists/audienceListShared";
 import {
   businessNamesMatch,
   formatBusinessLabel,

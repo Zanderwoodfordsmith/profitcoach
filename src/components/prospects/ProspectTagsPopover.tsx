@@ -15,7 +15,7 @@ import {
   MAX_PROSPECT_TAG_LENGTH,
   MAX_PROSPECT_TAGS,
   normalizeProspectTag,
-} from "@/lib/prospects/tags";
+} from "@/lib/prospects/tagNormalize";
 import {
   DEFAULT_PROSPECT_TAGS,
   mergeProspectTagCatalog,

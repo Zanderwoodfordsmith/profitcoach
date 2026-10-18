@@ -5,7 +5,7 @@ import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
 import { ProspectsHub } from "@/components/prospects/ProspectsHub";
-import { prospectWorkspacePath } from "@/lib/prospects/loadEnrichedProspect";
+import { prospectWorkspacePath } from "@/lib/prospects/workspacePath";
 import { useProspectsPage } from "@/hooks/useProspectsPage";
 
 export default function CoachProspectsPage() {

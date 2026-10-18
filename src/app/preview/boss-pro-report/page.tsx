@@ -12,7 +12,7 @@ import {
   getTotalScore,
   type AnswersMap,
 } from "@/lib/bossScores";
-import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoachConstants";
 
 function BossProReportPreviewWrapper() {
   const searchParams = useSearchParams();

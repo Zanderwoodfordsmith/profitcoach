@@ -1,4 +1,3 @@
-import { defaultUrlTransform } from "react-markdown";
 import type { UrlTransform } from "react-markdown";
 import { splitTextWithHttpUrls } from "@/lib/communityAutolink";
 import {
@@ -98,7 +97,31 @@ export function prepareCommunityPostMarkdownSource(
   return autolinkBareHttpUrlsForMarkdown(normalized);
 }
 
-/** Keeps `mention:` links intact; otherwise delegates to react-markdown defaults. */
+const SAFE_URL_PROTOCOL = /^(https?|ircs?|mailto|xmpp)$/i;
+
+/**
+ * react-markdown's defaultUrlTransform, copied so this module (used by the
+ * notification bell on every page) doesn't pull react-markdown into the shell.
+ * Relative URLs and safe protocols pass; anything else (e.g. javascript:) is dropped.
+ */
+function defaultUrlTransform(value: string): string {
+  const colon = value.indexOf(":");
+  const questionMark = value.indexOf("?");
+  const numberSign = value.indexOf("#");
+  const slash = value.indexOf("/");
+  if (
+    colon === -1 ||
+    (slash !== -1 && colon > slash) ||
+    (questionMark !== -1 && colon > questionMark) ||
+    (numberSign !== -1 && colon > numberSign) ||
+    SAFE_URL_PROTOCOL.test(value.slice(0, colon))
+  ) {
+    return value;
+  }
+  return "";
+}
+
+/** Keeps `mention:` links intact; otherwise applies react-markdown's default URL safety. */
 export const communityPostMarkdownUrlTransform: UrlTransform = (value) => {
   if (value.startsWith("mention:")) return value;
   return defaultUrlTransform(value);

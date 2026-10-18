@@ -132,8 +132,8 @@ import {
   ScheduledMessageCard,
   type ScheduledThreadMessage,
 } from "@/components/messaging/ScheduledMessageCard";
-import type { ReplyDisposition } from "@/lib/prospects/replyDisposition";
-import { inferReplyDisposition } from "@/lib/prospects/replyDisposition";
+import type { ReplyDisposition } from "@/lib/prospects/replyDispositionInfer";
+import { inferReplyDisposition } from "@/lib/prospects/replyDispositionInfer";
 import {
   EditPersonNameButton,
   EditPersonPhotoButton,

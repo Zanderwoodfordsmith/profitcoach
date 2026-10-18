@@ -1,10 +1,9 @@
 "use client";
 
 import { supabaseClient } from "@/lib/supabaseClient";
-import {
-  enrichRawCommunityPostRows,
-  type CommunityPostRow,
-  type RawCommunityPostRow,
+import type {
+  CommunityPostRow,
+  RawCommunityPostRow,
 } from "@/components/community/CommunityFeed";
 import {
   dismissWinsQueueForSession,
@@ -291,6 +290,9 @@ export async function fetchPendingAdminWinsQueue(
 
   if (pendingRaw.length === 0) return [];
 
+  // Loaded on demand: a static import put the whole Community feed into the
+  // notification bell's bundle, i.e. into every page.
+  const { enrichRawCommunityPostRows } = await import("@/components/community/CommunityFeed");
   const enriched = await enrichRawCommunityPostRows(pendingRaw, {
     includeLadderLevel: false,
   });

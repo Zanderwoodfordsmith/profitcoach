@@ -49,7 +49,7 @@ import { LADDER_LEVELS } from "@/lib/ladder";
 import { paymentSourceLabel } from "@/lib/paymentSource";
 import {
   revolutTransferCustomerDisplayLabel,
-} from "@/lib/revolutDirectPaymentsCsvImport";
+} from "@/lib/revolutTransferLabels";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 

@@ -38,7 +38,7 @@ import {
 import {
   isRevolutTransferPlaceholderEmail,
   revolutTransferCustomerDisplayLabel,
-} from "@/lib/revolutDirectPaymentsCsvImport";
+} from "@/lib/revolutTransferLabels";
 import {
   inferInstallmentCount,
   ongoingPlanInstallmentCents,

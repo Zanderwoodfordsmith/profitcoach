@@ -34,7 +34,7 @@ import {
 import {
   getPrimaryCoachSlug,
   PRIMARY_COACH_CALENDAR_EMBED_CODE,
-} from "@/lib/primaryCoach";
+} from "@/lib/primaryCoachConstants";
 
 /* ------------------------------------------------------------------ */
 /* Tokens                                                              */

@@ -8,7 +8,7 @@ import {
   audienceItemSourceLabel,
   displayListPersonName,
   type AudienceListSummary,
-} from "@/lib/leadLists/audienceLists";
+} from "@/lib/leadLists/audienceListShared";
 
 type CampaignOption = {
   id: string;

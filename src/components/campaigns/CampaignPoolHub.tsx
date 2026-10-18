@@ -48,7 +48,7 @@ import {
   mergeProspectTagCatalog,
   sortProspectTagCatalog,
 } from "@/lib/prospects/tagAppearance";
-import { normalizeProspectTag, normalizeProspectTags } from "@/lib/prospects/tags";
+import { normalizeProspectTag, normalizeProspectTags } from "@/lib/prospects/tagNormalize";
 import { usePoolTableViews } from "@/hooks/usePoolTableViews";
 import {
   moveKeyInOrder,
@@ -65,7 +65,7 @@ import {
   estimateGoogleMapsFindPersonCostUsd,
   GOOGLE_MAPS_FIND_PERSON_MAX,
 } from "@/lib/googleMaps/cost";
-import type { AudienceListSummary } from "@/lib/leadLists/audienceLists";
+import type { AudienceListSummary } from "@/lib/leadLists/audienceListShared";
 import {
   progressViewMatchingList,
   watchedSalesNavProgressView,

@@ -9,7 +9,7 @@ import {
   type CalendarContactParams,
 } from "@/lib/calendarContactParams";
 import type { ScorecardResultPayload } from "@/lib/bossScorecardScores";
-import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoachConstants";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export default function ScorecardReportPage() {
