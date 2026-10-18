@@ -19,6 +19,9 @@ export function CoachesHubTabs() {
   const onBlueprint =
     pathname === "/admin/client-success/blueprint" ||
     Boolean(pathname?.startsWith("/admin/client-success/blueprint/"));
+  const onGetClients =
+    pathname === "/admin/client-success/get-clients" ||
+    Boolean(pathname?.startsWith("/admin/client-success/get-clients/"));
   const onUsage =
     pathname === "/admin/client-success/usage" ||
     Boolean(pathname?.startsWith("/admin/client-success/usage/"));
@@ -42,7 +45,13 @@ export function CoachesHubTabs() {
           kind: "link",
           href: "/admin/client-success",
           label: "Client success",
-          active: onClientSuccess && !onRevenue && !onUsage && !onBlueprint,
+          active: onClientSuccess && !onRevenue && !onUsage && !onBlueprint && !onGetClients,
+        },
+        {
+          kind: "link",
+          href: "/admin/client-success/get-clients",
+          label: "Get clients",
+          active: onGetClients,
         },
         {
           kind: "link",

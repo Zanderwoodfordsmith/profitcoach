@@ -1,5 +1,7 @@
 # Overnight build: Ava replies, lead quality, group tests, coach health (17 to 18 Oct 2026)
 
+> **Read this first.** The new coach health board (Admin, Coaches, **Get clients**) shows that in the last 30 days only **one** active coach (Mark Hodgkinson) sent invites through Get Clients, and **14 of 34** active coaches haven't connected LinkedIn to the app. Everyone else still runs on Sales Robot. Everything below (Ava alerts and autopilot, launch checks, active-first ordering, group tests) only works on Get Clients campaigns, so **moving coaches from Sales Robot to Get Clients is now the biggest lever.** Suggested next step: a "switch-over week" where BCA connects each coach's LinkedIn and rebuilds their best campaign in Get Clients with them.
+
 Branch: `ava-copilot` in a separate worktree (`../profit-coach-app-ava`). Nothing pushed. Two additive migrations applied to the live database (new tables and columns only).
 
 ## 1. Ava replies: fast copilot and autopilot
@@ -79,3 +81,15 @@ Tested live on a Zander Demo draft campaign (join, lock, results, leave, then re
   - **3:** health and care.
 - The same scores now live in the app (`src/lib/campaigns/sectorTiers.ts`). The launch check warns when 35%+ of a campaign's people are in a sector scoring 4 or below.
 - **Coach profiles:** a full About section (1,200+ characters) and 1,000+ connections go with 4 to 6 points more acceptance. Headline wording showed no clear effect. Only 37 coaches, so treat this as a signal, not proof.
+
+## 5. Coach health board
+
+Admin, Coaches, new **Get clients** tab. One row per active coach:
+- **Columns:** invites (7 and 30 days), acceptance, replies, interested, calls booked (GHL first calls plus our own calendar), median reply time, last time in the app, LinkedIn and Blueprint state.
+- **Status:** red, amber or green, with the one thing to **fix first** and a suggested next step.
+
+The rules run in order (`src/lib/coachHealth.ts`, tested): not logging in for 14+ days, LinkedIn not connected or broken, not sending, Blueprint unfinished, under 200 invites a month, under 10% acceptance, interest but no calls, replies slower than 4 hours. Sales Robot coaches aren't marked stuck for not sending through Get Clients.
+
+Today's board: 14 "LinkedIn not connected", 6 "not logging in", 5 "not sending", 1 broken connection, 8 "Blueprint not finished".
+
+Ava's daily nudges (from the Ava plan) can read this board directly. It takes about 15 seconds to build, so it's admin-only and on demand for now.
