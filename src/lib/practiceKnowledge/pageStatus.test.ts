@@ -39,9 +39,34 @@ describe("page status", () => {
     assert.equal(pageStatusBySlug("story", row()), "needs_you");
   });
 
+  it("never marks the coach's own pages as BCA to do", () => {
+    const payload = emptyPracticePayload();
+    for (const path of [
+      "market.roles_held",
+      "market.industries_worked",
+      "proof.career_results",
+      "proof.superpowers",
+      "proof.problems_asked",
+      "market.industries_credibility",
+      "market.avoid",
+      "practice.tone",
+      "practice.voice_sounds_like",
+      "practice.voice_known_for",
+      "practice.voice_coaching_style",
+    ]) {
+      fill(payload, path);
+    }
+    // Answers in, short bio and "How you sound" not written yet. Imported facts wait for the coach to check.
+    assert.equal(pageStatusBySlug("story", row({ payload })), "review");
+    assert.equal(pageStatusBySlug("voice", row({ payload })), "done");
+  });
+
   it("marks later pages as BCA to do while they are still unwritten", () => {
     assert.equal(pageStatusBySlug("campaigns", row()), "bca");
     assert.equal(pageStatusBySlug("sales", row()), "bca");
+    // Empty answers after About You are BCA's to fill, not the coach's.
+    assert.equal(pageStatusBySlug("market", row()), "bca");
+    assert.equal(pageStatusBySlug("offer", row()), "bca");
   });
 
   it("stays BCA to do once the answers are in and the page is not written yet", () => {

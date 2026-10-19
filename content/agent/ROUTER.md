@@ -5,8 +5,9 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 | The person wants to | Open | You'll also need |
 |---|---|---|
 | Stand this coach up, "what's done", scrape LinkedIn and their sales-call transcripts, the portfolio | `practice-ready` | Then `fill-the-gaps` and, for admin, `blueprint-writing` |
-| Fill in their Blueprint, "what's left", "ask me the questions", answer open questions on a page | `fill-the-gaps` | `improve-section` when an answer needs work |
-| Check, sharpen or rewrite a Blueprint section: results, superpowers, avatar, offer, bio, messages | `improve-section` | `fill-the-gaps` to keep going |
+| Fill in their Blueprint, "what's left", "ask me the questions", answer open questions on a page | `fill-the-gaps` | Then `check-blueprint` to look over it together |
+| Look over their Blueprint on the page, "check it with me", "go through it", after filling the gaps | `check-blueprint` | `fill-the-gaps` for anything still empty |
+| Sharpen or rewrite a Blueprint section: results, superpowers, avatar, offer, bio, messages | `improve-section` | `fill-the-gaps` to keep going |
 | Find prospects, "build me a list", "who should I target" | `find-prospects` | Then the source they choose |
 | Import from a Sales Navigator search or criteria | `sales-navigator-import` | `lists` to see the result |
 | Find businesses on Google Maps (country, town, search) | `google-maps-import` | `lists` to see the result |
@@ -28,4 +29,4 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 
 ## Capability ids
 
-`fill-the-gaps`, `improve-section`, `practice-ready`, `find-prospects`, `sales-navigator-import`, `google-maps-import`, `google-search-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `linkedin-marketing`, `personalised-pitch`, `blueprint-writing`, `guide`, `coach-access`, `escalate-to-bca`.
+`fill-the-gaps`, `check-blueprint`, `improve-section`, `practice-ready`, `find-prospects`, `sales-navigator-import`, `google-maps-import`, `google-search-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `linkedin-marketing`, `personalised-pitch`, `blueprint-writing`, `guide`, `coach-access`, `escalate-to-bca`.

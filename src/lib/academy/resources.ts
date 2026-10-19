@@ -274,8 +274,15 @@ export async function loadAcademyResourcesCatalog(): Promise<AcademyResourcesCat
     supabaseAdmin.from("academy_resources").select("*").order("sort_order"),
   ]);
 
-  const sectionRows = (sections ?? []) as AcademyResourceSectionRow[];
-  const resourceRows = (resources ?? []) as AcademyResourceRow[];
+  // Vault worksheets (area `vault`) live on their lessons only, so keep them
+  // out of the library tree and its search.
+  const sectionRows = ((sections ?? []) as AcademyResourceSectionRow[]).filter(
+    (section) => section.area in ACADEMY_RESOURCE_AREA_LABELS
+  );
+  const librarySectionIds = new Set(sectionRows.map((section) => section.id));
+  const resourceRows = ((resources ?? []) as AcademyResourceRow[]).filter((resource) =>
+    librarySectionIds.has(resource.section_id)
+  );
 
   return {
     sections: sectionRows,

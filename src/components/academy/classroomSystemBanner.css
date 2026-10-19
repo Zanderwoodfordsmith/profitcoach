@@ -1,0 +1,100 @@
+/* Classroom hub → System banner. The map window sits on top when stacked and
+   on the right from 48rem, fading into the copy on its left edge. */
+.classroom-system-banner__preview {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3.4 / 1;
+  min-height: 7.5rem;
+  max-height: 11rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.classroom-system-banner__map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 24%),
+    linear-gradient(to bottom, #000 64%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0%, #000 24%),
+    linear-gradient(to bottom, #000 64%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/* Mist: a dusty grey-blue, light enough that the course cards above keep the
+   attention. Same direction changes as the brand gradient below. */
+.classroom-system-banner__copy--mist {
+  background: linear-gradient(165deg, #f1f5f9 0%, #e1e9f2 52%, #cfdcea 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.classroom-system-banner__copy--mist .classroom-system-banner__button {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(12, 82, 144, 0.1);
+}
+
+/* The sidebar gradient. Stacked it runs top to bottom like the sidebar; side
+   by side it turns to run across, ending past the edge so the copy never sits
+   on the lightest sky. */
+.classroom-system-banner__copy--brand {
+  background: linear-gradient(165deg, #051e36 0%, #0c5290 48%, #1a8fd4 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+@media (min-width: 48rem) {
+  .classroom-system-banner {
+    flex-direction: row-reverse;
+  }
+
+  .classroom-system-banner__copy--mist {
+    background: linear-gradient(115deg, #f1f5f9 0%, #e1e9f2 52%, #cfdcea 115%);
+  }
+
+  .classroom-system-banner__copy--brand {
+    background: linear-gradient(115deg, #051e36 0%, #0c5290 52%, #1a8fd4 115%);
+  }
+
+  .classroom-system-banner__preview {
+    flex: 0 0 52%;
+    aspect-ratio: auto;
+    min-height: 0;
+    max-height: none;
+    border-bottom: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  .classroom-system-banner__copy {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+/* Hover: light runs along the forward path towards New Client. */
+.classroom-system-banner .lead-flow-preview-pulse {
+  transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.classroom-system-banner:hover .lead-flow-preview-pulse,
+.classroom-system-banner:focus-visible .lead-flow-preview-pulse {
+  opacity: 0.9;
+  animation: lead-flow-preview-pulse 800ms linear infinite;
+}
+
+@keyframes lead-flow-preview-pulse {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .classroom-system-banner:hover .lead-flow-preview-pulse,
+  .classroom-system-banner:focus-visible .lead-flow-preview-pulse {
+    animation: none;
+    opacity: 0;
+  }
+}

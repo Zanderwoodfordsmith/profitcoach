@@ -1,4 +1,4 @@
-# Story and proof: bio, proof summary, one-pager
+# Story and proof: bio and proof summary
 
 ## Goal
 Turn the coach's career into commercial credibility a business owner trusts in ten seconds.
@@ -10,5 +10,4 @@ Turn the coach's career into commercial credibility a business owner trusts in t
 4. Keep the short bio to 60 to 90 words, first person. How they want to be known, and the kind of coach they are, should be readable without naming labels unless they would. Write a one-line version for introductions and a third-person version for partners and events.
 5. List the proof inventory as a table: result, where, timeframe, how (the mechanism), and whether it is precise. Flag any result that still needs a number.
 
-## One-pager (for partners, recruiters, accountants, banks)
-A single page someone can forward. Sections: who they are (two lines, including the kind of coach they are), who they help, the problems they fix, proof (three results as stats), how they work (format, and what working with them feels like), and how to get in touch. It must read well to a stranger. No jargon.
+The sendable 90-day programme lives in Toolkit. It is filled from this bio, the problems owners already ask, and the offer. Do not write a second essay for partners here.

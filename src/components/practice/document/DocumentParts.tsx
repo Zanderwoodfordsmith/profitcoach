@@ -365,6 +365,7 @@ export function BlueprintCover({ flush = false }: { flush?: boolean }) {
   if (!progress || !payload) return null;
   const date = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const location = payload.identity.location?.value?.trim();
+  const name = coachName.trim();
   const summary = (
     <>
       {progress.written} of {progress.toWrite} sections written
@@ -374,21 +375,21 @@ export function BlueprintCover({ flush = false }: { flush?: boolean }) {
   );
 
   // The landing page: a compact band, so the contents start above the fold.
+  // Their name sits above the title as a spaced eyebrow.
   if (flush) {
     return (
-      <header className="bp-cover px-6 pb-9 pt-12 text-white @2xl:px-12 @2xl:pb-10 @2xl:pt-16">
-        <h1 className="bp-display text-[2.75rem] font-medium leading-[0.98] tracking-[-0.035em] @2xl:text-[3.75rem]">
-          The Practice
+      <header className="bp-cover px-6 pb-10 pt-9 text-white @2xl:px-12 @2xl:pb-11 @2xl:pt-11">
+        {name ? (
+          <p className="text-[0.8125rem] font-semibold uppercase tracking-[0.32em] text-white/80">{name}</p>
+        ) : null}
+        <h1 className="bp-display mt-4 text-[2.75rem] font-medium leading-[0.98] tracking-[-0.035em] @2xl:text-[3.75rem]">
+          Your Portfolio
           <br />
           <span className="italic font-normal text-[#bfe2fb]">Blueprint</span>
         </h1>
-        <p className="mt-5 max-w-[42ch] text-[1.0625rem] leading-[1.55] text-white/80">
-          Your proof, your market, your messages and your plan. Everything we need to launch your practice, in one place.
+        <p className="mt-5 max-w-[46ch] text-[1.0625rem] leading-[1.55] text-white/80">
+          You bring the story, the proof and the voice. We turn it into your market, your messages and your offer, ready to launch.
         </p>
-        <div className="mt-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-white/20 pt-4">
-          <p className="text-[1.125rem] font-semibold tracking-[-0.01em]">{coachName || "Your practice"}</p>
-          <p className="bp-num text-sm text-white/80">{summary}</p>
-        </div>
       </header>
     );
   }
@@ -408,7 +409,7 @@ export function BlueprintCover({ flush = false }: { flush?: boolean }) {
       </div>
       <div className="mt-14 flex flex-wrap items-end justify-between gap-6 border-t border-white/20 pt-5">
         <div>
-          <p className="text-[1.375rem] font-semibold tracking-[-0.01em]">{coachName || "Your practice"}</p>
+          <p className="text-[1.625rem] font-semibold tracking-[-0.015em]">{name || "Your practice"}</p>
           {location ? <p className="mt-0.5 text-sm text-white/65">{location}</p> : null}
         </div>
         <p className="bp-num text-sm text-white/80">{summary}</p>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { AgentActionView, AgentCoach, AgentDisplayItem, AgentStreamEvent } from "@/lib/agent/types";
+import type { AgentActionView, AgentCoach, AgentDisplayItem, AgentShow, AgentStreamEvent } from "@/lib/agent/types";
 
 /**
  * One conversation with Ava: sending, streaming the reply, confirm cards, and
@@ -16,12 +16,15 @@ export function useAgentConversation({
   screenPath,
   defaultCoach,
   onWrote,
+  onShow,
 }: {
   authHeaders: () => Promise<Record<string, string> | null>;
   screenPath: string | null;
   defaultCoach: AgentCoach | null;
   /** Something changed in the app (a tool wrote, or a card was confirmed). */
   onWrote?: () => void;
+  /** Ava wants a Blueprint page or section on screen. Without it, she leaves a link instead. */
+  onShow?: (show: AgentShow) => void;
 }) {
   const [items, setItems] = useState<AgentDisplayItem[]>([]);
   const [chatId, setChatId] = useState<string | null>(null);
@@ -31,8 +34,16 @@ export function useAgentConversation({
   const [streaming, setStreaming] = useState(false);
   const [deciding, setDeciding] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const showRef = useRef(onShow);
+  useEffect(() => {
+    showRef.current = onShow;
+  });
 
   const apply = useCallback((event: AgentStreamEvent) => {
+    if (event.type === "show" && showRef.current) {
+      showRef.current(event.show);
+      return;
+    }
     switch (event.type) {
       case "chat":
         setChatId(event.chatId);
@@ -75,6 +86,9 @@ export function useAgentConversation({
           return next;
         case "link":
           next.push({ type: "link", link: event.link });
+          return next;
+        case "show":
+          next.push({ type: "link", link: { href: event.show.href, label: event.show.label } });
           return next;
       }
       return next;

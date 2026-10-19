@@ -15,24 +15,16 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
 
   const resourcesRoot = `${prefix}/academy/resources`;
+  const vaultRoot = `${prefix}/academy/vault`;
   const classroomRoot = `${prefix}/academy/classroom`;
-  const compassModulesRoot = `${prefix}/academy/compass`;
-  const compassRoot = `${prefix}/signature`;
-  const actionsRoot = `${prefix}/signature/actions`;
 
   const tabItems = useMemo(() => {
     const isResources =
       pathname === resourcesRoot || pathname.startsWith(`${resourcesRoot}/`);
-    const systemRoot = `${classroomRoot}/system`;
-    const isSystem =
-      pathname === systemRoot || pathname.startsWith(`${systemRoot}/`);
+    const isVault = pathname === vaultRoot || pathname.startsWith(`${vaultRoot}/`);
+    // System lives under Classroom (banner on the hub), so it keeps this tab lit.
     const isClassroom =
-      (pathname === classroomRoot || pathname.startsWith(`${classroomRoot}/`)) &&
-      !isSystem;
-    const isActions =
-      pathname === actionsRoot || pathname.startsWith(`${actionsRoot}/`);
-    const isCompass =
-      pathname === compassRoot || pathname === `${compassRoot}/`;
+      pathname === classroomRoot || pathname.startsWith(`${classroomRoot}/`);
 
     const items: PageHeaderUnderlineTabItem[] = [
       {
@@ -45,22 +37,6 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
       },
       {
         kind: "link",
-        href: systemRoot,
-        label: "System",
-        active: isSystem,
-        scroll: false,
-        onNavigate: () => markPending(systemRoot),
-      },
-      {
-        kind: "link",
-        href: actionsRoot,
-        label: "My Actions",
-        active: isActions,
-        scroll: false,
-        onNavigate: () => markPending(actionsRoot),
-      },
-      {
-        kind: "link",
         href: resourcesRoot,
         label: "Resources",
         active: isResources,
@@ -69,44 +45,23 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
       },
       {
         kind: "link",
-        href: compassRoot,
-        label: "My Compass",
-        active: isCompass,
+        href: vaultRoot,
+        label: "Vault",
+        active: isVault,
         scroll: false,
-        onNavigate: () => markPending(compassRoot),
+        onNavigate: () => markPending(vaultRoot),
       },
     ];
 
     return items;
-  }, [
-    pathname,
-    resourcesRoot,
-    classroomRoot,
-    compassRoot,
-    actionsRoot,
-    markPending,
-  ]);
+  }, [pathname, resourcesRoot, vaultRoot, classroomRoot, markPending]);
 
   const description = useMemo(() => {
-    if (pathname.startsWith(actionsRoot)) {
+    if (pathname.startsWith(vaultRoot)) {
       return (
         <span className="text-lg leading-relaxed text-slate-600">
-          Open work from Classroom, grouped like the hub — Start Here, Get Calls, Win Clients, and
-          more — plus your own lists.
-        </span>
-      );
-    }
-    if (
-      pathname === compassRoot ||
-      pathname === `${compassRoot}/` ||
-      (pathname.startsWith(`${compassRoot}/`) &&
-        !pathname.startsWith(actionsRoot) &&
-        !pathname.startsWith(`${compassRoot}/ladder`) &&
-        !pathname.startsWith(`${compassRoot}/scorecard`))
-    ) {
-      return (
-        <span className="text-lg leading-relaxed text-slate-600">
-          Tap the circle beside each line to score. The model updates as you go.
+          Bonus programmes outside the main path. Watch them in any order, alongside your Classroom
+          work.
         </span>
       );
     }
@@ -114,15 +69,15 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
       return (
         <span className="text-lg leading-relaxed text-slate-600">
           Worksheets, SOPs, templates, and reference links for coach delivery and the Profit
-          System — searchable and grouped by topic.
+          System, searchable and grouped by topic.
         </span>
       );
     }
     if (pathname.startsWith(`${classroomRoot}/system`)) {
       return (
         <span className="text-lg leading-relaxed text-slate-600">
-          How the coaching business fits together — from market and outreach through authority and
-          client delivery. Open any card to jump into the lesson.
+          The step-by-step process to build your advisory portfolio, from market and outreach
+          through authority and client delivery. Open any card to jump into the lesson.
         </span>
       );
     }
@@ -136,33 +91,17 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
     if (pathname.startsWith(classroomRoot)) {
       return (
         <span className="text-lg leading-relaxed text-slate-600">
-          Start Here, then your Coach Action Plan and Going Pro — followed by the three paths that
+          Start Here, then your Coach Action Plan and Going Pro. After that, the three paths that
           build your business: Get Calls, Win Clients, and Keep Clients.
-        </span>
-      );
-    }
-    if (pathname.startsWith(compassModulesRoot)) {
-      return (
-        <span className="text-lg leading-relaxed text-slate-600">
-          Self-paced training aligned with the nine modules on My Compass — Connect, Enroll, and
-          Deliver.
         </span>
       );
     }
     return (
       <span className="text-lg leading-relaxed text-slate-600">
-        Self-paced training aligned with the nine modules on My Compass — Connect, Enroll, and
-        Deliver.
+        Self-paced training across Connect, Enroll, and Deliver.
       </span>
     );
-  }, [
-    pathname,
-    resourcesRoot,
-    classroomRoot,
-    compassModulesRoot,
-    compassRoot,
-    actionsRoot,
-  ]);
+  }, [pathname, resourcesRoot, vaultRoot, classroomRoot]);
 
   return (
     <div className="flex flex-col gap-6">

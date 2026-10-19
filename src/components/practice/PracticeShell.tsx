@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
 
+import type { AgentShow } from "@/lib/agent/types";
 import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES, sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
+
+import { setAvaPageHost } from "@/components/ava/avaPageHost";
 
 import { useSectionComments } from "./comments/SectionCommentsContext";
 import { CommentsButton, PageCommentBadge } from "./comments/SectionCommentsUI";
@@ -143,7 +146,8 @@ export function PracticeShell({
   path?: string;
 }) {
   const pathname = usePathname();
-  const { loading, error, knowledge, payload, href, assistantOpen, setAssistantOpen, stayOnPage, viewer } = usePractice();
+  const router = useRouter();
+  const { loading, error, knowledge, payload, href, assistantOpen, setAssistantOpen, stayOnPage, viewer, sample } = usePractice();
   const rootRef = useRef<HTMLDivElement>(null);
   const here = path ?? pathname;
   const [navOpen, setNavOpen] = useState(true);
@@ -160,6 +164,34 @@ export function PracticeShell({
     comments?.close();
     setAssistantOpen(true);
   }
+  // Ava moving the document: the page she names, then her section scrolled to and lit up.
+  // On phones the sheet drops to half height so the page shows above it.
+  const focusRef = useRef<{ page: string; section: string | null } | null>(null);
+  const [focusNonce, setFocusNonce] = useState(0);
+  const [peek, setPeek] = useState(false);
+  if (peek && side !== "assistant") setPeek(false);
+  function showOnPage(show: AgentShow) {
+    const target = BLUEPRINT_PAGES.find((item) => item.slug === show.page);
+    if (!target) return;
+    focusRef.current = { page: target.slug, section: show.section };
+    setFocusNonce((n) => n + 1);
+    setPeek(true);
+    if (target.slug !== page?.slug) router.push(href(target.href), { scroll: false });
+  }
+  // The top-bar Ava button opens this Ava, beside the document, never a second one on top.
+  const assistantShown = side === "assistant";
+  const toggleAva = useRef<() => void>(() => {});
+  useEffect(() => {
+    toggleAva.current = () => {
+      if (assistantShown) setAssistantOpen(false);
+      else openAssistant();
+    };
+  });
+  useEffect(() => {
+    if (sample) return;
+    setAvaPageHost({ open: assistantShown, toggle: () => toggleAva.current() });
+    return () => setAvaPageHost(null);
+  }, [sample, assistantShown]);
   const isDocument = page?.slug === "blueprint";
   // The landing page draws its own full-width cover, with no page header.
   const isHome = page?.slug === "command";
@@ -206,6 +238,40 @@ export function PracticeShell({
     const frame = window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
     return () => window.cancelAnimationFrame(frame);
   }, [shown]);
+
+  // After the scroll to the top on a new page, so Ava's section wins. The page may still be rendering, so look for a moment.
+  const pageSlug = page?.slug;
+  useEffect(() => {
+    const focus = focusRef.current;
+    if (!focus || !shown || focus.page !== pageSlug) return;
+    const root = rootRef.current;
+    if (!focus.section) {
+      focusRef.current = null;
+      root?.scrollTo(0, 0);
+      root?.querySelector("section")?.scrollTo(0, 0);
+      return;
+    }
+    const id = `s-${focus.section.replace(":", "-")}`;
+    let tries = 0;
+    let timer = 0;
+    const find = () => {
+      const el = document.getElementById(id);
+      if (!el) {
+        if (++tries < 40) timer = window.setTimeout(find, 50);
+        else focusRef.current = null;
+        return;
+      }
+      focusRef.current = null;
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ block: "start", behavior: still ? "auto" : "smooth" });
+      el.classList.remove("bp-ava-focus");
+      void el.offsetWidth;
+      el.classList.add("bp-ava-focus");
+      window.setTimeout(() => el.classList.remove("bp-ava-focus"), 2600);
+    };
+    find();
+    return () => window.clearTimeout(timer);
+  }, [focusNonce, shown, pageSlug]);
 
   function toggleNav() {
     if (navOpen && !showNav) {
@@ -269,7 +335,7 @@ export function PracticeShell({
       className={`bp-doc app-canvas-bg print:bg-white ${
         embedded
           ? "flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none [contain:paint] lg:flex-row lg:items-stretch lg:overflow-hidden"
-          : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col md:-mx-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px+28rem)] lg:flex-row lg:items-stretch"
+          : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col md:-mx-[60px] lg:flex-row lg:items-stretch"
       }`}
       style={{ "--practice-nav-w": `${navWidth}px` } as CSSProperties}
     >
@@ -374,11 +440,20 @@ export function PracticeShell({
                 : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)] lg:self-start"
             }`}
           >
-            <SidePanel mode={side} sectionKey={discussing} page={page} />
+            <SidePanel mode={side} sectionKey={discussing} page={page} canExpand onShow={showOnPage} />
           </aside>
-          <div className="bp-no-print fixed inset-0 z-50 flex flex-col justify-end bg-[#051e36]/35 lg:hidden">
-            <div className="h-[85dvh] overflow-hidden rounded-t-3xl shadow-[0_-20px_50px_-20px_rgba(5,30,54,0.6)]">
-              <SidePanel mode={side} sectionKey={discussing} page={page} />
+          <div
+            className={`bp-no-print fixed inset-0 z-50 flex flex-col justify-end lg:hidden ${
+              peek ? "pointer-events-none" : "bg-[#051e36]/35"
+            }`}
+          >
+            <div
+              className={`h-[85dvh] overflow-hidden rounded-t-3xl shadow-[0_-20px_50px_-20px_rgba(5,30,54,0.6)] ${
+                peek ? "pointer-events-auto" : ""
+              }`}
+              style={peek ? { height: "50dvh" } : undefined}
+            >
+              <SidePanel mode={side} sectionKey={discussing} page={page} onShow={showOnPage} />
             </div>
           </div>
         </>

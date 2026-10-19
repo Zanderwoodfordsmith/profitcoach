@@ -19,6 +19,13 @@ export const metadata: Metadata = {
   description: "Profit Coach",
   icons: {
     icon: "/favicon.png",
+    apple: "/app-icons/apple-touch-icon.png",
+  },
+  // Home screen on iPhone: open full screen with the app's own name.
+  appleWebApp: {
+    capable: true,
+    title: "Profit Coach",
+    statusBarStyle: "default",
   },
 };
 

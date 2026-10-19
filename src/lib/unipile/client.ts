@@ -557,6 +557,41 @@ export async function listReceivedInvitations(input: {
   });
 }
 
+export type UnipileRelation = {
+  object?: string;
+  connection_urn?: string | null;
+  /** Epoch ms when the connection was made. */
+  created_at?: number | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  member_id?: string | null;
+  member_urn?: string | null;
+  headline?: string | null;
+  public_identifier?: string | null;
+  public_profile_url?: string | null;
+  profile_picture_url?: string | null;
+};
+
+/** 1st-degree connections of the connected account, newest first. Read only. */
+export async function listUnipileRelations(input: {
+  account_id: string;
+  limit?: number;
+  cursor?: string | null;
+}) {
+  const qs = new URLSearchParams({
+    account_id: input.account_id,
+    limit: String(Math.min(1000, Math.max(1, Math.floor(input.limit ?? 1000)))),
+  });
+  if (input.cursor) qs.set("cursor", input.cursor);
+  return unipileFetch<{
+    object?: string;
+    items?: UnipileRelation[];
+    cursor?: string | null;
+  }>("GET", `/api/v1/users/relations?${qs.toString()}`, undefined, {
+    timeoutMs: 30_000,
+  });
+}
+
 /** Publish a LinkedIn (or other) post via Unipile multipart API. */
 export async function createUnipilePost(input: {
   account_id: string;

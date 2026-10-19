@@ -34,6 +34,7 @@ import { AgentToolError } from "./tools/util";
 import type {
   AgentActionView,
   AgentCoach,
+  AgentShow,
   AgentStreamEvent,
   AgentToolContext,
   AgentToolInput,
@@ -361,6 +362,8 @@ export async function runAgentTurn(opts: {
       if (link && typeof link.href === "string") {
         emit({ type: "link", link: { href: link.href, label: String(link.label ?? "Open") } });
       }
+      const show = (result as { _show?: AgentShow } | null)?._show;
+      if (show && typeof show.href === "string") emit({ type: "show", show });
       return { content: capText(JSON.stringify(result ?? { ok: true })), isError: false, additions: [] };
     } catch (err) {
       const message =

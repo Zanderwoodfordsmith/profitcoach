@@ -1,4 +1,5 @@
 import { ClassroomCourseOverviewCard } from "@/components/academy/ClassroomCourseOverviewCard";
+import { ClassroomSystemBanner } from "@/components/academy/ClassroomSystemBanner";
 import {
   firstLessonInCourse,
   flattenSections,
@@ -72,6 +73,7 @@ export async function ClassroomCatalogGrid({ basePath }: Props) {
           <CourseCard key={course.id} course={course} basePath={basePath} />
         ))}
       </div>
+      <ClassroomSystemBanner href={`${basePath}/system`} />
     </div>
   );
 }

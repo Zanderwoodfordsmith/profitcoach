@@ -55,9 +55,10 @@ export type FieldSpec = {
   assume?: string;
   /**
    * A control that is not a text box: the same hours as Calls, WhatsApp
-   * following the phone number, a detected time zone, or a connected inbox.
+   * following the phone number, a detected time zone, a connected inbox, or an
+   * on/off switch for a two-option answer (on is the first option).
    */
-  widget?: "phone" | "whatsapp" | "timezone" | "hours" | "email" | "tone";
+  widget?: "phone" | "whatsapp" | "timezone" | "hours" | "email" | "tone" | "switch";
   /** Only shown when another answer is one of these values, e.g. guarantee terms once there is a guarantee. */
   showIf?: { path: FieldSpec["path"]; in: string[] };
   /** Columns for a rows field. Each row stores these keys, plus an id. */
@@ -134,6 +135,8 @@ export type BlueprintGroup = {
   label: string;
   /** Kept for later, not shown or written yet. */
   hidden?: boolean;
+  /** The coach's own pages: on the overview, BCA never has a to do here. */
+  yours?: boolean;
   /** Short line under the chapter title in the document. */
   intro: string;
   pages: BlueprintLink[];
@@ -174,6 +177,7 @@ const GROUPS: BlueprintGroup[] = [
   },
   {
     label: "About You",
+    yours: true,
     intro: "Who you are, what you have done, and how you sound.",
     pages: [
       {
@@ -181,7 +185,7 @@ const GROUPS: BlueprintGroup[] = [
         title: "Your Story and Proof",
         href: "/coach/blueprint/story",
         heading: "Turn your experience into commercial credibility",
-        summary: "The evidence we use to position you: results, client stories, superpowers, and the problems people already ask you to solve.",
+        summary: "The evidence we use to position you: results, client stories, superpowers, the problems people already ask you to solve, and where all that lands best.",
         sections: [
           {
             id: "experience",
@@ -229,6 +233,21 @@ const GROUPS: BlueprintGroup[] = [
             feeds: "Pain points, campaign messaging, the 90-day brochure",
             fields: [
               { path: "proof.problems_asked", label: "Problems", kind: "list", required: true, example: "We are busy but cash is always tight\nI cannot step away without things slipping", help: "One per line, in the owner's words if you can.", ask: "What problems do owners and colleagues keep asking you to help with?" },
+            ],
+          },
+          {
+            id: "credibility",
+            // Moved from Who You Help; the stored key keeps its answers, sign-off and comments.
+            key: "market:credibility",
+            title: "Where you have credibility",
+            source: "from_you",
+            about: "Where your results will impress owners, who signs off, and who you will not take. We use this to recommend your market and build your prospect list.",
+            from: ["LinkedIn: industries worked", "Conversation: industries you understand and can reach", "Conversation: clients to avoid"],
+            feeds: "Market options, prospect list",
+            fields: [
+              { path: "market.industries_credibility", label: "Where you have credibility", kind: "list", required: true, example: "Building services\nM&E contractors\nYorkshire contractors through the local CIOB branch", help: "Industries where owners would be impressed by your results, where you know the language, or where you already have contacts. One per line.", ask: "Which industries would be most impressed by your results, and where do you already know people?" },
+              { path: "market.buyer_roles", label: "Who signs off", kind: "list", example: "Owner-MD\nFinance Director", help: "The person who says yes to hiring you.", ask: "In those businesses, who signs off on hiring someone like you?" },
+              { path: "market.avoid", label: "Who you will not take", kind: "list", required: true, example: "Start-ups with no revenue\nAnyone looking for a quick fix", help: "Left off your prospect lists. One per line.", ask: "Who will you not work with, whatever they pay?" },
             ],
           },
           {
@@ -403,6 +422,33 @@ const GROUPS: BlueprintGroup[] = [
             ],
           },
           {
+            id: "visibility",
+            // Moved from the LinkedIn page; the stored key keeps its answers, sign-off and comments.
+            key: "linkedin:visibility",
+            title: "Going public",
+            source: "from_you",
+            // Hidden 19 Oct: we want members who can say what they do, so everyone writes as public.
+            // Writers treat a blank answer as public. Remove this line to ask again.
+            face: "stored",
+            about: "Whether your LinkedIn can say you coach yet. Turn it off if you are still employed or have a non-compete, and we write a discreet version.",
+            from: ["Conversation: can you say you are a business coach yet?"],
+            feeds: "Profile rewrite, and everything we write for LinkedIn",
+            fields: [
+              {
+                path: "identity.linkedin_visibility",
+                label: "My LinkedIn can say I coach",
+                kind: "enum",
+                widget: "switch",
+                help: "Off keeps the coaching off your profile until you are ready.",
+                ask: "Can your LinkedIn say you are a business coach, or do you need to stay discreet for now (still employed, or a non-compete)?",
+                options: [
+                  { value: "public", label: "Public: I can say I coach" },
+                  { value: "discreet", label: "Discreet for now" },
+                ],
+              },
+            ],
+          },
+          {
             id: "calls",
             title: "When you take calls",
             source: "from_you",
@@ -423,24 +469,11 @@ const GROUPS: BlueprintGroup[] = [
     pages: [
       {
         slug: "market",
-        title: "Who You Help",
+        title: "Your Ideal Client",
         href: "/coach/blueprint/market",
         heading: "Know exactly who you are built to help",
-        summary: "The person you help. Campaigns, the profile rewrite and the prospect list are pulled from the boxes on this page.",
+        summary: "The one person every message is written to: who they are, what they are going through, and how they talk. We fill it in from your Blueprint Call, then you check it.",
         sections: [
-          {
-            id: "credibility",
-            title: "Your market",
-            source: "from_you",
-            about: "Where your results will impress owners, who signs off, and who you will not take. We use this to recommend your market and build your prospect list.",
-            from: ["LinkedIn: industries worked", "Conversation: industries you understand and can reach", "Conversation: clients to avoid"],
-            feeds: "Market options, prospect list",
-            fields: [
-              { path: "market.industries_credibility", label: "Where you have credibility", kind: "list", required: true, example: "Building services\nM&E contractors\nYorkshire contractors through the local CIOB branch", help: "Industries where owners would be impressed by your results, where you know the language, or where you already have contacts. One per line.", ask: "Which industries would be most impressed by your results, and where do you already know people?" },
-              { path: "market.buyer_roles", label: "Who signs off", kind: "list", example: "Owner-MD\nFinance Director", help: "The person who says yes to hiring you.", ask: "In those businesses, who signs off on hiring someone like you?" },
-              { path: "market.avoid", label: "Who you will not take", kind: "list", required: true, example: "Start-ups with no revenue\nAnyone looking for a quick fix", help: "Left off your prospect lists. One per line.", ask: "Who will you not work with, whatever they pay?" },
-            ],
-          },
           {
             id: "options",
             title: "Market options",
@@ -563,34 +596,12 @@ const GROUPS: BlueprintGroup[] = [
             ],
           },
           {
-            id: "visibility",
-            title: "Public or discreet",
-            source: "from_you",
-            about: "Whether your profile can say you coach yet. If you are still employed or have a non-compete, we write a discreet version.",
-            from: ["Conversation: can you say you are a business coach yet?"],
-            feeds: "Profile rewrite",
-            fields: [
-              {
-                path: "identity.linkedin_visibility",
-                label: "On LinkedIn",
-                kind: "enum",
-                required: true,
-                help: "Discreet keeps the coaching off your profile until you are ready.",
-                ask: "Can your LinkedIn say you are a business coach, or do you need to stay discreet for now (still employed, or a non-compete)?",
-                options: [
-                  { value: "public", label: "Public: I can say I coach" },
-                  { value: "discreet", label: "Discreet for now" },
-                ],
-              },
-            ],
-          },
-          {
             id: "rewrite",
             title: "Your profile",
             source: "from_you",
             custom: "linkedin",
             about: "Your LinkedIn as owners see it. Switch between today and the new version, click any part to rewrite it from your Blueprint, then copy it across to LinkedIn.",
-            from: ["LinkedIn import", "Your voice", "Who you help", "Your offer", "Story and proof"],
+            from: ["LinkedIn import", "Your voice", "Your ideal client", "Your offer", "Story and proof"],
             feeds: "The coach's LinkedIn profile",
           },
         ],
@@ -720,7 +731,7 @@ const GROUPS: BlueprintGroup[] = [
             source: "we_build",
             face: "stored",
             about: "The weekly habit: publish, send the inbox note to your top 100, and stay visible on LinkedIn.",
-            from: ["Who you help", "Your voice"],
+            from: ["Your ideal client", "Your voice"],
             feeds: "Your LinkedIn habit",
             needs: ["market:pains"],
             uses: { fields: ["market.industries_credibility", "client.characteristics"] },
@@ -813,7 +824,7 @@ const GROUPS: BlueprintGroup[] = [
             title: "Analogy",
             source: "we_build",
             about: "The same 5-3-7 shape, taught through a sport, hobby, book or film they already named.",
-            from: ["Who you help", "Your voice"],
+            from: ["Your ideal client", "Your voice"],
             feeds: "A later LinkedIn newsletter",
             needs: ["market:pains", "voice:sound"],
             uses: {
@@ -897,7 +908,7 @@ const GROUPS: BlueprintGroup[] = [
         title: "Your Offer",
         href: "/coach/blueprint/offer",
         heading: "Make the destination clear, then make it easy to buy",
-        summary: "Where this offer leads, what you help with in your words, then the written offer they buy. Price comes last.",
+        summary: "What you sell, who it is for and the price. We agree it with you on your Blueprint Call, write it up, and you check it here.",
         learn: [
           { label: "Set up a new client", href: `${CLASSROOM}/coach-clients/coach-clients-client-onboarding-how-to-setup-a-new-client` },
           { label: "Session 1: Profit system and dashboard", href: `${CLASSROOM}/coach-clients/coach-clients-client-onboarding-session-1-profit-systems-dashboard` },
@@ -1028,7 +1039,7 @@ const GROUPS: BlueprintGroup[] = [
             face: "closed",
             about: "The one-page offer: who you help, the promise, the strategy, the guarantee, and what working together is. Price stays in the section above.",
             tip: "Same skeleton as Imperium's finalised offer. The words should sound like James Baker, John McCarthy or Will Walsh, not like EasyGrow.",
-            from: ["The destination", "What you help with", "Who you help", "Story and proof", "Guarantee"],
+            from: ["The destination", "What you help with", "Your ideal client", "Story and proof", "Guarantee"],
             feeds: "Decision Call, call script, LinkedIn rewrite, three lengths",
             needs: ["market:pains", "story:bio"],
             uses: {
@@ -1063,7 +1074,7 @@ const GROUPS: BlueprintGroup[] = [
             source: "we_build",
             about: "How you describe what you do in a line, a sentence and a paragraph, each marked with where to use it.",
             from: ["The offer", "The destination", "Guarantee", "Your voice"],
-            feeds: "LinkedIn headline and About, introductions, messages, proposals",
+            feeds: "LinkedIn headline and About, introductions, messages, the 90-day brochure, proposals",
             needs: ["offer:direction"],
             uses: { fields: ["practice.offer_outcome", "practice.more_of", "practice.less_of", "practice.help_with", "practice.guarantee", "practice.guarantee_terms", "proof.career_results", "proof.client_results"] },
           },
@@ -1281,6 +1292,8 @@ export function openQuestions(row: PracticeKnowledgeRow): { path: string; label:
       (ASK_ORDER.indexOf(a.page.slug) + 1 || 99) - (ASK_ORDER.indexOf(b.page.slug) + 1 || 99)
   );
   for (const ref of ordered) {
+    // Ava asks only for the coach's own pages; BCA researches the rest or agrees it on the Blueprint Call.
+    if (!ref.group.yours || ref.section.face === "stored") continue;
     for (const field of ref.section.fields ?? []) {
       if (!field.ask || fieldFilled(row.payload, field)) continue;
       out.push({ path: field.path, label: `${ref.section.title}: ${field.label}`, ask: field.ask, reach: answerReach(field.path) });

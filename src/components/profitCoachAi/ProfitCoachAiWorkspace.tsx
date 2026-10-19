@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -88,10 +88,7 @@ export function ProfitCoachAiWorkspace({
   lockedOutputId = null,
 }: WorkspaceProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
-  const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
-  const compassHref = `${prefix}/signature`;
   const [chats, setChats] = useState<ChatRow[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MsgRow[]>([]);
@@ -819,7 +816,6 @@ export function ProfitCoachAiWorkspace({
           ) : null}
           <ProfitCoachAiBrainForm
             key={brainFormKey}
-            compassHref={compassHref}
             initialContext={aiContext}
             draftFromChat={brainDraftFromChat}
             saving={brainSaving}

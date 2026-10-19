@@ -7,6 +7,7 @@ import { useOptimisticPathname } from "@/hooks/useOptimisticPathname";
 import {
   ChevronDown,
   ChevronUp,
+  ChevronsUpDown,
   Lock,
   LogOut,
   CircleHelp,
@@ -618,7 +619,7 @@ export function DashboardSidebar({
             {!collapsed ? renderSupportBadge() : null}
           </Link>
           <div
-            className="relative mt-2 border-t border-white/15 pt-2"
+            className="relative mt-1"
             ref={accountMenuRef}
           >
             <button
@@ -653,11 +654,17 @@ export function DashboardSidebar({
                 )}
               </span>
               {!collapsed ? (
-                <span className="relative min-w-0 flex-1 pr-1">
-                  <span className="block text-[0.8125rem] font-medium leading-snug line-clamp-2">
-                    {profileLoading ? "Loading..." : avatarLabel}
+                <>
+                  <span className="relative min-w-0 flex-1">
+                    <span className="block text-[0.8125rem] font-medium leading-snug line-clamp-2">
+                      {profileLoading ? "Loading..." : avatarLabel}
+                    </span>
+                    <span className="block text-[0.75rem] leading-snug opacity-80">
+                      Settings
+                    </span>
                   </span>
-                </span>
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                </>
               ) : null}
             </button>
             {accountMenuOpen ? (

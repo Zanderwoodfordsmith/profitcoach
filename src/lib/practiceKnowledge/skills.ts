@@ -435,7 +435,8 @@ export function skillUserPrompt(opts: {
   const contract = writerContract(opts.key);
   const reads = (source: WriterSource) => contract.sources.has(source);
   const report = opts.row.report_payload;
-  const visibility = opts.row.payload.identity.linkedin_visibility?.value ?? "unknown";
+  // Not asked any more (19 Oct): blank means public.
+  const visibility = opts.row.payload.identity.linkedin_visibility?.value ?? "public";
   // Tenure is the number models most like to invent. Only LinkedIn durations count.
   const tenureKnown = /\b\d+\s*(yrs?|years?)\b/i.test(opts.linkedinSummary);
   const tenureLine = !tenureKnown

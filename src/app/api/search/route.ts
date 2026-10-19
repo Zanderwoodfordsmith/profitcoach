@@ -148,6 +148,54 @@ function sanitizeMembers(items: SearchMemberItem[]): SearchMemberItem[] {
   }));
 }
 
+const PREVIEW_LIMIT: Record<SearchTab, number> = {
+  classroom: 4,
+  community: 3,
+  members: 3,
+};
+
+/** Overlay: the first few hits from every tab, with each tab's total as its count. */
+async function previewResponse(q: string) {
+  const run = (rpcName: string, tab: SearchTab) =>
+    supabaseAdmin.rpc(rpcName, {
+      p_query: q,
+      p_limit: PREVIEW_LIMIT[tab],
+      p_offset: 0,
+    });
+  const [classroomRes, communityRes, membersRes] = await Promise.all([
+    run("search_academy_classroom", "classroom"),
+    run("search_academy_community", "community"),
+    run("search_academy_members", "members"),
+  ]);
+  const failed = classroomRes.error ?? communityRes.error ?? membersRes.error;
+  if (failed) {
+    console.error("[search] preview", failed);
+    return NextResponse.json({ error: "Search failed." }, { status: 500 });
+  }
+
+  const bag = (raw: unknown) => (raw ?? {}) as RpcBag;
+  const itemsOf = (raw: unknown) => {
+    const items = bag(raw).items;
+    return Array.isArray(items) ? items : [];
+  };
+  const [classroom, community] = await Promise.all([
+    enrichClassroomItems(itemsOf(classroomRes.data) as SearchClassroomItem[], q),
+    enrichCommunityItems(itemsOf(communityRes.data) as SearchCommunityItem[]),
+  ]);
+
+  return NextResponse.json({
+    q,
+    counts: {
+      classroom: asCount(bag(classroomRes.data).total),
+      community: asCount(bag(communityRes.data).total),
+      members: asCount(bag(membersRes.data).total),
+    },
+    classroom,
+    community,
+    members: sanitizeMembers(itemsOf(membersRes.data) as SearchMemberItem[]),
+  });
+}
+
 export async function GET(request: Request) {
   const auth = await requireCoachRequest(request, { allowAdminSelf: true });
   if (auth.error || !auth.userId) {
@@ -175,6 +223,10 @@ export async function GET(request: Request) {
       total: 0,
       items: [],
     });
+  }
+
+  if (url.searchParams.get("preview") === "1") {
+    return previewResponse(q);
   }
 
   const { data: countsRaw, error: countsError } = await supabaseAdmin.rpc(

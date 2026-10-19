@@ -3,6 +3,7 @@ import { HABIT_TARGETS, loadHabitWeek, logHabit } from "@/lib/dailyHabit";
 import { listIntentSignals, refreshIntentSignals } from "@/lib/intentSignals";
 import { requireShareCoach } from "@/lib/shareLinks/requireShareCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getOkLinkedInAccount } from "@/lib/unipile/outreachAccounts";
 
 export const runtime = "nodejs";
 
@@ -17,8 +18,18 @@ export async function GET(request: Request) {
     refreshError = out.error;
   }
   try {
-    const [habit, signals] = await Promise.all([loadHabitWeek(auth.coachId), listIntentSignals(auth.coachId)]);
-    return NextResponse.json({ targets: HABIT_TARGETS, habit, signals, refreshError });
+    const [habit, signals, linkedIn] = await Promise.all([
+      loadHabitWeek(auth.coachId),
+      listIntentSignals(auth.coachId),
+      getOkLinkedInAccount(auth.coachId),
+    ]);
+    return NextResponse.json({
+      targets: HABIT_TARGETS,
+      habit,
+      signals,
+      refreshError,
+      linkedInConnected: Boolean(linkedIn),
+    });
   } catch (err) {
     console.error("today:", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Could not load today." }, { status: 500 });

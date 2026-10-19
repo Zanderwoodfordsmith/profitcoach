@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import type { CallRow } from "@/lib/callRow";
 import { CallsCalendarKey } from "@/components/calls/CallsCalendarKey";
+import { ConnectGateIcon, ConnectNudge } from "@/components/ui/ConnectGate";
 import { callMatchesSearch } from "@/lib/calls/callSearch";
 import {
   blockedSlotCalendarClass,
@@ -534,17 +535,31 @@ export function CallsWeekView({
 
         <div className="flex min-w-0 flex-col items-start gap-1 sm:items-end">
           <CallsCalendarKey />
-          <p className="text-xs text-slate-500">
-            {timezone}
-            {viewType !== "appointments" &&
-            !busyLoading &&
-            !busyConnected &&
-            !busyError
-              ? " · Connect Google or Outlook in Settings to see calendar events"
-              : null}
-          </p>
+          <p className="text-xs text-slate-500">{timezone}</p>
         </div>
       </div>
+
+      {/* Bookings work without a calendar, so this asks rather than blocks. */}
+      {viewType !== "appointments" &&
+      !busyLoading &&
+      !busyConnected &&
+      !busyError &&
+      settingsHref ? (
+        <div className="border-b border-slate-100 bg-gradient-to-r from-sky-50/70 via-white to-sky-50/40 px-4 py-3">
+          <ConnectNudge
+            dismissKey="calls-calendar-nudge-dismissed"
+            icon={
+              <ConnectGateIcon>
+                <CalendarDays className="h-4 w-4" strokeWidth={2} />
+              </ConnectGateIcon>
+            }
+            title="Connect your calendar"
+            description="See your Google or Outlook events next to your calls, so your whole week is in one place."
+            action={{ label: "Connect calendar", href: settingsHref }}
+            details="Your bookings work either way. Connecting also keeps busy times off your booking page and adds meeting links to new calls. You can disconnect it any time in Settings."
+          />
+        </div>
+      ) : null}
 
       {viewType !== "appointments" && busyError ? (
         <div className="border-b border-amber-100 bg-amber-50 px-4 py-2.5 text-sm text-amber-950">

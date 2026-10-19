@@ -15,6 +15,7 @@ export function ToolkitHubTabs() {
   const onScorecard =
     pathname === "/admin/signature/scorecard" ||
     Boolean(pathname?.startsWith("/admin/signature/scorecard/"));
+  const onCompass = pathname === "/admin/signature";
   const onTimeTracker =
     pathname === "/admin/time-tracker" ||
     Boolean(pathname?.startsWith("/admin/time-tracker/"));
@@ -27,6 +28,9 @@ export function ToolkitHubTabs() {
   const onSalesNavImports =
     pathname === "/admin/sales-nav-imports" ||
     Boolean(pathname?.startsWith("/admin/sales-nav-imports/"));
+  const onReferrals =
+    pathname === "/admin/referrals" ||
+    Boolean(pathname?.startsWith("/admin/referrals/"));
 
   const items = [
     {
@@ -40,6 +44,12 @@ export function ToolkitHubTabs() {
       href: "/admin/signature/scorecard",
       label: "Scorecard",
       active: onScorecard,
+    },
+    {
+      kind: "link" as const,
+      href: "/admin/signature",
+      label: "Compass",
+      active: onCompass,
     },
     {
       kind: "link" as const,
@@ -64,6 +74,12 @@ export function ToolkitHubTabs() {
       href: "/admin/sales-nav-imports",
       label: "Sales Nav imports",
       active: onSalesNavImports,
+    },
+    {
+      kind: "link" as const,
+      href: "/admin/referrals",
+      label: "Referrals",
+      active: onReferrals,
     },
   ];
 

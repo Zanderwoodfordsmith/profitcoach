@@ -144,6 +144,12 @@ export async function enrollLeadInOtherCampaign(input: {
         typeof input.lead.company === "string" ? input.lead.company : null,
       title:
         typeof input.lead.title === "string" ? input.lead.title : null,
+      open_profile:
+        input.lead.open_profile === true
+          ? true
+          : input.lead.open_profile === false
+            ? false
+            : null,
     },
   ]);
 }

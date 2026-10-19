@@ -51,6 +51,11 @@ import { AccountSendingModal } from "@/components/campaigns/AccountSendingModal"
 import { CampaignInvitesRailCard } from "@/components/campaigns/CampaignInvitesRailCard";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { CampaignsSubTabs } from "@/components/campaigns/CampaignsSubTabs";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import {
+  ConnectGate,
+  LINKEDIN_CONNECT_DETAILS,
+} from "@/components/ui/ConnectGate";
 
 const CampaignPoolHub = dynamic(
   () =>
@@ -1117,25 +1122,7 @@ export function LinkedInCampaignsOverview() {
 
       {campaignsTab ? (
         <div className="min-h-0 flex-1 overflow-y-auto pb-28">
-          {showConnectLinkedIn ? (
-            <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
-              Connect LinkedIn to load SSI, pending invites, and send from
-              campaigns.{" "}
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void connectLinkedIn()}
-                className="font-semibold text-[#0c5290] hover:underline disabled:opacity-50"
-              >
-                Connect LinkedIn
-              </button>
-            </p>
-          ) : null}
-          <div
-            className={`flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:grid-rows-[auto_1fr] ${
-              showConnectLinkedIn ? "pt-3" : "pt-4"
-            }`}
-          >
+          <div className="flex flex-col gap-4 pt-4 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:grid-rows-[auto_1fr]">
             <div className="xl:col-start-1 xl:row-start-1">
               <CampaignOverviewHero
                 connectRate={rates.connect}
@@ -1399,18 +1386,36 @@ export function LinkedInCampaignsOverview() {
               <div className="flex h-[min(34rem,calc(100dvh-12rem))] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
                 <CampaignActivityPane preview={preview} />
               </div>
-              <CampaignSsiCard
-                preview={preview}
-                linkedInConnected={
-                  preview ? true : loading ? undefined : Boolean(okLinkedInAccount)
-                }
-              />
-              <CampaignInvitesRailCard
-                preview={preview}
-                linkedInConnected={
-                  preview ? true : loading ? undefined : Boolean(okLinkedInAccount)
-                }
-              />
+              {/* Locked, the cards show sample numbers under the blur. */}
+              <ConnectGate
+                locked={showConnectLinkedIn}
+                size="sm"
+                className="rounded-2xl"
+                contentClassName="flex flex-col gap-3"
+                icon={<LinkedInSolidIcon className="h-full w-full" />}
+                title="Connect LinkedIn"
+                description="See your Social Selling Index and pending invites, and let your campaigns send for you."
+                action={{
+                  label: "Connect LinkedIn",
+                  onClick: () => void connectLinkedIn(),
+                  busy,
+                  busyLabel: "Opening LinkedIn…",
+                }}
+                details={LINKEDIN_CONNECT_DETAILS}
+              >
+                <CampaignSsiCard
+                  preview={preview || showConnectLinkedIn}
+                  linkedInConnected={
+                    preview ? true : loading ? undefined : Boolean(okLinkedInAccount)
+                  }
+                />
+                <CampaignInvitesRailCard
+                  preview={preview || showConnectLinkedIn}
+                  linkedInConnected={
+                    preview ? true : loading ? undefined : Boolean(okLinkedInAccount)
+                  }
+                />
+              </ConnectGate>
             </aside>
           </div>
         </div>

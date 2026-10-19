@@ -12,6 +12,7 @@ import { MessagingInbox } from "@/components/messaging/MessagingInbox";
 import { ProspectJourneyPane } from "@/components/prospects/ProspectJourneyPane";
 import type { ProspectRow } from "@/lib/prospectRow";
 import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import { useRecordRecentVisit } from "@/lib/search/recentVisits";
 import {
   loadProspectContactPayload,
   prospectContactQueryKey,
@@ -43,6 +44,11 @@ export function ProspectWorkspace({ contactId }: Props) {
   );
   const [coachSlug, setCoachSlug] = useState<string | null>(
     () => cached?.coachSlug ?? null
+  );
+  useRecordRecentVisit(
+    prospect
+      ? { kind: "prospect", title: prospect.full_name, detail: prospect.business_name }
+      : null
   );
 
   const fromConversations = searchParams.get("from") === "conversations";

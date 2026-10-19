@@ -10,7 +10,7 @@ import { loadBrandKnowledgeOverrides } from "@/lib/profitCoachAi/brandKnowledge"
 import { getDefaultOutputId, getOutputById } from "@/lib/profitCoachAi/registry";
 import {
   loadCoachAiContextRow,
-  loadCompassSummaryForUser,
+  loadLadderSummaryForUser,
 } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import { resolveAnthropicModel } from "@/lib/anthropicModel";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -172,10 +172,10 @@ export async function POST(request: Request) {
   // excerpt can use edited content from Admin → Brand → Core brain.
   const brandOverrides = await loadBrandKnowledgeOverrides();
 
-  const [brain, compassText, playbookExcerptText, priorCountRes, blueprint] =
+  const [brain, ladderText, playbookExcerptText, priorCountRes, blueprint] =
     await Promise.all([
       loadCoachAiContextRow(coachId),
-      loadCompassSummaryForUser(coachId),
+      loadLadderSummaryForUser(coachId),
       Promise.resolve(playbookExcerptForOutput(outputId, brandOverrides)),
       supabaseAdmin
         .from("profit_coach_ai_messages")
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
       roleId,
       playbookExcerptText,
       brain: brain ?? {},
-      compassContext: compassText,
+      ladderContext: ladderText,
       screenContext,
       brandOverrides,
     });

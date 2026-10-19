@@ -33,8 +33,7 @@ export type StickyPageHeaderProps = {
   /**
    * Negative horizontal margin + padding so the bar spans the main column.
    * Set `false` to disable (e.g. nested layouts). Default matches coach/admin `main`
-   * horizontal padding, and when the AI panel is docked (shell has `data-ai-docked`)
-   * also stretches under it so the bar still reaches the viewport's right edge.
+   * horizontal padding.
    */
   bleedInset?: string | false;
   /** Ref on the outer sticky shell — for measuring height without breaking stickiness. */
@@ -61,8 +60,8 @@ export function StickyPageHeader({
   below,
   actions,
   className,
-  // 28rem = docked AI panel width (COACH_AI_PANEL_WIDTH_REM); 60px = main px.
-  bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px_+_28rem)] md:group-data-[ai-docked]/appshell:pr-[calc(60px_+_28rem)]",
+  // 60px = main px.
+  bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px]",
   rootRef,
   nowrap = true,
   showChrome,
@@ -98,13 +97,13 @@ export function StickyPageHeader({
           </div>
         ) : null}
         {includeChrome ? (
-          <DashboardChromeActions compactSearchNavigate />
+          <DashboardChromeActions />
         ) : null}
       </div>
     ) : null;
 
   return (
-    <div ref={rootRef} className={shell}>
+    <div ref={rootRef} className={shell} data-page-header>
       <div
         className={`flex ${nowrap ? "flex-nowrap" : "flex-wrap"} justify-between gap-3 ${tabs ? "items-end" : "items-start"}`}
       >

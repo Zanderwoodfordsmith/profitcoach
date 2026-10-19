@@ -68,6 +68,47 @@ export function looksLikePersonName(name: string | null | undefined): boolean {
   return true;
 }
 
+/** Post-nominal letters such as MBA, FRSA, CMgr, MSc or PhD. Not McDonald. */
+function looksLikeLetters(word: string): boolean {
+  const upper = (word.match(/\p{Lu}/gu) ?? []).length;
+  const lower = (word.match(/\p{Ll}/gu) ?? []).length;
+  return upper >= 2 && lower <= 2;
+}
+
+function looksLikeShortName(part: string): boolean {
+  const words = part.split(" ").filter(Boolean);
+  return words.length >= 1 && words.length <= 3 && !looksLikeLetters(words[0]);
+}
+
+/** A tagline, note or list of letters starts here: " - ", " | ", ",", "(". */
+const DISPLAY_NAME_TAIL = /\s*[|·•,]\s*|\s+[-–—]|[-–—]\s+|\s*[([]/;
+
+/**
+ * LinkedIn display names often carry letters, a tagline or a group list:
+ * "Mervyn Pilley CMgr FRSA FAIA", "Christopher Breiner, MSc BA Hons",
+ * "Myranda Love - Fractional COO". Keep the person's name in front.
+ */
+export function personNameFromDisplayName(
+  name: string | null | undefined
+): string | null {
+  // Drop "(Liv)", "[ M.IPSA ]" and LinkedIn's "(13)" unread count.
+  const n = (name || "")
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!n) return null;
+  if (looksLikePersonName(n)) return n;
+  const parts = n.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 3 && parts.slice(0, 3).every(looksLikeShortName)) {
+    const shown = parts.slice(0, 3).join(", ");
+    return parts.length > 3 ? `${shown} +${parts.length - 3}` : shown;
+  }
+  const words = n.split(DISPLAY_NAME_TAIL)[0].split(" ").filter(Boolean);
+  const lettersAt = words.findIndex(looksLikeLetters);
+  const person = (lettersAt === -1 ? words : words.slice(0, lettersAt)).join(" ");
+  return looksLikePersonName(person) ? person : null;
+}
+
 export function isChannelOnlySubject(
   subject: string | null | undefined,
   channel?: string | null
@@ -95,6 +136,8 @@ export function conversationPersonName(input: {
     if (fromLinkedInTitle && looksLikePersonName(fromLinkedInTitle)) {
       return fromLinkedInTitle;
     }
+    const fromDisplayName = personNameFromDisplayName(raw);
+    if (fromDisplayName) return fromDisplayName;
     if (value.includes("@") && !isGenericConversationName(value, input.channel)) {
       return value;
     }

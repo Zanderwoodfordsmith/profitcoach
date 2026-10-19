@@ -7,8 +7,10 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { CoachAiPanel } from "@/components/profitCoachAi/CoachAiPanel";
+import { AvaDock } from "@/components/ava/AvaDock";
+import { useAvaPageHost } from "@/components/ava/avaPageHost";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
+import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
@@ -65,7 +67,7 @@ export default function AdminLayout({
   const sidebarCollapsed = sidebarMounted && !sidebarOpen;
 
   /**
-   * Docked AI panel — pushes the canvas from the right (ClickUp-style).
+   * Ava, from the top bar: she floats over the right of the page.
    * The admin chrome (sidebar included) stays hidden until this viewer is
    * confirmed as an admin. Coaches and clients are sent to their own area.
    */
@@ -102,11 +104,12 @@ export default function AdminLayout({
       /* noop */
     }
   };
-  const aiPanelDocked = aiPanelAvailable && aiPanelOpen && !aiPanelFullscreen;
+  /** The Blueprint has Ava built in: the top-bar button opens that one instead. */
+  const avaPageHost = useAvaPageHost();
 
   const shellPadClass = `${
     playbooksReader ? "pl-0" : sidebarExpanded ? "md:pl-56" : "md:pl-14"
-  } ${aiPanelDocked ? "md:pr-[28rem]" : ""} transition-[padding] duration-200`;
+  } transition-[padding] duration-200`;
   const isMinimalWorkshopChrome = bossWorkshopPage && sidebarCollapsed;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
   const chromeEnabled = !playbooksReader && !isMinimalWorkshopChrome;
@@ -142,7 +145,6 @@ export default function AdminLayout({
 
   return (
     <div
-      data-ai-docked={aiPanelDocked ? true : undefined}
       className={`group/appshell ${
         fullHeightPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
@@ -156,11 +158,12 @@ export default function AdminLayout({
         signingOut={signingOut}
         onSignOut={handleSignOut}
         showAi={showAiSparkles}
-        aiPanelOpen={aiPanelOpen}
+        aiPanelOpen={avaPageHost ? avaPageHost.open : aiPanelOpen}
         profileLoading={profileLoading}
-        onToggleAi={() => setAiOpen(!aiPanelOpen)}
+        onToggleAi={avaPageHost ? avaPageHost.toggle : () => setAiOpen(!aiPanelOpen)}
         chromeEnabled={chromeEnabled}
       >
+        <SearchOverlay />
         <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
           {playbooksReader ? null : isMinimalWorkshopChrome && workshopTopRightSlot ? (
             <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
@@ -244,14 +247,11 @@ export default function AdminLayout({
         </BossWorkshopChromeContext.Provider>
       </DashboardChromeProvider>
       <SalesNavImportToast />
-      {aiPanelAvailable && aiPanelOpen ? (
-        <CoachAiPanel
+      {aiPanelAvailable && aiPanelOpen && !avaPageHost ? (
+        <AvaDock
           onClose={() => setAiOpen(false)}
           fullscreen={aiPanelFullscreen}
           onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
-          createHubHref="/admin/message-generator"
-          sidebarVisible={sidebarMounted}
-          sidebarCollapsed={sidebarCollapsed}
         />
       ) : null}
     </div>

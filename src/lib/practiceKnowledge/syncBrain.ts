@@ -51,7 +51,7 @@ export function brainPatchFromPractice(
     ...listValue(payload.market.industries_worked),
   ];
   const uniqueIndustries = Array.from(new Set(industries));
-  // Who You Help is the ideal client. The industries line stays first: tools read it as the niche.
+  // Your Ideal Client page. The industries line stays first: tools read it as the niche.
   const ideal = [
     uniqueIndustries.length ? uniqueIndustries.slice(0, 4).join(", ") : "",
     listValue(payload.market.buyer_roles).length ? `Who signs off: ${listValue(payload.market.buyer_roles).join(", ")}` : "",

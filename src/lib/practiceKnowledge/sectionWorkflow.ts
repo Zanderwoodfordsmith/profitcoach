@@ -4,7 +4,7 @@ import { sourced } from "./sourced";
 import type { PracticeKnowledgePayload, PracticeKnowledgeRow } from "./types";
 
 /**
- * One status per section. The picture on the row says who it is waiting on.
+ * One status per section. The pill says who it waits on: Needs you, BCA to do, Review (the coach) or BCA review.
  * To do: someone still has to produce it.
  * Review: it exists, and this version has not been signed off.
  * Done: signed off against the current version. A later edit returns it to Review.
@@ -28,6 +28,15 @@ export type SectionWorkflow = {
 
 /** Written sections a coach can sign off, which then wait for BCA before they can be sent. */
 const BCA_GATE = new Set(["linkedin:rewrite", ...CAMPAIGN_HANDOFFS.map((h) => h.section)]);
+
+/**
+ * Who a section waits on while it is To do. The coach's own pages (About You)
+ * wait on the coach. Everything after waits on BCA: we write it, or research it
+ * and fill it in after the Blueprint Call, and the coach reviews it.
+ */
+export function todoOwner(ref: SectionRef): WorkflowOwner {
+  return ref.section.source === "we_build" || !ref.group.yours ? "bca" : "coach";
+}
 
 function stampAt(payload: PracticeKnowledgePayload, key: string, which: "coach" | "bca"): string | null {
   const map =
@@ -126,7 +135,7 @@ export function sectionWorkflow(ref: SectionRef, row: PracticeKnowledgeRow): Sec
 
   if (choice && (!revision || choice.at >= revision)) {
     const owner: WorkflowOwner | null =
-      choice.status === "done" ? null : choice.status === "todo" && section.source === "we_build" ? "bca" : "coach";
+      choice.status === "done" ? null : choice.status === "todo" ? todoOwner(ref) : "coach";
     return {
       status: choice.status,
       owner: choice.status === "done" ? null : owner,
@@ -151,7 +160,7 @@ export function sectionWorkflow(ref: SectionRef, row: PracticeKnowledgeRow): Sec
     return { status: "done", owner: null, tracked: false, revision: null, changed: false, changedFields: [] };
   }
   if (required.length && !required.every((field) => fieldFilled(row.payload, field))) {
-    return { status: "todo", owner: "coach", tracked: true, revision, changed: false, changedFields: [] };
+    return { status: "todo", owner: todoOwner(ref), tracked: true, revision, changed: false, changedFields: [] };
   }
   return signed(ref, row, revision, coachAt, changed, fieldsChanged);
 }
@@ -166,8 +175,7 @@ function signed(
 ): SectionWorkflow {
   const base = { tracked: true, revision, changed, changedFields: fieldsChanged };
   if (!revision) {
-    const owner: WorkflowOwner = ref.section.source === "we_build" ? "bca" : "coach";
-    return { status: "todo", owner, ...base, changed: false, changedFields: [] };
+    return { status: "todo", owner: todoOwner(ref), ...base, changed: false, changedFields: [] };
   }
   const implicit =
     ref.section.source === "from_you" && !coachAt && coachWrote(ref, row.payload);

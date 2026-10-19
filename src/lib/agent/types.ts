@@ -85,6 +85,9 @@ export type AgentActionView = {
 
 export type AgentLink = { href: string; label: string };
 
+/** A Blueprint page or section Ava wants on screen. href is the fallback link where there is no Blueprint beside her. */
+export type AgentShow = { page: string; section: string | null; href: string; label: string };
+
 /** One line of the NDJSON stream from POST /api/agent/chat. */
 export type AgentStreamEvent =
   | { type: "chat"; chatId: string; coach: AgentCoach | null; mode: AgentMode }
@@ -96,6 +99,7 @@ export type AgentStreamEvent =
   | { type: "capability"; id: string; title: string }
   | { type: "action"; action: AgentActionView }
   | { type: "link"; link: AgentLink }
+  | { type: "show"; show: AgentShow }
   | { type: "coach"; coach: AgentCoach }
   | { type: "error"; message: string }
   | { type: "done" };

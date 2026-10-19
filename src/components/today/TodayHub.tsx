@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { ConnectGate, LINKEDIN_CONNECT_DETAILS } from "@/components/ui/ConnectGate";
 
 type HabitDay = { day: string; posts: number; comments: number; conversations: number; postsLogged: number };
 type Signal = {
@@ -20,6 +22,7 @@ type TodayData = {
   habit: { today: string; days: HabitDay[] };
   signals: Signal[];
   refreshError: string | null;
+  linkedInConnected?: boolean;
 };
 
 const KIND_LABEL: Record<Signal["kind"], string> = {
@@ -27,6 +30,30 @@ const KIND_LABEL: Record<Signal["kind"], string> = {
   post_reaction: "Reacted to your post",
   invite_received: "Sent you a connection request",
 };
+
+/** Shown blurred under the connect card, so the section has a shape. */
+const SAMPLE_SIGNALS: Signal[] = [
+  {
+    id: "sample-1",
+    kind: "post_comment",
+    name: "Sarah Mitchell",
+    headline: "Owner, Mitchell & Co Accountants",
+    profile_url: null,
+    context: "Pricing is the lever most owners never pull.",
+    signal_at: null,
+    opener: "Thanks for the comment, Sarah. Is pricing on your list this year?",
+  },
+  {
+    id: "sample-2",
+    kind: "invite_received",
+    name: "James Okafor",
+    headline: "Managing Director, Okafor Build",
+    profile_url: null,
+    context: "Loved your post on cash flow.",
+    signal_at: null,
+    opener: "Good to connect, James. What made the cash flow post land?",
+  },
+];
 
 function weekday(day: string) {
   return new Date(`${day}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short" });
@@ -38,6 +65,7 @@ export function TodayHub() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
 
   const load = useCallback(
     async (refresh = false) => {
@@ -105,6 +133,26 @@ export function TodayHub() {
     }
   };
 
+  const connectLinkedIn = async () => {
+    setConnecting(true);
+    try {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers) throw new Error("Sign in again to connect LinkedIn.");
+      const res = await fetch("/api/coach/linkedin-outreach/accounts", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({}),
+      });
+      const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (!res.ok || !body.url) throw new Error(body.error || "Could not start LinkedIn connect.");
+      window.location.assign(body.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start LinkedIn connect.");
+      setConnecting(false);
+    }
+  };
+
+  const linkedInLocked = data?.linkedInConnected === false;
   const today = data?.habit.days.find((d) => d.day === data.habit.today);
   const t = data?.targets;
 
@@ -188,6 +236,7 @@ export function TodayHub() {
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-lg font-semibold text-slate-900">People showing interest</h2>
+          {linkedInLocked ? null : (
           <button
             type="button"
             onClick={() => {
@@ -199,20 +248,38 @@ export function TodayHub() {
           >
             {refreshing ? "Checking LinkedIn…" : "Check again"}
           </button>
+          )}
         </div>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
           They engaged with your posts or asked to connect in the last three weeks. These are the easiest conversations
           to start. Ask about the thing they did, then copy the opener, edit it and send it on LinkedIn yourself.
         </p>
-        {error ? <p className="mt-3 text-sm text-amber-800">{error}</p> : null}
-        {data && data.signals.length === 0 ? (
+        {/* Locked, the card below says it better than "Connect LinkedIn first". */}
+        {error && !(linkedInLocked && error === data?.refreshError) ? (
+          <p className="mt-3 text-sm text-amber-800">{error}</p>
+        ) : null}
+        {data && data.signals.length === 0 && !linkedInLocked ? (
           <p className="mt-4 text-sm text-slate-500">
             No one new yet. Posting every weekday is what creates these. Profile viewers aren&apos;t available here, so
             check those on LinkedIn.
           </p>
         ) : null}
-        <ul className="mt-4 space-y-3">
-          {(data?.signals ?? []).map((s) => (
+        <ConnectGate
+          locked={linkedInLocked}
+          className="mt-4 rounded-2xl"
+          icon={<LinkedInSolidIcon className="h-full w-full" />}
+          title="Connect LinkedIn"
+          description="See who comments on your posts, reacts, or sends you an invite, each with an opener ready to send."
+          action={{
+            label: "Connect LinkedIn",
+            onClick: () => void connectLinkedIn(),
+            busy: connecting,
+            busyLabel: "Opening LinkedIn…",
+          }}
+          details={LINKEDIN_CONNECT_DETAILS}
+        >
+        <ul className={`space-y-3 ${linkedInLocked ? "" : "mt-4"}`}>
+          {(linkedInLocked ? SAMPLE_SIGNALS : data?.signals ?? []).map((s) => (
             <li key={s.id} className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div className="min-w-0">
@@ -245,6 +312,7 @@ export function TodayHub() {
             </li>
           ))}
         </ul>
+        </ConnectGate>
       </section>
     </div>
   );

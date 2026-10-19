@@ -143,6 +143,11 @@ type Props = {
    * Pass `null` to hide (e.g. Archive, which has no catalog above the player).
    */
   contentsBackLabel?: string | null;
+  /**
+   * Guide tab listing the chapters as steps once two or more have content.
+   * Off for video-only courses (Vault), where it just repeats the chapter list.
+   */
+  chapterStepsGuide?: boolean;
 };
 
 /**
@@ -460,7 +465,6 @@ function LessonBodyFromFields({
   pathname,
   nextLessonTitle,
   nextLessonHref,
-  myActionsHref,
   relatedPlaylist,
   seekRequest,
   onSeekToTranscript,
@@ -469,6 +473,7 @@ function LessonBodyFromFields({
   onHideHandoff,
   onContinueNext,
   reportWatchProgress,
+  chapterStepsGuide,
 }: {
   videoUrl: string | null;
   videoChapters: LessonVideoChapter[];
@@ -488,7 +493,6 @@ function LessonBodyFromFields({
   pathname: string;
   nextLessonTitle: string | null;
   nextLessonHref: string | null;
-  myActionsHref: string;
   relatedPlaylist: ReactNode;
   seekRequest: LessonSeekRequest | null;
   onSeekToTranscript: (seconds: number) => void;
@@ -497,9 +501,10 @@ function LessonBodyFromFields({
   onHideHandoff: () => void;
   onContinueNext: () => void;
   reportWatchProgress: (currentTimeSeconds: number, durationSeconds: number) => void;
+  chapterStepsGuide: boolean;
 }) {
   const hasChapterPlayback = lessonHasVideoChapters(videoChapters);
-  const hasContentSteps = lessonHasContentSteps(videoChapters);
+  const hasContentSteps = chapterStepsGuide && lessonHasContentSteps(videoChapters);
   const chapterTranscript = buildLessonTranscriptFromChapters(videoChapters);
   const effectiveTranscript = transcriptText?.trim()
     ? transcriptText.trim()
@@ -600,7 +605,6 @@ function LessonBodyFromFields({
                   nextLessonTitle={nextLessonTitle}
                   nextLessonHref={nextLessonHref}
                   actionCount={handoffActionCount}
-                  myActionsHref={myActionsHref}
                   onStay={onHideHandoff}
                   onContinue={onContinueNext}
                 />
@@ -710,6 +714,7 @@ export function ClassroomLessonPlayer({
   contentsPosition = "right",
   chrome = "default",
   contentsBackLabel = "Classroom",
+  chapterStepsGuide = true,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -792,9 +797,6 @@ export function ClassroomLessonPlayer({
   const nextLessonHref = nextLesson
     ? `${basePath}/${encodeURIComponent(course.id)}/${encodeURIComponent(nextLesson.id)}`
     : null;
-  const myActionsHref = pathname.startsWith("/admin")
-    ? "/admin/signature/actions"
-    : "/coach/signature/actions";
   const lessonCount = hubLessonCount(course);
   const contentsOnLeft = contentsPosition === "left";
   const minimal = chrome === "minimal";
@@ -932,7 +934,6 @@ export function ClassroomLessonPlayer({
     pathname: pathname ?? "",
     nextLessonTitle: nextLesson?.title ?? null,
     nextLessonHref,
-    myActionsHref,
     relatedPlaylist: satelliteSiblings?.length
       ? renderSatellitePlaylist(satelliteSiblings, Boolean(parentLesson))
       : null,
@@ -950,6 +951,7 @@ export function ClassroomLessonPlayer({
       router.push(nextLessonHref);
     },
     reportWatchProgress,
+    chapterStepsGuide,
   };
 
   /** Tier label only (Core / Premium) — left-aligned, not an accordion. */

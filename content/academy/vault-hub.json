@@ -1,0 +1,2173 @@
+{
+  "courses": [
+    {
+      "id": "stryvx",
+      "title": "StryvX",
+      "description": "Zander's personal growth programme. Twelve modules on how people change, from mindset and values to purpose, emotions and energy.",
+      "sections": [
+        {
+          "id": "stryvx-1-foundations",
+          "title": "1. Foundations",
+          "lessons": [
+            {
+              "id": "stryvx-welcome",
+              "title": "Welcome to StryvX",
+              "duration": "29m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "welcome",
+                  "title": "Welcome",
+                  "sourceLessonId": "stryvx-1-1-welcome-to-stryvx",
+                  "duration": "3m"
+                },
+                {
+                  "id": "what-is-stryvx",
+                  "title": "What Is StryvX?",
+                  "sourceLessonId": "stryvx-1-2-what-is-stryvx",
+                  "duration": "9m"
+                },
+                {
+                  "id": "programme-overview",
+                  "title": "Programme Overview",
+                  "sourceLessonId": "stryvx-1-3-programme-overview",
+                  "duration": "10m"
+                },
+                {
+                  "id": "programme-success",
+                  "title": "Programme Success",
+                  "sourceLessonId": "stryvx-1-4-programme-success",
+                  "duration": "7m"
+                }
+              ]
+            },
+            {
+              "id": "stryvx-1-5-your-outcomes",
+              "title": "Your Outcomes",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-1-6-ownership",
+              "title": "Ownership",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-1-7-the-authenticity-objection",
+              "title": "The Authenticity Objection",
+              "duration": "5m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-1-8-the-holy-grail-of-change",
+              "title": "The Holy Grail of Change",
+              "duration": "15m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-1-9-constructing-your-new-self",
+              "title": "Constructing Your New Self",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-1-10-developing-your-self",
+              "title": "Developing Your Self",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-2-integral",
+          "title": "2. Integral",
+          "lessons": [
+            {
+              "id": "stryvx-2-1-integral-introduction",
+              "title": "Integral Introduction",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-the-integral-map",
+              "title": "The Integral Map",
+              "duration": "38m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "quadrants",
+                  "title": "Quadrants",
+                  "sourceLessonId": "stryvx-2-2-quadrants",
+                  "duration": "11m"
+                },
+                {
+                  "id": "lines",
+                  "title": "Lines",
+                  "sourceLessonId": "stryvx-2-3-lines",
+                  "duration": "9m"
+                },
+                {
+                  "id": "levels",
+                  "title": "Levels",
+                  "sourceLessonId": "stryvx-2-4-levels",
+                  "duration": "4m"
+                },
+                {
+                  "id": "states",
+                  "title": "States",
+                  "sourceLessonId": "stryvx-2-5-states",
+                  "duration": "13m"
+                },
+                {
+                  "id": "types",
+                  "title": "Types",
+                  "sourceLessonId": "stryvx-2-6-types",
+                  "duration": "1m"
+                }
+              ]
+            },
+            {
+              "id": "stryvx-2-7-applying-integral",
+              "title": "Applying Integral",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-3-transformation",
+          "title": "3. Transformation",
+          "lessons": [
+            {
+              "id": "stryvx-learning-vs-development",
+              "title": "Learning vs Development",
+              "duration": "5m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "horizontal-vs-vertical",
+                  "title": "Horizontal Learning vs Vertical Development",
+                  "sourceLessonId": "stryvx-3-1-learning-vs-development",
+                  "duration": "2m"
+                },
+                {
+                  "id": "waking-up-vs-growing-up",
+                  "title": "Waking Up vs Growing Up",
+                  "sourceLessonId": "stryvx-3-2-waking-up-vs-growing-up",
+                  "duration": "3m"
+                }
+              ]
+            },
+            {
+              "id": "stryvx-3-3-the-personal-transformation-model",
+              "title": "The Personal Transformation Model",
+              "duration": "3m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-the-six-transformation-levels",
+              "title": "The Six Transformation Levels",
+              "duration": "20m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "level-1",
+                  "title": "Level 1",
+                  "sourceLessonId": "stryvx-3-4-transformation-level-1",
+                  "duration": "3m"
+                },
+                {
+                  "id": "level-2",
+                  "title": "Level 2",
+                  "sourceLessonId": "stryvx-3-5-transformation-level-2",
+                  "duration": "3m"
+                },
+                {
+                  "id": "level-3",
+                  "title": "Level 3",
+                  "sourceLessonId": "stryvx-3-6-transformation-level-3",
+                  "duration": "4m"
+                },
+                {
+                  "id": "level-4",
+                  "title": "Level 4",
+                  "sourceLessonId": "stryvx-3-7-transformation-level-4",
+                  "duration": "4m"
+                },
+                {
+                  "id": "level-5",
+                  "title": "Level 5",
+                  "sourceLessonId": "stryvx-3-8-transformation-level-5",
+                  "duration": "2m"
+                },
+                {
+                  "id": "level-6",
+                  "title": "Level 6",
+                  "sourceLessonId": "stryvx-3-9-transformation-level-6",
+                  "duration": "4m"
+                }
+              ]
+            },
+            {
+              "id": "stryvx-3-10-the-transformation-tower",
+              "title": "The Transformation Tower",
+              "duration": "16m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-4-behaviour",
+          "title": "4. Behaviour",
+          "lessons": [
+            {
+              "id": "stryvx-4-1-behaviours-introduction",
+              "title": "Behaviours Introduction",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-the-four-behaviour-clusters",
+              "title": "The Four Behaviour Clusters",
+              "duration": "13m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "imagine",
+                  "title": "Imagine",
+                  "sourceLessonId": "stryvx-4-2-behaviour-cluster-imagine",
+                  "duration": "3m"
+                },
+                {
+                  "id": "involve",
+                  "title": "Involve",
+                  "sourceLessonId": "stryvx-4-3-behaviour-cluster-involve",
+                  "duration": "4m"
+                },
+                {
+                  "id": "ignite",
+                  "title": "Ignite",
+                  "sourceLessonId": "stryvx-4-4-behaviour-cluster-ignite",
+                  "duration": "4m"
+                },
+                {
+                  "id": "implement",
+                  "title": "Implement",
+                  "sourceLessonId": "stryvx-4-5-behaviour-cluster-implement",
+                  "duration": "2m"
+                }
+              ]
+            },
+            {
+              "id": "stryvx-4-6-behaviour-levels",
+              "title": "Behaviour Levels",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-4-7-behavioural-constructs",
+              "title": "Behavioural Constructs",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-4-8-frustration",
+              "title": "Frustration",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-4-9-analysis-paralysis",
+              "title": "Analysis Paralysis",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-4-10-procrastination",
+              "title": "Procrastination",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-4-11-overwhelm",
+              "title": "Overwhelm",
+              "duration": "15m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-5-performance",
+          "title": "5. Performance",
+          "lessons": [
+            {
+              "id": "stryvx-5-1-the-pressure-performance-curve",
+              "title": "The Pressure-Performance Curve",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-5-2-the-integrated-performance-model",
+              "title": "The Integrated Performance Model",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-5-3-the-performance-grid",
+              "title": "The Performance Grid",
+              "duration": "5m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-5-4-the-performance-recipe",
+              "title": "The Performance Recipe",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-5-5-applying-performance",
+              "title": "Applying Performance",
+              "duration": "16m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-6-mindset",
+          "title": "6. Mindset",
+          "lessons": [
+            {
+              "id": "stryvx-6-1-growth-vs-fixed-mindset",
+              "title": "Growth vs Fixed Mindset",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-6-2-how-to-create-happiness",
+              "title": "How to Create Happiness",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-6-3-the-happiness-paradox",
+              "title": "The Happiness Paradox",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-6-4-why-we-make-bad-decisions",
+              "title": "Why We Make Bad Decisions",
+              "duration": "3m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-6-5-reverse-your-failure-bias",
+              "title": "Reverse Your Failure Bias",
+              "duration": "13m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-6-6-avoiding-errors-in-judgement",
+              "title": "Avoiding Errors in Judgement",
+              "duration": "12m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-6-7-the-neuroscience-of-great-decisions",
+              "title": "The Neuroscience of Great Decisions",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-7-values",
+          "title": "7. Values",
+          "lessons": [
+            {
+              "id": "stryvx-7-1-values-overview-spiral-dynamics",
+              "title": "Values Overview: Spiral Dynamics",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-the-eight-values-levels",
+              "title": "The Eight Values Levels",
+              "duration": "38m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "beige",
+                  "title": "Level 1: Beige",
+                  "sourceLessonId": "stryvx-7-2-level-1-beige",
+                  "duration": "4m"
+                },
+                {
+                  "id": "purple",
+                  "title": "Level 2: Purple",
+                  "sourceLessonId": "stryvx-7-3-level-2-purple",
+                  "duration": "4m"
+                },
+                {
+                  "id": "red",
+                  "title": "Level 3: Red",
+                  "sourceLessonId": "stryvx-7-4-level-3-red",
+                  "duration": "3m"
+                },
+                {
+                  "id": "blue",
+                  "title": "Level 4: Blue",
+                  "sourceLessonId": "stryvx-7-5-level-4-blue",
+                  "duration": "5m"
+                },
+                {
+                  "id": "orange",
+                  "title": "Level 5: Orange",
+                  "sourceLessonId": "stryvx-7-6-level-5-orange",
+                  "duration": "5m"
+                },
+                {
+                  "id": "green",
+                  "title": "Level 6: Green",
+                  "sourceLessonId": "stryvx-7-7-level-6-green",
+                  "duration": "5m"
+                },
+                {
+                  "id": "yellow",
+                  "title": "Level 7: Yellow",
+                  "sourceLessonId": "stryvx-7-8-level-7-yellow",
+                  "duration": "6m"
+                },
+                {
+                  "id": "turquoise",
+                  "title": "Level 8: Turquoise",
+                  "sourceLessonId": "stryvx-7-9-level-8-turquoise",
+                  "duration": "6m"
+                }
+              ]
+            },
+            {
+              "id": "stryvx-7-10-values-and-communication",
+              "title": "Values and Communication",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-8-vision",
+          "title": "8. Vision",
+          "lessons": [
+            {
+              "id": "stryvx-8-1-vision-variance",
+              "title": "Vision Variance",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-the-vision-creator",
+              "title": "The V.I.S.I.O.N. Creator",
+              "duration": "14m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "values",
+                  "title": "Values",
+                  "sourceLessonId": "stryvx-8-2-vision-creator-values",
+                  "duration": "3m"
+                },
+                {
+                  "id": "initiatives",
+                  "title": "Initiatives",
+                  "sourceLessonId": "stryvx-8-3-initiatives",
+                  "duration": "1m"
+                },
+                {
+                  "id": "strategy",
+                  "title": "Strategy",
+                  "sourceLessonId": "stryvx-8-4-strategy",
+                  "duration": "2m"
+                },
+                {
+                  "id": "issues",
+                  "title": "Issues",
+                  "sourceLessonId": "stryvx-8-5-issues",
+                  "duration": "2m"
+                },
+                {
+                  "id": "outcomes",
+                  "title": "Outcomes",
+                  "sourceLessonId": "stryvx-8-6-outcomes",
+                  "duration": "6m"
+                }
+              ]
+            },
+            {
+              "id": "stryvx-8-7-next-ninety",
+              "title": "Next Ninety",
+              "duration": "11m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-9-purpose",
+          "title": "9. Purpose",
+          "lessons": [
+            {
+              "id": "stryvx-9-1-purpose-introduction",
+              "title": "Purpose Introduction",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-9-2-discover-your-purpose",
+              "title": "Discover Your Purpose",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-living-your-purpose",
+              "title": "Living Your Purpose",
+              "duration": "29m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "application",
+                  "title": "Application",
+                  "sourceLessonId": "stryvx-9-3-application",
+                  "duration": "5m"
+                },
+                {
+                  "id": "living",
+                  "title": "Living",
+                  "sourceLessonId": "stryvx-9-4-living",
+                  "duration": "5m"
+                },
+                {
+                  "id": "integrating",
+                  "title": "Integrating",
+                  "sourceLessonId": "stryvx-9-5-integrating",
+                  "duration": "6m"
+                },
+                {
+                  "id": "validation",
+                  "title": "Validation",
+                  "sourceLessonId": "stryvx-9-6-validation",
+                  "duration": "5m"
+                },
+                {
+                  "id": "evolution",
+                  "title": "Evolution",
+                  "sourceLessonId": "stryvx-9-7-evolution",
+                  "duration": "8m"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stryvx-10-maturity",
+          "title": "10. Maturity",
+          "lessons": [
+            {
+              "id": "stryvx-10-1-the-disease-of-meaning",
+              "title": "The Disease of Meaning",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-2-perspectives",
+              "title": "Perspectives",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-3-maturity",
+              "title": "Maturity",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-4-level-1-concrete",
+              "title": "Level 1: Concrete",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-5-level-2-conform",
+              "title": "Level 2: Conform",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-6-level-3-concept",
+              "title": "Level 3: Concept",
+              "duration": "13m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-7-level-4-context",
+              "title": "Level 4: Context",
+              "duration": "16m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-8-level-5-construct",
+              "title": "Level 5: Construct",
+              "duration": "14m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-9-level-6-causal",
+              "title": "Level 6: Causal",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-10-10-understanding-people-maturity-and-values",
+              "title": "Understanding People: Maturity and Values",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-11-emotions",
+          "title": "11. Emotions",
+          "lessons": [
+            {
+              "id": "stryvx-11-1-how-your-self-is-constructed",
+              "title": "How Your Self Is Constructed",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-11-2-overcome-your-fears-and-limits",
+              "title": "Overcome Your Fears and Limits",
+              "duration": "15m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-11-3-develop-your-optimism-bias",
+              "title": "Develop Your Optimism Bias",
+              "duration": "14m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-11-4-develop-wellbeing-and-happiness",
+              "title": "Develop Wellbeing and Happiness",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-11-5-master-your-emotions",
+              "title": "Master Your Emotions",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-11-6-positive-emotion-practice",
+              "title": "Positive Emotion Practice",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-11-7-alter-your-emotional-state",
+              "title": "Alter Your Emotional State",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-12-physiology",
+          "title": "12. Physiology",
+          "lessons": [
+            {
+              "id": "stryvx-12-1-power-up-your-physiology",
+              "title": "Power Up Your Physiology",
+              "duration": "12m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-brilliant-breathing",
+              "title": "Brilliant Breathing",
+              "duration": "16m",
+              "hasVideo": true,
+              "academyUrl": "",
+              "chapterSources": [
+                {
+                  "id": "brain-shutdown",
+                  "title": "Brain Shutdown",
+                  "sourceLessonId": "stryvx-12-2-brilliant-breathing-i-brain-shutdown",
+                  "duration": "7m"
+                },
+                {
+                  "id": "how-to-breathe",
+                  "title": "How to Breathe",
+                  "sourceLessonId": "stryvx-12-3-brilliant-breathing-ii-how-to-breathe",
+                  "duration": "9m"
+                }
+              ]
+            },
+            {
+              "id": "stryvx-12-5-exercise-for-energy",
+              "title": "Exercise for Energy",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-12-6-sleep-for-success",
+              "title": "Sleep for Success",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "stryvx-13-after-stryvx",
+          "title": "13. After StryvX",
+          "lessons": [
+            {
+              "id": "stryvx-13-1-dynamics-of-change-review",
+              "title": "Dynamics of Change Review",
+              "duration": "13m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-13-2-exercises-review",
+              "title": "Exercises Review",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "stryvx-13-3-content-focus-quiz",
+              "title": "Content Focus Quiz",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "books",
+      "title": "Books & Talks",
+      "description": "The best ideas from 150 books and talks on mindset, focus, sales and running a business. Five minutes each, with how to use them with clients.",
+      "sections": [
+        {
+          "id": "books-start-here",
+          "title": "Start here",
+          "lessons": [
+            {
+              "id": "books-start-here",
+              "title": "How to use this library",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-mindset-purpose",
+          "title": "Mindset & Purpose",
+          "lessons": [
+            {
+              "id": "books-mindset",
+              "title": "Mindset",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-growth-vs-fixed-mindset",
+              "title": "Principle: Growth vs Fixed Mindset",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-ego-is-the-enemy",
+              "title": "Ego is the Enemy",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-obstacle-is-the-way",
+              "title": "The Obstacle is the Way",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-superbetter",
+              "title": "SuperBetter",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-13-things-mentally-strong-people-dont-do",
+              "title": "13 Things Mentally Strong People Don't Do",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-12-rules-for-life",
+              "title": "12 Rules for Life",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-four-agreements",
+              "title": "The Four Agreements",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-awaken-the-giant-within",
+              "title": "Awaken the Giant Within",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-mans-search-for-meaning",
+              "title": "Man's Search for Meaning",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-psycho-cybernetics",
+              "title": "Psycho-Cybernetics",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-dip",
+              "title": "The Dip",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-grit",
+              "title": "Grit",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-cant-hurt-me",
+              "title": "Can't Hurt Me",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-winning",
+              "title": "Winning",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-antifragile",
+              "title": "Antifragile",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-subtle-art",
+              "title": "The Subtle Art of Not Giving a F*ck",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-designing-your-life",
+              "title": "Designing Your Life",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-code-of-the-extraordinary-mind",
+              "title": "The Code of the Extraordinary Mind",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-choose-yourself",
+              "title": "Choose Yourself",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-rethinking-positive-thinking",
+              "title": "Rethinking Positive Thinking",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-how-to-fail-at-almost-everything",
+              "title": "How to Fail at Almost Everything and Still Win Big",
+              "duration": "5m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-talk-tony-robbins-why-we-do-what-we-do",
+              "title": "Talk: Why We Do What We Do",
+              "duration": "23m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-energy-wellbeing",
+          "title": "Energy & Wellbeing",
+          "lessons": [
+            {
+              "id": "books-why-we-sleep",
+              "title": "Why We Sleep",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-breath",
+              "title": "Breath",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-spark",
+              "title": "Spark",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-power-of-full-engagement",
+              "title": "The Power of Full Engagement",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-are-you-fully-charged",
+              "title": "Are You Fully Charged?",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-miracle-morning",
+              "title": "The Miracle Morning",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-5-am-club",
+              "title": "The 5 AM Club",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-own-the-day",
+              "title": "Own the Day, Own Your Life",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-upside-of-stress",
+              "title": "The Upside of Stress",
+              "duration": "5m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-how-to-stop-worrying",
+              "title": "How to Stop Worrying and Start Living",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-emotional-agility",
+              "title": "Emotional Agility",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-tools",
+              "title": "The Tools",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-10-percent-happier",
+              "title": "10% Happier",
+              "duration": "5m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-happiness-advantage",
+              "title": "The Happiness Advantage",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-talk-shawn-achor-happy-secret",
+              "title": "Talk: The Happy Secret to Better Work",
+              "duration": "12m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-meditations",
+              "title": "Meditations",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-daily-stoic",
+              "title": "The Daily Stoic",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-stillness-is-the-key",
+              "title": "Stillness is the Key",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-habits",
+          "title": "Habits",
+          "lessons": [
+            {
+              "id": "books-atomic-habits",
+              "title": "Atomic Habits",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-tiny-habits",
+              "title": "Tiny Habits",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-mini-habits",
+              "title": "Mini Habits",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-power-of-habit",
+              "title": "The Power of Habit",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-one-small-step",
+              "title": "One Small Step Can Change Your Life",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-compound-effect",
+              "title": "The Compound Effect",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-willpower-instinct",
+              "title": "The Willpower Instinct",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-5-second-rule",
+              "title": "The 5 Second Rule",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-high-performance-habits",
+              "title": "High Performance Habits",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-switch",
+              "title": "Switch",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-drive",
+              "title": "Drive",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-talk-tali-sharot-motivate-yourself",
+              "title": "Talk: How to Motivate Yourself to Change Your Behaviour",
+              "duration": "17m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-time-priorities",
+          "title": "Time & Priorities",
+          "lessons": [
+            {
+              "id": "books-the-one-thing",
+              "title": "The ONE Thing",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-essentialism",
+              "title": "Essentialism",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-hell-yeah-or-no",
+              "title": "Hell Yeah or No",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-art-of-saying-no",
+              "title": "The Art of Saying No",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-positive-no",
+              "title": "Principle: The Positive No",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-your-one-word",
+              "title": "Your One Word",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-eat-that-frog",
+              "title": "Eat That Frog!",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-12-week-year",
+              "title": "The 12 Week Year",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-4-hour-workweek",
+              "title": "The 4-Hour Workweek",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-make-time",
+              "title": "Make Time",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-when",
+              "title": "When",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-getting-things-done",
+              "title": "Getting Things Done",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-batch-buckets",
+              "title": "Principle: Batch Buckets",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-bullet-journal-method",
+              "title": "The Bullet Journal Method",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-effortless",
+              "title": "Effortless",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-joy-at-work",
+              "title": "Joy at Work",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-how-to-have-a-good-day",
+              "title": "How to Have a Good Day",
+              "duration": "11m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-focus-performance",
+          "title": "Focus & Performance",
+          "lessons": [
+            {
+              "id": "books-deep-work",
+              "title": "Deep Work",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-intensity-x-time",
+              "title": "Principle: Intensity x Time",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-indistractable",
+              "title": "Indistractable",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-digital-minimalism",
+              "title": "Digital Minimalism",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-your-brain-at-work",
+              "title": "Your Brain at Work",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-flow",
+              "title": "Flow",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-rise-of-superman",
+              "title": "The Rise of Superman",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-4-percent-zone",
+              "title": "Principle: The 4% Zone",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-war-of-art",
+              "title": "The War of Art",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-practice",
+              "title": "The Practice",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-finish-what-you-start",
+              "title": "Finish What You Start",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-process-vs-product",
+              "title": "Principle: Process vs Product",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-predict-to-perform",
+              "title": "Principle: Predict to Perform",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-performing-under-pressure",
+              "title": "Performing Under Pressure",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-champions-mind",
+              "title": "The Champion's Mind",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-mindful-athlete",
+              "title": "The Mindful Athlete",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-10-minute-toughness",
+              "title": "10-Minute Toughness",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-thinking-decisions",
+          "title": "Thinking & Decisions",
+          "lessons": [
+            {
+              "id": "books-thinking-fast-and-slow",
+              "title": "Thinking, Fast and Slow",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-decisive",
+              "title": "Decisive",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-how-to-decide",
+              "title": "How to Decide",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-thinking-in-bets",
+              "title": "Thinking in Bets",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-great-mental-models",
+              "title": "The Great Mental Models",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-think-again",
+              "title": "Think Again",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-principles",
+              "title": "Principles",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-algorithms-to-live-by",
+              "title": "Algorithms to Live By",
+              "duration": "11m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-5-elements-of-effective-thinking",
+              "title": "The 5 Elements of Effective Thinking",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-smarter-faster-better",
+              "title": "Smarter Faster Better",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-barking-up-the-wrong-tree",
+              "title": "Barking Up the Wrong Tree",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-tribe-of-mentors",
+              "title": "Tribe of Mentors",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-talk-antonio-rangel-simple-choice",
+              "title": "Talk: The Neuroeconomics of Simple Choice",
+              "duration": "13m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-learning-mastery",
+          "title": "Learning & Mastery",
+          "lessons": [
+            {
+              "id": "books-the-first-20-hours",
+              "title": "The First 20 Hours",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-ultralearning",
+              "title": "Ultralearning",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-peak",
+              "title": "Peak",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-make-it-stick",
+              "title": "Make It Stick",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-a-mind-for-numbers",
+              "title": "A Mind for Numbers",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-unlimited-memory",
+              "title": "Unlimited Memory",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-limitless",
+              "title": "Limitless",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-art-of-learning",
+              "title": "The Art of Learning",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-4-hour-chef",
+              "title": "The 4-Hour Chef",
+              "duration": "5m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-talent-code",
+              "title": "The Talent Code",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-decoding-greatness",
+              "title": "Decoding Greatness",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-mastery",
+              "title": "Mastery",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-range",
+              "title": "Range",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-so-good-they-cant-ignore-you",
+              "title": "So Good They Can't Ignore You",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-born-for-this",
+              "title": "Born for This",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-coaching-leadership",
+          "title": "Coaching & Leadership",
+          "lessons": [
+            {
+              "id": "books-the-coaching-habit",
+              "title": "The Coaching Habit",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-new-one-minute-manager",
+              "title": "The New One Minute Manager",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-extreme-ownership",
+              "title": "Extreme Ownership",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-5-dysfunctions-of-a-team",
+              "title": "The 5 Dysfunctions of a Team",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-crucial-conversations",
+              "title": "Crucial Conversations",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-give-and-take",
+              "title": "Give and Take",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-five-minute-favour",
+              "title": "Principle: The Five-Minute Favour",
+              "duration": "1m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-effective-executive",
+              "title": "The Effective Executive",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-measure-what-matters",
+              "title": "Measure What Matters",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-4-disciplines-of-execution",
+              "title": "The 4 Disciplines of Execution",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-scrum",
+              "title": "Scrum: The Art of Doing Twice the Work in Half the Time",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-checklist-manifesto",
+              "title": "The Checklist Manifesto",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-talk-dan-pink-puzzle-of-motivation",
+              "title": "Talk: The Puzzle of Motivation",
+              "duration": "19m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-sales-influence",
+          "title": "Sales & Influence",
+          "lessons": [
+            {
+              "id": "books-how-to-win-friends",
+              "title": "How to Win Friends and Influence People",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-to-sell-is-human",
+              "title": "To Sell Is Human",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-influence",
+              "title": "Influence",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-exactly-what-to-say",
+              "title": "Exactly What to Say",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-never-split-the-difference",
+              "title": "Never Split the Difference",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-getting-to-yes",
+              "title": "Getting to Yes",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-start-with-why",
+              "title": "Start with Why + Find Your Why",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-building-a-storybrand",
+              "title": "Building a StoryBrand",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-made-to-stick",
+              "title": "Made to Stick",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-how-to-talk-to-anyone",
+              "title": "How to Talk to Anyone",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-charisma-myth",
+              "title": "The Charisma Myth",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-presence",
+              "title": "Presence",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "books-business-money",
+          "title": "Business & Money",
+          "lessons": [
+            {
+              "id": "books-the-e-myth-revisited",
+              "title": "The E-Myth Revisited",
+              "duration": "7m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-profit-first",
+              "title": "Profit First",
+              "duration": "11m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-good-to-great",
+              "title": "Good to Great",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-personal-mba",
+              "title": "The Personal MBA",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-rework",
+              "title": "Rework",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-blue-ocean-strategy",
+              "title": "Blue Ocean Strategy",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-competing-against-luck",
+              "title": "Competing Against Luck",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-zero-to-one",
+              "title": "Zero to One",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-lean-startup",
+              "title": "The Lean Startup",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-sprint",
+              "title": "Sprint",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-little-bets",
+              "title": "Little Bets",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-inside-the-box",
+              "title": "Inside the Box",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-originals",
+              "title": "Originals",
+              "duration": "12m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-invent-and-wander",
+              "title": "Invent and Wander",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-delivering-happiness",
+              "title": "Delivering Happiness",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-anything-you-want",
+              "title": "Anything You Want",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-how-i-built-this",
+              "title": "How I Built This",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-100-dollar-startup",
+              "title": "$100 Startup + 100 Side Hustles",
+              "duration": "11m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-perennial-seller",
+              "title": "Perennial Seller",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-hooked",
+              "title": "Hooked",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-rich-dad-poor-dad",
+              "title": "Rich Dad Poor Dad",
+              "duration": "8m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "books-the-psychology-of-money",
+              "title": "The Psychology of Money",
+              "duration": "10m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "how-to",
+      "title": "How To",
+      "description": "Short guides to the tools and set-up behind a coaching business: Zoom, Google Drive, passwords, a distraction-free phone and desktop, and the business basics.",
+      "sections": [
+        {
+          "id": "how-to-tech-made-easy",
+          "title": "Tech Made Easy",
+          "lessons": [
+            {
+              "id": "how-to-embracing-technology",
+              "title": "Embracing Technology: Overcoming Tech Trauma",
+              "duration": "15m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-organise-google-drive",
+              "title": "How to Organise Your Files in Google Drive",
+              "duration": "9m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-share-google-drive-files",
+              "title": "How to Share Google Drive Files",
+              "duration": "2m",
+              "hasVideo": false,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-set-up-zoom",
+              "title": "How to Set Up Your Zoom Account and Meetings",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-password-manager",
+              "title": "Store Your Passwords and Bank Details Safely",
+              "duration": "4m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "how-to-set-up-for-focus",
+          "title": "Set Up for Focus",
+          "lessons": [
+            {
+              "id": "how-to-digital-environment",
+              "title": "Set Up Your Digital Environment for Focus",
+              "duration": "17m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-set-up-your-phone",
+              "title": "How to Set Up Your Phone",
+              "duration": "17m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-set-up-your-desktop",
+              "title": "How to Set Up Your Desktop",
+              "duration": "11m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-set-up-your-browser",
+              "title": "How to Set Up Your Browser",
+              "duration": "19m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-freedom-app",
+              "title": "Block Distractions with the Freedom App",
+              "duration": "12m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-clear-your-inbox",
+              "title": "Clear Your Inbox of Newsletters",
+              "duration": "6m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-plan-your-day-sunsama",
+              "title": "Plan Your Day with Sunsama",
+              "duration": "2m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        },
+        {
+          "id": "how-to-business-set-up",
+          "title": "Business Set-Up",
+          "lessons": [
+            {
+              "id": "how-to-business-structure",
+              "title": "Choose Your Business Structure",
+              "duration": "2m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-business-bank-account",
+              "title": "Set Up a Business Bank Account",
+              "duration": "2m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-business-insurance",
+              "title": "Get the Right Business Insurance",
+              "duration": "2m",
+              "hasVideo": true,
+              "academyUrl": ""
+            },
+            {
+              "id": "how-to-tax",
+              "title": "Understand Your Tax",
+              "duration": "2m",
+              "hasVideo": true,
+              "academyUrl": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

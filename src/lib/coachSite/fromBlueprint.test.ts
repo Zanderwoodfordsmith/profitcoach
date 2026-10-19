@@ -98,7 +98,10 @@ describe("coach site from Blueprint", () => {
     assert.equal(site.place?.label, "Hull, Yorkshire");
     assert.equal(site.links.score, "/score/jo");
     assert.ok(site.missing.includes("story:bio"));
-    assert.ok(!site.missing.includes("story:onepager" as never));
+    assert.equal(
+      site.missing.some((item) => String(item) === "story:onepager"),
+      false
+    );
   });
 
   it("fills the site from bio, offer and problems when no one-pager exists", () => {

@@ -24,10 +24,7 @@ export function MobileDashboardTopBar({
   return (
     <div className="md:hidden">
       <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-end gap-2 px-3 pt-[max(0.375rem,env(safe-area-inset-top))]">
-        <SearchTopBarTrigger
-          className="pointer-events-auto shrink-0"
-          compactNavigate
-        />
+        <SearchTopBarTrigger className="pointer-events-auto shrink-0" />
         <DashboardTopActions
           variant={variant}
           signingOut={signingOut}

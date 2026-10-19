@@ -3,13 +3,26 @@
 import {
   useCallback,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type Ref,
+  type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import { BookOpen, Bold, GraduationCap, Heading1, Heading2, Heading3, Link2, List, Users } from "lucide-react";
-import { COMMUNITY_EXTERNAL_LINK_CLASS } from "@/lib/communityAutolink";
+import { safeExternalHref } from "@/lib/communityAutolink";
+import {
+  LINK_MARKER,
+  boldRanges,
+  deleteBesideLinkMarker,
+  linkIndexAt,
+  linkSpans,
+  reconcileLinkMarkers,
+  toggleBoldAt,
+} from "@/lib/commentInlineFormat";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
   MENTION_TOKEN_REGEX,
@@ -50,7 +63,35 @@ type Props = {
    * Off for support notes so a ticket cannot ping the whole community.
    */
   allowBroadcastMentions?: boolean;
+  /**
+   * Comment-sized formatting without the post toolbar: bold and links show
+   * formatted while typing, Cmd+B / Cmd+K work, and a link can be clicked to
+   * edit it. Pair with `formatRef` + `CommentFormatButtons` for buttons.
+   */
+  inlineFormatting?: boolean;
+  formatRef?: Ref<MentionTextareaHandle>;
 };
+
+/** Formatting commands for buttons that live outside the textarea. */
+export type MentionTextareaHandle = {
+  toggleBold: () => void;
+  openLink: () => void;
+};
+
+/** Where the link form writes: an existing link, or a new one over [start, end). */
+type LinkTarget = { index: number | null; start: number; end: number };
+
+type ListPos = {
+  left: number;
+  width: number;
+  maxHeight: number;
+  top?: number;
+  bottom?: number;
+};
+
+const LIST_MAX_HEIGHT = 208;
+const LIST_GAP = 4;
+const LIST_VIEWPORT_MARGIN = 12;
 
 type KnownMention = {
   /** Leading `@`(s) shown in the composer: "@", "@@" or "@@@". */
@@ -67,9 +108,6 @@ function normalizeMentionLabel(label: string): string {
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-
-/** Invisible wrappers around link labels in the editor (zero-width non-joiner). */
-const LINK_ZWNJ = "\u200c";
 
 type LinkPair = { label: string; url: string };
 
@@ -93,6 +131,10 @@ function extractLinkPairsInOrder(raw: string): LinkPair[] {
   return out;
 }
 
+function linkUrlsFromRaw(raw: string): string[] {
+  return extractLinkPairsInOrder(raw).map((pair) => pair.url);
+}
+
 function rawToDisplayFromRaw(raw: string): string {
   let s = raw.replace(
     new RegExp(MENTION_TOKEN_REGEX.source, "gi"),
@@ -102,56 +144,9 @@ function rawToDisplayFromRaw(raw: string): string {
     }
   );
   s = s.replace(new RegExp(NON_MENTION_LINK_MD_RE.source, "gi"), (_full, label: string) => {
-    return `${LINK_ZWNJ}${label}${LINK_ZWNJ}`;
+    return `${LINK_MARKER}${label}${LINK_MARKER}`;
   });
   return s;
-}
-
-function extractZwnjLinkLabelsInOrder(display: string): string[] {
-  const labels: string[] = [];
-  let i = 0;
-  while (i < display.length) {
-    if (display.startsWith(LINK_ZWNJ, i)) {
-      const close = display.indexOf(LINK_ZWNJ, i + LINK_ZWNJ.length);
-      if (close === -1) break;
-      labels.push(display.slice(i + LINK_ZWNJ.length, close));
-      i = close + LINK_ZWNJ.length;
-    } else {
-      const nextZ = display.indexOf(LINK_ZWNJ, i);
-      if (nextZ === -1) break;
-      i = nextZ;
-    }
-  }
-  return labels;
-}
-
-function countCompleteZwnjLinksBefore(display: string, pos: number): number {
-  let count = 0;
-  let i = 0;
-  while (i < display.length && i < pos) {
-    if (display.startsWith(LINK_ZWNJ, i)) {
-      const close = display.indexOf(LINK_ZWNJ, i + LINK_ZWNJ.length);
-      if (close === -1) break;
-      const end = close + LINK_ZWNJ.length;
-      if (end <= pos) count++;
-      i = end;
-    } else {
-      const nextZ = display.indexOf(LINK_ZWNJ, i);
-      if (nextZ === -1 || nextZ >= pos) break;
-      i = nextZ;
-    }
-  }
-  return count;
-}
-
-function resolveUrlsForLabels(labels: string[], pool: LinkPair[]): string[] {
-  const q = [...pool];
-  return labels.map((lab) => {
-    const idx = q.findIndex((p) => p.label === lab);
-    if (idx === -1) return "";
-    const [{ url }] = q.splice(idx, 1);
-    return url;
-  });
 }
 
 function assembleRawFromDisplay(
@@ -163,22 +158,22 @@ function assembleRawFromDisplay(
   let i = 0;
   let u = 0;
   while (i < display.length) {
-    if (display.startsWith(LINK_ZWNJ, i)) {
-      const close = display.indexOf(LINK_ZWNJ, i + LINK_ZWNJ.length);
+    if (display.startsWith(LINK_MARKER, i)) {
+      const close = display.indexOf(LINK_MARKER, i + LINK_MARKER.length);
       if (close === -1) {
         parts.push(display.slice(i));
         break;
       }
-      const label = display.slice(i + LINK_ZWNJ.length, close);
+      const label = display.slice(i + LINK_MARKER.length, close);
       const url = urlsInOrder[u++] ?? "";
       if (url) {
         parts.push(`[${escapeMarkdownLinkLabel(label)}](${url})`);
       } else {
         parts.push(label);
       }
-      i = close + LINK_ZWNJ.length;
+      i = close + LINK_MARKER.length;
     } else {
-      const nextZ = display.indexOf(LINK_ZWNJ, i);
+      const nextZ = display.indexOf(LINK_MARKER, i);
       const end = nextZ === -1 ? display.length : nextZ;
       parts.push(display.slice(i, end));
       i = end;
@@ -187,38 +182,91 @@ function assembleRawFromDisplay(
   return displayToRawText(parts.join(""), mentions);
 }
 
-function displayToMirrorHtml(display: string, ph?: string): string {
-  if (!display && ph) {
-    return `<span class="text-slate-400">${escapeHtml(ph)}</span>`;
+/** Link text in the overlay. No font weight, so it stays as wide as the textarea's text. */
+const MIRROR_LINK_CLASS = "text-blue-600 underline decoration-blue-600/40 underline-offset-2";
+const MIRROR_ACTIVE_LINK_CLASS = `${MIRROR_LINK_CLASS} rounded-sm bg-blue-50`;
+/** Bold drawn with a stroke: a heavier weight is wider and would push the caret off the text. */
+const MIRROR_BOLD_STYLE = "-webkit-text-stroke:0.035em currentColor";
+const MIRROR_BOLD_STARS_CLASS = "text-slate-300";
+
+/**
+ * HTML for the overlay drawn under the transparent textarea: link labels in
+ * blue (markers hidden), `**bold**` with faint stars. Every character stays
+ * the same width as in the textarea so the caret lines up.
+ */
+function displayToMirrorHtml(
+  display: string,
+  opts: { placeholder?: string; placeholderClass: string; activeLink: number }
+): string {
+  if (!display) {
+    return opts.placeholder
+      ? `<span class="${opts.placeholderClass}">${escapeHtml(opts.placeholder)}</span>`
+      : "";
   }
+  const linkAt = new Int32Array(display.length).fill(-1);
+  linkSpans(display).forEach((span, idx) => linkAt.fill(idx, span.open, span.close + 1));
+  // 1 = bold text, 2 = the stars around it.
+  const boldAt = new Uint8Array(display.length);
+  for (const r of boldRanges(display)) {
+    boldAt.fill(2, r.start, r.end);
+    boldAt.fill(1, r.start + 2, r.end - 2);
+  }
+
   let out = "";
-  let idx = 0;
-  while (idx < display.length) {
-    if (display.startsWith(LINK_ZWNJ, idx)) {
-      const close = display.indexOf(LINK_ZWNJ, idx + LINK_ZWNJ.length);
-      if (close === -1) {
-        out += escapeHtml(display.slice(idx));
-        break;
-      }
-      const label = display.slice(idx + LINK_ZWNJ.length, close);
-      out += `<span class="${COMMUNITY_EXTERNAL_LINK_CLASS}">${escapeHtml(label)}</span>`;
-      idx = close + LINK_ZWNJ.length;
-    } else {
-      const nextZ = display.indexOf(LINK_ZWNJ, idx);
-      const end = nextZ === -1 ? display.length : nextZ;
-      out += escapeHtml(display.slice(idx, end));
-      idx = end;
+  let i = 0;
+  while (i < display.length) {
+    let j = i + 1;
+    while (j < display.length && linkAt[j] === linkAt[i] && boldAt[j] === boldAt[i]) j++;
+    const text = escapeHtml(display.slice(i, j));
+    const classes: string[] = [];
+    if (linkAt[i] >= 0) {
+      classes.push(linkAt[i] === opts.activeLink ? MIRROR_ACTIVE_LINK_CLASS : MIRROR_LINK_CLASS);
     }
+    if (boldAt[i] === 2) classes.push(MIRROR_BOLD_STARS_CLASS);
+    const style = boldAt[i] === 1 ? ` style="${MIRROR_BOLD_STYLE}"` : "";
+    out +=
+      classes.length > 0 || style
+        ? `<span${classes.length > 0 ? ` class="${classes.join(" ")}"` : ""}${style}>${text}</span>`
+        : text;
+    i = j;
   }
+  // A trailing newline opens a new line in the textarea but not in a div.
+  if (display.endsWith("\n")) out += "\u200b";
   return out;
 }
 
+/**
+ * Accepts `example.com/page` or a full URL. Returns "" when it is not a usable
+ * link, so the form can disable its button. Spaces and brackets are encoded so
+ * the stored `[label](url)` parses back cleanly.
+ */
 function normalizeCommunityPostLinkUrl(input: string): string {
   const t = input.trim();
   if (!t) return "";
-  if (/^https?:\/\//i.test(t)) return t;
-  if (/^(mailto|tel):/i.test(t)) return t;
-  return `https://${t}`;
+  const candidate = /^(https?:\/\/|mailto:|tel:)/i.test(t) ? t : `https://${t}`;
+  try {
+    const u = new URL(candidate);
+    if ((u.protocol === "http:" || u.protocol === "https:") && !u.hostname.includes(".")) {
+      return "";
+    }
+  } catch {
+    return "";
+  }
+  return candidate.replace(/\s/g, "%20").replace(/\(/g, "%28").replace(/\)/g, "%29");
+}
+
+/** Link labels can't hold brackets (they end the markdown label) or link markers. */
+function cleanLinkLabel(label: string): string {
+  return label
+    .replaceAll(LINK_MARKER, "")
+    .replace(/[[\]]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** `https://www.example.com/page/` → `example.com/page` for the link bar. */
+function prettyLinkUrl(url: string): string {
+  return url.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
 }
 
 /** Minimal escaping so `[label](url)` survives CommonMark parsing. */
@@ -390,20 +438,28 @@ export function MentionTextarea({
   showFormattingToolbar = false,
   prioritizeUserId,
   allowBroadcastMentions = true,
+  inlineFormatting = false,
+  formatRef,
 }: Props) {
+  const richFormatting = showFormattingToolbar || inlineFormatting;
   const taRef = useRef<HTMLTextAreaElement>(null);
   const mirrorInnerRef = useRef<HTMLDivElement>(null);
-  const lastRawRef = useRef(value);
-  const linkPairsRef = useRef<LinkPair[]>(extractLinkPairsInOrder(value));
   const selectionRef = useRef({ start: 0, end: 0, selectedText: "" });
+  const pendingSelectionRef = useRef<[number, number] | null>(null);
   const [displayValue, setDisplayValue] = useState(() => rawToDisplayFromRaw(value));
   const [knownMentions, setKnownMentions] = useState<KnownMention[]>(() =>
     extractKnownMentionsFromRaw(value)
   );
-  const [linkModalOpen, setLinkModalOpen] = useState(false);
-  const [linkUrlDraft, setLinkUrlDraft] = useState("https://");
+  /** One URL per link marker pair in `displayValue`, in order. */
+  const [linkUrls, setLinkUrls] = useState<string[]>(() => linkUrlsFromRaw(value));
+  const [linkTarget, setLinkTarget] = useState<LinkTarget | null>(null);
+  /** Link holding the caret, for the link bar (-1 when none). */
+  const [caretLink, setCaretLink] = useState(-1);
+  const [linkUrlDraft, setLinkUrlDraft] = useState("");
   const [linkLabelDraft, setLinkLabelDraft] = useState("");
   const [mentionOpen, setMentionOpen] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [listPos, setListPos] = useState<ListPos | null>(null);
   const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
   const [mentionLoading, setMentionLoading] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
@@ -411,6 +467,19 @@ export function MentionTextarea({
   const [pickerMode, setPickerMode] = useState<"lesson" | "course">("lesson");
   const fetchSeq = useRef(0);
   const mentionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The raw value this editor last emitted or loaded. A parent echo of our own
+  // onChange matches it and is ignored (rehydrating would move the caret); any
+  // other change, such as clearing after posting, reloads the editor.
+  const [syncedValue, setSyncedValue] = useState(value);
+  if (value !== syncedValue) {
+    setSyncedValue(value);
+    setDisplayValue(rawToDisplayFromRaw(value));
+    setKnownMentions(extractKnownMentionsFromRaw(value));
+    setLinkUrls(linkUrlsFromRaw(value));
+    setLinkTarget(null);
+    setCaretLink(-1);
+  }
 
   useEffect(() => {
     return () => {
@@ -422,32 +491,58 @@ export function MentionTextarea({
     prefetchMentionUsers(prioritizeUserId);
   }, [prioritizeUserId]);
 
-  useEffect(() => {
-    // Ignore parent echoes of our own onChange while typing; rehydrating here
-    // can reset caret/selection and feel like "cursor jumping".
-    if (value === lastRawRef.current) return;
-    setDisplayValue(rawToDisplayFromRaw(value));
-    setKnownMentions(extractKnownMentionsFromRaw(value));
-    lastRawRef.current = value;
-    linkPairsRef.current = extractLinkPairsInOrder(value);
-  }, [value]);
+  // Writing a new value into the textarea puts the caret at the end; put it
+  // back before paint.
+  useLayoutEffect(() => {
+    const sel = pendingSelectionRef.current;
+    const el = taRef.current;
+    if (!sel || !el) return;
+    pendingSelectionRef.current = null;
+    el.focus();
+    el.setSelectionRange(sel[0], sel[1]);
+  });
 
+  /**
+   * Stores a new display string. Without `urls` the change is treated as
+   * typing, so a link that lost a marker is unlinked (reconcileLinkMarkers).
+   * Returns the stored display and `caret` shifted to match it.
+   */
   const commitFromDisplay = useCallback(
-    (nextDisplay: string, nextMentions = knownMentions) => {
-      const labels = extractZwnjLinkLabelsInOrder(nextDisplay);
-      const pool =
-        linkPairsRef.current.length > 0
-          ? linkPairsRef.current
-          : extractLinkPairsInOrder(lastRawRef.current);
-      const urls = resolveUrlsForLabels(labels, pool);
-      const nextRaw = assembleRawFromDisplay(nextDisplay, nextMentions, urls);
-      lastRawRef.current = nextRaw;
-      linkPairsRef.current = extractLinkPairsInOrder(nextRaw);
+    (
+      nextDisplay: string,
+      opts: { mentions?: KnownMention[]; urls?: string[]; caret?: number } = {}
+    ) => {
+      const fixed = opts.urls
+        ? { display: nextDisplay, urls: opts.urls, caret: opts.caret ?? 0 }
+        : reconcileLinkMarkers(displayValue, linkUrls, nextDisplay, opts.caret ?? 0);
+      const nextRaw = assembleRawFromDisplay(
+        fixed.display,
+        opts.mentions ?? knownMentions,
+        fixed.urls
+      );
+      setSyncedValue(nextRaw);
       setKnownMentions(extractKnownMentionsFromRaw(nextRaw));
-      setDisplayValue(nextDisplay);
+      setDisplayValue(fixed.display);
+      setLinkUrls(fixed.urls);
       onChange(nextRaw);
+      return fixed;
     },
-    [knownMentions, onChange]
+    [displayValue, knownMentions, linkUrls, onChange]
+  );
+
+  /** Selects [start, end) once `nextDisplay` is in the textarea. */
+  const placeCaret = useCallback(
+    (start: number, end: number, nextDisplay: string) => {
+      const el = taRef.current;
+      if (!el) return;
+      if (el.value === nextDisplay) {
+        el.focus();
+        el.setSelectionRange(start, end);
+      } else {
+        pendingSelectionRef.current = [start, end];
+      }
+    },
+    []
   );
 
   const captureTextareaSelection = useCallback(() => {
@@ -574,7 +669,7 @@ export function MentionTextarea({
       const nextDisplay =
         displayValue.slice(0, ctx.start) + mentionText + " " + displayValue.slice(sel);
       const nextKnown = [...knownMentions, { prefix, label: safeName, target }];
-      commitFromDisplay(nextDisplay, nextKnown);
+      commitFromDisplay(nextDisplay, { mentions: nextKnown });
       setMentionOpen(false);
 
       requestAnimationFrame(() => {
@@ -617,7 +712,7 @@ export function MentionTextarea({
       const nextDisplay =
         displayValue.slice(0, start) + insertText + displayValue.slice(end);
       const nextKnown = [...knownMentions, { prefix, label: safeLabel, target }];
-      commitFromDisplay(nextDisplay, nextKnown);
+      commitFromDisplay(nextDisplay, { mentions: nextKnown });
 
       requestAnimationFrame(() => {
         const pos = start + insertText.length;
@@ -628,8 +723,155 @@ export function MentionTextarea({
     [commitFromDisplay, displayValue, knownMentions]
   );
 
+  /** Commits text the user typed (or deleted) and re-reads the @mention query. */
+  const applyTypedEdit = useCallback(
+    (typed: string, caret: number, forceCaret: boolean) => {
+      const fixed = commitFromDisplay(typed, { caret });
+      if (forceCaret || fixed.display !== typed) {
+        placeCaret(fixed.caret, fixed.caret, fixed.display);
+      }
+      const ctx = getActiveMentionQuery(fixed.display, fixed.caret);
+      if (!ctx) {
+        setMentionOpen(false);
+        return;
+      }
+      runMentionFetch(ctx.query);
+    },
+    [commitFromDisplay, placeCaret, runMentionFetch]
+  );
+
+  const toggleBold = useCallback(() => {
+    const el = taRef.current;
+    if (!el) return;
+    const next = toggleBoldAt(displayValue, el.selectionStart ?? 0, el.selectionEnd ?? 0);
+    const fixed = commitFromDisplay(next.text);
+    setMentionOpen(false);
+    placeCaret(next.start, next.end, fixed.display);
+  }, [commitFromDisplay, displayValue, placeCaret]);
+
+  const editLink = useCallback(
+    (index: number) => {
+      const span = linkSpans(displayValue)[index];
+      if (!span) return;
+      setLinkUrlDraft(linkUrls[index] ?? "");
+      setLinkLabelDraft(displayValue.slice(span.open + 1, span.close));
+      setLinkTarget({ index, start: span.open, end: span.close + 1 });
+      setMentionOpen(false);
+      setCaretLink(-1);
+    },
+    [displayValue, linkUrls]
+  );
+
+  /**
+   * Link button / Cmd+K. Inside a link it edits that link; otherwise the
+   * selection becomes the link text (widened to swallow any link it overlaps).
+   */
+  const openLink = useCallback(() => {
+    const el = taRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    const inside = linkIndexAt(displayValue, start, end);
+    if (inside !== -1) {
+      editLink(inside);
+      return;
+    }
+    let s = start;
+    let e = end;
+    for (const span of linkSpans(displayValue)) {
+      if (span.open < e && span.close + 1 > s) {
+        s = Math.min(s, span.open);
+        e = Math.max(e, span.close + 1);
+      }
+    }
+    setLinkUrlDraft("");
+    setLinkLabelDraft(cleanLinkLabel(displayValue.slice(s, e)));
+    setLinkTarget({ index: null, start: s, end: e });
+    setMentionOpen(false);
+    setCaretLink(-1);
+  }, [displayValue, editLink]);
+
+  const applyLink = useCallback(() => {
+    if (!linkTarget) return;
+    const url = normalizeCommunityPostLinkUrl(linkUrlDraft);
+    if (!url) return;
+    const label = cleanLinkLabel(linkLabelDraft) || linkLabelFromUrl(url);
+    const { index, start, end } = linkTarget;
+    const urls = [...linkUrls];
+    if (index !== null) {
+      urls[index] = url;
+    } else {
+      const spans = linkSpans(displayValue);
+      const before = spans.filter((span) => span.close < start).length;
+      const replaced = spans.filter((span) => span.open >= start && span.close < end).length;
+      urls.splice(before, replaced, url);
+    }
+    const nextDisplay =
+      displayValue.slice(0, start) + LINK_MARKER + label + LINK_MARKER + displayValue.slice(end);
+    commitFromDisplay(nextDisplay, { urls });
+    setLinkTarget(null);
+    const caret = start + label.length + 2;
+    placeCaret(caret, caret, nextDisplay);
+  }, [commitFromDisplay, displayValue, linkLabelDraft, linkTarget, linkUrlDraft, linkUrls, placeCaret]);
+
+  /** Turns a link back into plain text. */
+  const removeLink = useCallback(
+    (index: number) => {
+      const span = linkSpans(displayValue)[index];
+      if (!span) return;
+      const label = displayValue.slice(span.open + 1, span.close);
+      const nextDisplay =
+        displayValue.slice(0, span.open) + label + displayValue.slice(span.close + 1);
+      commitFromDisplay(nextDisplay, { urls: linkUrls.filter((_, i) => i !== index) });
+      setLinkTarget(null);
+      setCaretLink(-1);
+      const caret = span.open + label.length;
+      placeCaret(caret, caret, nextDisplay);
+    },
+    [commitFromDisplay, displayValue, linkUrls, placeCaret]
+  );
+
+  const closeLinkForm = useCallback(() => {
+    if (!linkTarget) return;
+    setLinkTarget(null);
+    placeCaret(linkTarget.end, linkTarget.end, displayValue);
+  }, [displayValue, linkTarget, placeCaret]);
+
+  useImperativeHandle(formatRef, () => ({ toggleBold, openLink }), [toggleBold, openLink]);
+
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (richFormatting && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+        const key = e.key.toLowerCase();
+        if (key === "b" || key === "k") {
+          e.preventDefault();
+          // Cmd+K is also global search; inside the composer it means link.
+          e.stopPropagation();
+          if (key === "b") toggleBold();
+          else openLink();
+          return;
+        }
+      }
+      if (
+        (e.key === "Backspace" || e.key === "Delete") &&
+        !e.altKey &&
+        !e.metaKey &&
+        !e.ctrlKey
+      ) {
+        const el = e.currentTarget;
+        if (el.selectionStart === el.selectionEnd) {
+          const edit = deleteBesideLinkMarker(
+            displayValue,
+            el.selectionStart,
+            e.key === "Backspace" ? "backward" : "forward"
+          );
+          if (edit) {
+            e.preventDefault();
+            applyTypedEdit(edit.display, edit.caret, true);
+            return;
+          }
+        }
+      }
       if (!mentionOpen || mentionUsers.length === 0) {
         if (e.key === "Escape") setMentionOpen(false);
         return;
@@ -648,12 +890,25 @@ export function MentionTextarea({
         setMentionOpen(false);
       }
     },
-    [mentionOpen, mentionUsers, safeHighlightIdx, insertMention]
+    [
+      applyTypedEdit,
+      displayValue,
+      insertMention,
+      mentionOpen,
+      mentionUsers,
+      openLink,
+      richFormatting,
+      safeHighlightIdx,
+      toggleBold,
+    ]
   );
 
   const onSelectOrClick = useCallback(() => {
     syncMentionFromDom();
-  }, [syncMentionFromDom]);
+    const el = taRef.current;
+    const collapsed = el && el.selectionStart === el.selectionEnd;
+    setCaretLink(collapsed ? linkIndexAt(displayValue, el.selectionStart) : -1);
+  }, [displayValue, syncMentionFromDom]);
 
   useLayoutEffect(() => {
     if (!autoResize) return;
@@ -667,111 +922,21 @@ export function MentionTextarea({
   }, [autoResize, maxAutoHeightPx, minAutoHeightPx, displayValue]);
 
   useLayoutEffect(() => {
-    if (!showFormattingToolbar) return;
+    if (!richFormatting) return;
     syncMirrorScroll();
-  }, [displayValue, showFormattingToolbar, syncMirrorScroll]);
+  }, [displayValue, richFormatting, syncMirrorScroll]);
 
   const onChangeInner = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const nextDisplay = e.target.value;
-      commitFromDisplay(nextDisplay);
-      const ctx = getActiveMentionQuery(
-        nextDisplay,
-        e.target.selectionStart ?? 0
-      );
-      if (!ctx) {
-        setMentionOpen(false);
-        return;
-      }
-      runMentionFetch(ctx.query);
+      applyTypedEdit(e.target.value, e.target.selectionStart ?? 0, false);
     },
-    [commitFromDisplay, runMentionFetch]
+    [applyTypedEdit]
   );
 
   const openEntityPicker = useCallback((mode: "lesson" | "course") => {
     setPickerMode(mode);
     setPickerOpen(true);
     setMentionOpen(false);
-  }, []);
-
-  const applyWrappedSelection = useCallback(
-    (before: string, after: string) => {
-      const el = taRef.current;
-      if (!el) return;
-      const start = el.selectionStart ?? 0;
-      const end = el.selectionEnd ?? start;
-      const selected = displayValue.slice(start, end);
-      const isEmphasisWrap = before === "**" && after === "**";
-      const inner = isEmphasisWrap ? selected.trim() : selected;
-      const leadPad = isEmphasisWrap ? selected.length - selected.trimStart().length : 0;
-      const trailPad = isEmphasisWrap ? selected.length - selected.trimEnd().length : 0;
-      const wrapStart = start + leadPad;
-      const wrapEnd = end - trailPad;
-      const nextDisplay =
-        displayValue.slice(0, wrapStart) +
-        before +
-        inner +
-        after +
-        displayValue.slice(wrapEnd);
-      commitFromDisplay(nextDisplay);
-      setMentionOpen(false);
-
-      requestAnimationFrame(() => {
-        el.focus();
-        if (inner.length > 0) {
-          el.setSelectionRange(
-            wrapStart + before.length,
-            wrapStart + before.length + inner.length
-          );
-        } else {
-          const caret = wrapStart + before.length;
-          el.setSelectionRange(caret, caret);
-        }
-      });
-    },
-    [commitFromDisplay, displayValue]
-  );
-
-  const applyMarkdownLink = useCallback(() => {
-    const el = taRef.current;
-    if (!el) return;
-    const normalized = normalizeCommunityPostLinkUrl(linkUrlDraft);
-    if (!normalized) return;
-    const defaultLabel = linkLabelFromUrl(normalized);
-    const label =
-      linkLabelDraft.trim().length > 0 ? linkLabelDraft.trim() : defaultLabel;
-    const { start, end } = selectionRef.current;
-    const pairIdx = countCompleteZwnjLinksBefore(displayValue, start);
-    const pool = [...linkPairsRef.current];
-    pool.splice(pairIdx, 0, { label, url: normalized });
-    const nextDisplay =
-      displayValue.slice(0, start) +
-      LINK_ZWNJ +
-      label +
-      LINK_ZWNJ +
-      displayValue.slice(end);
-    const labels = extractZwnjLinkLabelsInOrder(nextDisplay);
-    const urls = resolveUrlsForLabels(labels, pool);
-    const nextRaw = assembleRawFromDisplay(nextDisplay, knownMentions, urls);
-    lastRawRef.current = nextRaw;
-    linkPairsRef.current = extractLinkPairsInOrder(nextRaw);
-    setKnownMentions(extractKnownMentionsFromRaw(nextRaw));
-    setDisplayValue(nextDisplay);
-    onChange(nextRaw);
-    setMentionOpen(false);
-    setLinkModalOpen(false);
-    requestAnimationFrame(() => {
-      el.focus();
-      const caret = start + LINK_ZWNJ.length + label.length + LINK_ZWNJ.length;
-      el.setSelectionRange(caret, caret);
-    });
-  }, [displayValue, knownMentions, linkLabelDraft, linkUrlDraft, onChange]);
-
-  const openLinkModal = useCallback(() => {
-    const { selectedText } = selectionRef.current;
-    setLinkUrlDraft("https://");
-    setLinkLabelDraft(selectedText);
-    setLinkModalOpen(true);
   }, []);
 
   const applyLinePrefix = useCallback(
@@ -812,44 +977,234 @@ export function MentionTextarea({
 
   const showList = mentionOpen;
 
+  // The list is portalled and fixed-positioned so scrolling comment panels and
+  // modals cannot clip it. Opens upward when there is more room above.
+  useLayoutEffect(() => {
+    if (!showList) return;
+
+    function updateListPos() {
+      const el = taRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - LIST_GAP - LIST_VIEWPORT_MARGIN;
+      const spaceAbove = rect.top - LIST_GAP - LIST_VIEWPORT_MARGIN;
+      const wanted = Math.min(LIST_MAX_HEIGHT, listRef.current?.scrollHeight || LIST_MAX_HEIGHT);
+      const placeAbove = spaceBelow < wanted && spaceAbove > spaceBelow;
+      const next: ListPos = {
+        left: rect.left,
+        width: rect.width,
+        maxHeight: Math.max(0, Math.min(LIST_MAX_HEIGHT, placeAbove ? spaceAbove : spaceBelow)),
+        ...(placeAbove
+          ? { bottom: window.innerHeight - rect.top + LIST_GAP }
+          : { top: rect.bottom + LIST_GAP }),
+      };
+      setListPos((cur) =>
+        cur &&
+        cur.left === next.left &&
+        cur.width === next.width &&
+        cur.maxHeight === next.maxHeight &&
+        cur.top === next.top &&
+        cur.bottom === next.bottom
+          ? cur
+          : next
+      );
+    }
+
+    updateListPos();
+    // Re-measure once the list has mounted so short lists are not flipped
+    // upward on the assumption they are full height.
+    const frame = window.requestAnimationFrame(updateListPos);
+    window.addEventListener("resize", updateListPos);
+    window.addEventListener("scroll", updateListPos, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateListPos);
+      window.removeEventListener("scroll", updateListPos, true);
+    };
+  }, [showList, mentionUsers, mentionLoading, displayValue]);
+
+  useEffect(() => {
+    if (!showList) return;
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-mention-idx="${safeHighlightIdx}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [showList, safeHighlightIdx]);
+
+  const textareaClass = `${className}${autoResize ? " resize-none overflow-hidden" : ""}`;
+  const activeLinkUrl = richFormatting && caretLink >= 0 ? linkUrls[caretLink] : undefined;
+  const activeLinkHref = activeLinkUrl ? safeExternalHref(activeLinkUrl) : null;
+  const linkPanelSpacing = showFormattingToolbar ? "mx-0.5 mb-2" : "mx-2 mb-2 mt-1";
+
+  const editor = richFormatting ? (
+    <div className="relative">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+      >
+        <div
+          ref={mirrorInnerRef}
+          className={`${textareaClass} whitespace-pre-wrap break-words text-slate-900`}
+          dangerouslySetInnerHTML={{
+            __html: displayToMirrorHtml(displayValue, {
+              placeholder,
+              placeholderClass: showFormattingToolbar ? "text-slate-400" : "text-slate-500",
+              activeLink: linkTarget?.index ?? caretLink,
+            }),
+          }}
+        />
+      </div>
+      <textarea
+        ref={taRef}
+        value={displayValue}
+        onChange={onChangeInner}
+        onKeyDown={onKeyDown}
+        onClick={onSelectOrClick}
+        onSelect={onSelectOrClick}
+        onKeyUp={onSelectOrClick}
+        onFocus={() => setLinkTarget(null)}
+        onBlur={() => setCaretLink(-1)}
+        onScroll={onScrollMirror}
+        placeholder={undefined}
+        aria-label={placeholder}
+        disabled={disabled}
+        rows={autoResize ? 1 : rows}
+        className={`${textareaClass} relative z-[1] text-transparent caret-slate-900`}
+      />
+    </div>
+  ) : (
+    <textarea
+      ref={taRef}
+      value={displayValue}
+      onChange={onChangeInner}
+      onKeyDown={onKeyDown}
+      onClick={onSelectOrClick}
+      onSelect={onSelectOrClick}
+      onKeyUp={onSelectOrClick}
+      placeholder={placeholder}
+      disabled={disabled}
+      rows={autoResize ? 1 : rows}
+      className={textareaClass}
+    />
+  );
+
+  const linkPanel = !richFormatting ? null : linkTarget ? (
+    <div
+      className={`relative z-20 ${linkPanelSpacing} rounded-xl border border-slate-200 bg-white p-3 shadow-lg`}
+      role="group"
+      aria-label={linkTarget.index === null ? "Add link" : "Edit link"}
+      onMouseDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+          e.preventDefault();
+          applyLink();
+        } else if (e.key === "Escape") {
+          // Close the form, not the modal around the composer.
+          e.preventDefault();
+          e.stopPropagation();
+          closeLinkForm();
+        }
+      }}
+    >
+      <div className="space-y-2">
+        <label className="block text-xs font-medium text-slate-600">
+          URL
+          <input
+            type="url"
+            value={linkUrlDraft}
+            onChange={(e) => setLinkUrlDraft(e.target.value)}
+            placeholder="Paste a link"
+            className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            autoFocus
+          />
+        </label>
+        <label className="block text-xs font-medium text-slate-600">
+          Text to display
+          <input
+            type="text"
+            value={linkLabelDraft}
+            onChange={(e) => setLinkLabelDraft(e.target.value)}
+            placeholder="Link label"
+            className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+          />
+        </label>
+      </div>
+      <div className="mt-3 flex items-center justify-end gap-2">
+        {linkTarget.index !== null ? (
+          <button
+            type="button"
+            className="mr-auto rounded-lg px-2 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+            onClick={() => removeLink(linkTarget.index!)}
+          >
+            Remove link
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+          onClick={closeLinkForm}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+          disabled={!normalizeCommunityPostLinkUrl(linkUrlDraft)}
+          onClick={applyLink}
+        >
+          {linkTarget.index === null ? "Add link" : "Save"}
+        </button>
+      </div>
+    </div>
+  ) : activeLinkUrl ? (
+    // Caret is in a link: show where it goes, with edit and remove.
+    <div
+      className={`${linkPanelSpacing} flex min-w-0 items-center gap-1 rounded-lg border border-slate-200 bg-white py-1 pl-2.5 pr-1 text-sm shadow-sm`}
+    >
+      <Link2 className="h-3.5 w-3.5 shrink-0 text-slate-400" strokeWidth={2} aria-hidden />
+      {activeLinkHref ? (
+        <a
+          href={activeLinkHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={activeLinkUrl}
+          className="min-w-0 flex-1 truncate text-blue-600 hover:underline"
+          onMouseDown={preventToolbarBlur}
+        >
+          {prettyLinkUrl(activeLinkUrl)}
+        </a>
+      ) : (
+        <span className="min-w-0 flex-1 truncate text-slate-500">{activeLinkUrl}</span>
+      )}
+      <button
+        type="button"
+        className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+        onMouseDown={preventToolbarBlur}
+        onClick={() => editLink(caretLink)}
+      >
+        Edit
+      </button>
+      <button
+        type="button"
+        className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+        onMouseDown={preventToolbarBlur}
+        onClick={() => removeLink(caretLink)}
+      >
+        Remove
+      </button>
+    </div>
+  ) : null;
+
   return (
     <div className="relative">
       {showFormattingToolbar ? (
         <div className="border-b border-slate-200 transition focus-within:border-sky-500">
-          <div className="relative">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-            >
-              <div
-                ref={mirrorInnerRef}
-                className={`${className}${autoResize ? " resize-none overflow-hidden" : ""} whitespace-pre-wrap break-words text-slate-900`}
-                dangerouslySetInnerHTML={{
-                  __html: displayToMirrorHtml(displayValue, placeholder),
-                }}
-              />
-            </div>
-            <textarea
-              ref={taRef}
-              value={displayValue}
-              onChange={onChangeInner}
-              onKeyDown={onKeyDown}
-              onClick={onSelectOrClick}
-              onSelect={onSelectOrClick}
-              onKeyUp={onSelectOrClick}
-              onScroll={onScrollMirror}
-              placeholder={undefined}
-              disabled={disabled}
-              rows={autoResize ? 1 : rows}
-              className={`${className}${autoResize ? " resize-none overflow-hidden" : ""} relative z-[1] text-transparent caret-slate-900`}
-            />
-          </div>
+          {editor}
           <div className="mb-1.5 mt-1.5 flex flex-wrap items-center gap-1.5 px-0.5">
             <button
               type="button"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition hover:bg-slate-50"
               onMouseDown={preventToolbarBlur}
-              onClick={() => applyWrappedSelection("**", "**")}
+              onClick={toggleBold}
               aria-label="Bold"
               title="Bold"
             >
@@ -901,11 +1256,8 @@ export function MentionTextarea({
             <button
               type="button"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition hover:bg-slate-50"
-              onMouseDown={(e) => {
-                preventToolbarBlur(e);
-                captureTextareaSelection();
-              }}
-              onClick={openLinkModal}
+              onMouseDown={preventToolbarBlur}
+              onClick={openLink}
               aria-label="Link"
               title="Link — select text, then add URL"
             >
@@ -941,74 +1293,20 @@ export function MentionTextarea({
               <span className="leading-none">Course</span>
             </button>
           </div>
-          {linkModalOpen ? (
-            <div
-              className="relative z-20 mx-0.5 mb-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
-              role="dialog"
-              aria-label="Add link"
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <div className="space-y-2">
-                <label className="block text-xs font-medium text-slate-600">
-                  URL
-                  <input
-                    type="url"
-                    value={linkUrlDraft}
-                    onChange={(e) => setLinkUrlDraft(e.target.value)}
-                    placeholder="https://example.com"
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-                    autoFocus
-                  />
-                </label>
-                <label className="block text-xs font-medium text-slate-600">
-                  Text to display
-                  <input
-                    type="text"
-                    value={linkLabelDraft}
-                    onChange={(e) => setLinkLabelDraft(e.target.value)}
-                    placeholder="Link label"
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-                  />
-                </label>
-              </div>
-              <div className="mt-3 flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-                  onClick={() => setLinkModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-                  disabled={!normalizeCommunityPostLinkUrl(linkUrlDraft)}
-                  onClick={() => applyMarkdownLink()}
-                >
-                  Add link
-                </button>
-              </div>
-            </div>
-          ) : null}
+          {linkPanel}
         </div>
       ) : (
-        <textarea
-          ref={taRef}
-          value={displayValue}
-          onChange={onChangeInner}
-          onKeyDown={onKeyDown}
-          onClick={onSelectOrClick}
-          onSelect={onSelectOrClick}
-          onKeyUp={onSelectOrClick}
-          placeholder={placeholder}
-          disabled={disabled}
-          rows={autoResize ? 1 : rows}
-          className={`${className}${autoResize ? " resize-none overflow-hidden" : ""}`}
-        />
+        <>
+          {editor}
+          {linkPanel}
+        </>
       )}
-      {showList ? (
+      {showList && listPos
+        ? createPortal(
         <ul
-          className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+          ref={listRef}
+          className="fixed z-[300] overflow-auto overscroll-contain rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+          style={listPos}
           role="listbox"
         >
           {mentionLoading && mentionUsers.length === 0 ? (
@@ -1020,7 +1318,12 @@ export function MentionTextarea({
               const next = mentionUsers[idx + 1];
               const showDivider = Boolean(u.broadcast) && next && !next.broadcast;
               return (
-                <li key={u.id} role="option" aria-selected={idx === safeHighlightIdx}>
+                <li
+                  key={u.id}
+                  role="option"
+                  aria-selected={idx === safeHighlightIdx}
+                  data-mention-idx={idx}
+                >
                   <button
                     type="button"
                     className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
@@ -1065,8 +1368,10 @@ export function MentionTextarea({
               );
             })
           )}
-        </ul>
-      ) : null}
+        </ul>,
+            document.body
+          )
+        : null}
 
       <AcademyMentionPicker
         open={pickerOpen}
@@ -1074,6 +1379,52 @@ export function MentionTextarea({
         onClose={() => setPickerOpen(false)}
         onPick={insertEntityMention}
       />
+    </div>
+  );
+}
+
+/**
+ * Bold + link buttons for a comment composer's own action row. Point
+ * `editorRef` at the `formatRef` of a MentionTextarea with `inlineFormatting`.
+ */
+export function CommentFormatButtons({
+  editorRef,
+  size = "md",
+  className = "",
+}: {
+  editorRef: RefObject<MentionTextareaHandle | null>;
+  size?: "sm" | "md";
+  className?: string;
+}) {
+  const buttonClass = `inline-flex ${
+    size === "md" ? "h-9 w-9" : "h-8 w-8"
+  } shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600`;
+  const iconClass = size === "md" ? "h-[1.125rem] w-[1.125rem]" : "h-4 w-4";
+  // Keep focus (and the selection) in the textarea while clicking.
+  const keepFocus = (e: React.MouseEvent) => e.preventDefault();
+
+  return (
+    <div className={`flex items-center ${className}`}>
+      <button
+        type="button"
+        className={buttonClass}
+        onMouseDown={keepFocus}
+        onClick={() => editorRef.current?.toggleBold()}
+        aria-label="Bold"
+        title="Bold"
+      >
+        <Bold className={iconClass} strokeWidth={2.25} />
+      </button>
+      <button
+        type="button"
+        className={buttonClass}
+        onMouseDown={keepFocus}
+        onClick={() => editorRef.current?.openLink()}
+        aria-label="Add link"
+        title="Add link (select the words to link first)"
+      >
+        <Link2 className={iconClass} strokeWidth={2} />
+      </button>
     </div>
   );
 }

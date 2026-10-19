@@ -56,7 +56,7 @@ function resolveHubCourseId(
 }
 
 /**
- * Top-level My Actions path card for a lesson (Get Calls, Win Clients, …).
+ * Top-level action path card for a lesson (Get Calls, Win Clients, …).
  */
 export function classroomActionPathTitleForLesson(
   storedCourseId: string,

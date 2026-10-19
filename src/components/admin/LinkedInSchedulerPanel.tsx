@@ -14,6 +14,11 @@ import {
   BarChart3,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import {
+  ConnectGate,
+  LINKEDIN_CONNECT_DETAILS,
+} from "@/components/ui/ConnectGate";
 import { LinkedInComposeTab } from "./linkedin/LinkedInComposeTab";
 import {
   displayName,
@@ -388,51 +393,22 @@ export function LinkedInSchedulerPanel() {
     );
   }
 
-  if (connected === false) {
-    return (
-      <div className="mx-auto max-w-lg rounded-3xl border border-slate-200/80 bg-white px-8 py-12 text-center shadow-sm">
-        <div
-          className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-md"
-          style={{ backgroundColor: LI_BLUE }}
-        >
-          in
-        </div>
-        <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">
-          Connect LinkedIn
-        </h2>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
-          One LinkedIn connect powers Content and Campaigns. Compose, schedule,
-          and publish from here.
-        </p>
-        <button
-          type="button"
-          disabled={connecting}
-          onClick={() => void handleConnect()}
-          className="mt-7 inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
-          style={{ backgroundColor: LI_BLUE }}
-        >
-          {connecting ? "Redirecting…" : "Connect LinkedIn"}
-        </button>
-        {linkedinStatus && linkedinStatus !== "connected" ? (
-          <p className="mt-4 text-xs text-amber-700">
-            Status: {linkedinStatus.replaceAll("_", " ")}
-          </p>
-        ) : null}
-        {actionMessage ? (
-          <p className={`mt-3 text-xs ${actionTone === "error" ? "text-rose-700" : "text-slate-600"}`}>
-            {actionMessage}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
+  // Not connected: the composer shows blurred under a connect card, since
+  // every action here (drafts included) posts through LinkedIn.
+  const locked = connected === false;
+  const shownTab: TabId = locked ? "compose" : tab;
   const draftCount = items.filter((i) => i.status === "draft").length;
   const scheduledCount = items.filter((i) => i.status === "scheduled").length;
 
   return (
     <div className="space-y-5">
-      {(actionMessage || linkedinStatus === "connected") && (
+      {locked && linkedinStatus && linkedinStatus !== "connected" ? (
+        <div className="rounded-2xl bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+          LinkedIn didn&apos;t finish connecting (
+          {linkedinStatus.replaceAll("_", " ")}). Try again below.
+        </div>
+      ) : null}
+      {(actionMessage || (linkedinStatus === "connected" && !locked)) && (
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm ${
             actionTone === "success" || linkedinStatus === "connected"
@@ -446,12 +422,28 @@ export function LinkedInSchedulerPanel() {
         </div>
       )}
 
+      <ConnectGate
+        locked={locked}
+        align="top"
+        className="min-h-[30rem] rounded-3xl"
+        contentClassName="space-y-5"
+        icon={<LinkedInSolidIcon className="h-full w-full" />}
+        title="Connect LinkedIn"
+        description="Write, schedule and publish your LinkedIn posts from here, and see how each one lands."
+        action={{
+          label: "Connect LinkedIn",
+          onClick: () => void handleConnect(),
+          busy: connecting,
+          busyLabel: "Opening LinkedIn…",
+        }}
+        details={LINKEDIN_CONNECT_DETAILS}
+      >
       {/* Floating tab bar — no enclosing card chrome */}
       <div className="flex flex-wrap items-center gap-2">
         <nav className="inline-flex flex-wrap gap-1 rounded-full bg-slate-100/90 p-1 shadow-inner">
           {TABS.map((t) => {
             const Icon = t.icon;
-            const active = tab === t.id;
+            const active = shownTab === t.id;
             const badge =
               t.id === "library"
                 ? draftCount
@@ -491,7 +483,7 @@ export function LinkedInSchedulerPanel() {
       </div>
 
       <div>
-        {tab === "compose" ? (
+        {shownTab === "compose" ? (
           <LinkedInComposeTab
             connected={!!connected}
             profile={profile}
@@ -503,7 +495,7 @@ export function LinkedInSchedulerPanel() {
             onSeedConsumed={() => setSeed(null)}
           />
         ) : null}
-        {tab === "queue" ? (
+        {shownTab === "queue" ? (
           !scheduledReady ? (
             <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -523,7 +515,7 @@ export function LinkedInSchedulerPanel() {
           />
           )
         ) : null}
-        {tab === "calendar" ? (
+        {shownTab === "calendar" ? (
           !scheduledReady ? (
             <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -536,7 +528,7 @@ export function LinkedInSchedulerPanel() {
           />
           )
         ) : null}
-        {tab === "library" ? (
+        {shownTab === "library" ? (
           !scheduledReady ? (
             <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -555,7 +547,7 @@ export function LinkedInSchedulerPanel() {
           />
           )
         ) : null}
-        {tab === "insights" ? (
+        {shownTab === "insights" ? (
           !scheduledReady ? (
             <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -569,7 +561,7 @@ export function LinkedInSchedulerPanel() {
           />
           )
         ) : null}
-        {tab === "settings" ? (
+        {shownTab === "settings" ? (
           <div className="mx-auto max-w-lg space-y-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 overflow-hidden rounded-full bg-slate-200">
@@ -711,6 +703,7 @@ export function LinkedInSchedulerPanel() {
           </div>
         ) : null}
       </div>
+      </ConnectGate>
     </div>
   );
 }

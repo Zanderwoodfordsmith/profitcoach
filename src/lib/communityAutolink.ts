@@ -41,6 +41,38 @@ function tryParseHttpUrl(rawFromRegex: string): { href: string; display: string 
   }
 }
 
+/** http(s), mailto and tel only; anything else (javascript:, mention:, …) is not a link. */
+export function safeExternalHref(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return ["http:", "https:", "mailto:", "tel:"].includes(u.protocol) ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
+const MARKDOWN_LINK_REGEX = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
+
+/**
+ * `splitTextWithHttpUrls` plus `[label](url)` links (the comment link button
+ * writes these). A link with an unsafe URL stays as literal text.
+ */
+export function splitTextWithLinks(text: string): TextAutolinkSegment[] {
+  const re = new RegExp(MARKDOWN_LINK_REGEX.source, "g");
+  const out: TextAutolinkSegment[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const href = safeExternalHref(m[2] ?? "");
+    if (!href) continue;
+    if (m.index > last) out.push(...splitTextWithHttpUrls(text.slice(last, m.index)));
+    out.push({ type: "url", href, label: m[1] ?? "" });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(...splitTextWithHttpUrls(text.slice(last)));
+  return out;
+}
+
 /** Split plain text into literal spans and http(s) URLs (for comment / preview bodies). */
 export function splitTextWithHttpUrls(text: string): TextAutolinkSegment[] {
   const re = new RegExp(HTTP_URL_REGEX.source, "gi");

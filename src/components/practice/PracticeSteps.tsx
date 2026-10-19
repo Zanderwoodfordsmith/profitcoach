@@ -62,8 +62,9 @@ export function PracticeSteps() {
 
 function stepNote(id: PracticeStepId, state: PracticeStepState, pamBooked: boolean): string | null {
   if (state === "done") return null;
-  if (state === "waiting") return "Upcoming";
   if (id === "pam" && pamBooked) return "Booked";
+  // Not "Upcoming": nothing is booked yet, so the step says nothing.
+  if (state === "waiting") return null;
   return "Now";
 }
 

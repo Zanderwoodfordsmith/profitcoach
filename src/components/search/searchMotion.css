@@ -1,0 +1,219 @@
+/*
+ * Search start screen and results arrive with a short fade once the box has
+ * started to move. The box itself slides with a FLIP in SearchPage.
+ */
+.search-fade-in {
+  animation: search-fade-in 320ms cubic-bezier(0.16, 1, 0.3, 1) 90ms both;
+}
+
+@keyframes search-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-fade-in {
+    animation: search-fade-in-plain 160ms ease both;
+  }
+}
+
+@keyframes search-fade-in-plain {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * Search overlay, after the Figma glassmorphism recipe: a see-through white
+ * fill, a 40px background blur, a subtle white border, an inner glow and a
+ * soft drop shadow. Only the panel blurs what is behind it; the rest of the
+ * page (sidebar included) stays sharp under a faint dim. Our text is dark, so
+ * the fill is whiter than the recipe's 20%, which assumes white text.
+ *
+ * Write only the standard backdrop-filter: the CSS build adds Safari's prefix
+ * itself, and given both it kept only the prefixed one, which Chrome ignores.
+ * Deliberately no prefers-reduced-transparency override: Zander wants the glass
+ * even with macOS "Reduce transparency" on (Oct 2026).
+ */
+.search-dialog::backdrop {
+  /* Brand navy, lighter behind the panel and deeper at the screen edges, so
+     the glass pops while the page stays readable. No blur. */
+  background: radial-gradient(
+    70% 60% at 58% 38%,
+    rgb(5 30 54 / 0.14),
+    rgb(5 30 54 / 0.38)
+  );
+  animation: search-backdrop-in 200ms ease-out both;
+}
+
+/*
+ * The page content (never the sidebar or title bar) steps back as soon as search opens:
+ * blurred and a touch more navy, and a little more once results show.
+ * Sits between the backdrop and the panel; clicks pass through to close.
+ */
+.search-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: rgb(5 30 54 / 0.14);
+  backdrop-filter: blur(8px);
+  animation: search-scrim-in 280ms ease-out;
+  transition:
+    backdrop-filter 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.search-scrim-active {
+  background-color: rgb(5 30 54 / 0.2);
+  backdrop-filter: blur(12px);
+}
+
+/* Fades in from a sharp page; only "from", so the class values take over after. */
+@keyframes search-scrim-in {
+  from {
+    background-color: rgb(5 30 54 / 0);
+    backdrop-filter: none;
+  }
+}
+
+/* Phone: the panel fills the screen, so it stays close to solid. */
+.search-dialog-panel {
+  background: rgb(248 250 252 / 0.9);
+  backdrop-filter: blur(30px) saturate(160%);
+}
+
+@media (min-width: 640px) {
+  /* Insets are the sidebar and AI panel widths, measured when it opens. */
+  .search-dialog {
+    padding-left: calc(var(--search-inset-left, 0px) + 1.5rem);
+    padding-right: calc(var(--search-inset-right, 0px) + 1.5rem);
+  }
+
+  /* Keep the app chrome sharp: sidebar, title bar and a docked AI panel. */
+  .search-scrim {
+    top: var(--search-inset-top, 0px);
+    left: var(--search-inset-left, 0px);
+    right: var(--search-inset-right, 0px);
+  }
+
+  .search-dialog-panel {
+    background:
+      radial-gradient(90% 60% at 0% 0%, rgb(56 189 248 / 0.12), transparent 60%),
+      linear-gradient(140deg, rgb(255 255 255 / 0.64) 0%, rgb(255 255 255 / 0.44) 100%);
+    backdrop-filter: blur(48px) saturate(170%);
+    box-shadow:
+      inset 0 0 24px rgb(255 255 255 / 0.3),
+      inset 0 -1px 0 rgb(56 189 248 / 0.18),
+      0 0 0 0.5px rgb(15 23 42 / 0.1),
+      0 28px 70px -20px rgb(5 30 54 / 0.5),
+      0 0 56px -14px rgb(56 189 248 / 0.35);
+  }
+
+  /* Iridescent edge: a 1px ring that runs bright white at the top left,
+     through sky, like light travelling round the edge of real glass. */
+  .search-dialog-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      140deg,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(186 230 253 / 0.7) 28%,
+      rgb(255 255 255 / 0.25) 52%,
+      rgb(125 211 252 / 0.6) 80%,
+      rgb(255 255 255 / 0.75) 100%
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+.search-dialog[open] .search-dialog-panel {
+  animation: search-panel-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The box is glass on glass: a little lighter, with a bright top edge. */
+.search-glass-field {
+  background: rgb(255 255 255 / 0.5);
+  border: 1px solid rgb(255 255 255 / 0.75);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 8px 24px -14px rgb(5 30 54 / 0.45);
+  transition:
+    border-color 200ms,
+    box-shadow 200ms,
+    background-color 200ms;
+}
+
+.search-glass-field:focus-within {
+  background: rgb(255 255 255 / 0.62);
+  border-color: rgb(56 189 248 / 0.8);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 0 0 4px rgb(56 189 248 / 0.22),
+    0 8px 24px -14px rgb(5 30 54 / 0.45);
+}
+
+/* Ask AI wears the brand gradient (navy to sky). */
+.search-ask-ai {
+  background: linear-gradient(135deg, #0c5290 0%, #1a8fd4 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 4px 14px -6px rgb(12 82 144 / 0.7);
+}
+
+.search-ask-ai:hover {
+  background: linear-gradient(135deg, #051e36 0%, #0c5290 55%, #1a8fd4 100%);
+}
+
+/* No blur support: a solid panel so text never sits on raw page content. */
+@supports not (backdrop-filter: blur(1px)) {
+  .search-dialog-panel {
+    background: rgb(240 246 252);
+  }
+}
+
+html:has(.search-dialog[open]) {
+  overflow: hidden;
+}
+
+@keyframes search-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes search-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-dialog[open] .search-dialog-panel {
+    animation: search-fade-in-plain 140ms ease both;
+  }
+}

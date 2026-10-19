@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { ArrowUp, Loader2, Mic, PhoneOff, Square } from "lucide-react";
 
+import { AvaOrb } from "@/components/ava/AvaKit";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import type { AvaCallProtocol } from "@/lib/practiceKnowledge/intakeCall";
 
@@ -131,6 +132,7 @@ function TurnCall({
       done={done}
       bookPath={bookPath}
       status={voice.recording ? "Listening" : avaSpeaking ? "Ava is speaking" : busy ? "Ava is thinking" : "Your turn"}
+      orb={avaSpeaking ? "speaking" : voice.recording ? "listening" : "quiet"}
       onClose={onClose}
     >
       <Transcript
@@ -278,6 +280,7 @@ function LiveCall({
       done={Boolean(knowledge?.interview_completed_at)}
       bookPath={bookPath}
       status={label}
+      orb={!connected ? "quiet" : isSpeaking ? "speaking" : "listening"}
       onClose={() => {
         endSession();
         onClose();
@@ -301,6 +304,7 @@ function CallFrame({
   done,
   bookPath,
   status,
+  orb,
   onClose,
   children,
 }: {
@@ -308,25 +312,26 @@ function CallFrame({
   done: boolean;
   bookPath: string;
   status: string;
+  /** The orb answers the call: swells while Ava speaks, breathes while she listens. */
+  orb: "speaking" | "listening" | "quiet";
   onClose: () => void;
   children: ReactNode;
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--bp-rule)] px-4 py-2.5">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-[var(--bp-ink)]">
-            {protocol === "intake" ? "First call" : "Follow-up"}
-          </p>
-          <p className="text-xs text-[var(--bp-faint)]">{status}</p>
-        </div>
+      <div className="flex shrink-0 flex-col items-center border-b border-[var(--bp-rule)] px-4 pb-4 pt-6 text-center">
+        <AvaOrb size={76} motion state={orb} />
+        <p className="mt-4 text-sm font-semibold text-[var(--bp-ink)]">{protocol === "intake" ? "First call" : "Follow-up"}</p>
+        <p className="mt-0.5 text-xs font-medium text-[var(--bp-muted)]" aria-live="polite">
+          {status}
+        </p>
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#9b1c1c] px-3 py-1.5 text-xs font-semibold text-white"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#9b1c1c] px-3.5 py-1.5 text-xs font-semibold text-white outline-none transition-colors hover:bg-[#7f1d1d] focus-visible:ring-2 focus-visible:ring-[#f3c7c7]"
         >
           <PhoneOff className="h-3.5 w-3.5" aria-hidden />
-          End
+          End call
         </button>
       </div>
       <div className="bp-scroll min-h-0 flex-1 overflow-y-auto py-4">{children}</div>

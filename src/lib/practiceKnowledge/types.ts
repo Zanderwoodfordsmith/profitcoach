@@ -219,7 +219,7 @@ export type PracticeKnowledgePayload = {
     geography_pref: Sourced<GeographyPref> | null;
     buyer_roles: Sourced<string[]> | null;
   };
-  /** The person every message is written to. Filled on Who You Help. */
+  /** The person every message is written to. Filled on Your Ideal Client. */
   client: {
     characteristics: Sourced<string[]> | null;
     habitat: Sourced<string[]> | null;
@@ -354,6 +354,8 @@ export type BuiltSection = {
   model: string;
   /** Set when the coach or an admin changed the text after it was written. */
   edited_at?: string | null;
+  /** The version before Ava's last change, so she can put it back. replaced_at is that change's edited_at. */
+  previous?: (Omit<BuiltSection, "previous"> & { replaced_at: string }) | null;
 };
 
 export type PracticeKnowledgeRow = {

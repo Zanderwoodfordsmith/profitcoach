@@ -157,6 +157,186 @@
   filter: blur(8px);
 }
 
+/*
+ * Overview contents: glass cards after the search overlay's recipe
+ * (src/components/search/searchMotion.css). The app canvas is nearly flat, so
+ * a soft light behind each group gives the glass something to pick up.
+ * No grid behind the cards: Zander found it messy (19 Oct).
+ * Write only the standard backdrop-filter: the CSS build adds Safari's prefix.
+ */
+.bp-home-field {
+  position: relative;
+  isolation: isolate;
+  /* The group lights bleed past the column; clip sideways only, so menus can still drop down. */
+  overflow-x: clip;
+}
+
+.bp-home-group {
+  position: relative;
+}
+
+/* Sky light behind each group, alternating sides; the glass picks it up as a tint. */
+.bp-home-group::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -2rem;
+  left: -20%;
+  width: 75%;
+  height: calc(100% + 4rem);
+  background: radial-gradient(closest-side, rgba(26, 143, 212, 0.22), rgba(26, 143, 212, 0));
+  pointer-events: none;
+}
+
+.bp-home-group-alt::before {
+  left: auto;
+  right: -20%;
+  background: radial-gradient(closest-side, rgba(12, 82, 144, 0.16), rgba(12, 82, 144, 0));
+}
+
+.bp-glass-card {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0);
+  background-image:
+    radial-gradient(80% 140% at 0% 0%, rgba(56, 189, 248, 0.08), transparent 60%),
+    linear-gradient(140deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.46) 100%);
+  backdrop-filter: blur(16px) saturate(170%);
+  box-shadow:
+    inset 0 0 20px rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(56, 189, 248, 0.16),
+    0 0 0 0.5px rgba(15, 23, 42, 0.07),
+    0 14px 30px -20px rgba(5, 30, 54, 0.5);
+  transition:
+    background-color 200ms ease-out,
+    box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 240ms ease-out;
+}
+
+/* Iridescent edge: a 1px ring, bright white at the top left, through sky. */
+.bp-glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(186, 230, 253, 0.75) 28%,
+    rgba(255, 255, 255, 0.3) 52%,
+    rgba(125, 211, 252, 0.65) 80%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.85;
+  transition: opacity 240ms ease-out;
+  pointer-events: none;
+}
+
+.bp-glass-card:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 20px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(56, 189, 248, 0.26),
+    0 0 0 0.5px rgba(15, 23, 42, 0.07),
+    0 18px 34px -18px rgba(5, 30, 54, 0.5),
+    0 0 40px -14px rgba(56, 189, 248, 0.45);
+}
+
+.bp-glass-card:hover::before {
+  opacity: 1;
+}
+
+.bp-glass-card:focus-visible {
+  outline: 2px solid #1a8fd4;
+  outline-offset: 2px;
+}
+
+/* The handover between the coach's cards and what BCA builds: the cover's gradient, with a soft light. */
+.bp-build-strip {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(110deg, #051e36 0%, #0c5290 55%, #1a8fd4 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 18px 36px -22px rgba(5, 30, 54, 0.7);
+}
+
+.bp-build-strip::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -60%;
+  left: 50%;
+  width: 70%;
+  aspect-ratio: 2;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(125, 211, 252, 0.35), rgba(125, 211, 252, 0));
+  pointer-events: none;
+}
+
+/* The BCA mark as a small glass coin on the strip. */
+.bp-build-mark {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 6px 16px -8px rgba(5, 30, 54, 0.8);
+}
+
+/*
+ * Before the coach has answered their own cards, what BCA builds sits back.
+ * Still readable and clickable; a card comes forward when you point at it.
+ */
+.bp-home-quiet h2,
+.bp-home-quiet .bp-glass-card {
+  opacity: 0.5;
+}
+
+.bp-home-quiet .bp-glass-card:hover,
+.bp-home-quiet .bp-glass-card:focus-visible {
+  opacity: 0.9;
+}
+
+/* The icon tile is glass on glass: a little lighter, with a bright top edge. */
+.bp-glass-tile {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.92) 0%, rgba(214, 234, 250, 0.75) 100%);
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 6px 14px -8px rgba(12, 82, 144, 0.4);
+  transition: box-shadow 200ms ease-out;
+}
+
+.bp-glass-card:hover .bp-glass-tile {
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    inset 0 0 0 1px rgba(186, 230, 253, 0.9),
+    0 8px 18px -8px rgba(26, 143, 212, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-glass-card:hover {
+    transform: none;
+  }
+}
+
+/* No blur support: near-solid cards so text never sits on the grid. */
+@supports not (backdrop-filter: blur(1px)) {
+  .bp-glass-card {
+    background-image: none;
+    background-color: rgba(255, 255, 255, 0.92);
+  }
+}
+
 .bp-table th {
   background: var(--bp-tint-strong);
   color: var(--bp-blue);
@@ -262,6 +442,9 @@
     --bp-muted: #55657a;
     --bp-faint: #8595a8;
   }
+  .bp-home-group::before {
+    display: none;
+  }
   .bp-table th,
   .bp-tinted {
     -webkit-print-color-adjust: exact;
@@ -294,5 +477,28 @@
 @media (prefers-reduced-motion: reduce) {
   .bp-status-guide-dialog {
     animation: none;
+  }
+}
+
+/* Ava showing a section: a soft sky ring that fades, so the eye lands on it. */
+.bp-ava-focus {
+  scroll-margin-top: 1.5rem;
+  animation: bp-ava-focus 2.6s ease-out;
+}
+
+@keyframes bp-ava-focus {
+  0%,
+  40% {
+    box-shadow: 0 0 0 3px rgba(26, 143, 212, 0.5), 0 0 0 10px rgba(26, 143, 212, 0.12);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(26, 143, 212, 0), 0 0 0 10px rgba(26, 143, 212, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-ava-focus {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(26, 143, 212, 0.5);
   }
 }

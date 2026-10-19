@@ -4,6 +4,18 @@ export type SearchTab = "community" | "classroom" | "members";
 
 export const DEFAULT_SEARCH_TAB: SearchTab = "classroom";
 
+/** The search page's box; the top bar focuses it when search is already open. */
+export const SEARCH_INPUT_ID = "app-search-input";
+
+/** A lesson the viewer opened, for the search start screen. */
+export type SearchRecentLesson = {
+  lesson_id: string;
+  course_id: string;
+  title: string;
+  course_title: string;
+  viewed_at: string;
+};
+
 export type SearchCounts = {
   community: number;
   classroom: number;
@@ -95,6 +107,15 @@ export type SearchResponse = {
   counts: SearchCounts;
   total: number;
   items: SearchCommunityItem[] | SearchClassroomItem[] | SearchMemberItem[];
+};
+
+/** Top hits from every tab at once, for the search overlay. */
+export type SearchPreview = {
+  q: string;
+  counts: SearchCounts;
+  classroom: SearchClassroomItem[];
+  community: SearchCommunityItem[];
+  members: SearchMemberItem[];
 };
 
 export function isSearchTab(value: string | null | undefined): value is SearchTab {

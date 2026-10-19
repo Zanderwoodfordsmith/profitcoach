@@ -77,6 +77,12 @@ export type VoiceTone = Record<ToneKey, number>;
 
 export const TONE_MIDDLE: VoiceTone = { respect: 3, humour: 3, formality: 3, energy: 3, confidence: 3 };
 
+/**
+ * Where the sliders start, and what the writers use until the coach moves one:
+ * conversational and confident, mostly serious, as owners read a LinkedIn message.
+ */
+export const TONE_START: VoiceTone = { respect: 3, humour: 2, formality: 4, energy: 3, confidence: 4 };
+
 function stop(value: unknown): number | null {
   const n = Math.round(Number(value));
   return Number.isFinite(n) && n >= 1 && n <= 5 ? n : null;

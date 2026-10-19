@@ -1,45 +1,17 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import {
-  normalizeScores,
-  SIGNATURE_MODULE_IDS,
-  type SignatureModuleId,
-  type SignatureScore,
-} from "@/lib/signatureModelV2";
 
 import type { CoachAiContext } from "./types";
 
-function formatScoresCompact(
-  scores: Record<SignatureModuleId, SignatureScore>
-): string {
-  const parts: string[] = [];
-  for (const id of SIGNATURE_MODULE_IDS) {
-    const v = scores[id];
-    if (v == null) continue;
-    parts.push(`${id}:${v}`);
-  }
-  if (parts.length === 0) return "No signature module scores recorded yet.";
-  return parts.join(", ");
-}
-
 /**
- * Text block for system prompt: compass scores + ladder goal fields.
+ * Text block for system prompt: ladder goal fields. Compass self-scores are
+ * admin-only now, so they stay out of the coach's prompt.
  */
-export async function loadCompassSummaryForUser(userId: string): Promise<string> {
-  const [{ data: scoreRow }, { data: prof }] = await Promise.all([
-    supabaseAdmin
-      .from("coach_signature_scores")
-      .select("scores")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabaseAdmin
-      .from("profiles")
-      .select("ladder_goal_level, ladder_goal_target_date")
-      .eq("id", userId)
-      .maybeSingle(),
-  ]);
-
-  const scores = normalizeScores((scoreRow?.scores as object) ?? {});
-  const scoreLine = formatScoresCompact(scores);
+export async function loadLadderSummaryForUser(userId: string): Promise<string> {
+  const { data: prof } = await supabaseAdmin
+    .from("profiles")
+    .select("ladder_goal_level, ladder_goal_target_date")
+    .eq("id", userId)
+    .maybeSingle();
 
   const p = prof as {
     ladder_goal_level?: string | null;
@@ -51,11 +23,9 @@ export async function loadCompassSummaryForUser(userId: string): Promise<string>
   if (p?.ladder_goal_target_date)
     ladderParts.push(`goal_target_date=${p.ladder_goal_target_date}`);
 
-  return [
-    "**Signature (module: R/Y/G)**",
-    scoreLine,
-    ladderParts.length > 0 ? `**Ladder:** ${ladderParts.join(", ")}` : "**Ladder:** (not set)",
-  ].join("\n");
+  return ladderParts.length > 0
+    ? `**Ladder:** ${ladderParts.join(", ")}`
+    : "**Ladder:** (not set)";
 }
 
 export async function loadCoachAiContextRow(

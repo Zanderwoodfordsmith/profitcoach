@@ -130,11 +130,24 @@ export function sanitizeBuiltSections(raw: unknown): Record<string, BuiltSection
     const v = rec(value);
     const blocks = sanitizeBlocks(v.blocks);
     if (!/^[a-z-]+:[a-z0-9-]+$/.test(key) || !blocks.length) continue;
+    const prev = rec(v.previous);
+    const prevBlocks = sanitizeBlocks(prev.blocks);
     out[key] = {
       blocks,
       generated_at: clip(v.generated_at, 40),
       model: clip(v.model, 80),
       edited_at: v.edited_at ? clip(v.edited_at, 40) : null,
+      ...(prevBlocks.length && prev.replaced_at
+        ? {
+            previous: {
+              blocks: prevBlocks,
+              generated_at: clip(prev.generated_at, 40),
+              model: clip(prev.model, 80),
+              edited_at: prev.edited_at ? clip(prev.edited_at, 40) : null,
+              replaced_at: clip(prev.replaced_at, 40),
+            },
+          }
+        : {}),
     };
   }
   return out;

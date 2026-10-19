@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Loader2 } from "lucide-react";
 
 import { WeeklyHoursEditor } from "@/components/booking/WeeklyHoursEditor";
@@ -23,7 +23,7 @@ import {
 } from "@/lib/shareLinks/socials";
 
 import { getCountries, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
-import { TONE_DIMENSIONS, TONE_MIDDLE, asVoiceTone, type VoiceTone } from "@/lib/practiceKnowledge/voiceTone";
+import { TONE_DIMENSIONS, TONE_START, asVoiceTone, type VoiceTone } from "@/lib/practiceKnowledge/voiceTone";
 
 import { usePractice } from "../PracticeProvider";
 import { InfoTip } from "./InfoTip";
@@ -36,6 +36,24 @@ const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 const PRIMARY_SOCIALS = ["linkedin", "instagram", "facebook"] as const;
 const MORE_SOCIALS = ["youtube", "tiktok", "x"] as const;
+
+/** Networks a coach can connect, so their messages come into the inbox. The link box still works without it. */
+type SocialProvider = "LINKEDIN" | "INSTAGRAM" | "MESSENGER";
+const SOCIAL_PROVIDER: Partial<Record<SocialNetwork, SocialProvider>> = {
+  linkedin: "LINKEDIN",
+  instagram: "INSTAGRAM",
+  facebook: "MESSENGER",
+};
+/** Set while a social connect is away at the provider, so a failed return is reported on the socials, not the email. */
+const SOCIAL_CONNECT_KEY = "bp-social-connect";
+
+function socialConnectPending(): boolean {
+  try {
+    return Boolean(window.sessionStorage.getItem(SOCIAL_CONNECT_KEY));
+  } catch {
+    return false;
+  }
+}
 
 const PREFERRED_HOURS: FieldSpec = {
   path: "working_times.preferred_hours",
@@ -129,15 +147,7 @@ function FieldLabel({
       <span className="text-[0.875rem] font-semibold text-[var(--bp-ink)]">{label}</span>
       {help ? <InfoTip label={label}>{help}</InfoTip> : null}
       {mark ? (
-        <span
-          className={`rounded-full px-2 py-px text-[0.6875rem] font-semibold ${
-            mark === "Needed"
-              ? "bg-[#fde8e6] text-[#9b2c2c]"
-              : "bg-[#fff4e0] text-[#8a5300]"
-          }`}
-        >
-          {mark}
-        </span>
+        <span className="rounded-full bg-[#fff4e0] px-2 py-px text-[0.6875rem] font-semibold text-[#8a5300]">{mark}</span>
       ) : null}
     </div>
   );
@@ -250,7 +260,7 @@ function PhoneRow({ field, changed }: { field: FieldSpec; changed?: boolean }) {
   const current = payload ? textAt(payload, field.path) : "";
   return (
     <div>
-      <FieldLabel label={field.label} help={field.help} mark={changed ? "Changed" : current ? undefined : field.required ? "Needed" : undefined} />
+      <FieldLabel label={field.label} help={field.help} mark={changed ? "Changed" : undefined} />
       <PhoneInput label={field.label} value={current} placeholder={field.example} disabled={sample} onCommit={(v) => saveField(field, v)} />
     </div>
   );
@@ -493,7 +503,7 @@ function CallHours({ field, changed }: { field: FieldSpec; changed?: boolean }) 
     window.setTimeout(() => setSaved(false), 1800);
   }
 
-  const mark = changed ? "Changed" : !existing ? "Needed" : undefined;
+  const mark = changed ? "Changed" : undefined;
 
   return (
     <div>
@@ -548,9 +558,11 @@ function EmailConnect({ field }: { field: FieldSpec }) {
   useEffect(() => {
     if (sample) return;
     const flag = new URLSearchParams(window.location.search).get("connected");
+    // A LinkedIn, Instagram or Facebook return belongs to the socials below.
+    const ours = flag === "GOOGLE" || flag === "OUTLOOK" || (flag === "failed" && !socialConnectPending());
     if (flag === "GOOGLE" || flag === "OUTLOOK") setJustConnected(flag);
-    if (flag === "failed") setError("Connection failed. Try again.");
-    if (flag) {
+    if (flag === "failed" && ours) setError("Connection failed. Try again.");
+    if (ours) {
       const url = new URL(window.location.href);
       url.searchParams.delete("connected");
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
@@ -665,11 +677,14 @@ function SocialField({
   value,
   onChange,
   onCommit,
+  action,
 }: {
   network: SocialNetwork;
   value: string;
   onChange: (value: string) => void;
   onCommit: () => void;
+  /** Connect, or Connected, beside the link box. */
+  action?: ReactNode;
 }) {
   const meta = SOCIAL_NETWORK_META[network];
   const id = `social-${network}`;
@@ -680,17 +695,20 @@ function SocialField({
         <label htmlFor={id} className="px-0.5 text-[0.875rem] font-semibold text-[var(--bp-ink)]">
           {meta.label}
         </label>
-        <input
-          id={id}
-          value={value}
-          placeholder={meta.placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onCommit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-          }}
-          className={INPUT}
-        />
+        <div className="flex min-w-0 items-center gap-2">
+          <input
+            id={id}
+            value={value}
+            placeholder={meta.placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={onCommit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+            className={`${INPUT} min-w-0 flex-1`}
+          />
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
       </div>
     </div>
   );
@@ -704,7 +722,90 @@ export function SetupSocials() {
   const [extra, setExtra] = useState<SocialNetwork[]>([]);
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<MailAccount[]>([]);
+  const [busy, setBusy] = useState<SocialProvider | null>(null);
+  const [justConnected, setJustConnected] = useState<SocialProvider | null>(null);
   const loaded = useRef(false);
+
+  // Back from LinkedIn, Instagram or Facebook: show it as connected, then load what is connected.
+  useEffect(() => {
+    if (sample) return;
+    const flag = new URLSearchParams(window.location.search).get("connected");
+    const social = Object.values(SOCIAL_PROVIDER).find((provider) => provider === flag) ?? null;
+    if (social || (flag === "failed" && socialConnectPending())) {
+      if (social) setJustConnected(social);
+      else setError("Connection failed. Try again.");
+      try {
+        window.sessionStorage.removeItem(SOCIAL_CONNECT_KEY);
+      } catch {
+        // Storage can be blocked; the flag in the address is enough.
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.delete("connected");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+    let cancel = false;
+    void (async () => {
+      const headers = await authHeaders();
+      if (!headers || cancel) return;
+      const res = await fetch("/api/coach/integrations/accounts", { headers });
+      const body = (await res.json().catch(() => ({}))) as { accounts?: MailAccount[] };
+      if (!cancel && res.ok) setAccounts(body.accounts ?? []);
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [sample, authHeaders]);
+
+  async function connect(provider: SocialProvider) {
+    if (sample) return;
+    setBusy(provider);
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Not signed in.");
+      const res = await fetch("/api/coach/integrations/accounts", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ provider, returnTo: "practice" }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (!res.ok || !body.url) throw new Error(body.error || "Could not start connect.");
+      try {
+        window.sessionStorage.setItem(SOCIAL_CONNECT_KEY, provider);
+      } catch {
+        // Without storage a failed return shows on the email instead. Still fine.
+      }
+      window.location.href = body.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start connect.");
+      setBusy(null);
+    }
+  }
+
+  function connectFor(network: SocialNetwork): ReactNode {
+    const provider = SOCIAL_PROVIDER[network];
+    if (!provider) return null;
+    const connected =
+      justConnected === provider ||
+      accounts.some((row) => row.provider.toUpperCase() === provider && row.status.toUpperCase() === "OK");
+    return connected ? (
+      <span className="inline-flex items-center gap-1 rounded-full bg-[#b6f3cc] px-2.5 py-1 text-xs font-semibold text-[#0e6a36]">
+        <Check className="h-3 w-3" aria-hidden />
+        Connected
+      </span>
+    ) : (
+      <button
+        type="button"
+        disabled={Boolean(busy) || sample}
+        onClick={() => void connect(provider)}
+        aria-label={`Connect ${SOCIAL_NETWORK_META[network].label}`}
+        className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-[var(--bp-ink)] ring-1 ring-[#e3e8ef] hover:ring-[#1a8fd4] disabled:opacity-50"
+      >
+        {busy === provider ? "Connecting…" : "Connect"}
+      </button>
+    );
+  }
 
   useEffect(() => {
     if (sample || loaded.current || !payload) return;
@@ -789,6 +890,7 @@ export function SetupSocials() {
             value={values[network] ?? ""}
             onChange={(value) => setValues((prev) => ({ ...prev, [network]: value }))}
             onCommit={() => void commit(network)}
+            action={connectFor(network)}
           />
         ))}
         {extra.map((network) => (
@@ -801,6 +903,9 @@ export function SetupSocials() {
           />
         ))}
       </div>
+      <p className="pl-[calc(9rem+0.75rem)] text-xs text-[var(--bp-muted)] max-[30rem]:pl-0">
+        Connect to bring your messages into your inbox, or just paste your link.
+      </p>
       {moreLeft.length ? (
         <div className="relative pl-[calc(9rem+0.75rem)] max-[30rem]:pl-0">
           <button
@@ -838,7 +943,7 @@ export function SetupSocials() {
 function ToneSliders({ field, changed }: { field: FieldSpec; changed?: boolean }) {
   const { payload, saveField, sample } = usePractice();
   const stored = payload ? asVoiceTone(fieldValue(payload, field.path)?.value) : null;
-  const [tone, setTone] = useState<VoiceTone>(stored ?? TONE_MIDDLE);
+  const [tone, setTone] = useState<VoiceTone>(stored ?? TONE_START);
   const [saved, setSaved] = useState(false);
   const storedKey = JSON.stringify(stored);
   const [seen, setSeen] = useState(storedKey);
@@ -859,7 +964,18 @@ function ToneSliders({ field, changed }: { field: FieldSpec; changed?: boolean }
     <div>
       {changed ? <FieldLabel label={field.label} mark="Changed" /> : null}
       {stored ? null : (
-        <p className="mb-3 px-0.5 text-sm text-[var(--bp-muted)]">Not set yet. BCA sets these from your call, or move them yourself.</p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-0.5">
+          <p className="text-sm text-[var(--bp-muted)]">A good place to start for business owners. Move any slider to sound more like you.</p>
+          {sample ? null : (
+            <button
+              type="button"
+              onClick={() => commit(tone)}
+              className="rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)]"
+            >
+              Keep this
+            </button>
+          )}
+        </div>
       )}
       <div className="space-y-4 rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-4 py-4 @xl:px-5">
         {TONE_DIMENSIONS.map((d) => {
@@ -914,5 +1030,55 @@ export function SetupWidget({ field, changed }: { field: FieldSpec; changed?: bo
   if (field.widget === "hours") return <CallHours field={field} changed={changed} />;
   if (field.widget === "email") return <EmailConnect field={field} />;
   if (field.widget === "tone") return <ToneSliders field={field} changed={changed} />;
+  if (field.widget === "switch") return <SwitchRow field={field} changed={changed} />;
   return null;
+}
+
+/**
+ * A two-option answer as an on/off switch: on is the first option, off the second.
+ * Until it is answered the switch sits off, with a link to choose off on purpose.
+ */
+function SwitchRow({ field, changed }: { field: FieldSpec; changed?: boolean }) {
+  const { payload, saveField, sample } = usePractice();
+  const [on, off] = field.options ?? [];
+  if (!payload || !on || !off) return null;
+  const current = textAt(payload, field.path);
+  const checked = current === on.value;
+  const chosen = checked ? on : current === off.value ? off : null;
+  return (
+    <div>
+      <FieldLabel label={field.label} help={field.help} mark={changed ? "Changed" : undefined} />
+      <div className="flex items-center gap-3 px-0.5">
+        <button
+          type="button"
+          role="switch"
+          id={`f-${field.path}`}
+          aria-checked={checked}
+          aria-label={field.label}
+          disabled={sample}
+          onClick={() => saveField(field, checked ? off.value : on.value)}
+          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a8fd4] focus-visible:ring-offset-2 disabled:opacity-50 ${
+            checked ? "bg-[#22a35a]" : "bg-[#cbd5e1]"
+          }`}
+        >
+          <span
+            aria-hidden
+            className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,0.3)] transition-transform duration-200 ${
+              checked ? "translate-x-5" : ""
+            }`}
+          />
+        </button>
+        <span className="text-sm text-[var(--bp-muted)]">{chosen ? chosen.label : "Not set yet."}</span>
+        {!chosen && !sample ? (
+          <button
+            type="button"
+            onClick={() => saveField(field, off.value)}
+            className="text-sm font-medium text-[var(--bp-blue)] hover:underline"
+          >
+            {off.label}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
 }

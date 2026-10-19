@@ -76,9 +76,9 @@ describe("agent context (ICM wiring)", () => {
 
   it("a coach without the agent gets the Blueprint skills and nothing else", () => {
     const ids = capabilitiesForActor("coach", true).map((cap) => cap.id).sort();
-    assert.deepEqual(ids, ["escalate-to-bca", "fill-the-gaps", "improve-section", "linkedin-marketing", "practice-ready"]);
+    assert.deepEqual(ids, ["check-blueprint", "escalate-to-bca", "fill-the-gaps", "improve-section", "linkedin-marketing", "practice-ready"]);
     const names = anthropicToolsForMode("coach", true).map((tool) => tool.name);
-    for (const name of ["save_answer", "propose_copy", "blueprint_questions", "read_section", "hand_to_bca"]) {
+    for (const name of ["save_answer", "propose_copy", "blueprint_questions", "read_section", "hand_to_bca", "show_section", "sign_off_section"]) {
       assert.ok(names.includes(name), `${name} should be available`);
     }
     for (const name of ["create_campaign", "add_list_to_campaign", "write_blueprint_section", "find_coach"]) {

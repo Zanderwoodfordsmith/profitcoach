@@ -45,8 +45,10 @@ import { MentionBody } from "@/components/community/MentionBody";
 import { CommunityPostMarkdownBody } from "@/components/community/CommunityPostMarkdownBody";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import {
+  CommentFormatButtons,
   MentionTextarea,
   prefetchMentionUsers,
+  type MentionTextareaHandle,
 } from "@/components/community/MentionTextarea";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
@@ -706,6 +708,10 @@ export function PostDetailModal({
     useState<Record<string, string>>({});
   const [newComment, setNewComment] = useState("");
   const [commentComposerFocused, setCommentComposerFocused] = useState(false);
+  // Bold/link buttons sit in each composer's own button row.
+  const topCommentEditorRef = useRef<MentionTextareaHandle>(null);
+  const replyEditorRef = useRef<MentionTextareaHandle>(null);
+  const editCommentEditorRef = useRef<MentionTextareaHandle>(null);
   const [discardCommentDialogOpen, setDiscardCommentDialogOpen] = useState(false);
   const [topCommentPendingImages, setTopCommentPendingImages] = useState<
     PendingCommentImage[]
@@ -2287,6 +2293,8 @@ export function PostDetailModal({
                           {topLevelIsEditing ? (
                             <div className="mt-2 space-y-2">
                               <MentionTextarea
+                                inlineFormatting
+                                formatRef={editCommentEditorRef}
                                 value={commentEditDrafts[c.id] ?? ""}
                                 onChange={(v) =>
                                   setCommentEditDrafts((d) => ({
@@ -2298,7 +2306,7 @@ export function PostDetailModal({
                                 rows={3}
                                 className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                               />
-                              <div className="flex gap-2">
+                              <div className="flex items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => void saveCommentEdit(c)}
@@ -2317,6 +2325,11 @@ export function PostDetailModal({
                                 >
                                   Cancel
                                 </button>
+                                <CommentFormatButtons
+                                  editorRef={editCommentEditorRef}
+                                  size="sm"
+                                  className="ml-auto"
+                                />
                               </div>
                             </div>
                           ) : (
@@ -2359,6 +2372,8 @@ export function PostDetailModal({
                           {replyOpenFor === c.id ? (
                             <div className="mt-2 space-y-2">
                               <MentionTextarea
+                                inlineFormatting
+                                formatRef={replyEditorRef}
                                 value={replyDrafts[c.id] ?? ""}
                                 onChange={(v) =>
                                   setReplyDrafts((d) => ({
@@ -2382,7 +2397,7 @@ export function PostDetailModal({
                                 disabled={submitting}
                                 onError={setActionError}
                               />
-                              <div className="flex gap-2">
+                              <div className="flex items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => void submitReply(c.id, c.id)}
@@ -2413,6 +2428,11 @@ export function PostDetailModal({
                                 >
                                   Cancel
                                 </button>
+                                <CommentFormatButtons
+                                  editorRef={replyEditorRef}
+                                  size="sm"
+                                  className="ml-auto"
+                                />
                               </div>
                             </div>
                           ) : null}
@@ -2524,6 +2544,8 @@ export function PostDetailModal({
                                         {replyIsEditing ? (
                                           <div className="mt-1.5 space-y-2">
                                             <MentionTextarea
+                                              inlineFormatting
+                                              formatRef={editCommentEditorRef}
                                               value={commentEditDrafts[r.id] ?? ""}
                                               onChange={(v) =>
                                                 setCommentEditDrafts((d) => ({
@@ -2535,7 +2557,7 @@ export function PostDetailModal({
                                               rows={3}
                                               className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                             />
-                                            <div className="flex gap-2">
+                                            <div className="flex items-center gap-2">
                                               <button
                                                 type="button"
                                                 onClick={() =>
@@ -2560,6 +2582,11 @@ export function PostDetailModal({
                                               >
                                                 Cancel
                                               </button>
+                                              <CommentFormatButtons
+                                                editorRef={editCommentEditorRef}
+                                                size="sm"
+                                                className="ml-auto"
+                                              />
                                             </div>
                                           </div>
                                         ) : (
@@ -2608,6 +2635,8 @@ export function PostDetailModal({
                                         {replyOpenFor === r.id ? (
                                           <div className="mt-2 space-y-2">
                                             <MentionTextarea
+                                              inlineFormatting
+                                              formatRef={replyEditorRef}
                                               value={replyDrafts[r.id] ?? ""}
                                               onChange={(v) =>
                                                 setReplyDrafts((d) => ({
@@ -2631,7 +2660,7 @@ export function PostDetailModal({
                                               disabled={submitting}
                                               onError={setActionError}
                                             />
-                                            <div className="flex gap-2">
+                                            <div className="flex items-center gap-2">
                                               <button
                                                 type="button"
                                                 onClick={() =>
@@ -2664,6 +2693,11 @@ export function PostDetailModal({
                                               >
                                                 Cancel
                                               </button>
+                                              <CommentFormatButtons
+                                                editorRef={replyEditorRef}
+                                                size="sm"
+                                                className="ml-auto"
+                                              />
                                             </div>
                                           </div>
                                         ) : null}
@@ -2722,6 +2756,8 @@ export function PostDetailModal({
                   {commentComposerExpanded ? (
                     <>
                       <MentionTextarea
+                        inlineFormatting
+                        formatRef={topCommentEditorRef}
                         value={newComment}
                         onChange={setNewComment}
                         prioritizeUserId={mentionPrioritizeUserId}
@@ -2731,6 +2767,10 @@ export function PostDetailModal({
                         className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent px-3.5 py-2 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
                       />
                       <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-2 py-1.5">
+                        <CommentFormatButtons
+                          editorRef={topCommentEditorRef}
+                          className="mr-auto"
+                        />
                         {showCommentComposerActions ? (
                           <>
                             <button

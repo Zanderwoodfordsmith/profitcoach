@@ -1,7 +1,7 @@
 import type { InterviewTurn, PracticeKnowledgePayload } from "./types";
 import { hoursLabel } from "./brief";
 import { foldRetiredAnswers, listValue, textValue } from "./sourced";
-import { asVoiceTone, toneInstructions } from "./voiceTone";
+import { TONE_START, asVoiceTone, toneInstructions } from "./voiceTone";
 
 export const PRACTICE_INTERVIEW_SYSTEM = `You are the Practice Installation interviewer for Business Coach Academy / Profit Coach.
 
@@ -180,8 +180,9 @@ export function summarizeKnowledgeForPrompt(
   push("client.buying_triggers", "The moment they act", listValue(payload.client.buying_triggers).join("; "));
   push("client.objections", "Objections", listValue(payload.client.objections).join("; "));
   push("client.why_you", "Why you", textValue(payload.client.why_you));
-  const tone = asVoiceTone(payload.practice.tone?.value);
-  if (tone && wanted("practice.tone")) {
+  // Until they move a slider, write to the same starting tone the sliders show.
+  const tone = asVoiceTone(payload.practice.tone?.value) ?? TONE_START;
+  if (wanted("practice.tone")) {
     lines.push("Tone (write to this):");
     for (const line of toneInstructions(tone)) lines.push(`- ${line}`);
   }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Circle } from "lucide-react";
 
-import type { SectionWorkflow } from "@/lib/practiceKnowledge/sectionWorkflow";
+import type { SectionWorkflow, WorkflowOwner } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { STATUS_LOOK } from "./statusLook";
 
@@ -13,22 +13,39 @@ const STATUS_OPTIONS: { id: SectionWorkflow["status"]; label: string }[] = [
   { id: "done", label: "Done" },
 ];
 
+/** To do or Review while it waits on BCA: the overview's quiet blue, not the colours that ask the coach to act. */
+const BCA_LOOK = { pill: "bg-sky-100 text-[#0c5290] ring-sky-200", option: "text-[#0c5290]", Icon: Circle, stroke: 2 };
+
 /** The section's status as one pill. Click it to change. */
 export function StatusSwitch({
   label,
   status,
   onChange,
   size = "md",
+  todoOwner,
+  bcaReview,
 }: {
   /** sm: the smaller pill used on the LinkedIn profile parts. */
   size?: "sm" | "md";
   label: string;
   status: SectionWorkflow["status"];
   onChange: (status: SectionWorkflow["status"]) => void;
+  /** Who To do waits on. Names it like the overview does: Needs you, or BCA to do. */
+  todoOwner?: WorkflowOwner;
+  /** Signed off by the coach and waiting on BCA's check. Plain Review always means the coach. */
+  bcaReview?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const current = STATUS_LOOK[status];
-  const currentLabel = STATUS_OPTIONS.find((o) => o.id === status)?.label ?? "To do";
+  const lookFor = (id: SectionWorkflow["status"]) => (id === "todo" && todoOwner === "bca" ? BCA_LOOK : STATUS_LOOK[id]);
+  const labelFor = (id: SectionWorkflow["status"]) =>
+    id === "todo" && todoOwner
+      ? todoOwner === "bca"
+        ? "BCA to do"
+        : "Needs you"
+      : (STATUS_OPTIONS.find((o) => o.id === id)?.label ?? "To do");
+  const waitingOnBca = bcaReview && status === "review";
+  const current = waitingOnBca ? BCA_LOOK : lookFor(status);
+  const currentLabel = waitingOnBca ? "BCA review" : labelFor(status);
   return (
     <div className="relative">
       <button
@@ -49,7 +66,7 @@ export function StatusSwitch({
       {open ? (
         <div role="menu" className="bp-pop absolute right-0 top-full z-20 mt-1.5 w-40 rounded-xl border border-[#e3e8ef] bg-white p-1 shadow-lg">
           {STATUS_OPTIONS.map((option) => {
-            const look = STATUS_LOOK[option.id];
+            const look = lookFor(option.id);
             const selected = option.id === status;
             return (
               <button
@@ -65,7 +82,7 @@ export function StatusSwitch({
                 className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm font-medium hover:bg-[var(--bp-tint)] ${look.option}`}
               >
                 <look.Icon className="h-3.5 w-3.5" strokeWidth={look.stroke} aria-hidden />
-                <span className="flex-1">{option.label}</span>
+                <span className="flex-1">{labelFor(option.id)}</span>
                 {selected ? <Check className="h-3.5 w-3.5 text-[var(--bp-ink)]" aria-hidden /> : null}
               </button>
             );

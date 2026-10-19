@@ -10,6 +10,7 @@ import {
   isChannelOnlySubject,
   isGenericConversationName,
   looksLikePersonName,
+  personNameFromDisplayName,
 } from "@/lib/messaging/conversationDisplay";
 import { mailboxPersonName } from "@/lib/messaging/threadIdentity";
 import {
@@ -301,16 +302,34 @@ async function backfillUnnamedChatIdentities(input: {
   coachId: string;
   channel: UnipileAppChannel;
 }): Promise<void> {
-  const { data: rows } = await supabaseAdmin
+  const columns =
+    "id, unipile_chat_id, prospect_name, subject, prospect_avatar_url, prospect_linkedin_url";
+  // Unnamed threads first, so an older "Unknown contact" is not skipped forever.
+  const { data: unnamed } = await supabaseAdmin
     .from("messaging_conversations")
-    .select("id, unipile_chat_id, prospect_name, subject, prospect_avatar_url, prospect_linkedin_url")
+    .select(columns)
     .eq("coach_id", input.coachId)
     .eq("last_channel", input.channel)
     .not("unipile_chat_id", "is", null)
+    .or('prospect_name.is.null,prospect_name.in.("Unknown contact","Unknown")')
+    .order("last_message_at", { ascending: false })
+    .limit(25);
+  const { data: recent } = await supabaseAdmin
+    .from("messaging_conversations")
+    .select(columns)
+    .eq("coach_id", input.coachId)
+    .eq("last_channel", input.channel)
+    .not("unipile_chat_id", "is", null)
+    .order("last_message_at", { ascending: false })
     .limit(80);
+  const unnamedIds = new Set((unnamed ?? []).map((row) => row.id));
+  const rows = [
+    ...(unnamed ?? []),
+    ...(recent ?? []).filter((row) => !unnamedIds.has(row.id)),
+  ];
 
   let fetched = 0;
-  for (const row of rows ?? []) {
+  for (const row of rows) {
     const existingName = (row.prospect_name as string | null) ?? null;
     const existingAvatar = (row.prospect_avatar_url as string | null) ?? null;
     const existingLinkedIn = (row.prospect_linkedin_url as string | null) ?? null;
@@ -363,8 +382,8 @@ function identityPatch(input: {
   const patch: Record<string, unknown> = {
     last_channel: input.channel,
   };
-  const resolvedName = input.counterpart.name;
-  if (resolvedName && looksLikePersonName(resolvedName)) {
+  const resolvedName = personNameFromDisplayName(input.counterpart.name);
+  if (resolvedName) {
     patch.prospect_name = resolvedName.slice(0, 200);
   }
   if (input.counterpart.pictureUrl) {
@@ -501,7 +520,10 @@ async function syncMessagingAccount(input: {
       leadName: leadDisplayName(lead),
       fetchIfMissing: true,
     });
-    const prospectName = counterpart.name || "Unknown contact";
+    const prospectName =
+      personNameFromDisplayName(counterpart.name) ||
+      counterpart.name ||
+      "Unknown contact";
 
     let conversationId: string | null = null;
     const { data: existingConv } = await supabaseAdmin

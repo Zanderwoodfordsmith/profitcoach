@@ -1,0 +1,175 @@
+/*
+ * Connect gate: a feature that needs a connection (LinkedIn, a calendar, an
+ * inbox) stays visible but blurred, with a glass card on top that says what
+ * it is and offers the one button that unlocks it. The glass follows the
+ * search overlay recipe (searchMotion.css): see-through white fill, heavy
+ * panel-only blur, a thin iridescent edge, inner glow and a soft navy shadow.
+ *
+ * Write only the standard backdrop-filter: the CSS build adds Safari's prefix
+ * itself, and given both it kept only the prefixed one, which Chrome ignores.
+ * No prefers-reduced-transparency override: Zander wants the glass anyway.
+ */
+
+/* What sits behind: readable shapes, unreadable detail, no interaction. */
+.connect-gate-content {
+  filter: blur(6px) saturate(115%);
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* A faint brand-navy veil, lighter in the middle where the card sits. */
+.connect-gate-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    80% 70% at 50% 45%,
+    rgb(5 30 54 / 0.03),
+    rgb(5 30 54 / 0.12)
+  );
+}
+
+.connect-gate-panel {
+  position: relative;
+  background:
+    radial-gradient(90% 60% at 0% 0%, rgb(56 189 248 / 0.12), transparent 60%),
+    linear-gradient(140deg, rgb(255 255 255 / 0.72) 0%, rgb(255 255 255 / 0.5) 100%);
+  backdrop-filter: blur(48px) saturate(170%);
+  box-shadow:
+    inset 0 0 24px rgb(255 255 255 / 0.3),
+    inset 0 -1px 0 rgb(56 189 248 / 0.18),
+    0 0 0 0.5px rgb(15 23 42 / 0.1),
+    0 24px 60px -24px rgb(5 30 54 / 0.45),
+    0 0 48px -16px rgb(56 189 248 / 0.35);
+  animation: connect-gate-in 420ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both;
+}
+
+/* Iridescent edge: bright white at the top left, through sky. */
+.connect-gate-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    140deg,
+    rgb(255 255 255 / 0.95) 0%,
+    rgb(186 230 253 / 0.7) 28%,
+    rgb(255 255 255 / 0.25) 52%,
+    rgb(125 211 252 / 0.6) 80%,
+    rgb(255 255 255 / 0.75) 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* The one action wears the brand gradient, like Ask AI in search. */
+.connect-gate-action {
+  background: linear-gradient(135deg, #0c5290 0%, #1a8fd4 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 4px 14px -6px rgb(12 82 144 / 0.7);
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms;
+}
+
+.connect-gate-action:hover {
+  background: linear-gradient(135deg, #051e36 0%, #0c5290 55%, #1a8fd4 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 8px 20px -8px rgb(12 82 144 / 0.8);
+}
+
+.connect-gate-action:active {
+  transform: scale(0.98);
+}
+
+/* "More about this" opens inline with a height ease, so the card grows
+   rather than a popover getting clipped by small cards. */
+.connect-gate-more {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.connect-gate-more[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+
+/* Nudge: same glass, no blur over anything, for when the page still works. */
+.connect-nudge {
+  position: relative;
+  background:
+    radial-gradient(70% 120% at 0% 0%, rgb(56 189 248 / 0.12), transparent 60%),
+    linear-gradient(140deg, rgb(255 255 255 / 0.8) 0%, rgb(240 249 255 / 0.6) 100%);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow:
+    inset 0 0 18px rgb(255 255 255 / 0.4),
+    0 0 0 0.5px rgb(15 23 42 / 0.08),
+    0 10px 30px -18px rgb(5 30 54 / 0.4);
+}
+
+.connect-nudge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    120deg,
+    rgb(255 255 255 / 0.95) 0%,
+    rgb(186 230 253 / 0.8) 40%,
+    rgb(255 255 255 / 0.3) 70%,
+    rgb(125 211 252 / 0.6) 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* No blur support: solid cards so text never sits on raw page content. */
+@supports not (backdrop-filter: blur(1px)) {
+  .connect-gate-panel,
+  .connect-nudge {
+    background: rgb(240 246 252);
+  }
+}
+
+@keyframes connect-gate-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes connect-gate-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connect-gate-panel {
+    animation: connect-gate-fade 160ms ease both;
+  }
+
+  .connect-gate-more,
+  .connect-gate-action {
+    transition: none;
+  }
+}

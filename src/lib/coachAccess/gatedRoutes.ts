@@ -92,7 +92,7 @@ export const GATED_ROUTES: GatedRoute[] = [
     feature: "nav.marketing",
     title: "Toolkit",
     description:
-      "Posts, banners and print files with your name and your own QR code, ready to share or send to a printer.",
+      "The 90-day brochure from your Blueprint, plus posts, banners and print files with your name and QR code.",
   },
   {
     prefix: "/coach/links",
@@ -203,11 +203,15 @@ export const ACADEMY_COURSE_TITLES: Record<string, string> = {
   "profit-coach-os": "Profit Coach OS",
   "profit-brand-framework": "PROFIT Brand & Framework",
   "not-in-classroom": "Archive",
+  stryvx: "StryvX",
+  books: "Books & Talks",
+  "how-to": "How To",
 };
 
 const ACADEMY_RESERVED_SEGMENTS = new Set([
   "classroom",
   "compass",
+  "vault",
   "archive",
   "programs",
   "simplified",

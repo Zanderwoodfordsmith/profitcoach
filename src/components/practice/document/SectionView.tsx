@@ -12,7 +12,7 @@ import {
   type FieldSpec,
   type SectionRef,
 } from "@/lib/practiceKnowledge/blueprint";
-import { sectionWorkflow, type SectionWorkflow } from "@/lib/practiceKnowledge/sectionWorkflow";
+import { sectionWorkflow, todoOwner, type SectionWorkflow } from "@/lib/practiceKnowledge/sectionWorkflow";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 import { handoffForSection } from "@/lib/practiceKnowledge/campaignHandoff";
@@ -21,7 +21,6 @@ import { formatFieldValue } from "@/lib/practiceKnowledge/exportMarkdown";
 
 import { useSectionComments } from "../comments/SectionCommentsContext";
 import { CommentButton } from "../comments/SectionCommentsUI";
-import { OwnerMark } from "../OwnerMark";
 import { usePractice } from "../PracticeProvider";
 import { BlockBoxes } from "./BlockEditor";
 import { Blocks } from "./Blocks";
@@ -65,6 +64,9 @@ function hint(field: FieldSpec): string {
   if (field.placeholder) return field.placeholder;
   return field.example ? `e.g. ${field.example.split("\n").join(", ")}` : "Type here";
 }
+
+/** In the empty boxes BCA fills after About You, so they look the same as they will once filled. */
+const BCA_FILLS_HINT = "Our team fills this in from your Blueprint Call.";
 
 /** The look of something the coach fills in: a light grey box with a soft edge that turns white while you type. */
 const INPUT_BOX =
@@ -502,7 +504,7 @@ function LineListEditor({ field }: { field: FieldSpec }) {
             <input
               id={index === 0 ? `f-${field.path}` : undefined}
               value={item.text}
-              placeholder={examples[index] ? `e.g. ${examples[index]}` : "Type here"}
+              placeholder={examples[index] ? `e.g. ${examples[index]}` : (index === 0 && field.placeholder) || "Type here"}
               onChange={(event) => {
                 const text = event.target.value;
                 setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, text } : row)));
@@ -576,15 +578,13 @@ function LineListEditor({ field }: { field: FieldSpec }) {
 function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; solo?: boolean }) {
   const { payload } = usePractice();
   if (!payload) return null;
-  const filled = formatFieldValue(payload, field).length > 0;
   const structured = field.kind === "results" || field.kind === "stories";
   const paired = Boolean(field.pair);
   const list = field.kind === "list" && !paired;
   const showHelp = Boolean(field.help) && !lineHintOnly(field.help);
+  // No "Needed" badge: the section's To do already says so.
   const mark = changed ? (
     <span className="rounded-full bg-[#fff4e0] px-2 py-px text-[0.6875rem] font-semibold text-[#8a5300]">Changed</span>
-  ) : !filled && field.required ? (
-    <span className="rounded-full bg-[#fde8e6] px-2 py-px text-[0.6875rem] font-semibold text-[#9b2c2c]">Needed</span>
   ) : null;
   const cue =
     field.cue === "more" ? (
@@ -628,13 +628,15 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
   );
 }
 
-function Fields({ section, changedFields }: { section: BlueprintSection; changedFields: string[] }) {
+function Fields({ section, changedFields, bcaFills }: { section: BlueprintSection; changedFields: string[]; bcaFills?: boolean }) {
   const { payload } = usePractice();
-  const fields = (section.fields ?? []).filter((f) => {
-    if (!f.showIf || !payload) return true;
-    const answer = fieldValue(payload, f.showIf.path)?.value;
-    return typeof answer === "string" && f.showIf.in.includes(answer);
-  });
+  const fields = (section.fields ?? [])
+    .filter((f) => {
+      if (!f.showIf || !payload) return true;
+      const answer = fieldValue(payload, f.showIf.path)?.value;
+      return typeof answer === "string" && f.showIf.in.includes(answer);
+    })
+    .map((f) => (bcaFills ? { ...f, placeholder: BCA_FILLS_HINT, example: undefined } : f));
   // Short answers sit two to a row. Widgets and long answers take the full width.
   // Paired lists (more/less) sit on their own row, not next to a picker.
   const short = (f: FieldSpec) => !f.widget && !f.pair && (f.kind === "text" || f.kind === "enum");
@@ -951,7 +953,7 @@ export function SectionView({
   /** Taller writing boxes. Used for the newsletter issue itself. */
   roomy?: boolean;
 }) {
-  const { knowledge, payload, setSectionStatus, addNote, building, build, href } = usePractice();
+  const { knowledge, payload, setSectionStatus, addNote, building, build, href, viewer } = usePractice();
   const focusKey = useSectionComments()?.openKey ?? null;
   const discussing = focusKey === sectionRef.key;
   // While one section is being discussed, the rest step back. Hover brings one forward to read.
@@ -974,9 +976,12 @@ export function SectionView({
   const lastRequest = requests[requests.length - 1];
   const changeAsked = work.status === "todo" && work.owner === "bca" && Boolean(lastRequest);
   const selected = work.tracked ? work.status : "todo";
-  const only = section.fields?.length === 1 ? section.fields[0] : null;
-  const solo = only && section.layout !== "inline" && (!only.widget || only.widget === "tone") ? only : null;
-  const soloNeeded = Boolean(solo?.required && !fieldFilled(payload, solo));
+  // After About You, answers are BCA's to fill. The coach sees the same boxes, with a hint that BCA fills them.
+  const bcaFills =
+    !isOutput &&
+    viewer === "coach" &&
+    !sectionRef.group.yours &&
+    !(section.fields ?? []).some((field) => fieldFilled(payload, field));
 
   function chooseStatus(status: SectionWorkflow["status"]) {
     setSectionStatus(key, status);
@@ -1064,17 +1069,9 @@ export function SectionView({
               <SectionAbout section={section} />
             </InfoTip>
           )}
-          {soloNeeded ? (
-            <span className="ml-1 rounded-full bg-[#fde8e6] px-2 py-px text-[0.6875rem] font-semibold text-[#9b2c2c]">Needed</span>
-          ) : null}
         </div>
         <div className={`bp-no-print ml-auto flex shrink-0 items-center gap-2 ${quiet ? "hidden" : ""}`}>
           {writing ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bp-muted)]" aria-label="Writing" /> : null}
-          {work.owner ? (
-            <span className="inline-flex rounded-full ring-2 ring-white/85">
-              <OwnerMark owner={work.owner} size="sm" />
-            </span>
-          ) : null}
           {menu.length ? (
             <MoreMenu
               items={menu}
@@ -1082,7 +1079,13 @@ export function SectionView({
             />
           ) : null}
           <CommentButton sectionKey={key} title={section.title} />
-          <StatusSwitch label={section.title} status={selected} onChange={chooseStatus} />
+          <StatusSwitch
+            label={section.title}
+            status={selected}
+            onChange={chooseStatus}
+            todoOwner={todoOwner(sectionRef)}
+            bcaReview={work.status === "review" && work.owner === "bca"}
+          />
         </div>
       </header>
 
@@ -1148,7 +1151,7 @@ export function SectionView({
         ) : isOutput ? (
           <OutputBody refKey={key} section={section} emptyHint={emptyHint} canWrite={canWrite} />
         ) : (
-          <Fields section={section} changedFields={work.changedFields} />
+          <Fields section={section} changedFields={work.changedFields} bcaFills={bcaFills} />
         )}
       </div>
       ) : null}

@@ -36,6 +36,10 @@ const PROGRAMME_PREFIXES: ReadonlyArray<readonly [string, string]> = [
   ["client-delivery-", "coach-clients"],
   ["client-retention-", "coach-clients"],
   ["kickstart-", "start-here"],
+  // Vault programmes (content/academy/vault-hub.json).
+  ["stryvx-", "stryvx"],
+  ["books-", "books"],
+  ["how-to-", "how-to"],
 ];
 
 /** Programme that owns this lesson, or null when the prefix is unknown. */

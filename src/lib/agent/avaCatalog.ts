@@ -75,7 +75,7 @@ const SKILL_GROUPS: AvaSkillGroup[] = [
     id: "blueprint",
     title: "Blueprint",
     hint: "Fill answers, sharpen a section, write a LinkedIn newsletter, or run the classroom writing skills.",
-    capabilityIds: ["practice-ready", "fill-the-gaps", "improve-section", "linkedin-marketing", "blueprint-writing"],
+    capabilityIds: ["practice-ready", "fill-the-gaps", "check-blueprint", "improve-section", "linkedin-marketing", "blueprint-writing"],
   },
   {
     id: "prospects",

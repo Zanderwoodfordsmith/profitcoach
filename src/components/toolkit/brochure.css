@@ -1,0 +1,269 @@
+.pb-preview {
+  display: flex;
+  width: max-content;
+  gap: 16px;
+}
+
+.pb-preview .pb-sheet {
+  flex: none;
+  transform: scale(0.38);
+  transform-origin: top left;
+  margin-right: calc(210mm * -0.62);
+  margin-bottom: calc(297mm * -0.62);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 0.18);
+}
+
+.pb-sheet {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 18mm 16mm 16mm;
+  color: #0d1f31;
+  background: #fff;
+  font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  overflow: hidden;
+}
+
+.pb-sheet--cover {
+  display: flex;
+  flex-direction: column;
+  color: #f4f8fc;
+  background:
+    radial-gradient(120% 70% at 100% 0%, #1a8fd4 0%, transparent 55%),
+    linear-gradient(165deg, #051e36 0%, #0c5290 72%, #0a467b 100%);
+}
+
+.pb-cover-name {
+  margin: 0;
+  font-family: "Inter Tight", Inter, "Helvetica Neue", Arial, sans-serif;
+  font-size: 42pt;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+}
+
+.pb-cover-role {
+  margin: 10px 0 0;
+  font-size: 13pt;
+  font-weight: 500;
+  color: #c5d8ea;
+}
+
+.pb-cover-title {
+  margin: auto 0 8mm;
+  max-width: 28ch;
+  font-family: "Inter Tight", Inter, "Helvetica Neue", Arial, sans-serif;
+  font-size: 28pt;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+}
+
+.pb-cover-line {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 13.5pt;
+  line-height: 1.4;
+  color: #e4eef7;
+}
+
+.pb-cover-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14mm;
+}
+
+.pb-stats {
+  display: flex;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pb-stat {
+  min-width: 0;
+}
+
+.pb-stat b {
+  display: block;
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.pb-stat span {
+  display: block;
+  margin-top: 2px;
+  font-size: 8.5pt;
+  color: #c5d8ea;
+}
+
+.pb-photo {
+  width: 38mm;
+  height: 38mm;
+  flex: none;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.45);
+}
+
+.pb-photo--empty {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: #c5d8ea;
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 22pt;
+  font-weight: 700;
+}
+
+.pb-h {
+  margin: 0 0 6mm;
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 22pt;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.pb-lede {
+  margin: -2mm 0 10mm;
+  max-width: 48ch;
+  font-size: 12pt;
+  line-height: 1.45;
+  color: #46566b;
+}
+
+.pb-block {
+  margin: 0 0 9mm;
+}
+
+.pb-block h3 {
+  margin: 0 0 3.5mm;
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 13pt;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.pb-block p,
+.pb-block li {
+  margin: 0;
+  font-size: 11pt;
+  line-height: 1.45;
+}
+
+.pb-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pb-list li + li {
+  margin-top: 2.5mm;
+}
+
+.pb-quote {
+  padding: 0;
+  border: 0;
+}
+
+.pb-quote p {
+  font-size: 13pt;
+  line-height: 1.4;
+}
+
+.pb-quote cite {
+  display: block;
+  margin-top: 3mm;
+  font-style: normal;
+  font-size: 10pt;
+  color: #46566b;
+}
+
+.pb-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: pb;
+}
+
+.pb-steps li {
+  display: grid;
+  grid-template-columns: 9mm 1fr;
+  gap: 4mm;
+  align-items: start;
+  counter-increment: pb;
+}
+
+.pb-steps li + li {
+  margin-top: 4mm;
+}
+
+.pb-steps li::before {
+  content: counter(pb);
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: #0c5290;
+}
+
+.pb-cta {
+  margin-top: auto;
+  padding: 8mm 8mm 7mm;
+  color: #f4f8fc;
+  background: #051e36;
+}
+
+.pb-cta h2 {
+  margin: 0 0 2mm;
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.pb-cta p {
+  margin: 0 0 5mm;
+  max-width: 42ch;
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #c5d8ea;
+}
+
+.pb-cta a {
+  color: #fff;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.pb-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 8mm;
+  font-size: 10pt;
+  color: #46566b;
+}
+
+.pb-sheet--about {
+  display: flex;
+  flex-direction: column;
+}
+
+@media print {
+  .pb-preview .pb-sheet {
+    transform: none;
+    margin: 0;
+    box-shadow: none;
+  }
+  .pb-sheet {
+    break-after: page;
+    box-shadow: none;
+  }
+  .pb-sheet:last-child {
+    break-after: auto;
+  }
+}

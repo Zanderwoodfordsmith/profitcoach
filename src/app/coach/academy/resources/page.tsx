@@ -1,12 +1,5 @@
-import { AcademyResourcesLibrary } from "@/components/academy/AcademyResourcesLibrary";
-import { loadAcademyResourcesCatalog } from "@/lib/academy/resources";
+import { ResourcesHome } from "@/components/resources/ResourcesHome";
 
-export default async function CoachAcademyResourcesPage() {
-  const catalog = await loadAcademyResourcesCatalog();
-
-  return (
-    <div className="pt-6">
-      <AcademyResourcesLibrary catalog={catalog} />
-    </div>
-  );
+export default function CoachAcademyResourcesPage() {
+  return <ResourcesHome />;
 }

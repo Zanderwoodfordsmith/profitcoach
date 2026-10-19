@@ -39,7 +39,7 @@ export type AssembleProfitCoachPromptArgs = {
   roleId?: string | null;
   playbookExcerptText: string;
   brain: CoachAiContext | null | undefined;
-  compassContext: string;
+  ladderContext: string;
   /** One-line "where the coach is right now" from the docked panel. */
   screenContext?: string | null;
   /**
@@ -212,7 +212,7 @@ export function assembleProfitCoachSystemPrompt(
     `# Reference — Coach factory (ai_context)\nPrivilege these for proof, voice, and specifics in outward-facing copy. Do not invent client stories.\n\n${brainFmt}`
   );
 
-  sections.push(`# Working — Compass / ladder\n${args.compassContext}`);
+  sections.push(`# Working — Ladder\n${args.ladderContext}`);
 
   return sections.join("\n\n---\n\n");
 }

@@ -1,0 +1,563 @@
+/*
+ * Ava, the one AI across the app. The same parts render in two rooms:
+ * the white panel that sits beside a page, and the navy stage when she
+ * goes full screen. Every part reads these tokens, so the stage only
+ * swaps the tokens.
+ */
+
+.ava-ui {
+  --ava-ink: #0b1b2e;
+  --ava-body: #1f2d3d;
+  --ava-muted: #55657a;
+  --ava-faint: #6b7b8f;
+  --ava-rule: #e6ecf2;
+  --ava-navy: #051e36;
+  --ava-blue: #0c5290;
+  --ava-sky: #1a8fd4;
+  --ava-tint: #f2f7fc;
+  --ava-tint-strong: #e3eef8;
+  --ava-surface: #ffffff;
+  --ava-field: #ffffff;
+  --ava-field-rule: #dbe4ee;
+  --ava-ring: #cfe6f8;
+  --ava-user-bg: #051e36;
+  --ava-user-ink: #ffffff;
+  --ava-reply-bg: #f2f7fc;
+  --ava-card: #ffffff;
+  --ava-card-rule: #cfe3f5;
+  --ava-card-shadow: 0 6px 20px -12px rgba(12, 82, 144, 0.35);
+  --ava-send-bg: #051e36;
+  --ava-send-hover: #0c5290;
+  --ava-ok: #047857;
+  --ava-danger: #9b2c2c;
+  --ava-danger-tint: #fdeeee;
+  color: var(--ava-body);
+}
+
+.ava-ui ::selection {
+  background: #cfe6f8;
+  color: var(--ava-ink);
+}
+
+.ava-ui textarea {
+  caret-color: var(--ava-sky);
+}
+
+.ava-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(85, 101, 122, 0.28) transparent;
+}
+
+/* The one filled button: send, confirm, the lead starter. */
+.ava-primary {
+  background: var(--ava-send-bg);
+  color: #ffffff;
+  outline: none;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.ava-primary:hover:not(:disabled) {
+  background: var(--ava-send-hover);
+}
+
+.ava-primary:focus-visible {
+  box-shadow: 0 0 0 3px var(--ava-ring);
+}
+
+.ava-warn {
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.ava-stage .ava-warn {
+  background: rgba(245, 180, 60, 0.12);
+  color: #fcd9a0;
+}
+
+/* ------------------------------------------------------------------ */
+/* The orb: Ava's mark everywhere, from a 22px dot to the stage hero.  */
+/* ------------------------------------------------------------------ */
+
+.ava-orb {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.ava-orb-sphere {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(222, 240, 255, 0.9), rgba(222, 240, 255, 0) 42%),
+    radial-gradient(circle at 70% 78%, rgba(26, 143, 212, 0.85), rgba(26, 143, 212, 0) 56%),
+    radial-gradient(circle at 50% 50%, #0c3f73 22%, #051e36 74%);
+  box-shadow:
+    inset 0 0 10px rgba(110, 190, 245, 0.45),
+    inset 0 -5px 9px rgba(2, 10, 24, 0.75),
+    0 3px 10px -3px rgba(12, 82, 144, 0.55);
+}
+
+.ava-orb-glow,
+.ava-orb-ribbon,
+.ava-orb-rim {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ava-orb-glow {
+  inset: -36%;
+  background: radial-gradient(
+    circle,
+    rgba(26, 143, 212, 0.42) 0%,
+    rgba(26, 143, 212, 0.14) 45%,
+    transparent 70%
+  );
+  filter: blur(18px);
+  animation: avaBreath 5s ease-in-out infinite;
+}
+
+.ava-orb-ribbon {
+  inset: 6%;
+  background: conic-gradient(
+    from 210deg,
+    transparent 0%,
+    transparent 52%,
+    rgba(150, 214, 250, 0.2) 62%,
+    rgba(214, 240, 255, 0.95) 72%,
+    rgba(26, 143, 212, 0.8) 82%,
+    transparent 92%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 52%, #000 56%, #000 78%, transparent 82%);
+  mask: radial-gradient(circle, transparent 52%, #000 56%, #000 78%, transparent 82%);
+  filter: blur(2px);
+  animation: avaSpin 7s linear infinite;
+}
+
+.ava-orb-ribbon.two {
+  inset: 14%;
+  background: conic-gradient(
+    from 30deg,
+    transparent 0%,
+    transparent 60%,
+    rgba(190, 232, 255, 0.55) 74%,
+    rgba(12, 82, 144, 0.7) 84%,
+    transparent 94%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 44%, #000 50%, #000 72%, transparent 78%);
+  mask: radial-gradient(circle, transparent 44%, #000 50%, #000 72%, transparent 78%);
+  filter: blur(3px);
+  animation: avaSpinBack 11s linear infinite;
+}
+
+.ava-orb-rim {
+  inset: -1px;
+  border: 1px solid rgba(160, 210, 245, 0.25);
+  box-shadow: inset 0 1px 12px rgba(200, 235, 255, 0.22);
+}
+
+/* Voice: the orb answers the call. Speaking swells, listening breathes. */
+.ava-orb.is-speaking .ava-orb-glow {
+  animation-duration: 1.4s;
+  opacity: 1;
+}
+
+.ava-orb.is-speaking .ava-orb-ribbon {
+  animation-duration: 2.6s;
+}
+
+.ava-orb.is-listening .ava-orb-glow {
+  animation-duration: 3s;
+}
+
+.ava-orb.is-quiet .ava-orb-glow,
+.ava-orb.is-quiet .ava-orb-ribbon {
+  animation-play-state: paused;
+  opacity: 0.45;
+}
+
+@keyframes avaSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes avaSpinBack {
+  from {
+    transform: rotate(140deg);
+  }
+  to {
+    transform: rotate(-220deg);
+  }
+}
+
+@keyframes avaBreath {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* The docked panel: floats over the page, never pushes it.            */
+/* ------------------------------------------------------------------ */
+
+.ava-dock {
+  animation: avaDockIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes avaDockIn {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .ava-dock {
+    animation-name: avaSheetIn;
+  }
+}
+
+@keyframes avaSheetIn {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* The stage: Ava full screen. Brand navy room, slow light, glass.     */
+/* ------------------------------------------------------------------ */
+
+.ava-stage {
+  --ava-ink: rgba(240, 247, 255, 0.97);
+  --ava-body: rgba(226, 237, 250, 0.92);
+  --ava-muted: rgba(196, 214, 236, 0.78);
+  --ava-faint: rgba(160, 186, 216, 0.72);
+  --ava-rule: rgba(255, 255, 255, 0.1);
+  --ava-tint: rgba(255, 255, 255, 0.07);
+  --ava-tint-strong: rgba(255, 255, 255, 0.12);
+  --ava-surface: transparent;
+  --ava-field: transparent;
+  --ava-field-rule: rgba(255, 255, 255, 0.14);
+  --ava-ring: rgba(120, 196, 245, 0.28);
+  --ava-user-bg: rgba(26, 143, 212, 0.24);
+  --ava-user-ink: rgba(244, 250, 255, 0.98);
+  --ava-reply-bg: transparent;
+  --ava-card: rgba(255, 255, 255, 0.06);
+  --ava-card-rule: rgba(255, 255, 255, 0.13);
+  --ava-card-shadow: 0 16px 40px -20px rgba(1, 8, 20, 0.9);
+  --ava-send-bg: linear-gradient(180deg, #3aa6e6 0%, #0c5290 100%);
+  --ava-send-hover: linear-gradient(180deg, #52b3ec 0%, #1166aa 100%);
+  --ava-ok: #6ee7b7;
+  --ava-danger: #fda4af;
+  --ava-danger-tint: rgba(225, 80, 95, 0.14);
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ava-body);
+  background: linear-gradient(180deg, #020b17 0%, #04182e 52%, #062947 100%);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: avaStageIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ava-stage ::selection {
+  background: rgba(26, 143, 212, 0.45);
+  color: #fff;
+}
+
+.ava-stage .ava-scroll {
+  scrollbar-color: rgba(200, 225, 250, 0.22) transparent;
+}
+
+@keyframes avaStageIn {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ava-stage-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ava-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.ava-aurora.one {
+  width: 70vmax;
+  height: 70vmax;
+  left: 50%;
+  top: -44vmax;
+  background: radial-gradient(
+    circle,
+    rgba(12, 82, 144, 0.75) 0%,
+    rgba(26, 143, 212, 0.25) 40%,
+    transparent 70%
+  );
+  animation: avaDriftTop 14s ease-in-out infinite alternate;
+}
+
+.ava-aurora.two {
+  width: 46vmax;
+  height: 46vmax;
+  left: -16vmax;
+  bottom: -22vmax;
+  background: radial-gradient(
+    circle,
+    rgba(26, 143, 212, 0.4) 0%,
+    rgba(12, 82, 144, 0.18) 50%,
+    transparent 72%
+  );
+  animation: avaDrift 18s ease-in-out infinite alternate-reverse;
+}
+
+.ava-aurora.three {
+  width: 40vmax;
+  height: 40vmax;
+  right: -14vmax;
+  bottom: -16vmax;
+  opacity: 0.4;
+  background: radial-gradient(
+    circle,
+    rgba(88, 180, 236, 0.42) 0%,
+    rgba(26, 143, 212, 0.14) 50%,
+    transparent 72%
+  );
+  animation: avaDrift 11s ease-in-out infinite alternate;
+}
+
+/* A faint glowing arc near the top, like a horizon. */
+.ava-horizon {
+  position: absolute;
+  left: 50%;
+  top: -34vmax;
+  width: 88vmax;
+  height: 44vmax;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  border: 1px solid rgba(150, 205, 245, 0.16);
+  box-shadow:
+    0 0 60px rgba(26, 143, 212, 0.22),
+    inset 0 0 80px rgba(26, 143, 212, 0.1);
+}
+
+@keyframes avaDrift {
+  from {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2%, 4%, 0) scale(1.08);
+  }
+}
+
+@keyframes avaDriftTop {
+  from {
+    transform: translateX(-52%) scale(1);
+  }
+  to {
+    transform: translateX(-48%) scale(1.06);
+  }
+}
+
+/* Round glass buttons in the stage header. */
+.ava-glass-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  color: var(--ava-muted);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.ava-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--ava-ink);
+}
+
+.ava-glass-btn:focus-visible {
+  outline: 2px solid rgba(150, 210, 250, 0.7);
+  outline-offset: 2px;
+}
+
+.ava-glass-btn.is-active {
+  background: rgba(26, 143, 212, 0.22);
+  border-color: rgba(140, 205, 245, 0.45);
+  color: #dff2ff;
+}
+
+/* Stage hero (empty conversation). */
+.ava-hero-hello {
+  animation: avaRise 0.6s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ava-hero-title {
+  color: var(--ava-faint);
+  animation: avaRise 0.6s 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ava-hero-title em {
+  font-style: normal;
+  color: var(--ava-ink);
+  text-shadow: 0 0 24px rgba(120, 200, 245, 0.32);
+}
+
+.ava-hero-orb {
+  animation: avaRise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ava-hero-actions {
+  animation: avaRise 0.6s 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes avaRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Glass on the stage: pills, composer, cards. */
+.ava-stage .ava-pill {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  color: var(--ava-muted);
+}
+
+.ava-stage .ava-pill:hover {
+  border-color: rgba(140, 205, 245, 0.5);
+  background: rgba(26, 143, 212, 0.16);
+  color: var(--ava-ink);
+  box-shadow: 0 10px 26px -12px rgba(26, 143, 212, 0.75);
+}
+
+.ava-stage .ava-pill.is-primary {
+  border-color: rgba(140, 205, 245, 0.45);
+  background: rgba(26, 143, 212, 0.24);
+  color: var(--ava-ink);
+}
+
+.ava-stage .ava-composer {
+  border-radius: 26px;
+  border-color: rgba(255, 255, 255, 0.13);
+  background: linear-gradient(180deg, rgba(120, 190, 255, 0.12) 0%, rgba(40, 110, 200, 0.08) 100%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 18px 48px -18px rgba(1, 8, 22, 0.9);
+}
+
+.ava-stage .ava-composer:focus-within {
+  border-color: rgba(140, 205, 245, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 18px 48px -18px rgba(1, 8, 22, 0.9),
+    0 10px 40px -18px rgba(26, 143, 212, 0.8);
+}
+
+.ava-stage .ava-send:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 8px 20px -6px rgba(26, 143, 212, 0.8);
+}
+
+.ava-stage .ava-user-bubble {
+  border: 1px solid rgba(140, 205, 245, 0.26);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 28px -14px rgba(12, 82, 144, 0.9);
+}
+
+.ava-stage .ava-reply {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.ava-stage .ava-card {
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+
+/* Markdown keeps its own slate colours on white; on the stage it follows Ava's ink. */
+.ava-stage .ava-md :is(strong, h1, h2, h3, p, li, blockquote) {
+  color: inherit;
+}
+
+.ava-stage .ava-md strong {
+  color: var(--ava-ink);
+}
+
+.ava-stage .ava-md :is(code, hr) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--ava-ink);
+}
+
+.ava-stage .ava-md a {
+  color: #8fd0f7;
+  text-decoration-color: rgba(143, 208, 247, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ava-dock,
+  .ava-stage,
+  .ava-hero-orb,
+  .ava-hero-hello,
+  .ava-hero-title,
+  .ava-hero-actions {
+    animation: none;
+  }
+
+  .ava-aurora,
+  .ava-orb-glow,
+  .ava-orb-ribbon {
+    animation: none;
+  }
+}

@@ -73,6 +73,7 @@ import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { ConnectGate, ConnectGateIcon } from "@/components/ui/ConnectGate";
 import { PROSPECT_INTERNAL_NOTE_EVENT } from "@/lib/messaging/internalNoteEvent";
 import {
   clearProspectOpenCaches,
@@ -1015,6 +1016,15 @@ const SORT_OPTIONS: { id: InboxSort; label: string }[] = [
   { id: "unread", label: "Unread first" },
 ];
 
+/** Shown blurred under the connect card when nothing is connected yet. */
+const SAMPLE_INBOX_ROWS = [
+  { name: "Sarah Mitchell", channel: "linkedin", preview: "Thanks for reaching out. Tuesday works for a call.", when: "09:42" },
+  { name: "James Okafor", channel: "whatsapp", preview: "Sounds good, send me the scorecard link.", when: "Yesterday" },
+  { name: "Priya Shah", channel: "email", preview: "Re: Your BOSS Score results", when: "Mon" },
+  { name: "Tom Hughes", channel: "linkedin", preview: "Happy to connect. What do you help owners with?", when: "Sun" },
+  { name: "Claire Dawson", channel: "whatsapp", preview: "Can we move our call to Thursday?", when: "Fri" },
+];
+
 function inboxEmptyCopy(
   tab: InboxTab,
   filters: InboxFilters,
@@ -1435,6 +1445,13 @@ export function MessagingInbox({
     : "/coach/settings?tab=profile";
   const adminOrgWideInbox =
     Boolean(pathname?.startsWith("/admin")) && !impersonatingCoachId;
+  // Nothing connected and nothing to read: show what the inbox will hold.
+  const inboxLocked =
+    accountsLoaded &&
+    inboxAccounts.length === 0 &&
+    !adminOrgWideInbox &&
+    !loading &&
+    conversations.length === 0;
 
   conversationsRef.current = conversations;
 
@@ -4906,14 +4923,51 @@ export function MessagingInbox({
             </div>
           )}
 
+          <ConnectGate
+            locked={inboxLocked}
+            className="min-h-0 flex-1 grid-rows-1"
+            icon={
+              <ConnectGateIcon>
+                <Inbox className="h-5 w-5" strokeWidth={2} />
+              </ConnectGateIcon>
+            }
+            title="Connect your inbox"
+            description="Bring your LinkedIn, WhatsApp and email messages into one place, and reply to everyone from here."
+            action={{ label: "Connect a channel", href: settingsIntegrationsHref }}
+            details="Pick the channels you use in Settings. LinkedIn also runs your campaigns. Gmail or Outlook also sends your booking emails. WhatsApp only brings in chats with people already in your pool, prospects or clients."
+          >
           <ul className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
+            {inboxLocked
+              ? SAMPLE_INBOX_ROWS.map((row) => (
+                  <li key={row.name} className="px-2.5 py-0.5">
+                    <div className="flex items-start gap-2.5 rounded-lg px-2 py-2">
+                      <AvatarWithChannels
+                        name={row.name}
+                        size="md"
+                        channels={[row.channel]}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-slate-900">
+                          {row.name}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-slate-500">
+                          {row.preview}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[11px] text-slate-400">
+                        {row.when}
+                      </span>
+                    </div>
+                  </li>
+                ))
+              : null}
             {loading && conversations.length === 0 ? (
               <li className="flex items-center gap-2 px-4 py-8 text-sm text-slate-500">
                 <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
                 Loading conversations…
               </li>
             ) : null}
-            {filtered.length === 0 && !loading ? (
+            {filtered.length === 0 && !loading && !inboxLocked ? (
               <li className="px-4 py-8 text-sm text-slate-500">
                 {inboxEmptyCopy(
                   tab,
@@ -5071,6 +5125,7 @@ export function MessagingInbox({
               );
             })}
           </ul>
+          </ConnectGate>
         </aside>
           )}
 

@@ -45,6 +45,10 @@ import {
   type NotificationReadState,
 } from "@/lib/communityNotificationReadState";
 import type { ProspectNotificationItem } from "@/lib/prospectNotifications";
+import {
+  FEEDBACK_REQUEST_CATEGORY_SLUG,
+  QA_CATEGORY_LABEL,
+} from "@/lib/coachAccess/tiers";
 
 type DashboardTopActionsProps = {
   variant: "coach" | "admin";
@@ -95,7 +99,13 @@ function NotificationReadToggle({
   );
 }
 
-type NotificationFilter = "all" | "mentions" | "replies" | "announcements" | "wins";
+type NotificationFilter =
+  | "all"
+  | "posts"
+  | "mentions"
+  | "replies"
+  | "announcements"
+  | "wins";
 type NotificationSection = "community" | "prospects";
 
 type NotificationItem = {
@@ -110,6 +120,13 @@ type NotificationItem = {
 };
 
 const NOTIFICATION_ITEMS_MAX = 40;
+
+/** "💬 General Discussion" → "General Discussion"; the feedback slug shows as Ask & Share. */
+function newPostCategoryLabel(slug: string, label: string | null | undefined): string {
+  if (slug === FEEDBACK_REQUEST_CATEGORY_SLUG) return QA_CATEGORY_LABEL;
+  const cleaned = (label ?? "").replace(/^[^\p{L}\p{N}]+/u, "").trim();
+  return cleaned || "the community";
+}
 
 function relativeAgo(iso: string): string {
   const now = Date.now();
@@ -357,6 +374,31 @@ export function DashboardTopActions({
         ? announcementsQuery
         : Promise.resolve({ data: [], error: null });
 
+      // Every main-feed post from someone else. Community is quiet enough that
+      // each new post is worth a ping.
+      let newPostsQuery = supabaseClient
+        .from("community_posts")
+        .select(
+          `
+            id,
+            title,
+            body,
+            created_at,
+            published_at,
+            author_id,
+            category:community_categories!category_id ( slug, label ),
+            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+          `
+        )
+        .or("post_scope.is.null,post_scope.eq.feed")
+        .neq("author_id", uid)
+        .lte("published_at", nowIso)
+        .order("published_at", { ascending: false })
+        .limit(NOTIFICATION_ITEMS_MAX);
+      if (joinedAt) {
+        newPostsQuery = newPostsQuery.gte("published_at", joinedAt);
+      }
+
       const winsPromise =
         variant === "admin" && winsCategoryId
           ? supabaseClient
@@ -386,6 +428,7 @@ export function DashboardTopActions({
         postMentionsRes,
         commentMentionsRes,
         lessonQaRes,
+        newPostsRes,
       ] = await Promise.all([
         repliesPromise,
         announcementsPromise,
@@ -393,6 +436,7 @@ export function DashboardTopActions({
         postMentionsPromise,
         commentMentionsPromise,
         lessonQaPromise,
+        newPostsQuery,
       ]);
 
       type AuthorRow = {
@@ -706,6 +750,55 @@ export function DashboardTopActions({
         }
       }
 
+      if (!newPostsRes.error) {
+        const rows = (newPostsRes.data ?? []) as Array<{
+          id: string;
+          title: string | null;
+          body: string;
+          created_at: string;
+          published_at?: string | null;
+          author: AuthorRow | AuthorRow[] | null;
+          category:
+            | { slug: string; label: string | null }
+            | { slug: string; label: string | null }[]
+            | null;
+        }>;
+        // Announcements, admin wins and posts that mention you already have their own item.
+        const mentionedPostIds = new Set(
+          next
+            .filter((item) => item.id.startsWith("mention-post:"))
+            .map((item) => item.id.slice("mention-post:".length))
+        );
+        for (const row of rows) {
+          if (mentionedPostIds.has(row.id)) continue;
+          const category = Array.isArray(row.category)
+            ? (row.category[0] ?? null)
+            : (row.category ?? null);
+          const author = Array.isArray(row.author)
+            ? (row.author[0] ?? null)
+            : (row.author ?? null);
+          if (!category || !author) continue;
+          if (category.slug === "announcements") continue;
+          if (category.slug === "wins" && variant === "admin") continue;
+          const actor = displayNameFromProfile(author);
+          next.push({
+            id: `post:${row.id}`,
+            type: "posts",
+            created_at: row.published_at ?? row.created_at,
+            actor_name: actor,
+            actor_avatar_url: author.avatar_url ?? null,
+            title:
+              category.slug === "wins"
+                ? `${actor} shared a win`
+                : `${actor} posted in ${newPostCategoryLabel(category.slug, category.label)}`,
+            body: row.title?.trim() || row.body?.trim() || "New post",
+            href: communityPostPath(communityHref, {
+              title: row.title?.trim() || row.body?.trim() || "Community post",
+            }),
+          });
+        }
+      }
+
       next.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -953,7 +1046,9 @@ export function DashboardTopActions({
                     >
                       {filter === "all"
                         ? "All"
-                        : filter === "mentions"
+                        : filter === "posts"
+                          ? "New posts"
+                          : filter === "mentions"
                           ? "Mentions"
                           : filter === "replies"
                             ? "Replies"
@@ -967,6 +1062,7 @@ export function DashboardTopActions({
                         {(
                           [
                             ["all", "All"],
+                            ["posts", "New posts"],
                             ["mentions", "Mentions"],
                             ["replies", "Replies"],
                             ["announcements", "Announcements"],

@@ -1,0 +1,44 @@
+/* Resources pages: Download PDF prints the article column only. */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .rs-print-root,
+  .rs-print-root * {
+    visibility: visible;
+  }
+  .rs-print-root {
+    position: absolute;
+    inset: 0 0 auto 0;
+    width: 100%;
+    margin: 0;
+  }
+  .rs-print-root > div {
+    max-width: none !important;
+  }
+  .rs-no-print {
+    display: none !important;
+  }
+  .rs-doc {
+    font-size: 10.5pt;
+  }
+  .rs-keep {
+    break-inside: avoid;
+  }
+  .rs-print-root h2,
+  .rs-print-root h3,
+  .rs-print-root h4 {
+    break-after: avoid;
+  }
+}

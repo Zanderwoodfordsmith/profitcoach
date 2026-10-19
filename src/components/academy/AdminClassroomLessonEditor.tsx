@@ -34,7 +34,7 @@ type Props = {
   contentsPosition?: "left" | "right";
   chrome?: "default" | "minimal";
   /** Which hub JSON the course comes from — picks the save route. */
-  hub?: "archive" | "classroom";
+  hub?: "archive" | "classroom" | "vault";
   /** Minimal chrome back link; `null` hides it. */
   contentsBackLabel?: string | null;
   /** Open a consolidated step when Edit starts (`?chapter=`). */
@@ -585,6 +585,7 @@ export function AdminClassroomLessonEditor({
         contentsPosition={contentsPosition}
         chrome={chrome}
         contentsBackLabel={contentsBackLabel}
+        chapterStepsGuide={hub !== "vault"}
         viewerIsAdmin
         canEditLessons
         contentSource="classroom"

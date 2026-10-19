@@ -247,10 +247,10 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
  * with the last hub tab from this session.
  */
 /**
- * Blueprint link at the top of Tools. Admins always see it. Coaches see it
- * locally only until it is released: set this to true.
+ * Blueprint link at the top of Tools. Admins always see it. Released to
+ * coaches on 19 Oct 2026; set this to false to hide it from them again.
  */
-const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = process.env.NODE_ENV !== "production";
+const SHOW_BLUEPRINT_IN_COACH_SIDEBAR = true;
 
 export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   // Admins open the coach view, where they can page through every coach's blueprint.
@@ -540,9 +540,7 @@ export function isCoachesHubPath(pathname: string | null): boolean {
     pathname === "/admin" ||
     pathname === "/admin/" ||
     pathMatches(pathname, "/admin/coaches") ||
-    pathMatches(pathname, "/admin/client-success") ||
-    pathMatches(pathname, "/admin/action-plans") ||
-    pathMatches(pathname, "/admin/coach-groups")
+    pathMatches(pathname, "/admin/client-success")
   );
 }
 
@@ -564,11 +562,12 @@ export function isToolkitHubPath(pathname: string | null): boolean {
   return (
     pathMatches(pathname, "/admin/links") ||
     pathMatches(pathname, "/admin/settings") ||
-    pathMatches(pathname, "/admin/signature/scorecard") ||
+    pathMatches(pathname, "/admin/signature") ||
     pathMatches(pathname, "/admin/time-tracker") ||
     pathMatches(pathname, "/admin/landing-analytics") ||
     pathMatches(pathname, "/admin/funnel-analyzer") ||
-    pathMatches(pathname, "/admin/sales-nav-imports")
+    pathMatches(pathname, "/admin/sales-nav-imports") ||
+    pathMatches(pathname, "/admin/referrals")
   );
 }
 

@@ -1,11 +1,9 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import Link from "next/link";
 import {
   Award,
   BookOpen,
-  Compass,
   Heart,
   Megaphone,
   Quote,
@@ -165,7 +163,6 @@ export function buildInitialBrainForm(
 }
 
 type Props = {
-  compassHref: string;
   initialContext: CoachAiContext;
   draftFromChat?: string | null;
   saving: boolean;
@@ -178,7 +175,6 @@ type Props = {
 };
 
 export function ProfitCoachAiBrainForm({
-  compassHref,
   initialContext,
   draftFromChat,
   saving,
@@ -548,14 +544,7 @@ export function ProfitCoachAiBrainForm({
     return (
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-3">
         <p className="text-sm text-slate-600">
-          The AI uses this for proof, voice, and specifics.{" "}
-          <Link
-            href={compassHref}
-            className="font-medium text-sky-700 underline hover:text-sky-800"
-          >
-            Open Compass
-          </Link>{" "}
-          to update signature scores (shown read-only in the AI prompt).
+          The AI uses this for proof, voice, and specifics.
         </p>
         <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
           {ALL_SECTIONS.map((item) => {
@@ -614,15 +603,6 @@ export function ProfitCoachAiBrainForm({
               );
             })}
           </div>
-        </div>
-        <div className="hidden border-t border-slate-100 px-3 py-3 md:block">
-          <Link
-            href={compassHref}
-            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 hover:text-sky-800"
-          >
-            <Compass className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            Compass scores (read-only here)
-          </Link>
         </div>
       </aside>
 

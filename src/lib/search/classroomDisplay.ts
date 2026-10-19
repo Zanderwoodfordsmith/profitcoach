@@ -1,6 +1,7 @@
 import { flattenLessonsInSections, type HubCatalog } from "@/lib/academy/hubCatalog";
 import { loadArchiveHub } from "@/lib/academy/archiveHubLoad";
 import { loadClassroomHubForImport } from "@/lib/academy/importHubLoad";
+import { loadVaultHub } from "@/lib/academy/vaultHubLoad";
 import {
   parseLessonVideoChapters,
   legacyConsolidatedChapterRedirect,
@@ -42,7 +43,7 @@ let hubTitleIndex: Map<string, HubTitleRow> | null = null;
 function titleIndex(): Map<string, HubTitleRow> {
   if (hubTitleIndex) return hubTitleIndex;
   const map = new Map<string, HubTitleRow>();
-  const catalogs: HubCatalog[] = [loadArchiveHub(), loadClassroomHubForImport()];
+  const catalogs: HubCatalog[] = [loadArchiveHub(), loadClassroomHubForImport(), loadVaultHub()];
   for (const catalog of catalogs) {
     for (const course of catalog.courses) {
       for (const lesson of flattenLessonsInSections(course.sections)) {
@@ -103,6 +104,15 @@ export function classroomSearchLessonIds(lessonId: string): string[] {
   const legacy = legacyConsolidatedChapterRedirect(hubId);
   if (legacy?.lessonId) ids.add(legacy.lessonId);
   return [...ids];
+}
+
+/** Hub course and title for a lesson, or null when no hub catalog lists it. */
+export function hubLessonMeta(
+  lessonId: string
+): { lessonId: string; title: string; courseId: string; courseTitle: string } | null {
+  const resolved = resolveHubLessonId(lessonId);
+  const row = titleIndex().get(resolved);
+  return row ? { lessonId: resolved, ...row } : null;
 }
 
 export function hubTitleForLesson(lessonId: string | null | undefined): string | null {

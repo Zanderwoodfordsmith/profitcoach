@@ -6,11 +6,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
+import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
-import { CoachAiPanel } from "@/components/profitCoachAi/CoachAiPanel";
+import { AvaDock } from "@/components/ava/AvaDock";
+import { useAvaPageHost } from "@/components/ava/avaPageHost";
 import { useCoachAgentAccess } from "@/components/agent/useAgentAccess";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
@@ -110,8 +112,8 @@ export default function CoachLayout({
   }, [impersonatingCoachId]);
 
   /**
-   * Compass + Actions are coach-accessible (Classroom tabs).
-   * Scorecard stays admin-only. Ladder redirects live on the page.
+   * Compass and Scorecard are admin-only (Tools & links); coaches go back to
+   * Classroom. Ladder redirects live on the page.
    * Admins without impersonation use /admin/signature*.
    */
   useEffect(() => {
@@ -135,8 +137,6 @@ export default function CoachLayout({
       if (roleBody.role === "admin") {
         if (pathname.startsWith("/coach/signature/scorecard")) {
           router.replace("/admin/signature/scorecard");
-        } else if (pathname.startsWith("/coach/signature/actions")) {
-          router.replace("/admin/signature/actions");
         } else if (pathname.startsWith("/coach/signature/ladder")) {
           router.replace("/admin/account?tab=ladder");
         } else {
@@ -144,7 +144,7 @@ export default function CoachLayout({
         }
         return;
       }
-      if (pathname.startsWith("/coach/signature/scorecard")) {
+      if (!pathname.startsWith("/coach/signature/ladder")) {
         router.replace("/coach/academy/classroom");
       }
     }
@@ -199,8 +199,8 @@ export default function CoachLayout({
   const sidebarCollapsed = sidebarMounted && !sidebarOpen;
 
   /**
-   * Docked AI panel (admin preview). ClickUp-style: pushes the canvas from
-   * the right instead of overlaying it; can expand to full screen.
+   * Ava, from the top bar. She floats over the right of the page (the page
+   * never moves) and can expand to full screen.
    */
   const { profile: viewerProfile, profileLoading } = useDashboardProfile();
   /** Admin-only docked panel — hidden while impersonating so "View as coach" matches members. */
@@ -229,11 +229,12 @@ export default function CoachLayout({
       /* noop */
     }
   };
-  const aiPanelDocked = aiPanelAvailable && aiPanelOpen && !aiPanelFullscreen;
+  /** The Blueprint has Ava built in: the top-bar button opens that one instead. */
+  const avaPageHost = useAvaPageHost();
 
   const shellPadClass = `${
     playbooksReader ? "pl-0" : sidebarExpanded ? "md:pl-56" : "md:pl-14"
-  } ${aiPanelDocked ? "md:pr-[28rem]" : ""} transition-[padding] duration-200`;
+  } transition-[padding] duration-200`;
   const isMinimalWorkshopChrome = bossWorkshopPage && sidebarCollapsed;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
   const { access, hasFeature } = useCoachAccess(impersonatingCoachId);
@@ -268,7 +269,6 @@ export default function CoachLayout({
 
   return (
     <div
-      data-ai-docked={aiPanelDocked ? true : undefined}
       className={`group/appshell ${
         fullHeightPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
@@ -282,12 +282,13 @@ export default function CoachLayout({
         signingOut={signingOut}
         onSignOut={handleSignOut}
         avatarOverride={avatarOverride}
-        showAi={showAiSparkles}
-        aiPanelOpen={aiPanelOpen}
+        showAi={showAiSparkles || Boolean(avaPageHost)}
+        aiPanelOpen={avaPageHost ? avaPageHost.open : aiPanelOpen}
         profileLoading={profileLoading}
-        onToggleAi={() => setAiOpen(!aiPanelOpen)}
+        onToggleAi={avaPageHost ? avaPageHost.toggle : () => setAiOpen(!aiPanelOpen)}
         chromeEnabled={chromeEnabled}
       >
+      <SearchOverlay />
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {!playbooksReader && isMinimalWorkshopChrome && workshopTopRightSlot ? (
           <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
@@ -383,15 +384,11 @@ export default function CoachLayout({
       </BossWorkshopChromeContext.Provider>
       </DashboardChromeProvider>
       <SalesNavImportToast />
-      {aiPanelAvailable && aiPanelOpen ? (
-        <CoachAiPanel
+      {aiPanelAvailable && aiPanelOpen && !avaPageHost ? (
+        <AvaDock
           onClose={() => setAiOpen(false)}
           fullscreen={aiPanelFullscreen}
           onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
-          createHubHref="/coach/message-generator"
-          sidebarVisible={sidebarMounted}
-          sidebarCollapsed={sidebarCollapsed}
-          agentOnly={!adminAiPanel}
         />
       ) : null}
     </div>

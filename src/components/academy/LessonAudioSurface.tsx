@@ -134,6 +134,51 @@ export function LessonAudioSurface({
     if (el) el.playbackRate = rate;
   }, [rate, src]);
 
+  // Lock-screen and headphone controls. Phones keep audio playing with the
+  // screen locked; this gives that playback a title and play/pause/skip.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const session = navigator.mediaSession;
+    session.metadata = new MediaMetadata({ title: title ?? "Lesson audio" });
+    const seekTo = (seconds: number) => {
+      const el = audioRef.current;
+      if (!el) return;
+      const max = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : seconds;
+      el.currentTime = Math.min(max, Math.max(0, seconds));
+    };
+    const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
+      ["play", () => void audioRef.current?.play()],
+      ["pause", () => audioRef.current?.pause()],
+      ["seekbackward", (d) => seekTo((audioRef.current?.currentTime ?? 0) - (d.seekOffset ?? 15))],
+      ["seekforward", (d) => seekTo((audioRef.current?.currentTime ?? 0) + (d.seekOffset ?? 15))],
+      ["seekto", (d) => {
+        if (d.seekTime != null) seekTo(d.seekTime);
+      }],
+    ];
+    for (const [action, handler] of handlers) {
+      try {
+        session.setActionHandler(action, handler);
+      } catch {
+        // Browser does not support this action.
+      }
+    }
+    return () => {
+      for (const [action] of handlers) {
+        try {
+          session.setActionHandler(action, null);
+        } catch {
+          // Browser does not support this action.
+        }
+      }
+      session.metadata = null;
+    };
+  }, [title, src]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+  }, [playing]);
+
   useEffect(() => {
     if (!speedMenuOpen) return;
     function onPointerDown(e: PointerEvent) {

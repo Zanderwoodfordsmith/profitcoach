@@ -28,6 +28,7 @@ import type {
   CoachingPlanDocument,
 } from "@/lib/clientCoaching/types";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useRecordRecentVisit } from "@/lib/search/recentVisits";
 
 type Props = {
   contactId: string;
@@ -204,6 +205,9 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
   const shownBusiness = dismissedBusinessRef.current
     ? contact?.businessName?.trim() || null
     : identitySuggestion?.shownBusiness || null;
+  useRecordRecentVisit(
+    contact ? { kind: "client", title: shownName, detail: shownBusiness } : null
+  );
 
   useEffect(() => {
     if (!contact || !identitySuggestion) return;

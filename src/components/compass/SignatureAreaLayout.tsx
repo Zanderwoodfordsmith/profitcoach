@@ -2,13 +2,12 @@
 
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { ClassroomShell } from "@/components/academy/ClassroomShell";
 import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 
 /**
- * Compass home + Actions sit under Classroom chrome.
- * Scorecard is admin-only with a simple header (no Compass sidebar area).
+ * Compass and Scorecard are admin tools under Tools & links (coaches are sent
+ * back to Classroom; admins impersonating a coach still see the plain header).
  * Ladder redirects to Account settings.
  */
 export function SignatureAreaLayout({
@@ -19,17 +18,32 @@ export function SignatureAreaLayout({
   const pathname = usePathname() ?? "";
   const isScorecard = pathname.includes("/signature/scorecard");
   const isLadder = pathname.includes("/signature/ladder");
-  const isAdminScorecard = pathname.startsWith("/admin/signature/scorecard");
+  const isAdminArea = pathname.startsWith("/admin/signature");
 
   const scorecardHeader = useMemo(
     () => (
       <StickyPageHeader
         title="My Scorecard"
         description="Log weekly pipeline and revenue numbers; targets follow your ladder goal."
-        tabs={isAdminScorecard ? <ToolkitHubTabs /> : undefined}
+        tabs={isAdminArea ? <ToolkitHubTabs /> : undefined}
       />
     ),
-    [isAdminScorecard]
+    [isAdminArea]
+  );
+
+  const compassHeader = useMemo(
+    () => (
+      <StickyPageHeader
+        title="Compass"
+        description={
+          isAdminArea
+            ? "Tap the circle beside each line to score. To score with a coach, impersonate them first. Client Success shows everyone's scores."
+            : "Tap the circle beside each line to score. The model updates as you go."
+        }
+        tabs={isAdminArea ? <ToolkitHubTabs /> : undefined}
+      />
+    ),
+    [isAdminArea]
   );
 
   if (isLadder) {
@@ -45,5 +59,10 @@ export function SignatureAreaLayout({
     );
   }
 
-  return <ClassroomShell>{children}</ClassroomShell>;
+  return (
+    <div className="flex flex-col gap-6">
+      {compassHeader}
+      {children}
+    </div>
+  );
 }

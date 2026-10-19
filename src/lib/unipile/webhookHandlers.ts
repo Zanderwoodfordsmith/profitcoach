@@ -17,6 +17,7 @@ import {
 import {
   isGenericConversationName,
   looksLikePersonName,
+  personNameFromDisplayName,
 } from "@/lib/messaging/conversationDisplay";
 import { mailboxPersonName } from "@/lib/messaging/threadIdentity";
 import {
@@ -234,7 +235,10 @@ export async function handleUnipileMessageReceived(
     String(body.account_type || account.provider)
   );
   const identity = identityFromUnipileWebhook(body, channel);
-  const prospectName = identity.name || "Unknown contact";
+  const prospectName =
+    personNameFromDisplayName(identity.name) ||
+    identity.name ||
+    "Unknown contact";
   const waPhone =
     channel === "whatsapp"
       ? whatsappPhoneDigits({
@@ -387,7 +391,7 @@ export async function handleUnipileMessageReceived(
           channel
         ))
     ) {
-      identityUpdate.prospect_name = identity.name.slice(0, 200);
+      identityUpdate.prospect_name = prospectName.slice(0, 200);
     }
     if (identity.pictureUrl && !existingConv?.prospect_avatar_url) {
       identityUpdate.prospect_avatar_url = identity.pictureUrl;
@@ -442,7 +446,7 @@ export async function handleUnipileMessageReceived(
         channel
       ))
   ) {
-    identityUpdate.prospect_name = identity.name.slice(0, 200);
+    identityUpdate.prospect_name = prospectName.slice(0, 200);
   }
   if (identity.pictureUrl && !existingConv?.prospect_avatar_url) {
     identityUpdate.prospect_avatar_url = identity.pictureUrl;

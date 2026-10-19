@@ -15,6 +15,8 @@ import {
   printPdf,
   svgForInline,
 } from "@/lib/printPack/browserExport";
+import type { ProgrammeBrochure } from "@/lib/practiceKnowledge/brochure";
+import { ProgrammeBrochureCard } from "./ProgrammeBrochure";
 
 type ToolkitDetails = {
   name: string | null;
@@ -22,6 +24,7 @@ type ToolkitDetails = {
   business: string | null;
   avatar_url: string | null;
   coach_slug: string | null;
+  brochure?: ProgrammeBrochure;
 };
 
 type CatalogItem = {
@@ -118,6 +121,8 @@ export function ToolkitHub() {
   return (
     <div className="space-y-14 pb-12">
       <link rel="stylesheet" href={GOOGLE_FONTS_HREF} precedence="default" />
+
+      <ProgrammeBrochureCard pack={details?.brochure ?? null} pathname={pathname} />
 
       <section className="space-y-6">
         <div className="max-w-3xl space-y-2">

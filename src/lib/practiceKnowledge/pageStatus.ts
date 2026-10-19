@@ -39,9 +39,11 @@ export const PAGE_STATUS_COPY: Record<PageStatusId, { label: string; title: stri
 /** Where one blueprint page stands, for the overview. Null when the page has nothing to track. */
 export function pageStatus(page: BlueprintLink, row: PracticeKnowledgeRow): PageStatusId | null {
   const visible = BLUEPRINT_SECTIONS.filter((ref) => ref.page.slug === page.slug && ref.section.face !== "stored");
+  // On the coach's own pages, BCA's write-ups (short bio, how you sound) only
+  // count once they are waiting on the coach.
   const tracked = visible
     .map((ref) => ({ ref, work: sectionWorkflow(ref, row) }))
-    .filter((item) => item.work.tracked);
+    .filter((item) => item.work.tracked && !(item.ref.group.yours && item.work.owner === "bca"));
   if (!tracked.length) return null;
 
   if (tracked.some((item) => item.work.status === "todo" && item.work.owner === "coach")) return "needs_you";

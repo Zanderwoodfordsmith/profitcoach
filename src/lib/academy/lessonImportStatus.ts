@@ -14,6 +14,7 @@ import {
   type HubSection,
 } from "./hubCatalog";
 import { contentSourceCourseId } from "./programmeContentSource";
+import { loadVaultHub } from "./vaultHubLoad";
 import {
   parseLessonVideoChapters,
   type LessonVideoChapterInput,
@@ -87,6 +88,8 @@ const CLASSROOM_DISPLAY_ORDER = [
   ...CLASSROOM_PATH_COURSE_IDS,
 ] as const;
 
+const VAULT_ADMIN_BASE_PATH = "/admin/academy/vault";
+
 function catalogSectionFromHub(
   section: HubSection,
   deletedLessonIds: ReadonlySet<string>,
@@ -114,13 +117,22 @@ function catalogOrderFromHub(
   const remainder = hub.courses.filter((c) => !orderedIds.has(c.id));
 
   return {
-    courses: [...ordered, ...remainder].map((course) => ({
-      id: course.id,
-      title: course.title,
-      sections: course.sections.map((section) =>
-        catalogSectionFromHub(section, deletedLessonIds),
-      ),
-    })),
+    courses: [...ordered, ...remainder].map((course) =>
+      catalogCourseFromHub(course, deletedLessonIds),
+    ),
+  };
+}
+
+function catalogCourseFromHub(
+  course: HubCourse,
+  deletedLessonIds: ReadonlySet<string>,
+): LessonImportCatalogOrder["courses"][number] {
+  return {
+    id: course.id,
+    title: course.title,
+    sections: course.sections.map((section) =>
+      catalogSectionFromHub(section, deletedLessonIds),
+    ),
   };
 }
 
@@ -411,11 +423,20 @@ export async function loadLessonImportStatusReport(
     if (r.is_deleted === true) deletedLessonIds.add(r.lesson_id);
   }
 
+  // Vault programmes sit after the Classroom path so they get the same
+  // video / transcript tracking (and Happy Scribe candidates).
+  const vaultCourses = loadVaultHub().courses;
   const catalogOrder = catalogOrderFromHub(hub, deletedLessonIds);
+  catalogOrder.courses.push(
+    ...vaultCourses.map((course) => catalogCourseFromHub(course, deletedLessonIds)),
+  );
 
   const lessons: LessonImportStatusRow[] = [];
   for (const course of coursesForRows) {
     collectLessonRows(course, course.sections, byKey, adminBasePath, lessons);
+  }
+  for (const course of vaultCourses) {
+    collectLessonRows(course, course.sections, byKey, VAULT_ADMIN_BASE_PATH, lessons);
   }
 
   const flatLessons = flattenLessonImportRows(lessons);
@@ -455,7 +476,7 @@ export async function loadLessonImportStatusReport(
 
   return {
     lessons,
-    courseOrder: coursesForRows.map((c) => c.id),
+    courseOrder: [...coursesForRows, ...vaultCourses].map((c) => c.id),
     catalogOrder,
     summary,
     snapshotUpdatedAt: (snap?.updated_at as string | undefined) ?? null,

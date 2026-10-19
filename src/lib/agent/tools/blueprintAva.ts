@@ -2,9 +2,11 @@ import { blocksToMarkdown, sanitizeBlocks } from "@/lib/practiceKnowledge/blocks
 import {
   BLUEPRINT_GROUPS,
   BLUEPRINT_SECTIONS,
+  blueprintPage,
   fieldFilled,
   fieldValue,
   sectionByKey,
+  type BlueprintLink,
   type FieldSpec,
   type SectionRef,
 } from "@/lib/practiceKnowledge/blueprint";
@@ -15,13 +17,14 @@ import { sectionWorkflow } from "@/lib/practiceKnowledge/sectionWorkflow";
 import { ensurePracticeKnowledge, patchPracticeKnowledge, saveBuiltSection } from "@/lib/practiceKnowledge/store";
 import type { PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 
-import type { AgentToolContext, AgentToolDef, AgentToolInput, GateDecision } from "../types";
+import type { AgentShow, AgentToolDef, AgentToolInput } from "../types";
 import { AgentToolError, bool, coachOf, num, str } from "./util";
 
 /**
  * Ava's Blueprint tools, for coaches and admins. Facts (the coach's answers)
- * are only ever saved from the coach's own words. Written copy is changed by
- * proposal: the person sees the new version on a card and accepts it.
+ * are only ever saved from the coach's own words. Written copy goes straight
+ * into the section; the person reads it on the page and tells Ava to keep it,
+ * change it or put it back. Nothing to click.
  */
 
 /** Pages in the order coaches are asked: proof first, practical setup last. */
@@ -89,29 +92,26 @@ function shapeValue(field: FieldSpec, raw: unknown): unknown {
   }
 }
 
-async function copyGate(input: AgentToolInput, ctx: AgentToolContext): Promise<GateDecision> {
-  const coach = coachOf(ctx);
+/** The section, the new blocks and what is there now, or an error the model can fix. */
+async function checkCopy(input: AgentToolInput, coachId: string) {
   const ref = sectionRef(input);
   if (ref.section.source !== "we_build") {
-    return { error: `${where(ref)} holds the coach's own answers. Ava never rewrites those; use save_answer with their words.` };
+    throw new AgentToolError(`${where(ref)} holds the coach's own answers. Ava never rewrites those; use save_answer with their words.`);
   }
-  const existing = (await ensurePracticeKnowledge(coach.id)).built_sections[ref.key];
+  const existing = (await ensurePracticeKnowledge(coachId)).built_sections[ref.key];
   if (!existing && !ref.key.startsWith("content:")) {
-    return { error: `${where(ref)} is not written yet. BCA writes it first; then you can improve it.` };
+    throw new AgentToolError(`${where(ref)} is not written yet. BCA writes it first; then you can improve it.`);
   }
   const blocks = sanitizeBlocks(input.blocks);
-  if (!blocks.length) return { error: "The new version is empty. Send blocks in the blueprint block format." };
-  const summary = str(input, "summary");
-  return {
-    confirm: true,
-    title: existing ? `Use the new ${ref.section.title}` : `Save ${ref.section.title} to the blueprint`,
-    details: [
-      { label: "Section", value: where(ref) },
-      ...(summary ? [{ label: "What changed", value: summary }] : []),
-    ],
-    preview: blocksToMarkdown(blocks, 4),
-    warning: existing?.edited_at ? "This replaces the current text, including edits made by hand." : undefined,
-  };
+  if (!blocks.length) throw new AgentToolError("The new version is empty. Send blocks in the blueprint block format.");
+  return { ref, blocks, existing };
+}
+
+/** Where a Blueprint page lives for this viewer, with the section anchor the page scrolls to. */
+function blueprintHref(mode: "admin" | "coach", page: BlueprintLink, ref: SectionRef | null): string {
+  const base = mode === "admin" ? "/admin/blueprint/coach" : "/coach/blueprint";
+  const anchor = ref ? `#s-${ref.key.replace(":", "-")}` : "";
+  return `${base}${page.href.slice("/coach/blueprint".length)}${anchor}`;
 }
 
 export const blueprintAvaTools: AgentToolDef[] = [
@@ -301,10 +301,10 @@ export const blueprintAvaTools: AgentToolDef[] = [
   },
   {
     name: "propose_copy",
-    label: "Drafting a new version",
+    label: "Writing the new version",
     needsCoach: true,
     description:
-      "Propose a new version of a written Blueprint section (copy BCA wrote, never the coach's answers). The person sees it on a card and accepts or declines; nothing changes until they accept. Send the whole section in the blueprint block format.",
+      "Write a new version of a written Blueprint section (copy BCA wrote, never the coach's answers) straight into the section. It is live on the page at once, and the version before is kept so undo_copy can put it back. Send the whole section in the blueprint block format.",
     input_schema: {
       type: "object",
       properties: {
@@ -314,20 +314,171 @@ export const blueprintAvaTools: AgentToolDef[] = [
       },
       required: ["section", "blocks", "summary"],
     },
-    gate: copyGate,
     run: async (input, ctx) => {
       const coach = coachOf(ctx);
-      const ref = sectionRef(input);
-      const blocks = sanitizeBlocks(input.blocks);
-      if (!blocks.length) throw new AgentToolError("The new version is empty.");
-      const existing = (await ensurePracticeKnowledge(coach.id)).built_sections[ref.key];
+      const { ref, blocks, existing } = await checkCopy(input, coach.id);
       const now = new Date().toISOString();
       await saveBuiltSection({
         coachId: coach.id,
         key: ref.key,
-        section: { blocks, generated_at: existing?.generated_at ?? now, model: "ava", edited_at: now },
+        section: {
+          blocks,
+          generated_at: existing?.generated_at ?? now,
+          model: "ava",
+          edited_at: now,
+          previous: existing
+            ? {
+                blocks: existing.blocks,
+                generated_at: existing.generated_at,
+                model: existing.model,
+                edited_at: existing.edited_at ?? null,
+                replaced_at: now,
+              }
+            : null,
+        },
       });
-      return { saved: true, section: ref.key, _note: `Updated ${where(ref)}` };
+      return {
+        saved: true,
+        section: ref.key,
+        can_undo: Boolean(existing),
+        ...(existing?.edited_at ? { replaced_hand_edits: true } : {}),
+        _note: `Updated ${where(ref)}`,
+      };
+    },
+  },
+  {
+    name: "undo_copy",
+    label: "Putting it back",
+    needsCoach: true,
+    description:
+      "Put a written section back the way it was before your last propose_copy on it. Use it when they say undo that, put it back, or they liked the old one better. One step back only.",
+    input_schema: {
+      type: "object",
+      properties: { section: { type: "string", description: "Written section key" } },
+      required: ["section"],
+    },
+    run: async (input, ctx) => {
+      const coach = coachOf(ctx);
+      const ref = sectionRef(input);
+      const current = (await ensurePracticeKnowledge(coach.id)).built_sections[ref.key];
+      const previous = current?.previous;
+      if (!current || !previous) throw new AgentToolError(`There is no earlier version of ${where(ref)} to put back.`);
+      if (current.edited_at !== previous.replaced_at) {
+        throw new AgentToolError(
+          `${where(ref)} was changed by hand after your edit, so putting the old version back would lose that. Ask what they want and write it with propose_copy.`
+        );
+      }
+      await saveBuiltSection({
+        coachId: coach.id,
+        key: ref.key,
+        section: {
+          blocks: previous.blocks,
+          generated_at: previous.generated_at,
+          model: previous.model,
+          edited_at: previous.edited_at,
+        },
+      });
+      return { restored: true, section: ref.key, _note: `Put back ${where(ref)}` };
+    },
+  },
+  {
+    name: "clear_answer",
+    label: "Clearing the answer",
+    needsCoach: true,
+    description:
+      "Empty one of the coach's answers, only when they ask you to delete or remove it. To take one item out of a list or results, use save_answer with the rest and replace: true instead.",
+    input_schema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: 'Field path, e.g. "proof.superpowers"' },
+        coach_words: { type: "string", description: "What the coach said asking for it to go, quoted" },
+      },
+      required: ["path", "coach_words"],
+    },
+    run: async (input, ctx) => {
+      const coach = coachOf(ctx);
+      const path = str(input, "path");
+      const owner = fieldOwner(path);
+      if (!owner) throw new AgentToolError(`"${path}" is not an answer you can clear.`);
+      if (!str(input, "coach_words")) throw new AgentToolError("Quote what the coach said. Only they can remove an answer.");
+      // An empty value only survives the sanitizer from a person's edit, which this is.
+      const source = ctx.mode === "admin" ? "admin" : "coach_edit";
+      const [group, key] = path.split(".");
+      const patch = sanitizePayloadPatch(
+        { [group]: { [key]: { value: "", source, updated_at: new Date().toISOString() } } },
+        source
+      );
+      await patchPracticeKnowledge({ coachId: coach.id, payloadPatch: patch });
+      return { cleared: true, section: owner.ref.key, field: owner.field.label, _note: `Cleared ${owner.field.label}` };
+    },
+  },
+  {
+    name: "show_section",
+    label: "Opening it on the page",
+    needsCoach: true,
+    description:
+      "Move the Blueprint beside you to a page, or to one section scrolled into view and lit up, so the person reads it there. Use it when checking with them, and again after you change something so they see the new version. Not while collecting answers: that conversation stays put.",
+    input_schema: {
+      type: "object",
+      properties: {
+        section: { type: "string", description: 'Section key, e.g. "story:results"' },
+        page: { type: "string", description: 'Page slug when showing a whole page, e.g. "voice"' },
+      },
+    },
+    run: async (input, ctx) => {
+      const ref = str(input, "section") ? sectionRef(input) : null;
+      const page = blueprintPage(ref?.page.slug ?? pageSlug(input) ?? "");
+      if (!page) throw new AgentToolError("Send a section key, or a page slug from blueprint_overview.");
+      const show: AgentShow = {
+        page: page.slug,
+        section: ref?.key ?? null,
+        href: blueprintHref(ctx.mode, page, ref),
+        label: ref ? `Open ${where(ref)}` : `Open ${page.title}`,
+      };
+      return { shown: true, _show: show, _note: ref ? `Showing ${where(ref)}` : `Showing ${page.title}` };
+    },
+  },
+  {
+    name: "sign_off_section",
+    label: "Marking it checked",
+    needsCoach: true,
+    description:
+      "Record that the coach has looked over a section and is happy with it as it is now. Only after they say so in this conversation: their yes is the sign-off, there is nothing for them to click. Sections waiting on BCA are not theirs to sign off.",
+    input_schema: {
+      type: "object",
+      properties: {
+        section: { type: "string", description: "Section key" },
+        coach_words: { type: "string", description: "What the coach said, quoted" },
+      },
+      required: ["section", "coach_words"],
+    },
+    run: async (input, ctx) => {
+      const coach = coachOf(ctx);
+      const ref = sectionRef(input);
+      if (!str(input, "coach_words")) throw new AgentToolError("Quote the coach saying they are happy with it.");
+      const row = await ensurePracticeKnowledge(coach.id);
+      const work = sectionWorkflow(ref, row);
+      if (!work.tracked) throw new AgentToolError(`${where(ref)} has nothing in it to sign off.`);
+      if (work.status === "done") return { signed_off: true, already: true };
+      if (work.owner !== "coach" || work.status !== "review" || !work.revision) {
+        throw new AgentToolError(
+          work.owner === "bca"
+            ? `${where(ref)} is waiting on BCA, so there is nothing for the coach to sign off yet.`
+            : `${where(ref)} still has answers to fill before it can be signed off.`
+        );
+      }
+      // Same stamp as signing off on the page: never older than the words it covers.
+      const now = new Date().toISOString();
+      const stamps = { ...(row.payload.review.approved_sections?.value ?? {}), [ref.key]: work.revision > now ? work.revision : now };
+      const source = ctx.mode === "admin" ? "admin" : "coach_edit";
+      const patch = sanitizePayloadPatch({ review: { approved_sections: { value: stamps, source, updated_at: now } } }, source);
+      const after = sectionWorkflow(ref, await patchPracticeKnowledge({ coachId: coach.id, payloadPatch: patch }));
+      return {
+        signed_off: true,
+        status: after.status,
+        waiting_on: after.owner,
+        _note: after.owner === "bca" ? `Signed off ${where(ref)}. BCA checks it next` : `Signed off ${where(ref)}`,
+      };
     },
   },
   {

@@ -2,7 +2,7 @@
 id: linkedin-marketing
 title: LinkedIn marketing
 summary: Write one LinkedIn newsletter issue, then its cover, inbox note, post, article and InMail.
-tools: [blueprint_overview, read_section, propose_copy]
+tools: [blueprint_overview, read_section, propose_copy, undo_copy, show_section]
 references: [practice-skills/_shared.md, practice-skills/linkedin-newsletter.md, practice-skills/nurture.md, ai-knowledge/writing-rules.md, code:blueprint-blocks]
 modes: [admin, coach]
 group: blueprint
@@ -20,8 +20,8 @@ The coach's public LinkedIn engine: one newsletter issue, then the messages that
 
 ## The process
 1. Say the plan in a line ("I'll write this week's issue on cash in scaffolding, then the cover, the inbox note and the post").
-2. Draft the issue in the chat first when they want to see it. Then `propose_copy` for `content:newsletter` with the whole section in blocks. Nothing lands until they accept the card. This issue only. Do not add a list of later issues.
-3. After they accept the issue, offer the pieces that belong to it, one at a time: `content:cover`, `content:inbox`, `content:post`, `content:inmail`, `content:article`. Each is its own section.
+2. Draft the issue in the chat first when they want to see it. Then `propose_copy` for `content:newsletter` with the whole section in blocks, and `show_section` so they read it on the page. It goes straight in; change it or `undo_copy` if they ask. This issue only. Do not add a list of later issues.
+3. Once they are happy with the issue, offer the pieces that belong to it, one at a time: `content:cover`, `content:inbox`, `content:post`, `content:inmail`, `content:article`. Each is its own section.
 4. `content:checklist` is the habit, not an issue. Write or refresh it when they ask how to run the newsletter.
 5. The Analogy issue (`content:analogy`) and the KPIs issue (`content:kpis`) only when they ask, and only from a sport, hobby, book or film they already gave us.
 
