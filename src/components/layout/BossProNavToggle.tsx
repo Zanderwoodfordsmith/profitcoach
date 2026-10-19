@@ -8,12 +8,13 @@ type BossProNavToggleProps = {
   onToggle: () => void;
 };
 
+/** Desktop only: phones always show the bottom nav, so there is nothing to toggle. */
 export function BossProNavToggle({ expanded, onToggle }: BossProNavToggleProps) {
   return (
     <button
       type="button"
       onClick={onToggle}
-      className={`fixed top-4 z-[95] flex h-6 w-6 items-center justify-center rounded-full bg-[#0c5290] text-white shadow-md hover:bg-[#1664b6] sm:top-[1.125rem] md:top-auto md:bottom-6 ${
+      className={`fixed top-4 z-[95] hidden h-6 w-6 items-center justify-center rounded-full bg-[#0c5290] text-white shadow-md hover:bg-[#1664b6] md:flex md:top-auto md:bottom-6 ${
         expanded
           ? "left-3 md:left-56 md:-translate-x-1/2"
           : "left-3 md:left-14 md:-translate-x-1/2"

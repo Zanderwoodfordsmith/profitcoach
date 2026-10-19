@@ -4,33 +4,11 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Download, Loader2 } from "lucide-react";
 import { useInstallDevice } from "@/lib/installDevice";
 import { InstallQrCode } from "@/components/install/InstallQrCode";
+import { InstallArrow, InstallSteps } from "@/components/install/InstallSteps";
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
-
-const STEPS: Record<"ios-safari" | "ios-chrome" | "ios-other" | "android", string[]> = {
-  "ios-safari": [
-    "Tap ••• at the bottom right of Safari (or the Share icon).",
-    "Tap Share, then scroll down and tap Add to Home Screen.",
-    "Leave Open as Web App switched on and tap Add.",
-  ],
-  "ios-chrome": [
-    "Tap the Share icon at the top right, next to the web address.",
-    "Scroll down and tap Add to Home Screen.",
-    "Tap Add.",
-  ],
-  "ios-other": [
-    "This app's browser can't add to your home screen.",
-    "Tap ••• or the compass icon and choose Open in Safari.",
-    "Then follow the steps on the page that opens.",
-  ],
-  android: [
-    "Tap ⋮ at the top right of Chrome.",
-    "Tap Add to Home screen, then Install.",
-    "Tap Install again to confirm.",
-  ],
 };
 
 /** Public /install page. Android gets a one-tap install button; iPhone gets the taps, because Apple doesn't let a site add itself. */
@@ -70,9 +48,15 @@ export function InstallGuide() {
   };
 
   const done = installed || device === "installed";
+  const showSteps =
+    !done &&
+    device !== null &&
+    device !== "desktop" &&
+    !(device === "android" && (prompt || !promptChecked));
 
   return (
-    <main className="flex min-h-dvh items-start justify-center bg-slate-50 px-4 py-10 sm:items-center">
+    <main className="flex min-h-dvh items-start justify-center bg-slate-50 px-4 pb-16 pt-20 sm:items-center sm:py-10">
+      {showSteps ? <InstallArrow device={device} /> : null}
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -136,22 +120,14 @@ export function InstallGuide() {
               <Loader2 className="h-5 w-5 animate-spin text-slate-400" aria-hidden />
             </div>
           ) : (
-            <ol className="space-y-4">
-              {STEPS[device].map((step, i) => (
-                <li key={step} className="flex gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0c5290]/10 text-sm font-semibold text-[#0c5290]">
-                    {i + 1}
-                  </span>
-                  <span className="pt-0.5 text-[15px] leading-snug text-slate-800">{step}</span>
-                </li>
-              ))}
-            </ol>
+            <InstallSteps device={device} />
           )}
         </div>
 
         {!done && device !== null && device !== "desktop" ? (
           <p className="mt-4 text-center text-xs leading-relaxed text-slate-500">
-            Then open it from your home screen and sign in once. It keeps you signed in after that.
+            Then open it from your home screen and sign in once (your phone can fill in a saved
+            password). It keeps you signed in after that.
           </p>
         ) : null}
       </div>

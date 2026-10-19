@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { likelyFemaleFirstName } from "@/lib/directoryGenderHint";
+import { applyDirectoryOrder } from "@/lib/directoryOrder";
 
 type RpcRow = {
   slug: string;
@@ -160,7 +161,7 @@ export async function GET(request: Request) {
     const isBrowse =
       search.length === 0 && level === null && location.length === 0;
     if (isBrowse && page === 1) {
-      coaches = promoteWomenEarly(coaches);
+      coaches = promoteWomenEarly(applyDirectoryOrder(coaches));
     }
 
     return NextResponse.json({

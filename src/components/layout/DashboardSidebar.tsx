@@ -68,8 +68,7 @@ type DashboardSidebarProps = {
   /** Coach-only: hide Join Premium for members already on Premium/VIP. */
   coachAccessTier?: CoachAccessTier | null;
   /**
-   * Desktop: icon-only rail. Mobile bottom nav is hidden while collapsed
-   * (workshop / focus mode).
+   * Desktop: icon-only rail. The mobile bottom nav ignores it and is always shown.
    */
   collapsed?: boolean;
 };
@@ -713,9 +712,7 @@ export function DashboardSidebar({
         </div>
       </aside>
 
-      {/* Mobile: 4 primary tabs + settings (opens more sheet) — hidden while collapsed */}
-      {!collapsed ? (
-        <>
+      {/* Mobile: 4 primary tabs + settings (opens more sheet), always shown */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/15 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-4px_24px_rgba(0,0,0,0.18)] md:hidden"
         aria-label="Main navigation"
@@ -943,8 +940,6 @@ export function DashboardSidebar({
             </div>
           </div>
         </div>
-      ) : null}
-        </>
       ) : null}
     </>
   );

@@ -65,8 +65,9 @@ function IconBookOpen({ className }: { className?: string }) {
 }
 
 function IconAcademy({ className }: { className?: string }) {
+  // Tight viewBox: the paths only fill the middle of 24x24, so it read small beside lucide icons.
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className={className} fill="none" viewBox="3 4.5 18 18" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l7-3.5L12 7 5 10.5 12 14z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 10.5V16.5l7 3.5 7-3.5v-6M5 16.5l7 3.5 7-3.5" />
     </svg>

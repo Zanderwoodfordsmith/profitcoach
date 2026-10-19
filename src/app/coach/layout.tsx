@@ -299,32 +299,16 @@ export default function CoachLayout({
         <main
           className={`min-w-0 w-full pt-0 ${
             edgeToEdgeInbox
-              ? `h-dvh overflow-hidden px-0 ${
-                  sidebarExpanded
-                    ? "pb-0 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
-                    : "pb-0"
-                }`
+              ? "h-dvh overflow-hidden px-0 pb-0 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
               : prospectsListPage || campaignsListPage
-              ? `h-dvh overflow-hidden px-4 md:px-[60px] ${
-                  sidebarExpanded
-                    ? "pb-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                    : "pb-3"
-                }`
+              ? "h-dvh overflow-hidden px-4 md:px-[60px] pb-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
               : membershipPage
               ? "min-h-screen px-0 pb-0"
               : playbooksReader
               ? "min-h-screen px-0 pb-10"
               : blueprintPage
-              ? `h-dvh overflow-hidden px-0 ${
-                  sidebarExpanded
-                    ? "pb-0 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                    : "pb-0"
-                }`
-              : `min-h-screen px-4 md:px-[60px] ${
-                  sidebarExpanded
-                    ? "pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                    : "pb-6"
-                }`
+              ? "h-dvh overflow-hidden px-0 pb-0 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+              : "min-h-screen px-4 md:px-[60px] pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
           }`}
         >
           <div
