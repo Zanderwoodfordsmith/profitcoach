@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+import type { VerifiedUser } from "@/lib/auth/verifyAccessToken";
 import { NextResponse } from "next/server";
 import {
   buildScorecardResult,
@@ -8,12 +8,13 @@ import {
 import type { QualifyingData } from "@/lib/bossScorecardQuestions";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 type AuthFailure = { ok: false; error: string; status: number };
 
 type AuthOk = {
   ok: true;
-  user: User;
+  user: VerifiedUser;
   profileRole: string;
   impersonateCoachId: string | null;
 };
@@ -30,12 +31,9 @@ async function authenticateCoachRequest(request: Request): Promise<AuthResult> {
     return { ok: false, error: "Missing access token.", status: 401 };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return { ok: false, error: "Invalid access token.", status: 401 };
   }
 

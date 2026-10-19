@@ -1,5 +1,7 @@
 "use client";
 
+import { CampaignGroupTestPanel } from "@/components/campaigns/CampaignGroupTestPanel";
+import { CampaignLaunchCheck } from "@/components/campaigns/CampaignLaunchCheck";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -375,6 +377,11 @@ export function LinkedInCampaignEditor() {
         : Boolean(primaryAccount);
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
+
+  const launchCheckHeaders = useCallback(
+    () => authHeaders(impersonatingCoachId),
+    [impersonatingCoachId]
+  );
 
   const applyCore = useCallback((payload: CampaignDetailCorePayload) => {
     const next = asCampaign(payload.campaign);
@@ -1166,6 +1173,17 @@ export function LinkedInCampaignEditor() {
           }))}
         />
       </div>
+
+      {campaignId && activeCampaign.status !== "archived" ? (
+        <CampaignLaunchCheck
+          campaignId={campaignId}
+          refreshKey={steps.map((s) => `${s.position}:${s.step_type}:${(s.body ?? "").length}`).join("|")}
+          getHeaders={launchCheckHeaders}
+        />
+      ) : null}
+      {campaignId && activeCampaign.status !== "archived" && activeCampaign.channel !== "email" ? (
+        <CampaignGroupTestPanel campaignId={campaignId} getHeaders={launchCheckHeaders} onChanged={() => void load()} />
+      ) : null}
 
       {error && !templatePickerOpen ? (
         <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">

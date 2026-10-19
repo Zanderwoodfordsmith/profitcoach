@@ -15,7 +15,7 @@ import {
   MAX_PROSPECT_TAG_LENGTH,
   MAX_PROSPECT_TAGS,
   normalizeProspectTag,
-} from "@/lib/prospects/tags";
+} from "@/lib/prospects/tagNormalize";
 import {
   DEFAULT_PROSPECT_TAGS,
   mergeProspectTagCatalog,
@@ -311,13 +311,8 @@ export function ProspectTagsPopover({
 
   return (
     <>
-      <div
-        ref={triggerRef}
-        className="inline-flex"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={open ? panelId : undefined}
-      >
+      {/* Wrapper only: popup state belongs on the trigger button the caller passes in. */}
+      <div ref={triggerRef} className="inline-flex">
         {children}
       </div>
       {typeof document !== "undefined" && panel

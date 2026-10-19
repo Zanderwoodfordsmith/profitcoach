@@ -17,7 +17,7 @@ import {
   resolveReportCalendarContact,
   type CalendarContactParams,
 } from "@/lib/calendarContactParams";
-import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoachConstants";
 import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
 import { supabaseClient } from "@/lib/supabaseClient";
 

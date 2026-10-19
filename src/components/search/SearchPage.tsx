@@ -36,7 +36,7 @@ import {
   type CommunityPostRow,
 } from "@/components/community/CommunityFeed";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
-import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { getValidSupabaseAccessToken, getSessionUser } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { paginationItems } from "@/lib/communityPagination";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
@@ -293,9 +293,7 @@ export function SearchPage() {
     let cancelled = false;
     const run = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabaseClient.auth.getUser();
+        const user = await getSessionUser();
         const rows = await fetchEnrichedCommunityPostsByIds(
           communityItems.map((item) => item.id),
           { viewerProfileId: user?.id ?? null }

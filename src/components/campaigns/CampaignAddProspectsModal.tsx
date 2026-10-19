@@ -16,7 +16,7 @@ import {
   displayListPersonName,
   splitPersonName,
   type AudienceListSummary,
-} from "@/lib/leadLists/audienceLists";
+} from "@/lib/leadLists/audienceListShared";
 import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode";
 import type { ParsedProspectCsvRow } from "@/lib/prospects/parseProspectsCsv";
 import { CsvUploadDropzone } from "@/components/prospects/CsvUploadDropzone";

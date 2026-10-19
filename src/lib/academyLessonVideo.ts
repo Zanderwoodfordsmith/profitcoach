@@ -4,6 +4,7 @@ import {
   resolveCommunityPostMediaMime,
 } from "@/lib/communityPostMedia";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 /** Must match `academy-lessons` bucket `file_size_limit` (see 20260731150000 migration). */
 export const ACADEMY_LESSON_MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
@@ -44,11 +45,8 @@ export async function uploadAcademyLessonVideoFile(
     return validated;
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseClient.auth.getUser();
-  if (userError || !user) {
+  const user = await getSessionUser();
+  if (!user) {
     return { error: "Not signed in." };
   }
 

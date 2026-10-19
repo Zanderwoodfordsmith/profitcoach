@@ -1,6 +1,5 @@
 import { parseCoachIdHeader } from "@/lib/coachId";
 import { effectiveMessagingCoachId } from "@/lib/messaging/messagingCoachScope";
-import { requireAdmin } from "@/lib/requireAdmin";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -36,8 +35,13 @@ async function impersonatedCoachExists(coachId: string): Promise<boolean> {
 export async function resolveMessagingAccess(
   request: Request
 ): Promise<MessagingAccess> {
-  const admin = await requireAdmin(request);
-  if (admin.error === null && admin.userId) {
+  // One auth pass for both roles (this used to run the admin check, then the coach check).
+  const auth = await requireCoachRequest(request, { allowAdminSelf: true });
+  if (auth.error || !auth.userId) {
+    return { ok: false, error: auth.error || "Not authorized.", status: 401 };
+  }
+
+  if (auth.callerIsAdmin) {
     const impersonateId = parseCoachIdHeader(
       request.headers.get("x-impersonate-coach-id")
     );
@@ -49,28 +53,19 @@ export async function resolveMessagingAccess(
     return {
       ok: true,
       coachId: effectiveMessagingCoachId({
-        userId: admin.userId,
+        userId: auth.callerId,
         isAdmin: true,
         impersonateId,
       }),
       isAdmin: true,
-      userId: admin.userId,
-    };
-  }
-
-  const coach = await requireCoachRequest(request);
-  if (coach.error || !coach.userId) {
-    return {
-      ok: false,
-      error: coach.error || admin.error || "Not authorized.",
-      status: 401,
+      userId: auth.callerId,
     };
   }
 
   return {
     ok: true,
-    coachId: coach.userId,
+    coachId: auth.userId,
     isAdmin: false,
-    userId: coach.userId,
+    userId: auth.userId,
   };
 }

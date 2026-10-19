@@ -32,7 +32,7 @@ import {
 import type { CalendarContactParams } from "@/lib/calendarContactParams";
 import { PLAYBOOK_COUNT } from "@/lib/bossData";
 import { getOverallLevel } from "@/lib/insightEngine";
-import { getPrimaryCoachSlug, PRIMARY_COACH_CALENDAR_EMBED_CODE } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug, PRIMARY_COACH_CALENDAR_EMBED_CODE } from "@/lib/primaryCoachConstants";
 import type { BossLevel } from "@/lib/bossScorecardScores";
 import { getCtaTier } from "@/lib/bossScorecardScores";
 import {

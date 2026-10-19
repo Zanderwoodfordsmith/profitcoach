@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 /**
  * GET /api/community/members-map
@@ -38,12 +39,9 @@ async function requireStaff(request: Request): Promise<
     return { ok: false, status: 401, message: "Missing access token." };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return { ok: false, status: 401, message: "Invalid access token." };
   }
 

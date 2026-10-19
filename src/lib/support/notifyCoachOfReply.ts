@@ -11,7 +11,6 @@ import {
 } from "@/lib/support/supportTicketMedia";
 import { supportMarkdownToEmailInnerHtml } from "@/lib/support/supportMessageHtml";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import type { SupportTicketSource } from "@/lib/support/tickets";
 import {
   getUnipileEmail,
   isUnipileConfigured,
@@ -83,14 +82,7 @@ export async function resolveSupportNotifyRecipient(ticket: {
   };
 }
 
-export function supportNotifyDefaultOn(
-  source: SupportTicketSource | string | null | undefined,
-  memberNotifyEmail?: boolean | null
-): boolean {
-  if (memberNotifyEmail === false) return false;
-  if (memberNotifyEmail === true) return true;
-  return source === "email_inbox" || source === "public_form";
-}
+export { supportNotifyDefaultOn } from "@/lib/support/notifyDefaults";
 
 /**
  * Schedule (or re-bump) a debounced email notify for this ticket.

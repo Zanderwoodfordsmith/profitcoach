@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type CoachProfile = {
   id: string;
@@ -25,25 +27,18 @@ export default function CoachDashboardPage() {
       setLoading(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
 
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
         error?: string;
       };
-      if (!roleRes.ok || !roleBody.role) {
+      if (!roleBody.role) {
         setError("Unable to load your profile.");
         setLoading(false);
         return;
@@ -57,18 +52,14 @@ export default function CoachDashboardPage() {
         return;
       }
 
-      const infoRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: effectiveCoachId }),
-      });
-      const infoBody = (await infoRes.json().catch(() => ({}))) as {
+      const infoBody = (await fetchProfileRole(effectiveCoachId)) as {
+        role?: string;
         full_name?: string | null;
         coach_business_name?: string | null;
         coach_slug?: string | null;
       };
       if (cancelled) return;
-      if (!infoRes.ok) {
+      if (!infoBody.role) {
         setError("Unable to load coach info.");
         setLoading(false);
         return;

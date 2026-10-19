@@ -1,4 +1,5 @@
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 const LOCAL_STORAGE_PREFIX = "support-admin-reply-draft:";
 
@@ -65,9 +66,7 @@ export async function saveAdminReplyDraft(
     return;
   }
 
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
+  const user = await getSessionUser();
   if (!user?.id) return;
 
   const { error } = await supabaseClient.from("support_admin_reply_drafts").upsert(
@@ -93,9 +92,7 @@ export async function clearAdminReplyDraft(reportId: string): Promise<void> {
   if (!reportId) return;
   clearLegacyLocalDraft(reportId);
 
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
+  const user = await getSessionUser();
   if (!user?.id) return;
 
   await supabaseClient

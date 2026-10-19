@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CommunityCalendar } from "@/components/community/CommunityCalendar";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 export function CommunityCalendarPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -20,12 +21,7 @@ export function CommunityCalendarPage() {
         if (!cancelled) setCalendarAdmin(false);
         return;
       }
-      const res = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: uid }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { role?: string };
+      const body = (await fetchProfileRole(uid)) as { role?: string };
       if (!cancelled) setCalendarAdmin(body.role === "admin");
     })();
     return () => {

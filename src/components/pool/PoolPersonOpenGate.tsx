@@ -15,7 +15,7 @@ import {
   prefetchProspectThread,
   rememberProspectConversation,
 } from "@/lib/messaging/prefetchProspectOpen";
-import { isLeadListUuid } from "@/lib/leadLists/audienceLists";
+import { isLeadListUuid } from "@/lib/leadLists/leadListId";
 import {
   liteProspectFromPool,
   peekPendingPoolPerson,

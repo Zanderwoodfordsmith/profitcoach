@@ -14,15 +14,14 @@ import {
   patchPracticeKnowledge,
   syncPracticeToBrain,
 } from "@/lib/practiceKnowledge/store";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 /** BCA sign-off is stored on the payload, and only an admin may move it. */
 async function callerIsAdmin(request: Request): Promise<boolean> {
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : null;
   if (!token) return false;
-  const {
-    data: { user },
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
   if (!user) return false;
   const { data } = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).maybeSingle();
   return data?.role === "admin";

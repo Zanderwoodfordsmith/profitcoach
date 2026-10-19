@@ -32,6 +32,7 @@ import {
   type SupportTicket,
   type SupportTicketType,
 } from "@/lib/support/tickets";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type PendingMedia = { key: string; file: File; previewUrl: string };
 
@@ -245,9 +246,7 @@ export function SupportCreateTicketComposer({
   useEffect(() => {
     if (isAdminCreate) return;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       setAccountEmail(user?.email?.trim() || null);
     })();
   }, [isAdminCreate]);
@@ -324,9 +323,7 @@ export function SupportCreateTicketComposer({
     setError(null);
 
     try {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user?.id) throw new Error("Could not determine your account.");
 
       const createdBy = isAdminCreate

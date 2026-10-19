@@ -21,6 +21,7 @@ import type {
 import { parseProgrammeWelcomePrefill } from "@/config/programmeWelcome";
 import { START_HERE_WELCOME_PATH } from "@/lib/academy/classroomIds";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 type WelcomeState =
   | { status: "loading" }
@@ -72,16 +73,11 @@ function WelcomeInner() {
           throw new Error("Sign in as admin first, then open this preview link.");
         }
 
-        const roleRes = await fetch("/api/profile-role", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user.id }),
-        });
-        const roleBody = (await roleRes.json().catch(() => ({}))) as {
+        const roleBody = (await fetchProfileRole(user.id)) as {
           role?: string;
           full_name?: string | null;
         };
-        if (!roleRes.ok || roleBody.role !== "admin") {
+        if (roleBody.role !== "admin") {
           throw new Error("This preview is only available to admins.");
         }
 

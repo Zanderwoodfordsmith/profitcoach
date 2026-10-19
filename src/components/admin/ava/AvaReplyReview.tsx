@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { AvaAutopilotAdmin } from "@/components/admin/ava/AvaAutopilotAdmin";
 
 type Disposition = "interested" | "neutral" | "not_interested";
-type NextStep = "calendar" | "scorecard" | "answer" | "nurture" | "no_reply" | "human";
+type NextStep = "calendar" | "scorecard" | "answer" | "nurture" | "no_reply" | "human" | "confirm_time";
 
 type Row = {
   id: string;
@@ -21,6 +22,10 @@ type Row = {
   reason: string | null;
   draft: string | null;
   alert_sent_at: string | null;
+  alert_channels: string[] | null;
+  mode: string | null;
+  status: string | null;
+  sent_text: string | null;
   admin_disposition: Disposition | null;
   admin_next_step: NextStep | null;
   admin_note: string | null;
@@ -41,6 +46,7 @@ const STEP_LABEL: Record<NextStep, string> = {
   nurture: "Keep it going",
   no_reply: "No reply",
   human: "Coach handles",
+  confirm_time: "Confirm their time",
 };
 
 async function adminHeaders(): Promise<Record<string, string> | null> {
@@ -130,6 +136,8 @@ export function AvaReplyReview() {
         Autopilot stays off until these agree often enough, especially on when to send the calendar.
       </p>
 
+      <AvaAutopilotAdmin />
+
       {stats ? (
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
@@ -208,6 +216,17 @@ function ReplyCard({
         {row.confidence != null ? ` · ${Math.round(Number(row.confidence) * 100)}% sure` : ""}
         {row.reason ? <span className="text-slate-500"> · {row.reason}</span> : null}
       </p>
+      {row.mode || row.alert_channels?.length ? (
+        <p className="mt-1 text-xs text-slate-500">
+          {row.mode ? `Mode: ${row.mode}` : ""}
+          {row.alert_channels?.length ? ` · Alerted by ${row.alert_channels.join(", ")}` : ""}
+        </p>
+      ) : null}
+      {row.sent_text ? (
+        <p className="mt-2 whitespace-pre-wrap rounded border border-sky-200 bg-sky-50 p-2 text-sm text-slate-800">
+          <span className="font-medium">Ava {row.status === "autopilot_cancelled" ? "would have sent (cancelled)" : "sent"}:</span> {row.sent_text}
+        </p>
+      ) : null}
       {row.draft ? (
         <details className="mt-2 text-sm">
           <summary className="cursor-pointer text-slate-500">Ava&apos;s draft</summary>

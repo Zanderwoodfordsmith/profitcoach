@@ -82,6 +82,25 @@ export async function enrichMessagingConversationPeople<
     if (row.coach_id) coachIds.add(row.coach_id);
   }
 
+  // The coach-wide bridge only needs coach ids: start it now, apply it below.
+  const coachList = [...coachIds];
+  const bridgeRowsPromise = coachList.length
+    ? Promise.all([
+        supabaseAdmin
+          .from("contacts")
+          .select("linkedin_url, linkedin_provider_id")
+          .in("coach_id", coachList)
+          .not("linkedin_provider_id", "is", null)
+          .limit(2000),
+        supabaseAdmin
+          .from("linkedin_campaign_leads")
+          .select("linkedin_url, linkedin_provider_id")
+          .in("coach_id", coachList)
+          .not("linkedin_provider_id", "is", null)
+          .limit(2000),
+      ])
+    : null;
+
   const leadsByChat = new Map<
     string,
     {
@@ -157,22 +176,8 @@ export async function enrichMessagingConversationPeople<
   for (const lead of leadsByChat.values()) {
     addBridgePair(bridge, lead.linkedin_url, lead.linkedin_provider_id);
   }
-  if (coachIds.size) {
-    const coachList = [...coachIds];
-    const [{ data: bridgeContacts }, { data: bridgeLeads }] = await Promise.all([
-      supabaseAdmin
-        .from("contacts")
-        .select("linkedin_url, linkedin_provider_id")
-        .in("coach_id", coachList)
-        .not("linkedin_provider_id", "is", null)
-        .limit(2000),
-      supabaseAdmin
-        .from("linkedin_campaign_leads")
-        .select("linkedin_url, linkedin_provider_id")
-        .in("coach_id", coachList)
-        .not("linkedin_provider_id", "is", null)
-        .limit(2000),
-    ]);
+  if (bridgeRowsPromise) {
+    const [{ data: bridgeContacts }, { data: bridgeLeads }] = await bridgeRowsPromise;
     for (const row of bridgeContacts ?? []) {
       addBridgePair(
         bridge,

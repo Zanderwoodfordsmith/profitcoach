@@ -26,7 +26,7 @@ import {
   bossLevelSaturated,
 } from "@/lib/bossScorecardColors";
 import type { CalendarContactParams } from "@/lib/calendarContactParams";
-import { getPrimaryCoachSlug, PRIMARY_COACH_CALENDAR_EMBED_CODE } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug, PRIMARY_COACH_CALENDAR_EMBED_CODE } from "@/lib/primaryCoachConstants";
 import type { BossLevel } from "@/lib/bossScorecardScores";
 import {
   computeScorecardFocusAreas,

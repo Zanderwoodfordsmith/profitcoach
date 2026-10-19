@@ -49,7 +49,7 @@ import {
 } from "@/components/support/SupportVoiceRecorder";
 import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
 import { ScheduleMessageModal } from "@/components/messaging/ComposerMediaTools";
-import { assertFutureSchedule } from "@/lib/support/scheduledReplies";
+import { assertFutureSchedule } from "@/lib/support/scheduleTime";
 import {
   COMMUNITY_COMMENT_MEDIA_MAX,
 } from "@/lib/communityCommentMedia";
@@ -75,6 +75,7 @@ import {
   loadAdminReplyDraft,
   saveAdminReplyDraft,
 } from "@/lib/support/adminReplyDrafts";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 import {
   deleteSupportInternalNote,
   insertSupportInternalNote,
@@ -99,7 +100,7 @@ import {
 import {
   buildSupportCallPrefillQuery,
   type SupportCallContactPrefill,
-} from "@/lib/support/supportCallPrefill";
+} from "@/lib/support/supportCallPrefillQuery";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
@@ -495,9 +496,7 @@ export function AdminTicketReplies({
 
   useEffect(() => {
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       setUserId(user?.id ?? null);
       setSendAsId((current) => current ?? user?.id ?? null);
     })();

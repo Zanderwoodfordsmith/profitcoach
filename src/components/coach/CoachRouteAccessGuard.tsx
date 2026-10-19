@@ -14,6 +14,8 @@ import {
   gatedRouteForPath,
 } from "@/lib/coachAccess/gatedRoutes";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type Props = {
   children: ReactNode;
@@ -31,9 +33,7 @@ export function CoachRouteAccessGuard({ children }: Props) {
     let cancelled = false;
     void (async () => {
       setRoleLoading(true);
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         if (!cancelled) {
           setIsAdmin(false);
@@ -41,12 +41,7 @@ export function CoachRouteAccessGuard({ children }: Props) {
         }
         return;
       }
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
       };
       if (!cancelled) {

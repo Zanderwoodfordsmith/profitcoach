@@ -28,6 +28,7 @@ import { callsCalendarsHref } from "@/lib/booking/callsCalendarsPath";
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 type LinkedInImportProfile = {
   linkedinUrl: string;
@@ -132,16 +133,11 @@ export function BossDashboardSettings({
       return;
     }
 
-    const roleRes = await fetch("/api/profile-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session.user.id }),
-    });
-    const roleBody = (await roleRes.json().catch(() => ({}))) as {
+    const roleBody = (await fetchProfileRole(session.user.id)) as {
       role?: string;
       error?: string;
     };
-    if (!roleRes.ok || !roleBody.role) {
+    if (!roleBody.role) {
       setError("Unable to load your profile.");
       setLoading(false);
       return;
@@ -166,10 +162,16 @@ export function BossDashboardSettings({
       headers["x-impersonate-coach-id"] = impersonatingCoachId;
     }
 
+    // Both at once; the page shows as soon as the profile is in and the
+    // LinkedIn import fills its own section when it lands.
+    setLinkedinImportLoading(true);
+    setLinkedinImportError(null);
+    const liPromise = fetch("/api/coach/linkedin/profile", { headers }).catch(() => null);
     const res = await fetch("/api/coach/profile", { headers });
     if (!res.ok) {
       setError("Could not load profile.");
       setLoading(false);
+      setLinkedinImportLoading(false);
       return;
     }
     const data = (await res.json()) as ProfileData;
@@ -182,11 +184,10 @@ export function BossDashboardSettings({
     setLocation(data.location ?? "");
     setReplyCopilotNotes(data.reply_copilot_notes ?? "");
 
-    setLinkedinImportLoading(true);
-    setLinkedinImportError(null);
+    setLoading(false);
     try {
-      const liRes = await fetch("/api/coach/linkedin/profile", { headers });
-      if (liRes.ok) {
+      const liRes = await liPromise;
+      if (liRes?.ok) {
         const liBody = (await liRes.json()) as {
           profile?: LinkedInImportProfile | null;
         };
@@ -197,8 +198,6 @@ export function BossDashboardSettings({
     } finally {
       setLinkedinImportLoading(false);
     }
-
-    setLoading(false);
   }, [router, impersonatingCoachId, variant]);
 
   useEffect(() => {
@@ -673,13 +672,13 @@ export function BossDashboardSettings({
 
         <ProfileSectionCard
           title="Reply style"
-          description="Optional notes the reply copilot layers on top of the shared prompt — how you sign off, what you never pitch, phrases you like."
+          description="Optional notes for the replies Ava drafts for you: how you sign off, what you never pitch, phrases you like."
         >
           <ProfileFieldRow
             label="Notes"
             htmlFor="reply_copilot_notes"
             alignTop
-            hint="Used when you tap the sparkle in Conversations. Leave blank to use the shared voice only."
+            hint="Used whenever Ava drafts a reply, including the sparkle in Conversations. Leave blank to use the standard voice."
             last
           >
             <ProfileMinimalTextarea

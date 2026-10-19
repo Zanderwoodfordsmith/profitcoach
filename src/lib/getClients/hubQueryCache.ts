@@ -1,5 +1,7 @@
 /**
- * In-memory stale-while-revalidate cache for Get Clients hub lists.
+ * In-memory stale-while-revalidate cache for Get Clients hub lists, and for
+ * shell data many components ask for at once (profile, role, coach access,
+ * the notification bell) so they share one request across pages.
  * AuthZ still happens on every network fetch; this is a paint cache only.
  * Never persist to localStorage / sessionStorage — payloads include PII.
  */

@@ -34,6 +34,7 @@ import {
 } from "@/lib/ladderIncomeGoal";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 const PAGE_SIZE = 50;
 const stylesMap = styles as Record<string, string>;
@@ -205,12 +206,7 @@ export function MyLadderTab() {
     } = await supabaseClient.auth.getSession();
     if (!session?.access_token) return null;
 
-    const roleRes = await fetch("/api/profile-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session.user.id }),
-    });
-    const roleBody = (await roleRes.json().catch(() => ({}))) as {
+    const roleBody = (await fetchProfileRole(session.user.id)) as {
       role?: string;
     };
 
@@ -243,12 +239,7 @@ export function MyLadderTab() {
       return;
     }
 
-    const roleRes = await fetch("/api/profile-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session.user.id }),
-    });
-    const roleBody = (await roleRes.json().catch(() => ({}))) as {
+    const roleBody = (await fetchProfileRole(session.user.id)) as {
       role?: string;
     };
     const onAdminOwnLadder =

@@ -266,8 +266,10 @@ export async function hydrateNotificationReadState(
     mergeNotificationReadStates(local, remote)
   );
   persistNotificationReadStateLocal(uid, merged);
-  // Always mirror resolved state server-side (covers first-time seed).
-  void upsertNotificationReadStateServer(uid, merged);
+  // Mirror server-side only when something changed (covers first-time seed).
+  if (error || JSON.stringify(merged) !== JSON.stringify(remote)) {
+    void upsertNotificationReadStateServer(uid, merged);
+  }
   return merged;
 }
 

@@ -8,7 +8,7 @@ import {
   MAGNET_STAGE_LABEL,
   type MagnetAudience,
   type MagnetStage,
-} from "@/lib/leadMagnets/audience";
+} from "@/lib/leadMagnets/audienceTypes";
 
 const STAGE_COLOR: Record<MagnetStage, string> = {
   opted_in: "#94a3b8",

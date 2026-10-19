@@ -1,14 +1,15 @@
-import type { User } from "@supabase/supabase-js";
+import type { VerifiedUser } from "@/lib/auth/verifyAccessToken";
 import { NextResponse } from "next/server";
 import { PLAYBOOKS } from "@/lib/bossData";
 import { isPlaybookSessionNotesKey } from "@/lib/playbookSessionNotes";
 import {
   CONTACTS_SESSION_NOTES_MIGRATION_HINT,
   isMissingColumnError,
-  loadContactForWorkshopSession,
 } from "@/lib/contactsSchemaSafeSelect";
+import { loadContactForWorkshopSession } from "@/lib/contactWorkshopSession";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getTotalScore } from "@/lib/bossScores";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 const VALID_PLAYBOOK_REFS = new Set(PLAYBOOKS.map((p) => p.ref));
 
@@ -21,7 +22,7 @@ type WorkshopAuthFailure = { ok: false; error: string; status: number };
 
 type WorkshopAuthOk = {
   ok: true;
-  user: User;
+  user: VerifiedUser;
   profileRole: string;
   impersonateCoachId: string | null;
 };
@@ -43,12 +44,9 @@ async function authenticateWorkshopSession(request: Request): Promise<WorkshopAu
     return { ok: false, error: "Missing access token.", status: 401 };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return { ok: false, error: "Invalid access token.", status: 401 };
   }
 

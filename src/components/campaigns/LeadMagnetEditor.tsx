@@ -27,7 +27,7 @@ import {
   emptyMagnetAudience,
   type MagnetAudience,
   type MagnetStage,
-} from "@/lib/leadMagnets/audience";
+} from "@/lib/leadMagnets/audienceTypes";
 import {
   getLeadMagnet,
   magnetShareCopyUrl,

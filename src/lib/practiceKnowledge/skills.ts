@@ -108,6 +108,7 @@ Blocks, in this order:
 3. heading "The sequence", then message blocks for Connection request (under 275 characters, note the character count), Message 1 (30 minutes), Message 2 (1 day), Message 3 (2 days), Message 4 (4 days), Message 5 (2 weeks). Put the timing in each note.
 4. heading "Check before launch", then a table with columns Check, Pass (the ten connection message checks, each Yes or Fix with a reason).
 If the proof has no number yet, keep the placeholder in square brackets and add a callout (tone "warning") saying the campaign cannot launch until it has one.
+Every story, anecdote, number and result about the coach must come from their record. If a message needs one the record does not have, write a [square-bracket prompt] for the coach to fill instead. Never make one up.
 Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
   },
   "campaigns:conversation": {
@@ -141,6 +142,7 @@ Blocks, in this order:
 2. heading "Who gets it", then a callout (tone "tip") on who goes on the top 100 list and the rhythm (every two weeks).
 3. heading "The sequence", then four message blocks, two weeks apart. Each gives away one BCA tool that fits the avatar's pains (for example "Profit Maximiser", "Cashflow Forecaster", "Time Value Tracker", "Pairwise Prioritisation"), opens with a personal first line in square brackets, has three emoji-numbered benefits, and ends with [link to the tool]. Put the timing in each note. One of the four should open from a story, book, film or hobby they named, if they named one.
 4. heading "Nurture rhythm", then a timeline for people who said not now (for example Week 2, Week 5, Week 8, Day 90).
+Every story, anecdote, number and result about the coach must come from their record. If a message needs one the record does not have, write a [square-bracket prompt] for the coach to fill instead. Never make one up.
 Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
   },
   "conversations:followup": {
@@ -151,6 +153,7 @@ Blocks, in this order:
 1. lede: how to handle replies in one sentence.
 2. heading "When they reply", then for each common reply a message block whose label is the prospect's reply (for example "They say: How much is it?") and whose body is what to send back. Cover: what is it exactly, how much is it, not right now, we are doing fine, who are you, a neutral one-liner, send me some info. Each moves to one next step. Never quote below their minimum fee.
 3. heading "Avoid", then bullets (the reply mistakes, short).
+Every story, anecdote, number and result about the coach must come from their record. If a message needs one the record does not have, write a [square-bracket prompt] for the coach to fill instead. Never make one up.
 Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
   },
   "campaigns:interested": {

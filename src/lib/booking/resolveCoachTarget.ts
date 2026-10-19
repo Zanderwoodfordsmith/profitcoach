@@ -5,6 +5,7 @@ import {
 } from "@/lib/support/supportCallHosts";
 import { parseCoachIdHeader } from "@/lib/coachId";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 export type CoachAuthUser = {
   userId: string;
@@ -129,11 +130,8 @@ export async function requireCoachOrAdmin(request: Request): Promise<
     };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) {
+  const user = await verifyAccessToken(token);
+  if (!user) {
     return {
       error: "Invalid access token.",
       userId: null,

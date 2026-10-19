@@ -19,6 +19,7 @@ import {
   type DemoCoachToggleUser,
 } from "@/lib/demoCoachToggle";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 const RECENT_KEY = "pc-use-as-recent-coach-ids";
 const MAX_RECENT = 5;
@@ -139,9 +140,7 @@ export function UseAsMenu({
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (cancelled) return;
       const accessible = staffDemosAccessibleToEmail(user?.email);
       setDemos(accessible);

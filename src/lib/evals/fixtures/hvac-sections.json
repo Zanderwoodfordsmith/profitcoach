@@ -1,0 +1,649 @@
+{
+ "voice:sound": {
+  "blocks": [
+   {
+    "text": "Zander sounds like someone who has actually done the job, not read about it. He is direct, unpretentious, and comfortable letting the work speak.",
+    "type": "lede"
+   },
+   {
+    "type": "pairs",
+    "items": [
+     {
+      "label": "Tone",
+      "value": "Straight-talking, grounded, confident without being loud, quietly warm"
+     },
+     {
+      "label": "Pace",
+      "value": "Measured. He takes a beat before he answers. No rushing to fill silence."
+     },
+     {
+      "label": "Formality",
+      "value": "Low. First names from the off. No corporate polish. Speaks to an MD the way one operator speaks to another."
+     },
+     {
+      "label": "Humour",
+      "value": "Dry and rare. He does not go for the laugh, but it surfaces naturally."
+     },
+     {
+      "label": "Regional flavour",
+      "value": "Yorkshire. 'Aye', 'nowt', 'the lads'. Not performed, just present."
+     }
+    ]
+   },
+   {
+    "text": "Sounds like",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "'Aye, it's usually the same three things. Margin, being stuck in the middle of everything, and retentions nobody's chasing. I've lived all three, so I can talk to them straight.'",
+     "'I want to get properly into the numbers early on. Some of it'll feel more like hands-on work than coaching, and that's how I like it.'",
+     "'Eight clients is the right number. Enough to build something meaningful, not so many that people are getting half my attention.'"
+    ]
+   },
+   {
+    "text": "Does not sound like",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "'I help visionary leaders unlock transformational growth by navigating the complexities of today's business landscape.'",
+     "'Let's dive deep into your journey and unpack what's really holding you back from elevating your business to the next level.'",
+     "'I empower contractors to leverage robust systems that deliver seamless, sustainable profitability.'"
+    ]
+   },
+   {
+    "text": "Words and phrases to use",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "Aye / nowt / the lads",
+     "Live jobs, live site",
+     "Job costing, pricing up, the tender",
+     "Margin bleed, where the money went",
+     "Retentions, money sitting out there",
+     "Weekly numbers rhythm",
+     "Planned maintenance, PM work, service contracts",
+     "The MD as bottleneck",
+     "Getting into the numbers",
+     "Talk to it straight",
+     "What's already there (not 'your current situation')",
+     "Makes sense (not 'aligns with your goals')"
+    ]
+   },
+   {
+    "text": "Words to avoid",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "Empower, unlock, elevate",
+     "Leverage (as a verb)",
+     "Robust, seamless, crucial",
+     "Navigate, journey",
+     "Unpack, dive deep",
+     "Transformational, visionary",
+     "Coaching language: 'accountability partner', 'mindset shift', 'growth journey'",
+     "Consultant-speak: 'deliverables', 'stakeholder alignment', 'go-to-market'"
+    ]
+   },
+   {
+    "text": "A message in your voice",
+    "type": "heading"
+   },
+   {
+    "body": "Hi {first_name}, I work with MDs of HVAC and M&E firms in the North who are winning plenty of work but watching the margin disappear somewhere between the tender and the final account. Usually the same three culprits: job costing in the field, retentions nobody's chasing, and the MD still in the middle of everything. I spent my career inside building services, so I know how it works in practice, not just on paper. If any of that sounds familiar, worth a quick conversation?",
+    "note": "Use on LinkedIn connection follow-up or cold outreach to an MD or owner in HVAC or M&E contracting. Keep it this length. Do not pitch the offer.",
+    "type": "message",
+    "label": "Example"
+   }
+  ],
+  "generated_at": "2026-10-16T04:00:10.107Z",
+  "model": "claude-sonnet-4-6"
+ },
+ "market:avatar": {
+  "blocks": [
+   {
+    "text": "Margin-Squeezed Mike: MD of a 25-person M&E contracting firm in the North of England, winning plenty of work and wondering where the profit keeps going.",
+    "type": "lede"
+   },
+   {
+    "type": "pairs",
+    "items": [
+     {
+      "label": "Name",
+      "value": "Mike"
+     },
+     {
+      "label": "Age",
+      "value": "42 to 54"
+     },
+     {
+      "label": "Location",
+      "value": "North of England, Midlands"
+     },
+     {
+      "label": "Business",
+      "value": "HVAC or M&E contracting firm, usually family-founded or owner-built"
+     },
+     {
+      "label": "Revenue",
+      "value": "£2m to £12m"
+     },
+     {
+      "label": "Team",
+      "value": "15 to 40, mix of office and site"
+     },
+     {
+      "label": "Role",
+      "value": "MD or Owner, often Contracts Manager in an earlier life"
+     },
+     {
+      "label": "Time in the business",
+      "value": "Typically 8 or more years, often the founder or second-generation owner"
+     }
+    ]
+   },
+   {
+    "text": "A day in the life",
+    "type": "heading"
+   },
+   {
+    "text": "It is 7.15am and Mike is already in the van, phone wedged against his ear, talking one of the lads through a commissioning issue on a commercial fit-out in Wakefield. He has not opened his emails yet but he can feel there are twelve waiting. By 8.30 he is in the yard, signing off a materials order he probably should have delegated, fielding a question about a retention that has been sitting on the books since March, and promising the estimator he will look at the Hargreaves tender by lunchtime. He does not look at it until 4pm. The numbers look tight but the job feels winnable, so he prices it the way he always has: gut feel and a quick scan of the labour hours. At 6pm he sits at the kitchen table with the monthly P&L his accountant sends over. Revenue is up. He squints at the bottom line. It is not up anywhere near as much as the revenue suggests it should be. He is not sure which job leaked it. He has a feeling it was the Rotherham school, but he cannot prove it, and by the time it matters it is already too late to do anything about it.",
+    "type": "paragraph"
+   },
+   {
+    "text": "In his words",
+    "type": "heading"
+   },
+   {
+    "cite": "Mike, MD",
+    "text": "We've had a decent year on paper. Turnover's up, the lads are busy, we've got work on the board into next spring. But I'm sitting here looking at this P&L and the profit just isn't where it should be. We're working harder than we ever have and I'm not taking any more home. I know some of the jobs have bled a bit but I couldn't tell you which ones or why, not properly. The accountant tells me we're doing alright but I don't feel like we're doing alright. I'm on the phone from seven in the morning and I'm still answering site queries at half seven at night. I've got good lads, don't get me wrong, but nothing moves unless I'm pushing it. I keep thinking I need to sort the pricing out, get someone else handling the day-to-day, chase up these retentions properly. I've been thinking that for about three years. I just don't know where to start, or whether spending money on getting help is going to make it worse before it gets better.",
+    "type": "quote"
+   },
+   {
+    "text": "What they want",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "To know, job by job, where the money went - and to fix it before the next one bleeds the same way.",
+     "To step back from the day-to-day without the wheels coming off - someone else fielding the site calls, making the small decisions.",
+     "To grow the business without growing the stress proportionally.",
+     "To get retentions moving and stop carrying other people's cash for months at a time.",
+     "To have a business that works without them being in the middle of everything, and eventually the option to step back on their own terms."
+    ]
+   },
+   {
+    "text": "What they fear",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "That the margin problem is unfixable in their sector and they just have to live with it.",
+     "That if they let go of the day-to-day, something serious goes wrong on site and it falls back on them.",
+     "That they are further behind than their peers and too proud to admit it.",
+     "That spending £1,950 a month on outside help is the thing that finally tips the cash flow over the edge.",
+     "That they will end up with nothing to show for twenty years of building the business."
+    ]
+   },
+   {
+    "text": "What they have tried",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "Brought in an estimator or QS to tighten up pricing, but the bleed carried on because job costing in the field was never tackled.",
+     "Promoted a good engineer or site supervisor to a management role, only to find themselves still making all the real decisions.",
+     "Had a conversation with their accountant about margins, got a report, put it in a drawer.",
+     "Looked at new software to track job costs, spent three months implementing it, and never quite got the team to use it properly."
+    ]
+   },
+   {
+    "text": "What they suspect",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "That most business coaches have never run a contracting operation and would not last a week on a live site.",
+     "That consultants come in, produce a report full of things they already knew, and disappear when it gets hard.",
+     "That coaching is for bigger businesses with a proper management team, not a firm where the MD is still running jobs.",
+     "That anyone charging nearly two grand a month had better know the difference between a planned maintenance contract and a one-off install."
+    ]
+   },
+   {
+    "text": "What finally makes them act",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "A job that looked healthy at quote stage comes in well under, and for the first time they can see exactly how much it cost them.",
+     "They miss a family commitment because of a site crisis that one of the team should have handled.",
+     "A retention figure on the aged debtors report stops them cold: more cash sitting unchased than they realised.",
+     "A competitor they know personally sells their firm or takes on a big contract, and it prompts the question: why not us?",
+     "They have a blunt conversation with their partner or spouse about the hours, and cannot defend them."
+    ]
+   },
+   {
+    "text": "How they talk",
+    "type": "heading"
+   },
+   {
+    "rows": [
+     [
+      "Customers",
+      "Clients, main contractors, the client side"
+     ],
+     [
+      "Site staff",
+      "The lads, engineers, operatives"
+     ],
+     [
+      "Office staff",
+      "The office, back office, the girls in the office"
+     ],
+     [
+      "Jobs",
+      "Contracts, projects, works, a job"
+     ],
+     [
+      "Revenue",
+      "Turnover, what we've billed, what we've got on"
+     ],
+     [
+      "Profit",
+      "What's left, the margin, the bottom line"
+     ],
+     [
+      "Unpaid retention money",
+      "Retentions, money sitting out there, what they owe us"
+     ],
+     [
+      "Job cost review",
+      "Going through the numbers, seeing where it went"
+     ],
+     [
+      "Planned maintenance work",
+      "Service contracts, planned maintenance, PM work"
+     ],
+     [
+      "Estimating",
+      "Pricing up, doing the tender, putting a number on it"
+     ]
+    ],
+    "type": "table",
+    "columns": [
+     "Thing",
+     "What they call it"
+    ]
+   },
+   {
+    "text": "Ready to act",
+    "type": "heading"
+   },
+   {
+    "cite": "Mike, MD",
+    "text": "I've built a decent business but I'm working too hard for what I'm taking home. I need someone who actually knows contracting to help me get the margins right, get the retentions moving, and get me out of the middle of everything. I'm not looking for theory. I want someone who's done it.",
+    "type": "quote"
+   }
+  ],
+  "generated_at": "2026-09-29T21:23:33.029Z",
+  "model": "claude-sonnet-4-6"
+ },
+ "market:pains": {
+  "blocks": [
+   {
+    "text": "Under every problem Mike names, there is one sentence: 'We're winning the work, so where the hell is the money going?'",
+    "type": "lede"
+   },
+   {
+    "rows": [
+     [
+      "Margin bleed on jobs",
+      "'Revenue's up but I'm not taking any more home. Some jobs have bled but I couldn't tell you which ones or why, not properly.'",
+      "Profit that should exist doesn't. Owner works harder each year for the same or less. Business feels busier than it is valuable.",
+      "Job-by-job visibility so they can see where the margin went before the next job bleeds the same way.",
+      "Profit margin / Control"
+     ],
+     [
+      "Owner stuck in the middle of everything",
+      "'Nothing moves unless I'm pushing it. I'm on the phone from seven in the morning and still answering site queries at half seven at night.'",
+      "No time for pricing, strategy or family. Exhaustion compounds annually. Business growth is capped at the owner's personal capacity.",
+      "A team and an operational rhythm that handles the day-to-day without the MD being the last line of everything.",
+      "Owner dependency / Control"
+     ],
+     [
+      "Retentions sitting unchased",
+      "'There's money sitting out there that they owe us. Nobody's chasing it properly and it's been like that for months.'",
+      "Cash tied up that belongs to the business. Pressure on working capital. Owner carries the stress of knowing it is there but not fixing it.",
+      "A systematic chase process that gets retention cash moving and off the aged debtors report.",
+      "Profit margin / Velocity"
+     ],
+     [
+      "Pricing by gut feel",
+      "'I price it the way I always have - gut feel and a quick scan of the labour hours. The tender looks tight but the job feels winnable.'",
+      "Jobs priced to win rather than to profit. Margin bleed baked in before a spanner is lifted. Estimator tightened up quotes but field job costing was never fixed.",
+      "A pricing discipline that works from quote stage through to completion, with the numbers to prove each job stacked up.",
+      "Profit margin / Control"
+     ],
+     [
+      "No real-time numbers visibility",
+      "'The accountant sends over the monthly P&L. Revenue's up. The bottom line's not up anywhere near as much as it should be. I don't know which job leaked it.'",
+      "Problems found weeks or months after they are fixable. Owner is always reacting, never ahead of it.",
+      "A weekly numbers rhythm that shows what is happening on live jobs before month-end, not after.",
+      "Profit margin / Control"
+     ],
+     [
+      "Promoted engineers who are not managing",
+      "'I put one of my best engineers into a management role. I'm still making all the real decisions. Nothing's actually changed.'",
+      "Wage bill goes up. Owner workload stays the same. The promoted person is frustrated. The MD is still the bottleneck.",
+      "A management layer that actually works: people who make decisions, own outcomes, and reduce the load on the MD.",
+      "Owner dependency / Value"
+     ],
+     [
+      "Scepticism that outside help is worth the fee",
+      "'Spending nearly two grand a month on a coach - what if that's the thing that tips the cash flow over the edge? And how do I know they actually understand contracting?'",
+      "Owner stays stuck rather than risk a fee they cannot justify. Problems compound for another year or more.",
+      "Confidence that the person they hire has lived the operation, knows the sector, and will pay for themselves in tighter margins alone.",
+      "Velocity / Control"
+     ]
+    ],
+    "type": "table",
+    "columns": [
+     "Pain",
+     "What they say out loud",
+     "What it costs",
+     "What they want instead",
+     "Lever"
+    ]
+   },
+   {
+    "text": "At 3am",
+    "type": "heading"
+   },
+   {
+    "cite": "Mike, MD",
+    "text": "We billed more this year than ever and I'm still not taking enough home. I've got no idea which jobs killed the margin and by the time I find out it's too late to do anything about it.\n\nIf I step back and something goes wrong on site, it comes back to me. The lads are good but they're not making the calls they should be. I'm still in the middle of everything and I can't see a way out of it.\n\nThere's a retention figure on that aged debtors report that shouldn't be there. That's our money. I keep meaning to get it sorted and I never do.",
+    "type": "quote"
+   },
+   {
+    "text": "Main desire hooks",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "Are you looking to know, job by job, exactly where your margin went - and fix the pricing before the next one bleeds the same way?",
+     "Are you looking to get out of the middle of the operation so the site calls stop landing on your phone at seven in the evening?",
+     "Are you looking to get your retentions moving and stop carrying other people's cash for six months at a time?"
+    ]
+   },
+   {
+    "text": "Buying triggers",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "A job that looked healthy at quote stage comes in well under, and for the first time the owner can see exactly how much it cost them.",
+     "A retention figure on the aged debtors report stops them cold: more cash sitting unchased than they realised.",
+     "They miss a family event or commitment because of a site crisis that one of the team should have handled.",
+     "A competitor they know sells up or wins a contract that prompts the question: why not us?",
+     "A blunt conversation with a partner or spouse about the hours, and no good answer to give.",
+     "An estimator or QS was brought in to tighten pricing but margin is still bleeding, and the owner knows the problem is somewhere else.",
+     "New job-costing software was installed, the team never properly adopted it, and nothing changed."
+    ]
+   },
+   {
+    "text": "Objections and honest answers",
+    "type": "heading"
+   },
+   {
+    "rows": [
+     [
+      "'You've never run a contracting business yourself.'",
+      "Zander spent his career inside building services as a Project Engineer, Contracts Manager, and then Operations Director. He grew a HVAC division from £4.2m to £11.8m over five years. He has lived the retentions problem, the margin bleed, and the MD-as-bottleneck problem from the inside. He does not need six months to understand how the sector works."
+     ],
+     [
+      "'£1,950 a month is a lot. What if it tips the cash flow?'",
+      "The margin bleed on one mid-sized job typically costs more than twelve months of the coaching fee. The first focus is always on finding where the money is going and stopping the leak. Most clients recover the fee inside the first few months through tighter job costing alone."
+     ],
+     [
+      "'We've tried a consultant before. They wrote a report and disappeared.'",
+      "Zander gets into job reviews and pricing discussions from week one. He does not produce a report and leave. The engagement runs on a weekly numbers rhythm: live jobs, margin visibility, retentions. If it is not working in practice, he knows about it before month-end."
+     ],
+     [
+      "'I don't have time for coaching. I'm already stretched.'",
+      "That is exactly the problem to fix, not a reason to wait. The sessions are structured around what is live in the business: current jobs, current numbers. The time investment pays back quickly when the MD stops being the first call for every site issue."
+     ],
+     [
+      "'My problems are specific to my sector. A generic coach won't get it.'",
+      "Zander works only with building services contractors. He knows the difference between a planned maintenance contract and a one-off install, how retentions work in practice, and why gut-feel pricing kills margin on jobs that look winnable. There is no sector education required."
+     ],
+     [
+      "'I'm not sure coaching is for businesses like mine. We're not big enough.'",
+      "Zander works with businesses between £1m and £20m. His work is operational and numbers-based, not strategic theory. A firm with 15 to 40 people and live jobs on the board is exactly the right size to fix job costing, get retentions moving, and build a management layer that reduces owner dependency."
+     ],
+     [
+      "'What if I commit and it doesn't work?'",
+      "The engagement starts with Zander sitting in on job reviews and pricing discussions so both sides can see whether it is working early. He takes a maximum of eight clients and turns down quick-fix seekers, so the fit is assessed before any commitment is made."
+     ]
+    ],
+    "type": "table",
+    "columns": [
+     "Objection",
+     "Answer"
+    ]
+   }
+  ],
+  "generated_at": "2026-09-29T21:25:23.949Z",
+  "model": "claude-sonnet-4-6"
+ },
+ "story:bio": {
+  "blocks": [
+   {
+    "text": "Zander Demo is a former Operations Director who grew the HVAC division at Harlow & Pike from £4.2m to £11.8m in five years. He now coaches MDs and owners in building services contracting to fix the same problems he solved from the inside.",
+    "type": "lede"
+   },
+   {
+    "type": "stats",
+    "items": [
+     {
+      "label": "HVAC division revenue when Zander took the lead at Harlow & Pike",
+      "value": "£4.2m"
+     },
+     {
+      "label": "Revenue five years later, with margin held",
+      "value": "£11.8m"
+     },
+     {
+      "label": "Maximum clients he carries, to give each proper time",
+      "value": "8"
+     },
+     {
+      "label": "Minimum monthly fee per client",
+      "value": "£1,950"
+     }
+    ]
+   },
+   {
+    "text": "Proof inventory",
+    "type": "heading"
+   },
+   {
+    "rows": [
+     [
+      "Revenue grew from £4.2m to £11.8m",
+      "HVAC division, Harlow & Pike Building Services (Division Leader)",
+      "5 years",
+      "Shifted the model from one-off installs to planned maintenance contracts; tightened job pricing to hold margin through the growth phase",
+      "Ready"
+     ]
+    ],
+    "type": "table",
+    "columns": [
+     "Result",
+     "Where",
+     "Timeframe",
+     "How",
+     "Status"
+    ]
+   },
+   {
+    "text": "Short bio",
+    "type": "heading"
+   },
+   {
+    "text": "I spent my career inside building services: project engineer, contracts manager, then Operations Director at Harlow & Pike, where I led the HVAC division from £4.2m to £11.8m in five years. We got there by shifting from one-off installs to planned maintenance contracts and keeping a tight grip on job pricing and margin. I have lived the retentions problem, the margin bleed, and the MD-as-bottleneck problem firsthand. I now work with owners and MDs in HVAC, M&E, electrical contracting, and facilities management to fix exactly those three things, faster than they would on their own.",
+    "type": "paragraph"
+   },
+   {
+    "text": "One-line introduction",
+    "type": "heading"
+   },
+   {
+    "text": "Zander Demo is a former Operations Director in building services who coaches HVAC and M&E contractors to stop margin bleeding, free the MD from the middle, and get retentions moving.",
+    "type": "paragraph"
+   },
+   {
+    "text": "For partners and events",
+    "type": "heading"
+   },
+   {
+    "text": "Zander Demo is a former Operations Director with a career built inside building services: HVAC, M&E contracting, and facilities management. At Harlow & Pike he led the HVAC division from £4.2m to £11.8m over five years by moving the business from one-off installs to planned maintenance contracts and holding margin through disciplined job pricing. He now coaches MDs and owners of contracting businesses to fix the three problems he knows best: margin bleed, owner dependency, and retention cash sitting unchased. He works with businesses turning over £1m to £20m across HVAC, M&E, electrical contracting, and facilities management, and takes on a maximum of eight clients at a time.",
+    "type": "paragraph"
+   },
+   {
+    "text": "Every result in the proof inventory is marked Ready. The single career result has a precise from (£4.2m), a precise to (£11.8m), and a confirmed timeframe (5 years). If Zander adds client results from his coaching practice, log each one with the same three data points before using it in any copy.",
+    "tone": "note",
+    "type": "callout",
+    "title": "No additional numbers needed"
+   }
+  ],
+  "generated_at": "2026-09-29T21:22:14.900Z",
+  "model": "claude-sonnet-4-6"
+ },
+ "offer:direction": {
+  "blocks": [
+   {
+    "text": "I help MDs and owners of HVAC and M&E contracting businesses stop margin bleeding, get retentions moving, and get out of the middle of the operation, without waiting months for a consultant's report to gather dust, using a weekly numbers rhythm built on how contracting actually works.",
+    "type": "lede"
+   },
+   {
+    "text": "The gap",
+    "type": "heading"
+   },
+   {
+    "rows": [
+     [
+      "Revenue is up but the bottom line tells a different story every month-end",
+      "Job-by-job margin visibility before the next contract bleeds the same way"
+     ],
+     [
+      "The MD is still the last call on every site query, from 7am to half seven at night",
+      "A team and a rhythm that handles the day-to-day without the owner in the middle of it"
+     ],
+     [
+      "Retentions sitting unchased on the aged debtors report for months at a time",
+      "A systematic chase process that gets that cash moving and off the report for good"
+     ],
+     [
+      "Gut-feel pricing that wins the tender and loses the margin somewhere between quote and completion",
+      "A pricing discipline that holds from tender stage through to final account, with the numbers to prove it"
+     ]
+    ],
+    "type": "table",
+    "columns": [
+     "Today",
+     "What they want"
+    ]
+   },
+   {
+    "text": "Why they will buy",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "Know-how: Mike has tried an estimator, a consultant's report, and new software. None of it fixed the underlying problem because none of it came with someone who has actually run the operation. Zander has. He knows retentions, job costing, and the MD-as-bottleneck problem from the inside of building services, not from a textbook.",
+     "Speed: the engagement starts with Zander sitting in on job reviews and pricing discussions from week one. There is no six-month onboarding, no sector education required. The problems are visible quickly because Zander already speaks the language.",
+     "Ease: a weekly numbers rhythm means Mike is not left to implement a framework on his own. Zander is in the numbers with him, on live jobs, before month-end. The structure does the heavy lifting.",
+     "Fit: Zander works only with building services contractors. Mike does not need to explain what a planned maintenance contract is, how retentions work in practice, or why a job that looked winnable at tender can bleed badly in the field. That removes the biggest objection Mike has to outside help."
+    ]
+   },
+   {
+    "text": "Key messages",
+    "type": "heading"
+   },
+   {
+    "type": "numbered",
+    "items": [
+     "You are winning the work. The turnover is there. The problem is not revenue, it is that the margin disappears somewhere between the tender and the final account, and by the time the monthly P&L lands you cannot tell which job leaked it or why.",
+     "The MD answering every site call is not a people problem, it is a structure problem. Until there is a weekly operational rhythm and a management layer that actually makes decisions, the phone will keep ringing at half seven in the evening.",
+     "Retentions sitting unchased for six months is not a cash flow problem, it is a management problem. The money belongs to the business. The only reason it is still out there is that nobody owns the process of getting it back.",
+     "Bringing in an estimator, buying new software, or having a chat with the accountant does not fix margin bleed. The bleed usually happens in field job costing, not at quote stage, and you need someone who knows the difference to find it.",
+     "A contractor's MD spending nearly two grand a month on outside help needs to know the person has lived the operation, not just studied it. The fee pays for itself when one job that would have bled holds its margin instead."
+    ]
+   },
+   {
+    "text": "The offer",
+    "type": "heading"
+   },
+   {
+    "type": "pairs",
+    "items": [
+     {
+      "label": "Name",
+      "value": "The Contractor's Profit Practice"
+     },
+     {
+      "label": "Promise",
+      "value": "Job-by-job margin visibility, retentions moving, and the MD out of the middle of the operation, built around a weekly numbers rhythm that shows what is happening on live jobs before problems become expensive."
+     },
+     {
+      "label": "Who it is for",
+      "value": "MDs and owners of HVAC, M&E, electrical contracting, and facilities management businesses turning over £1m to £20m, with 15 to 40 people and the owner still carrying more of the operation than they should."
+     },
+     {
+      "label": "What is included",
+      "value": "Weeks 1 to 4: Zander sits in on job reviews and pricing discussions, diagnoses where margin is bleeding, and identifies the fastest retention wins. From week 5: two 90-minute sessions a month on a fixed weekly rhythm, covering live job costing, margin tracking, retentions, and the management actions needed before the next session. Direct access between sessions for anything that cannot wait. Hybrid delivery: calls and, where useful, on-site."
+     },
+     {
+      "label": "Format",
+      "value": "Weekly sessions for the first four to six weeks, then two 90-minute sessions a month on Tuesdays or Wednesdays. Maximum eight clients carried at any time so each gets proper attention."
+     },
+     {
+      "label": "Price options",
+      "value": "£1,950 a month rolling. Six months upfront available at a fixed rate on request. Price rises with each new client taken on, so early clients secure the lowest rate."
+     }
+    ]
+   },
+   {
+    "text": "Why you",
+    "type": "heading"
+   },
+   {
+    "type": "bullets",
+    "items": [
+     "Zander led the HVAC division at Harlow & Pike from £4.2m to £11.8m over five years, shifting the model from one-off installs to planned maintenance contracts and holding margin through disciplined job pricing throughout the growth.",
+     "He has carried the roles his clients now employ: Project Engineer, Contracts Manager, Operations Director. He does not need an explanation of how retentions work in practice, what a planned maintenance contract looks like on the books, or why gut-feel pricing kills margin on jobs that looked winnable.",
+     "He grew the division by solving the same three problems his clients face now: margin bleed, owner dependency, and cash tied up in unchased retentions. The method is not theory, it is what actually worked inside a live contracting business.",
+     "He takes a maximum of eight clients. Each gets a clean block of time, proper preparation, and a coach who knows what is live in their business before every session.",
+     "He works only in building services: HVAC contractors, M&E firms, electrical contractors, and facilities management. No sector education required, no generic frameworks dressed up in contracting language."
+    ]
+   }
+  ],
+  "generated_at": "2026-09-29T21:29:59.579Z",
+  "model": "claude-sonnet-4-6"
+ }
+}

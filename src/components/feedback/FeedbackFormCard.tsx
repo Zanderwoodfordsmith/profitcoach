@@ -5,6 +5,7 @@ import { Bug, Lightbulb, MessageCircleQuestion } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
 import type { SupportTicketType } from "@/lib/support/tickets";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type FeedbackFormCardProps = {
   onSubmitted?: () => void;
@@ -74,9 +75,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
           setFeedbackSuccess(null);
           void (async () => {
             try {
-              const {
-                data: { user },
-              } = await supabaseClient.auth.getUser();
+              const user = await getSessionUser();
               if (!user?.id) throw new Error("Could not determine your account.");
               const { error } = await supabaseClient
                 .from("community_feedback_reports")

@@ -1,5 +1,6 @@
 import { parseCoachIdHeader } from "@/lib/coachId";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 export async function requireCoachRequest(
   request: Request,
@@ -38,12 +39,9 @@ export async function requireCoachRequest(
     return { error: "Missing access token." as const, userId: null };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return { error: "Invalid access token." as const, userId: null };
   }
 

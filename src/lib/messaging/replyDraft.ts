@@ -9,6 +9,7 @@ import {
   resolveReplyCopilotModel,
   sanitizeCopilotSuggestion,
   selectCopilotThreadWindow,
+  type CopilotProspectFacts,
   type CopilotThreadMessage,
   type ReplyCopilotChannel,
 } from "@/lib/messaging/replyCopilot";
@@ -139,32 +140,59 @@ export async function draftReplyForConversation(input: {
     (typeof profile?.first_name === "string" && profile.first_name.trim()) ||
     null;
 
-  const { router } = resolveReplyCopilotRouter({
+  return draftReplyFromParts({
+    apiKey,
+    channel: input.channel,
+    coachName,
+    coachNotes,
+    messages: windowed,
+    prospect: prospectFacts,
     storedPrompt: typeof settings?.system_prompt === "string" ? settings.system_prompt : "",
+    storedModel: typeof settings?.model === "string" ? settings.model : null,
     overrides,
+    steer: input.steer,
   });
+}
+
+/**
+ * The prompt and the model call, once everything is loaded. Split out so the
+ * evals run exactly this with fixed threads. Suggest-only.
+ */
+export async function draftReplyFromParts(input: {
+  apiKey: string;
+  channel: ReplyCopilotChannel;
+  coachName: string | null;
+  coachNotes: string;
+  messages: CopilotThreadMessage[];
+  prospect: CopilotProspectFacts | null;
+  storedPrompt: string;
+  storedModel: string | null;
+  overrides: Record<string, string>;
+  steer?: string | null;
+}): Promise<ReplyDraftResult> {
+  const { router } = resolveReplyCopilotRouter({ storedPrompt: input.storedPrompt, overrides: input.overrides });
   const { markdown: knowledge } = assembleReplyCopilotKnowledge({
-    disposition: prospectFacts?.replyDisposition ?? null,
-    bossScore: prospectFacts?.bossScore ?? null,
-    overrides,
+    disposition: input.prospect?.replyDisposition ?? null,
+    bossScore: input.prospect?.bossScore ?? null,
+    overrides: input.overrides,
   });
 
   const system = composeReplyCopilotSystem({
     adminVoice: input.steer ? `${router}\n\n## Steer for this reply\n\n${input.steer}` : router,
-    coachNotes: coachNotes || null,
+    coachNotes: input.coachNotes || null,
     knowledge,
   });
   const user = composeReplyCopilotUserMessage({
     channel: input.channel,
-    coachName,
-    messages: windowed,
-    prospect: prospectFacts,
+    coachName: input.coachName,
+    messages: input.messages,
+    prospect: input.prospect,
   });
 
   try {
-    const anthropic = new Anthropic({ apiKey });
+    const anthropic = new Anthropic({ apiKey: input.apiKey });
     const response = await anthropic.messages.create({
-      model: resolveReplyCopilotModel(typeof settings?.model === "string" ? settings.model : null),
+      model: resolveReplyCopilotModel(input.storedModel),
       max_tokens: maxTokensForChannel(input.channel),
       system,
       messages: [{ role: "user", content: user }],
@@ -173,7 +201,7 @@ export async function draftReplyForConversation(input: {
     if (!suggestion) {
       return { ok: false, status: 502, error: "Could not draft a reply. Try again." };
     }
-    return { ok: true, suggestion, messages: windowed };
+    return { ok: true, suggestion, messages: input.messages };
   } catch (err) {
     console.error("reply draft anthropic:", err instanceof Error ? err.message : "failed");
     return { ok: false, status: 502, error: "Could not draft a reply. Try again." };

@@ -32,7 +32,7 @@ import {
   notifySupportCountsChanged,
 } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
-import type { SupportCallContactPrefill } from "@/lib/support/supportCallPrefill";
+import type { SupportCallContactPrefill } from "@/lib/support/supportCallPrefillQuery";
 import type { SupportCallHostSlug } from "@/lib/support/supportCallHosts";
 import { SupportCallAdminSettings } from "@/components/support/SupportCallAdminSettings";
 import { SupportTicketBookCall } from "@/components/support/SupportTicketBookCall";
@@ -55,7 +55,7 @@ import {
   supportAttentionBadgeCount,
   type SupportAttentionMap,
 } from "@/lib/support/adminAttention";
-import { supportNotifyDefaultOn } from "@/lib/support/notifyCoachOfReply";
+import { supportNotifyDefaultOn } from "@/lib/support/notifyDefaults";
 import {
   SUPPORT_SOURCE_LABELS,
   SUPPORT_STATUS_ADMIN_LABELS,
@@ -73,6 +73,7 @@ import {
 } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 type AdminTicketRow = {
   id: string;
   created_at: string;
@@ -591,9 +592,7 @@ export function AdminSupportPage() {
   }
 
   const loadMeta = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const user = await getSessionUser();
     setAdminUserId(user?.id ?? null);
 
     const { data: adminProfiles } = await supabaseClient

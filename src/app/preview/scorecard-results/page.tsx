@@ -6,7 +6,7 @@ import {
   buildNaturalPreviewAnswers,
   buildScorecardResult,
 } from "@/lib/bossScorecardScores";
-import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoachConstants";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 

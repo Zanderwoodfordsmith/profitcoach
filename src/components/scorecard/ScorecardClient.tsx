@@ -42,6 +42,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import type { ScorecardManualWeek } from "@/lib/scorecardManual";
 
 import { ScorecardComboChart } from "@/components/scorecard/ScorecardComboChart";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 const LIGHT_CLASS: Record<TrafficLight, string> = {
   green: "bg-emerald-500 ring-1 ring-emerald-500/35",
@@ -350,12 +351,7 @@ export function ScorecardClient() {
     } = await supabaseClient.auth.getSession();
     if (!session?.access_token) return null;
 
-    const roleRes = await fetch("/api/profile-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session.user.id }),
-    });
-    const roleBody = (await roleRes.json().catch(() => ({}))) as {
+    const roleBody = (await fetchProfileRole(session.user.id)) as {
       role?: string;
     };
 

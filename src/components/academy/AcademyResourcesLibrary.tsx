@@ -25,7 +25,7 @@ import {
   type AcademyResourceSectionTree,
   type AcademyResourceTopicGroup,
   type AcademyResourcesCatalog,
-} from "@/lib/academy/resources";
+} from "@/lib/academy/resourcesCatalog";
 import type { AcademyResourceArea, AcademyResourceKind } from "@/lib/academy/parseResourcesMarkdown";
 import { supabaseClient } from "@/lib/supabaseClient";
 

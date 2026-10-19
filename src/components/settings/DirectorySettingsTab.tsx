@@ -10,6 +10,7 @@ import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActions
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 type DirectoryProfile = {
   first_name: string | null;
@@ -147,15 +148,10 @@ export function DirectorySettingsTab({
       return;
     }
 
-    const roleRes = await fetch("/api/profile-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session.user.id }),
-    });
-    const roleBody = (await roleRes.json().catch(() => ({}))) as {
+    const roleBody = (await fetchProfileRole(session.user.id)) as {
       role?: string;
     };
-    if (!roleRes.ok || !roleBody.role) {
+    if (!roleBody.role) {
       setError("Unable to load your profile.");
       setLoading(false);
       return;

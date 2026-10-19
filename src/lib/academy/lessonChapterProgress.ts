@@ -8,21 +8,19 @@ import { parseLessonVideoChapters } from "./lessonVideoChapters";
 import { setLessonProgressStatus } from "./lessonProgress";
 import type { LessonProgressMap, LessonProgressStatus } from "./lessonProgressTypes";
 import { progressCourseId } from "./programmeContentSource";
-
-/** `${lessonId}:${chapterId}` → completed */
-export type LessonChapterProgressMap = Record<string, true>;
+import {
+  lessonChapterProgressKey,
+  type LessonChapterProgressMap,
+} from "@/lib/academy/lessonChapterProgressKey";
+export {
+  lessonChapterProgressKey,
+  type LessonChapterProgressMap,
+} from "@/lib/academy/lessonChapterProgressKey";
 
 type ChapterProgressRow = {
   lesson_id: string;
   chapter_id: string;
 };
-
-export function lessonChapterProgressKey(
-  lessonId: string,
-  chapterId: string
-): string {
-  return `${lessonId}:${chapterId}`;
-}
 
 /**
  * Overlay completed pre-consolidation lessons onto chapter ticks so coaches

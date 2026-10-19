@@ -16,11 +16,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("role, full_name, coach_business_name, avatar_url")
-      .eq("id", body.userId)
-      .maybeSingle();
+    // Independent lookups: run them together.
+    const [profileRes, coachRes, contactsRes] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("role, full_name, coach_business_name, avatar_url")
+        .eq("id", body.userId)
+        .maybeSingle(),
+      supabaseAdmin.from("coaches").select("slug").eq("id", body.userId).maybeSingle(),
+      supabaseAdmin.from("contacts").select("type").eq("user_id", body.userId).limit(20),
+    ]);
+    const { data: profile, error: profileError } = profileRes;
 
     if (profileError) {
       return NextResponse.json(
@@ -29,24 +35,12 @@ export async function POST(request: Request) {
       );
     }
 
-    let coach_slug: string | null = null;
     const role = profile?.role ?? "coach";
-    if (role === "coach" || profile) {
-      const { data: coachRow } = await supabaseAdmin
-        .from("coaches")
-        .select("slug")
-        .eq("id", body.userId)
-        .maybeSingle();
-      coach_slug = coachRow?.slug ?? null;
-    }
+    const coach_slug: string | null = coachRes.data?.slug ?? null;
 
     /** Contacts linked to this auth user (client portal). Prospects must not use the client app. */
     let linked_contact_type: string | null = null;
-    const { data: contactRows } = await supabaseAdmin
-      .from("contacts")
-      .select("type")
-      .eq("user_id", body.userId)
-      .limit(20);
+    const contactRows = contactsRes.data;
     if (contactRows && contactRows.length > 0) {
       const types = (contactRows as { type: string }[]).map((r) => r.type);
       if (types.includes("prospect")) linked_contact_type = "prospect";

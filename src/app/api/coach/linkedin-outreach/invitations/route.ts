@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import {
   getInviteWithdrawPolicy,
+  getPendingInviteSnapshot,
   listPendingInvitesForCoach,
   saveInviteWithdrawPolicy,
   withdrawInvitation,
@@ -18,6 +19,10 @@ import {
 /** LinkedIn paging via Unipile is slow; stay under the platform kill that returns HTML. */
 export const maxDuration = 60;
 
+/** Serve the stored count while it's this fresh; recount in the background once it's older than REFRESH. */
+const SNAPSHOT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+const SNAPSHOT_REFRESH_MS = 15 * 60 * 1000;
+
 export async function GET(request: Request) {
   let coachId: string | null = null;
   try {
@@ -28,6 +33,27 @@ export async function GET(request: Request) {
     coachId = auth.coachId;
     const url = new URL(request.url);
     const full = url.searchParams.get("full") === "1";
+    if (!full) {
+      // The campaigns page only needs the count: answer from the stored one.
+      const snapshot = await getPendingInviteSnapshot(coachId);
+      const age = snapshot ? Date.now() - new Date(snapshot.counted_at).getTime() : Infinity;
+      if (snapshot && age < SNAPSHOT_MAX_AGE_MS) {
+        if (age > SNAPSHOT_REFRESH_MS) {
+          const id = coachId;
+          after(() =>
+            listPendingInvitesForCoach(id, { maxItems: 1, deadlineAt: Date.now() + 45_000 }).catch(() => undefined)
+          );
+        }
+        return NextResponse.json({
+          account_id: snapshot.account_id,
+          invitations: [],
+          total: snapshot.total,
+          has_more: snapshot.has_more,
+          counted_at: snapshot.counted_at,
+          withdraw: snapshot.withdraw,
+        });
+      }
+    }
     const data = await listPendingInvitesForCoach(coachId, {
       // Total always counts the full pending pile; maxItems only limits returned rows.
       maxItems: full ? PENDING_LIST_MAX : 1,

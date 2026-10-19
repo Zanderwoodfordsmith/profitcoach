@@ -223,6 +223,7 @@ function ContactSectionHeader({
 }) {
   return (
     <div
+      aria-hidden
       className={
         showTopDivider
           ? compact
@@ -266,7 +267,7 @@ function ContactOptionButton({
       : `Boss Pro score ${Math.round(normalizedScore)}`;
 
   return (
-    <li className="w-full">
+    <li className="w-full" role="none">
       <button
         type="button"
         role="option"
@@ -326,7 +327,7 @@ function ContactOptionList({
 }) {
   if (sectionContacts.length === 0) return null;
   return (
-    <ul className="w-full space-y-0.5">
+    <ul className="w-full space-y-0.5" role="none">
       {sectionContacts.map((c) => (
         <ContactOptionButton
           key={c.id}
@@ -476,8 +477,6 @@ function WorkshopContactCombobox({
           className={`absolute left-0 top-[calc(100%+4px)] z-[110] w-full min-w-[14rem] rounded-lg border border-slate-200 bg-white py-2 shadow-lg ring-1 ring-black/5 [color-scheme:light] ${
             compact ? "max-w-[min(100vw-2.5rem,22rem)]" : ""
           }`}
-          role="listbox"
-          aria-label="Contacts"
         >
           <div className="px-2 pb-2">
             <input
@@ -490,7 +489,12 @@ function WorkshopContactCombobox({
               aria-label="Filter contacts"
             />
           </div>
-          <div className="max-h-[min(32rem,calc(100vh-10rem))] overflow-y-auto px-1">
+          {/* The search box sits outside the listbox; only options (and labelled groups) live inside it. */}
+          <div
+            className="max-h-[min(32rem,calc(100vh-10rem))] overflow-y-auto px-1"
+            role="listbox"
+            aria-label="Contacts"
+          >
             {showNewPersonOption ? (
               <button
                 type="button"
@@ -515,7 +519,7 @@ function WorkshopContactCombobox({
             ) : useSectionHeaders ? (
               <>
                 {filteredClients.length > 0 ? (
-                  <div>
+                  <div role="group" aria-label="Clients">
                     <ContactSectionHeader label="Clients" compact={compact} />
                     <ContactOptionList
                       contacts={filteredClients}
@@ -527,7 +531,7 @@ function WorkshopContactCombobox({
                   </div>
                 ) : null}
                 {filteredProspects.length > 0 ? (
-                  <div>
+                  <div role="group" aria-label="Prospects">
                     <ContactSectionHeader
                       label="Prospects"
                       compact={compact}

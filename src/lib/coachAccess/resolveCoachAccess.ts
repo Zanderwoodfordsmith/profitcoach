@@ -24,10 +24,18 @@ const DEFAULT_ACCESS: CoachAccessSnapshot = {
   enforcementEnabled: false,
 };
 
+/** Programme status only moves on 6-month dates; re-check it at most this often per coach per server. */
+const PROGRAMME_REFRESH_MS = 10 * 60 * 1000;
+const programmeRefreshedAt = new Map<string, number>();
+
 export async function resolveCoachAccessForUserId(
   userId: string
 ): Promise<CoachAccessSnapshot> {
-  await refreshCoachProgrammeStatus(supabaseAdmin, userId);
+  const refreshedAt = programmeRefreshedAt.get(userId);
+  if (!refreshedAt || Date.now() - refreshedAt > PROGRAMME_REFRESH_MS) {
+    await refreshCoachProgrammeStatus(supabaseAdmin, userId);
+    programmeRefreshedAt.set(userId, Date.now());
+  }
 
   const { data, error } = await supabaseAdmin
     .from("coaches")

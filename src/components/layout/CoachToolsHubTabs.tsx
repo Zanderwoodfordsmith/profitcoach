@@ -19,6 +19,7 @@ import { useOptimisticPathname } from "@/hooks/useOptimisticPathname";
 import { prefetchGetClientsHref } from "@/lib/getClients/hubFetchers";
 import { fetchCachedProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { rememberGetClientsLastTab } from "@/lib/getClients/lastHubTab";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export type CoachToolsHub = "get-clients" | "coach-clients";
 
@@ -42,9 +43,7 @@ function useShowAdminPreviewTabs(onAdminPath: boolean): boolean {
     }
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
       try {
         const roleBody = await fetchCachedProfileRole(user.id);

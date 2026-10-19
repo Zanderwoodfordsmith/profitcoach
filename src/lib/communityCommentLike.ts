@@ -1,5 +1,6 @@
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 /**
  * Toggles like on a comment. If `community_comment_likes` is missing, no-ops.
@@ -8,9 +9,7 @@ export async function toggleCommunityCommentLike(
   commentId: string,
   currentlyLiked: boolean
 ): Promise<void> {
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return;
 
   if (currentlyLiked) {

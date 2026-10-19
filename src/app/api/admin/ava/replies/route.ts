@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   let query = supabaseAdmin
     .from("ava_reply_triage")
     .select(
-      "id, coach_id, conversation_id, channel, inbound_text, inbound_at, disposition, situation, next_step, confidence, reason, draft, alert_sent_at, admin_disposition, admin_next_step, admin_note, admin_labelled_at, created_at"
+      "id, coach_id, conversation_id, channel, inbound_text, inbound_at, disposition, situation, next_step, confidence, reason, draft, alert_sent_at, alert_channels, mode, status, sent_text, admin_disposition, admin_next_step, admin_note, admin_labelled_at, created_at"
     )
     .in("disposition", dispositions.length ? dispositions : ["interested", "neutral"])
     .order("inbound_at", { ascending: false, nullsFirst: false })

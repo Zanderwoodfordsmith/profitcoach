@@ -26,7 +26,7 @@ import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
 import type { CampaignAddChoice } from "@/components/campaigns/CampaignAudienceEmpty";
-import { dispositionFromInterestOutcome } from "@/lib/prospects/replyDisposition";
+import { dispositionFromInterestOutcome } from "@/lib/prospects/replyDispositionInfer";
 import {
   formatBusinessLabel,
   formatProspectJobTitle,

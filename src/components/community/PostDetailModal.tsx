@@ -1,5 +1,6 @@
 "use client";
 
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 import type { RefObject } from "react";
 import {
   useCallback,
@@ -845,8 +846,8 @@ export function PostDetailModal({
   }, [post.id]);
 
   useEffect(() => {
-    void supabaseClient.auth.getUser().then(({ data }) => {
-      setCurrentUserId(data.user?.id ?? null);
+    void getSessionUser().then((user) => {
+      setCurrentUserId(user?.id ?? null);
     });
   }, []);
 

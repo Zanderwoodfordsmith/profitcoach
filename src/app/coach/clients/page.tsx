@@ -12,6 +12,7 @@ import {
   type CoachClientRosterItem,
 } from "@/components/clients/CoachClientRoster";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 type ApiClient = {
   id: string;
@@ -26,6 +27,12 @@ type ApiClient = {
   client_joined_on?: string | null;
   client_fee_amount?: number | string | null;
   client_problem_notes?: string | null;
+  client_sector?: string | null;
+  client_revenue_band?: string | null;
+  client_team_size?: string | null;
+  client_source?: string | null;
+  client_result?: string | null;
+  client_fit?: number | null;
 };
 
 function readFee(value: number | string | null | undefined): number | null {
@@ -47,6 +54,12 @@ function toRosterItem(row: ApiClient): CoachClientRosterItem {
     feeAmount: readFee(row.client_fee_amount),
     problemNotes: row.client_problem_notes ?? null,
     bossScore: row.boss_score_premium ?? row.boss_score ?? null,
+    sector: row.client_sector ?? null,
+    revenueBand: row.client_revenue_band ?? null,
+    teamSize: row.client_team_size ?? null,
+    source: row.client_source ?? null,
+    result: row.client_result ?? null,
+    fit: row.client_fit ?? null,
   };
 }
 
@@ -80,16 +93,11 @@ export default function CoachClientsPage() {
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: session.user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(session.user.id)) as {
         role?: string;
         error?: string;
       };
-      if (!roleRes.ok || !roleBody.role) {
+      if (!roleBody.role) {
         if (!cancelled) {
           setError("Unable to load your profile.");
           setLoading(false);

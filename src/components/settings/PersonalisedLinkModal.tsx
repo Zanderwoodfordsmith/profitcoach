@@ -10,6 +10,8 @@ import {
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export type PersonalisedLinkProduct = "boss-score" | "boss-pro";
 
@@ -93,9 +95,7 @@ export function PersonalisedLinkModal({
       setProspectsLoading(true);
       setProspectsError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         if (!cancelled) {
           setProspectsError("Sign in to load prospects.");
@@ -104,12 +104,7 @@ export function PersonalisedLinkModal({
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
       };
       const effectiveId =

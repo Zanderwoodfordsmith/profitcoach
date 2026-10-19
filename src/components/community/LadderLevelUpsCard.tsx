@@ -12,6 +12,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { profileInitialsFromName } from "@/lib/communityProfile";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 
 function displayName(e: CommunityLadderEventDTO): string {
   const fromParts = [e.first_name, e.last_name]
@@ -84,12 +85,7 @@ export function LadderLevelUpsCard() {
       return;
     }
 
-    const roleRes = await fetch("/api/profile-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session.user.id }),
-    });
-    const roleBody = (await roleRes.json().catch(() => ({}))) as {
+    const roleBody = (await fetchProfileRole(session.user.id)) as {
       role?: string;
     };
 

@@ -233,16 +233,24 @@ async function loadLessonContentRowsForCourses(
   courseIds: string[]
 ): Promise<Map<string, AcademyLessonContentRow>> {
   const byLesson = new Map<string, AcademyLessonContentRow>();
-  for (const courseId of courseIds) {
+  if (courseIds.length === 0) return byLesson;
+  // One query for every course (this used to be one round trip per course).
+  const rows: AcademyLessonContentRow[] = [];
+  for (let from = 0; ; from += 1000) {
     const { data } = await supabaseAdmin
       .from("academy_lesson_content")
       .select("*")
-      .eq("course_id", courseId);
-    for (const row of data ?? []) {
-      const r = row as AcademyLessonContentRow;
-      byLesson.set(r.lesson_id, r);
-    }
+      .in("course_id", courseIds)
+      .order("course_id")
+      .order("lesson_id")
+      .range(from, from + 999);
+    rows.push(...((data ?? []) as AcademyLessonContentRow[]));
+    if (!data || data.length < 1000) break;
   }
+  // Same precedence as before: a later course in courseIds wins for a shared lesson id.
+  const order = new Map(courseIds.map((id, i) => [id, i]));
+  rows.sort((a, b) => (order.get(a.course_id) ?? 0) - (order.get(b.course_id) ?? 0));
+  for (const r of rows) byLesson.set(r.lesson_id, r);
   return byLesson;
 }
 

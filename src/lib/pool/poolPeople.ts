@@ -1,4 +1,4 @@
-import { audienceItemSourceLabel } from "@/lib/leadLists/audienceLists";
+import { audienceItemSourceLabel } from "@/lib/leadLists/audienceListShared";
 import {
   businessNamesMatch,
   formatBusinessLabel,
@@ -179,6 +179,13 @@ export type PersistedPoolGrouping = {
   order: PoolGroupOrder;
   manualOrder: Record<string, string[]>;
 };
+
+/** 2 = Open Profile, 1 = Premium, 0 = unknown. Active people reply about twice as often. */
+export function activityPriority(row: { open_profile?: boolean | null; linkedin_premium?: boolean | null }): number {
+  if (row.open_profile) return 2;
+  if (row.linkedin_premium) return 1;
+  return 0;
+}
 
 export function defaultPoolGrouping(): PersistedPoolGrouping {
   return { field: null, order: "asc", manualOrder: {} };
@@ -606,6 +613,8 @@ export function comparePoolPeople(
       result =
         time(b.source_ranked_at ?? b.created_at) -
         time(a.source_ranked_at ?? a.created_at);
+      // Within an import, active LinkedIn users first (Open Profile, then Premium).
+      if (result === 0) result = activityPriority(b) - activityPriority(a);
       if (result === 0) {
         const aRank = a.source_rank ?? Number.MAX_SAFE_INTEGER;
         const bRank = b.source_rank ?? Number.MAX_SAFE_INTEGER;

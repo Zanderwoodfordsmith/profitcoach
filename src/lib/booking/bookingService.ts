@@ -48,6 +48,20 @@ function slugifyBase(raw: string): string {
  * Admins (and anyone without a coaches row) need a coaches row + slug
  * so booking settings FK and /book/[slug] work for them as themselves.
  */
+const coachRowSeenAt = new Map<string, number>();
+const COACH_ROW_SEEN_MS = 10 * 60 * 1000;
+
+/**
+ * For auth helpers that only need the coach row to exist: skips the lookup
+ * when this server instance confirmed it in the last few minutes.
+ */
+export async function ensureCoachRowExists(userId: string): Promise<void> {
+  const seen = coachRowSeenAt.get(userId);
+  if (seen && Date.now() - seen < COACH_ROW_SEEN_MS) return;
+  await ensureCoachRowForUser(userId);
+  coachRowSeenAt.set(userId, Date.now());
+}
+
 export async function ensureCoachRowForUser(userId: string): Promise<{
   id: string;
   slug: string;

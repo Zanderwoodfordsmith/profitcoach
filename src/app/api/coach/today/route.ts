@@ -13,8 +13,9 @@ export async function GET(request: Request) {
   if (auth.error || !auth.coachId) return NextResponse.json({ error: auth.error }, { status: 401 });
 
   let refreshError: string | null = null;
-  if (new URL(request.url).searchParams.get("refresh") === "1") {
-    const out = await refreshIntentSignals(auth.coachId);
+  const refresh = new URL(request.url).searchParams.get("refresh");
+  if (refresh === "1" || refresh === "force") {
+    const out = await refreshIntentSignals(auth.coachId, { force: refresh === "force" });
     refreshError = out.error;
   }
   try {

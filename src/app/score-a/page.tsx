@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoachConstants";
 
 const SESSION_COOKIE = "landing_session_id";
 

@@ -15,6 +15,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
 import { resolveCommunityBio } from "@/lib/profileBioFields";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export type CommunityRosterMember = {
   id: string;
@@ -136,6 +137,8 @@ function useCommunityMemberDirectoryState() {
   }, [pathname, searchParams]);
 
   const [roster, setRoster] = useState<CommunityRosterMember[]>([]);
+  /** False until the first roster load lands, so counts don't read "0 members" meanwhile. */
+  const [rosterLoaded, setRosterLoaded] = useState(false);
   const [presenceRows, setPresenceRows] = useState<PresenceRow[]>([]);
   const [presenceUnavailable, setPresenceUnavailable] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -185,6 +188,7 @@ function useCommunityMemberDirectoryState() {
     const merged = mergeRoster(plist as StaffProfileRow[], coaches);
     if (!includeLadder) {
       setRoster(merged);
+      setRosterLoaded(true);
       return;
     }
 
@@ -197,6 +201,7 @@ function useCommunityMemberDirectoryState() {
         ladder_level: ladderByUser.get(m.id) ?? null,
       }))
     );
+    setRosterLoaded(true);
   }, []);
 
   const loadPresence = useCallback(async () => {
@@ -224,9 +229,7 @@ function useCommunityMemberDirectoryState() {
 
   const touchPresence = useCallback(async () => {
     if (presenceUnavailable) return;
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const user = await getSessionUser();
     if (!user) return;
 
     const { error } = await supabaseClient.from("community_presence").upsert(
@@ -274,9 +277,11 @@ function useCommunityMemberDirectoryState() {
           ]);
         } else {
           await loadPresence();
+          // The feed paints first; the (small) roster follows once the page settles,
+          // so the sidebar counts and "Recently active" fill in within a second or two.
           rosterDelayId = window.setTimeout(() => {
             if (!cancelled) void loadRoster({ includeLadder: false });
-          }, 8000);
+          }, 1200);
         }
         if (!cancelled) await touchPresence();
         if (!cancelled) await loadPresence();
@@ -334,5 +339,6 @@ function useCommunityMemberDirectoryState() {
     clock,
     refresh,
     counts,
+    rosterLoaded,
   };
 }

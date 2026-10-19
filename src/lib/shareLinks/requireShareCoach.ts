@@ -1,4 +1,4 @@
-import { ensureCoachRowForUser } from "@/lib/booking/bookingService";
+import { ensureCoachRowExists } from "@/lib/booking/bookingService";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 
 export async function requireShareCoach(request: Request): Promise<
@@ -10,7 +10,7 @@ export async function requireShareCoach(request: Request): Promise<
     return { error: auth.error ?? "Not authorized.", coachId: null };
   }
   try {
-    await ensureCoachRowForUser(auth.userId);
+    await ensureCoachRowExists(auth.userId);
   } catch {
     return { error: "Coach profile missing.", coachId: null };
   }

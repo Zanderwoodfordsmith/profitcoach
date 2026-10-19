@@ -1,5 +1,6 @@
 import { isLeadFinderAllowedEmail } from "@/lib/leadFinderAccess";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 export async function requireLeadFinderAccess(request: Request): Promise<
   | {
@@ -23,12 +24,9 @@ export async function requireLeadFinderAccess(request: Request): Promise<
       return { error: "Missing access token." as const, userId: null, email: null };
     }
 
-    const {
-      data: { user },
-      error,
-    } = await supabaseAdmin.auth.getUser(token);
+    const user = await verifyAccessToken(token);
 
-    if (error || !user?.email) {
+    if (!user?.email) {
       return { error: "Invalid access token." as const, userId: null, email: null };
     }
 

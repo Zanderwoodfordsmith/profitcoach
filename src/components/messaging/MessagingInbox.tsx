@@ -75,6 +75,7 @@ import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { ConnectGate, ConnectGateIcon } from "@/components/ui/ConnectGate";
 import { PROSPECT_INTERNAL_NOTE_EVENT } from "@/lib/messaging/internalNoteEvent";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 import {
   clearProspectOpenCaches,
   fetchThreadPage,
@@ -87,9 +88,12 @@ import {
   readThreadCache,
   writeThreadCache,
 } from "@/lib/messaging/threadCache";
-import { peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
+import { fetchHubQuery, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
 import { hubQueryKey } from "@/lib/getClients/hubKeys";
-import type { ConversationsHubPayload } from "@/lib/getClients/hubFetchers";
+import {
+  loadConversationsHubPayload,
+  type ConversationsHubPayload,
+} from "@/lib/getClients/hubFetchers";
 import {
   mergeMessagesChronological,
   shouldAutoloadOlder,
@@ -122,14 +126,15 @@ import {
 import { NewConversationPicker } from "@/components/messaging/NewConversationPicker";
 import { ReplySnippetPicker } from "@/components/messaging/ReplySnippetPicker";
 import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
+import { AvaDraftBar } from "@/components/messaging/AvaDraftBar";
 import { ReplyCopilotButton } from "@/components/messaging/ReplyCopilotButton";
 import { ScorecardInsertButtons } from "@/components/messaging/ScorecardInsertButtons";
 import {
   ScheduledMessageCard,
   type ScheduledThreadMessage,
 } from "@/components/messaging/ScheduledMessageCard";
-import type { ReplyDisposition } from "@/lib/prospects/replyDisposition";
-import { inferReplyDisposition } from "@/lib/prospects/replyDisposition";
+import type { ReplyDisposition } from "@/lib/prospects/replyDispositionInfer";
+import { inferReplyDisposition } from "@/lib/prospects/replyDispositionInfer";
 import {
   EditPersonNameButton,
   EditPersonPhotoButton,
@@ -1761,25 +1766,37 @@ export function MessagingInbox({
           if (!silent) setError("Sign in again, then retry.");
           return;
         }
-        const qs =
-          typeof opts?.limit === "number"
-            ? `?limit=${encodeURIComponent(String(opts.limit))}`
-            : "";
-        const res = await fetch(`/api/messaging/conversations${qs}`, { headers });
-        const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          conversations?: ConversationRow[];
-        };
-        if (generation !== listLoadGenerationRef.current) return;
-        if (!res.ok) {
-          if (!silent) {
-            setError(body.error || `Request failed (${res.status}).`);
-            setConversations([]);
+        let list: ConversationRow[];
+        if (opts?.limit === THREAD_LIST_FAST_LIMIT) {
+          // The first page is what the Get Clients warmup fetches: share its
+          // request (or its answer from a moment ago) instead of asking again.
+          const payload = await fetchHubQuery(
+            conversationsCacheKey,
+            loadConversationsHubPayload
+          );
+          if (generation !== listLoadGenerationRef.current) return;
+          list = payload.conversations as unknown as ConversationRow[];
+        } else {
+          const qs =
+            typeof opts?.limit === "number"
+              ? `?limit=${encodeURIComponent(String(opts.limit))}`
+              : "";
+          const res = await fetch(`/api/messaging/conversations${qs}`, { headers });
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            conversations?: ConversationRow[];
+          };
+          if (generation !== listLoadGenerationRef.current) return;
+          if (!res.ok) {
+            if (!silent) {
+              setError(body.error || `Request failed (${res.status}).`);
+              setConversations([]);
+            }
+            return;
           }
-          return;
+          list = Array.isArray(body.conversations) ? body.conversations : [];
+          writeHubQuery(conversationsCacheKey, { conversations: list });
         }
-        const list = Array.isArray(body.conversations) ? body.conversations : [];
-        writeHubQuery(conversationsCacheKey, { conversations: list });
         setConversations(list);
         const pending = peekMessagingComposeDraft();
         const prev = selectedIdRef.current;
@@ -3227,9 +3244,7 @@ export function MessagingInbox({
   useEffect(() => {
     let cancelled = false;
     async function loadCoach() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
       const { data } = await supabaseClient
         .from("profiles")
@@ -3306,11 +3321,30 @@ export function MessagingInbox({
         /* ignore */
       }
     }
-    void tick();
-    const id = window.setInterval(() => void tick(), 30_000);
+    // Vercel cron runs both jobs every minute in production; calling them from
+    // every open inbox only re-ran them for admins (and 401'd for coaches).
+    // Locally there's no cron, so keep the tick there.
+    if (process.env.NODE_ENV !== "production") {
+      void tick();
+      const id = window.setInterval(() => void tick(), 30_000);
+      return () => {
+        cancelled = true;
+        window.clearInterval(id);
+      };
+    }
+    // Coming back to the tab: pick up anything that arrived meanwhile.
+    const onVisible = () => {
+      if (document.hidden || cancelled || contactId) return;
+      if (liSyncingRef.current) {
+        pendingListRefreshRef.current = true;
+        return;
+      }
+      void loadList({ silent: true });
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [authHeaders, contactId, loadList, loadThread]);
 
@@ -3439,6 +3473,16 @@ export function MessagingInbox({
       setReplyChannel("email");
     }
   }, [prospectMode, replyChannel]);
+
+  // Deep link from Ava's alerts: /coach/conversations?conversation=<id>
+  const avaDeepLinkRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = (searchParams.get("conversation") || "").trim();
+    if (!/^[0-9a-f-]{36}$/i.test(id) || avaDeepLinkRef.current === id) return;
+    avaDeepLinkRef.current = id;
+    const t = setTimeout(() => openConversation(id), 0);
+    return () => clearTimeout(t);
+  }, [searchParams, openConversation]);
 
   const composeAppliedRef = useRef<string | null>(null);
   const [campaignCompose, setCampaignCompose] = useState<{
@@ -5008,7 +5052,7 @@ export function MessagingInbox({
                   ) : null}
                   <li className="px-2.5 py-0.5">
                     <div
-                      className={`flex items-start gap-2 rounded-lg px-2 py-2 ${
+                      className={`relative flex items-start gap-2 rounded-lg px-2 py-2 ${
                         checked
                           ? "bg-sky-50 ring-1 ring-sky-300"
                           : active
@@ -5088,36 +5132,31 @@ export function MessagingInbox({
                                   {c.unread_count}
                                 </span>
                               ) : null}
-                              <span
-                                role="button"
-                                tabIndex={0}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void patchConversation(c.id, {
-                                    starred: !c.starred,
-                                  });
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    void patchConversation(c.id, {
-                                      starred: !c.starred,
-                                    });
-                                  }
-                                }}
-                                className={`text-sm ${
-                                  c.starred
-                                    ? "text-amber-500"
-                                    : "text-slate-300 hover:text-slate-500"
-                                }`}
-                                aria-label={c.starred ? "Unstar" : "Star"}
-                              >
-                                {c.starred ? "★" : "☆"}
+                              {/* Space for the star button, which sits over this
+                                  spot outside the row button (buttons can't nest). */}
+                              <span className="inline-block w-3.5 text-sm" aria-hidden>
+                                {"\u00a0"}
                               </span>
                             </span>
                           </span>
                         </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void patchConversation(c.id, {
+                            starred: !c.starred,
+                          })
+                        }
+                        className={`absolute bottom-2 right-2 w-3.5 text-sm leading-5 ${
+                          c.starred
+                            ? "text-amber-500"
+                            : "text-slate-300 hover:text-slate-500"
+                        }`}
+                        aria-label={c.starred ? `Unstar ${personName}` : `Star ${personName}`}
+                        aria-pressed={Boolean(c.starred)}
+                      >
+                        {c.starred ? "★" : "☆"}
                       </button>
                     </div>
                   </li>
@@ -6086,6 +6125,16 @@ export function MessagingInbox({
                       </div>
                     ) : null}
 
+                    {selected?.id && replyChannel !== "comment" ? (
+                      <AvaDraftBar
+                        conversationId={selected.id}
+                        getHeaders={authHeaders}
+                        onUseDraft={(text) => {
+                          setReplyBody(text);
+                          replyTextareaRef.current?.focus();
+                        }}
+                      />
+                    ) : null}
                     <div
                       className={`relative flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-sky-400 ${
                         composerExpanded ? "flex-1" : ""

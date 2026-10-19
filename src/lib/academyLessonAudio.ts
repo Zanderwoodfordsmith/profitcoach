@@ -1,4 +1,5 @@
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 /** Comfortable ceiling for lesson MP3s (audiobook-length sessions). */
 export const ACADEMY_LESSON_MAX_AUDIO_BYTES = 200 * 1024 * 1024; // 200 MB
@@ -63,11 +64,8 @@ export async function uploadAcademyLessonAudioFile(
     return validated;
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseClient.auth.getUser();
-  if (userError || !user) {
+  const user = await getSessionUser();
+  if (!user) {
     return { error: "Not signed in." };
   }
 

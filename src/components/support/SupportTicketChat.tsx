@@ -42,6 +42,7 @@ import {
 } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { supportComposerFallbackBody } from "@/lib/support/supportTicketMedia";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 type TicketWithReplies = SupportTicket & { replies: SupportReply[] };
 
@@ -99,9 +100,7 @@ export function SupportTicketChat({
 
   useEffect(() => {
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       setAccountEmail(user?.email?.trim() || null);
     })();
   }, []);

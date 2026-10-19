@@ -7,6 +7,7 @@ import {
   fetchCachedProfileRole,
   peekProfileRole,
 } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 /**
  * Admin Get Clients pages used to block on /api/profile-role every visit.
@@ -23,9 +24,7 @@ export function useRequireAdminRole(redirectTo = "/coach") {
   useEffect(() => {
     let cancelled = false;
     async function check() {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user) {
         router.replace("/login");
         return;

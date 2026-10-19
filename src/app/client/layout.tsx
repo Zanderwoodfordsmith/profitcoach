@@ -8,6 +8,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 function IconChart({ className }: { className?: string }) {
   return (
@@ -77,21 +79,14 @@ export default function ClientLayout({
       setChecking(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
 
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
         error?: string;
         linked_contact_type?: string | null;
@@ -99,7 +94,7 @@ export default function ClientLayout({
 
       if (cancelled) return;
 
-      if (!roleRes.ok || !roleBody.role) {
+      if (!roleBody.role) {
         setError("Unable to load your profile.");
         setChecking(false);
         return;

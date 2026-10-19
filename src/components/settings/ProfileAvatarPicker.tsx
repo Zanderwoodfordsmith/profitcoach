@@ -86,6 +86,7 @@ export function ProfileAvatarPicker({
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
         tabIndex={-1}
+        aria-label="Upload a profile photo"
         onChange={(e) => {
           void onFileSelected(e);
           setMenuOpen(false);

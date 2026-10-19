@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
@@ -13,11 +14,14 @@ import { setAvaPageHost } from "@/components/ava/avaPageHost";
 
 import { useSectionComments } from "./comments/SectionCommentsContext";
 import { CommentsButton, PageCommentBadge } from "./comments/SectionCommentsUI";
-import { SidePanel } from "./SidePanel";
 import { DownloadMenu, PageBlurb } from "./document/DocumentParts";
 import { PageIcon } from "./pageIcons";
 import { usePractice } from "./PracticeProvider";
+import { useMatchesBreakpoint } from "@/hooks/useBreakpoint";
 import "./document/blueprint.css";
+
+// Loaded when the assistant or comments open: it carries the chat, markdown and voice SDK.
+const SidePanel = dynamic(() => import("./SidePanel").then((m) => m.SidePanel), { ssr: false });
 
 const NAV_KEY = "practice-nav-open";
 const NAV_WIDTH_KEY = "practice-nav-width";
@@ -152,6 +156,8 @@ export function PracticeShell({
   const here = path ?? pathname;
   const [navOpen, setNavOpen] = useState(true);
   const wide = useWideScreen();
+  // Mount the assistant once: docked at lg+, as a sheet below (not both, hidden by CSS).
+  const sidePanelDesktop = useMatchesBreakpoint("lg");
   const [navWidth, setNavWidth] = useState(NAV_WIDTH_DEFAULT);
   const page =
     BLUEPRINT_PAGES.find((item) => (path ? item.href === here : href(item.href) === here)) ?? null;
@@ -430,8 +436,7 @@ export function PracticeShell({
         )}
       </section>
 
-      {side ? (
-        <>
+      {side && sidePanelDesktop === true ? (
           <aside
             aria-label={side === "comments" ? "Comments" : "Ava"}
             className={`bp-no-print hidden w-[23rem] shrink-0 flex-col border-l border-slate-200 lg:flex ${
@@ -442,6 +447,8 @@ export function PracticeShell({
           >
             <SidePanel mode={side} sectionKey={discussing} page={page} canExpand onShow={showOnPage} />
           </aside>
+      ) : null}
+      {side && sidePanelDesktop === false ? (
           <div
             className={`bp-no-print fixed inset-0 z-50 flex flex-col justify-end lg:hidden ${
               peek ? "pointer-events-none" : "bg-[#051e36]/35"
@@ -456,7 +463,6 @@ export function PracticeShell({
               <SidePanel mode={side} sectionKey={discussing} page={page} onShow={showOnPage} />
             </div>
           </div>
-        </>
       ) : null}
 
       {ready && !side ? (

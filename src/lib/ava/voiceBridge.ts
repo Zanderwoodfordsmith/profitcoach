@@ -6,6 +6,7 @@ import {
   type BridgeExtra,
   type BridgeMessage,
 } from "@/lib/ava/voiceBridgeParse";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 export const maxDuration = 60;
 
@@ -82,11 +83,8 @@ function completion(text: string, stream: boolean): Response {
 }
 
 async function coachForToken(token: string, requestedCoachId: string | null): Promise<string | null> {
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) return null;
+  const user = await verifyAccessToken(token);
+  if (!user) return null;
 
   const { data: profile } = await supabaseAdmin
     .from("profiles")

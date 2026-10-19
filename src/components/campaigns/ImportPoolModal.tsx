@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
-import { MAX_POOL_ITEMS_PER_REQUEST } from "@/lib/leadLists/audienceLists";
+import { MAX_POOL_ITEMS_PER_REQUEST } from "@/lib/leadLists/audienceListShared";
 import type { ParsedProspectCsvRow } from "@/lib/prospects/parseProspectsCsv";
 import { CsvColumnMatch } from "@/components/prospects/CsvColumnMatch";
 import { CsvUploadDropzone } from "@/components/prospects/CsvUploadDropzone";
@@ -21,7 +21,7 @@ import {
   readCsvForMatching,
   type CsvColumnMapping,
 } from "@/lib/prospects/csvColumnMatch";
-import { splitPersonName } from "@/lib/leadLists/audienceLists";
+import { splitPersonName } from "@/lib/leadLists/audienceListShared";
 import { poolIdentityKey } from "@/lib/pool/identity";
 import {
   extraImportTeamSizeOptions,

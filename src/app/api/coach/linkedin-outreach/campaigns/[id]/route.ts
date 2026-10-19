@@ -95,9 +95,22 @@ export async function PATCH(request: Request, ctx: Ctx) {
         body.release_wait_position >= 0
           ? body.release_wait_position
           : undefined;
+      // Group test steps keep their fixed wording whatever the editor sends.
+      const { lockedStepsById } = await import("@/lib/groupTests/store");
+      const locked = await lockedStepsById(id);
+      const incoming = (body.steps as CampaignStepInput[]).map((step) => {
+        const fixed = step.id ? locked.get(step.id) : undefined;
+        if (!fixed) return step;
+        return {
+          ...step,
+          body: fixed.body,
+          variants: (fixed.variants as CampaignStepInput["variants"]) ?? null,
+          config: fixed.config,
+        };
+      });
       const steps = await replaceCampaignSteps(
         id,
-        body.steps as CampaignStepInput[],
+        incoming,
         releaseWaitPosition != null ? { releaseWaitPosition } : undefined
       );
       return NextResponse.json({ steps });
@@ -105,6 +118,17 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
     if (typeof body.status === "string") {
       const nextStatus = body.status as CampaignStatus;
+      if (nextStatus === "running") {
+        // Don't let a campaign go live with something prospects would see broken.
+        const { checkCampaignById } = await import("@/lib/campaigns/launchCheck");
+        const blockers = (await checkCampaignById(auth.coachId, id)).filter((i) => i.level === "blocker");
+        if (blockers.length) {
+          return NextResponse.json(
+            { error: blockers.map((b) => b.message).join(" "), issues: blockers },
+            { status: 422 }
+          );
+        }
+      }
       if ("outreach_account_id" in body) {
         await updateCampaign(auth.coachId, id, {
           outreach_account_id: body.outreach_account_id,

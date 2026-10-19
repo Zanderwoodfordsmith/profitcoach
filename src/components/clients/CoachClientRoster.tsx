@@ -12,9 +12,17 @@ import {
 import Link from "next/link";
 import { Loader2, Plus, Search } from "lucide-react";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { BestClientsCard } from "@/components/clients/BestClientsCard";
+import { ClientBulkImport } from "@/components/clients/ClientBulkImport";
 import {
+  CLIENT_SOURCE_LABELS,
+  CLIENT_SOURCES,
   parseClientRosterCreate,
   parseClientRosterPatch,
+  REVENUE_BAND_LABELS,
+  REVENUE_BANDS,
+  TEAM_SIZE_LABELS,
+  TEAM_SIZES,
 } from "@/lib/clientRoster/fields";
 import {
   compareRosterClients,
@@ -38,6 +46,12 @@ export type CoachClientRosterItem = {
   feeAmount: number | null;
   problemNotes: string | null;
   bossScore: number | null;
+  sector?: string | null;
+  revenueBand?: string | null;
+  teamSize?: string | null;
+  source?: string | null;
+  result?: string | null;
+  fit?: number | null;
 };
 
 type Props = {
@@ -392,6 +406,12 @@ function ClientEditor({
   const [fee, setFee] = useState(feeToInput(client.feeAmount));
   const [notes, setNotes] = useState(client.problemNotes ?? "");
   const [linkedinUrl, setLinkedinUrl] = useState(client.linkedinUrl ?? "");
+  const [sector, setSector] = useState(client.sector ?? "");
+  const [revenueBand, setRevenueBand] = useState(client.revenueBand ?? "");
+  const [teamSize, setTeamSize] = useState(client.teamSize ?? "");
+  const [source, setSource] = useState(client.source ?? "");
+  const [result, setResult] = useState(client.result ?? "");
+  const [fit, setFit] = useState(client.fit != null ? String(client.fit) : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -403,6 +423,12 @@ function ClientEditor({
     setFee(feeToInput(client.feeAmount));
     setNotes(client.problemNotes ?? "");
     setLinkedinUrl(client.linkedinUrl ?? "");
+    setSector(client.sector ?? "");
+    setRevenueBand(client.revenueBand ?? "");
+    setTeamSize(client.teamSize ?? "");
+    setSource(client.source ?? "");
+    setResult(client.result ?? "");
+    setFit(client.fit != null ? String(client.fit) : "");
   }, [client]);
 
   async function handleSave(e: FormEvent) {
@@ -418,6 +444,12 @@ function ClientEditor({
         feeAmount: fee,
         problemNotes: notes,
         linkedinUrl,
+        sector,
+        revenueBand: revenueBand || null,
+        teamSize: teamSize || null,
+        source: source || null,
+        result,
+        fit: fit || null,
       });
       const headers = await authHeaders();
       if (!headers) throw new Error("You must be signed in.");
@@ -489,6 +521,66 @@ function ClientEditor({
             />
           </Field>
         </div>
+        <Field label="Sector" htmlFor={`sector-${client.id}`}>
+          <input
+            id={`sector-${client.id}`}
+            value={sector}
+            onChange={(e) => setSector(e.target.value)}
+            placeholder="e.g. Accountancy"
+            className={INPUT}
+          />
+        </Field>
+        <Field label="How they found you" htmlFor={`source-${client.id}`}>
+          <select id={`source-${client.id}`} value={source} onChange={(e) => setSource(e.target.value)} className={INPUT}>
+            <option value="">Not set</option>
+            {CLIENT_SOURCES.map((k) => (
+              <option key={k} value={k}>
+                {CLIENT_SOURCE_LABELS[k]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Turnover" htmlFor={`revenue-${client.id}`}>
+          <select id={`revenue-${client.id}`} value={revenueBand} onChange={(e) => setRevenueBand(e.target.value)} className={INPUT}>
+            <option value="">Not set</option>
+            {REVENUE_BANDS.map((k) => (
+              <option key={k} value={k}>
+                {REVENUE_BAND_LABELS[k]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Team size" htmlFor={`team-${client.id}`}>
+          <select id={`team-${client.id}`} value={teamSize} onChange={(e) => setTeamSize(e.target.value)} className={INPUT}>
+            <option value="">Not set</option>
+            {TEAM_SIZES.map((k) => (
+              <option key={k} value={k}>
+                {TEAM_SIZE_LABELS[k]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <div className="sm:col-span-2">
+          <Field label="Result you got them" htmlFor={`result-${client.id}`}>
+            <input
+              id={`result-${client.id}`}
+              value={result}
+              onChange={(e) => setResult(e.target.value)}
+              placeholder="e.g. Profit up 40% in a year"
+              className={INPUT}
+            />
+          </Field>
+        </div>
+        <Field label="More like them? (1 to 5)" htmlFor={`fit-${client.id}`}>
+          <select id={`fit-${client.id}`} value={fit} onChange={(e) => setFit(e.target.value)} className={INPUT}>
+            <option value="">Not set</option>
+            <option value="5">5: my ideal client</option>
+            <option value="4">4: yes please</option>
+            <option value="3">3: fine</option>
+            <option value="2">2: not really</option>
+            <option value="1">1: never again</option>
+          </select>
+        </Field>
         <div className="sm:col-span-2">
           <Field
             label="LinkedIn profile"
@@ -547,6 +639,7 @@ export function CoachClientRoster({
   onChanged,
 }: Props) {
   const [adding, setAdding] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -645,6 +738,15 @@ export function CoachClientRoster({
               {filtered.length} matching
             </p>
           ) : null}
+          {!bulkOpen ? (
+            <button
+              type="button"
+              onClick={() => setBulkOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Add many
+            </button>
+          ) : null}
           {!composerOpen ? (
             <button
               type="button"
@@ -659,6 +761,12 @@ export function CoachClientRoster({
       </div>
 
       {notice ? <p className="text-sm text-rose-700">{notice}</p> : null}
+
+      {bulkOpen ? (
+        <ClientBulkImport authHeaders={authHeaders} onDone={onChanged} onClose={() => setBulkOpen(false)} />
+      ) : null}
+
+      {clients.length > 0 ? <BestClientsCard authHeaders={authHeaders} refreshKey={String(clients.length)} /> : null}
 
       {composerOpen ? (
         <AddClientComposer

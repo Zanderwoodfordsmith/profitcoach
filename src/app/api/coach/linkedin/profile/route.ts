@@ -10,6 +10,7 @@ import {
 } from "@/lib/apify/linkedinProfile";
 import { applyLinkedInPhotoAsAvatarIfMissing } from "@/lib/apify/applyLinkedInAvatar";
 import { patchPracticeKnowledge } from "@/lib/practiceKnowledge/store";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 type StoredRow = {
   linkedin_url: string;
@@ -23,9 +24,7 @@ async function callerIsAdmin(request: Request): Promise<boolean> {
     ? authHeader.slice("Bearer ".length)
     : null;
   if (!token) return false;
-  const {
-    data: { user },
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
   if (!user) return false;
   const { data: profile } = await supabaseAdmin
     .from("profiles")

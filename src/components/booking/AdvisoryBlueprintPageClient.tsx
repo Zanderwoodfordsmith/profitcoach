@@ -9,8 +9,9 @@ import {
   ADVISORY_BLUEPRINT_COACH_SLUG,
 } from "@/config/advisoryBlueprintCalendar";
 import type { ApplyPrefill } from "@/lib/booking/bookCallPrefill";
-import { contactToApplyPrefill } from "@/lib/support/supportCallPrefill";
+import { contactToApplyPrefill } from "@/lib/support/supportCallPrefillQuery";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -28,9 +29,7 @@ export function AdvisoryBlueprintPageClient() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
 
       const { data: profile } = await supabaseClient

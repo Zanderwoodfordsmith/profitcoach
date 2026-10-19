@@ -8,6 +8,7 @@ import {
   type MentionProfileRow,
 } from "@/lib/communityMentionUsers";
 import { isHiddenFromMentionPicker } from "@/lib/communityFormerStaff";
+import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 const PROFILE_SELECT =
   "id, full_name, first_name, last_name, avatar_url, role, access_removed_at" as const;
@@ -25,12 +26,9 @@ async function requireStaff(request: Request): Promise<
     return { ok: false, status: 401, message: "Missing access token." };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
+  const user = await verifyAccessToken(token);
 
-  if (error || !user) {
+  if (!user) {
     return { ok: false, status: 401, message: "Invalid access token." };
   }
 

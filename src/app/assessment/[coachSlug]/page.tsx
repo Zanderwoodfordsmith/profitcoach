@@ -42,7 +42,7 @@ import {
 } from "@/lib/bossScorecardScores";
 import { resolveLandingTrackCoachSlug } from "@/lib/landingAnalytics";
 import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
-import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoachConstants";
 import {
   assessmentContactToSessionPayload,
   assessmentResultsContactError,

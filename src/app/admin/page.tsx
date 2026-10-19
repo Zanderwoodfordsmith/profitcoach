@@ -54,7 +54,7 @@ import {
   type CsvExportScope,
 } from "@/components/table/TableCsvExportButton";
 import { coachSlugFromFullName } from "@/lib/coachSlug";
-import { isSystemCoachSlug } from "@/lib/primaryCoach";
+import { isSystemCoachSlug } from "@/lib/primaryCoachConstants";
 import { exportCoachesToCsv } from "@/lib/exportCoachesCsv";
 import { formatPersonName } from "@/lib/formatPersonName";
 import {
@@ -77,6 +77,8 @@ import {
   X,
 } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 import {
   COACH_ACCESS_TIER_LABELS,
@@ -914,25 +916,18 @@ export default function AdminPage() {
       setCheckingRole(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
 
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
         error?: string;
       };
-      if (!roleRes.ok || !roleBody.role) {
+      if (!roleBody.role) {
         setError("Unable to load your profile.");
         setCheckingRole(false);
         return;

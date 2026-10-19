@@ -75,7 +75,7 @@ import {
   toggleCollapsedGroupKey,
 } from "@/lib/table/groupedTableItems";
 import { buildPersonalisedAssessmentLink, buildPersonalisedAssessmentProLink } from "@/lib/assessmentContactParams";
-import { normalizeAssessmentInviteToken } from "@/lib/assessmentInviteToken";
+import { normalizeAssessmentInviteToken } from "@/lib/assessmentInviteTokenParam";
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { splitFullName } from "@/lib/splitFullName";

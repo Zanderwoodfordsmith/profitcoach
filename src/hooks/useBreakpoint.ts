@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 /** Tailwind default breakpoints (min-width). */
 export const BREAKPOINTS = {
@@ -43,4 +43,23 @@ export function useBelowBreakpoint(key: BreakpointKey): boolean {
   useEffect(() => setMounted(true), []);
   if (!mounted) return false;
   return !atOrAbove;
+}
+
+/**
+ * True/false once the viewport is known, null while hydrating a server render.
+ * Unlike useBreakpoint it is right on the first client render, so it can
+ * decide which of two layouts to mount instead of mounting both and hiding
+ * one with CSS (which doubled their data loading).
+ */
+export function useMatchesBreakpoint(key: BreakpointKey): boolean | null {
+  const query = `(min-width: ${BREAKPOINTS[key]}px)`;
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(query);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(query).matches,
+    () => null
+  );
 }

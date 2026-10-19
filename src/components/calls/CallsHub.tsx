@@ -34,6 +34,8 @@ import {
 } from "@/lib/callStatusUi";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
+import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 const LIST_DROPDOWN =
   "absolute left-0 z-[90] mt-1 w-[min(92vw,20rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg";
@@ -112,16 +114,9 @@ export function CallsHub({
     }
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+      const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
       };
       if (!cancelled) {

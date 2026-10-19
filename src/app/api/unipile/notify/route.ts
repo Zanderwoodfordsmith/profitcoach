@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAlertsNotifyName, upsertAlertsWhatsAppFromNotify } from "@/lib/ava/alertsWhatsApp";
 import { upsertOutreachAccountFromNotify } from "@/lib/unipile/outreachAccounts";
 import {
   connectedByFromNotifyName,
@@ -32,6 +33,17 @@ export async function POST(request: Request) {
       keys: Object.keys(body),
     });
     return NextResponse.json({ ok: true, ignored: true });
+  }
+
+  // BCA's alerts WhatsApp (Ava) — never write coach outreach rows.
+  if (isAlertsNotifyName(name)) {
+    try {
+      await upsertAlertsWhatsAppFromNotify({ unipileAccountId, name });
+      return NextResponse.json({ ok: true, purpose: "alerts" });
+    } catch (err) {
+      console.error("unipile alerts notify:", err);
+      return NextResponse.json({ error: "Notify failed" }, { status: 500 });
+    }
   }
 
   // Dedicated Support mailbox — never write coach outreach rows.

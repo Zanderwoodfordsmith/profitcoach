@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Phone } from "lucide-react";
 
@@ -20,7 +21,9 @@ import { avaCallIntro, avaCallProtocol } from "@/lib/practiceKnowledge/intakeCal
 import { primeCallAudio } from "./callAudio";
 
 import { usePractice } from "../PracticeProvider";
-import { AvaVoiceCall } from "./AvaVoiceCall";
+
+// The ElevenLabs voice SDK is large: fetch it only when a call starts.
+const AvaVoiceCall = dynamic(() => import("./AvaVoiceCall").then((m) => m.AvaVoiceCall), { ssr: false });
 
 /**
  * Ava in the Blueprint: one conversation at a time, titled by Ava, with every

@@ -2,19 +2,30 @@ import { fetchAllSupabasePages } from "@/lib/contactsSchemaSafeSelect";
 import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 import { normalizePoolEmail } from "@/lib/pool/identity";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-export const LEAD_LIST_UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isLeadListUuid } from "@/lib/leadLists/leadListId";
+import {
+  type AudienceListKind,
+  type AudienceListSummary,
+  displayListPersonName,
+  MAX_POOL_ITEMS_PER_REQUEST,
+  splitPersonName,
+} from "@/lib/leadLists/audienceListShared";
+export {
+  AUDIENCE_LIST_KINDS,
+  audienceItemSourceLabel,
+  type AudienceListKind,
+  type AudienceListSummary,
+  displayListPersonName,
+  MAX_POOL_ITEMS_PER_REQUEST,
+  splitPersonName,
+} from "@/lib/leadLists/audienceListShared";
+export { isLeadListUuid, LEAD_LIST_UUID_RE } from "@/lib/leadLists/leadListId";
 
 export const MAX_LIST_ITEMS_PER_REQUEST = 250;
 export const MAX_POOL_ITEMS_TOTAL = 25_000;
 /** Named lists used to be the inventory, so they were capped at 1,000.
  * Pool is the inventory now; a named list is a bag of the same size. */
 export const MAX_LIST_ITEMS_TOTAL = MAX_POOL_ITEMS_TOTAL;
-export const MAX_POOL_ITEMS_PER_REQUEST = 2_500;
-
-export const AUDIENCE_LIST_KINDS = ["audience", "blacklist", "pool"] as const;
-export type AudienceListKind = (typeof AUDIENCE_LIST_KINDS)[number];
 
 export const AUDIENCE_ITEM_SOURCES = [
   "lead_finder",
@@ -27,18 +38,6 @@ export const AUDIENCE_ITEM_SOURCES = [
   "google_search",
 ] as const;
 export type AudienceItemSource = (typeof AUDIENCE_ITEM_SOURCES)[number];
-
-export type AudienceListSummary = {
-  id: string;
-  name: string;
-  kind: AudienceListKind;
-  source: string;
-  item_count: number;
-  updated_at: string | null;
-  created_at: string | null;
-  /** True when this list was created by a pool bulk import. */
-  from_pool_import: boolean;
-};
 
 export type AudienceListPerson = {
   linkedin_url: string;
@@ -72,10 +71,6 @@ export type AudienceListItemRow = {
   in_campaign?: boolean;
 };
 
-export function isLeadListUuid(value: string): boolean {
-  return LEAD_LIST_UUID_RE.test(value);
-}
-
 export function normalizeAudienceKind(
   value: string | null | undefined
 ): AudienceListKind {
@@ -90,58 +85,6 @@ export function listItemCapForKind(kind: AudienceListKind): number {
 
 export function isAudienceItemSource(value: string): value is AudienceItemSource {
   return (AUDIENCE_ITEM_SOURCES as readonly string[]).includes(value);
-}
-
-export function audienceItemSourceLabel(source: string): string {
-  switch (source) {
-    case "sales_nav":
-    case "sales_nav_csv":
-      return "Sales Nav";
-    case "lead_finder":
-      return "Lead Finder";
-    case "connections":
-      return "Connections";
-    case "search":
-      return "Search";
-    case "google_maps":
-      return "Google Maps";
-    case "google_search":
-      return "Google Search";
-    case "manual":
-      return "Added";
-    case "mixed":
-      return "Mixed";
-    default:
-      return "List";
-  }
-}
-
-export function displayListPersonName(input: {
-  full_name?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-}): string {
-  const full = input.full_name?.trim();
-  if (full) return full;
-  const joined = [input.first_name, input.last_name]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-  return joined || "Unnamed";
-}
-
-export function splitPersonName(fullName: string | null | undefined): {
-  first_name: string | null;
-  last_name: string | null;
-} {
-  const parts = (fullName ?? "").trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return { first_name: null, last_name: null };
-  if (parts.length === 1) return { first_name: parts[0], last_name: null };
-  return {
-    first_name: parts[0],
-    last_name: parts.slice(1).join(" "),
-  };
 }
 
 export function parsePastedAudienceLines(text: string): AudienceListPerson[] {

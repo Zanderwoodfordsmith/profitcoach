@@ -107,6 +107,13 @@ export const MERGE_FIELD_CATALOG: MergeField[] = [
     aliases: ["city"],
   },
   {
+    key: "profile_hook",
+    label: "Line from their profile",
+    group: "Prospect",
+    hint: "One true sentence Ava writes from their LinkedIn profile when the message sends",
+    example: "I see you've grown Acme Engineering from a two-man shop over the last 12 years.",
+  },
+  {
     key: "coach_name",
     label: "Coach name",
     group: "You",

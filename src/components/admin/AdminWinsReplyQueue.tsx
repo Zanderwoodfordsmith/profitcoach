@@ -22,6 +22,7 @@ import type {
   CommunityPostRow,
 } from "@/components/community/CommunityFeed";
 import dynamic from "next/dynamic";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 const PostDetailModal = dynamic(
   () =>
@@ -65,9 +66,7 @@ export function AdminWinsReplyQueue() {
       if (isWinsQueueCheckedThisSession()) {
         setPhase("ready");
         try {
-          const {
-            data: { user },
-          } = await supabaseClient.auth.getUser();
+          const user = await getSessionUser();
           if (!cancelled && user?.id) {
             const { data: profile } = await supabaseClient
               .from("profiles")
@@ -86,9 +85,7 @@ export function AdminWinsReplyQueue() {
 
       setPhase("checking");
       try {
-        const {
-          data: { user },
-        } = await supabaseClient.auth.getUser();
+        const user = await getSessionUser();
         if (cancelled || !user?.id) {
           return;
         }

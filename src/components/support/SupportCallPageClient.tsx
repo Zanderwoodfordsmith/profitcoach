@@ -7,13 +7,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StartApplyPanelNative } from "@/components/booking/StartApplyPanelNative";
 import type { ApplyPrefill } from "@/lib/booking/bookCallPrefill";
-import { contactToApplyPrefill } from "@/lib/support/supportCallPrefill";
+import { contactToApplyPrefill } from "@/lib/support/supportCallPrefillQuery";
 import {
   SUPPORT_CALL_CALENDAR_SLUG,
   supportCallHostDisplayName,
   type SupportCallHostSlug,
 } from "@/lib/support/supportCallHosts";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -37,9 +38,7 @@ export function SupportCallPageClient({ hostSlug }: Props) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      const user = await getSessionUser();
       if (!user || cancelled) return;
 
       const { data: profile } = await supabaseClient

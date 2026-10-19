@@ -57,6 +57,7 @@ export function CommunitySidebar({
     presenceUnavailable,
     clock,
     counts,
+    rosterLoaded,
   } = useCommunityMemberDirectory();
 
   const recentTwelve = useMemo(() => {
@@ -89,7 +90,7 @@ export function CommunitySidebar({
       className="flex flex-1 flex-col items-center gap-0.5 px-1 py-2 text-center transition-colors hover:bg-slate-50"
     >
       <span className="text-xl font-bold tabular-nums text-slate-900">
-        {value}
+        {rosterLoaded ? value : "–"}
       </span>
       <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
         {label}
@@ -153,6 +154,12 @@ export function CommunitySidebar({
                 Presence will show here after the latest database migration is
                 applied.
               </p>
+            ) : !rosterLoaded ? (
+              <div className="flex gap-2" aria-hidden>
+                {Array.from({ length: 6 }, (_, i) => (
+                  <span key={i} className="h-8 w-8 animate-pulse rounded-full bg-slate-100" />
+                ))}
+              </div>
             ) : recentTwelve.length === 0 ? (
               <p className="text-xs text-slate-500">
                 No recent activity yet. Open the community on other devices to
@@ -210,6 +217,7 @@ export function CommunitySidebar({
                         {online ? (
                           <span
                             className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500"
+                            role="img"
                             aria-label="Online"
                           />
                         ) : null}

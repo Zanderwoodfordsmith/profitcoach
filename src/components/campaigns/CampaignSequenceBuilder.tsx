@@ -1396,6 +1396,30 @@ export function StepInlineEditor({
   const noteLimit =
     step.step_type === "invite" ? CONNECTION_REQUEST_LIMIT : undefined;
 
+  // BCA group test: fixed wording so results compare across coaches.
+  if (step.config?.group_test_id && step.config?.locked) {
+    const testName = typeof step.config.group_test_name === "string" ? step.config.group_test_name : "BCA group test";
+    const all = Array.isArray(step.variants) ? step.variants : [];
+    return (
+      <div className="space-y-2">
+        <p className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900">
+          Part of the BCA group test &ldquo;{testName}&rdquo;. The wording is fixed while the test runs so results
+          compare fairly across coaches. Leave the test above to edit it.
+        </p>
+        {all.map((v) => (
+          <div key={v.key} className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">
+            <p className="text-xs font-medium text-slate-500">
+              Version {v.key}
+              {v.label && v.label !== v.key ? `: ${v.label}` : ""}
+              {stepStats?.[v.key] ? ` · ${stepStats[v.key]!.assigned} people` : ""}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-slate-800">{v.body}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function patchActiveVariant(patch: Partial<SequenceVariant>) {
     const next = variants.map((item, i) =>
       i === activeIndex ? { ...item, ...patch } : item

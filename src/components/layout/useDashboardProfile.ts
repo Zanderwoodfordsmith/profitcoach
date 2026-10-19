@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 
@@ -21,28 +23,56 @@ export function useDashboardProfile(avatarOverride?: {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  const loadProfile = useCallback(async () => {
-    setProfileLoading(true);
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+  const loadProfile = useCallback(async (force = false) => {
+    const user = await getSessionUser();
     if (!user) {
       setProfile(null);
       setProfileLoading(false);
       return;
     }
-    const { data } = await supabaseClient
-      .from("profiles")
-      .select("id, role, full_name, first_name, last_name, avatar_url, created_at")
-      .eq("id", user.id)
-      .maybeSingle();
-    setProfile((data as DashboardProfile | null) ?? null);
+    // Sidebar, top bar and menus all ask at once, on every page: paint the
+    // last answer immediately and share one refresh between them.
+    const key = `viewer-profile:${user.id}`;
+    const cached = peekHubQuery<DashboardProfile | null>(key);
+    if (cached !== undefined) {
+      setProfile(cached);
+      setProfileLoading(false);
+    } else {
+      setProfileLoading(true);
+    }
+    try {
+      const data = await fetchHubQuery(
+        key,
+        async () => {
+          const { data, error } = await supabaseClient
+            .from("profiles")
+            .select("id, role, full_name, first_name, last_name, avatar_url, created_at")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (error) throw error;
+          return (data as DashboardProfile | null) ?? null;
+        },
+        { staleMs: 5_000, force }
+      );
+      setProfile(data);
+    } catch {
+      if (cached === undefined) setProfile(null);
+    }
     setProfileLoading(false);
   }, []);
 
   useEffect(() => {
-    void loadProfile();
+    let cancelled = false;
+    void (async () => {
+      await Promise.resolve();
+      if (!cancelled) await loadProfile();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [loadProfile]);
+
+  const reloadProfile = useCallback(() => loadProfile(true), [loadProfile]);
 
   const avatarLabel = useMemo(() => {
     if (avatarOverride?.name) return avatarOverride.name;
@@ -57,6 +87,6 @@ export function useDashboardProfile(avatarOverride?: {
     profileLoading,
     avatarLabel,
     avatarImageUrl,
-    reloadProfile: loadProfile,
+    reloadProfile,
   };
 }
