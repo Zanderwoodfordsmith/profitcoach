@@ -5,10 +5,15 @@ import type { ProfileSectionId } from "./types";
 import { experienceDraftAt } from "./draft";
 
 /** Locked in code so a bad admin edit cannot break the rewrite parser. */
+/** Locked like the JSON contract: the writing rules every variant must follow, whatever the admin voice says. */
+export const PROFILE_REWRITE_HARD_RULES = `Hard rules for every variant:
+- Never use the em dash character. Use a comma, a full stop or a hyphen instead.
+- Never invent a story, an anecdote, a number, a client or a result. Use only facts given below. Anything the coach must add goes in [square brackets].`;
+
 export const PROFILE_REWRITE_JSON_CONTRACT = `Return ONE JSON object only, no markdown:
 {"recommendedIndex":0,"variants":[{"label":"Short label","text":"..."}]}
 Mark the recommended variant with recommendedIndex (0-based).
-Keep labels to 1–3 words (Direct, Proof-led, Specific, Warm).`;
+Keep labels to 1 to 3 words (Direct, Proof-led, Specific, Warm).`;
 
 /** Admin-editable voice. Saved in linkedin_optimizer_prompt; empty row uses this. */
 export const PROFILE_REWRITE_DEFAULT_VOICE = `You rewrite a BCA coach's LinkedIn profile so the right business owners recognise themselves and want to talk.
@@ -18,11 +23,11 @@ Rules:
 - The Practice Blueprint is the source of truth: write to its ideal client, in its voice and tone, with its offer. If it says the coach is discreet about coaching, keep the profile discreet.
 - How they want to be known, and the kind of coach they are (boot camp, hugs, a mix), should be readable in the About. Owners must recognise what working with them will feel like. Use values they named. Do not invent a hobby, book or film, and do not force those onto the profile.
 - Owner language, not coach-speak. Not “Business Coach | Helping leaders transform”.
-- Headline: who they help + the outcome. Scannable. 3–5 variants. LinkedIn max 220 characters.
-- About: written TO the ideal client (you/your), not a CV. Pain in their words → mechanism (BOSS as a system, not therapy) → the kind of coach they are → proof from the Blueprint → clear next step (connect, newsletter, or a call). Short paragraphs. 2–3 variants.
-- Experience: current role framed as client outcomes, not job history. 2–3 variants of the description (and title if the current title is generic).
+- Headline: who they help + the outcome. Scannable. 3 to 5 variants. LinkedIn max 220 characters.
+- About: written TO the ideal client (you/your), not a CV. Pain in their words → mechanism (BOSS as a system, not therapy) → the kind of coach they are → proof from the Blueprint → clear next step (connect, newsletter, or a call). Short paragraphs. 2 to 3 variants.
+- Experience: current role framed as client outcomes, not job history. 2 to 3 variants of the description (and title if the current title is generic).
 - Banner: words only (who + result). Do not describe image layouts in detail. 3 short lines they can put on a banner.
-- Featured: what to pin on the profile (newsletter, a proof post, a lead magnet / case). 2–3 variants. Each variant.text is a short numbered list of what to feature and why — not image generation.`;
+- Featured: what to pin on the profile (newsletter, a proof post, a lead magnet / case). 2 to 3 variants. Each variant.text is a short numbered list of what to feature and why. No image generation.`;
 
 export const PROFILE_REWRITE_SYSTEM = `${PROFILE_REWRITE_DEFAULT_VOICE}
 
@@ -34,7 +39,7 @@ export function composeRewriteSystem(adminVoice: string | null, method = ""): st
   const methodPart = method.trim()
     ? `# Method\n\nUse the parts of this method that fit the section you are asked to rewrite. The section instructions and the JSON format win on format.\n\n${method.trim()}\n\n`
     : "";
-  return `${voice}\n\n${methodPart}${PROFILE_REWRITE_JSON_CONTRACT}`;
+  return `${voice}\n\n${methodPart}${PROFILE_REWRITE_HARD_RULES}\n\n${PROFILE_REWRITE_JSON_CONTRACT}`;
 }
 
 function clip(value: string, max: number): string {
@@ -50,14 +55,14 @@ function formatBrain(brain: CoachAiContext | null): string {
     `superpowers: ${clip((brain.superpowers ?? "").trim() || "(empty)", 800)}`,
   ];
   if (results.length === 0) {
-    lines.push("client_results: (none — do not invent)");
+    lines.push("client_results: (none, do not invent)");
   } else {
     lines.push(
       "client_results:",
       ...results.slice(0, 6).map((r, i) => {
         const t = (r.title ?? "").trim();
         const s = clip((r.story ?? "").trim(), 400);
-        return `  ${i + 1}. ${t || "Untitled"}${s ? ` — ${s}` : ""}`;
+        return `  ${i + 1}. ${t || "Untitled"}${s ? `: ${s}` : ""}`;
       })
     );
   }
@@ -88,11 +93,11 @@ function currentSectionText(
             .map((item, i) => {
               const line = [item.title, item.subtitle, item.url]
                 .filter(Boolean)
-                .join(" — ");
+                .join(", ");
               return `  ${i + 1}. ${line || "(untitled)"}`;
             })
             .join("\n")
-        : "(none imported — scrape often misses Featured)";
+        : "(none imported; the scrape often misses Featured)";
     return `Currently pinned:\n${live}${notes ? `\n\nDraft pin advice:\n${notes}` : ""}`;
   }
   const exp = snapshot.experiences[experienceIndex];
@@ -124,7 +129,7 @@ export function buildRewriteUser(opts: {
     banner:
       "Write BANNER COPY only (who they help + the result). Each variant.text is one short line or two.",
     featured:
-      "Write FEATURED pin advice only. Each variant.text is a short numbered list of 2–4 items to pin (newsletter, proof, lead magnet) and one line why. Do not invent URLs.",
+      "Write FEATURED pin advice only. Each variant.text is a short numbered list of 2 to 4 items to pin (newsletter, proof, lead magnet) and one line why. Do not invent URLs.",
   };
 
   const extra = opts.instruction
