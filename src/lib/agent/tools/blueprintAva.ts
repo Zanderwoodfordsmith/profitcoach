@@ -27,8 +27,8 @@ import { AgentToolError, bool, coachOf, num, str } from "./util";
  * change it or put it back. Nothing to click.
  */
 
-/** Pages in the order coaches are asked: proof first, practical setup last. */
-const ASK_ORDER = ["story", "market", "offer", "linkedin", "voice", "setup"];
+/** About You pages, in the order coaches are asked: proof first, practical setup last. */
+const ASK_ORDER = ["story", "voice", "setup"];
 
 function where(ref: SectionRef): string {
   return `${ref.page.title} · ${ref.section.title}`;
@@ -156,7 +156,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
     label: "Finding what is still open",
     needsCoach: true,
     description:
-      "The coach's unanswered Blueprint questions, starting with the page they are on, then proof, market, offer, LinkedIn, voice and setup. Each has the field path to save to, the question to ask, an example of a good answer, and why we ask.",
+      "The coach's unanswered About You questions (story and proof, voice, setup), starting with the page they are on. Everything after About You is BCA's to research or agree on the Blueprint Call, so it is never asked. Each has the field path to save to, the question to ask, an example of a good answer, and why we ask.",
     input_schema: {
       type: "object",
       properties: {
@@ -170,7 +170,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
       const first = pageSlug(input);
       const rank = (slug: string) => (slug === first ? 0 : ASK_ORDER.indexOf(slug) + 1 || 99);
       const limit = Math.min(Math.max(num(input, "limit") ?? 8, 1), 20);
-      const open = [...BLUEPRINT_SECTIONS]
+      const open = BLUEPRINT_SECTIONS.filter((ref) => ref.group.yours && ref.section.face !== "stored")
         .sort((a, b) => rank(a.page.slug) - rank(b.page.slug))
         .flatMap((ref) =>
           answerFields(ref)

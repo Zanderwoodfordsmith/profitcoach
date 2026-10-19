@@ -157,6 +157,7 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
         <div>
           {underHeading ? null : <Caption>{block.label || "Message"}</Caption>}
           <Area value={block.body} onChange={(body) => set({ ...block, body })} />
+          {block.note ? <p className="mt-1.5 px-0.5 text-sm text-[var(--bp-muted)]">{block.note}</p> : null}
         </div>
       );
     case "callout":
@@ -248,9 +249,21 @@ function MessageLine({
   );
 }
 
+/** Messages in a run of three or more in a row (a campaign sequence) start closed. */
+function inSequence(blocks: BlueprintBlock[], i: number): boolean {
+  const isMessage = (j: number) => blocks[j]?.type === "message";
+  if (!isMessage(i)) return false;
+  let start = i;
+  let end = i;
+  while (isMessage(start - 1)) start--;
+  while (isMessage(end + 1)) end++;
+  return end - start >= 2;
+}
+
 /**
- * A written section as click-in boxes. A run of messages starts closed, one
- * line each, so you open the one you want. A single message stays open.
+ * A written section as click-in boxes. A sequence of messages starts closed,
+ * one line each, so you open the one you want. A message on its own, or one
+ * under its own heading (the offer in three lengths), stays open.
  */
 export function BlockBoxes({
   blocks,
@@ -262,7 +275,6 @@ export function BlockBoxes({
   const [draft, setDraft] = useState<BlueprintBlock[]>(blocks);
   const stored = useRef(JSON.stringify(blocks));
   const [saved, setSaved] = useState(false);
-  const collapseMessages = draft.filter((block) => block.type === "message").length > 1;
 
   async function save() {
     const next = tidy(draft);
@@ -278,7 +290,7 @@ export function BlockBoxes({
   return (
     <div className="relative space-y-4" onBlur={save}>
       {draft.map((block, i) =>
-        collapseMessages && block.type === "message" ? (
+        block.type === "message" && inSequence(draft, i) ? (
           <MessageLine
             key={i}
             block={block}

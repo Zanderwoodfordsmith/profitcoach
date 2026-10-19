@@ -17,7 +17,6 @@ import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 import { handoffForSection } from "@/lib/practiceKnowledge/campaignHandoff";
 import { isNewsletterOverviewKey, stripStandingFacts } from "@/lib/practiceKnowledge/newsletters";
-import { formatFieldValue } from "@/lib/practiceKnowledge/exportMarkdown";
 
 import { useSectionComments } from "../comments/SectionCommentsContext";
 import { CommentButton } from "../comments/SectionCommentsUI";
@@ -218,38 +217,159 @@ function EnumBox({ field }: { field: FieldSpec }) {
   );
 }
 
-/** Results and stories have structure (from, to, timeframe), so the conversation with BCA captures them. */
-function StructuredBox({ field }: { field: FieldSpec }) {
-  const { payload, setAssistantOpen, sample } = usePractice();
-  const [height, setHeight] = useState<number | null>(null);
-  if (!payload) return null;
-  const values = formatFieldValue(payload, field);
+type CardPart = { key: string; label: string; placeholder: string; long?: boolean };
+
+/** What a result card asks, in the order a coach thinks of it: what changed, where, then how. */
+const RESULT_PARTS: CardPart[][] = [
+  [
+    { key: "metric_from", label: "Before", placeholder: "e.g. 74 debtor days" },
+    { key: "metric_to", label: "After", placeholder: "e.g. 31 debtor days" },
+    { key: "timeframe", label: "How long it took", placeholder: "e.g. 9 months" },
+  ],
+  [
+    { key: "role", label: "Your role", placeholder: "e.g. Finance Director" },
+    { key: "company", label: "Company", placeholder: "e.g. Harlow & Pike" },
+  ],
+  [{ key: "mechanism", label: "How you did it", placeholder: "e.g. A weekly cash meeting and new credit terms for the top 20 customers", long: true }],
+];
+
+const STORY_PARTS: CardPart[][] = [
+  [{ key: "title", label: "The result", placeholder: "e.g. Took a 20-person builder from 4% to 11% net margin in a year" }],
+  [{ key: "story", label: "The story", placeholder: "Who they were, what was wrong, what you did together, and what changed.", long: true }],
+];
+
+type CardDraft = { id: string; rest: Record<string, unknown>; cells: Record<string, string> };
+
+/**
+ * Results and client stories as cards: one per result, each with its own
+ * boxes, and "Add another" underneath. Saves when you leave a box.
+ */
+function ResultCards({ field }: { field: FieldSpec }) {
+  const { payload, saveField, setAssistantOpen, sample } = usePractice();
+  const stories = field.kind === "stories";
+  const parts = stories ? STORY_PARTS : RESULT_PARTS;
+  const keys = parts.flat().map((part) => part.key);
+  const noun = stories ? "story" : "result";
+
+  const current = payload ? fieldValue(payload, field.path)?.value : null;
+  const stored: CardDraft[] = Array.isArray(current)
+    ? current
+        .filter((item) => item && typeof item === "object")
+        .map((item) => {
+          const rec = item as Record<string, unknown>;
+          return {
+            id: String(rec.id || crypto.randomUUID()),
+            rest: rec,
+            cells: Object.fromEntries(keys.map((key) => [key, String(rec[key] ?? "")])),
+          };
+        })
+    : [];
+  const storedKey = JSON.stringify(stored.map((card) => [card.id, ...keys.map((key) => card.cells[key])]));
+  const blank = (): CardDraft => ({ id: crypto.randomUUID(), rest: {}, cells: Object.fromEntries(keys.map((key) => [key, ""])) });
+  const [cards, setCards] = useState<CardDraft[]>(() => (stored.length ? stored : [blank()]));
+  const [seen, setSeen] = useState(storedKey);
+  const [focus, setFocus] = useState(false);
+
+  if (storedKey !== seen && !focus) {
+    setSeen(storedKey);
+    setCards(stored.length ? stored : [blank()]);
+  }
+
+  function persist(next: CardDraft[]) {
+    const saved = next
+      .filter((card) => keys.some((key) => card.cells[key].trim()))
+      .map((card) => {
+        const cells = Object.fromEntries(keys.map((key) => [key, card.cells[key].trim()]));
+        if (stories) return { id: card.id, ...cells };
+        return {
+          proof_type: "career",
+          ...card.rest,
+          id: card.id,
+          ...cells,
+          precise: Boolean(cells.metric_from && cells.metric_to),
+        };
+      });
+    const key = JSON.stringify(saved.map((card) => [card.id, ...keys.map((k) => String((card as Record<string, unknown>)[k] ?? ""))]));
+    setCards(next.length ? next : [blank()]);
+    if (key === storedKey) return;
+    setSeen(key);
+    saveField(field, saved);
+  }
+
+  const edit = (id: string, key: string, text: string) =>
+    cards.map((card) => (card.id === id ? { ...card, cells: { ...card.cells, [key]: text } } : card));
+
   return (
-    <div className="relative">
-      <button
-        type="button"
-        id={`f-${field.path}`}
-        onClick={() => !sample && setAssistantOpen(true)}
-        style={height != null ? { height } : undefined}
-        className={`${INPUT_BOX} block overflow-y-auto text-left`}
-      >
-        {values.length ? (
-          <span className="block space-y-1.5">
-            {values.map((v, i) => (
-              <span key={i} className="block whitespace-pre-line">
-                {v}
-              </span>
+    <div className="space-y-3">
+      {cards.map((card, index) => (
+        <div key={card.id} className="rounded-2xl border border-[#e3e9f0] bg-white p-3.5 @lg:p-4">
+          <div className="mb-2.5 flex items-center justify-between gap-2">
+            <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--bp-muted)]">
+              {stories ? "Story" : "Result"} {index + 1}
+            </p>
+            {cards.length > 1 || keys.some((key) => card.cells[key]) ? (
+              <button
+                type="button"
+                className={NUDGE}
+                aria-label={`Remove ${noun} ${index + 1}`}
+                onClick={() => persist(cards.filter((item) => item.id !== card.id))}
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            ) : null}
+          </div>
+          <div className="space-y-2.5">
+            {parts.map((row, r) => (
+              <div key={r} className={`grid gap-2.5 ${row.length === 3 ? "@lg:grid-cols-3" : row.length === 2 ? "@lg:grid-cols-2" : ""}`}>
+                {row.map((part) => {
+                  const id = `f-${field.path}-${card.id}-${part.key}`;
+                  const props = {
+                    id: index === 0 && r === 0 && part === row[0] ? `f-${field.path}` : id,
+                    value: card.cells[part.key] ?? "",
+                    placeholder: part.placeholder,
+                    onFocus: () => setFocus(true),
+                    onChange: (event: { target: { value: string } }) => setCards(edit(card.id, part.key, event.target.value)),
+                    onBlur: (event: { target: { value: string } }) => {
+                      setFocus(false);
+                      persist(edit(card.id, part.key, event.target.value));
+                    },
+                  };
+                  return (
+                    <label key={part.key} htmlFor={props.id} className="block min-w-0">
+                      <span className="mb-1 block px-0.5 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">{part.label}</span>
+                      {part.long ? (
+                        <textarea {...props} rows={3} className={`${INPUT_BOX} resize-y`} />
+                      ) : (
+                        <input {...props} type="text" className={INPUT_BOX} />
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
             ))}
-          </span>
-        ) : (
-          <span className="block text-[#9aa8b8]">{hint(field)}</span>
+          </div>
+        </div>
+      ))}
+      <div className="bp-no-print flex flex-wrap items-center gap-x-4 gap-y-1 px-0.5">
+        <button
+          type="button"
+          onClick={() => setCards((prev) => [...prev, blank()])}
+          className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline"
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+          Add another {noun}
+        </button>
+        {sample ? null : (
+          <button
+            type="button"
+            onClick={() => setAssistantOpen(true)}
+            className="inline-flex items-center gap-1 text-sm text-[var(--bp-muted)] hover:text-[var(--bp-blue)] hover:underline"
+          >
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            Or talk it through with Ava
+          </button>
         )}
-        <span className="bp-no-print mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--bp-blue)]">
-          <Sparkles className="h-3.5 w-3.5" aria-hidden />
-          {values.length ? "Add or change with BCA" : "Add with BCA"}
-        </span>
-      </button>
-      <ResizeGrip onResize={setHeight} />
+      </div>
     </div>
   );
 }
@@ -614,7 +734,7 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
       ) : paired && field.kind === "list" ? (
         <LineListEditor field={field} />
       ) : structured ? (
-        <StructuredBox field={field} />
+        <ResultCards field={field} />
       ) : (
         <AnswerBox field={field} />
       )}

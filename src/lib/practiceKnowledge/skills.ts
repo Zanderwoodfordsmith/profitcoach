@@ -24,15 +24,13 @@ export type SectionSkill = {
 export const SECTION_SKILLS: Record<string, SectionSkill> = {
   "story:bio": {
     file: "story.md",
-    task: `Write the coach's proof summary and short bio. How they want to be known and the kind of coach they are (boot camp, hugs, a mix) should be readable in the bio, without naming those labels unless they would.
+    task: `Write the coach's short bio, in three versions. How they want to be known and the kind of coach they are (boot camp, hugs, a mix) should be readable in the bio, without naming those labels unless they would. Their results are already on the page above as their own cards, so do not list them again.
 Blocks, in this order:
 1. lede: one or two sentences that say who they are, the kind of coach they are, and the most impressive thing they have done.
 2. stats: two to four real numbers from their record (years in business, a result, team size). Only real numbers. Skip the block if there are fewer than two.
-3. heading "Proof inventory", then a table with columns Result, Where, Timeframe, How, Status. Status is "Ready" when the result has a from, a to and a timeframe, otherwise "Needs a number".
-4. heading "Short bio", then a paragraph: first person, 60 to 90 words.
-5. heading "One-line introduction", then a paragraph with one sentence.
-6. heading "For partners and events", then a paragraph: the same bio in the third person.
-7. If a result needs a number, a callout (tone "note") saying exactly what to add.`,
+3. heading "Short bio", then a paragraph: first person, 60 to 90 words.
+4. heading "One-line introduction", then a paragraph with one sentence.
+5. heading "For partners and events", then a paragraph: the same bio in the third person.`,
   },
   "voice:sound": {
     file: "voice.md",
