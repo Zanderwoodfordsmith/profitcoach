@@ -10,6 +10,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { sectionByKey } from "./blueprint";
 import { sanitizeBlocks } from "./blocks";
+import { fitConnectionNote } from "./connectionNote";
 import { listOnboardingTranscripts, onboardingTranscriptText } from "./ingestOnboarding";
 import { SECTION_SKILLS, skillSystemPrompt, skillUserPrompt } from "./skills";
 import { listValue } from "./sourced";
@@ -19,7 +20,7 @@ import {
   getLatestIntakeSession,
   saveBuiltSection,
 } from "./store";
-import type { DecisionRecordPayload, PracticeKnowledgeRow } from "./types";
+import type { BlueprintBlock, DecisionRecordPayload, PracticeKnowledgeRow } from "./types";
 
 function decisionText(payload: DecisionRecordPayload | null | undefined): string {
   if (!payload) return "";
@@ -87,14 +88,25 @@ export async function sectionPrompt(
 }
 
 /**
+ * The model call and the fixes that follow it, without saving. The evals run
+ * exactly this, so what they score is what a coach would get.
+ */
+export async function writeSectionBlocks(
+  key: string,
+  prompt: { system: string; user: string; maxTokens: number }
+): Promise<{ blocks: BlueprintBlock[]; error?: string }> {
+  const { data, error } = await generateCampaignJson<{ blocks?: unknown }>(prompt);
+  const blocks = sanitizeBlocks(data?.blocks);
+  return { blocks: blocks.length ? await fitConnectionNote(key, blocks) : blocks, error };
+}
+
+/**
  * Write one "We build" section for a coach and save it. Used by the build
  * route and by admin scripts. Throws with a readable message on failure.
  */
 export async function buildSection(coachId: string, key: string): Promise<PracticeKnowledgeRow> {
   const { system, user, maxTokens } = await sectionPrompt(coachId, key);
-  const { data, error } = await generateCampaignJson<{ blocks?: unknown }>({ system, user, maxTokens });
-
-  const blocks = sanitizeBlocks(data?.blocks);
+  const { blocks, error } = await writeSectionBlocks(key, { system, user, maxTokens });
   if (!blocks.length) throw new Error(error || "The section came back empty. Try again.");
 
   return saveBuiltSection({

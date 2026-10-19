@@ -49,6 +49,8 @@ export async function writeHook(facts: string): Promise<string> {
     const res = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 120,
+      // Haiku thinks by default and would spend the whole budget on it, leaving no sentence.
+      thinking: { type: "disabled" },
       system: [
         "Write ONE short sentence (under 25 words) a business coach could open a LinkedIn message with, noticing something specific and true from this person's profile, such as how long they've run the business, what it does, or a milestone.",
         "Plain UK English. No question. No em dash. Don't invent anything that isn't in the profile.",
