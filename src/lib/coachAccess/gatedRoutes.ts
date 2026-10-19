@@ -81,13 +81,6 @@ export const GATED_ROUTES: GatedRoute[] = [
       "Copy and send your assessments, booking pages, reports, and socials from one place.",
   },
   {
-    prefix: "/coach/today",
-    feature: "nav.marketing",
-    title: "Today",
-    description:
-      "Your daily 1-10-10 and the people already engaging with you on LinkedIn.",
-  },
-  {
     prefix: "/coach/toolkit",
     feature: "nav.marketing",
     title: "Toolkit",

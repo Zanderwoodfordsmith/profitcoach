@@ -1,22 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
-import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
-import { TodayHub } from "@/components/today/TodayHub";
-
+/** Today is hidden from coaches while it's redesigned (admins have it under Tools and links). */
 export default function CoachTodayPage() {
-  return (
-    <DashboardPageSection
-      contentMaxWidthClass="max-w-4xl"
-      header={
-        <StickyPageHeader
-          title="Get Clients"
-          description="Your daily 1-10-10 and the people already showing interest."
-          tabs={<CoachToolsHubTabs hub="get-clients" />}
-        />
-      }
-    >
-      <TodayHub />
-    </DashboardPageSection>
-  );
+  redirect("/coach/conversations");
 }

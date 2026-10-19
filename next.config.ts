@@ -65,6 +65,12 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
+        // Today is hidden from coaches while it's redesigned; admins have it under Tools and links.
+        source: "/coach/today",
+        destination: "/coach/conversations",
+        permanent: false,
+      },
+      {
         // My Actions was removed; each lesson keeps its own actions.
         source: "/coach/signature/actions",
         destination: "/coach/academy/classroom",

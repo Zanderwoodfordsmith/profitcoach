@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     delivered = await sendPushToUser(auth.callerId, {
       title: "Alerts are on",
       body: "Ava will tell you here the moment a prospect replies.",
-      url: "/coach/today",
+      url: "/coach/settings",
       tag: "push-test",
     });
   }

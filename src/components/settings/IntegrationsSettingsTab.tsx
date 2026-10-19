@@ -134,7 +134,7 @@ const LINKEDIN_CONNECT_TIP = (
   </>
 );
 
-function SectionInfoTip({
+export function SectionInfoTip({
   label,
   text,
   wide = false,

@@ -340,8 +340,8 @@ export type CoachClientsTabItem = {
  * page at `/admin/links`.
  */
 export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
+  // Today is hidden from coaches while it's redesigned; admins find it under Tools and links.
   const items: ToolsHubTabItem[] = [
-    { href: `${prefix}/today`, label: "Today" },
     {
       href: `${prefix}/campaigns`,
       label: "Campaigns",
@@ -567,7 +567,8 @@ export function isToolkitHubPath(pathname: string | null): boolean {
     pathMatches(pathname, "/admin/landing-analytics") ||
     pathMatches(pathname, "/admin/funnel-analyzer") ||
     pathMatches(pathname, "/admin/sales-nav-imports") ||
-    pathMatches(pathname, "/admin/referrals")
+    pathMatches(pathname, "/admin/referrals") ||
+    pathMatches(pathname, "/admin/today")
   );
 }
 

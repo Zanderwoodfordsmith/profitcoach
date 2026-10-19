@@ -81,6 +81,12 @@ export function ToolkitHubTabs() {
       label: "Referrals",
       active: onReferrals,
     },
+    {
+      kind: "link" as const,
+      href: "/admin/today",
+      label: "Today",
+      active: pathname === "/admin/today",
+    },
   ];
 
   return <PageHeaderUnderlineTabs ariaLabel="Links" items={items} />;
