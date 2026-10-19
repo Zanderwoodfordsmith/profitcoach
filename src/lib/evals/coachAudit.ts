@@ -9,7 +9,7 @@ import { numbered, stepTimings } from "./extract";
 import { judge } from "./judge";
 import { loadRubric } from "./rubrics";
 import { combine, topFix } from "./score";
-import { ARTIFACT_LABELS, type ArtifactKind, type ScoredArtifact } from "./types";
+import { ARTIFACT_LABELS, bandFor, type ArtifactKind, type CheckResult, type JudgeResult, type ScoredArtifact } from "./types";
 
 /**
  * Ava's audit of every active coach: their live LinkedIn profile and the
@@ -353,8 +353,10 @@ export function resultsScore(h: CoachHealthRow | undefined): number | null {
 }
 
 export function pillarsFor(pieces: AuditPiece[], health: CoachHealthRow | undefined): Pillars {
+  // No imported profile means we don't know, not that it scores zero.
+  const noProfile = pieces.some((p) => p.artifact === "linkedin.basics" && !p.scored);
   return {
-    profile: weighted(pieces, PROFILE_WEIGHTS, true),
+    profile: noProfile ? null : weighted(pieces, PROFILE_WEIGHTS, true),
     messaging: weighted(pieces, MESSAGING_WEIGHTS, false),
     activity: activityScore(health),
     results: resultsScore(health),
@@ -375,6 +377,37 @@ export function topFixes(pieces: AuditPiece[]): { artifact: ArtifactKind; label:
     .sort((a, b) => b.impact - a.impact)
     .slice(0, 3)
     .map(({ p }) => ({ artifact: p.artifact, label: ARTIFACT_LABELS[p.artifact], score: p.scored?.score ?? null, fix: p.top_fix }));
+}
+
+/** A saved coach_quality_scores row back as a piece, for recomputing a summary without re-judging. */
+export function pieceFromRow(r: Record<string, unknown>): AuditPiece {
+  const judgeRaw = (r.judge ?? null) as (JudgeResult & { judge_score?: number | null; note?: string | null }) | { note?: string } | null;
+  const judge = judgeRaw && "criteria" in judgeRaw ? (judgeRaw as JudgeResult) : null;
+  const score = r.score == null ? null : Number(r.score);
+  const hardFails = (r.hard_fails as string[] | null) ?? [];
+  return {
+    coach_id: r.coach_id as string,
+    artifact: r.artifact as ArtifactKind,
+    source_ref: (r.source_ref as string | null) ?? null,
+    source_at: (r.source_at as string | null) ?? null,
+    text_scored: (r.text_scored as string | null) ?? null,
+    scored:
+      score == null
+        ? null
+        : {
+            kind: r.artifact as ArtifactKind,
+            score,
+            band: bandFor(score),
+            passed: !hardFails.length && score >= 70,
+            hardFails,
+            checks: (r.checks as CheckResult[] | null) ?? [],
+            judge,
+            judgeScore: (judgeRaw as { judge_score?: number | null } | null)?.judge_score ?? null,
+          },
+    top_fix: (r.top_fix as string | null) ?? "",
+    note: judgeRaw?.note ?? undefined,
+    cost_usd: 0,
+  };
 }
 
 export async function savePieces(runId: string, pieces: AuditPiece[]): Promise<void> {

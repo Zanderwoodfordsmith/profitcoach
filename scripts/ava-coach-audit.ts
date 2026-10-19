@@ -10,6 +10,7 @@
  *   npx tsx scripts/ava-coach-audit.ts --coach <id>    # one coach (repeat or comma-separate)
  *   npx tsx scripts/ava-coach-audit.ts --all           # include inactive coaches with a profile
  *   npx tsx scripts/ava-coach-audit.ts --no-library
+ *   npx tsx scripts/ava-coach-audit.ts --resummarize <run id>   # recompute pillars from saved scores, no judge calls
  *
  * About 3 judge calls per coach on claude-opus-5-5, roughly $0.10 a coach.
  */
@@ -27,10 +28,12 @@ async function main() {
   const { refreshAgentContextOverrides } = await import("../src/lib/agent/agentOverrides");
   const { loadCoachHealth } = await import("../src/lib/coachHealth");
   const audit = await import("../src/lib/evals/coachAudit");
-  const { createRun, finishRun } = await import("../src/lib/evals/runStore");
+  const { createRun } = await import("../src/lib/evals/runStore");
   const { judgeModel } = await import("../src/lib/evals/judge");
 
   await refreshAgentContextOverrides();
+  const resummarize = arg("--resummarize");
+  if (resummarize) return summarizeAgain(resummarize);
   const coachIds = arg("--coach")?.split(",").map((s) => s.trim()).filter(Boolean);
   const targets = await audit.loadAuditTargets({ coachIds, includeInactive: process.argv.includes("--all") });
   console.log(`${targets.length} coaches. Loading health numbers…`);
@@ -40,7 +43,7 @@ async function main() {
   const runId = await createRun("coach_audit", arg("--label"), ["linkedin", "campaigns"], config);
   console.log(`Run ${runId}`);
 
-  const results: { target: (typeof targets)[number]; pieces: Awaited<ReturnType<typeof audit.auditCoach>> }[] = [];
+  const results: AuditResults = [];
   let cost = 0;
   let next = 0;
   await Promise.all(
@@ -63,7 +66,42 @@ async function main() {
 
   const library = process.argv.includes("--no-library") ? [] : await audit.auditLibrary();
   cost += library.reduce((a, p) => a + p.cost_usd, 0);
+  const librarySummary = library.map((p) => ({ artifact: p.artifact, source: p.source_ref, score: p.scored?.score ?? null, band: p.scored?.band ?? null, fix: p.top_fix, gates: p.scored?.hardFails ?? [], text: p.text_scored }));
+  await saveSummary(runId, results, health, librarySummary, cost);
+}
 
+type Audit = typeof import("../src/lib/evals/coachAudit");
+type AuditResults = { target: Awaited<ReturnType<Audit["loadAuditTargets"]>>[number]; pieces: Awaited<ReturnType<Audit["auditCoach"]>> }[];
+type Health = Map<string, Awaited<ReturnType<typeof import("../src/lib/coachHealth")["loadCoachHealth"]>>[number]>;
+
+/** Recompute the pillars and benchmarks of an earlier audit from its saved scores, after a weighting change. */
+async function summarizeAgain(runId: string) {
+  const { supabaseAdmin } = await import("../src/lib/supabaseAdmin");
+  const { loadCoachHealth } = await import("../src/lib/coachHealth");
+  const audit = await import("../src/lib/evals/coachAudit");
+  const { data: run } = await supabaseAdmin.from("ava_eval_runs").select("id, kind, summary, cost_usd").eq("id", runId).single();
+  if (!run || run.kind !== "coach_audit") throw new Error("That is not a coach audit run.");
+  const { data: rows } = await supabaseAdmin.from("coach_quality_scores").select("*").eq("run_id", runId);
+  const ids = [...new Set((rows ?? []).map((r) => r.coach_id as string))];
+  const targets = await audit.loadAuditTargets({ coachIds: ids });
+  const health = new Map((await loadCoachHealth()).map((h) => [h.coach_id, h]));
+  const results: AuditResults = targets.map((target) => ({
+    target,
+    pieces: (rows ?? []).filter((r) => r.coach_id === target.coach_id).map((r) => audit.pieceFromRow(r)),
+  }));
+  const library = ((run.summary as { library?: unknown[] })?.library ?? []) as Parameters<typeof saveSummary>[3];
+  await saveSummary(runId, results, health, library, Number(run.cost_usd ?? 0));
+}
+
+async function saveSummary(
+  runId: string,
+  results: AuditResults,
+  health: Health,
+  library: { artifact: string; source: string | null; score: number | null; band: string | null; fix: string; gates: string[]; text: string | null }[],
+  cost: number
+) {
+  const audit = await import("../src/lib/evals/coachAudit");
+  const { finishRun } = await import("../src/lib/evals/runStore");
   const coaches = results.map(({ target, pieces }) => {
     const h = health.get(target.coach_id);
     const pillars = audit.pillarsFor(pieces, h);
@@ -126,7 +164,7 @@ async function main() {
         return [k, { scored: scored.length, missing: results.length - scored.length, median: medianOf(scored.map((p) => p.scored!.score)), gates }];
       })
     ),
-    library: library.map((p) => ({ artifact: p.artifact, source: p.source_ref, score: p.scored?.score ?? null, band: p.scored?.band ?? null, fix: p.top_fix, gates: p.scored?.hardFails ?? [], text: p.text_scored })),
+    library,
   };
   await finishRun(runId, summary, cost);
 
