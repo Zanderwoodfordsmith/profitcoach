@@ -7,8 +7,11 @@ import {
   isOpenProfileSendRef,
   jobUsesInviteQuota,
   jobUsesMessageQuota,
+  OPEN_INMAIL_MAX_CHARS,
+  OPEN_PROFILE_MESSAGE_TEMPLATE,
   openInmailText,
   openProfileSendRef,
+  ownOpenProfileMessage,
   shouldSendOpenProfileInmail,
   unipileProfileIsOpen,
 } from "./openProfileInvite";
@@ -115,5 +118,36 @@ describe("open profile quota", () => {
     assert.equal(campaignLeadIsOpenProfile({ open_profile: true }), true);
     assert.equal(campaignLeadIsOpenProfile({ metadata: { open_profile: true } }), true);
     assert.equal(campaignLeadIsOpenProfile({}), null);
+  });
+});
+
+describe("ownOpenProfileMessage", () => {
+  it("uses the coach's own words once written", () => {
+    assert.equal(
+      ownOpenProfileMessage({ open_profile_message: "  Hi {{first_name}}  " }),
+      "Hi {{first_name}}"
+    );
+  });
+
+  it("falls back to the note when empty or missing", () => {
+    assert.equal(ownOpenProfileMessage({ open_profile_message: "  " }), null);
+    assert.equal(ownOpenProfileMessage({}), null);
+    assert.equal(ownOpenProfileMessage(null), null);
+  });
+
+  it("never sends the template with its [brackets] left in", () => {
+    assert.equal(
+      ownOpenProfileMessage({ open_profile_message: OPEN_PROFILE_MESSAGE_TEMPLATE }),
+      null
+    );
+    assert.equal(
+      ownOpenProfileMessage({ open_profile_message: "I work with [who you help]." }),
+      null
+    );
+  });
+
+  it("keeps the template inside InMail's limit and free of em dashes", () => {
+    assert.ok(OPEN_PROFILE_MESSAGE_TEMPLATE.length < OPEN_INMAIL_MAX_CHARS);
+    assert.ok(!OPEN_PROFILE_MESSAGE_TEMPLATE.includes("\u2014"));
   });
 });

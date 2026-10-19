@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   insertableMergeFields,
+  mergeFieldPickerForConnectionNote,
   mergeFieldPickerForLibraryKind,
   mergeFieldPickerForMagnet,
   mergeFieldPickerForPlaybook,
@@ -81,6 +82,15 @@ describe("insertable merge fields", () => {
       mergeFieldPickerHint(score, { kind: "custom" }),
       /completed the Boss Scorecard/
     );
+  });
+
+  it("keeps every scorecard field out of connection notes", () => {
+    for (const kind of ["outreach", "custom", "magnet_completed"] as const) {
+      const picker = mergeFieldPickerForConnectionNote({ kind });
+      const offered = insertableMergeFields(picker);
+      assert.ok(offered.every((field) => field.group !== "Scorecard"), kind);
+      assert.ok(offered.some((field) => field.key === "first_name"), kind);
+    }
   });
 
   it("maps playbooks and library kinds to the right picker", () => {

@@ -21,11 +21,101 @@ import {
   type CampaignStepMedia,
   type CampaignStepMediaKind,
 } from "@/lib/unipile/campaignStepTypes";
+import type { MergeFieldPickerContext } from "@/lib/unipile/mergeFields";
+import {
+  OPEN_INMAIL_MAX_CHARS,
+  OPEN_PROFILE_MESSAGE_TEMPLATE,
+} from "@/lib/unipile/openProfileInvite";
+import { MergeFieldComposer } from "@/components/campaigns/MergeFieldComposer";
 
 type SequenceCampaignOptionLocal = {
   id: string;
   name: string;
 };
+
+const OPEN_PROFILE_LIMIT = {
+  max: OPEN_INMAIL_MAX_CHARS,
+  noun: "an Open Profile message",
+};
+
+export function InviteOpenProfileInmail({
+  config,
+  picker,
+  onChange,
+  onCommit,
+}: {
+  config: Record<string, unknown> | null | undefined;
+  picker: MergeFieldPickerContext;
+  onChange: (patch: { config: Record<string, unknown> }) => void;
+  onCommit: () => void;
+}) {
+  const { open_profile_inmail: enabled, open_profile_message: message } =
+    inviteNoConnectFrom(config);
+
+  function patch(next: Record<string, unknown>) {
+    onChange({ config: { ...(config ?? {}), ...next } });
+  }
+
+  return (
+    <div className="rounded-lg border border-sky-200 bg-sky-50/60 px-3 py-2.5">
+      <p className="text-xs font-semibold text-[#0c5290]">
+        If they have an Open Profile
+      </p>
+      <label className="mt-2 flex items-start gap-2 text-xs text-slate-700">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => {
+            patch({ open_profile_inmail: e.target.checked });
+            onCommit();
+          }}
+          className="mt-0.5"
+        />
+        <span>
+          <span className="font-medium text-slate-800">
+            Send them a message instead of an invite
+          </span>
+          <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-500">
+            Open Profiles take messages from anyone, so it lands straight in
+            their inbox, doesn&apos;t use your weekly invites, and has room for
+            up to 1,900 characters.
+          </span>
+        </span>
+      </label>
+      {enabled ? (
+        <div className="mt-3 space-y-2">
+          <MergeFieldComposer
+            value={message}
+            ariaLabel="Open Profile message"
+            placeholder="Leave empty to send your connection note instead"
+            picker={picker}
+            limit={OPEN_PROFILE_LIMIT}
+            onChange={(body) => patch({ open_profile_message: body })}
+            onCommit={onCommit}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              Empty, or with [brackets] still in it, they get your connection
+              note instead.
+            </p>
+            {message.trim() ? null : (
+              <button
+                type="button"
+                onClick={() => {
+                  patch({ open_profile_message: OPEN_PROFILE_MESSAGE_TEMPLATE });
+                  onCommit();
+                }}
+                className="rounded-md border border-sky-200 bg-white px-2.5 py-1 text-xs font-medium text-[#0c5290] hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+              >
+                Start from the template
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function InviteNoConnectBranch({
   config,
@@ -68,7 +158,7 @@ export function InviteNoConnectBranch({
             }
             className="mt-0.5"
           />
-          <span>Do nothing — leave the invite pending</span>
+          <span>Do nothing. Leave the invite pending</span>
         </label>
         {libraryMode ? null : (
         <label className="flex items-start gap-2 text-xs text-slate-700">
@@ -255,8 +345,8 @@ export function MessageStepMedia({
       : "video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm";
   const uploadHint =
     selected === "voice"
-      ? `M4A or MP3, under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB — up to about 5 minutes.`
-      : `MP4 or MOV, under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB — up to about 5 minutes.`;
+      ? `M4A or MP3, under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB, up to about 5 minutes.`
+      : `MP4 or MOV, under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB, up to about 5 minutes.`;
 
   function selectKind(next: CampaignStepMediaKind | "message") {
     if (next === selected) return;

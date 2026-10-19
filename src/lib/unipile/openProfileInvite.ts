@@ -1,7 +1,28 @@
+import { templateFillIns } from "@/lib/campaigns/connectionNote";
 import { optionalLeadFlag } from "@/lib/salesNavigator/leadFlags";
 
 export const OPEN_PROFILE_SEND_PREFIX = "open_profile:";
-const OPEN_INMAIL_MAX_CHARS = 1900;
+export const OPEN_INMAIL_MAX_CHARS = 1900;
+
+/**
+ * Starting point for the Open Profile message, in the shape of BCA's LinkedIn
+ * ads: a short opener, two numbered points, one proof line, a low-pressure ask.
+ * Built on the Oct 2026 outreach review: name their tribe, use their words,
+ * no link, no "coaching" or "free call", sell the next step, one question.
+ */
+export const OPEN_PROFILE_MESSAGE_TEMPLATE = `{{first_name}}, we've never met, but I work with a lot of [who you help, e.g. engineering MDs in the Midlands]. Do you ever feel [the problem they say most, e.g. busy all year, but the profit doesn't show it]?
+
+I ask because there are usually two quick fixes:
+
+1️⃣ [Fix one, e.g. find the jobs that make no money]
+
+2️⃣ [Fix two, e.g. price the work that does]
+
+[A client like them]: [their result with a number, e.g. £180k to £410k profit in 12 months].
+
+Happy to show you where yours sits in 10 minutes. No pitch, just the numbers.
+
+✅ Worth a look? If not, no worries at all.`;
 
 /** Default on: Open Profiles get a message instead of a connection request. */
 export function inviteOpenProfileInmailFrom(config: unknown): boolean {
@@ -10,6 +31,23 @@ export function inviteOpenProfileInmailFrom(config: unknown): boolean {
       ? (config as Record<string, unknown>)
       : {};
   return raw.open_profile_inmail !== false;
+}
+
+/**
+ * The coach's own Open Profile message, ready to fill in, or null to send the
+ * connection note instead. A draft with template [brackets] left never sends.
+ */
+export function ownOpenProfileMessage(config: unknown): string | null {
+  const raw =
+    config && typeof config === "object" && !Array.isArray(config)
+      ? (config as Record<string, unknown>)
+      : {};
+  const text =
+    typeof raw.open_profile_message === "string"
+      ? raw.open_profile_message.trim()
+      : "";
+  if (!text || templateFillIns(text).length) return null;
+  return text;
 }
 
 export function openProfileFlagFromUnknown(

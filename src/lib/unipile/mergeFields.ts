@@ -18,6 +18,8 @@ export type MergeFieldPickerKind =
 export type MergeFieldPickerContext = {
   kind: MergeFieldPickerKind;
   magnetId?: LeadMagnetId | null;
+  /** A connection request note: no scorecard links or results. */
+  connectionNote?: boolean;
 };
 
 export const DEFAULT_MERGE_FIELD_PICKER: MergeFieldPickerContext = {
@@ -201,6 +203,8 @@ export function isInsertableMergeField(
 ): boolean {
   if (field.insertable === false) return false;
   if (IDENTITY_KEYS.has(field.key)) return true;
+  // Links in a note cut acceptance, and results are blank before they take it.
+  if (picker.connectionNote && field.group === "Scorecard") return false;
 
   if (field.key === "assessment_url") {
     if (picker.kind === "magnet_completed") return false;
@@ -243,7 +247,18 @@ export function mergeFieldPickerHint(
 export function mergeFieldPickerShowsResultWarning(
   picker: MergeFieldPickerContext
 ): boolean {
-  return picker.kind === "custom";
+  return picker.kind === "custom" && !picker.connectionNote;
+}
+
+/** Names, company and the like explain themselves; the rest get an info icon. */
+export function mergeFieldNeedsExplaining(field: MergeField): boolean {
+  return !IDENTITY_KEYS.has(field.key);
+}
+
+export function mergeFieldPickerForConnectionNote(
+  picker: MergeFieldPickerContext
+): MergeFieldPickerContext {
+  return { ...picker, connectionNote: true };
 }
 
 export function mergeFieldPickerForMagnet(

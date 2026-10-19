@@ -31,11 +31,12 @@ type ListItemRow = {
   linkedin_url: string | null;
   email: string | null;
   phone: string | null;
+  open_profile: boolean | null;
   raw: unknown;
 };
 
 const ITEM_SELECT =
-  "id, first_name, last_name, job_title, company, linkedin_url, email, phone, raw";
+  "id, first_name, last_name, job_title, company, linkedin_url, email, phone, open_profile, raw";
 
 /** addCampaignLeads takes up to 2,500 rows per call. */
 const ENROL_CHUNK = 2_500;
@@ -118,6 +119,8 @@ function toLead(row: ListItemRow) {
     company: row.company ?? null,
     title: row.job_title ?? null,
     linkedin_provider_id: provider,
+    open_profile:
+      row.open_profile === true ? true : row.open_profile === false ? false : null,
     raw,
   };
 }

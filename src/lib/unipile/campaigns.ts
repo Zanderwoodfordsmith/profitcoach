@@ -48,6 +48,7 @@ import {
 import { parseLinkedInIdentity } from "@/lib/contacts/linkedinIdentity";
 import { normalizePoolEmail, normalizePoolPhone } from "@/lib/pool/identity";
 import { selectRowsWhereIn } from "@/lib/supabase/inFilterChunks";
+import { optionalLeadFlag } from "@/lib/salesNavigator/leadFlags";
 
 const CONTACT_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -706,8 +707,22 @@ export type LeadImportRow = {
   linkedin_provider_id?: string | null;
   instagram_url?: string | null;
   facebook_url?: string | null;
+  open_profile?: boolean | null;
   raw?: unknown;
 };
+
+function openProfileFromImport(row: LeadImportRow): boolean | null {
+  const raw =
+    row.raw && typeof row.raw === "object" && !Array.isArray(row.raw)
+      ? (row.raw as Record<string, unknown>)
+      : {};
+  return optionalLeadFlag(
+    row.open_profile,
+    raw.open_profile,
+    raw.openProfile,
+    raw.is_open_profile
+  );
+}
 
 type OwnedContact = {
   id: string;
@@ -827,6 +842,7 @@ type LeadInsertRow = {
   last_name: string | null;
   company: string | null;
   title: string | null;
+  open_profile: boolean | null;
   status: "queued";
   current_step_position: number;
   next_action_at: string;
@@ -1021,6 +1037,7 @@ export async function addCampaignLeads(
           last_name: row.last_name ?? null,
           company: row.company ?? null,
           title: row.title ?? null,
+          open_profile: openProfileFromImport(row),
           status: "queued",
           current_step_position: 0,
           next_action_at: nowIso,
@@ -1062,6 +1079,7 @@ export async function addCampaignLeads(
           last_name: row.last_name ?? null,
           company: row.company ?? null,
           title: row.title ?? null,
+          open_profile: openProfileFromImport(row),
           status: "queued",
           current_step_position: 0,
           next_action_at: nowIso,
@@ -1130,6 +1148,7 @@ export async function addCampaignLeads(
         last_name: row.last_name ?? null,
         company: row.company ?? null,
         title: row.title ?? null,
+        open_profile: openProfileFromImport(row),
         status: "queued",
         current_step_position: 0,
         next_action_at: nowIso,

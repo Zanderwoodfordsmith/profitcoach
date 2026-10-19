@@ -25,6 +25,7 @@ import {
   isInmailRejected,
   openInmailText,
   openProfileSendRef,
+  ownOpenProfileMessage,
   shouldSendOpenProfileInmail,
   unipileProfileIsOpen,
 } from "@/lib/unipile/openProfileInvite";
@@ -693,16 +694,20 @@ export async function processOutreachJobsTick(): Promise<{
 
       if (step.step_type === "invite") {
         const { text: note } = await renderedStepBody();
+        const ownMessage = ownOpenProfileMessage(step.config);
+        const inmailSource = ownMessage
+          ? buildMessageBody(ownMessage, leadForMessage, templateExtras)
+          : note;
         let sentOpenProfile = false;
         if (
           shouldSendOpenProfileInmail({
             stepType,
             config: step.config,
             openProfile,
-            note,
+            note: inmailSource,
           })
         ) {
-          const inmailText = openInmailText(note);
+          const inmailText = openInmailText(inmailSource);
           const messageSafety = await checkOutreachSendSafety({
             coachId: job.coach_id,
             campaign: {

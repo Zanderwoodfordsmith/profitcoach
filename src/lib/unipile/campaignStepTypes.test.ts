@@ -179,7 +179,29 @@ describe("invite no-connect", () => {
       no_connect_wait_hours: null,
       no_connect_campaign_id: null,
       open_profile_inmail: true,
+      open_profile_message: "",
     });
+  });
+
+  it("can turn Open Profile InMail off", () => {
+    assert.equal(
+      inviteNoConnectFrom({ open_profile_inmail: false }).open_profile_inmail,
+      false
+    );
+  });
+
+  it("keeps the Open Profile message as written", () => {
+    const message = "{{first_name}}, we've never met.\n\n1️⃣ One\n\n2️⃣ Two";
+    assert.equal(
+      inviteNoConnectFrom(
+        sanitizeStepConfig("invite", { open_profile_message: message })
+      ).open_profile_message,
+      message
+    );
+    assert.equal(
+      inviteNoConnectFrom({ open_profile_message: 42 }).open_profile_message,
+      ""
+    );
   });
 
   it("keeps a campaign branch and wait", () => {
@@ -194,6 +216,7 @@ describe("invite no-connect", () => {
       no_connect_wait_hours: 48,
       no_connect_campaign_id: id,
       open_profile_inmail: true,
+      open_profile_message: "",
     });
   });
 });

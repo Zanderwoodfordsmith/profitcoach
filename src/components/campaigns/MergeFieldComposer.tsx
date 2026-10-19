@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { ChevronDown, Info } from "lucide-react";
+import { checkConnectionNote } from "@/lib/campaigns/connectionNote";
 import {
   DEFAULT_MERGE_FIELD_PICKER,
   insertableMergeFields,
+  mergeFieldNeedsExplaining,
   mergeFieldPickerHint,
   mergeFieldPickerShowsResultWarning,
   mergeToken,
@@ -276,9 +278,12 @@ function InsertChip({
           activeMergeDragKey = null;
         }}
         onClick={() => onInsert(field.key)}
-        className="inline-flex shrink-0 cursor-grab select-none items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-[#0c5290] transition duration-150 hover:border-sky-300 hover:bg-sky-50 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+        className="inline-flex shrink-0 cursor-grab select-none items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-[#0c5290] transition duration-150 hover:border-sky-300 hover:bg-sky-50 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
       >
         {field.label}
+        {mergeFieldNeedsExplaining(field) ? (
+          <Info className="h-3 w-3 text-slate-400" aria-hidden />
+        ) : null}
       </button>
       {tip ? (
         <span
@@ -308,6 +313,7 @@ export function MergeFieldComposer({
   placeholder = "Hi First name…",
   ariaLabel,
   picker = DEFAULT_MERGE_FIELD_PICKER,
+  limit,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -315,6 +321,8 @@ export function MergeFieldComposer({
   placeholder?: string;
   ariaLabel?: string;
   picker?: MergeFieldPickerContext;
+  /** First-touch copy: count characters against LinkedIn's limit and flag what doesn't belong. */
+  limit?: { max: number; noun: string };
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
@@ -323,6 +331,11 @@ export function MergeFieldComposer({
   const [expanded, setExpanded] = useState(false);
   const fields = useMemo(() => insertableMergeFields(picker), [picker]);
   const resultWarning = mergeFieldPickerShowsResultWarning(picker);
+  const noteId = useId();
+  // Over-long notes go red but stay editable and savable.
+  const note =
+    limit && value.trim() ? checkConnectionNote(value, limit.max) : null;
+  const tooLong = (note?.over ?? 0) > 0;
 
   useEffect(() => {
     const el = editorRef.current;
@@ -421,113 +434,162 @@ export function MergeFieldComposer({
   }
 
   return (
-    <div
-      className="overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-[#0c5290]"
-      onDragOver={(event) => {
-        if (!isMergeFieldDrag()) return;
-        event.preventDefault();
-        event.stopPropagation();
-        event.dataTransfer.dropEffect = "copy";
-      }}
-      onDrop={(event) => {
-        if (!isMergeFieldDrag() && !mergeKeyFromDrag(event.dataTransfer)) {
-          return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-      }}
-    >
+    <div className="space-y-1.5">
       <div
-        ref={editorRef}
-        role="textbox"
-        aria-multiline="true"
-        aria-label={ariaLabel}
-        contentEditable
-        suppressContentEditableWarning
-        data-placeholder={placeholder}
-        onInput={emit}
-        onDragOver={onEditorDragOver}
-        onDrop={onEditorDrop}
-        onBlur={() => {
-          if (ignoreBlur.current) {
-            ignoreBlur.current = false;
-            return;
-          }
-          const el = editorRef.current;
-          if (el) {
-            const next = serializeEditor(el);
-            emitted.current = next;
-            onChange(next);
-            el.innerHTML = next
-              ? segmentsToHtml(tokenizeMergeFields(next), "editor")
-              : "";
-          }
-          onCommit();
-        }}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+        className={`overflow-hidden rounded-lg border bg-white ${
+          tooLong
+            ? "border-red-400 ring-1 ring-red-500"
+            : "border-slate-200 focus-within:border-[#0c5290]"
+        }`}
+        onDragOver={(event) => {
+          if (!isMergeFieldDrag()) return;
           event.preventDefault();
           event.stopPropagation();
-          const el = editorRef.current;
-          if (el) insertLineBreakInEditor(el);
-          emit();
+          event.dataTransfer.dropEffect = "copy";
         }}
-        className="min-h-[8.5rem] w-full whitespace-pre-wrap bg-white px-3 py-2.5 text-[15px] leading-relaxed text-slate-800 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)]"
-      />
-      <div
-        className="flex items-stretch border-t border-slate-200 bg-slate-100"
-        onPointerDown={() => {
-          ignoreBlur.current = true;
+        onDrop={(event) => {
+          if (!isMergeFieldDrag() && !mergeKeyFromDrag(event.dataTransfer)) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
         }}
       >
-        <div className="relative min-w-0 flex-1">
-          <div
-            className={
-              expanded
-                ? "flex flex-wrap gap-1 p-1.5"
-                : "flex flex-nowrap gap-1 overflow-hidden p-1.5"
+        <div
+          ref={editorRef}
+          role="textbox"
+          aria-multiline="true"
+          aria-label={ariaLabel}
+          aria-invalid={tooLong || undefined}
+          aria-describedby={note ? noteId : undefined}
+          contentEditable
+          suppressContentEditableWarning
+          data-placeholder={placeholder}
+          onInput={emit}
+          onDragOver={onEditorDragOver}
+          onDrop={onEditorDrop}
+          onBlur={() => {
+            if (ignoreBlur.current) {
+              ignoreBlur.current = false;
+              return;
             }
-          >
-            {fields.map((field) => (
-              <InsertChip
-                key={field.key}
-                field={field}
-                hint={mergeFieldPickerHint(field, picker)}
-                tabbable={expanded}
-                onInsert={insert}
-              />
-            ))}
+            const el = editorRef.current;
+            if (el) {
+              const next = serializeEditor(el);
+              emitted.current = next;
+              onChange(next);
+              el.innerHTML = next
+                ? segmentsToHtml(tokenizeMergeFields(next), "editor")
+                : "";
+            }
+            onCommit();
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const el = editorRef.current;
+            if (el) insertLineBreakInEditor(el);
+            emit();
+          }}
+          className="min-h-[8.5rem] w-full whitespace-pre-wrap bg-white px-3 py-2.5 text-[15px] leading-relaxed text-slate-800 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)]"
+        />
+        <div
+          className="flex items-stretch border-t border-slate-200 bg-slate-100"
+          onPointerDown={() => {
+            ignoreBlur.current = true;
+          }}
+        >
+          <div className="relative min-w-0 flex-1">
+            <div
+              className={
+                expanded
+                  ? "flex flex-wrap gap-1 p-1.5"
+                  : "flex flex-nowrap gap-1 overflow-hidden p-1.5"
+              }
+            >
+              {fields.map((field) => (
+                <InsertChip
+                  key={field.key}
+                  field={field}
+                  hint={mergeFieldPickerHint(field, picker)}
+                  tabbable={expanded}
+                  onInsert={insert}
+                />
+              ))}
+            </div>
+            {resultWarning ? (
+              <p className="px-1.5 pb-1.5 text-[11px] leading-snug text-slate-500">
+                Scorecard results only fill in after they finish the Boss
+                Scorecard.
+              </p>
+            ) : null}
           </div>
-          {resultWarning ? (
-            <p className="px-1.5 pb-1.5 text-[11px] leading-snug text-slate-500">
-              Scorecard results only fill in after they finish the Boss
-              Scorecard.
+          <div className="relative z-10 flex shrink-0 self-stretch items-start bg-slate-100">
+            {expanded ? null : (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 right-full w-7 bg-gradient-to-l from-slate-100 from-30% to-transparent"
+              />
+            )}
+            <button
+              type="button"
+              aria-expanded={expanded}
+              onClick={() => setExpanded((open) => !open)}
+              className="flex items-center gap-0.5 px-2 py-1.5 text-xs font-medium text-slate-800 transition duration-150 hover:bg-slate-200 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0c5290]/40"
+            >
+              {expanded ? "See less" : "See more"}
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  expanded ? "rotate-180" : ""
+                }`}
+                aria-hidden
+              />
+            </button>
+          </div>
+        </div>
+        {note && limit && tooLong ? (
+          <p className="border-t border-red-200 bg-red-50 px-3 py-2 text-xs font-medium leading-snug text-red-800">
+            Too long for {limit.noun}. LinkedIn allows{" "}
+            {note.max.toLocaleString("en-GB")} characters, and this is about{" "}
+            {note.length.toLocaleString("en-GB")} once names and other fields
+            are filled in. Cut about {note.over.toLocaleString("en-GB")}.
+          </p>
+        ) : null}
+      </div>
+      {note ? (
+        <div id={noteId} aria-live="polite" className="space-y-1 text-xs leading-snug">
+          {tooLong ? (
+            <span className="sr-only">
+              Too long for {limit?.noun}. Cut about {note.over} characters.
+            </span>
+          ) : (
+            <p className="text-right tabular-nums text-slate-500">
+              About {note.length.toLocaleString("en-GB")} of{" "}
+              {note.max.toLocaleString("en-GB")} characters
+            </p>
+          )}
+          {note.fillIns ? (
+            <p className="text-amber-700">
+              Replace the {note.fillIns} [bracketed]{" "}
+              {note.fillIns === 1 ? "bit" : "bits"} with your own words before
+              this sends.
+            </p>
+          ) : null}
+          {note.scorecardLinks.length ? (
+            <p className="text-amber-700">
+              Take out {note.scorecardLinks.join(" and ")}. A link from someone
+              they don’t know reads as spam, so send it later in the sequence.
+            </p>
+          ) : null}
+          {note.scorecardResults.length ? (
+            <p className="text-amber-700">
+              Take out {note.scorecardResults.join(" and ")}. People haven’t taken
+              the scorecard when you first reach out, so these come out blank.
             </p>
           ) : null}
         </div>
-        <div className="relative z-10 flex shrink-0 self-stretch items-start bg-slate-100">
-          {expanded ? null : (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-full w-7 bg-gradient-to-l from-slate-100 from-30% to-transparent"
-            />
-          )}
-          <button
-            type="button"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((open) => !open)}
-            className="flex items-center gap-0.5 px-2 py-1.5 text-xs font-medium text-slate-800 transition duration-150 hover:bg-slate-200 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0c5290]/40"
-          >
-            {expanded ? "See less" : "See more"}
-            <ChevronDown
-              className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                expanded ? "rotate-180" : ""
-              }`}
-              aria-hidden
-            />
-          </button>
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }

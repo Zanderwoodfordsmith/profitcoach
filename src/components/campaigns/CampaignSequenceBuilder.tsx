@@ -79,8 +79,10 @@ import {
 } from "@/components/campaigns/MergeFieldComposer";
 import {
   DEFAULT_MERGE_FIELD_PICKER,
+  mergeFieldPickerForConnectionNote,
   type MergeFieldPickerContext,
 } from "@/lib/unipile/mergeFields";
+import { CONNECTION_NOTE_MAX } from "@/lib/campaigns/connectionNote";
 import {
   ContentWithRail,
   ContentWithRailAside,
@@ -93,6 +95,7 @@ import {
 } from "@/lib/unipile/providers";
 import {
   InviteNoConnectBranch,
+  InviteOpenProfileInmail,
   MessageStepMedia,
 } from "@/components/campaigns/CampaignStepExtras";
 import { startDragAutoScroll } from "@/lib/campaigns/dragAutoScroll";
@@ -1309,16 +1312,23 @@ function ChannelToggle({
   );
 }
 
+const CONNECTION_REQUEST_LIMIT = {
+  max: CONNECTION_NOTE_MAX,
+  noun: "a connection request",
+};
+
 function AbVariantPane({
   variant,
   placeholder,
   picker,
+  limit,
   onChange,
   onCommit,
 }: {
   variant: { key: string; label?: string; body: string };
   placeholder?: string;
   picker: MergeFieldPickerContext;
+  limit?: { max: number; noun: string };
   onChange: (patch: { label?: string; body?: string }) => void;
   onCommit: () => void;
 }) {
@@ -1329,6 +1339,7 @@ function AbVariantPane({
       ariaLabel={name}
       placeholder={placeholder}
       picker={picker}
+      limit={limit}
       onChange={(body) => onChange({ body })}
       onCommit={onCommit}
     />
@@ -1375,6 +1386,15 @@ export function StepInlineEditor({
   const activeIndex = activeVariant
     ? variants.findIndex((item) => item.key === activeVariant.key)
     : 0;
+  const picker = useMemo(
+    () =>
+      step.step_type === "invite"
+        ? mergeFieldPickerForConnectionNote(mergeFields)
+        : mergeFields,
+    [step.step_type, mergeFields]
+  );
+  const noteLimit =
+    step.step_type === "invite" ? CONNECTION_REQUEST_LIMIT : undefined;
 
   function patchActiveVariant(patch: Partial<SequenceVariant>) {
     const next = variants.map((item, i) =>
@@ -1602,15 +1622,6 @@ export function StepInlineEditor({
 
   return (
     <div className="space-y-4">
-      {step.step_type === "invite" ? (
-        <InviteNoConnectBranch
-          config={step.config}
-          campaigns={campaigns}
-          libraryMode={libraryMode}
-          onChange={onChange}
-          onCommit={onCommit}
-        />
-      ) : null}
       {step.step_type === "email" ? (
         <p className="text-xs leading-relaxed text-slate-500">
           Sends from your connected Gmail or Outlook. Start the first line with
@@ -1720,7 +1731,8 @@ export function StepInlineEditor({
               step.config,
               activeVariant.media_kind
             )}
-            picker={mergeFields}
+            picker={picker}
+            limit={noteLimit}
             onChange={patchActiveVariant}
             onCommit={onCommit}
           />
@@ -1745,8 +1757,27 @@ export function StepInlineEditor({
           <MergeFieldComposer
             value={step.body ?? ""}
             placeholder={messageCopyPlaceholder(step.config)}
-            picker={mergeFields}
+            picker={picker}
+            limit={noteLimit}
             onChange={(body) => onChange({ body })}
+            onCommit={onCommit}
+          />
+        </div>
+      ) : null}
+
+      {step.step_type === "invite" ? (
+        <div className="space-y-3">
+          <InviteOpenProfileInmail
+            config={step.config}
+            picker={picker}
+            onChange={onChange}
+            onCommit={onCommit}
+          />
+          <InviteNoConnectBranch
+            config={step.config}
+            campaigns={campaigns}
+            libraryMode={libraryMode}
+            onChange={onChange}
             onCommit={onCommit}
           />
         </div>

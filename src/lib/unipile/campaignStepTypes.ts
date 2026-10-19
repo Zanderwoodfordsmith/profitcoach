@@ -68,7 +68,12 @@ export type InviteStepConfig = {
   no_connect_campaign_id: string | null;
   /** Send a free Open Profile InMail instead of a connection request. Default on. */
   open_profile_inmail: boolean;
+  /** The InMail's own words. Empty means Open Profiles get the connection note. */
+  open_profile_message: string;
 };
+
+/** Above InMail's 1,900 so an over-long draft still saves and shows red. */
+const OPEN_PROFILE_MESSAGE_STORE_MAX = 4000;
 
 export type CampaignStepConfig = NotifyStepConfig &
   AddToCampaignStepConfig &
@@ -88,6 +93,7 @@ const EMPTY_CONFIG: CampaignStepConfig = {
   no_connect_wait_hours: null,
   no_connect_campaign_id: null,
   open_profile_inmail: true,
+  open_profile_message: "",
 };
 
 export function defaultStepConfig(type: CampaignStepType): CampaignStepConfig {
@@ -206,6 +212,10 @@ export function sanitizeStepConfig(
       no_connect_campaign_id:
         action === "other_campaign" && UUID_RE.test(id) ? id : null,
       open_profile_inmail: raw.open_profile_inmail !== false,
+      open_profile_message:
+        typeof raw.open_profile_message === "string"
+          ? raw.open_profile_message.slice(0, OPEN_PROFILE_MESSAGE_STORE_MAX)
+          : "",
     };
   }
   return {};
@@ -275,6 +285,10 @@ export function inviteNoConnectFrom(config: unknown): InviteStepConfig {
         ? sanitized.no_connect_campaign_id
         : null,
     open_profile_inmail: sanitized.open_profile_inmail !== false,
+    open_profile_message:
+      typeof sanitized.open_profile_message === "string"
+        ? sanitized.open_profile_message
+        : "",
   };
 }
 
