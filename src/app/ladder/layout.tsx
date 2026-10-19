@@ -1,11 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-inter",
-});
+import { inter } from "@/fonts";
 
 export const metadata: Metadata = {
   title: "Profit Coach Ladder",

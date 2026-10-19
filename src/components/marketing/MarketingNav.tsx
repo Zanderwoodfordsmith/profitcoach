@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Inter } from "next/font/google";
+import { inter } from "@/fonts";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -12,12 +12,6 @@ import { useEffect, useState } from "react";
  * - `overlay`: transparent over a gradient hero, turns solid on scroll (homepage).
  * - `solid`: always a solid sticky white bar (blog, directory, inner pages).
  */
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-  display: "swap",
-});
 
 const CTA_GRADIENT = "linear-gradient(155deg, #0a6fa8 0%, #1aa3e0 100%)";
 

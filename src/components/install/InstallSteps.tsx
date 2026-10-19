@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
-import { Caveat } from "next/font/google";
+import { caveat as hand } from "@/fonts";
 import { Ellipsis, EllipsisVertical, Share } from "lucide-react";
-
-const hand = Caveat({ subsets: ["latin"], weight: "700" });
 
 export type StepsDevice = "ios-safari" | "ios-chrome" | "ios-other" | "android";
 

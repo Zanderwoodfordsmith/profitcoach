@@ -1,6 +1,6 @@
 "use client";
 
-import { Outfit } from "next/font/google";
+import { outfit } from "@/fonts";
 import Image from "next/image";
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -56,8 +56,6 @@ import {
   type ResultsContactPrompt,
 } from "@/lib/assessmentContactParams";
 import { splitFullName } from "@/lib/splitFullName";
-
-const outfit = Outfit({ subsets: ["latin"] });
 
 const RESULT_STORAGE_KEY = "boss_scorecard_result";
 

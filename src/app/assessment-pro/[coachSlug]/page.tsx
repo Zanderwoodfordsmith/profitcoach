@@ -1,6 +1,6 @@
 "use client";
 
-import { Outfit } from "next/font/google";
+import { outfit } from "@/fonts";
 import Image from "next/image";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,8 +30,6 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { METHODOLOGY_VERSION } from "@/lib/bossMethodologyMigration";
 import { QUESTIONS_BY_LEVEL } from "@/lib/assessmentQuestions";
 import { splitFullName } from "@/lib/splitFullName";
-
-const outfit = Outfit({ subsets: ["latin"] });
 
 type AnswersMap = Record<string, 0 | 1 | 2>;
 

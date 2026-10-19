@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { fraunces, plusJakartaSans as jakarta } from "@/fonts";
 import {
   ArrowRight,
   Bird,
@@ -17,21 +17,6 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { BossWheel } from "@/components/BossCharts/BossWheel";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-  display: "swap",
-  variable: "--font-fraunces",
-});
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-  variable: "--font-jakarta",
-});
 
 const LINK_DIAGNOSTIC = "/assessment";
 const LINK_COACH = "/directory";

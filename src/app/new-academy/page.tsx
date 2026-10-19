@@ -1,4 +1,4 @@
-import { Fraunces } from "next/font/google";
+import { fraunces } from "@/fonts";
 import Image from "next/image";
 import Link from "next/link";
 import { Play } from "lucide-react";
@@ -9,12 +9,6 @@ import {
 } from "@/config/academyMoved";
 import { resolveAcademyMovedMedia } from "@/lib/academyMovedVideo";
 import { buildLoginUrl } from "@/lib/auth/loginReturnPath";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
 
 export const metadata = {
   title: "The Academy Moved — The Profit Coach",

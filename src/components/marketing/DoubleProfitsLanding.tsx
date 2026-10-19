@@ -2,22 +2,10 @@
 
 import Image from "next/image";
 import { Check } from "lucide-react";
-import { Lato, Montserrat } from "next/font/google";
+import { montserrat, lato } from "@/fonts";
 import { CoachPublicBookingSurface } from "@/components/booking/CoachPublicBookingSurface";
 import type { DoubleProfitsCoach } from "@/lib/getDoubleProfitsCoach";
 import { PAM_CALENDAR_EMBED_CODE } from "@/lib/doubleProfitsLandingCopy";
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const lato = Lato({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
 
 type DoubleProfitsLandingProps = {
   coach: DoubleProfitsCoach;

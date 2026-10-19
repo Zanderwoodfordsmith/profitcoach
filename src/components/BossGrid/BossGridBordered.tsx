@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Outfit } from "next/font/google";
+import { outfit } from "@/fonts";
 import { ASSESSMENT_QUESTIONS } from "@/lib/assessmentQuestions";
 import { BOSS_PRO_SCORE_LABELS, bossProGridScoreDescription } from "@/lib/bossProScoringLabels";
 import { AREAS, BOSS_FOUNDATION_COLOR, BOSS_FOUNDATION_SOFT, LEVELS, PLAYBOOKS } from "@/lib/bossData";
@@ -15,7 +15,6 @@ import {
 import { BossGridMobileStacked } from "./BossGridMobileStacked";
 import { SpeedDials } from "./SpeedDials";
 
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 const TOOLTIP_DELAY_MS = 800;
 
 export type BossGridBorderedProps = {

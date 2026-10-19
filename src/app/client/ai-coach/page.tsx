@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Outfit } from "next/font/google";
+import { outfit } from "@/fonts";
 import ReactMarkdown from "react-markdown";
 import {
   DndContext,
@@ -147,8 +147,6 @@ function FavouriteSortableRow({
     </div>
   );
 }
-
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 /** Section context when opening from Insights "Get coaching" - must match API / coachAi.SectionContext */
 type PendingSectionContext = {

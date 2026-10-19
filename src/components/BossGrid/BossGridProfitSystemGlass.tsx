@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Outfit } from "next/font/google";
+import { outfit } from "@/fonts";
 import { AREAS, BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import { getTotalScore, type AnswersMap } from "@/lib/bossScores";
-
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 /** Display order: Level 1 (Overwhelm) … Level 5 (Owner) */
 const DISPLAY_LEVELS = [...LEVELS].sort((a, b) => a.id - b.id);

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGrid, Layers } from "lucide-react";
-import { Outfit } from "next/font/google";
+import { outfit } from "@/fonts";
 import { AREAS, BOSS_FOUNDATION_COLOR, getLevelColor, getLevelIcon, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import { playbookDetailUrl } from "@/lib/bossGridNavigation";
 import { getTotalScore, type AnswersMap } from "@/lib/bossScores";
@@ -15,8 +15,6 @@ import {
   getBossLevelInfoSections,
   getBossPillarInfoSections,
 } from "@/lib/bossGridInfo";
-
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export type BossGridTransposedProps = {
   answers: AnswersMap;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fraunces } from "next/font/google";
+import { fraunces } from "@/fonts";
 import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,12 +15,6 @@ import {
 } from "@/lib/support/supportCallHosts";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
 
 type Props = {
   hostSlug: SupportCallHostSlug;

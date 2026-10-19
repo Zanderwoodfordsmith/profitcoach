@@ -10,7 +10,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { Outfit } from "next/font/google";
+import { outfit } from "@/fonts";
 
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -25,8 +25,6 @@ import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { studioDisplayTitle } from "@/lib/profitCoachAi/studioHub";
 
 import { ProfitCoachAiBrainForm } from "./ProfitCoachAiBrainForm";
-
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 type ChatRow = {
   id: string;

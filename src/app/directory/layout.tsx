@@ -1,8 +1,5 @@
-import { Figtree } from "next/font/google";
+import { figtree } from "@/fonts";
 import { SiteFooter, SiteNav } from "@/components/marketing/SiteNav";
-
-/** Same face as the static site and the BCA website. */
-const figtree = Figtree({ subsets: ["latin"], display: "swap" });
 
 export default function DirectoryLayout({
   children,

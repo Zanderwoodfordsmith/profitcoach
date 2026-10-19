@@ -1,6 +1,6 @@
 "use client";
 
-import { Fraunces } from "next/font/google";
+import { fraunces } from "@/fonts";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { StartApplyPanelNative } from "@/components/booking/StartApplyPanelNative";
@@ -12,12 +12,6 @@ import type { ApplyPrefill } from "@/lib/booking/bookCallPrefill";
 import { contactToApplyPrefill } from "@/lib/support/supportCallPrefillQuery";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
 
 /**
  * Public booker for Pam's Blueprint Call.

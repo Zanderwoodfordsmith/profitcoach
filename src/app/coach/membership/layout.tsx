@@ -1,15 +1,4 @@
-import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-pc-ds-mono",
-});
+import { plusJakartaSans as plusJakarta, jetbrainsMono } from "@/fonts";
 
 export default function CoachMembershipLayout({
   children,

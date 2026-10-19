@@ -1,15 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Inter } from "next/font/google";
+import { inter } from "@/fonts";
 import { LINK_HOME } from "./MarketingNav";
 
 /** The standard marketing footer, shared across all public brand pages. */
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
 
 const CTA_GRADIENT = "linear-gradient(155deg, #0a6fa8 0%, #1aa3e0 100%)";
 const LINK_SCORE = "/score";

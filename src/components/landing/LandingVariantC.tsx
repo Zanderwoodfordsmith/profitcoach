@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { Outfit } from "next/font/google";
+import { outfit as landingOutfit } from "@/fonts";
 import { ArrowUpRight, Sparkles, TrendingUp } from "lucide-react";
 import {
   DashboardStyleLevelBarsCard,
@@ -11,12 +11,6 @@ import { LandingHeroHeadline } from "@/components/landing/LandingHeroHeadline";
 import { BossScoreWordmark } from "@/components/scorecard/BossScoreWordmark";
 import type { LandingContent } from "@/lib/landingCopy";
 import type { LandingHeroHeadlineVariant } from "@/lib/landingHeroHeadline";
-
-const landingOutfit = Outfit({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  display: "swap",
-});
 
 const DEMO_TOTAL = 47;
 

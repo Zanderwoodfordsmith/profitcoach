@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Fraunces, Inter, Inter_Tight } from "next/font/google";
+import { interTight, inter, fraunces } from "@/fonts";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -35,29 +35,6 @@ const CTA_GRADIENT = "linear-gradient(155deg, #0a6fa8 0%, #1aa3e0 100%)";
 /** House level blues, light → deep (matches OwnerLevelsDiagram). */
 const LEVEL_COLORS = ["#7cc0f4", "#42a1ee", "#1f7fd1", "#0c5290", "#1ca0c2"];
 const LEVEL_ICONS = [Flame, BatteryLow, ListChecks, Telescope, Crown];
-
-const interTight = Inter_Tight({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  display: "swap",
-  variable: "--font-inter-tight",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-inter",
-});
-
-/** Serif accent for the pre-FAQ conversion card only. */
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-  style: ["normal", "italic"],
-  display: "swap",
-  variable: "--font-fraunces",
-});
 
 /* ── Links & assets ───────────────────────────────────────────────────────── */
 

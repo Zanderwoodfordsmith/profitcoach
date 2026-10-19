@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { plusJakartaSans as jakarta } from "@/fonts";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -23,12 +23,6 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
 
 const LINK_DIAGNOSTIC = "/assessment";
 const LINK_BOOK = "/doubleprofitsinsixmonths";

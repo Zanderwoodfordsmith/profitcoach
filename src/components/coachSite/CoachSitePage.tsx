@@ -1,4 +1,4 @@
-import { Figtree } from "next/font/google";
+import { figtree } from "@/fonts";
 import { Suspense } from "react";
 import { GOOGLE_FONTS_HREF } from "@/lib/printPack/brand.js";
 import type { CoachSiteGraphics } from "@/lib/coachSite/graphics";
@@ -25,12 +25,6 @@ import {
 } from "./Sections";
 import { VariantPanel } from "./VariantPanel";
 import "./coachSite.css";
-
-const figtree = Figtree({
-  subsets: ["latin"],
-  variable: "--cs-font",
-  display: "swap",
-});
 
 export function CoachSiteShell({ children }: { children: React.ReactNode }) {
   return (
