@@ -71,6 +71,14 @@ function structureNav(): NavSection[] {
         { id: "replies", label: "Reply review", href: "/admin/ava/replies" },
       ],
     },
+    {
+      id: "quality",
+      label: "Quality",
+      pages: [
+        { id: "evals", label: "Evals", href: "/admin/ava/evals" },
+        { id: "audit", label: "Coach audit", href: "/admin/client-success/quality" },
+      ],
+    },
   ];
 }
 

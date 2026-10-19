@@ -6,6 +6,7 @@ import {
   isBrandKnowledgeFile,
   readBrandKnowledgeRepoFile,
 } from "@/lib/profitCoachAi/brandKnowledge";
+import { ARTIFACT_LABELS, RUBRIC_FILES } from "@/lib/evals/types";
 import { SECTION_SKILLS } from "@/lib/practiceKnowledge/skills";
 
 import { CODE_REFERENCES, loadCapabilities, parseFrontmatter } from "./context";
@@ -312,6 +313,11 @@ export function buildAvaCatalog(opts: {
       label: "Pitch patterns",
       description: "Five Golden Thread examples. Shape, not a script to recite.",
     },
+    ...Object.entries(RUBRIC_FILES).map(([kind, file]) => ({
+      id: `agent/evals/rubrics/${file}`,
+      label: `Quality bar: ${ARTIFACT_LABELS[kind as keyof typeof ARTIFACT_LABELS]}`,
+      description: "The rubric Ava's evals and the coach audit score this against. Edit the criteria, anchors or weights here.",
+    })),
   ];
   for (const spec of referenceSpecs) {
     files.push(

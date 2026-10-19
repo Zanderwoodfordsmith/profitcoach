@@ -15,6 +15,11 @@ export function peekAllAgentOverrides(): Record<string, string> {
   return Object.fromEntries(cache);
 }
 
+/** Evals only: try an edited file (a skill, a rubric) in this process before anyone saves it. */
+export function setAgentOverrideForEval(relPath: string, content: string): void {
+  cache.set(relPath, content);
+}
+
 /**
  * Load admin edits. Agent files live in agent_context_files (path under content/).
  * Brand files Ava also reads (ai-knowledge/…) come from brand_knowledge_files.

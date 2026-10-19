@@ -268,6 +268,20 @@ export async function researchMarketPains(input: {
     return { quotes: [], snippetsUsed: 0, providers, queries };
   }
 
+  const quotes = await extractPainQuotes(input, snippets);
+  return {
+    quotes,
+    snippetsUsed: snippets.length,
+    providers,
+    queries,
+  };
+}
+
+/** The extraction step on its own, so evals can run it on fixed snippets. */
+export async function extractPainQuotes(
+  input: { industry: string; roleTitles: string[]; geography?: string; teamSize?: string },
+  snippets: ResearchSnippet[]
+): Promise<ResearchQuote[]> {
   const compact = snippets.map((s, i) => ({
     i,
     source: s.source,
@@ -292,7 +306,7 @@ Extract pains-in-their-words quotes for this Ideal Client Profile.`,
     maxTokens: 2048,
   });
 
-  const quotes = (data?.quotes ?? [])
+  return (data?.quotes ?? [])
     .map((q) => ({
       text: String(q.text ?? "").trim(),
       sourceLabel: String(q.sourceLabel ?? "Reddit").trim(),
@@ -300,11 +314,4 @@ Extract pains-in-their-words quotes for this Ideal Client Profile.`,
     }))
     .filter((q) => q.text.length >= 12)
     .slice(0, 10);
-
-  return {
-    quotes,
-    snippetsUsed: snippets.length,
-    providers,
-    queries,
-  };
 }
