@@ -23,16 +23,21 @@ type State = {
   pushKey: string | null;
 };
 
-const MODES: { id: Exclude<ReplyMode, "off">; label: string; detail: string }[] = [
+const MODES: { id: ReplyMode; label: string; detail: string }[] = [
+  {
+    id: "off",
+    label: "Off",
+    detail: "Ava stays quiet. You check LinkedIn replies yourself.",
+  },
   {
     id: "copilot",
-    label: "Copilot alerts",
+    label: "Copilot",
     detail: "Ava tells you the moment someone replies, with a draft ready. You send it.",
   },
   {
     id: "autopilot",
-    label: "Full autopilot",
-    detail: "Ava answers for you when someone asks to talk.",
+    label: "Autopilot",
+    detail: "Ava answers for you when someone asks to talk, offering two times from your calendar.",
   },
 ];
 
@@ -217,7 +222,7 @@ export function AvaReplyAlertsCard() {
               );
             })}
             {s.reply_mode === "off" ? (
-              <p className="mt-1 text-xs text-amber-800">Ava isn&apos;t alerting you. Tick Copilot alerts to turn her on.</p>
+              <p className="mt-1 text-xs text-amber-800">Ava isn&apos;t alerting you. Choose Copilot to turn her on.</p>
             ) : null}
           </fieldset>
 
