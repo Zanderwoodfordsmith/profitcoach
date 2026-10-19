@@ -95,7 +95,10 @@ async function main() {
 
   const blank = notes.get("(blank)");
   const withNote = [...notes.values()].filter((g) => g.key !== "(blank)");
-  const pooled = (gs: Group[], k: keyof Stats, of: keyof Stats) => rate(gs.reduce((s, g) => s + g.stats[k], 0), gs.reduce((s, g) => s + g.stats[of], 0));
+  const pooled = (gs: Group[], k: keyof Stats, of: keyof Stats) => {
+    const n = gs.reduce((s, g) => s + g.stats[of], 0);
+    return n ? gs.reduce((s, g) => s + g.stats[k], 0) / n : null;
+  };
 
   // Free view: plain features of the note against acceptance.
   // Acceptance is only the first step; replies and interest per invite are what turn into calls.

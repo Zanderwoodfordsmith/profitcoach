@@ -22,7 +22,7 @@ import type { BuiltSection, PracticeKnowledgeRow } from "@/lib/practiceKnowledge
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { runChecks, type ArtifactInput, type CheckContext } from "./checks";
-import { connectionPieces, labelledReplies, numbered, sequenceMessages } from "./extract";
+import { connectionPieces, labelledReplies, numbered, sequenceMessages, sequenceTimings } from "./extract";
 import { EVAL_COACHES, evalCoach, type EvalCoach } from "./fixtures/coaches";
 import { REPLY_CASES, type ReplyCase } from "./fixtures/replies";
 import { RESEARCH_CASES } from "./fixtures/research";
@@ -342,7 +342,7 @@ async function runCampaigns(opts: SuiteOptions, canon: string, coaches: EvalCoac
             skill: "campaign.followups",
             caseId: `${c.id}/followups`,
             rep,
-            input: { text: numbered(followups), messages: followups },
+            input: { text: numbered(followups, sequenceTimings("campaigns:messaging", messaging.section).slice(1)), messages: followups },
             checkCtx: ctx,
             judgeContext: judgeContextFor(c, `The connection note these follow: ${note ?? "(none)"}`),
             facts,
@@ -362,7 +362,7 @@ async function runCampaigns(opts: SuiteOptions, canon: string, coaches: EvalCoac
           skill: "campaign.nurture",
           caseId: `${c.id}/nurture`,
           rep,
-          input: { text: numbered(messages), messages },
+          input: { text: numbered(messages, sequenceTimings("campaigns:nurture", nurture.section)), messages },
           checkCtx: ctx,
           judgeContext: judgeContextFor(c),
           facts,

@@ -5,7 +5,7 @@ import type { PracticeKnowledgePayload } from "@/lib/practiceKnowledge/types";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { runChecks, type ArtifactInput } from "./checks";
-import { numbered } from "./extract";
+import { numbered, stepTimings } from "./extract";
 import { judge } from "./judge";
 import { loadRubric } from "./rubrics";
 import { combine, topFix } from "./score";
@@ -89,7 +89,7 @@ export async function loadAuditTargets(opts: { coachIds?: string[]; includeInact
   });
 }
 
-type Step = { campaign_id: string; position: number; step_type: string; body: string | null; updated_at: string };
+type Step = { campaign_id: string; position: number; step_type: string; body: string | null; wait_hours: number | null; updated_at: string };
 type Campaign = { id: string; name: string; status: string; updated_at: string; leads: number };
 
 export type CoachCampaigns = { connection: Campaign | null; connectionSteps: Step[]; nurture: Campaign | null; nurtureSteps: Step[]; sentAny: boolean };
@@ -101,7 +101,7 @@ export async function loadCoachCampaigns(coachId: string): Promise<CoachCampaign
   if (!list.length) return { connection: null, connectionSteps: [], nurture: null, nurtureSteps: [], sentAny: false };
   const { data: stepRows } = await supabaseAdmin
     .from("linkedin_campaign_steps")
-    .select("campaign_id, position, step_type, body, updated_at")
+    .select("campaign_id, position, step_type, body, wait_hours, updated_at")
     .in(
       "campaign_id",
       list.map((c) => c.id)
@@ -242,7 +242,7 @@ export async function auditCoach(target: AuditTarget): Promise<AuditPiece[]> {
         scoreLive({
           target,
           artifact: "campaign.followups",
-          input: { text: numbered(messages), messages },
+          input: { text: numbered(messages, stepTimings(campaigns.connectionSteps)), messages },
           context: contextFor(target, `follow-up messages from the campaign "${c.name}"`),
           source_ref: ref,
           source_at: campaigns.connectionSteps[campaigns.connectionSteps.length - 1]?.updated_at ?? null,
@@ -259,7 +259,7 @@ export async function auditCoach(target: AuditTarget): Promise<AuditPiece[]> {
         await scoreLive({
           target,
           artifact: "campaign.nurture",
-          input: { text: numbered(messages), messages },
+          input: { text: numbered(messages, stepTimings(campaigns.nurtureSteps)), messages },
           context: contextFor(target, `nurture campaign "${c.name}"`),
           source_ref: `${c.id}|${c.name}|${c.status}|${c.leads} people`,
           source_at: null,
