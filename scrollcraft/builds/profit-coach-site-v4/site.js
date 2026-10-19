@@ -385,7 +385,7 @@
 
   // -------------------------------------------------------------- dock --
   var dock = $('[data-dock]');
-  var closeAct = $('[data-close]') && $('[data-close]').closest('[data-sc-act]');
+  var closeAct = $('[data-close]');
   var dockOn = false;
   function dockFrame() {
     if (!dock) return;
