@@ -12,6 +12,7 @@ import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPa
 import { BillingSettingsTab } from "@/components/settings/BillingSettingsTab";
 import { IntegrationsSettingsTab } from "@/components/settings/IntegrationsSettingsTab";
 import { AvaReplyAlertsCard } from "@/components/settings/AvaReplyAlertsCard";
+import { AddToPhoneCard } from "@/components/settings/AddToPhoneCard";
 import { DirectorySettingsTab } from "@/components/settings/DirectorySettingsTab";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
 import {
@@ -718,6 +719,7 @@ export function BossDashboardSettings({
           </form>
           {variant === "coach" ? (
             <aside className="w-full shrink-0 space-y-4 pt-3 lg:w-[22rem] lg:sticky lg:top-4 lg:self-start lg:pt-3.5">
+              <AddToPhoneCard />
               <IntegrationsSettingsTab />
               <AvaReplyAlertsCard />
             </aside>

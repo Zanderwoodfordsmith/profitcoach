@@ -721,8 +721,18 @@
 .foot__nav { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
 .foot__nav a { color: #C9DAEA; text-decoration: none; font-size: 0.9rem; }
 .foot__nav a:hover { color: #fff; text-decoration: underline; }
-.foot__small { grid-column: 1 / -1; margin: 0; font-size: 0.8rem; color: #8FA9C2; }
+.foot__base { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 0.9rem 2rem; flex-wrap: wrap; padding-top: 0.9rem; border-top: 1px solid var(--line-dark); }
+.foot__small { margin: 0; font-size: 0.8rem; color: #8FA9C2; }
 .foot__small a { color: #C9DAEA; }
+.foot__login {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  height: 2.6rem; padding: 0 1rem 0 1.1rem;
+  border: 1px solid rgb(255 255 255 / 0.32); border-radius: 10px;
+  color: #fff; font-size: 0.9375rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+  transition: background-color 200ms var(--sc-ease-out), border-color 200ms var(--sc-ease-out);
+}
+.foot__login:hover { background: rgb(255 255 255 / 0.08); border-color: rgb(255 255 255 / 0.55); }
+.foot__login:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
 
 /* ============================================================ DOCK == */
 .dock {
@@ -834,6 +844,8 @@
   .foot__brand p { display: none; }
   .foot__nav { justify-content: flex-start; gap: 0.35rem 1.1rem; }
   .foot__nav a { font-size: 0.85rem; }
+  .foot__base { flex-direction: column-reverse; align-items: stretch; }
+  .foot__login { justify-content: center; }
 
   .dock { left: 0.75rem; right: 0.75rem; bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
   .dock__read { display: none; }

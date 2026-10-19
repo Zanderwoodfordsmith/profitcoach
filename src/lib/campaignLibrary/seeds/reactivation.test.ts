@@ -28,10 +28,10 @@ describe("reactivation library template", () => {
     const messages = steps.filter((step) => step.step_type === "message");
     assert.equal(messages.length, 4);
     assert.ok(String(messages[0]?.body).includes("we connected a while back"));
-    assert.ok(String(messages[3]?.body).includes("{{scorecard_link}}"));
+    assert.ok(String(messages[3]?.body).includes("BOSS Score"));
   });
 
-  it("uses the check-in as the control and the scorecard invite as the test", () => {
+  it("uses the check-in as the control and a profit tip as the test", () => {
     const first = reactivationLibrarySteps().filter(
       (step) => step.step_type === "message"
     )[0];
@@ -39,6 +39,6 @@ describe("reactivation library template", () => {
     assert.equal(variants[0]?.key, "B");
     assert.equal(first?.body, variants[0]?.body);
     assert.equal(variants[1]?.key, "A");
-    assert.ok(String(variants[1]?.body).includes("BOSS Scorecard"));
+    assert.ok(String(variants[1]?.body).includes("double profit"));
   });
 });

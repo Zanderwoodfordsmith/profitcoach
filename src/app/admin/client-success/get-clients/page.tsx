@@ -155,6 +155,9 @@ export default function AdminGetClientsHealthPage() {
                     <th className="px-3 py-2 font-medium">Interested</th>
                     <th className="px-3 py-2 font-medium">Calls</th>
                     <th className="px-3 py-2 font-medium">Reply time</th>
+                    <th className="px-3 py-2 font-medium" title="LinkedIn posts in the last 30 days, from their imported history">Posts 30d</th>
+                    <th className="px-3 py-2 font-medium">Last post</th>
+                    <th className="px-3 py-2 font-medium" title="Newsletter issues in the last 90 days">Issues 90d</th>
                     <th className="px-3 py-2 font-medium">Last in app</th>
                   </tr>
                 </thead>
@@ -186,6 +189,9 @@ export default function AdminGetClientsHealthPage() {
                       <td className="px-3 py-2">{r.interested_30d}</td>
                       <td className="px-3 py-2">{r.calls_30d}</td>
                       <td className="px-3 py-2">{r.median_reply_hours == null ? "–" : r.median_reply_hours < 1 ? "< 1h" : `${Math.round(r.median_reply_hours)}h`}</td>
+                      <td className="px-3 py-2">{r.posts_30d ?? "–"}</td>
+                      <td className="px-3 py-2">{r.last_post_days == null ? "–" : r.last_post_days === 0 ? "today" : `${r.last_post_days}d ago`}</td>
+                      <td className="px-3 py-2">{r.issues_90d ?? "–"}</td>
                       <td className="px-3 py-2">{r.last_active_days == null ? "–" : r.last_active_days === 0 ? "today" : `${r.last_active_days}d ago`}</td>
                     </tr>
                   ))}

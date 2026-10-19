@@ -2,34 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CONNECTOR_LIBRARY_SEED, connectorLibrarySteps } from "./connector";
 
-const MSG2_B = `Hi {{first_name}}, thanks for connecting. I work with business owners, so I hear the same thing a lot.
-
-Most owners tell me revenue is fine, but they still can't take a week off.
-
-Ring any bells, or is it different your end?`;
-
-const MSG2_A = `Hi {{first_name}}, great to have you in my network.
-
-Are you focused on growing your business at the moment, or more on maintaining what you've already built?`;
-
-const MSG3 = `Hi {{first_name}}, one thing I see either way,  whether someone's pushing for growth or protecting what they've built... is that every business has a weakest link, and most owners are guessing which one it is.
-
-Growth tends to break it. Steady tends to hide it.
-
-If you had to guess, where's yours?`;
-
-const MSG4 = `Hi {{first_name}}, that's one of the reasons we built the BOSS Scorecard . It's designed to find the root constraint rather than just the symptoms.
-
-If you fancy giving it a go, I can send you a personalised link.`;
-
-const MSG5 = `Hi {{first_name}}, I’ll leave this here in case it’s useful: {{scorecard_link}}
-
-The BOSS Scorecard is a short assessment designed to show where the biggest constraint may be across profit, performance and owner-dependence.
-
-No pressure to use it. I’ll leave you to it.`;
-
 describe("connector library template", () => {
-  it("stores the Connection sequence with the supplied copy", () => {
+  it("stores the Connection sequence: blank invite, then four short messages", () => {
     assert.equal(CONNECTOR_LIBRARY_SEED.kind, "connector");
     assert.equal(CONNECTOR_LIBRARY_SEED.name, "Connection");
     assert.equal(CONNECTOR_LIBRARY_SEED.settings?.daily_invite_limit, 9);
@@ -44,21 +18,22 @@ describe("connector library template", () => {
     );
 
     const messages = steps.filter((step) => step.step_type === "message");
-    assert.deepEqual(
-      messages.map((step) => step.body),
-      [MSG2_B, MSG3, MSG4, MSG5]
-    );
+    assert.equal(messages.length, 4);
+    for (const message of messages) {
+      assert.ok(String(message.body).length < 300, String(message.body).slice(0, 40));
+      assert.equal(/just checking|free (coaching|discovery)|—/i.test(String(message.body)), false);
+    }
   });
 
-  it("uses observation as the control and growth vs maintain as the test", () => {
+  it("uses observation as the control and growth vs keep as the test", () => {
     const first = connectorLibrarySteps().filter(
       (step) => step.step_type === "message"
     )[0];
     const variants = first?.variants ?? [];
     assert.equal(variants[0]?.key, "B");
-    assert.equal(variants[0]?.body, MSG2_B);
-    assert.equal(first?.body, MSG2_B);
+    assert.equal(first?.body, variants[0]?.body);
+    assert.ok(String(variants[0]?.body).includes("can't take a week off"));
     assert.equal(variants[1]?.key, "A");
-    assert.equal(variants[1]?.body, MSG2_A);
+    assert.ok(String(variants[1]?.body).includes("growing your business"));
   });
 });

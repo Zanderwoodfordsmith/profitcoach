@@ -16,7 +16,7 @@ export const STANDARD_SECTIONS: Record<string, BlueprintBlock[]> = {
       items: [
         { title: "Write like you talk", detail: "Short sentences. Plain words. Say it the way you would say it across a table." },
         { title: "Use their words", detail: "Jobs, sites, contracts, covers, fee earners. Industry nouns beat coaching language every time." },
-        { title: "Lead with proof", detail: "A result with a from, a to and a timeframe does more than any adjective." },
+        { title: "Lead with proof", detail: "A result with the number before, the number after and how long it took does more than any adjective." },
         { title: "Say what to do", detail: "Tell the reader what to do, not what to avoid, unless the warning is the point." },
         { title: "Cut the filler", detail: "If a word can go without changing the meaning, it goes." },
         { title: "Never sell coaching", detail: "In outreach, sell interest in the outcome. The call does the rest." },

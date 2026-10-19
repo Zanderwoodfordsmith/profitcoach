@@ -39,8 +39,10 @@
 *.pem
 .tmp-frames/
 public/membership/*.mp4
-# Local Scrollcraft preview. A symlink here breaks Vercel's public/ copy.
+# Local Scrollcraft previews. A symlink here breaks Vercel's public/ copy.
 public/site-v2
+public/site-v3
+public/site-v4
 
 # debug
 npm-debug.log*

@@ -21,6 +21,17 @@ const nextConfig: NextConfig = {
       "./content/practice-skills/**/*",
     ],
   },
+  async rewrites() {
+    return {
+      // The homepage is the Scrollcraft build (copied into public/site-v4 at build time).
+      // beforeFiles so it wins over src/app/page.tsx.
+      beforeFiles: [
+        { source: "/", destination: "/site-v4/index.html" },
+        { source: "/our-story", destination: "/site-v4/our-story.html" },
+        { source: "/profit-system", destination: "/site-v4/profit-system.html" },
+      ],
+    };
+  },
   async redirects() {
     return [
       {

@@ -1,40 +1,9 @@
 import type { BlueprintBlock } from "./types";
 
-/** Pieces that sit under one newsletter, in the order they are read. */
-export const NEWSLETTER_PIECES = ["cover", "inbox", "post", "inmail", "article"] as const;
-
-export type NewsletterPiece = (typeof NEWSLETTER_PIECES)[number];
-
-export const NEWSLETTER_PIECE_TITLE: Record<NewsletterPiece, string> = {
-  cover: "Cover",
-  inbox: "Inbox",
-  post: "Post",
-  inmail: "InMail",
-  article: "Article",
-};
-
-const LIBRARY_ID = /^[a-z0-9]{6,12}$/;
 const LIBRARY_KEY = /^content:nl-[a-z0-9]{6,12}(?:-cover|-inbox|-post|-inmail|-article)?$/;
 
 export function isNewsletterLibraryKey(key: string): boolean {
   return LIBRARY_KEY.test(key);
-}
-
-export function newsletterLibraryId(): string {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
-}
-
-export function isNewsletterLibraryId(id: string): boolean {
-  return LIBRARY_ID.test(id);
-}
-
-/** The built-in 5-3-7 uses the original section keys. Added newsletters use content:nl-… */
-export function newsletterOverviewKey(id: "main" | string): string {
-  return id === "main" ? "content:newsletter" : `content:nl-${id}`;
-}
-
-export function newsletterPieceKey(id: "main" | string, piece: NewsletterPiece): string {
-  return id === "main" ? `content:${piece}` : `content:nl-${id}-${piece}`;
 }
 
 const STANDING_LABELS = new Set(["name", "who it is for", "how often", "call to action", "the analogy"]);
@@ -91,22 +60,4 @@ export function newsletterTitle(blocks: BlueprintBlock[] | undefined, fallback: 
     }
   }
   return fallback;
-}
-
-export function newsletterStarter(title: string): BlueprintBlock[] {
-  return [
-    { type: "pairs", items: [{ label: "Name", value: title }] },
-    { type: "paragraph", text: "Write the issue here." },
-  ];
-}
-
-export function newsletterPieceStarter(piece: NewsletterPiece): BlueprintBlock[] {
-  const text: Record<NewsletterPiece, string> = {
-    cover: "Headline, the line under it, and what the picture shows.",
-    inbox: "The note to your top 100. Personalise the first line.",
-    post: "The feed post that points people at this issue.",
-    inmail: "The InMail that links this issue and offers a call.",
-    article: "The longer piece that points back to this issue.",
-  };
-  return [{ type: "paragraph", text: text[piece] }];
 }

@@ -1,8 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { ToolkitHub } from "@/components/toolkit/ToolkitHub";
+import { parseToolkitView, ToolkitTabs } from "@/components/toolkit/ToolkitTabs";
 
 export default function CoachToolkitPage() {
   return (
@@ -16,7 +19,19 @@ export default function CoachToolkitPage() {
         />
       }
     >
-      <ToolkitHub />
+      <Suspense fallback={<ToolkitTabs active="brochure" />}>
+        <ToolkitBody />
+      </Suspense>
     </DashboardPageSection>
+  );
+}
+
+function ToolkitBody() {
+  const view = parseToolkitView(useSearchParams().get("view"));
+  return (
+    <>
+      <ToolkitTabs active={view} />
+      <ToolkitHub view={view} />
+    </>
   );
 }

@@ -8,6 +8,7 @@ import {
   coachClientsTabItems,
   getClientsTabItems,
   isGetClientsContentPath,
+  isGetClientsToolkitPath,
   navLinkActive,
   type CoachClientsTabItem,
   type ToolsHubTabItem,
@@ -122,6 +123,7 @@ function GetClientsTabsNav({
     return true;
   });
   const contentHref = `${prefix}/linkedin`;
+  const toolkitHref = `${prefix}/share`;
   return (
     <PageHeaderUnderlineTabs
       ariaLabel="Get Clients tools"
@@ -149,7 +151,9 @@ function GetClientsTabsNav({
         const active =
           item.href === contentHref
             ? isGetClientsContentPath(pathname)
-            : navLinkActive(pathname, item.href);
+            : item.href === toolkitHref
+              ? isGetClientsToolkitPath(pathname)
+              : navLinkActive(pathname, item.href);
         return {
           kind: "link" as const,
           href: item.href,

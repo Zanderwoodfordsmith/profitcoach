@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Download, FileText, GraduationCap, Loader2, MessageCircle, Printer, Sparkles, Square } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Download, FileText, GraduationCap, Loader2, MessageCircle, Play, Printer, Sparkles, Square } from "lucide-react";
 
 import {
   BLUEPRINT_GROUPS,
@@ -19,7 +19,6 @@ import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { DecisionRecordView } from "../DecisionRecord";
 import { usePractice } from "../PracticeProvider";
-import { NewsletterPage } from "./NewsletterPage";
 import { SectionView } from "./SectionView";
 
 /** Pages that belong in the document (not the Command Center or the whole-document page). */
@@ -129,11 +128,6 @@ export function PageView({ page, showTitle = true }: { page: BlueprintLink; show
       ) : null}
       {page.slug === "decisions" ? (
         <DecisionRecordView />
-      ) : page.slug === "content" ? (
-        <div className="space-y-5">
-          <NewsletterPage page={page} />
-          <ClassroomLinks page={page} />
-        </div>
       ) : (
         <div className="space-y-5">
           {page.sections
@@ -359,6 +353,73 @@ export function StillNeeded() {
   );
 }
 
+/** Zander's welcome video on the landing cover: why the Blueprint works this way and the three steps. */
+const COVER_VIDEO = "/tutorials/blueprint-welcome.mp4";
+const COVER_POSTER = "/tutorials/blueprint-welcome-poster.jpg";
+const COVER_VIDEO_SEEN_KEY = "bp-welcome-video-seen";
+
+// First visits get the full thumbnail. Once played, the cover keeps a slim play button instead.
+function CoverVideo() {
+  const [seen, setSeen] = useState(false);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- read browser storage after hydration
+      setSeen(localStorage.getItem(COVER_VIDEO_SEEN_KEY) === "1");
+    } catch {
+      // Storage blocked: always show the thumbnail.
+    }
+  }, []);
+
+  function play() {
+    setPlaying(true);
+    try {
+      localStorage.setItem(COVER_VIDEO_SEEN_KEY, "1");
+    } catch {
+      // Not remembered; harmless.
+    }
+  }
+
+  if (seen && !playing) {
+    return (
+      <button
+        type="button"
+        onClick={play}
+        className="bp-no-print group inline-flex shrink-0 items-center gap-3 self-start rounded-full bg-white/10 py-2 pl-2 pr-5 text-left ring-1 ring-white/20 backdrop-blur-md transition-colors hover:bg-white/16 @3xl:self-center"
+      >
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#0c5290] shadow-[0_6px_16px_rgba(2,12,27,0.3)] transition-transform group-hover:scale-105">
+          <Play className="ml-0.5 h-4 w-4 fill-current" aria-hidden />
+        </span>
+        <span className="leading-tight">
+          <span className="block text-sm font-semibold text-white">Why we build it for you</span>
+          <span className="block text-xs text-white/65">A welcome from Zander · 1 min 30</span>
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="bp-no-print w-full max-w-[28rem] shrink-0 overflow-hidden rounded-2xl bg-[#051e36] shadow-[0_18px_40px_rgba(2,12,27,0.35)] ring-1 ring-white/15 @3xl:w-[22rem] @5xl:w-[26rem]">
+      {playing ? (
+        <video
+          className="block aspect-video w-full"
+          controls
+          autoPlay
+          playsInline
+          src={COVER_VIDEO}
+          aria-label="Why we build it for you, a welcome from Zander"
+        />
+      ) : (
+        <button type="button" onClick={play} className="group relative block w-full" aria-label="Play: why we build it for you, a welcome from Zander">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={COVER_POSTER} alt="" className="block aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function BlueprintCover({ flush = false }: { flush?: boolean }) {
   const { coachName, payload } = usePractice();
   const progress = useBlueprintProgress();
@@ -379,17 +440,22 @@ export function BlueprintCover({ flush = false }: { flush?: boolean }) {
   if (flush) {
     return (
       <header className="bp-cover px-6 pb-10 pt-9 text-white @2xl:px-12 @2xl:pb-11 @2xl:pt-11">
-        {name ? (
-          <p className="text-[0.8125rem] font-semibold uppercase tracking-[0.32em] text-white/80">{name}</p>
-        ) : null}
-        <h1 className="bp-display mt-4 text-[2.75rem] font-medium leading-[0.98] tracking-[-0.035em] @2xl:text-[3.75rem]">
-          Your Portfolio
-          <br />
-          <span className="italic font-normal text-[#bfe2fb]">Blueprint</span>
-        </h1>
-        <p className="mt-5 max-w-[46ch] text-[1.0625rem] leading-[1.55] text-white/80">
-          You bring the story, the proof and the voice. We turn it into your market, your messages and your offer, ready to launch.
-        </p>
+        <div className="flex flex-col gap-7 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:gap-10">
+          <div className="min-w-0">
+            {name ? (
+              <p className="text-[0.8125rem] font-semibold uppercase tracking-[0.32em] text-white/80">{name}</p>
+            ) : null}
+            <h1 className="bp-display mt-4 text-[2.75rem] font-medium leading-[0.98] tracking-[-0.035em] @2xl:text-[3.75rem]">
+              Your Portfolio
+              <br />
+              <span className="italic font-normal text-[#bfe2fb]">Blueprint</span>
+            </h1>
+            <p className="mt-5 max-w-[46ch] text-[1.0625rem] leading-[1.55] text-white/80">
+              You bring the story, the proof and the voice. We turn it into your market, your messages and your offer, ready to launch.
+            </p>
+          </div>
+          <CoverVideo />
+        </div>
       </header>
     );
   }

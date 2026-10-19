@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   FolderOpen,
   ListTodo,
   Loader2,
+  Newspaper,
   PenLine,
   RefreshCw,
   Settings2,
@@ -36,6 +37,8 @@ import {
   type ContentStatusPayload,
 } from "@/lib/getClients/hubFetchers";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useLinkedInHistory } from "./linkedin/useLinkedInHistory";
+import { LinkedInHistoryStats } from "./linkedin/LinkedInHistoryStats";
 
 const LinkedInCalendarTab = dynamic(() =>
   import("./linkedin/LinkedInCalendarTab").then((m) => ({
@@ -57,11 +60,17 @@ const LinkedInInsightsTab = dynamic(() =>
     default: m.LinkedInInsightsTab,
   }))
 );
+const NewsletterIssuesTab = dynamic(() =>
+  import("./linkedin/NewsletterIssuesTab").then((m) => ({
+    default: m.NewsletterIssuesTab,
+  }))
+);
 
 type TabId =
   | "compose"
   | "queue"
   | "calendar"
+  | "newsletter"
   | "library"
   | "insights"
   | "settings";
@@ -70,6 +79,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof PenLine }> = [
   { id: "compose", label: "Compose", icon: PenLine },
   { id: "queue", label: "Queue", icon: ListTodo },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
+  { id: "newsletter", label: "Newsletter", icon: Newspaper },
   { id: "library", label: "Library", icon: FolderOpen },
   { id: "insights", label: "Insights", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings2 },
@@ -77,6 +87,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof PenLine }> = [
 
 export function LinkedInSchedulerPanel() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const linkedinStatus = searchParams.get("linkedin");
   const { impersonatingCoachId } = useImpersonation();
   const statusKey = hubQueryKey("content:status", impersonatingCoachId);
@@ -141,6 +152,21 @@ export function LinkedInSchedulerPanel() {
     []
   );
 
+  const getHistoryHeaders = useCallback(async () => {
+    try {
+      return { Authorization: `Bearer ${await getToken()}` };
+    } catch {
+      return null;
+    }
+  }, [getToken]);
+  const history = useLinkedInHistory(getHistoryHeaders);
+  const [openIssueId, setOpenIssueId] = useState<string | null>(null);
+
+  async function handleImportHistory() {
+    const error = await history.runImport();
+    onMessage(error ?? "Your LinkedIn posts and newsletter issues are up to date.", error ? "error" : "success");
+  }
+
   const applyStatus = useCallback((payload: ContentStatusPayload) => {
     setConnected(payload.connected);
     const nextProfile: LinkedInProfilePreview = {
@@ -179,9 +205,11 @@ export function LinkedInSchedulerPanel() {
       ]);
       applyStatus(status);
       applyScheduled(scheduled);
+      void history.reload();
     } catch {
       onMessage("Could not load LinkedIn workspace.", "error");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applyScheduled, applyStatus, onMessage, scheduledKey, statusKey]);
 
   useEffect(() => {
@@ -210,7 +238,9 @@ export function LinkedInSchedulerPanel() {
       tabParam === "compose" ||
       tabParam === "queue" ||
       tabParam === "calendar" ||
+      tabParam === "newsletter" ||
       tabParam === "library" ||
+      tabParam === "insights" ||
       tabParam === "settings"
     ) {
       setTab(tabParam);
@@ -524,9 +554,27 @@ export function LinkedInSchedulerPanel() {
           ) : (
           <LinkedInCalendarTab
             items={items}
+            history={history.data?.posts}
+            issues={history.data?.issues}
             onSelectPost={() => setTab("queue")}
+            onOpenIssue={(id) => {
+              setOpenIssueId(id);
+              setTab("newsletter");
+            }}
           />
           )
+        ) : null}
+        {shownTab === "newsletter" ? (
+          <NewsletterIssuesTab
+            history={history.data}
+            loading={history.loading}
+            importing={history.importing}
+            onImport={() => void handleImportHistory()}
+            getHeaders={getHistoryHeaders}
+            openIssueId={openIssueId}
+            onOpenIssue={setOpenIssueId}
+            blueprintHref={pathname?.startsWith("/admin") ? null : "/coach/blueprint/content"}
+          />
         ) : null}
         {shownTab === "library" ? (
           !scheduledReady ? (
@@ -554,11 +602,19 @@ export function LinkedInSchedulerPanel() {
               Loading insights…
             </div>
           ) : (
-          <LinkedInInsightsTab
-            items={items}
-            getToken={getToken}
-            onMessage={onMessage}
-          />
+          <div className="space-y-6">
+            <LinkedInHistoryStats
+              history={history.data}
+              loading={history.loading}
+              importing={history.importing}
+              onImport={() => void handleImportHistory()}
+            />
+            <LinkedInInsightsTab
+              items={items}
+              getToken={getToken}
+              onMessage={onMessage}
+            />
+          </div>
           )
         ) : null}
         {shownTab === "settings" ? (

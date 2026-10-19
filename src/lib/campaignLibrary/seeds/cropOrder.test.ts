@@ -9,13 +9,32 @@ import {
 describe("CROP template order", () => {
   it("seeds Connection, Reactivation, Ongoing nurture, then Positive replies", () => {
     assert.deepEqual(
-      LIBRARY_SEEDS.map((seed) => seed.kind),
+      [...new Set(LIBRARY_SEEDS.map((seed) => seed.kind))],
       [...CAMPAIGN_LIBRARY_KINDS]
     );
     assert.deepEqual(
       LIBRARY_SEEDS.map((seed) => seed.name),
-      ["Connection", "Reactivation", "Ongoing nurture", "Positive replies"]
+      [
+        "Connection",
+        "Tribe connection",
+        "Reactivation",
+        "Warm network",
+        "Ongoing nurture",
+        "Positive replies",
+      ]
     );
+  });
+
+  it("puts no link in any connection note or cold first message", () => {
+    for (const seed of LIBRARY_SEEDS) {
+      if (seed.kind !== "connector" && seed.kind !== "reactivation") continue;
+      for (const step of seed.steps) {
+        const bodies = [step.body ?? "", ...(step.variants ?? []).map((v) => v.body)];
+        for (const body of bodies) {
+          assert.equal(/https?:|{{(assessment_url|scorecard_link|scorecard_url)}}/.test(body), false, `${seed.name}: ${body.slice(0, 40)}`);
+        }
+      }
+    }
   });
 
   it("sorts published templates into CROP order even when recency is reversed", () => {

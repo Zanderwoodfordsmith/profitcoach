@@ -1,0 +1,128 @@
+/*
+ * Glass modal, the same look as the search overlay (searchMotion.css): a
+ * brand-navy dim, the page content blurred behind it while the sidebar and
+ * title bar stay sharp, and a see-through white panel with an iridescent edge.
+ *
+ * Write only the standard backdrop-filter: the CSS build adds Safari's prefix
+ * itself, and given both it kept only the prefixed one, which Chrome ignores.
+ * Deliberately no prefers-reduced-transparency override (Zander, Oct 2026).
+ */
+/* Same light dim as search's backdrop, so the sidebar and title bar stay
+   almost untouched; the extra darkness lives on the content scrim below.
+   It fades on its own layer: an opacity animation on the overlay itself
+   would stop the scrim's backdrop-filter from reaching the page in Chrome. */
+.glass-modal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    70% 60% at 58% 38%,
+    rgb(5 30 54 / 0.14),
+    rgb(5 30 54 / 0.38)
+  );
+  animation: glass-modal-fade 200ms ease-out both;
+}
+
+/* Page content only (never the sidebar or title bar) steps back: darker and
+   blurred, a touch darker than search so the panel text reads easily.
+   Clicks pass through to the overlay to close. */
+.glass-modal-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: rgb(5 30 54 / 0.3);
+  backdrop-filter: blur(8px);
+  animation: glass-modal-scrim-in 280ms ease-out;
+}
+
+@keyframes glass-modal-scrim-in {
+  from {
+    background-color: rgb(5 30 54 / 0);
+    backdrop-filter: none;
+  }
+}
+
+/* Phone: close to solid, there is little page left to see through. */
+.glass-modal-panel {
+  position: relative;
+  background: rgb(248 250 252 / 0.96);
+  backdrop-filter: blur(30px) saturate(160%);
+  box-shadow: 0 28px 70px -20px rgb(5 30 54 / 0.5);
+  animation: glass-modal-panel-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (min-width: 640px) {
+  /* Insets are the sidebar and AI panel widths, measured when it opens. */
+  .glass-modal {
+    padding-left: calc(var(--glass-inset-left, 0px) + 1.5rem);
+    padding-right: calc(var(--glass-inset-right, 0px) + 1.5rem);
+  }
+
+  .glass-modal-scrim {
+    top: var(--glass-inset-top, 0px);
+    left: var(--glass-inset-left, 0px);
+    right: var(--glass-inset-right, 0px);
+  }
+
+  .glass-modal-panel {
+    background:
+      radial-gradient(90% 60% at 0% 0%, rgb(56 189 248 / 0.12), transparent 60%),
+      linear-gradient(140deg, rgb(255 255 255 / 0.86) 0%, rgb(255 255 255 / 0.74) 100%);
+    backdrop-filter: blur(48px) saturate(170%);
+    box-shadow:
+      inset 0 0 24px rgb(255 255 255 / 0.3),
+      inset 0 -1px 0 rgb(56 189 248 / 0.18),
+      0 0 0 0.5px rgb(15 23 42 / 0.1),
+      0 28px 70px -20px rgb(5 30 54 / 0.5),
+      0 0 56px -14px rgb(56 189 248 / 0.35);
+  }
+
+  /* Iridescent 1px edge, bright white at the top left through sky. */
+  .glass-modal-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      140deg,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(186 230 253 / 0.7) 28%,
+      rgb(255 255 255 / 0.25) 52%,
+      rgb(125 211 252 / 0.6) 80%,
+      rgb(255 255 255 / 0.75) 100%
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-modal-panel {
+    background: rgb(240 246 252);
+  }
+}
+
+@keyframes glass-modal-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes glass-modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-modal-panel {
+    animation: glass-modal-fade 140ms ease both;
+  }
+}

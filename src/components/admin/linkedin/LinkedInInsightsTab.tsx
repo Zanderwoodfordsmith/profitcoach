@@ -58,19 +58,21 @@ export function LinkedInInsightsTab({
 
   if (!published.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-16 text-center">
-        <BarChart3 className="mx-auto h-8 w-8 text-slate-300" />
-        <p className="mt-3 text-sm font-medium text-slate-800">
-          No published posts yet
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-8 text-center">
+        <BarChart3 className="mx-auto h-6 w-6 text-slate-300" />
+        <p className="mt-2 text-sm font-medium text-slate-800">
+          Nothing published from here yet
         </p>
         <p className="mt-1 text-xs text-slate-500">
-          Publish from Compose, then pull comments and reactions here.
+          Posts you publish from Compose show their comments and reactions here.
         </p>
       </div>
     );
   }
 
   return (
+    <section>
+    <h3 className="mb-3 text-sm font-semibold text-slate-900">Published from here</h3>
     <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
       {published.map((post) => {
         const eng = byId[post.id] || post.engagement || undefined;
@@ -141,5 +143,6 @@ export function LinkedInInsightsTab({
         );
       })}
     </ul>
+    </section>
   );
 }

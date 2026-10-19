@@ -171,7 +171,7 @@ export function buildPracticeBrief(
   if (!proofBlocks.length) {
     proofBlocks.push({
       kind: "gap",
-      text: "Still open. One commercial result with a from, a to, and a timeframe.",
+      text: "Still open. One result for a business: the number before, the number after, and how long it took.",
     });
   }
 

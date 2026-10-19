@@ -13,6 +13,7 @@ import {
   AdminCoachLinkedInPanel,
   type AdminCoachLinkedInProfile,
 } from "@/components/admin/AdminCoachLinkedInPanel";
+import { AdminCoachContentHistory } from "@/components/admin/AdminCoachContentHistory";
 import { CoachProfileBlueprint } from "@/components/admin/CoachProfileBlueprint";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
@@ -904,6 +905,7 @@ export default function AdminCoachDetailPage({
           ) : null}
 
           {activeTab === "linkedin" ? (
+            <div className="space-y-6">
             <AdminCoachLinkedInPanel
               coachId={coach.id}
               linkedinUrl={coach.linkedin_url}
@@ -920,6 +922,8 @@ export default function AdminCoachDetailPage({
                 );
               }}
             />
+            <AdminCoachContentHistory coachId={coach.id} />
+            </div>
           ) : null}
 
           {activeTab === "blueprint" ? (

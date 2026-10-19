@@ -34,6 +34,10 @@ export type CoachHealthRow = {
   interested_30d: number;
   calls_30d: number;
   median_reply_hours: number | null;
+  /** From their imported LinkedIn history; null until it has been imported. */
+  posts_30d: number | null;
+  last_post_days: number | null;
+  issues_90d: number | null;
 };
 
 async function all<T>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
@@ -102,7 +106,8 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
   const ids = active.map((c) => c.id);
   if (!ids.length) return [];
 
-  const [profiles, accounts, knowledge, campaigns, jobs, leadsRecent, ghl, bookings, sessions, msgs] = await Promise.all([
+  const since90 = new Date(Date.now() - 90 * DAY).toISOString();
+  const [profiles, accounts, knowledge, campaigns, jobs, leadsRecent, ghl, bookings, sessions, msgs, postImports, recentPosts, recentIssues] = await Promise.all([
     supabaseAdmin.from("profiles").select("id, full_name").in("id", ids),
     supabaseAdmin.from("linkedin_outreach_accounts").select("coach_id, provider, status, ssi_score").in("coach_id", ids),
     supabaseAdmin.from("coach_practice_knowledge").select("coach_id, status, completeness_score").in("coach_id", ids),
@@ -131,6 +136,13 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
         .gte("created_at", since30)
         .order("created_at", { ascending: true })
         .range(f, t)
+    ),
+    supabaseAdmin.from("linkedin_history_imports").select("user_id, last_ok_at, last_post_at").in("user_id", ids),
+    all<{ user_id: string; posted_at: string }>((f, t) =>
+      supabaseAdmin.from("linkedin_post_history").select("user_id, posted_at").in("user_id", ids).gte("posted_at", since30).range(f, t)
+    ),
+    all<{ user_id: string }>((f, t) =>
+      supabaseAdmin.from("linkedin_newsletter_issues").select("user_id").in("user_id", ids).gte("published_at", since90).range(f, t)
     ),
   ]);
 
@@ -203,6 +215,14 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
     }
   }
 
+  // LinkedIn posting, only for coaches whose history has been imported.
+  const imported = new Map<string, string | null>();
+  for (const r of postImports.data ?? []) if (r.last_ok_at) imported.set(r.user_id as string, (r.last_post_at as string | null) ?? null);
+  const posts30 = new Map<string, number>();
+  for (const p of recentPosts) posts30.set(p.user_id, (posts30.get(p.user_id) ?? 0) + 1);
+  const issues90 = new Map<string, number>();
+  for (const i of recentIssues) issues90.set(i.user_id, (issues90.get(i.user_id) ?? 0) + 1);
+
   const nameOf = new Map((profiles.data ?? []).map((p) => [p.id as string, (p.full_name as string) || ""]));
   const accountOf = new Map<string, { status: string; ssi: number | null }>();
   for (const a of accounts.data ?? []) {
@@ -236,6 +256,9 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
         interested_30d: interested.get(c.id) ?? 0,
         calls_30d: calls.get(c.id) ?? 0,
         median_reply_hours: median(waits.get(c.id) ?? []),
+        posts_30d: imported.has(c.id) ? posts30.get(c.id) ?? 0 : null,
+        last_post_days: imported.get(c.id) ? Math.floor((Date.now() - Date.parse(imported.get(c.id)!)) / DAY) : null,
+        issues_90d: imported.has(c.id) ? issues90.get(c.id) ?? 0 : null,
       };
       return { ...base, ...diagnose(base) };
     })

@@ -58,6 +58,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/linkedin-history",
+      "schedule": "20 * * * *"
+    },
+    {
       "path": "/api/cron/ava-followups",
       "schedule": "*/10 * * * *"
     }

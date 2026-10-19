@@ -15,23 +15,23 @@ Ring any bells, or is it different your end?`;
 
 const MSG2_A = `Hi {{first_name}}, great to have you in my network.
 
-Are you focused on growing your business at the moment, or more on maintaining what you've already built?`;
+Are you focused on growing your business at the moment, or more on keeping what you've already built?`;
 
-const MSG3 = `Hi {{first_name}}, one thing I see either way,  whether someone's pushing for growth or protecting what they've built... is that every business has a weakest link, and most owners are guessing which one it is.
+const MSG3 = `Hi {{first_name}}, one thing I see in nearly every business, growing or steady: there's a weakest link, and most owners are guessing which one it is.
 
 Growth tends to break it. Steady tends to hide it.
 
 If you had to guess, where's yours?`;
 
-const MSG4 = `Hi {{first_name}}, that's one of the reasons we built the BOSS Scorecard . It's designed to find the root constraint rather than just the symptoms.
+const MSG4 = `Hi {{first_name}}, a quick bit of maths I share with owners.
 
-If you fancy giving it a go, I can send you a personalised link.`;
+Five numbers sit behind revenue: leads, conversion, average sale, how often people buy, and margin. Improve each by 10% and the result grows by about 61%, because they multiply.
 
-const MSG5 = `Hi {{first_name}}, I’ll leave this here in case it’s useful: {{scorecard_link}}
+Which of the five has the most room in yours?`;
 
-The BOSS Scorecard is a short assessment designed to show where the biggest constraint may be across profit, performance and owner-dependence.
+const MSG5 = `I'll leave it there, {{first_name}}. If the business ever starts needing you more than you'd like, I'm easy to find.
 
-No pressure to use it. I’ll leave you to it.`;
+Either way, good luck with the rest of the year.`;
 
 export const CONNECTOR_LIBRARY_SEED: CampaignLibrarySeed = {
   sourceKey: "connector",
@@ -40,7 +40,7 @@ export const CONNECTOR_LIBRARY_SEED: CampaignLibrarySeed = {
   name: "Connection",
   previousNames: ["Connector"],
   description:
-    "Blank LinkedIn invite, then observation (control) vs growth/maintain. Weakest-link value, permission for the scorecard, then the link with no extra ask.",
+    "Blank invite, then short messages with one question each: observation (control) vs growth/keep, the weakest link, the five levers, then a warm close. No links. Move quiet people into Ongoing nurture.",
   status: "published",
   settings: { daily_invite_limit: 9, stop_on_reply: true },
   steps: spaced([
@@ -48,7 +48,7 @@ export const CONNECTOR_LIBRARY_SEED: CampaignLibrarySeed = {
     waitStep(24),
     messageStep(MSG2_B, [
       { key: "B", label: "Observation (control)", body: MSG2_B },
-      { key: "A", label: "Growth vs maintain", body: MSG2_A },
+      { key: "A", label: "Growth vs keep", body: MSG2_A },
     ]),
     waitStep(72),
     messageStep(MSG3),

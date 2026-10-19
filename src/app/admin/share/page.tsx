@@ -3,6 +3,7 @@
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { ShareLinksHub } from "@/components/shareLinks/ShareLinksHub";
+import { ToolkitTabs } from "@/components/toolkit/ToolkitTabs";
 import { useRequireAdminRole } from "@/hooks/useRequireAdminRole";
 
 export default function AdminShareLinksPage() {
@@ -19,6 +20,7 @@ export default function AdminShareLinksPage() {
         />
       }
     >
+      <ToolkitTabs active="links" />
       <ShareLinksHub />
     </DashboardPageSection>
   );

@@ -1,20 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
+import {
+  AtSign,
+  CalendarDays,
+  Check,
+  ClipboardList,
+  Copy,
+  FileText,
+  Gauge,
+  Globe,
+  LayoutDashboard,
+  Link2,
+  Plus,
+  Share2,
+  type LucideIcon,
+} from "lucide-react";
 import { PublicSlugEditor } from "@/components/leadMagnets/PublicSlugEditor";
 import {
   ShareToProspectModal,
   type ShareTarget,
 } from "@/components/shareLinks/ShareToProspectModal";
-import {
-  ContentWithRail,
-  ContentWithRailAside,
-  ContentWithRailMain,
-} from "@/components/layout";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { callsCalendarsHref } from "@/lib/booking/callsCalendarsPath";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
@@ -57,174 +65,109 @@ function prettyUrl(url: string) {
 }
 
 const shareClass =
-  "shrink-0 text-[15px] font-semibold text-[#0c5290] transition hover:text-[#051e36] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/30 disabled:text-slate-300";
+  "shrink-0 text-sm font-semibold text-[#0c5290] transition hover:text-[#051e36] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/30 disabled:text-slate-300";
 const ghostClass =
   "text-sm font-medium text-slate-500 transition hover:text-slate-800";
 const quietInput =
   "w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400";
+const iconButton =
+  "flex h-8 w-8 items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/30 disabled:pointer-events-none disabled:text-slate-300";
 
-function ProductCard({
+/** One group of links (Scorecards, Book a call…) inside the single Links table. */
+function LinkSection({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-t border-slate-200 first:border-t-0">
+      <div className="flex min-h-9 items-center justify-between gap-3 bg-slate-50/70 px-4 py-1.5 sm:px-5">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {title}
+        </h2>
+        {action}
+      </div>
+      <ul className="divide-y divide-slate-100">{children}</ul>
+    </section>
+  );
+}
+
+/** Icon, name, short description, link, then copy and share. */
+function LinkRow({
+  icon: Icon,
   title,
   detail,
   displayUrl,
   copied,
-  imageSrc,
-  imageAlt,
   onCopy,
   onShare,
   disabled,
-  footer,
+  disabledHint,
+  trailing,
 }: {
+  icon: LucideIcon;
   title: string;
   detail?: string;
+  /** Shown in the link column; plain text when there is no single link. */
   displayUrl?: string;
   copied?: boolean;
-  imageSrc?: string;
-  imageAlt?: string;
   onCopy?: () => void;
   onShare?: () => void;
   disabled?: boolean;
-  footer?: ReactNode;
+  disabledHint?: string;
+  trailing?: ReactNode;
 }) {
   return (
-    <article className="flex min-h-[132px] w-full flex-col rounded-2xl border border-slate-200 bg-white px-[1.125rem] py-4 text-left shadow-[0_1px_2px_rgb(15_23_42/0.05),0_3px_8px_-3px_rgb(15_23_42/0.08)]">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="text-xl font-semibold leading-snug tracking-tight text-slate-900">
-          {title}
-        </h2>
+    <li className="group flex items-center gap-3 px-4 py-2.5 sm:px-5">
+      <Icon className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+      <div className="min-w-0 flex-1 sm:grid sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-center sm:gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_minmax(0,17rem)]">
+        <p className="truncate text-[15px] font-medium text-slate-900">{title}</p>
+        <p className="truncate text-sm text-slate-500">{detail}</p>
+        <p className="hidden truncate text-sm text-slate-400 lg:block">
+          {displayUrl ? prettyUrl(displayUrl) : null}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-0.5">
+        {trailing}
+        {onCopy ? (
+          <button
+            type="button"
+            onClick={onCopy}
+            disabled={disabled}
+            title={disabled ? disabledHint : copied ? "Copied" : "Copy link"}
+            aria-label={copied ? `${title} link copied` : `Copy ${title} link`}
+            className={`${iconButton} ${copied ? "text-emerald-600" : "text-slate-400 hover:bg-slate-100 hover:text-slate-800"}`}
+          >
+            {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+          </button>
+        ) : null}
         {onShare ? (
           <button
             type="button"
             onClick={onShare}
             disabled={disabled}
-            className={shareClass}
+            title={disabled ? disabledHint : "Share"}
+            aria-label={`Share ${title}`}
+            className={`${iconButton} text-[#0c5290] hover:bg-[#0c5290]/10`}
           >
-            Share
+            <Share2 className="h-4 w-4" aria-hidden />
           </button>
         ) : null}
       </div>
-      <div className="mt-3 flex w-full min-w-0 gap-3">
-        <div className="min-w-0 flex-1">
-          {detail ? (
-            <p className="text-base leading-relaxed text-slate-600">{detail}</p>
-          ) : null}
-          {displayUrl ? (
-            onCopy ? (
-              <button
-                type="button"
-                onClick={onCopy}
-                className="mt-1 block max-w-full truncate text-left text-sm text-slate-400 transition hover:text-slate-600"
-                title="Copy link"
-              >
-                {copied ? "Copied" : prettyUrl(displayUrl)}
-              </button>
-            ) : (
-              <p className="mt-1 truncate text-sm text-slate-400">
-                {prettyUrl(displayUrl)}
-              </p>
-            )
-          ) : null}
-          {footer}
-        </div>
-        {imageSrc ? (
-          <div className="relative h-[80px] w-[92px] shrink-0 overflow-hidden rounded-lg bg-slate-100">
-            <Image
-              src={imageSrc}
-              alt={imageAlt ?? ""}
-              fill
-              className="object-cover object-top"
-              sizes="92px"
-            />
-          </div>
-        ) : null}
-      </div>
-    </article>
-  );
-}
-
-function RailCard({
-  title,
-  children,
-}: {
-  title?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
-      {title ? (
-        <div className="border-b border-slate-100 px-4 pb-3 pt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
-            {title}
-          </p>
-        </div>
-      ) : null}
-      <div className="p-4">{children}</div>
-    </div>
-  );
-}
-
-function RailRow({
-  title,
-  displayUrl,
-  copied,
-  onCopy,
-  onShare,
-  trailing,
-}: {
-  title: string;
-  displayUrl?: string;
-  copied?: boolean;
-  onCopy?: () => void;
-  onShare?: () => void;
-  trailing?: ReactNode;
-}) {
-  return (
-    <div className="group flex items-start justify-between gap-3 py-2">
-      <div className="min-w-0">
-        <p className="truncate text-[0.8125rem] font-semibold leading-snug text-slate-900">
-          {title}
-        </p>
-        {displayUrl ? (
-          onCopy ? (
-            <button
-              type="button"
-              onClick={onCopy}
-              className="mt-0.5 block max-w-full truncate text-left text-[11px] leading-snug text-slate-500 hover:text-slate-700"
-              title="Copy link"
-            >
-              {copied ? "Copied" : prettyUrl(displayUrl)}
-            </button>
-          ) : (
-            <p className="mt-0.5 truncate text-[11px] text-slate-500">
-              {prettyUrl(displayUrl)}
-            </p>
-          )
-        ) : null}
-      </div>
-      <div className="flex shrink-0 items-center gap-2 pt-0.5">
-        {trailing}
-        {onShare ? (
-          <button type="button" onClick={onShare} className={shareClass}>
-            Share
-          </button>
-        ) : null}
-      </div>
-    </div>
+    </li>
   );
 }
 
 function LinksSkeleton() {
   return (
-    <ContentWithRail className="pb-10 pt-1">
-      <ContentWithRailMain className="flex flex-col gap-6 pt-1">
-        <div className="h-[132px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
-        <div className="h-[132px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
-        <div className="h-[132px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
-      </ContentWithRailMain>
-      <ContentWithRailAside className="lg:top-24">
-        <div className="h-52 animate-pulse rounded-xl border border-slate-200 bg-white" />
-      </ContentWithRailAside>
-    </ContentWithRail>
+    <div className="space-y-4 pb-10 pt-1">
+      <div className="ml-auto h-8 w-72 animate-pulse rounded-lg bg-slate-100" />
+      <div className="h-96 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+    </div>
   );
 }
 
@@ -490,20 +433,35 @@ export function ShareLinksHub() {
     return <LinksSkeleton />;
   }
 
+  const noSlugHint = "Set your public URL first";
+  const editButton =
+    "rounded-md px-1.5 py-1 text-xs font-medium text-slate-400 transition hover:bg-slate-100 hover:text-slate-700";
+
   return (
-    <div className="selection:bg-[#0c5290]/15">
-      {error ? (
-        <p className="mb-4 text-sm text-rose-600">{error}</p>
+    <div className="space-y-4 pb-10 pt-1 selection:bg-[#0c5290]/15">
+      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">
+          Copy a link anyone can use, or share one made for one person.
+        </p>
+        <PublicSlugEditor slug={slug} onSlugChange={setSlug} layout="inline" />
+      </div>
+      {!slugReady ? (
+        <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Set your public URL to share your scorecards and booking pages.
+        </p>
       ) : null}
 
-      <ContentWithRail>
-        <ContentWithRailMain className="flex min-h-0 flex-col gap-6 pt-1">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.04)]">
+        <LinkSection title="Scorecards">
           {assessmentItems.map(({ magnet, copyUrl, displayUrl }) => {
             const isPro = magnet.id === "boss-score-pro";
             const title = isPro ? "Boss Score Pro" : "Boss Score";
             return (
-              <ProductCard
+              <LinkRow
                 key={magnet.id}
+                icon={isPro ? ClipboardList : Gauge}
                 title={title}
                 detail={
                   isPro
@@ -512,35 +470,39 @@ export function ShareLinksHub() {
                 }
                 displayUrl={displayUrl}
                 copied={copiedKey === magnet.id}
-                imageSrc={magnet.imageSrc}
-                imageAlt={magnet.imageAlt}
-                onCopy={slugReady ? () => void copy(magnet.id, copyUrl) : undefined}
-                onShare={
-                  slugReady
-                    ? () =>
-                        setShareTarget({
-                          kind: "assessment",
-                          product: isPro ? "boss-pro" : "boss-score",
-                          title,
-                          genericUrl: copyUrl,
-                        })
-                    : undefined
+                onCopy={() => void copy(magnet.id, copyUrl)}
+                onShare={() =>
+                  setShareTarget({
+                    kind: "assessment",
+                    product: isPro ? "boss-pro" : "boss-score",
+                    title,
+                    genericUrl: copyUrl,
+                  })
                 }
                 disabled={!slugReady}
+                disabledHint={noSlugHint}
               />
             );
           })}
+        </LinkSection>
 
+        <LinkSection
+          title="Book a call"
+          action={
+            <span className="flex items-center gap-3">
+              {offCount > 0 ? (
+                <span className="text-xs text-slate-400">{offCount} off</span>
+              ) : null}
+              <Link href={callsHref} className="text-xs font-medium text-slate-500 hover:text-slate-800">
+                Manage in Calls
+              </Link>
+            </span>
+          }
+        >
           {liveCalendars.length === 0 ? (
-            <ProductCard
-              title="Book a call"
-              detail="No public calendars yet."
-              footer={
-                <Link href={callsHref} className={`${ghostClass} mt-2 inline-block`}>
-                  Manage in Calls
-                </Link>
-              }
-            />
+            <li className="px-4 py-3 text-sm text-slate-500 sm:px-5">
+              No public calendars yet.
+            </li>
           ) : (
             liveCalendars.map((calendar) => {
               const path = coachBookPath(slug || "your-slug", calendar.slug);
@@ -550,8 +512,9 @@ export function ShareLinksHub() {
               );
               const copyUrl = magnetShareCopyUrl(path, appOrigin);
               return (
-                <ProductCard
+                <LinkRow
                   key={calendar.id}
+                  icon={CalendarDays}
                   title={calendar.name}
                   detail={
                     calendar.description?.trim() ||
@@ -559,42 +522,28 @@ export function ShareLinksHub() {
                   }
                   displayUrl={displayUrl}
                   copied={copiedKey === `cal-${calendar.id}`}
-                  onCopy={
-                    slugReady
-                      ? () => void copy(`cal-${calendar.id}`, copyUrl)
-                      : undefined
-                  }
-                  onShare={
-                    slugReady
-                      ? () =>
-                          setShareTarget({
-                            kind: "calendar",
-                            title: calendar.name,
-                            genericUrl: copyUrl,
-                          })
-                      : undefined
+                  onCopy={() => void copy(`cal-${calendar.id}`, copyUrl)}
+                  onShare={() =>
+                    setShareTarget({
+                      kind: "calendar",
+                      title: calendar.name,
+                      genericUrl: copyUrl,
+                    })
                   }
                   disabled={!slugReady}
-                  footer={
-                    calendar.id === liveCalendars[liveCalendars.length - 1]?.id ? (
-                      <span className="mt-2 flex items-center gap-2">
-                        <Link href={callsHref} className={`${ghostClass} inline-block`}>
-                          Manage in Calls
-                        </Link>
-                        {offCount > 0 ? (
-                          <span className="text-sm text-slate-400">{offCount} off</span>
-                        ) : null}
-                      </span>
-                    ) : null
-                  }
+                  disabledHint={noSlugHint}
                 />
               );
             })
           )}
+        </LinkSection>
 
-          <ProductCard
+        <LinkSection title="Reports">
+          <LinkRow
+            icon={FileText}
             title="Boss Score report"
             detail="Send the results page after they finish."
+            displayUrl="One per person"
             onShare={() =>
               setShareTarget({
                 kind: "report",
@@ -603,9 +552,11 @@ export function ShareLinksHub() {
               })
             }
           />
-          <ProductCard
+          <LinkRow
+            icon={LayoutDashboard}
             title="Boss Score Pro dashboard"
             detail="The workshop dashboard after a Pro session."
+            displayUrl="One per person"
             onShare={() =>
               setShareTarget({
                 kind: "report",
@@ -614,290 +565,309 @@ export function ShareLinksHub() {
               })
             }
           />
-        </ContentWithRailMain>
+        </LinkSection>
 
-        <ContentWithRailAside className="flex flex-col gap-4 lg:top-24">
-          <RailCard>
-            <PublicSlugEditor slug={slug} onSlugChange={setSlug} framed={false} />
-            <div className="mt-5">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                Profiles
-              </p>
-              {filledSocials.map((network) => {
-                const meta = SOCIAL_NETWORK_META[network];
-                const value = socials[network].trim();
-                return (
-                  <RailRow
-                    key={network}
-                    title={meta.label}
-                    displayUrl={value}
-                    copied={copiedKey === `social-${network}`}
-                    onCopy={() => void copy(`social-${network}`, value)}
-                    onShare={() =>
-                      setShareTarget({
-                        kind: "social",
-                        network,
-                        title: meta.label,
-                        genericUrl: value,
-                      })
-                    }
-                  />
-                );
-              })}
-              {addingSocial ? (
-                <div className="py-2">
-                  <p className="text-[0.8125rem] font-semibold text-slate-900">
-                    {SOCIAL_NETWORK_META[addingSocial].label}
-                  </p>
-                  <input
-                    autoFocus
-                    type="url"
-                    value={socials[addingSocial]}
-                    onChange={(e) =>
-                      setSocials((prev) => ({
-                        ...prev,
-                        [addingSocial]: e.target.value,
-                      }))
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void saveSocials();
-                      }
-                      if (e.key === "Escape") {
-                        setSocials(savedSocials);
-                        setAddingSocial(null);
-                      }
-                    }}
-                    placeholder={SOCIAL_NETWORK_META[addingSocial].placeholder}
-                    className={`${quietInput} mt-1.5 rounded-lg border border-slate-300 px-2.5 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500`}
-                  />
-                  <div className="mt-2 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void saveSocials()}
-                      disabled={socialSaving || !socials[addingSocial].trim()}
-                      className={shareClass}
-                    >
-                      {socialSaving ? "Saving" : "Save"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSocials(savedSocials);
-                        setAddingSocial(null);
-                      }}
-                      className={ghostClass}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-              {!addingSocial && emptySocials.length > 0 ? (
-                pickingSocial ? (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                    {emptySocials.map((network) => (
-                      <button
-                        key={network}
-                        type="button"
-                        onClick={() => {
-                          setAddingSocial(network);
-                          setPickingSocial(false);
-                        }}
-                        className={ghostClass}
-                      >
-                        {SOCIAL_NETWORK_META[network].label}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => setPickingSocial(false)}
-                      className={ghostClass}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setPickingSocial(true)}
-                    className={`${ghostClass} mt-1 inline-flex items-center gap-1.5`}
-                  >
-                    <Plus className="h-3.5 w-3.5" aria-hidden />
-                    Add a profile
-                  </button>
-                )
-              ) : null}
+        <LinkSection
+          title="Profiles"
+          action={
+            !addingSocial && emptySocials.length > 0 && !pickingSocial ? (
+              <button
+                type="button"
+                onClick={() => setPickingSocial(true)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800"
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                Add
+              </button>
+            ) : null
+          }
+        >
+          {filledSocials.map((network) => {
+            const meta = SOCIAL_NETWORK_META[network];
+            const value = socials[network].trim();
+            return (
+              <LinkRow
+                key={network}
+                icon={network === "website" ? Globe : AtSign}
+                title={meta.label}
+                detail={prettyUrl(value)}
+                copied={copiedKey === `social-${network}`}
+                onCopy={() => void copy(`social-${network}`, value)}
+                onShare={() =>
+                  setShareTarget({
+                    kind: "social",
+                    network,
+                    title: meta.label,
+                    genericUrl: value,
+                  })
+                }
+              />
+            );
+          })}
+          {filledSocials.length === 0 && !addingSocial && !pickingSocial ? (
+            <li className="px-4 py-3 text-sm text-slate-500 sm:px-5">
+              Add your LinkedIn, website or socials to share them from here.
+            </li>
+          ) : null}
+          {pickingSocial && !addingSocial ? (
+            <li className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 sm:px-5">
+              {emptySocials.map((network) => (
+                <button
+                  key={network}
+                  type="button"
+                  onClick={() => {
+                    setAddingSocial(network);
+                    setPickingSocial(false);
+                  }}
+                  className={ghostClass}
+                >
+                  {SOCIAL_NETWORK_META[network].label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPickingSocial(false)}
+                className="text-sm text-slate-400 hover:text-slate-700"
+              >
+                Cancel
+              </button>
+            </li>
+          ) : null}
+          {addingSocial ? (
+            <li className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
+              <span className="w-24 text-sm font-medium text-slate-900">
+                {SOCIAL_NETWORK_META[addingSocial].label}
+              </span>
+              <input
+                autoFocus
+                type="url"
+                value={socials[addingSocial]}
+                onChange={(e) =>
+                  setSocials((prev) => ({
+                    ...prev,
+                    [addingSocial]: e.target.value,
+                  }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void saveSocials();
+                  }
+                  if (e.key === "Escape") {
+                    setSocials(savedSocials);
+                    setAddingSocial(null);
+                  }
+                }}
+                placeholder={SOCIAL_NETWORK_META[addingSocial].placeholder}
+                aria-label={`${SOCIAL_NETWORK_META[addingSocial].label} URL`}
+                className={`${quietInput} min-w-0 flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 focus:border-sky-500 focus:ring-1 focus:ring-sky-500`}
+              />
+              <button
+                type="button"
+                onClick={() => void saveSocials()}
+                disabled={socialSaving || !socials[addingSocial].trim()}
+                className={shareClass}
+              >
+                {socialSaving ? "Saving" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSocials(savedSocials);
+                  setAddingSocial(null);
+                }}
+                className={ghostClass}
+              >
+                Cancel
+              </button>
+            </li>
+          ) : null}
+          {socialMessage || (socialsDirty && !addingSocial) ? (
+            <li className="flex items-center gap-3 px-4 py-2 sm:px-5">
               {socialMessage ? (
-                <p
-                  className={`pt-1 text-xs ${
+                <span
+                  className={`text-xs ${
                     socialMessage === "Saved" ? "text-slate-500" : "text-rose-600"
                   }`}
                 >
                   {socialMessage}
-                </p>
+                </span>
               ) : null}
               {socialsDirty && !addingSocial ? (
                 <button
                   type="button"
                   onClick={() => void saveSocials()}
                   disabled={socialSaving}
-                  className={`${shareClass} mt-2`}
+                  className={shareClass}
                 >
                   {socialSaving ? "Saving" : "Save"}
                 </button>
               ) : null}
-            </div>
-          </RailCard>
+            </li>
+          ) : null}
+        </LinkSection>
 
-          <RailCard title="Your links">
-            {customLinks.map((link) => {
-              const editing = editingId === link.id;
-              if (editing) {
-                return (
-                  <div key={link.id} className="space-y-2 py-2">
+        <LinkSection
+          title="Your links"
+          action={
+            !addingCustom ? (
+              <button
+                type="button"
+                onClick={() => setAddingCustom(true)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800"
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                Add
+              </button>
+            ) : null
+          }
+        >
+          {customLinks.map((link) => {
+            if (editingId === link.id) {
+              return (
+                <li key={link.id} className="px-4 py-3 sm:px-5">
+                  <div className="grid gap-2 sm:grid-cols-3">
                     <input
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
                       placeholder="Title"
                       aria-label="Title"
-                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-2`}
+                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
                     />
                     <input
                       value={editUrl}
                       onChange={(e) => setEditUrl(e.target.value)}
                       placeholder="https://"
                       aria-label="URL"
-                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-2`}
+                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
                     />
                     <input
                       value={editDescription}
                       onChange={(e) => setEditDescription(e.target.value)}
                       placeholder="Description (optional)"
                       aria-label="Description"
-                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-2`}
+                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
                     />
-                    <div className="flex gap-3 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => void saveCustomEdit(link.id)}
-                        className={shareClass}
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingId(null)}
-                        className={ghostClass}
-                      >
-                        Cancel
-                      </button>
-                    </div>
                   </div>
-                );
-              }
-              return (
-                <RailRow
-                  key={link.id}
-                  title={link.title}
-                  displayUrl={link.url}
-                  copied={copiedKey === `custom-${link.id}`}
-                  onCopy={() => void copy(`custom-${link.id}`, link.url)}
-                  onShare={() =>
-                    setShareTarget({
-                      kind: "generic",
-                      title: link.title,
-                      genericUrl: link.url,
-                    })
-                  }
-                  trailing={
-                    <span className="flex items-center gap-2 opacity-70 sm:opacity-0 sm:transition sm:group-hover:opacity-100">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingId(link.id);
-                          setEditTitle(link.title);
-                          setEditUrl(link.url);
-                          setEditDescription(link.description ?? "");
-                        }}
-                        className="text-[11px] font-medium text-slate-400 hover:text-slate-700"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void deleteCustomLink(link.id)}
-                        className="text-[11px] font-medium text-slate-400 hover:text-slate-700"
-                      >
-                        Delete
-                      </button>
-                    </span>
-                  }
-                />
+                  <div className="mt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void saveCustomEdit(link.id)}
+                      className={shareClass}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className={ghostClass}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </li>
               );
-            })}
-            {addingCustom ? (
-              <div className="space-y-2 py-2">
+            }
+            return (
+              <LinkRow
+                key={link.id}
+                icon={Link2}
+                title={link.title}
+                detail={link.description?.trim() || prettyUrl(link.url)}
+                displayUrl={link.description?.trim() ? link.url : undefined}
+                copied={copiedKey === `custom-${link.id}`}
+                onCopy={() => void copy(`custom-${link.id}`, link.url)}
+                onShare={() =>
+                  setShareTarget({
+                    kind: "generic",
+                    title: link.title,
+                    genericUrl: link.url,
+                  })
+                }
+                trailing={
+                  <span className="flex items-center opacity-100 sm:opacity-0 sm:transition sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(link.id);
+                        setEditTitle(link.title);
+                        setEditUrl(link.url);
+                        setEditDescription(link.description ?? "");
+                      }}
+                      className={editButton}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void deleteCustomLink(link.id)}
+                      className={editButton}
+                    >
+                      Delete
+                    </button>
+                  </span>
+                }
+              />
+            );
+          })}
+          {customLinks.length === 0 && !addingCustom ? (
+            <li className="px-4 py-3 text-sm text-slate-500 sm:px-5">
+              Add any other page you send people, like a case study or a workshop.
+            </li>
+          ) : null}
+          {addingCustom ? (
+            <li className="px-4 py-3 sm:px-5">
+              <div className="grid gap-2 sm:grid-cols-3">
                 <input
                   autoFocus
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Title"
                   aria-label="Title"
-                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-2`}
+                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
                 />
                 <input
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
                   placeholder="https://"
                   aria-label="URL"
-                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-2`}
+                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
                 />
                 <input
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="Description (optional)"
                   aria-label="Description"
-                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-2`}
+                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
                 />
-                {addError ? (
-                  <p className="text-xs text-rose-600">{addError}</p>
-                ) : null}
-                <div className="flex gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => void addCustomLink()}
-                    disabled={adding}
-                    className={shareClass}
-                  >
-                    {adding ? "Adding" : "Add"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddingCustom(false);
-                      setAddError(null);
-                    }}
-                    className={ghostClass}
-                  >
-                    Cancel
-                  </button>
-                </div>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setAddingCustom(true)}
-                className={`${ghostClass} mt-1 inline-flex items-center gap-1.5`}
-              >
-                <Plus className="h-3.5 w-3.5" aria-hidden />
-                Add a link
-              </button>
-            )}
-          </RailCard>
-        </ContentWithRailAside>
-      </ContentWithRail>
+              {addError ? (
+                <p className="mt-2 text-xs text-rose-600">{addError}</p>
+              ) : null}
+              <div className="mt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => void addCustomLink()}
+                  disabled={adding}
+                  className={shareClass}
+                >
+                  {adding ? "Adding" : "Add"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddingCustom(false);
+                    setAddError(null);
+                  }}
+                  className={ghostClass}
+                >
+                  Cancel
+                </button>
+              </div>
+            </li>
+          ) : null}
+        </LinkSection>
+      </div>
 
       <ShareToProspectModal
         open={shareTarget != null}

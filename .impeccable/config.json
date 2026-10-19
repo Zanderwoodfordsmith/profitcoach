@@ -127,6 +127,15 @@
         "value": "inter",
         "createdAt": "2026-10-17T15:42:30.903Z",
         "reason": "Print pack and Toolkit already ship Inter Tight / Inter as the brand face; the 90-day brochure inherits that world."
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/lib/linkedinHistory/parse.test.ts"
+        ],
+        "createdAt": "2026-10-19T12:38:00.871Z",
+        "reason": "Claude: the img is inside a LinkedIn HTML string used as a parser test fixture, never rendered"
       }
     ]
   }

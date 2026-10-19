@@ -3,6 +3,7 @@
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { ShareLinksHub } from "@/components/shareLinks/ShareLinksHub";
+import { ToolkitTabs } from "@/components/toolkit/ToolkitTabs";
 
 export default function CoachShareLinksPage() {
   return (
@@ -16,6 +17,7 @@ export default function CoachShareLinksPage() {
         />
       }
     >
+      <ToolkitTabs active="links" />
       <ShareLinksHub />
     </DashboardPageSection>
   );

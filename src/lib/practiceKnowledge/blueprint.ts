@@ -204,10 +204,10 @@ const GROUPS: BlueprintGroup[] = [
             title: "Commercial achievements",
             source: "from_you",
             about: "Your strongest results with numbers. The single most useful thing you can give us: every message we write leads with one.",
-            from: ["Conversation: career results with a from, a to, and a timeframe"],
+            from: ["Conversation: career results with the number before, the number after, and how long it took"],
             feeds: "LinkedIn rewrite, campaign messaging, call script",
             fields: [
-              { path: "proof.career_results", label: "Results", kind: "results", required: true, example: "Cut debtor days from 74 to 31 in 9 months as Finance Director at Harlow & Pike", help: "A from, a to and a timeframe. \"Grew profit a lot\" does not work. \"Grew profit from £150k to £900k in 3 years\" does.", ask: "What is your strongest commercial result? I need a from, a to, and a timeframe." },
+              { path: "proof.career_results", label: "Results", kind: "results", required: true, example: "Cut debtor days from 74 to 31 in 9 months as Finance Director at Harlow & Pike", help: "The number before, the number after, and how long it took. \"Grew profit a lot\" does not work. \"Grew profit from £150k to £900k in 3 years\" does.", ask: "What is the best result you have got for a business? Tell me the number before, the number after, and how long it took. For example, profit went from £150k to £900k in 3 years." },
               { path: "proof.client_results", label: "Client stories", kind: "stories", example: "Took a 20-person builder from 4% to 11% net margin in a year", help: "Results you got for someone else. Client proof beats career proof." },
             ],
           },
@@ -246,7 +246,7 @@ const GROUPS: BlueprintGroup[] = [
             feeds: "Market options, prospect list",
             fields: [
               { path: "market.industries_credibility", label: "Where you have credibility", kind: "list", required: true, example: "Building services\nM&E contractors\nYorkshire contractors through the local CIOB branch", help: "Industries where owners would be impressed by your results, where you know the language, or where you already have contacts. One per line.", ask: "Which industries would be most impressed by your results, and where do you already know people?" },
-              { path: "market.buyer_roles", label: "Who signs off", kind: "list", example: "Owner-MD\nFinance Director", help: "The person who says yes to hiring you.", ask: "In those businesses, who signs off on hiring someone like you?" },
+              { path: "market.buyer_roles", label: "Who signs off", kind: "list", example: "Owner-MD\nFinance Director", help: "The person who says yes to hiring you.", ask: "In those businesses, who would decide to hire you? The owner, the managing director, or someone else?" },
               { path: "market.avoid", label: "Who you will not take", kind: "list", required: true, example: "Start-ups with no revenue\nAnyone looking for a quick fix", help: "Left off your prospect lists. One per line.", ask: "Who will you not work with, whatever they pay?" },
             ],
           },
@@ -513,7 +513,7 @@ const GROUPS: BlueprintGroup[] = [
             about: "How this person talks: what they say and think, and the words that would put them off.",
             feeds: "Campaign messaging, LinkedIn, newsletters, call script",
             fields: [
-              { path: "client.says", label: "What they say and think", kind: "list", required: true, example: "I just need to get through this quarter\nI would go on my own if I knew where to start\nWhat if I cannot provide for my family?", help: "What they say out loud, what they think in private, and what they keep hearing from others. Their words, not marketing language.", ask: "What does this person say, think, and keep hearing from a boss or people like them? Their actual words." },
+              { path: "client.says", label: "What they say and think", kind: "list", required: true, example: "I just need to get through this quarter\nI would go on my own if I knew where to start\nWhat if I cannot provide for my family?", help: "What they say out loud, what they think in private, and what they keep hearing from others. Their words, not marketing language.", ask: "What does this person say about their business when they are fed up? Use their actual words." },
               { path: "client.words_avoid", label: "Words to avoid", kind: "list", example: "Guru\nHustle\nPassive income", help: "Words that sound like everyone else, or that this person would not trust." },
             ],
           },
@@ -685,17 +685,18 @@ const GROUPS: BlueprintGroup[] = [
       },
       {
         slug: "content",
-        title: "LinkedIn Newsletter",
+        title: "Content",
         href: "/coach/blueprint/content",
-        heading: "The facts, then each issue",
-        summary: "The standing facts for the newsletter, then each issue: the piece itself, the cover, the inbox note and the feed post.",
+        heading: "Stay in front of your network between campaigns",
+        summary: "What your newsletter is called, who it is for and where it sends people, then your post pillars. The issues themselves live in Get Clients, under Content.",
         sections: [
           {
             id: "info",
-            title: "Newsletter info",
+            title: "Newsletter",
             source: "from_you",
             layout: "inline",
-            about: "The standing facts for this newsletter. Every issue uses these.",
+            about: "The name, who it is for, what it promises, how often it goes out, and the call to action. Every issue uses these.",
+            link: { href: "/coach/linkedin?tab=newsletter", label: "Open your newsletter" },
             fields: [
               {
                 path: "practice.newsletter_cadence",
@@ -711,9 +712,10 @@ const GROUPS: BlueprintGroup[] = [
               { path: "practice.newsletter_name", label: "Name", kind: "text", placeholder: "Scaffolding Profit Notes" },
               {
                 path: "practice.newsletter_description",
-                label: "Description",
+                label: "Positioning",
                 kind: "longtext",
                 placeholder: "A note for owners who want cash in the business, not just turnover.",
+                help: "One line on what readers get and why it is worth opening. It becomes the description on LinkedIn.",
               },
               { path: "practice.newsletter_audience", label: "Who it's for", kind: "text", placeholder: "Scaffolding company owners" },
               {
@@ -725,6 +727,29 @@ const GROUPS: BlueprintGroup[] = [
               },
             ],
           },
+          // Moved from the old Content page; the stored key keeps its posts, sign-off and comments.
+          {
+            id: "kit",
+            key: "content:posts",
+            title: "Posts",
+            source: "we_build",
+            about: "Content pillars, twelve post ideas, and two posts ready to go.",
+            from: ["Story and proof", "Pain points", "Your voice"],
+            feeds: "LinkedIn posts",
+            needs: ["market:pains", "voice:sound"],
+            uses: {
+              fields: [
+                "proof.career_results",
+                "proof.client_results",
+                "proof.superpowers",
+                "practice.voice_values",
+                ...VOICE_STYLE_PATHS,
+                ...VOICE_COLOUR_PATHS,
+              ],
+              sources: ["transcript"],
+            },
+          },
+          // The issue and its pieces are still written here, and shown in the Newsletter tab (Get Clients, Content).
           {
             id: "checklist",
             title: "How to run it",
@@ -740,6 +765,7 @@ const GROUPS: BlueprintGroup[] = [
             id: "newsletter",
             title: "Newsletter",
             source: "we_build",
+            face: "stored",
             about: "Five strategies, three things to avoid, a seven-point checklist, and a call to book a Discovery call.",
             from: ["Pain points", "Commercial achievements", "Your voice", "Your value session"],
             feeds: "LinkedIn newsletter",
@@ -769,6 +795,7 @@ const GROUPS: BlueprintGroup[] = [
             id: "cover",
             title: "Cover",
             source: "we_build",
+            face: "stored",
             about: "The banner for this issue: the headline, the line under it, and what the picture shows.",
             from: ["Newsletter"],
             feeds: "The newsletter header image",
@@ -779,6 +806,7 @@ const GROUPS: BlueprintGroup[] = [
             id: "inbox",
             title: "Inbox",
             source: "we_build",
+            face: "stored",
             about: "The note to your top 100. The first line is theirs to personalise from one of that person's posts.",
             from: ["Newsletter", "Your voice"],
             feeds: "LinkedIn inbox",
@@ -789,6 +817,7 @@ const GROUPS: BlueprintGroup[] = [
             id: "post",
             title: "Post",
             source: "we_build",
+            face: "stored",
             about: "A feed post on the three things to avoid, pointing people at the newsletter.",
             from: ["Newsletter", "Your voice"],
             feeds: "LinkedIn feed",
@@ -823,6 +852,7 @@ const GROUPS: BlueprintGroup[] = [
             id: "analogy",
             title: "Analogy",
             source: "we_build",
+            face: "stored",
             about: "The same 5-3-7 shape, taught through a sport, hobby, book or film they already named.",
             from: ["Your ideal client", "Your voice"],
             feeds: "A later LinkedIn newsletter",
@@ -847,6 +877,7 @@ const GROUPS: BlueprintGroup[] = [
             id: "kpis",
             title: "KPIs",
             source: "we_build",
+            face: "stored",
             about: "What a good week looks like in the hobby, set next to what a good week looks like in the business.",
             from: ["Pain points", "Your voice"],
             feeds: "A later LinkedIn newsletter",
@@ -863,36 +894,6 @@ const GROUPS: BlueprintGroup[] = [
                 "practice.voice_favourite_film",
                 "practice.voice_hobbies",
               ],
-            },
-          },
-        ],
-      },
-      {
-        slug: "posts",
-        title: "Content",
-        href: "/coach/blueprint/posts",
-        heading: "Posts that stand on their own",
-        summary: "Content pillars, twelve ideas, and two posts ready to publish. A post that points at a newsletter lives with it.",
-        sections: [
-          {
-            id: "kit",
-            key: "content:posts",
-            title: "Posts",
-            source: "we_build",
-            about: "Content pillars, twelve post ideas, and two posts ready to go.",
-            from: ["Story and proof", "Pain points", "Your voice"],
-            feeds: "LinkedIn posts",
-            needs: ["market:pains", "voice:sound"],
-            uses: {
-              fields: [
-                "proof.career_results",
-                "proof.client_results",
-                "proof.superpowers",
-                "practice.voice_values",
-                ...VOICE_STYLE_PATHS,
-                ...VOICE_COLOUR_PATHS,
-              ],
-              sources: ["transcript"],
             },
           },
         ],
@@ -934,7 +935,7 @@ const GROUPS: BlueprintGroup[] = [
                 kind: "enum",
                 required: true,
                 help: "The three things at the end of the BOSS score. Income, Impact and Freedom stay with the academy.",
-                ask: "Does this offer lead with money (profit and income), time (their week back), or team (a business that runs without them)?",
+                ask: "What is the main thing you help them get: more money, more time, or a team that runs things without them?",
                 options: [
                   { value: "money", label: "Money: more profit and income" },
                   { value: "time", label: "Time: more of their week back" },
@@ -955,7 +956,7 @@ const GROUPS: BlueprintGroup[] = [
             feeds: "The written offer, call script",
             fields: [
               { path: "practice.help_with", label: "What you help with", kind: "list", required: true, example: "The weekly number the team actually reviews\nA 90-day plan that sticks\nRoles so the MD is not chasing everyone", help: "Three to six lines, their words. Things that are not on the Profit System list are fine.", ask: "What do you actually help owners with? A few short lines, in your own words." },
-              { path: "practice.offer_timeframe", label: "First result they can point to", kind: "text", example: "A number they trust within 90 days", help: "How long until something has changed that they can point at. Leave blank if you would rather not name a clock.", ask: "How long until they can point at a first result? Leave this if you would rather not name a clock." },
+              { path: "practice.offer_timeframe", label: "First result they can point to", kind: "text", example: "A number they trust within 90 days", help: "How long until something has changed that they can point at. Leave blank if you would rather not name a clock.", ask: "How soon would a new client see their first win? It is fine to skip this one." },
             ],
           },
           {
@@ -1333,7 +1334,7 @@ export function commandCenter(row: PracticeKnowledgeRow): CommandCenterModel {
 
   if (proofOpen) {
     lead = "You are capturing the proof behind your practice.";
-    detail = "Your next step is one commercial result with a from, a to, and a timeframe.";
+    detail = "Your next step is your best result for a business: the number before, the number after, and how long it took.";
     action = { label: "Add the result in your blueprint", href: "/coach/blueprint/story#s-story-results" };
     milestone = "One precise result";
   } else if (askedOpen) {

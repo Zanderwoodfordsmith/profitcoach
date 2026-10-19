@@ -124,32 +124,32 @@ export default function DirectoryClient() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 px-4 py-16 text-white sm:px-6">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(56,189,248,0.15),_transparent_50%)]" />
-        <div className="relative mx-auto max-w-4xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200/90">
-            Find a coach
+      <section className="px-5 pb-10 pt-[clamp(3.5rem,8vh,5.5rem)] text-center sm:px-6">
+        <div className="mx-auto max-w-5xl">
+          <p className="mb-5 inline-block rounded-full bg-[linear-gradient(135deg,rgba(117,193,255,0.24),rgba(17,175,224,0.14))] px-4 py-[7px] text-[0.9375rem] font-semibold text-[#0C5290] shadow-[inset_0_0_0_1px_rgba(12,82,144,0.12)]">
+            250+ coaches trained worldwide
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Profit Coach directory
+          <h1 className="text-[clamp(2.6rem,1.5rem+4vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.035em] [text-wrap:balance]">
+            <span className="block">Find your coach</span>
+            <span className="block font-light text-[#46566B]">trained in the same system</span>
           </h1>
-          <p className="mt-4 text-sm leading-relaxed text-slate-200 sm:text-base">
-            Search certified professionals who can help your team build a
-            healthier, more profitable business. Connect for an intro and see
-            if it is a fit.
+          <p className="mx-auto mt-6 max-w-2xl text-[clamp(1.15rem,1.05rem+0.4vw,1.3rem)] leading-relaxed text-[#46566B] [text-wrap:pretty]">
+            Every Profit Coach works from the same BOSS Score and the same 50
+            playbooks. Search by name or location, then connect for an intro
+            and see if it is a fit.
           </p>
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl px-5 pb-20 sm:px-6">
         <form
           onSubmit={applyFilters}
-          className="mb-8 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end"
+          className="mb-10 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-[0_0_0_1px_#E3E8EF,0_12px_28px_-18px_rgba(11,27,43,0.22)] sm:flex-row sm:flex-wrap sm:items-end"
         >
           <div className="min-w-[12rem] flex-1">
             <label
               htmlFor="dir-search"
-              className="block text-xs font-medium text-slate-600"
+              className="block text-sm font-semibold text-[#46566B]"
             >
               Search
             </label>
@@ -159,13 +159,13 @@ export default function DirectoryClient() {
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
               placeholder="Name or keyword"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className="mt-1.5 w-full rounded-xl border border-[#CBD4DF] bg-white px-3.5 py-2.5 text-[0.975rem] text-[#0D1F31] focus:border-[#0C5290] focus:outline-none focus:ring-2 focus:ring-[#0C5290]/20"
             />
           </div>
           <div className="w-full min-w-[10rem] sm:w-40">
             <label
               htmlFor="dir-level"
-              className="block text-xs font-medium text-slate-600"
+              className="block text-sm font-semibold text-[#46566B]"
             >
               Level
             </label>
@@ -176,7 +176,7 @@ export default function DirectoryClient() {
                 setLevel(e.target.value);
                 setPage(1);
               }}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className="mt-1.5 w-full rounded-xl border border-[#CBD4DF] bg-white px-3.5 py-2.5 text-[0.975rem] text-[#0D1F31] focus:border-[#0C5290] focus:outline-none focus:ring-2 focus:ring-[#0C5290]/20"
             >
               <option value="all">All levels</option>
               <option value="certified">Certified</option>
@@ -187,7 +187,7 @@ export default function DirectoryClient() {
           <div className="min-w-[12rem] flex-1">
             <label
               htmlFor="dir-location"
-              className="block text-xs font-medium text-slate-600"
+              className="block text-sm font-semibold text-[#46566B]"
             >
               Location
             </label>
@@ -197,12 +197,12 @@ export default function DirectoryClient() {
               value={locationDraft}
               onChange={(e) => setLocationDraft(e.target.value)}
               placeholder="City, region, country"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className="mt-1.5 w-full rounded-xl border border-[#CBD4DF] bg-white px-3.5 py-2.5 text-[0.975rem] text-[#0D1F31] focus:border-[#0C5290] focus:outline-none focus:ring-2 focus:ring-[#0C5290]/20"
             />
           </div>
           <button
             type="submit"
-            className="rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-600"
+            className="h-[2.9rem] rounded-full bg-[#0C5290] px-6 text-[0.975rem] font-semibold text-white shadow-[0_10px_24px_-12px_rgba(12,82,144,0.6)] hover:bg-[#0A467B]"
           >
             Search
           </button>
@@ -224,8 +224,8 @@ export default function DirectoryClient() {
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {coaches.map((c) => (
               <li key={c.slug}>
-                <article className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+                <article className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_0_0_1px_#E3E8EF,0_12px_28px_-18px_rgba(11,27,43,0.22)] transition-transform duration-300 hover:-translate-y-1">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#E8EBF0]">
                     {c.avatar_url ? (
                       <img
                         src={c.avatar_url}
@@ -241,7 +241,7 @@ export default function DirectoryClient() {
                   <DirectoryLevelBadge level={c.directory_level} />
                   <div className="flex flex-1 flex-col gap-2 px-4 pb-4 pt-3">
                     <div>
-                      <h2 className="text-lg font-semibold text-slate-900">
+                      <h2 className="text-[1.2rem] font-bold tracking-[-0.015em] text-[#0D1F31]">
                         {c.full_name ?? c.slug}
                       </h2>
                       {c.coach_business_name ? (
@@ -264,7 +264,7 @@ export default function DirectoryClient() {
                     <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
                       <Link
                         href={`/directory/${encodeURIComponent(c.slug)}`}
-                        className="inline-flex flex-1 justify-center rounded-md bg-sky-700 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-sky-600"
+                        className="inline-flex flex-1 justify-center rounded-full bg-[#0C5290] px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-[#0A467B]"
                       >
                         View profile
                       </Link>
@@ -273,7 +273,7 @@ export default function DirectoryClient() {
                           href={c.linkedin_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          className="rounded-full border border-[#CBD4DF] px-4 py-2.5 text-sm font-semibold text-[#34435A] hover:bg-[#F6F8FB]"
                         >
                           LinkedIn
                         </a>
@@ -295,7 +295,7 @@ export default function DirectoryClient() {
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm disabled:opacity-40"
+              className="rounded-full border border-[#CBD4DF] bg-white px-4 py-2 text-sm font-semibold disabled:opacity-40"
             >
               Previous
             </button>
@@ -306,7 +306,7 @@ export default function DirectoryClient() {
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm disabled:opacity-40"
+              className="rounded-full border border-[#CBD4DF] bg-white px-4 py-2 text-sm font-semibold disabled:opacity-40"
             >
               Next
             </button>

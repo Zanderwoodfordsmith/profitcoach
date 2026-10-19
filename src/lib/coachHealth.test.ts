@@ -18,6 +18,9 @@ const base = {
   replies_30d: 30,
   interested_30d: 6,
   calls_30d: 3,
+  posts_30d: 8,
+  last_post_days: 2,
+  issues_90d: 4,
   median_reply_hours: 0.5,
 };
 

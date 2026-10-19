@@ -333,11 +333,12 @@ export type CoachClientsTabItem = {
 /**
  * Get Clients peer tabs — Classroom Get Calls order:
  * Campaigns generate conversations, conversations book calls.
- * Campaigns → Conversations → Calls → Prospects → Content → Links
+ * Campaigns → Conversations → Calls → Prospects → Content → Toolkit
  * Create tools live in Profit Coach AI (fullscreen Create tab).
  *
- * Links lives at `/share` so it does not collide with the admin toolkit
- * page at `/admin/links`.
+ * Toolkit holds Links (`/share`, its first sub-tab, so it does not collide
+ * with the admin page at `/admin/links`) and the brochure and graphics
+ * (`/toolkit`). See {@link isGetClientsToolkitPath}.
  */
 export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
   // Today is hidden from coaches while it's redesigned; admins find it under Tools and links.
@@ -366,10 +367,6 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
   }
   items.push({
     href: `${prefix}/share`,
-    label: "Links",
-  });
-  items.push({
-    href: `${prefix}/toolkit`,
     label: "Toolkit",
   });
   return items;
@@ -389,6 +386,7 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
     `${prefix}/pipeline`,
     `${prefix}/linkedin`,
     `${prefix}/share`,
+    `${prefix}/toolkit`,
   ];
   if (prefix === "/coach") {
     paths.push("/coach/links");
@@ -409,6 +407,17 @@ export function isGetClientsContentPath(pathname: string | null): boolean {
   return (
     pathMatches(pathname, "/admin/linkedin") ||
     pathMatches(pathname, "/coach/linkedin")
+  );
+}
+
+/** Toolkit tab covers Links (`/share`) and the brochure and graphics (`/toolkit`). */
+export function isGetClientsToolkitPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathMatches(pathname, "/admin/share") ||
+    pathMatches(pathname, "/coach/share") ||
+    pathMatches(pathname, "/admin/toolkit") ||
+    pathMatches(pathname, "/coach/toolkit")
   );
 }
 

@@ -24,7 +24,8 @@ describe("positive reply library template", () => {
     const day0 = messages[0];
     assert.equal(day0?.variants?.length, 2);
     assert.ok(day0?.variants?.some((v) => v.body.includes("called a couple of times")));
-    assert.ok(day0?.variants?.some((v) => v.body.includes("just something specific")));
+    assert.ok(day0?.variants?.some((v) => v.body.includes("[day and time] or [day and time]")));
+    assert.equal(messages.some((step) => String(step.body).includes("—")), false);
   });
 
   it("does not auto-send any LinkedIn message", () => {

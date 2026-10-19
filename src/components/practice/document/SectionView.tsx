@@ -629,7 +629,7 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
 }
 
 function Fields({ section, changedFields, bcaFills }: { section: BlueprintSection; changedFields: string[]; bcaFills?: boolean }) {
-  const { payload } = usePractice();
+  const { payload, href } = usePractice();
   const fields = (section.fields ?? [])
     .filter((f) => {
       if (!f.showIf || !payload) return true;
@@ -683,6 +683,14 @@ function Fields({ section, changedFields, bcaFills }: { section: BlueprintSectio
         </Fragment>
       ))}
       {showSocials ? <SetupSocials /> : null}
+      {section.link ? (
+        <p className="bp-no-print border-t border-[#e1e6ec] pt-3 text-sm @xl:col-span-2">
+          <Link href={href(section.link.href)} className="inline-flex items-center gap-1 font-semibold text-[var(--bp-blue)] hover:underline">
+            {section.link.label}
+            <ArrowUpRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

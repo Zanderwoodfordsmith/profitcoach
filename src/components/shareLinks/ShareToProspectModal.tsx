@@ -81,6 +81,16 @@ function availableChannels(prospect: ProspectPickerRow | null): MessagingCompose
   return next;
 }
 
+type ShareMode = "anyone" | "person";
+
+/** What changes when the link goes to one person rather than anyone. */
+function personHint(target: ShareTarget): string {
+  if (target.kind === "assessment") return "Their details are filled in for them, so they skip that step.";
+  if (target.kind === "calendar") return "Their details are filled in on the booking form.";
+  if (target.kind === "report") return "Choose who completed it. Then copy or send.";
+  return "Same link. Send it in a conversation with them.";
+}
+
 function defaultMessage(target: ShareTarget, url: string): string {
   if (target.kind === "assessment") {
     return shareMessageForAssessment(target.product, url);
@@ -117,6 +127,7 @@ export function ShareToProspectModal({
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [mode, setMode] = useState<ShareMode>("anyone");
 
   const reset = useCallback(() => {
     setSearch("");
@@ -133,6 +144,7 @@ export function ShareToProspectModal({
   useEffect(() => {
     if (!open) return;
     reset();
+    setMode(target?.kind === "report" ? "person" : "anyone");
     if (target && target.kind !== "report") {
       setResolvedUrl(target.genericUrl);
       setMessage(defaultMessage(target, target.genericUrl));
@@ -395,6 +407,7 @@ export function ShareToProspectModal({
   const genericUrl = target.kind === "report" ? null : target.genericUrl;
   const displayUrl = resolvedUrl || genericUrl;
   const needsProspect = target.kind === "report";
+  const personMode = needsProspect || mode === "person";
   const canCopy = Boolean(displayUrl) && !reportLoading;
   const canSend = Boolean(selected && displayUrl && message.trim()) && !reportLoading;
   const displayHost = displayUrl
@@ -425,9 +438,9 @@ export function ShareToProspectModal({
               Share {target.title}
             </h2>
             <p className="mt-1 text-[13px] leading-snug text-slate-500">
-              {needsProspect
-                ? "Choose who completed it. Then copy or send."
-                : "Copy the link, or send it in a conversation."}
+              {personMode
+                ? personHint(target)
+                : "One link anyone can use. Post it, or send it anywhere."}
             </p>
           </div>
           <button
@@ -439,66 +452,101 @@ export function ShareToProspectModal({
           </button>
         </div>
 
-        <div className="mt-5">
-          <input
-            id="share_prospect_search"
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search prospects"
-            aria-label="Choose a prospect"
-            className="w-full rounded-xl bg-slate-100 px-3.5 py-2.5 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-[#0c5290]/25"
-          />
-          <div className="mt-2 max-h-44 overflow-y-auto">
-            {loading ? (
-              <p className="px-1 py-6 text-center text-[13px] text-slate-500">
-                Loading prospects
-              </p>
-            ) : filtered.length === 0 ? (
-              <p className="px-1 py-6 text-center text-[13px] text-slate-500">
-                {prospects.length === 0 ? "No prospects yet." : "No matches."}
-              </p>
-            ) : (
-              <ul>
-                {filtered.map((prospect) => {
-                  const isSelected = selectedId === prospect.id;
-                  const meta =
-                    prospect.email?.trim() ||
-                    prospect.business_name?.trim() ||
-                    "";
-                  return (
-                    <li key={prospect.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(prospect.id)}
-                        className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition hover:bg-slate-50 ${
-                          isSelected ? "bg-slate-50" : ""
-                        }`}
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[15px] font-medium text-slate-900">
-                            {prospect.full_name}
-                          </span>
-                          {meta ? (
-                            <span className="block truncate text-[13px] text-slate-500">
-                              {meta}
-                            </span>
-                          ) : null}
-                        </span>
-                        {isSelected ? (
-                          <Check
-                            className="h-4 w-4 shrink-0 text-[#0c5290]"
-                            aria-hidden
-                          />
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+        {!needsProspect ? (
+          <div
+            role="radiogroup"
+            aria-label="Who is it for"
+            className="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1"
+          >
+            {(
+              [
+                { id: "anyone", label: "Anyone" },
+                { id: "person", label: "One person" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={mode === option.id}
+                onClick={() => {
+                  setMode(option.id);
+                  if (option.id === "anyone") setSelectedId(null);
+                }}
+                className={`rounded-lg px-3 py-1.5 text-[14px] font-medium transition ${
+                  mode === option.id
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
-        </div>
+        ) : null}
+
+        {personMode ? (
+          <div className="mt-4">
+            <input
+              id="share_prospect_search"
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search prospects"
+              aria-label="Choose a prospect"
+              className="w-full rounded-xl bg-slate-100 px-3.5 py-2.5 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-[#0c5290]/25"
+            />
+            <div className="mt-2 max-h-44 overflow-y-auto">
+              {loading ? (
+                <p className="px-1 py-6 text-center text-[13px] text-slate-500">
+                  Loading prospects
+                </p>
+              ) : filtered.length === 0 ? (
+                <p className="px-1 py-6 text-center text-[13px] text-slate-500">
+                  {prospects.length === 0 ? "No prospects yet." : "No matches."}
+                </p>
+              ) : (
+                <ul>
+                  {filtered.map((prospect) => {
+                    const isSelected = selectedId === prospect.id;
+                    const meta =
+                      prospect.email?.trim() ||
+                      prospect.business_name?.trim() ||
+                      "";
+                    return (
+                      <li key={prospect.id}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(prospect.id)}
+                          className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition hover:bg-slate-50 ${
+                            isSelected ? "bg-slate-50" : ""
+                          }`}
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[15px] font-medium text-slate-900">
+                              {prospect.full_name}
+                            </span>
+                            {meta ? (
+                              <span className="block truncate text-[13px] text-slate-500">
+                                {meta}
+                              </span>
+                            ) : null}
+                          </span>
+                          {isSelected ? (
+                            <Check
+                              className="h-4 w-4 shrink-0 text-[#0c5290]"
+                              aria-hidden
+                            />
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        ) : null}
 
         {reportLoading ? (
           <p className="mt-4 flex items-center gap-2 text-[13px] text-slate-500">
@@ -507,7 +555,12 @@ export function ShareToProspectModal({
           </p>
         ) : null}
 
-        {displayHost ? (
+        {displayHost && !personMode ? (
+          <p className="mt-4 truncate rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-[14px] text-slate-600">
+            {displayHost}
+          </p>
+        ) : null}
+        {displayHost && personMode && selected ? (
           <button
             type="button"
             onClick={() => void copyLink()}
@@ -519,7 +572,7 @@ export function ShareToProspectModal({
           </button>
         ) : null}
 
-        {selected ? (
+        {personMode && selected ? (
           <div className="mt-4 space-y-3">
             <OutlinedTextArea
               id="share_message"
@@ -556,29 +609,38 @@ export function ShareToProspectModal({
 
         {error ? <p className="mt-3 text-[13px] text-rose-600">{error}</p> : null}
 
-        <div className="mt-6 flex items-center justify-end gap-4">
-          <button
-            type="button"
-            onClick={() => void copyLink()}
-            disabled={!canCopy}
-            className="text-[15px] font-medium text-slate-500 transition hover:text-slate-800 disabled:text-slate-300"
-          >
-            {copied ? "Copied" : "Copy"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void openConversation()}
-            disabled={!canSend || sending}
-            className="rounded-full bg-[#0c5290] px-4 py-2 text-[15px] font-medium text-white transition hover:bg-[#051e36] disabled:bg-slate-200 disabled:text-slate-400"
-          >
-            {sending ? "Opening" : "Send"}
-          </button>
-        </div>
-        {target.kind === "social" ? (
-          <p className="mt-3 text-[12px] text-slate-400">
-            Same link for everyone. A prospect just prepares the message.
-          </p>
-        ) : null}
+        {personMode ? (
+          <div className="mt-6 flex items-center justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => void copyLink()}
+              disabled={!canCopy || (needsProspect && !selected)}
+              className="text-[15px] font-medium text-slate-500 transition hover:text-slate-800 disabled:text-slate-300"
+            >
+              {copied ? "Copied" : "Copy"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void openConversation()}
+              disabled={!canSend || sending}
+              className="rounded-full bg-[#0c5290] px-4 py-2 text-[15px] font-medium text-white transition hover:bg-[#051e36] disabled:bg-slate-200 disabled:text-slate-400"
+            >
+              {sending ? "Opening" : "Send"}
+            </button>
+          </div>
+        ) : (
+          <div className="mt-6 flex justify-end">
+            <button
+              type="button"
+              onClick={() => void copyLink()}
+              disabled={!canCopy}
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#0c5290] px-4 py-2 text-[15px] font-medium text-white transition hover:bg-[#051e36] disabled:bg-slate-200 disabled:text-slate-400"
+            >
+              {copied ? <Check className="h-4 w-4" aria-hidden /> : null}
+              {copied ? "Copied" : "Copy link"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

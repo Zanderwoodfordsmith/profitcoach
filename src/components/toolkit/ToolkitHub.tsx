@@ -7,7 +7,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { GOOGLE_FONTS_HREF } from "@/lib/printPack/brand.js";
 import { makeCoach } from "@/lib/printPack/coach.js";
-import { GENERIC, PERSONAL, PERSONAL_GROUPS, PLACEHOLDER_COACH } from "@/lib/printPack/catalog.js";
+import { GENERIC, PERSONAL, PLACEHOLDER_COACH } from "@/lib/printPack/catalog.js";
 import {
   downloadPng,
   downloadSvg,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/printPack/browserExport";
 import type { ProgrammeBrochure } from "@/lib/practiceKnowledge/brochure";
 import { ProgrammeBrochureCard } from "./ProgrammeBrochure";
+import { TOOLKIT_VIEWS, type ToolkitGraphicsView } from "./ToolkitTabs";
 
 type ToolkitDetails = {
   name: string | null;
@@ -60,7 +61,8 @@ const sectionLabel = (section: string) => {
 };
 const cardTitle = (title: string) => title.replace(/^Post - /, "");
 
-export function ToolkitHub() {
+/** One Toolkit sub-tab: the brochure, one group of your graphics, or the brand graphics. */
+export function ToolkitHub({ view }: { view: ToolkitGraphicsView }) {
   const pathname = usePathname() ?? "";
   const linksHref = pathname.startsWith("/admin") ? "/admin/share" : "/coach/share";
   const { impersonatingCoachId } = useImpersonation();
@@ -117,40 +119,44 @@ export function ToolkitHub() {
   const firstName = details?.first_name ?? null;
   const hasLink = Boolean(details?.coach_slug);
   const genericSections = [...new Set(GENERIC_ITEMS.map((i) => i.section ?? ""))];
+  const viewMeta = TOOLKIT_VIEWS.find((v) => v.id === view);
+  const personalGroup = viewMeta && "group" in viewMeta ? viewMeta.group : null;
+  const groupItems = personalGroup ? PERSONAL_ITEMS.filter((i) => i.group === personalGroup) : [];
 
   return (
     <div className="space-y-14 pb-12">
       <link rel="stylesheet" href={GOOGLE_FONTS_HREF} precedence="default" />
 
-      <ProgrammeBrochureCard pack={details?.brochure ?? null} pathname={pathname} />
+      {view === "brochure" ? (
+        <ProgrammeBrochureCard pack={details?.brochure ?? null} pathname={pathname} />
+      ) : null}
 
-      <section className="space-y-6">
-        <div className="max-w-3xl space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Your graphics</h2>
-          <p className="text-base leading-relaxed text-slate-600">
-            Each one carries your name, photo and a QR code that opens your BOSS Scorecard page.
-            Download a PNG to post, a PDF to print, or the SVG for a designer.
-          </p>
-          {details && hasLink ? (
-            <p className="text-sm text-slate-500">
-              QR codes open <span className="font-medium text-slate-700">{coach.displayUrl}</span>
+      {personalGroup ? (
+        <section className="space-y-6">
+          <div className="max-w-3xl space-y-2">
+            <p className="text-base leading-relaxed text-slate-600">
+              Each one carries your name, photo and a QR code that opens your BOSS Scorecard page.
+              Download a PNG to post, a PDF to print, or the SVG for a designer.
             </p>
-          ) : null}
-          {details && !hasLink ? (
-            <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Set your public link in{" "}
-              <Link href={linksHref} className="font-semibold underline underline-offset-2">
-                Links
-              </Link>{" "}
-              to put your own QR code on these.
-            </p>
-          ) : null}
-          {loadError ? <p className="text-sm text-red-700">{loadError}</p> : null}
-        </div>
+            {details && hasLink ? (
+              <p className="text-sm text-slate-500">
+                QR codes open <span className="font-medium text-slate-700">{coach.displayUrl}</span>
+              </p>
+            ) : null}
+            {details && !hasLink ? (
+              <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Set your public link in{" "}
+                <Link href={linksHref} className="font-semibold underline underline-offset-2">
+                  Links
+                </Link>{" "}
+                to put your own QR code on these.
+              </p>
+            ) : null}
+            {loadError ? <p className="text-sm text-red-700">{loadError}</p> : null}
+          </div>
 
-        {(PERSONAL_GROUPS as string[]).map((group) => (
-          <AssetGroup key={group} title={group} count={PERSONAL_ITEMS.filter((i) => i.group === group).length}>
-            {PERSONAL_ITEMS.filter((i) => i.group === group).map((item) => (
+          <AssetGroup count={groupItems.length}>
+            {groupItems.map((item) => (
               <AssetCard
                 key={item.id}
                 item={item}
@@ -172,34 +178,35 @@ export function ToolkitHub() {
               </AssetCard>
             ))}
           </AssetGroup>
-        ))}
-      </section>
+        </section>
+      ) : null}
 
-      <section className="space-y-6">
-        <div className="max-w-3xl space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Brand graphics</h2>
-          <p className="text-base leading-relaxed text-slate-600">
-            The BOSS Compass, BOSS Wheel and the 50 playbooks, for slides, workbooks and posts.
-          </p>
-        </div>
-        {genericSections.map((section) => (
-          <AssetGroup key={section} title={sectionLabel(section)} count={GENERIC_ITEMS.filter((i) => i.section === section).length}>
-            {GENERIC_ITEMS.filter((i) => i.section === section).map((item) => (
-              <AssetCard key={item.id} item={item} svg={genericSvgs[item.id]} fileBase={item.title} />
-            ))}
-          </AssetGroup>
-        ))}
-      </section>
+      {view === "brand" ? (
+        <section className="space-y-6">
+          <div className="max-w-3xl space-y-2">
+            <p className="text-base leading-relaxed text-slate-600">
+              The BOSS Compass, BOSS Wheel and the 50 playbooks, for slides, workbooks and posts.
+            </p>
+          </div>
+          {genericSections.map((section) => (
+            <AssetGroup key={section} title={sectionLabel(section)} count={GENERIC_ITEMS.filter((i) => i.section === section).length}>
+              {GENERIC_ITEMS.filter((i) => i.section === section).map((item) => (
+                <AssetCard key={item.id} item={item} svg={genericSvgs[item.id]} fileBase={item.title} />
+              ))}
+            </AssetGroup>
+          ))}
+        </section>
+      ) : null}
     </div>
   );
 }
 
-function AssetGroup({ title, count, children }: { title: string; count: number; children: ReactNode }) {
+function AssetGroup({ title, count, children }: { title?: string; count: number; children: ReactNode }) {
   // Four cards fill one wide row instead of leaving one alone under three.
   const cols = count === 4 ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-2 xl:grid-cols-3";
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
+      {title ? <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h3> : null}
       <div className={`grid gap-4 ${cols}`}>{children}</div>
     </div>
   );

@@ -10,29 +10,19 @@ const MSG1_B = `Hi {{first_name}}, we connected a while back and I didn't want t
 
 Are you still looking to get more profit and time out of the business, or has that gone on the back burner?`;
 
-const MSG1_A = `Hi {{first_name}},
+const MSG1_A = `Hi {{first_name}}, a quick one I share with owners: at a 10% margin, cutting costs by 11% can double profit.
 
-I've put together a 3-minute BOSS Scorecard for owners who are doing well on paper, but feel stretched too thin behind the scenes.
-
-It gives you a score out of 100 and shows where the business may be over-relying on you.
-
-What do you reckon you'll score?`;
+Most people don't believe it until they see the maths. Want me to send the table?`;
 
 const MSG2 = `Hi {{first_name}}, one thing I keep seeing with owners is that the visible number looks fine, and the constraint is somewhere else.
 
-Most owners tell me revenue is fine, but they still can't take a week off.
+Most owners tell me revenue is fine, but they still can't take a week off. Is that still true your end, or have you already cracked it?`;
 
-Is that still true your end, or have you already cracked it?`;
+const MSG3 = `Hi {{first_name}}, that's one of the reasons we built the BOSS Score. It finds the root constraint rather than just the symptoms.
 
-const MSG3 = `Hi {{first_name}}, that's one of the reasons we built the BOSS Scorecard. It's designed to find the root constraint rather than just the symptoms.
+If you fancy giving it a go, I can send you a personal link.`;
 
-If you fancy giving it a go, I can send you a personalised link.`;
-
-const MSG4 = `Hi {{first_name}}, I'll leave this here in case it's useful: {{scorecard_link}}
-
-The BOSS Scorecard is a short assessment designed to show where the biggest constraint may be across profit, performance and owner-dependence.
-
-No pressure to use it. I'll leave you to it.`;
+const MSG4 = `I'll leave it there, {{first_name}}. If you'd ever like the 3-minute BOSS Score, just say the word and I'll send it over.`;
 
 export const REACTIVATION_LIBRARY_SEED: CampaignLibrarySeed = {
   sourceKey: "reactivation",
@@ -40,13 +30,13 @@ export const REACTIVATION_LIBRARY_SEED: CampaignLibrarySeed = {
   kind: "reactivation",
   name: "Reactivation",
   description:
-    "Already connected, gone quiet. Check-in (control) vs scorecard invite, then the same permission-and-link close as Connection. No invite.",
+    "Already connected, gone quiet. Check-in (control) vs a profit tip they can ask for, then the constraint question, permission for the BOSS Score, and a close with no link. No invite.",
   status: "published",
   settings: { stop_on_reply: true },
   steps: spaced([
     messageStep(MSG1_B, [
       { key: "B", label: "Still looking (control)", body: MSG1_B },
-      { key: "A", label: "Scorecard invite", body: MSG1_A },
+      { key: "A", label: "Profit tip", body: MSG1_A },
     ]),
     waitStep(72),
     messageStep(MSG2),
