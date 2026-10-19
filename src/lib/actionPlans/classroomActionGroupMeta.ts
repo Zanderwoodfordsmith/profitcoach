@@ -3,7 +3,7 @@ export const ACADEMY_ACTIONS_GROUP_TEXT = "Academy";
 
 /**
  * Classroom hub *path cards* (top-level Classroom tabs).
- * My Actions now groups most paths by section/lesson; these titles remain
+ * Action rows are grouped by section/lesson within most paths; these titles remain
  * recognized so older flat headers can be redistributed on reorganize.
  */
 export const CLASSROOM_PATH_CARD_GROUPS = [
@@ -40,18 +40,6 @@ export function classroomActionGroupOrderIndex(title: string): number {
   return index >= 0 ? index : CLASSROOM_PATH_CARD_GROUPS.length;
 }
 
-/** Assigned / platform-setup plans — hidden from My Actions for now. */
-export function isHiddenAssignedActionGroup(item: {
-  depth: number;
-  text: string;
-  isLocked?: boolean;
-  assignmentId?: string | null;
-}): boolean {
-  if (item.depth !== 0) return false;
-  if (item.isLocked && item.assignmentId) return true;
-  return /boss\s*school\s*platform\s*setup/i.test(item.text);
-}
-
 export const TITLE_BY_HUB_ID = new Map<string, string>(
   CLASSROOM_PATH_CARD_GROUPS.map((group) => [group.id, group.title])
 );
@@ -72,7 +60,7 @@ export const TITLE_BY_PROGRAMME_ID: Record<string, string> = {
   "profit-coach-os": "Profit Coach OS",
 };
 
-/** Hub cards that group My Actions by top-level Classroom section. */
+/** Hub cards that group action rows by top-level Classroom section. */
 export const SECTION_GROUPED_HUB_COURSE_IDS = new Set([
   "get-calls",
   "win-clients",
@@ -80,5 +68,5 @@ export const SECTION_GROUPED_HUB_COURSE_IDS = new Set([
   "profit-coach-system",
 ]);
 
-/** Hub cards that group My Actions by lesson (e.g. PRO Energy). */
+/** Hub cards that group action rows by lesson (e.g. PRO Energy). */
 export const LESSON_GROUPED_HUB_COURSE_IDS = new Set(["going-pro"]);

@@ -82,9 +82,6 @@ export function CompassLessonPlayer({
   const handoffActionCount = (lesson.recommendedActions ?? []).filter((a) =>
     a.text.trim(),
   ).length;
-  const myActionsHref = pathname.startsWith("/admin")
-    ? "/admin/signature/actions"
-    : "/coach/signature/actions";
   const pillarEyebrow =
     getSignaturePillarTitleById(course.compassPillarId) ?? category.title;
   const programsPath = basePath.replace(/\/classroom\/?$/, "/programs");
@@ -139,7 +136,6 @@ export function CompassLessonPlayer({
                         nextLessonTitle={nextLesson?.title ?? null}
                         nextLessonHref={nextLessonHref}
                         actionCount={handoffActionCount}
-                        myActionsHref={myActionsHref}
                         onStay={() => setShowVideoHandoff(false)}
                         onContinue={() => {
                           if (!nextLessonHref) {

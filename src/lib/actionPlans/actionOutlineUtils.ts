@@ -1,4 +1,4 @@
-import type { ActionOutlineLine, ActionRecurrence } from "@/lib/actionPlans/types";
+import type { ActionOutlineLine } from "@/lib/actionPlans/types";
 
 export function startOfDay(date: Date) {
   const next = new Date(date);
@@ -34,24 +34,6 @@ export function formatAbsoluteDate(value: string) {
   });
 }
 
-export function formatTimePart(value: string) {
-  const timePartRaw = value.split("T")[1]?.slice(0, 5);
-  if (!timePartRaw || timePartRaw === "00:00") return "";
-  const parsed = parseLocalDateTime(value);
-  if (!parsed) return "";
-  return parsed.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-export function formatStartDateTimeLabel(value: string) {
-  if (!value) return "";
-  const datePart = formatAbsoluteDate(value);
-  const timePart = formatTimePart(value);
-  return timePart ? `${datePart}, ${timePart}` : datePart;
-}
-
 export function formatDueDateLabel(value: string) {
   if (!value) return "";
   const diffDays = daysFromToday(value);
@@ -85,62 +67,4 @@ export function createOutlineLine(text: string, depth: number): ActionOutlineLin
     dueAt: "",
     recurrence: "none",
   };
-}
-
-type LegacyActionItem = {
-  id: string;
-  text: string;
-  done: boolean;
-  children?: LegacyActionItem[];
-};
-
-export function flattenLegacyActions(items: LegacyActionItem[], depth = 0): ActionOutlineLine[] {
-  return items.flatMap((item) => {
-    const current: ActionOutlineLine = {
-      id: item.id ?? crypto.randomUUID(),
-      text: typeof item.text === "string" ? item.text : "",
-      done: Boolean(item.done),
-      depth,
-      estimate: "",
-      startAt: "",
-      dueAt: "",
-      recurrence: "none",
-    };
-    const children = Array.isArray(item.children)
-      ? flattenLegacyActions(item.children, depth + 1)
-      : [];
-    return [current, ...children];
-  });
-}
-
-export function normalizeLegacyStorageLines(parsed: unknown): ActionOutlineLine[] | null {
-  if (!Array.isArray(parsed) || !parsed.length) return null;
-  const firstEntry = parsed[0] as Record<string, unknown>;
-  if ("depth" in firstEntry) {
-    return (parsed as unknown[]).map((entry) => {
-      const line = (entry ?? {}) as Record<string, unknown>;
-      const recurrence =
-        line.recurrence === "daily" ||
-        line.recurrence === "weekly" ||
-        line.recurrence === "monthly"
-          ? line.recurrence
-          : "none";
-      return {
-        id: typeof line.id === "string" ? line.id : crypto.randomUUID(),
-        text: typeof line.text === "string" ? line.text : "",
-        done: Boolean(line.done),
-        depth: Math.max(0, Math.min(6, Number.isFinite(line.depth) ? Number(line.depth) : 0)),
-        estimate: typeof line.estimate === "string" ? line.estimate : "",
-        startAt: typeof line.startAt === "string" ? line.startAt : "",
-        dueAt:
-          typeof line.dueAt === "string"
-            ? line.dueAt
-            : typeof line.dueDate === "string"
-              ? line.dueDate
-              : "",
-        recurrence: recurrence as ActionRecurrence,
-      };
-    });
-  }
-  return flattenLegacyActions(parsed as LegacyActionItem[]);
 }

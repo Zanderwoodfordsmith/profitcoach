@@ -217,56 +217,9 @@ function sortAcademyChildren(
 }
 
 /**
- * Remove duplicate academy recommended rows (same lesson + recommended id).
- * Keeps a done row when present, otherwise the earliest sort_order.
- */
-export async function dedupeAcademyRecommendedActionItems(
-  coachId: string
-): Promise<number> {
-  const items = await loadCoachActionItems(coachId);
-  const groups = new Map<string, DbActionItem[]>();
-
-  for (const item of items) {
-    if (!item.academy_lesson_id || !item.academy_recommended_action_id) continue;
-    const key = `${item.academy_lesson_id}|${item.academy_recommended_action_id}`;
-    const list = groups.get(key) ?? [];
-    list.push(item);
-    groups.set(key, list);
-  }
-
-  const toDelete: string[] = [];
-  for (const group of groups.values()) {
-    if (group.length < 2) continue;
-    group.sort((a, b) => {
-      if (a.done !== b.done) return a.done ? -1 : 1;
-      return a.sort_order - b.sort_order;
-    });
-    for (const extra of group.slice(1)) {
-      toDelete.push(extra.id);
-    }
-  }
-
-  if (!toDelete.length) return 0;
-
-  const chunkSize = 80;
-  for (let i = 0; i < toDelete.length; i += chunkSize) {
-    const chunk = toDelete.slice(i, i + chunkSize);
-    const { error } = await supabaseAdmin
-      .from("coach_action_items")
-      .delete()
-      .eq("coach_id", coachId)
-      .in("id", chunk)
-      .eq("is_locked", false);
-    if (error) throw new Error(error.message);
-  }
-
-  return toDelete.length;
-}
-
-/**
  * Move academy-linked rows into Classroom path groups (Start Here, Get Calls, …)
  * with section/lesson subgroups under Get Calls, Win Clients, Keep Clients, and
- * Going Pro. Safe to call on every My Actions load.
+ * Going Pro.
  */
 export async function reorganizeClassroomActionGroups(
   coachId: string
@@ -732,7 +685,7 @@ export async function addAcademyLessonAction(
 }
 
 /**
- * Ensure recommended lesson actions exist as My Actions rows.
+ * Ensure recommended lesson actions exist as coach action rows.
  * Missing rows are created incomplete (or with the given done state).
  * Existing rows keep their done flag unless `done` is provided.
  */

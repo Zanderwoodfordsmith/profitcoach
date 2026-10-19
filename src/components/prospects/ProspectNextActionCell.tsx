@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
 import { useEffect, useRef, useState } from "react";
 import { formatDueDateLabel } from "@/lib/actionPlans/actionOutlineUtils";
@@ -127,14 +126,6 @@ export function ProspectNextActionCell({
       >
         {content}
       </button>
-      <Link
-        href="/coach/signature/actions"
-        onClick={(e) => e.stopPropagation()}
-        className="shrink-0 text-[10px] font-medium text-sky-600 hover:text-sky-800"
-        title="View in My Actions"
-      >
-        Actions
-      </Link>
     </div>
   );
 }

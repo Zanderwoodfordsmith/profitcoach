@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ListTodo } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 /** Soft auto-advance only when the lesson has no recommended actions. */
 export const LESSON_HANDOFF_AUTO_ADVANCE_SECONDS = 5;
@@ -11,7 +10,6 @@ type Props = {
   nextLessonTitle: string | null;
   nextLessonHref: string | null;
   actionCount: number;
-  myActionsHref: string;
   onStay: () => void;
   onContinue: () => void;
 };
@@ -24,7 +22,6 @@ export function LessonVideoHandoff({
   nextLessonTitle,
   nextLessonHref,
   actionCount,
-  myActionsHref,
   onStay,
   onContinue,
 }: Props) {
@@ -80,14 +77,6 @@ export function LessonVideoHandoff({
         {actionCount > 0 ? (
           <p className="mt-3 text-sm text-white/80">
             {actionCount} action{actionCount === 1 ? "" : "s"} from this lesson
-            {" · "}
-            <Link
-              href={myActionsHref}
-              className="inline-flex items-center gap-1 font-medium text-white underline-offset-2 hover:underline"
-            >
-              <ListTodo className="h-3.5 w-3.5" aria-hidden />
-              My Actions
-            </Link>
           </p>
         ) : null}
 

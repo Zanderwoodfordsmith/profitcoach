@@ -65,6 +65,28 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
+        // My Actions was removed; each lesson keeps its own actions.
+        source: "/coach/signature/actions",
+        destination: "/coach/academy/classroom",
+        permanent: false,
+      },
+      {
+        source: "/admin/signature/actions",
+        destination: "/admin/academy/classroom",
+        permanent: false,
+      },
+      {
+        // Pushed action plans and coach groups were removed.
+        source: "/admin/action-plans/:path*",
+        destination: "/admin",
+        permanent: false,
+      },
+      {
+        source: "/admin/coach-groups/:path*",
+        destination: "/admin",
+        permanent: false,
+      },
+      {
         source: "/coach/workshop",
         destination: "/coach/boss-pro",
         permanent: true,

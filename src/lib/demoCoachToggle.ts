@@ -66,7 +66,6 @@ export function staffDemosAccessibleToEmail(
 /** Admin-only routes with no coach surface equivalent. */
 const ADMIN_ONLY_PREFIXES = [
   "/admin/coaches",
-  "/admin/coach-groups",
   "/admin/payments",
   "/admin/client-success",
   "/admin/cash-flow-forecast",
@@ -80,7 +79,6 @@ const ADMIN_ONLY_PREFIXES = [
   "/admin/linkedin-inbox",
   "/admin/landing-analytics",
   "/admin/time-tracker",
-  "/admin/action-plans",
   "/admin/growth-system",
   "/admin/academy/classroom/working",
   "/admin/settings",

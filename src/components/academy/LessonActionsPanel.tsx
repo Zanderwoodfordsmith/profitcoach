@@ -18,7 +18,7 @@ type Props = {
   lessonId: string;
   recommendedActions: AcademyRecommendedAction[];
   /**
-   * Admin preview: manual actions cannot be ticked into My Actions.
+   * Admin preview: manual actions cannot be ticked.
    * Tracked actions still show their real verified state.
    */
   readOnly?: boolean;
