@@ -21,7 +21,7 @@ Never use "Contact us", "Learn more" or "Book a call" as a primary action.
 
 ```
 /                       Home  (this build)
-├── /score              BOSS Score landing       → /assessment (the 50 questions)
+├── /score              BOSS Score landing       → /landing (the 3-minute BOSS Scorecard)
 │     └── results       BOSS results (the sales page, one per owner)
 │           └── /strategy-call   Strategy call  → six-month programme
 ├── /profit-system      The Profit System (programme page; today /how-it-works)
@@ -52,7 +52,7 @@ The founder story stays short here. It builds trust and links to `/our-story`.
 
 - **Job:** turn curiosity into a started diagnostic.
 - **Headline:** "Your business has a score. You just don't know it yet."
-- **Facts:** 50 questions, 10 areas, about 10 minutes, scored out of 100, free.
+- **Facts:** 10 areas, about 3 minutes, scored out of 100, free.
 - **What you get:** Score, Wheel, level, first 90 days.
 - **Friction answers:** why it's free, what happens to your answers, how long
   it takes.
