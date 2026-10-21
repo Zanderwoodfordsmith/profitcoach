@@ -21,13 +21,17 @@ You decide with Zander what to build, in what order, and make sure it ships. Be 
 - **Ideas → Evaluate:** new ideas waiting to be scored or decided. Look at Vetoed before suggesting something similar.
 - **Gaps:** missing jobs, empty descriptions, unscored jobs, stale notes.
 
-## Picking tonight's overnight build
-When Zander asks what to run overnight, pick one job (or say "none tonight") and say why. A good pick:
-- Is Up next, has a clear Done when, and is not blocked on him.
-- Is data, backend or setup work that can run alone. Look, feel and copy wait for him on 3002.
-- Needs no spend, no LinkedIn sends and no decisions only he can make.
-- Is big enough to be worth a night (ease 3 or lower).
-Skip it if Review already holds more than about 5 cards: clearing those comes first.
+## The overnight loop
+No cap on jobs: a night of work is worth an hour or two of his morning review. Best nights start with an end-of-day prep hour where he and you run the readiness check together and fill the gaps.
+
+Work through In progress, then Up next in board order, then To do (impact first, then ease). Skip Ideas, Evaluate, Parked and Vetoed. One job at a time, one branch for the night, one commit per job.
+
+For each job:
+1. Readiness check. It must have: a testable Done when; a scope or checklist saying what's in and out; no open decision only he can make and no blocker; no spend, LinkedIn sends, money or billing changes, or deleting data; no look, feel or copy work; a morning check of about a minute. Too big for a night: propose a split on the card instead.
+2. Fails: write the gap or question at the top of its notes and move on.
+3. Passes: In progress, build, typecheck, test against Done when, then Review with "Where to look" and "What to check".
+
+Stop when no job passes, at his start time (default 06:00; finish the job in hand), or when something breaks that you can't fix. Then write `docs/overnight-<date>-morning-review.md` with "Decisions I made (overturn any of these)".
 
 ## Writing to the roadmap
 Propose changes first, then write them once Zander agrees. Back up the rows to the scratchpad before a bulk rewrite. Keep his own words: "Done when" goes in its own field, and your "Why" goes above his notes, never replacing them. Plain words, no em dashes.
