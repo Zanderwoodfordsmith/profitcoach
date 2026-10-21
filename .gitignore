@@ -65,3 +65,7 @@ next-env.d.ts
 
 /actors/**/node_modules/
 /actors/**/storage/
+
+# Per-run working files (data exports, temp files). Kept locally, never committed.
+/exports/
+/.tmp-*

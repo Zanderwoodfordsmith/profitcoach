@@ -14,12 +14,20 @@ export const COMMUNITY_BROADCAST_MENTION_CLASS =
   "font-semibold !text-blue-700 rounded-md bg-blue-50 px-1 py-0.5";
 
 /** Academy areas a lesson/course mention can point at. */
-export type AcademyArea = "classroom" | "programs";
+export type AcademyArea = "classroom" | "programs" | "vault";
 
 const ACADEMY_AREA_BASE: Record<AcademyArea, string> = {
   classroom: "/coach/academy/compass",
   programs: "/coach/academy/classroom",
+  vault: "/coach/academy/vault",
 };
+
+function isAcademyArea(value: string | undefined): value is AcademyArea {
+  return value === "classroom" || value === "programs" || value === "vault";
+}
+
+/** Where in a lesson a mention opens: one chapter and/or a start time in seconds. */
+export type LessonMentionSpot = { chapterId?: string; t?: number };
 
 /** Legacy stored format: @ plus UUID (no brackets). */
 export const MENTION_UUID_REGEX =
@@ -37,7 +45,7 @@ export const MENTION_MARKDOWN_REGEX =
  * `@` = member or broadcast, `@@` = lesson, `@@@` = course. Target encodes:
  *   - member: `uuid`
  *   - broadcast: `group:everyone` | `group:coaches`
- *   - lesson: `lesson:courseId:lessonId`
+ *   - lesson: `lesson:courseId:lessonId` (optional `?chapter=…&t=…`)
  *   - course: `course:courseId`
  */
 export const MENTION_TOKEN_REGEX =
@@ -68,9 +76,20 @@ export function broadcastMentionTarget(group: BroadcastMentionGroup): string {
 export type ParsedMentionTarget =
   | { type: "user"; userId: string }
   | { type: "group"; group: BroadcastMentionGroup }
-  | { type: "lesson"; area: AcademyArea; courseId: string; lessonId: string }
+  | ({ type: "lesson"; area: AcademyArea; courseId: string; lessonId: string } & LessonMentionSpot)
   | { type: "course"; area: AcademyArea; courseId: string }
   | null;
+
+/** Reads `chapter` and `t` from a lesson target's `?…` suffix. */
+function parseLessonSpot(query: string): LessonMentionSpot {
+  const params = new URLSearchParams(query);
+  const spot: LessonMentionSpot = {};
+  const chapterId = params.get("chapter")?.trim();
+  if (chapterId) spot.chapterId = chapterId;
+  const t = Number(params.get("t"));
+  if (params.has("t") && Number.isFinite(t) && t > 0) spot.t = Math.floor(t);
+  return spot;
+}
 
 function parseBroadcastMentionTarget(target: string): BroadcastMentionGroup | null {
   const normalized = target.trim().toLowerCase();
@@ -92,7 +111,8 @@ function parseBroadcastMentionTarget(target: string): BroadcastMentionGroup | nu
  * Decodes a `mention:` target string into a typed entity reference. Formats:
  *   - `uuid`
  *   - `group:everyone` | `group:coaches`
- *   - `lesson:<area>:<courseId>:<lessonId>` (legacy `lesson:<courseId>:<lessonId>` ⇒ classroom)
+ *   - `lesson:<area>:<courseId>:<lessonId>[?chapter=<id>&t=<seconds>]`
+ *     (legacy `lesson:<courseId>:<lessonId>` ⇒ classroom)
  *   - `course:<area>:<courseId>` (legacy `course:<courseId>` ⇒ classroom)
  */
 export function parseMentionTarget(target: string): ParsedMentionTarget {
@@ -104,22 +124,26 @@ export function parseMentionTarget(target: string): ParsedMentionTarget {
     return { type: "group", group: broadcast };
   }
   if (target.startsWith("lesson:")) {
-    const parts = target.slice("lesson:".length).split(":");
-    if (parts[0] === "classroom" || parts[0] === "programs") {
+    const rest = target.slice("lesson:".length);
+    const queryAt = rest.indexOf("?");
+    const path = queryAt === -1 ? rest : rest.slice(0, queryAt);
+    const spot = queryAt === -1 ? {} : parseLessonSpot(rest.slice(queryAt + 1));
+    const parts = path.split(":");
+    if (isAcademyArea(parts[0])) {
       const area = parts[0];
       const courseId = parts[1] ?? "";
       const lessonId = parts.slice(2).join(":");
       if (!courseId || !lessonId) return null;
-      return { type: "lesson", area, courseId, lessonId };
+      return { type: "lesson", area, courseId, lessonId, ...spot };
     }
     const courseId = parts[0] ?? "";
     const lessonId = parts.slice(1).join(":");
     if (!courseId || !lessonId) return null;
-    return { type: "lesson", area: "classroom", courseId, lessonId };
+    return { type: "lesson", area: "classroom", courseId, lessonId, ...spot };
   }
   if (target.startsWith("course:")) {
     const parts = target.slice("course:".length).split(":");
-    if (parts[0] === "classroom" || parts[0] === "programs") {
+    if (isAcademyArea(parts[0])) {
       const area = parts[0];
       const courseId = parts.slice(1).join(":");
       if (!courseId) return null;
@@ -137,13 +161,13 @@ export function buildMentionTarget(
   ref:
     | { type: "user"; userId: string }
     | { type: "group"; group: BroadcastMentionGroup }
-    | { type: "lesson"; area: AcademyArea; courseId: string; lessonId: string }
+    | ({ type: "lesson"; area: AcademyArea; courseId: string; lessonId: string } & LessonMentionSpot)
     | { type: "course"; area: AcademyArea; courseId: string }
 ): string {
   if (ref.type === "user") return ref.userId;
   if (ref.type === "group") return broadcastMentionTarget(ref.group);
   if (ref.type === "lesson") {
-    return `lesson:${ref.area}:${ref.courseId}:${ref.lessonId}`;
+    return `lesson:${ref.area}:${ref.courseId}:${ref.lessonId}${lessonSpotQuery(ref)}`;
   }
   return `course:${ref.area}:${ref.courseId}`;
 }
@@ -155,12 +179,22 @@ export function atPrefixForMentionType(type: MentionEntityType): string {
   return "@";
 }
 
+/** `?chapter=…&t=…` for a lesson spot, or "" when it is the whole lesson. */
+function lessonSpotQuery(spot: LessonMentionSpot): string {
+  const params = new URLSearchParams();
+  if (spot.chapterId) params.set("chapter", spot.chapterId);
+  if (spot.t && spot.t > 0) params.set("t", String(Math.floor(spot.t)));
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
 export function lessonMentionHref(
   area: AcademyArea,
   courseId: string,
-  lessonId: string
+  lessonId: string,
+  spot: LessonMentionSpot = {}
 ): string {
-  return `${ACADEMY_AREA_BASE[area]}/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}`;
+  return `${ACADEMY_AREA_BASE[area]}/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}${lessonSpotQuery(spot)}`;
 }
 
 export function courseMentionHref(area: AcademyArea, courseId: string): string {
@@ -171,7 +205,7 @@ export function courseMentionHref(area: AcademyArea, courseId: string): string {
 export function mentionTargetHref(target: ParsedMentionTarget): string | null {
   if (!target) return null;
   if (target.type === "lesson") {
-    return lessonMentionHref(target.area, target.courseId, target.lessonId);
+    return lessonMentionHref(target.area, target.courseId, target.lessonId, target);
   }
   if (target.type === "course") {
     return courseMentionHref(target.area, target.courseId);
@@ -268,6 +302,8 @@ export type MentionSegment =
       courseId?: string;
       /** Lesson id (lesson mentions). */
       lessonId?: string;
+      /** Chapter + start time (lesson mentions that open one spot). */
+      spot?: LessonMentionSpot;
       labelFromToken?: string;
     };
 
@@ -299,6 +335,7 @@ export function splitMentionSegments(body: string): MentionSegment[] {
           area: parsed.area,
           courseId: parsed.courseId,
           lessonId: parsed.lessonId,
+          spot: { chapterId: parsed.chapterId, t: parsed.t },
           labelFromToken: label,
         });
       } else if (parsed?.type === "course") {

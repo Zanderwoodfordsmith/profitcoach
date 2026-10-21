@@ -36,7 +36,7 @@ export {
 export const ROADMAP_IMAGES_BUCKET = "roadmap-images";
 
 const JOB_COLUMNS =
-  "id, job_number, title, notes, area, project, status, blocked_by, app_path, visibility, impact, ease, checklist, comments, images, sort_order, created_at, updated_at";
+  "id, job_number, title, notes, done_when, urgent, area, project, status, blocked_by, app_path, visibility, impact, ease, checklist, comments, images, sort_order, created_at, updated_at";
 
 function sanitizeChecklist(value: unknown): RoadmapChecklistItem[] {
   if (!Array.isArray(value)) return [];
@@ -51,19 +51,32 @@ function sanitizeChecklist(value: unknown): RoadmapChecklistItem[] {
     .filter((v) => v.text.trim().length > 0);
 }
 
+function sanitizeCommentBase(v: Record<string, unknown>) {
+  return {
+    id: typeof v.id === "string" ? v.id : crypto.randomUUID(),
+    text: typeof v.text === "string" ? v.text.slice(0, 4000) : "",
+    author: typeof v.author === "string" ? v.author.slice(0, 120) : null,
+    created_at:
+      typeof v.created_at === "string" ? v.created_at : new Date().toISOString(),
+  };
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object";
+
 function sanitizeComments(value: unknown): RoadmapComment[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((v): v is Record<string, unknown> => !!v && typeof v === "object")
+    .filter(isRecord)
     .slice(0, 200)
     .map((v) => ({
-      id: typeof v.id === "string" ? v.id : crypto.randomUUID(),
-      text: typeof v.text === "string" ? v.text.slice(0, 4000) : "",
-      author: typeof v.author === "string" ? v.author.slice(0, 120) : null,
-      created_at:
-        typeof v.created_at === "string"
-          ? v.created_at
-          : new Date().toISOString(),
+      ...sanitizeCommentBase(v),
+      edited_at: typeof v.edited_at === "string" ? v.edited_at : null,
+      replies: (Array.isArray(v.replies) ? v.replies : [])
+        .filter(isRecord)
+        .slice(0, 100)
+        .map(sanitizeCommentBase)
+        .filter((r) => r.text.trim().length > 0),
     }))
     .filter((v) => v.text.trim().length > 0);
 }
@@ -149,6 +162,8 @@ export async function resolveRoadmapJobId(ref: string): Promise<string | null> {
 export type CreateRoadmapJobInput = {
   title: string;
   notes?: string | null;
+  doneWhen?: string | null;
+  urgent?: boolean | null;
   area?: string | null;
   project?: string | null;
   status?: RoadmapStatus | null;
@@ -170,6 +185,8 @@ export async function createRoadmapJob(
     .insert({
       title: title.slice(0, 300),
       notes: input.notes?.trim() || null,
+      done_when: input.doneWhen?.trim().slice(0, 2000) || null,
+      urgent: input.urgent === true,
       area: input.area?.trim() || "platform",
       project: input.project?.trim().slice(0, 80) || null,
       status: input.status && isRoadmapStatus(input.status) ? input.status : "todo",
@@ -194,6 +211,8 @@ export async function createRoadmapJob(
 export type UpdateRoadmapJobInput = {
   title?: string;
   notes?: string | null;
+  doneWhen?: string | null;
+  urgent?: boolean;
   area?: string;
   project?: string | null;
   status?: RoadmapStatus;
@@ -219,6 +238,10 @@ export async function updateRoadmapJob(
     update.title = patch.title.trim().slice(0, 300);
   }
   if (patch.notes !== undefined) update.notes = patch.notes?.trim() || null;
+  if (typeof patch.urgent === "boolean") update.urgent = patch.urgent;
+  if (patch.doneWhen !== undefined) {
+    update.done_when = patch.doneWhen?.trim().slice(0, 2000) || null;
+  }
   if (typeof patch.area === "string" && patch.area.trim()) {
     update.area = patch.area.trim();
   }

@@ -11,10 +11,21 @@ import {
   AlignLeft,
   ArrowDown,
   ArrowUp,
+  ArrowUpDown,
+  Check,
   CheckSquare,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Columns3,
+  Flag,
+  Folder,
+  Gauge,
   ImageIcon,
   ImagePlus,
+  Layers,
+  LayoutGrid,
+  Link2,
   Loader2,
   MessageSquare,
   OctagonAlert,
@@ -22,20 +33,26 @@ import {
   Plus,
   Rows3,
   ScatterChart,
+  Sigma,
+  Tag,
   Trash2,
   X,
+  Zap,
 } from "lucide-react";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
+import { WorkshopActivityPanel } from "@/components/BossGrid/WorkshopActivityPanel";
+import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
+import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
+import type { WorkshopComment } from "@/lib/playbookSessionNotes";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
   ROADMAP_AREAS,
   ROADMAP_AREA_META,
   ROADMAP_EASE_LEVELS,
-  ROADMAP_IMPACT_HINT,
+  ROADMAP_IMPACT_LEVELS,
   ROADMAP_SCORES,
-  ROADMAP_STATUSES,
   type RoadmapChecklistItem,
   type RoadmapComment,
   type RoadmapJob,
@@ -61,7 +78,8 @@ const STATUS_META: Record<RoadmapStatus, { label: string; chip: string }> = {
   up_next: { label: "Up next", chip: "bg-orange-100 text-orange-800" },
   in_progress: { label: "In progress", chip: "bg-blue-100 text-blue-800" },
   review: { label: "Review", chip: "bg-yellow-200/80 text-yellow-900" },
-  done: { label: "Done", chip: "bg-emerald-100 text-emerald-800" },
+  done: { label: "Ready", chip: "bg-emerald-100 text-emerald-800" },
+  staged: { label: "On staging", chip: "bg-cyan-100 text-cyan-800" },
   live: { label: "Live", chip: "bg-teal-100 text-teal-800" },
   evaluate: { label: "Evaluate", chip: "bg-violet-100 text-violet-800" },
   parked: { label: "Parked", chip: "bg-slate-200/70 text-slate-500" },
@@ -92,7 +110,16 @@ const COLUMN_LABEL: Partial<Record<RoadmapStatus, string>> = {
  * first card lines up with the other columns; To do's own section is "Later".
  */
 const COLUMN_SECTIONS: Partial<
-  Record<RoadmapStatus, { status: RoadmapStatus; label: string | null; tone: string }[]>
+  Record<
+    RoadmapStatus,
+    {
+      status: RoadmapStatus;
+      label: string | null;
+      tone: string;
+      /** Unheaded sections only: the strip shown mid-drag while empty. */
+      dropHint?: string;
+    }[]
+  >
 > = {
   parked: [
     { status: "evaluate", label: "Evaluate", tone: "text-violet-700" },
@@ -100,8 +127,12 @@ const COLUMN_SECTIONS: Partial<
     { status: "vetoed", label: "Vetoed", tone: "text-rose-600" },
   ],
   todo: [
-    { status: "up_next", label: null, tone: "" },
+    { status: "up_next", label: null, tone: "", dropHint: "Drop here for Up next" },
     { status: "todo", label: "Later", tone: "text-slate-500" },
+  ],
+  done: [
+    { status: "done", label: null, tone: "", dropHint: "Drop here once you've checked it" },
+    { status: "staged", label: "On staging", tone: "text-cyan-700" },
   ],
 };
 
@@ -110,33 +141,61 @@ const COLUMN_ADD_STATUS: Partial<Record<RoadmapStatus, RoadmapStatus>> = {
   parked: "evaluate",
 };
 
-const IDEA_STATUSES: RoadmapStatus[] = ["evaluate", "parked", "vetoed"];
 
 /** Columns rendered as a narrow strip until expanded. */
 const DEFAULT_COLLAPSED: RoadmapStatus[] = ["parked", "live"];
 
 const SECTIONS_KEY = "roadmap-collapsed-sections";
 
-/** Status pills on an open job, in the same order as the board. */
-const PICKER_ORDER: RoadmapStatus[] = [
-  ...IDEA_STATUSES,
-  ...ROADMAP_STATUSES.filter((s) => !IDEA_STATUSES.includes(s)),
-];
+/** Cards shown per board list before "Show N more". */
+const CARD_LIMIT = 15;
 
+/** Closest to shipping first, then planned work, ideas, and Live last. */
 const LIST_ORDER: RoadmapStatus[] = [
+  "done",
+  "staged",
   "review",
   "in_progress",
   "up_next",
   "todo",
-  "done",
-  "live",
   "evaluate",
   "parked",
   "vetoed",
+  "live",
 ];
+
+/** The Filter's status list, grouped like the status dropdown, in LIST_ORDER. */
+const FILTER_STATUS_GROUPS: { label: string | null; items: RoadmapStatus[] }[] = [
+  { label: "Ready", items: ["done", "staged"] },
+  { label: null, items: ["review"] },
+  { label: null, items: ["in_progress"] },
+  { label: "To do", items: ["up_next", "todo"] },
+  { label: "Ideas", items: ["evaluate", "parked", "vetoed"] },
+  { label: null, items: ["live"] },
+];
+
+/** Hidden until ticked in Filter. */
+const DEFAULT_HIDDEN_STATUSES: RoadmapStatus[] = ["live"];
 
 const VIEW_STORAGE_KEY = "roadmap-view";
 const BOARD_GROUP_KEY = "roadmap-board-group";
+const BOARD_SORT_KEY = "roadmap-board-sort";
+const CARD_STYLE_KEY = "roadmap-card-style";
+
+/** Board card look: clean (21 Oct) or the earlier classic one, kept to compare. */
+type CardStyle = "clean" | "classic";
+
+/** Statuses where a missing Done when is worth flagging on the card. */
+const NEEDS_DONE_WHEN: RoadmapStatus[] = ["todo", "up_next", "in_progress", "review", "evaluate"];
+
+type BoardSort = "total" | "impact" | "ease" | "added";
+
+const BOARD_SORTS: { key: BoardSort; label: string }[] = [
+  { key: "total", label: "Total (impact + ease)" },
+  { key: "impact", label: "Impact" },
+  { key: "ease", label: "Ease" },
+  { key: "added", label: "Date added" },
+];
 
 /** Filter value for jobs with no project label. */
 const NO_PROJECT = "__none__";
@@ -149,6 +208,15 @@ const SCORE_TONE: Record<number, { fill: string; text: string; soft: string }> =
   4: { fill: "bg-lime-500", text: "text-lime-700", soft: "bg-lime-50" },
   5: { fill: "bg-emerald-500", text: "text-emerald-700", soft: "bg-emerald-50" },
 };
+
+/** Red flag for urgent jobs. */
+function UrgentFlag({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <span title="Urgent" className="inline-flex shrink-0">
+      <Flag className={`${className} fill-rose-500 text-rose-500`} aria-label="Urgent" />
+    </span>
+  );
+}
 
 /** Short job reference, e.g. #12. */
 function JobNumber({ n }: { n: number }) {
@@ -173,14 +241,30 @@ export default function AdminRoadmapPage() {
   const [jobs, setJobs] = useState<RoadmapJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [areaFilter, setAreaFilter] = useState<string>("all");
-  /** "all", NO_PROJECT, or a project label. */
-  const [projectFilter, setProjectFilter] = useState<string>("all");
+  /** Categories ticked in Filter; empty = all. */
+  const [areaFilter, setAreaFilter] = useState<Set<string>>(() => new Set());
+  /** Projects ticked in Filter (NO_PROJECT for jobs without one); empty = all. */
+  const [projectFilter, setProjectFilter] = useState<Set<string>>(() => new Set());
+  const [toolbarMenu, setToolbarMenu] = useState<
+    "filter" | "sort" | "group" | "cards" | null
+  >(null);
+  const [boardSort, setBoardSort] = useState<BoardSort>("total");
+  const [cardStyle, setCardStyle] = useState<CardStyle>("clean");
+  const [listGroup, setListGroup] = useState<ListGroup>("area");
+  const [listSort, setListSort] = useState<ListSort>(DEFAULT_LIST_SORT);
+  /** Statuses unticked in Filter: hidden on every view. */
+  const [hiddenStatuses, setHiddenStatuses] = useState<Set<RoadmapStatus>>(
+    () => new Set(DEFAULT_HIDDEN_STATUSES)
+  );
+  const closeToolbarMenu = useCallback(() => setToolbarMenu(null), []);
+  const toolbarMenuRef = useDismiss(toolbarMenu !== null, closeToolbarMenu);
   const [boardGroup, setBoardGroup] = useState<"none" | "project">("none");
   /** Board sections folded shut (by status), e.g. Vetoed. */
   const [foldedSections, setFoldedSections] = useState<Set<RoadmapStatus>>(
     () => new Set(["vetoed"])
   );
+  /** Board lists opened past the first CARD_LIMIT cards. */
+  const [showAll, setShowAll] = useState<Set<string>>(() => new Set());
   /** A card is being dragged: shows the Up next drop strip when it's empty. */
   const [dragging, setDragging] = useState(false);
   const [lastArea, setLastArea] = useState<string>("get-clients");
@@ -207,6 +291,24 @@ export default function AdminRoadmapPage() {
       }
       if (window.localStorage.getItem(BOARD_GROUP_KEY) === "project") {
         setBoardGroup("project");
+      }
+      const listPrefs = window.localStorage.getItem(LIST_PREFS_KEY);
+      if (listPrefs) {
+        const parsed = JSON.parse(listPrefs) as {
+          group?: ListGroup;
+          sort?: ListSort;
+          hidden?: RoadmapStatus[];
+        };
+        if (parsed.group) setListGroup(parsed.group);
+        if (parsed.sort) setListSort(parsed.sort);
+        if (parsed.hidden) setHiddenStatuses(new Set(parsed.hidden));
+      }
+      if (window.localStorage.getItem(CARD_STYLE_KEY) === "classic") {
+        setCardStyle("classic");
+      }
+      const storedSort = window.localStorage.getItem(BOARD_SORT_KEY);
+      if (BOARD_SORTS.some((o) => o.key === storedSort)) {
+        setBoardSort(storedSort as BoardSort);
       }
       const folded = window.localStorage.getItem(SECTIONS_KEY);
       if (folded) setFoldedSections(new Set(JSON.parse(folded) as RoadmapStatus[]));
@@ -235,6 +337,49 @@ export default function AdminRoadmapPage() {
       }
       return next;
     });
+  }
+
+  function saveListPrefs(next: {
+    group?: ListGroup;
+    sort?: ListSort;
+    hidden?: Set<RoadmapStatus>;
+  }) {
+    try {
+      window.localStorage.setItem(
+        LIST_PREFS_KEY,
+        JSON.stringify({
+          group: next.group ?? listGroup,
+          sort: next.sort ?? listSort,
+          hidden: [...(next.hidden ?? hiddenStatuses)],
+        })
+      );
+    } catch {
+      /* noop */
+    }
+  }
+
+  function sortListBy(key: ListSortKey) {
+    // Scores open high-first; everything else reads top-down.
+    const numeric = key === "impact" || key === "ease" || key === "total";
+    const next: ListSort =
+      listSort.key === key
+        ? { key, dir: listSort.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: numeric ? "desc" : "asc" };
+    setListSort(next);
+    saveListPrefs({ sort: next });
+  }
+
+  function changeListGroup(next: ListGroup) {
+    setListGroup(next);
+    saveListPrefs({ group: next });
+  }
+
+  function toggleHiddenStatus(status: RoadmapStatus) {
+    const next = new Set(hiddenStatuses);
+    if (next.has(status)) next.delete(status);
+    else next.add(status);
+    setHiddenStatuses(next);
+    saveListPrefs({ hidden: next });
   }
 
   function changeBoardGroup(next: "none" | "project") {
@@ -269,9 +414,15 @@ export default function AdminRoadmapPage() {
     };
   }, []);
 
+  /** Saves still on their way; a reload while any are pending would undo them on screen. */
+  const pendingSavesRef = useRef(0);
+  /** Only the newest reload may replace the jobs. */
+  const loadSeqRef = useRef(0);
+
   const load = useCallback(async () => {
     const headers = await authHeaders();
     if (!headers) return;
+    const seq = ++loadSeqRef.current;
     setError(null);
     const res = await fetch("/api/admin/roadmap", { headers });
     if (!res.ok) {
@@ -280,6 +431,8 @@ export default function AdminRoadmapPage() {
       return;
     }
     const body = (await res.json()) as { jobs?: RoadmapJob[] };
+    // Stale answer (a newer reload started, or a save is still in flight): skip it.
+    if (seq !== loadSeqRef.current || pendingSavesRef.current > 0) return;
     setJobs(body.jobs ?? []);
     setLoading(false);
   }, [authHeaders]);
@@ -325,15 +478,28 @@ export default function AdminRoadmapPage() {
     async (id: string, patch: Record<string, unknown>) => {
       const headers = await authHeaders();
       if (!headers) return;
+      // Show the change straight away (API names map onto the row's columns).
+      const { doneWhen, blockedBy, ...rest } = patch;
+      const onScreen = {
+        ...rest,
+        ...(doneWhen !== undefined ? { done_when: doneWhen || null } : {}),
+        ...(blockedBy !== undefined ? { blocked_by: blockedBy || null } : {}),
+      };
       setJobs((prev) =>
-        prev.map((j) => (j.id === id ? ({ ...j, ...patch } as RoadmapJob) : j))
+        prev.map((j) => (j.id === id ? ({ ...j, ...onScreen } as RoadmapJob) : j))
       );
-      await fetch(`/api/admin/roadmap/${id}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify(patch),
-      });
-      await load();
+      pendingSavesRef.current += 1;
+      try {
+        await fetch(`/api/admin/roadmap/${id}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(patch),
+        });
+      } finally {
+        pendingSavesRef.current -= 1;
+      }
+      // One reload once the last save lands.
+      if (pendingSavesRef.current === 0) await load();
     },
     [authHeaders, load]
   );
@@ -445,11 +611,11 @@ export default function AdminRoadmapPage() {
     () =>
       jobs.filter(
         (j) =>
-          (areaFilter === "all" || j.area === areaFilter) &&
-          (projectFilter === "all" ||
-            (projectFilter === NO_PROJECT ? !j.project : j.project === projectFilter))
+          !hiddenStatuses.has(j.status) &&
+          (areaFilter.size === 0 || areaFilter.has(j.area)) &&
+          (projectFilter.size === 0 || projectFilter.has(j.project ?? NO_PROJECT))
       ),
-    [jobs, areaFilter, projectFilter]
+    [jobs, areaFilter, projectFilter, hiddenStatuses]
   );
 
   const openJob = openJobId
@@ -497,7 +663,38 @@ export default function AdminRoadmapPage() {
     </div>
   );
 
-  const composeArea = areaFilter !== "all" ? areaFilter : lastArea;
+  /** Board order: urgent first, then highest first, unscored at the bottom; "added" is oldest first. */
+  const boardJobs = useMemo(() => {
+    const score = (j: RoadmapJob) =>
+      boardSort === "total" ? jobTotal(j) : boardSort === "impact" ? j.impact : j.ease;
+    return [...visible].sort((a, b) => {
+      // Urgent jobs jump the queue whatever the sort.
+      if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+      if (boardSort === "added") return a.created_at.localeCompare(b.created_at);
+      const sa = score(a);
+      const sb = score(b);
+      if (sa !== sb) {
+        if (sa === null) return 1;
+        if (sb === null) return -1;
+        return sb - sa;
+      }
+      return (jobTotal(b) ?? 0) - (jobTotal(a) ?? 0) || a.sort_order - b.sort_order;
+    });
+  }, [visible, boardSort]);
+
+  const composeArea = areaFilter.size === 1 ? [...areaFilter][0] : lastArea;
+  /** New jobs join the project when exactly one is ticked in Filter. */
+  const filterProject =
+    projectFilter.size === 1 && !projectFilter.has(NO_PROJECT) ? [...projectFilter][0] : null;
+  const filterCount = areaFilter.size + projectFilter.size + hiddenStatuses.size;
+  const statusCounts = new Map<RoadmapStatus, number>();
+  for (const j of jobs) statusCounts.set(j.status, (statusCounts.get(j.status) ?? 0) + 1);
+  const toggleIn = (set: Set<string>, value: string) => {
+    const next = new Set(set);
+    if (next.has(value)) next.delete(value);
+    else next.add(value);
+    return next;
+  };
 
   /** Faint "+ Add" at the foot of a lane; opens the composer in place. */
   /** project: the lane's label; undefined falls back to the project filter. */
@@ -510,9 +707,7 @@ export default function AdminRoadmapPage() {
     const laneProject =
       project !== undefined
         ? project
-        : projectFilter !== "all" && projectFilter !== NO_PROJECT
-          ? projectFilter
-          : null;
+        : filterProject;
     if (composingIn === key) {
       return (
         <AddJobComposer
@@ -549,8 +744,34 @@ export default function AdminRoadmapPage() {
           dragActiveRef={dragActiveRef}
           onOpen={() => setOpenJobId(job.id)}
           showProject={showProject}
+          variant={cardStyle}
         />
       ));
+    // Long lists show the top cards (the board is sorted best first) and fold the rest.
+    const limitedCards = (rows: RoadmapJob[], key: string) => {
+      const all = showAll.has(key);
+      return (
+        <>
+          {cards(all ? rows : rows.slice(0, CARD_LIMIT))}
+          {rows.length > CARD_LIMIT ? (
+            <button
+              type="button"
+              onClick={() =>
+                setShowAll((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(key)) next.delete(key);
+                  else next.add(key);
+                  return next;
+                })
+              }
+              className="rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-500 transition hover:bg-slate-200/60 hover:text-slate-800"
+            >
+              {all ? "Show fewer" : `Show ${rows.length - CARD_LIMIT} more`}
+            </button>
+          ) : null}
+        </>
+      );
+    };
     return (
       <div
         onDragStart={() => setDragging(true)}
@@ -599,13 +820,15 @@ export default function AdminRoadmapPage() {
             <div
               key={`${lanePrefix}${status}`}
               {...(sections ? {} : dropHandlers(status))}
-              className={`min-w-72 flex-1 basis-0 rounded-xl p-2 transition ${
+              // Header stays put; the cards scroll inside the column.
+              style={{ maxHeight: `calc(100dvh - ${headerHeight + 150}px)` }}
+              className={`flex min-h-48 min-w-72 flex-1 basis-0 flex-col rounded-xl p-2 transition ${
                 !sections && dragOverStatus === status
                   ? "bg-sky-100 ring-1 ring-sky-400"
                   : "bg-slate-100/80"
               }`}
             >
-              <div className="mb-2 flex items-center justify-between px-1 pt-0.5">
+              <div className="mb-2 flex shrink-0 items-center justify-between px-1 pt-0.5">
                 <span className="flex items-center gap-2">
                   <span
                     className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
@@ -644,6 +867,7 @@ export default function AdminRoadmapPage() {
                   ) : null}
                 </span>
               </div>
+              <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-0.5">
               {sections ? (
                 <div className="flex flex-col gap-2">
                   {sections.map((section) => {
@@ -657,13 +881,23 @@ export default function AdminRoadmapPage() {
                           key={section.status}
                           {...dropHandlers(section.status)}
                           className={`flex flex-col gap-2 rounded-md transition ${
-                            over ? "bg-orange-100 ring-1 ring-orange-400" : ""
+                            over
+                              ? section.status === "up_next"
+                                ? "bg-orange-100 ring-1 ring-orange-400"
+                                : "bg-sky-100 ring-1 ring-sky-400"
+                              : ""
                           }`}
                         >
                           {cards(rows)}
                           {rows.length === 0 ? (
-                            <p className="rounded-md border border-dashed border-orange-300 px-2 py-2 text-xs font-medium text-orange-600">
-                              Drop here for Up next
+                            <p
+                              className={`rounded-md border border-dashed px-2 py-2 text-xs font-medium ${
+                                section.status === "up_next"
+                                  ? "border-orange-300 text-orange-600"
+                                  : "border-slate-300 text-slate-500"
+                              }`}
+                            >
+                              {section.dropHint}
                             </p>
                           ) : null}
                         </div>
@@ -697,7 +931,7 @@ export default function AdminRoadmapPage() {
                         ) : null}
                         {folded ? null : (
                           <div className="flex min-h-6 flex-col gap-2 pt-0.5">
-                            {cards(rows)}
+                            {limitedCards(rows, `${lanePrefix}${section.status}`)}
                           </div>
                         )}
                       </div>
@@ -707,10 +941,14 @@ export default function AdminRoadmapPage() {
                 </div>
               ) : (
                 <div className="flex min-h-12 flex-col gap-2">
-                  {cards(subset.filter((j) => j.status === status))}
+                  {limitedCards(
+                    subset.filter((j) => j.status === status),
+                    `${lanePrefix}${status}`
+                  )}
                   {addSlot(`${lanePrefix}${status}`, addStatus, undefined, project)}
                 </div>
               )}
+              </div>
             </div>
           );
         })}
@@ -723,81 +961,265 @@ export default function AdminRoadmapPage() {
       <StickyPageHeader
         rootRef={headerRef}
         title="Academy"
-        description="Review = built, waiting for Zander to check. Done = checked and pushed (may still be admin-only). Live = coaches can see it. Projects group related jobs. Ask the AI panel to add or update jobs from any screen."
+        description="Review = built, check it on 3002. Ready = checked, goes out with the next ;stage. On staging = on staging.theprofitcoach.com, waiting for ;live. Live = coaches have it. Projects group related jobs. Ask the AI panel to add or update jobs from any screen."
         tabs={<LessonImportTabs />}
       />
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-5 flex flex-wrap items-center gap-3 border-b border-slate-200/80 pb-4">
         {viewToggle}
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => setAreaFilter("all")}
-            className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-              areaFilter === "all"
-                ? "bg-slate-900 text-white"
-                : "bg-white text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            All
-          </button>
-          {areas.map((a) => (
-            <button
-              key={a}
-              type="button"
-              onClick={() => setAreaFilter(a)}
-              title={areaMeta(a).hint || undefined}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                areaFilter === a
-                  ? "bg-slate-900 text-white"
-                  : "bg-white text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${areaMeta(a).dot}`} />
-              {areaMeta(a).label}
-              {openCounts.get(a) ? (
-                <span
-                  className={`tabular-nums ${
-                    areaFilter === a ? "text-white/60" : "text-slate-400"
-                  }`}
-                >
-                  {openCounts.get(a)}
-                </span>
+        <div ref={toolbarMenuRef} className="flex items-center gap-1">
+          <div className="relative">
+            <TableToolbarButton
+              label="Filter"
+              aria-haspopup="true"
+              aria-expanded={toolbarMenu === "filter"}
+              active={toolbarMenu === "filter" || filterCount > 0}
+              badge={filterCount > 0 ? filterCount : null}
+              onClick={() => setToolbarMenu((m) => (m === "filter" ? null : "filter"))}
+              icon={<FilterSlidersIcon className="h-5 w-5 text-slate-500" />}
+            />
+            {toolbarMenu === "filter" ? (
+              <div className="absolute left-0 top-full z-[90] mt-1 max-h-[min(40rem,78vh)] w-80 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.35)]">
+                <p className="mb-1 px-2 text-xs font-semibold text-slate-700">
+                  Status <span className="font-normal text-slate-400">· untick to hide</span>
+                </p>
+                <div className="flex flex-col">
+                  {FILTER_STATUS_GROUPS.map((group, gi) => (
+                    <div key={gi}>
+                      {group.label ? (
+                        <p className="px-2 pb-0.5 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                          {group.label}
+                        </p>
+                      ) : null}
+                      {group.items.map((st) => (
+                        <label
+                          key={st}
+                          className={`flex cursor-pointer items-center gap-2 rounded-md py-1.5 pr-2 text-sm text-slate-700 hover:bg-slate-50 ${
+                            group.label ? "pl-5" : "pl-2"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!hiddenStatuses.has(st)}
+                            onChange={() => toggleHiddenStatus(st)}
+                            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+                          />
+                          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_META[st].chip}`} />
+                          <span className="flex-1 truncate">
+                            {STATUS_MENU_LABEL[st] ?? STATUS_META[st].label}
+                          </span>
+                          <span className="text-xs tabular-nums text-slate-400">
+                            {statusCounts.get(st) ?? 0}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <p className="mb-1 mt-3 border-t border-slate-100 px-2 pt-3 text-xs font-semibold text-slate-700">
+                  Category
+                </p>
+                {areas.map((a) => (
+                  <label
+                    key={a}
+                    title={areaMeta(a).hint || undefined}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={areaFilter.has(a)}
+                      onChange={() => setAreaFilter((f) => toggleIn(f, a))}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+                    />
+                    <span className={`h-2 w-2 rounded-full ${areaMeta(a).dot}`} />
+                    <span className="flex-1">{areaMeta(a).label}</span>
+                    {openCounts.get(a) ? (
+                      <span className="text-xs tabular-nums text-slate-400">{openCounts.get(a)}</span>
+                    ) : null}
+                  </label>
+                ))}
+                <p className="mb-1 mt-3 border-t border-slate-100 px-2 pt-3 text-xs font-semibold text-slate-700">
+                  Project
+                </p>
+                <div className="max-h-56 overflow-y-auto">
+                  {[...projects, NO_PROJECT].map((p) => (
+                    <label
+                      key={p}
+                      className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={projectFilter.has(p)}
+                        onChange={() => setProjectFilter((f) => toggleIn(f, p))}
+                        className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+                      />
+                      <Folder className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                      <span className={`flex-1 truncate ${p === NO_PROJECT ? "text-slate-400" : ""}`}>
+                        {p === NO_PROJECT ? "No project" : p}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {filterCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAreaFilter(new Set());
+                      setProjectFilter(new Set());
+                      setHiddenStatuses(new Set());
+                      saveListPrefs({ hidden: new Set() });
+                    }}
+                    className="mt-2 w-full rounded-lg border-t border-slate-100 px-2 pt-2 text-left text-xs font-medium text-slate-500 hover:text-slate-800"
+                  >
+                    Clear all filters
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+          {view !== "graph" ? (
+            <div className="relative">
+              <TableToolbarButton
+                label="Sort"
+                aria-haspopup="true"
+                aria-expanded={toolbarMenu === "sort"}
+                active={toolbarMenu === "sort"}
+                onClick={() => setToolbarMenu((m) => (m === "sort" ? null : "sort"))}
+                icon={<ArrowUpDown className="h-5 w-5 text-slate-500" aria-hidden />}
+              />
+              {toolbarMenu === "sort" ? (
+                <div className="absolute left-0 top-full z-[90] mt-1 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.35)]">
+                  <p className="px-2 pb-1 pt-1 text-xs font-semibold text-slate-700">
+                    {view === "board" ? "Sort cards by" : "Sort rows by"}
+                  </p>
+                  {view === "board"
+                    ? BOARD_SORTS.map((o) => (
+                        <button
+                          key={o.key}
+                          type="button"
+                          onClick={() => {
+                            setBoardSort(o.key);
+                            try {
+                              window.localStorage.setItem(BOARD_SORT_KEY, o.key);
+                            } catch {
+                              /* noop */
+                            }
+                            setToolbarMenu(null);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        >
+                          <span className="flex-1">{o.label}</span>
+                          {boardSort === o.key ? <Check className="h-4 w-4 text-slate-500" aria-hidden /> : null}
+                        </button>
+                      ))
+                    : LIST_SORT_OPTIONS.map((o) => (
+                        <button
+                          key={o.key}
+                          type="button"
+                          onClick={() => sortListBy(o.key)}
+                          title={listSort.key === o.key ? "Click again to flip the order" : undefined}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        >
+                          <span className="flex-1">{o.label}</span>
+                          {listSort.key === o.key ? (
+                            listSort.dir === "asc" ? (
+                              <ArrowUp className="h-4 w-4 text-slate-500" aria-hidden />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-slate-500" aria-hidden />
+                            )
+                          ) : null}
+                        </button>
+                      ))}
+                </div>
               ) : null}
-            </button>
-          ))}
+            </div>
+          ) : null}
+          {view !== "graph" ? (
+            <div className="relative">
+              <TableToolbarButton
+                label="Group"
+                aria-haspopup="true"
+                aria-expanded={toolbarMenu === "group"}
+                active={toolbarMenu === "group" || (view === "board" && boardGroup !== "none")}
+                onClick={() => setToolbarMenu((m) => (m === "group" ? null : "group"))}
+                icon={<Layers className="h-5 w-5 text-slate-500" aria-hidden />}
+              />
+              {toolbarMenu === "group" ? (
+                <div className="absolute left-0 top-full z-[90] mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.35)]">
+                  <p className="px-2 pb-1 pt-1 text-xs font-semibold text-slate-700">Group by</p>
+                  {(view === "board"
+                    ? ([
+                        { key: "none", label: "Nothing" },
+                        { key: "project", label: "Project" },
+                      ] as const)
+                    : LIST_GROUP_OPTIONS
+                  ).map((o) => {
+                    const current = view === "board" ? boardGroup : listGroup;
+                    return (
+                      <button
+                        key={o.key}
+                        type="button"
+                        onClick={() => {
+                          if (view === "board") changeBoardGroup(o.key as "none" | "project");
+                          else changeListGroup(o.key as ListGroup);
+                          setToolbarMenu(null);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <span className="flex-1">{o.label}</span>
+                        {current === o.key ? <Check className="h-4 w-4 text-slate-500" aria-hidden /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {view === "board" ? (
+            <div className="relative">
+              <TableToolbarButton
+                label="Cards"
+                aria-haspopup="true"
+                aria-expanded={toolbarMenu === "cards"}
+                active={toolbarMenu === "cards"}
+                onClick={() => setToolbarMenu((m) => (m === "cards" ? null : "cards"))}
+                icon={<LayoutGrid className="h-5 w-5 text-slate-500" aria-hidden />}
+              />
+              {toolbarMenu === "cards" ? (
+                <div className="absolute left-0 top-full z-[90] mt-1 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.35)]">
+                  <p className="px-2 pb-1 pt-1 text-xs font-semibold text-slate-700">Card style</p>
+                  {(
+                    [
+                      ["clean", "Clean", "Dot, progress bar, flags"],
+                      ["classic", "Classic", "The earlier look"],
+                    ] as const
+                  ).map(([key, label, hint]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setCardStyle(key);
+                        try {
+                          window.localStorage.setItem(CARD_STYLE_KEY, key);
+                        } catch {
+                          /* noop */
+                        }
+                        setToolbarMenu(null);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <span className="flex-1">
+                        {label}
+                        <span className="block text-xs text-slate-400">{hint}</span>
+                      </span>
+                      {cardStyle === key ? <Check className="h-4 w-4 text-slate-500" aria-hidden /> : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-        <select
-          value={projectFilter}
-          onChange={(e) => setProjectFilter(e.target.value)}
-          aria-label="Project"
-          className={`rounded-lg border px-2 py-1 text-xs font-medium focus:border-sky-400 focus:outline-none ${
-            projectFilter === "all"
-              ? "border-slate-200 bg-white text-slate-600"
-              : "border-slate-900 bg-slate-900 text-white"
-          }`}
-        >
-          <option value="all">All projects</option>
-          {projects.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-          <option value={NO_PROJECT}>No project</option>
-        </select>
-        {view === "board" ? (
-          <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-            Group by
-            <select
-              value={boardGroup}
-              onChange={(e) => changeBoardGroup(e.target.value as "none" | "project")}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 focus:border-sky-400 focus:outline-none"
-            >
-              <option value="none">Nothing</option>
-              <option value="project">Project</option>
-            </select>
-          </label>
-        ) : null}
         <div className="relative ml-auto">
           <button
             type="button"
@@ -823,9 +1245,7 @@ export default function AdminRoadmapPage() {
                       title,
                       area,
                       "todo",
-                      projectFilter !== "all" && projectFilter !== NO_PROJECT
-                        ? projectFilter
-                        : null
+                      filterProject
                     );
                     setComposingIn(null);
                   }}
@@ -849,6 +1269,7 @@ export default function AdminRoadmapPage() {
           allJobs={jobs}
           onOpen={setOpenJobId}
           onScore={(id, impact, ease) => void patchJob(id, { impact, ease })}
+          stickyTop={headerHeight}
         />
       ) : view === "list" ? (
         <RoadmapListTable
@@ -859,13 +1280,17 @@ export default function AdminRoadmapPage() {
           addSlot={addSlot}
           stickyTop={headerHeight}
           projects={projects}
+          key={listGroup}
+          group={listGroup}
+          sort={listSort}
+          onSortBy={sortListBy}
         />
       ) : boardGroup === "project" ? (
         <div className="mt-4 flex flex-col gap-6">
           {[...projects, null]
             .map((project) => ({
               project,
-              rows: visible.filter((j) => (j.project ?? null) === project),
+              rows: boardJobs.filter((j) => (j.project ?? null) === project),
             }))
             .filter((lane) => lane.rows.length > 0)
             .map((lane) => (
@@ -886,7 +1311,7 @@ export default function AdminRoadmapPage() {
             ))}
         </div>
       ) : (
-        renderBoard(visible, "", undefined, true)
+        renderBoard(boardJobs, "", undefined, true)
       )}
 
       {openJob ? (
@@ -961,17 +1386,29 @@ function JobMetaBadges({
   );
 }
 
-function JobCard({
+/** The clean card: title leads, one quiet row, progress along the bottom. */
+function CleanJobCard({
   job,
   dragActiveRef,
   onOpen,
-  showProject = true,
+  showProject,
 }: {
   job: RoadmapJob;
   dragActiveRef: React.MutableRefObject<boolean>;
   onOpen: () => void;
-  showProject?: boolean;
+  showProject: boolean;
 }) {
+  const total = jobTotal(job);
+  const checklistDone = job.checklist?.filter((c) => c.done).length ?? 0;
+  const checklistTotal = job.checklist?.length ?? 0;
+  const commentCount = job.comments?.length ?? 0;
+  const imageCount = job.images?.length ?? 0;
+  const missingDoneWhen = !job.done_when?.trim() && NEEDS_DONE_WHEN.includes(job.status);
+  const edge = job.blocked_by
+    ? "bg-rose-500"
+    : job.status === "up_next"
+      ? "bg-orange-400"
+      : null;
   return (
     <div
       draggable
@@ -985,11 +1422,151 @@ function JobCard({
           dragActiveRef.current = false;
         }, 0);
       }}
+      role="button"
+      tabIndex={0}
+      aria-label={job.title}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
       onClick={() => {
         if (dragActiveRef.current) return;
         onOpen();
       }}
-      className={`cursor-pointer rounded-lg border bg-white px-3 py-2.5 transition hover:shadow-sm active:cursor-grabbing ${
+      className={`relative cursor-pointer overflow-hidden rounded-lg border outline-none transition focus-visible:ring-2 focus-visible:ring-sky-400 hover:shadow-sm active:cursor-grabbing ${
+        job.blocked_by
+          ? "border-rose-200 bg-rose-50/70 hover:border-rose-300"
+          : "border-slate-200 bg-white hover:border-slate-300"
+      } ${job.status === "vetoed" ? "opacity-60 hover:opacity-100" : ""}`}
+    >
+      {edge ? <span className={`absolute inset-y-0 left-0 w-1 ${edge}`} aria-hidden /> : null}
+      <div className="py-2.5 pl-3.5 pr-3">
+        {showProject && job.project ? (
+          // Project line carries the Total, so the title gets the full width.
+          <>
+            <div className="mb-0.5 flex items-center justify-between gap-2">
+              <p className="truncate text-[11px] font-medium text-slate-500">{job.project}</p>
+              <span className="flex shrink-0 items-center gap-1.5">
+                {job.urgent ? <UrgentFlag /> : null}
+                {total !== null ? <TotalBadge total={total} size="sm" /> : null}
+              </span>
+            </div>
+            <p className="line-clamp-3 text-sm font-semibold leading-snug text-slate-900">
+              {job.title}
+            </p>
+          </>
+        ) : (
+          <div className="flex items-start justify-between gap-2">
+            <p className="line-clamp-3 text-sm font-semibold leading-snug text-slate-900">
+              {job.title}
+            </p>
+            <span className="flex shrink-0 items-center gap-1.5">
+              {job.urgent ? <UrgentFlag /> : null}
+              {total !== null ? <TotalBadge total={total} size="sm" /> : null}
+            </span>
+          </div>
+        )}
+        {job.blocked_by ? (
+          <p className="mt-1 line-clamp-1 text-xs font-medium text-rose-700">
+            Blocked: {job.blocked_by}
+          </p>
+        ) : null}
+        <div className="mt-2 flex items-center gap-2.5 text-xs text-slate-500">
+          <span
+            title={areaMeta(job.area).label}
+            className={`h-2 w-2 shrink-0 rounded-full ${areaMeta(job.area).dot}`}
+          />
+          {missingDoneWhen ? (
+            <span className="font-medium text-amber-600" title="Open the job and add what finished looks like">
+              No done when
+            </span>
+          ) : null}
+          {imageCount > 0 ? (
+            <span className="flex items-center gap-0.5">
+              <ImageIcon className="h-3 w-3" aria-hidden />
+              {imageCount}
+            </span>
+          ) : null}
+          {commentCount > 0 ? (
+            <span className="flex items-center gap-0.5">
+              <MessageSquare className="h-3 w-3" aria-hidden />
+              {commentCount}
+            </span>
+          ) : null}
+          {checklistTotal > 0 ? (
+            <span className="tabular-nums">
+              {checklistDone}/{checklistTotal}
+            </span>
+          ) : null}
+          <span className="ml-auto">
+            <JobNumber n={job.job_number} />
+          </span>
+        </div>
+      </div>
+      {checklistTotal > 0 ? (
+        <div className="h-1 w-full bg-slate-100" aria-hidden>
+          <div
+            className="h-full bg-emerald-500 transition-all"
+            style={{ width: `${(checklistDone / checklistTotal) * 100}%` }}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function JobCard({
+  job,
+  dragActiveRef,
+  onOpen,
+  showProject = true,
+  variant = "clean",
+}: {
+  job: RoadmapJob;
+  dragActiveRef: React.MutableRefObject<boolean>;
+  onOpen: () => void;
+  showProject?: boolean;
+  variant?: CardStyle;
+}) {
+  if (variant === "clean") {
+    return (
+      <CleanJobCard
+        job={job}
+        dragActiveRef={dragActiveRef}
+        onOpen={onOpen}
+        showProject={showProject}
+      />
+    );
+  }
+  return (
+    <div
+      draggable
+      onDragStart={(e) => {
+        dragActiveRef.current = true;
+        e.dataTransfer.setData("text/plain", job.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => {
+        window.setTimeout(() => {
+          dragActiveRef.current = false;
+        }, 0);
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={job.title}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      onClick={() => {
+        if (dragActiveRef.current) return;
+        onOpen();
+      }}
+      className={`cursor-pointer rounded-lg border bg-white px-3 py-2.5 outline-none transition focus-visible:ring-2 focus-visible:ring-sky-400 hover:shadow-sm active:cursor-grabbing ${
         job.status === "up_next"
           ? "border-orange-200 border-l-2 border-l-orange-400 hover:border-orange-300"
           : job.status === "review"
@@ -1008,11 +1585,15 @@ function JobCard({
         <p className="text-sm font-medium leading-snug text-slate-900">
           {job.title}
         </p>
-        {job.blocked_by ? (
-          <span title={`Blocked by: ${job.blocked_by}`} className="shrink-0">
-            <OctagonAlert className="h-3.5 w-3.5 text-rose-500" />
-          </span>
-        ) : null}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {job.urgent ? <UrgentFlag /> : null}
+          {job.blocked_by ? (
+            <span title={`Blocked by: ${job.blocked_by}`}>
+              <OctagonAlert className="h-3.5 w-3.5 text-rose-500" />
+            </span>
+          ) : null}
+          {jobTotal(job) !== null ? <TotalBadge total={jobTotal(job)} size="sm" /> : null}
+        </span>
       </div>
       <div className="mt-1.5 flex items-center gap-2.5">
         <span className="text-xs font-medium text-slate-400">
@@ -1030,6 +1611,366 @@ function JobCard({
       </div>
     </div>
   );
+}
+
+/** The status menu: board columns in order, with Ideas, To do and Ready split into their parts. */
+const STATUS_MENU: { label: string | null; items: RoadmapStatus[] }[] = [
+  { label: "Ideas", items: ["evaluate", "parked", "vetoed"] },
+  { label: "To do", items: ["up_next", "todo"] },
+  { label: null, items: ["in_progress"] },
+  { label: null, items: ["review"] },
+  { label: "Ready", items: ["done", "staged"] },
+  { label: null, items: ["live"] },
+];
+
+/** Menu names where a status reads differently inside its group. */
+const STATUS_MENU_LABEL: Partial<Record<RoadmapStatus, string>> = {
+  todo: "Later",
+};
+
+/** Closes a popover when the pointer goes down outside it. */
+function useDismiss(open: boolean, close: () => void) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open, close]);
+  return ref;
+}
+
+function StatusDropdown({
+  value,
+  onChange,
+}: {
+  value: RoadmapStatus;
+  onChange: (status: RoadmapStatus) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(open, () => setOpen(false));
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={`Status: ${STATUS_META[value].label}`}
+        onClick={() => setOpen((o) => !o)}
+        className={`inline-flex min-w-36 items-center justify-between gap-2 rounded-full px-4 py-2 text-sm font-semibold transition hover:opacity-90 ${STATUS_META[value].chip}`}
+      >
+        {STATUS_META[value].label}
+        <ChevronDown className="h-4 w-4 opacity-60" aria-hidden />
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-full z-30 mt-1.5 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+          {STATUS_MENU.map((group, gi) => (
+            <div key={gi} className={gi > 0 ? "mt-1 border-t border-slate-100 pt-1" : ""}>
+              {group.label ? (
+                <p className="px-2 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  {group.label}
+                </p>
+              ) : null}
+              {group.items.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => {
+                    onChange(s);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-lg py-1.5 pr-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 ${
+                    group.label ? "pl-5" : "pl-2"
+                  }`}
+                >
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_META[s].chip}`} />
+                  <span className="flex-1">{STATUS_MENU_LABEL[s] ?? STATUS_META[s].label}</span>
+                  {value === s ? <Check className="h-4 w-4 text-slate-500" aria-hidden /> : null}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** ClickUp-style property row: grey icon and label, then the value. */
+function MetaRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: typeof Folder;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid min-h-9 grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-x-3 text-sm">
+      <span className="flex items-center gap-2 text-slate-400">
+        <Icon className="h-4 w-4 shrink-0" aria-hidden />
+        {label}
+      </span>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
+}
+
+/** A value that opens a small menu of options. */
+function MetaDropdown({
+  display,
+  options,
+  onClear,
+  bare = false,
+}: {
+  display: React.ReactNode;
+  options: { key: string; node: React.ReactNode; selected: boolean; onSelect: () => void }[];
+  onClear?: () => void;
+  /** The display is its own pill, chevron included. */
+  bare?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(open, () => setOpen(false));
+  return (
+    <div ref={ref} className="relative inline-flex max-w-full">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={
+          bare
+            ? "inline-flex max-w-full rounded-full px-1 py-0.5 text-left transition hover:opacity-90"
+            : "inline-flex max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition hover:bg-slate-100"
+        }
+      >
+        {display}
+        {bare ? null : (
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+        )}
+      </button>
+      {open ? (
+        <div className="absolute left-0 top-full z-30 mt-1 min-w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+          {options.map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => {
+                o.onSelect();
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+            >
+              <span className="flex flex-1 items-center gap-2">{o.node}</span>
+              {o.selected ? <Check className="h-4 w-4 text-slate-500" aria-hidden /> : null}
+            </button>
+          ))}
+          {onClear ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClear();
+                setOpen(false);
+              }}
+              className="mt-1 w-full rounded-lg border-t border-slate-100 px-2 py-1.5 text-left text-xs font-medium text-slate-500 transition hover:bg-slate-50"
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Pick a project from the list, or type to find or add one. */
+function ProjectDropdown({
+  value,
+  projects,
+  onChange,
+}: {
+  value: string | null;
+  projects: string[];
+  onChange: (project: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+  }, []);
+  const ref = useDismiss(open, close);
+  const q = query.trim();
+  const shown = projects.filter((p) => p.toLowerCase().includes(q.toLowerCase()));
+  const canAdd = q.length > 0 && !projects.some((p) => p.toLowerCase() === q.toLowerCase());
+  const pick = (project: string | null) => {
+    onChange(project);
+    close();
+  };
+  return (
+    <div ref={ref} className="relative inline-flex max-w-full">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => (open ? close() : setOpen(true))}
+        className="inline-flex max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition hover:bg-slate-100"
+      >
+        {value ? (
+          <span className="truncate font-medium text-slate-800">{value}</span>
+        ) : (
+          <span className="text-slate-400">Empty</span>
+        )}
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+      </button>
+      {open ? (
+        <div className="absolute left-0 top-full z-30 mt-1 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                close();
+              }
+              if (e.key === "Enter") {
+                if (canAdd) pick(q);
+                else if (shown.length === 1) pick(shown[0]);
+              }
+            }}
+            placeholder="Find or add a project"
+            className="mb-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
+          />
+          <div className="max-h-64 overflow-y-auto">
+            {shown.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => pick(p)}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                <Folder className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                <span className="flex-1 truncate">{p}</span>
+                {value === p ? <Check className="h-4 w-4 text-slate-500" aria-hidden /> : null}
+              </button>
+            ))}
+            {canAdd ? (
+              <button
+                type="button"
+                onClick={() => pick(q)}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+              >
+                <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                Add “{q}”
+              </button>
+            ) : null}
+            {shown.length === 0 && !canAdd ? (
+              <p className="px-2 py-1.5 text-sm text-slate-400">No projects yet.</p>
+            ) : null}
+          </div>
+          {value ? (
+            <button
+              type="button"
+              onClick={() => pick(null)}
+              className="mt-1 w-full rounded-lg border-t border-slate-100 px-2 py-1.5 text-left text-xs font-medium text-slate-500 transition hover:bg-slate-50"
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Score as one coloured pill: number and short name, red at 1 to green at 5. */
+function ScorePill({
+  value,
+  name,
+  chevron = false,
+}: {
+  value: number | null;
+  name?: string;
+  chevron?: boolean;
+}) {
+  if (!value) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-0.5 text-sm text-slate-500">
+        Set
+        {chevron ? <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden /> : null}
+      </span>
+    );
+  }
+  const tone = SCORE_TONE[value];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-semibold ${tone.soft} ${tone.text}`}
+    >
+      <span className="tabular-nums">{value}</span>
+      {name ? <span className="font-medium">{name}</span> : null}
+      {chevron ? <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden /> : null}
+    </span>
+  );
+}
+
+function ScoreDropdown({
+  value,
+  names,
+  onChange,
+}: {
+  value: number | null;
+  names: Record<number, string>;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <MetaDropdown
+      bare
+      display={<ScorePill value={value} name={value ? names[value] : undefined} chevron />}
+      options={[...ROADMAP_SCORES].reverse().map((n) => ({
+        key: String(n),
+        selected: value === n,
+        onSelect: () => onChange(n),
+        node: <ScorePill value={n} name={names[n]} />,
+      }))}
+      onClear={value ? () => onChange(null) : undefined}
+    />
+  );
+}
+
+/** Roadmap comments in the shape the BOSS Pro comments panel uses, and back. */
+function toPanelComments(comments: RoadmapComment[]): WorkshopComment[] {
+  return comments.map((c) => ({
+    id: c.id,
+    author: "coach",
+    authorName: c.author ?? "Admin",
+    text: c.text,
+    createdAt: c.created_at,
+    editedAt: c.edited_at ?? undefined,
+    replies: (c.replies ?? []).map((r) => ({
+      id: r.id,
+      author: "coach",
+      authorName: r.author ?? "Admin",
+      text: r.text,
+      createdAt: r.created_at,
+    })),
+  }));
+}
+
+function fromPanelComments(comments: WorkshopComment[]): RoadmapComment[] {
+  return comments.map((c) => ({
+    id: c.id,
+    author: c.authorName ?? null,
+    text: c.text,
+    created_at: c.createdAt,
+    edited_at: c.editedAt ?? null,
+    replies: c.replies.map((r) => ({
+      id: r.id,
+      author: r.authorName ?? null,
+      text: r.text,
+      created_at: r.createdAt,
+    })),
+  }));
 }
 
 function JobDetailModal({
@@ -1055,12 +1996,25 @@ function JobDetailModal({
 }) {
   const [title, setTitle] = useState(job.title);
   const [notes, setNotes] = useState(job.notes ?? "");
+  const [doneWhen, setDoneWhen] = useState(job.done_when ?? "");
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const headingRef = useRef<HTMLDivElement | null>(null);
+  /** The big title has scrolled away: show the slim bar instead. */
+  const [compact, setCompact] = useState(false);
   const [blockedBy, setBlockedBy] = useState(job.blocked_by ?? "");
-  const [project, setProject] = useState(job.project ?? "");
   const [newItem, setNewItem] = useState("");
-  const [newComment, setNewComment] = useState("");
+  const [commentsCollapsed, setCommentsCollapsed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const titleRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // The title wraps onto as many lines as it needs.
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [title]);
 
   const uploadFiles = useCallback(
     async (files: File[]) => {
@@ -1079,9 +2033,21 @@ function JobDetailModal({
   useEffect(() => {
     setTitle(job.title);
     setNotes(job.notes ?? "");
+    setDoneWhen(job.done_when ?? "");
     setBlockedBy(job.blocked_by ?? "");
-    setProject(job.project ?? "");
-  }, [job.id, job.title, job.notes, job.blocked_by, job.project]);
+  }, [job.id, job.title, job.notes, job.done_when, job.blocked_by]);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const target = headingRef.current;
+    if (!root || !target) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCompact(!entry.isIntersecting),
+      { root, threshold: 0 }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1105,31 +2071,20 @@ function JobDetailModal({
     setNewItem("");
   }
 
-  function addComment() {
-    const text = newComment.trim();
-    if (!text) return;
-    const next: RoadmapComment[] = [
-      ...(job.comments ?? []),
-      { id: newId(), text, author: authorName, created_at: new Date().toISOString() },
-    ];
-    void onPatch(job.id, { comments: next });
-    setNewComment("");
-  }
-
   const checklist = job.checklist ?? [];
-  const comments = job.comments ?? [];
+  const panelComments = toPanelComments(job.comments ?? []);
   const images = job.images ?? [];
 
   return (
-    <div
-      className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4 sm:p-6"
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[110]" role="dialog" aria-modal="true">
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/55 backdrop-blur-[2px]"
+      />
       <div
-        className="relative my-4 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
-        onClick={(e) => e.stopPropagation()}
+        className="absolute left-1/2 top-1/2 h-[min(88vh,880px)] w-[min(calc(100vw-1.5rem),72rem)] -translate-x-1/2 -translate-y-1/2"
         onPaste={(e) => {
           const files = Array.from(e.clipboardData?.files ?? []).filter((f) =>
             f.type.startsWith("image/")
@@ -1149,341 +2104,349 @@ function JobDetailModal({
           <X className="h-4 w-4" strokeWidth={2} aria-hidden />
         </button>
 
-        {/* Header */}
-        <div className="border-b border-slate-200 pb-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-sky-700">
-            <JobNumber n={job.job_number} />
-            <span className="text-sky-700/50"> · </span>
-            {areaMeta(job.area).label}
-          </p>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => {
-              const t = title.trim();
-              if (t && t !== job.title) void onPatch(job.id, { title: t });
-            }}
-            className="mt-1.5 w-full border-0 bg-transparent p-0 text-lg font-semibold text-slate-900 focus:outline-none focus:ring-0 sm:text-xl"
-          />
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            {PICKER_ORDER.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => void onPatch(job.id, { status: s })}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                  job.status === s
-                    ? STATUS_META[s].chip
-                    : "bg-white text-slate-400 hover:bg-slate-100"
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5 lg:flex-row">
+          {/* Main */}
+          <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+            {/* Slim bar that stays put once the title scrolls away, like ClickUp */}
+            <div className="sticky top-0 z-20 h-0">
+              <div
+                aria-hidden={!compact}
+                className={`absolute inset-x-0 top-0 flex items-center gap-3 border-b border-slate-200 bg-white/95 px-6 py-3 backdrop-blur transition md:px-10 ${
+                  compact ? "opacity-100" : "pointer-events-none -translate-y-1 opacity-0"
                 }`}
               >
-                {STATUS_META[s].label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="max-h-[min(65vh,600px)] overflow-y-auto pt-5">
-          {/* Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              list="roadmap-projects"
-              value={project}
-              onChange={(e) => setProject(e.target.value)}
-              onBlur={() => {
-                const next = project.trim() || null;
-                if (next !== (job.project ?? null)) {
-                  void onPatch(job.id, { project: next ?? "" });
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") e.currentTarget.blur();
-              }}
-              placeholder="Project"
-              aria-label="Project"
-              className="w-40 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
-            />
-            <datalist id="roadmap-projects">
-              {projects.map((p) => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
-            <select
-              value={job.area}
-              onChange={(e) => void onPatch(job.id, { area: e.target.value })}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 focus:border-sky-400 focus:outline-none"
-            >
-              {areas.map((a) => (
-                <option key={a} value={a}>
-                  {areaMeta(a).label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() =>
-                void onPatch(job.id, {
-                  visibility:
-                    job.visibility === "members" ? "internal" : "members",
-                })
-              }
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                job.visibility === "members"
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-              }`}
-            >
-              {job.visibility === "members"
-                ? "Members — on public roadmap"
-                : "Internal"}
-            </button>
-            {job.app_path ? (
-              <span className="rounded-full bg-slate-50 px-2 py-1 text-[11px] text-slate-400">
-                {job.app_path}
-              </span>
-            ) : null}
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-            <ScorePicker
-              label="Impact"
-              hint={ROADMAP_IMPACT_HINT}
-              value={job.impact}
-              onChange={(impact) => void onPatch(job.id, { impact })}
-            />
-            <ScorePicker
-              label="Ease"
-              hint={job.ease ? ROADMAP_EASE_LEVELS[job.ease] : "5 = under an hour"}
-              value={job.ease}
-              onChange={(ease) => void onPatch(job.id, { ease })}
-            />
-          </div>
-
-          <input
-            value={blockedBy}
-            onChange={(e) => setBlockedBy(e.target.value)}
-            onBlur={() => {
-              if ((blockedBy.trim() || null) !== (job.blocked_by ?? null)) {
-                void onPatch(job.id, { blockedBy: blockedBy.trim() || null });
-              }
-            }}
-            placeholder="Blocked by… (leave empty if not blocked)"
-            className="mt-3 w-full rounded-lg border border-amber-200/70 bg-amber-50/40 px-3 py-1.5 text-sm text-amber-900 placeholder:text-amber-800/45 focus:border-amber-400 focus:outline-none"
-          />
-
-          {/* Scope / notes */}
-          <h3 className="mt-5 text-sm font-semibold text-slate-900">Scope</h3>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            onBlur={() => {
-              if ((notes.trim() || null) !== (job.notes ?? null)) {
-                void onPatch(job.id, { notes: notes.trim() || null });
-              }
-            }}
-            rows={4}
-            placeholder="What exactly is this job? Crisp enough that an agent could pick it up."
-            className="mt-1.5 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
-          />
-
-          {/* Reference images */}
-          <div className="mt-5 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Images{images.length > 0 ? ` · ${images.length}` : ""}
-            </h3>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 disabled:opacity-40"
-            >
-              {uploading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ImagePlus className="h-3.5 w-3.5" />
-              )}
-              {uploading ? "Uploading…" : "Add images"}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                e.target.value = "";
-                void uploadFiles(files);
-              }}
-            />
-          </div>
-          <p className="mt-0.5 text-[11px] text-slate-400">
-            Design refs and screenshots for whoever builds this — upload or
-            paste a screenshot anywhere in this card.
-          </p>
-          {images.length > 0 ? (
-            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {images.map((img) => (
-                <div
-                  key={img.id}
-                  className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-                >
-                  <a
-                    href={img.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={img.name}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img.url}
-                      alt={img.name}
-                      className="h-full w-full object-cover transition group-hover:opacity-90"
-                      loading="lazy"
-                    />
-                  </a>
+                <span
+                  className={`h-3.5 w-3.5 shrink-0 rounded-full ring-2 ring-white ${STATUS_META[job.status].chip}`}
+                  title={STATUS_META[job.status].label}
+                />
+                {job.urgent ? <UrgentFlag className="h-4 w-4" /> : null}
+                <span className="min-w-0 flex-1 truncate text-base font-semibold text-slate-900">
+                  {job.title}
+                </span>
+                <span className="shrink-0 text-xs font-medium text-slate-400">
+                  <JobNumber n={job.job_number} />
+                </span>
+                <TotalBadge total={jobTotal(job)} />
+              </div>
+            </div>
+            <div className="px-6 pb-8 pt-7 md:px-10 md:pt-8">
+              <div ref={headingRef} className="flex items-start justify-between gap-6">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Job <JobNumber n={job.job_number} />
+                    {job.project ? <span className="text-slate-400"> · {job.project}</span> : null}
+                  </p>
+                  <textarea
+                    ref={titleRef}
+                    value={title}
+                    rows={1}
+                    onChange={(e) => setTitle(e.target.value.replace(/\n/g, " "))}
+                    onBlur={() => {
+                      const t = title.trim();
+                      if (t && t !== job.title) void onPatch(job.id, { title: t });
+                    }}
+                    className="mt-1 w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-2xl font-bold tracking-tight text-slate-900 focus:outline-none focus:ring-0 md:text-3xl"
+                  />
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"
-                    aria-label={`Remove ${img.name}`}
-                    onClick={() => void onDeleteImage(job.id, img.id)}
-                    className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white opacity-0 transition hover:bg-rose-600 group-hover:opacity-100"
+                    aria-pressed={job.urgent}
+                    onClick={() => void onPatch(job.id, { urgent: !job.urgent })}
+                    title={job.urgent ? "Urgent: click to clear" : "Mark as urgent (jumps the queue)"}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition ${
+                      job.urgent
+                        ? "bg-rose-100 text-rose-700 hover:bg-rose-200"
+                        : "text-slate-400 ring-1 ring-inset ring-slate-200 hover:bg-slate-50 hover:text-slate-600"
+                    }`}
                   >
-                    <X className="h-3 w-3" />
+                    <Flag
+                      className={`h-4 w-4 ${job.urgent ? "fill-rose-500 text-rose-500" : ""}`}
+                      aria-hidden
+                    />
+                    {job.urgent ? "Urgent" : null}
                   </button>
+                  <StatusDropdown
+                    value={job.status}
+                    onChange={(status) => void onPatch(job.id, { status })}
+                  />
                 </div>
-              ))}
-            </div>
-          ) : null}
+              </div>
 
-          {/* Checklist */}
-          <h3 className="mt-5 text-sm font-semibold text-slate-900">
-            Checklist
-            {checklist.length > 0
-              ? ` · ${checklist.filter((c) => c.done).length}/${checklist.length}`
-              : ""}
-          </h3>
-          <div className="mt-1.5 flex flex-col gap-1">
-            {checklist.map((item) => (
-              <div key={item.id} className="group flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={item.done}
-                  onChange={() =>
-                    saveChecklist(
-                      checklist.map((c) =>
-                        c.id === item.id ? { ...c, done: !c.done } : c
-                      )
-                    )
+              {/* Properties */}
+              <div className="mt-5 grid gap-x-10 gap-y-1 sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                  <MetaRow icon={Folder} label="Project">
+                    <ProjectDropdown
+                      value={job.project}
+                      projects={projects}
+                      onChange={(next) => void onPatch(job.id, { project: next ?? "" })}
+                    />
+                  </MetaRow>
+                  <MetaRow icon={Tag} label="Category">
+                    <MetaDropdown
+                      display={
+                        <span className="flex items-center gap-2 font-medium text-slate-800">
+                          <span className={`h-2 w-2 rounded-full ${areaMeta(job.area).dot}`} />
+                          {areaMeta(job.area).label}
+                        </span>
+                      }
+                      options={areas.map((a) => ({
+                        key: a,
+                        selected: job.area === a,
+                        onSelect: () => void onPatch(job.id, { area: a }),
+                        node: (
+                          <>
+                            <span className={`h-2 w-2 rounded-full ${areaMeta(a).dot}`} />
+                            {areaMeta(a).label}
+                          </>
+                        ),
+                      }))}
+                    />
+                  </MetaRow>
+                  <MetaRow icon={OctagonAlert} label="Blocked by">
+                    <input
+                      value={blockedBy}
+                      onChange={(e) => setBlockedBy(e.target.value)}
+                      onBlur={() => {
+                        if ((blockedBy.trim() || null) !== (job.blocked_by ?? null)) {
+                          void onPatch(job.id, { blockedBy: blockedBy.trim() || null });
+                        }
+                      }}
+                      placeholder="Not blocked"
+                      className={`w-full rounded-md border border-transparent px-2 py-1 placeholder:text-slate-400 hover:bg-slate-100 focus:border-sky-400 focus:bg-white focus:outline-none ${
+                        job.blocked_by ? "bg-rose-50 font-medium text-rose-700" : "bg-transparent text-slate-800"
+                      }`}
+                    />
+                  </MetaRow>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <MetaRow icon={Zap} label="Impact">
+                    <ScoreDropdown
+                      value={job.impact}
+                      names={ROADMAP_IMPACT_LEVELS}
+                      onChange={(impact) => void onPatch(job.id, { impact })}
+                    />
+                  </MetaRow>
+                  <MetaRow icon={Gauge} label="Ease">
+                    <ScoreDropdown
+                      value={job.ease}
+                      names={ROADMAP_EASE_LEVELS}
+                      onChange={(ease) => void onPatch(job.id, { ease })}
+                    />
+                  </MetaRow>
+                  <MetaRow icon={Sigma} label="Total">
+                    <span className="px-1">
+                      <TotalBadge total={jobTotal(job)} />
+                    </span>
+                  </MetaRow>
+                </div>
+                <div className="sm:col-span-2">
+                  {job.app_path ? (
+                    <MetaRow icon={Link2} label="Page">
+                      <a
+                        href={job.app_path}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2 font-medium text-sky-700 hover:underline"
+                      >
+                        {job.app_path}
+                      </a>
+                    </MetaRow>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mt-6 border-t border-slate-200" role="presentation" />
+
+              {/* Done when */}
+              <h3 className="mt-5 text-sm font-semibold text-slate-900">Done when</h3>
+              <textarea
+                value={doneWhen}
+                onChange={(e) => setDoneWhen(e.target.value)}
+                onBlur={() => {
+                  if ((doneWhen.trim() || null) !== (job.done_when ?? null)) {
+                    void onPatch(job.id, { doneWhen: doneWhen.trim() || null });
                   }
-                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+                }}
+                rows={3}
+                placeholder="What finished looks like, in a sentence or two. Review checks against this."
+                className="mt-1.5 w-full resize-y rounded-lg border border-emerald-200 bg-emerald-50/40 px-3.5 py-2.5 text-sm font-medium leading-relaxed text-slate-800 placeholder:font-normal placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none"
+              />
+
+              {/* Scope */}
+              <h3 className="mt-5 text-sm font-semibold text-slate-900">Scope</h3>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                onBlur={() => {
+                  if ((notes.trim() || null) !== (job.notes ?? null)) {
+                    void onPatch(job.id, { notes: notes.trim() || null });
+                  }
+                }}
+                rows={12}
+                placeholder="Why it matters, what's in and out, links and notes."
+                className="mt-1.5 min-h-64 w-full resize-y rounded-lg border border-slate-200 bg-white px-3.5 py-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
+              />
+
+              {/* Checklist */}
+              <h3 className="mt-6 text-sm font-semibold text-slate-900">
+                Checklist
+                {checklist.length > 0 ? (
+                  <span className="font-normal text-slate-400">
+                    {" "}
+                    · {checklist.filter((c) => c.done).length}/{checklist.length}
+                  </span>
+                ) : null}
+              </h3>
+              <div className="mt-2 flex flex-col gap-1.5">
+                {checklist.map((item) => (
+                  <div key={item.id} className="group flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      onChange={() =>
+                        saveChecklist(
+                          checklist.map((c) =>
+                            c.id === item.id ? { ...c, done: !c.done } : c
+                          )
+                        )
+                      }
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+                    />
+                    <span
+                      className={`flex-1 text-sm leading-snug ${
+                        item.done ? "text-slate-400 line-through" : "text-slate-800"
+                      }`}
+                    >
+                      {item.text}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Remove item"
+                      onClick={() =>
+                        saveChecklist(checklist.filter((c) => c.id !== item.id))
+                      }
+                      className="rounded p-0.5 text-slate-300 opacity-0 transition hover:text-rose-600 group-hover:opacity-100"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <input
+                  value={newItem}
+                  onChange={(e) => setNewItem(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addChecklistItem();
+                  }}
+                  placeholder="+ Add an item, press Enter"
+                  className="mt-1 w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 hover:bg-slate-50 focus:border-sky-400 focus:bg-white focus:outline-none"
                 />
-                <span
-                  className={`flex-1 text-sm ${
-                    item.done
-                      ? "text-slate-400 line-through"
-                      : "text-slate-800"
-                  }`}
-                >
-                  {item.text}
-                </span>
+              </div>
+
+              {/* Images */}
+              <div className="mt-6 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Images
+                  {images.length > 0 ? (
+                    <span className="font-normal text-slate-400"> · {images.length}</span>
+                  ) : null}
+                </h3>
                 <button
                   type="button"
-                  aria-label="Remove item"
-                  onClick={() =>
-                    saveChecklist(checklist.filter((c) => c.id !== item.id))
-                  }
-                  className="rounded p-0.5 text-slate-300 opacity-0 transition hover:text-rose-600 group-hover:opacity-100"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 disabled:opacity-40"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  {uploading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-3.5 w-3.5" />
+                  )}
+                  {uploading ? "Uploading…" : "Add images"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    e.target.value = "";
+                    void uploadFiles(files);
+                  }}
+                />
+              </div>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Design refs and screenshots. Paste a screenshot anywhere in this card.
+              </p>
+              {images.length > 0 ? (
+                <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {images.map((img) => (
+                    <div
+                      key={img.id}
+                      className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                    >
+                      <a href={img.url} target="_blank" rel="noreferrer" title={img.name}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img.url}
+                          alt={img.name}
+                          className="h-full w-full object-cover transition group-hover:opacity-90"
+                          loading="lazy"
+                        />
+                      </a>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${img.name}`}
+                        onClick={() => void onDeleteImage(job.id, img.id)}
+                        className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white opacity-0 transition hover:bg-rose-600 group-hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Footer */}
+              <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-4">
+                <p className="text-xs text-slate-400">
+                  Added{" "}
+                  {new Date(job.created_at).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void onDelete(job.id)}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete job
                 </button>
               </div>
-            ))}
-            <div className="mt-1 flex items-center gap-2">
-              <input
-                value={newItem}
-                onChange={(e) => setNewItem(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addChecklistItem();
-                }}
-                placeholder="Add checklist item…"
-                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={addChecklistItem}
-                disabled={!newItem.trim()}
-                className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 disabled:opacity-40"
-              >
-                Add
-              </button>
             </div>
           </div>
 
-          {/* Comments */}
-          <h3 className="mt-5 text-sm font-semibold text-slate-900">
-            Comments
-          </h3>
-          <div className="mt-1.5 flex flex-col gap-2.5">
-            {comments.map((c) => (
-              <div key={c.id} className="rounded-lg bg-slate-50 px-3 py-2">
-                <p className="text-xs font-semibold text-slate-500">
-                  {c.author ?? "Admin"}{" "}
-                  <span className="font-normal text-slate-400">
-                    ·{" "}
-                    {new Date(c.created_at).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                    })}
-                  </span>
-                </p>
-                <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-800">
-                  {c.text}
-                </p>
-              </div>
-            ))}
-            <div className="flex items-end gap-2">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    addComment();
-                  }
-                }}
-                rows={2}
-                placeholder="Add a comment…"
-                className="flex-1 resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={addComment}
-                disabled={!newComment.trim()}
-                className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:opacity-40"
-              >
-                Post
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-4">
-          <p className="text-xs text-slate-400">
-            Added{" "}
-            {new Date(job.created_at).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </p>
-          <button
-            type="button"
-            onClick={() => void onDelete(job.id)}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Delete job
-          </button>
+          {/* Comments: the same panel as a BOSS Pro playbook */}
+          <WorkshopActivityPanel
+            activity={[]}
+            comments={panelComments}
+            editable
+            defaultAuthor="coach"
+            defaultAuthorName={authorName}
+            onCommentsChange={(next) =>
+              void onPatch(job.id, { comments: fromPanelComments(next) })
+            }
+            onActivityAppend={() => {}}
+            collapsed={commentsCollapsed}
+            onCollapsedChange={setCommentsCollapsed}
+            allowManage
+            emptyText="No comments yet."
+          />
         </div>
       </div>
     </div>
@@ -1576,27 +2539,6 @@ function AddJobComposer({
   );
 }
 
-/** Labelled score meter for the job modal. */
-function ScorePicker({
-  label,
-  hint,
-  value,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  value: number | null;
-  onChange: (value: number | null) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2.5" title={hint}>
-      <span className="text-xs font-semibold text-slate-600">{label}</span>
-      <ScoreMeter label={label} value={value} onChange={onChange} size="lg" />
-      <span className="text-[11px] text-slate-400">{hint}</span>
-    </div>
-  );
-}
-
 /**
  * Five segments filled up to the score, red at 1 to green at 5. Click a
  * segment to set it; click the current one to clear.
@@ -1661,12 +2603,21 @@ function ScoreMeter({
 }
 
 /** Impact plus ease as a pill, red at 2 to green at 10. */
-function TotalBadge({ total }: { total: number | null }) {
+function TotalBadge({
+  total,
+  size = "md",
+}: {
+  total: number | null;
+  size?: "sm" | "md";
+}) {
   if (total === null) return <span className="text-slate-300">–</span>;
   const tone = SCORE_TONE[Math.round(total / 2)];
   return (
     <span
-      className={`inline-flex min-w-8 justify-center rounded-full px-2 py-0.5 text-sm font-semibold tabular-nums ${tone.soft} ${tone.text}`}
+      title="Total: impact + ease"
+      className={`inline-flex justify-center rounded-full font-semibold tabular-nums ${tone.soft} ${tone.text} ${
+        size === "sm" ? "min-w-6 px-1.5 py-px text-xs" : "min-w-8 px-2 py-0.5 text-sm"
+      }`}
     >
       {total}
     </span>
@@ -1675,31 +2626,155 @@ function TotalBadge({ total }: { total: number | null }) {
 
 /** What each corner of the impact vs ease grid means. */
 function zoneFor(impact: number, ease: number) {
-  if (impact >= 4 && ease >= 4) return { label: "Quick wins", bg: "bg-emerald-50" };
-  if (impact >= 4 && ease <= 2) return { label: "Big bets", bg: "bg-sky-50" };
-  if (impact <= 2 && ease >= 4) return { label: "Fill-ins", bg: "bg-amber-50/70" };
-  if (impact <= 2 && ease <= 2) return { label: "Not now", bg: "bg-rose-50/60" };
+  if (impact >= 4 && ease >= 4)
+    return { label: "Quick wins", hint: "Do these first", bg: "bg-emerald-100 ring-emerald-200", text: "text-emerald-700" };
+  if (impact >= 4 && ease <= 2)
+    return { label: "Big bets", hint: "Plan these properly", bg: "bg-sky-100 ring-sky-200", text: "text-sky-700" };
+  if (impact <= 2 && ease >= 4)
+    return { label: "Fill-ins", hint: "When there's a gap", bg: "bg-amber-100 ring-amber-200", text: "text-amber-700" };
+  if (impact <= 2 && ease <= 2)
+    return { label: "Not now", hint: "Park or drop", bg: "bg-rose-100 ring-rose-200", text: "text-rose-700" };
   return null;
 }
 
-const GRAPH_STATUSES: RoadmapStatus[] = [...OPEN_STATUSES, "parked"];
+const GRAPH_STATUSES: RoadmapStatus[] = [...OPEN_STATUSES, "evaluate", "parked"];
+const GRAPH_SIDEBAR_KEY = "roadmap-graph-sidebar";
+/**
+ * Graph chip dots: only the stages worth spotting. To do has no dot, so a
+ * plain chip is a to-do. Checked for colour-blind separation (dataviz validator).
+ */
+const GRAPH_STATUS_DOT: Partial<Record<RoadmapStatus, { color: string; label: string }>> = {
+  in_progress: { color: "#2563eb", label: "In progress" },
+  up_next: { color: "#f97316", label: "Up next" },
+  evaluate: { color: "#a855f7", label: "Idea" },
+  parked: { color: "#a855f7", label: "Idea" },
+};
+
+/** Chips a grid square shows before "+N more", like a calendar day. */
+const CELL_LIMIT = 4;
 const IMPACT_ROWS = [...ROADMAP_SCORES].reverse();
+
+function ZoneLabel({
+  zone,
+  right,
+}: {
+  zone: { label: string; hint: string; text: string };
+  right: boolean;
+}) {
+  return (
+    <div className={`px-0.5 leading-tight ${right ? "text-right" : ""}`}>
+      <p className={`text-sm font-semibold ${zone.text}`}>{zone.label}</p>
+      <p className={`text-[11px] opacity-80 ${zone.text}`}>{zone.hint}</p>
+    </div>
+  );
+}
+
+/** Category colours for the donut; the same hues as the category dots. */
+const AREA_HEX: Record<string, string> = {
+  "set-up": "#8b5cf6",
+  "get-clients": "#0ea5e9",
+  "keep-clients": "#10b981",
+  platform: "#f59e0b",
+};
+
+/** Share of in-progress and up-next jobs per category, as a donut. */
+function EffortDonut({ effort, total }: { effort: { area: string; count: number }[]; total: number }) {
+  const size = 132;
+  const stroke = 18;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const gap = total > 1 ? 2 : 0; // 2px surface gap between segments
+  // Where each segment starts along the ring.
+  const starts = effort.reduce<number[]>(
+    (acc, _segment, i) => [...acc, i === 0 ? 0 : acc[i - 1] + (effort[i - 1].count / Math.max(total, 1)) * circumference],
+    []
+  );
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="img"
+      aria-label={`${total} jobs in progress or up next`}
+      className="shrink-0"
+    >
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f1f5f9" strokeWidth={stroke} />
+      {effort.map(({ area, count }, i) => {
+        if (count === 0 || total === 0) return null;
+        const len = (count / total) * circumference;
+        return (
+          <circle
+            key={area}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke={AREA_HEX[area] ?? "#94a3b8"}
+            strokeWidth={stroke}
+            strokeDasharray={`${Math.max(len - gap, 0)} ${circumference - Math.max(len - gap, 0)}`}
+            strokeDashoffset={-starts[i]}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            className="transition-opacity hover:opacity-80"
+          >
+            <title>{`${areaMeta(area).label}: ${count} of ${total}`}</title>
+          </circle>
+        );
+      })}
+      <text x="50%" y="47%" textAnchor="middle" className="fill-slate-900 text-2xl font-bold">
+        {total}
+      </text>
+      <text x="50%" y="62%" textAnchor="middle" className="fill-slate-500 text-[11px]">
+        jobs
+      </text>
+    </svg>
+  );
+}
 
 function ImpactEaseGraph({
   jobs,
   allJobs,
   onOpen,
   onScore,
+  stickyTop,
 }: {
   jobs: RoadmapJob[];
   allJobs: RoadmapJob[];
   onOpen: (id: string) => void;
   onScore: (id: string, impact: number | null, ease: number | null) => void;
+  stickyTop: number;
 }) {
   const [dragOver, setDragOver] = useState<string | null>(null);
   const dragActiveRef = useRef(false);
+  /** Squares opened past CELL_LIMIT. */
+  const [openCells, setOpenCells] = useState<Set<string>>(() => new Set());
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    try {
+      return window.localStorage.getItem(GRAPH_SIDEBAR_KEY) !== "closed";
+    } catch {
+      return true;
+    }
+  });
+  function toggleSidebar() {
+    setSidebarOpen((open) => {
+      try {
+        window.localStorage.setItem(GRAPH_SIDEBAR_KEY, open ? "closed" : "open");
+      } catch {
+        /* noop */
+      }
+      return !open;
+    });
+  }
 
-  const planned = jobs.filter((j) => GRAPH_STATUSES.includes(j.status));
+  // Within each square: urgent first, then closest to shipping, ideas last.
+  const statusRank = new Map(LIST_ORDER.map((st, i) => [st, i]));
+  const planned = jobs
+    .filter((j) => GRAPH_STATUSES.includes(j.status))
+    .sort(
+      (a, b) =>
+        Number(b.urgent) - Number(a.urgent) ||
+        (statusRank.get(a.status) ?? 99) - (statusRank.get(b.status) ?? 99) ||
+        a.sort_order - b.sort_order
+    );
   const unscored = planned.filter((j) => !(j.impact && j.ease));
 
   // Effort is what's being built now, across every category.
@@ -1735,127 +2810,188 @@ function ImpactEaseGraph({
     };
   }
 
+  // The grid fills the screen below the toolbar; crowded cells scroll inside.
+  const height = `max(34rem, calc(100dvh - ${stickyTop + 128}px))`;
+
   return (
-    <div className="mt-4">
-      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-        <p className="text-xs font-semibold text-slate-600">
-          Where effort is going
-          <span className="font-normal text-slate-400">
-            {" "}
-            · {active.length} in progress or up next
-          </span>
-        </p>
-        <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100">
-          {effort.map(({ area, count }) =>
-            count > 0 ? (
-              <div
-                key={area}
-                className={areaMeta(area).dot}
-                style={{ width: `${(count / active.length) * 100}%` }}
-                title={`${areaMeta(area).label}: ${count}`}
-              />
-            ) : null
-          )}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-          {effort.map(({ area, count }) => (
-            <span
-              key={area}
-              className="flex items-center gap-1.5 text-[11px] text-slate-500"
-              title={areaMeta(area).hint || undefined}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${areaMeta(area).dot}`} />
-              {areaMeta(area).label}
-              <span className="tabular-nums text-slate-400">{count}</span>
-            </span>
-          ))}
+    <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-stretch">
+      <div
+        className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-slate-200 bg-white py-3 pl-1 pr-3"
+        style={{ height }}
+      >
+        <div className="flex h-full min-w-[40rem] flex-col">
+            <div className="grid min-h-0 flex-1 grid-cols-[1.25rem_repeat(5,minmax(0,1fr))] grid-rows-5">
+              {IMPACT_ROWS.map((impact) => (
+                <div key={impact} className="contents">
+                  <div
+                    className="flex items-center justify-center text-sm font-bold tabular-nums text-slate-600"
+                    title={`Impact ${impact}: ${ROADMAP_IMPACT_LEVELS[impact]}`}
+                  >
+                    {impact}
+                  </div>
+                  {ROADMAP_SCORES.map((ease) => {
+                    const key = `${impact}-${ease}`;
+                    const zone = zoneFor(impact, ease);
+                    const corner =
+                      (impact === 5 || impact === 1) && (ease === 5 || ease === 1);
+                    const cellJobs = planned.filter(
+                      (j) => j.impact === impact && j.ease === ease
+                    );
+                    return (
+                      <div
+                        key={key}
+                        {...dropZone(key, (job) => {
+                          if (job.impact !== impact || job.ease !== ease) {
+                            onScore(job.id, impact, ease);
+                          }
+                        })}
+                        title={`Impact ${impact} (${ROADMAP_IMPACT_LEVELS[impact]}), ease ${ease} (${ROADMAP_EASE_LEVELS[ease]})`}
+                        // Each square's edge is a shade darker than its zone, so the
+                        // zones read as blocks and the squares stay visible.
+                        className={`flex min-h-0 flex-col gap-1 overflow-y-auto p-1.5 ring-inset transition ${
+                          dragOver === key
+                            ? "bg-sky-200/70 ring-2 ring-sky-500"
+                            : `ring-1 ${zone?.bg ?? "bg-slate-50 ring-slate-200"}`
+                        }`}
+                      >
+                        {/* Zone name in its outer corner: top row on top, bottom row at the foot. */}
+                        {corner && zone && impact === 5 ? (
+                          <ZoneLabel zone={zone} right={ease === 5} />
+                        ) : null}
+                        {(openCells.has(key) ? cellJobs : cellJobs.slice(0, CELL_LIMIT)).map(
+                          (job) => (
+                            <GraphChip
+                              key={job.id}
+                              job={job}
+                              dragActiveRef={dragActiveRef}
+                              onOpen={() => onOpen(job.id)}
+                            />
+                          )
+                        )}
+                        {cellJobs.length > CELL_LIMIT ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenCells((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(key)) next.delete(key);
+                                else next.add(key);
+                                return next;
+                              })
+                            }
+                            className="self-start rounded px-1 py-0.5 text-[11px] font-semibold text-slate-500 transition hover:bg-white/70 hover:text-slate-800"
+                          >
+                            {openCells.has(key) ? "Show fewer" : `+${cellJobs.length - CELL_LIMIT} more`}
+                          </button>
+                        ) : null}
+                        {corner && zone && impact === 1 ? (
+                          <div className="mt-auto">
+                            <ZoneLabel zone={zone} right={ease === 5} />
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            {/* X axis: numbers, then both axis titles on one line */}
+            <div className="grid shrink-0 grid-cols-[1.25rem_repeat(5,minmax(0,1fr))] pt-1.5">
+              <div />
+              {ROADMAP_SCORES.map((ease) => (
+                <div
+                  key={ease}
+                  className="text-center text-sm font-bold tabular-nums text-slate-600"
+                  title={`Ease ${ease}: ${ROADMAP_EASE_LEVELS[ease]}`}
+                >
+                  {ease}
+                </div>
+              ))}
+            </div>
+            <div className="flex shrink-0 items-center justify-between pl-0.5 pt-1.5 text-sm font-semibold text-slate-700">
+              <span>↑ Impact: bigger results</span>
+              <span>Ease: quicker to deliver →</span>
+            </div>
         </div>
       </div>
 
-      <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-3">
-          <div className="grid min-w-[640px] grid-cols-[1.25rem_repeat(5,minmax(0,1fr))] gap-1">
-            {IMPACT_ROWS.map((impact) => (
-              <div key={impact} className="contents">
-                <div className="flex items-center justify-center text-[11px] font-semibold tabular-nums text-slate-400">
-                  {impact}
-                </div>
-                {ROADMAP_SCORES.map((ease) => {
-                  const key = `${impact}-${ease}`;
-                  const zone = zoneFor(impact, ease);
-                  const corner =
-                    (impact === 5 || impact === 1) && (ease === 5 || ease === 1);
-                  const cellJobs = planned.filter(
-                    (j) => j.impact === impact && j.ease === ease
-                  );
-                  return (
-                    <div
-                      key={key}
-                      {...dropZone(key, (job) => {
-                        if (job.impact !== impact || job.ease !== ease) {
-                          onScore(job.id, impact, ease);
-                        }
-                      })}
-                      className={`flex min-h-[5.5rem] flex-col gap-1 rounded-md p-1 transition ${
-                        dragOver === key
-                          ? "bg-sky-100 ring-1 ring-sky-400"
-                          : zone?.bg ?? "bg-slate-50"
-                      }`}
-                    >
-                      {corner && zone ? (
-                        <p className="px-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                          {zone.label}
-                        </p>
-                      ) : null}
-                      {cellJobs.map((job) => (
-                        <GraphChip
-                          key={job.id}
-                          job={job}
-                          dragActiveRef={dragActiveRef}
-                          onOpen={() => onOpen(job.id)}
-                        />
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-            <div />
-            {ROADMAP_SCORES.map((ease) => (
-              <div
-                key={ease}
-                className="pt-0.5 text-center text-[11px] font-semibold tabular-nums text-slate-400"
-              >
-                {ease}
-              </div>
-            ))}
-          </div>
-          <div className="mt-1 flex min-w-[640px] items-center justify-between pl-6 text-[11px] text-slate-400">
-            <span>↑ Impact: results, cash, happiness, your time</span>
-            <span>Ease: quicker to live →</span>
-          </div>
-        </div>
+      {!sidebarOpen ? (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label="Show effort and not scored"
+          style={{ height }}
+          className="hidden w-10 shrink-0 flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-100/80 py-3 text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 lg:flex"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+          <span
+            className="text-xs font-semibold"
+            style={{ writingMode: "vertical-rl" }}
+          >
+            Effort · Not scored {unscored.length}
+          </span>
+        </button>
+      ) : null}
+      <div
+        className={`w-full shrink-0 flex-col gap-3 lg:w-72 ${sidebarOpen ? "flex" : "flex lg:hidden"}`}
+        style={{ height }}
+      >
+        <section className="relative shrink-0 rounded-xl border border-slate-200 bg-white p-4">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Hide this column"
+            className="absolute right-2 top-2 hidden h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:inline-flex"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+          <h3 className="text-sm font-semibold text-slate-900">Where effort is going</h3>
+          <p className="text-xs text-slate-500">In progress and up next</p>
+          {active.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-400">Nothing in progress or up next.</p>
+          ) : (
+            <div className="mt-3 flex items-center gap-4">
+              <EffortDonut effort={effort} total={active.length} />
+              <ul className="flex min-w-0 flex-1 flex-col gap-1.5">
+                {effort.map(({ area, count }) => (
+                  <li
+                    key={area}
+                    title={areaMeta(area).hint || undefined}
+                    className="flex items-center gap-2 text-xs text-slate-700"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                      style={{ backgroundColor: AREA_HEX[area] ?? "#94a3b8" }}
+                    />
+                    <span className="flex-1 truncate">{areaMeta(area).label}</span>
+                    <span className="font-semibold tabular-nums">{count}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
 
-        <aside
+        <section
           {...dropZone("unscored", (job) => {
             if (job.impact !== null || job.ease !== null) {
               onScore(job.id, null, null);
             }
           })}
-          className={`w-full shrink-0 rounded-xl border p-2 transition lg:w-60 ${
+          className={`flex min-h-48 flex-1 flex-col rounded-xl border p-3 transition ${
             dragOver === "unscored"
               ? "border-sky-400 bg-sky-50"
               : "border-slate-200 bg-slate-100/80"
           }`}
         >
-          <p className="px-1 text-xs font-semibold text-slate-600">
+          <h3 className="px-1 text-sm font-semibold text-slate-900">
             Not scored
-            <span className="font-normal text-slate-400"> · {unscored.length}</span>
-          </p>
-          <p className="px-1 pb-2 text-[11px] text-slate-400">
+            <span className="font-normal text-slate-500"> · {unscored.length}</span>
+          </h3>
+          <p className="px-1 pb-2 text-xs text-slate-500">
             Drag onto the grid to score, or open a job and pick numbers.
           </p>
-          <div className="flex flex-col gap-1">
+          <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
             {unscored.map((job) => (
               <GraphChip
                 key={job.id}
@@ -1865,16 +3001,31 @@ function ImpactEaseGraph({
               />
             ))}
             {unscored.length === 0 ? (
-              <p className="px-1 pb-1 text-[11px] text-slate-400">
-                Everything planned is scored.
-              </p>
+              <p className="px-1 pb-1 text-xs text-slate-500">Everything planned is scored.</p>
             ) : null}
           </div>
-        </aside>
+          <div className="mt-2 border-t border-slate-200/80 px-1 pt-2 text-[11px] text-slate-500">
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              {[
+                { color: "#2563eb", label: "In progress" },
+                { color: "#f97316", label: "Up next" },
+                { color: null, label: "To do" },
+                { color: "#a855f7", label: "Idea" },
+              ].map((k) => (
+                <span key={k.label} className="flex items-center gap-1.5">
+                  {k.color ? (
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: k.color }} />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full ring-1 ring-inset ring-slate-300" />
+                  )}
+                  {k.label}
+                </span>
+              ))}
+            </p>
+            <p className="mt-1">Dashed = parked. Drag a card to rescore it.</p>
+          </div>
+        </section>
       </div>
-      <p className="mt-2 text-[11px] text-slate-400">
-        Shows jobs not yet done. Dashed = parked. Drag a card to rescore it.
-      </p>
     </div>
   );
 }
@@ -1907,29 +3058,55 @@ function GraphChip({
       }}
       title={`#${job.job_number} · ${job.title} (${STATUS_META[job.status].label})`}
       className={`flex min-w-0 cursor-pointer items-center gap-1.5 rounded border bg-white px-1.5 py-1 text-[11px] font-medium leading-tight text-slate-800 transition hover:border-slate-300 hover:shadow-sm active:cursor-grabbing ${
-        job.status === "parked"
-          ? "border-dashed border-slate-300 opacity-60"
-          : job.status === "in_progress"
-            ? "border-slate-200 border-l-2 border-l-blue-400"
-            : job.status === "up_next"
-              ? "border-slate-200 border-l-2 border-l-orange-400"
-              : "border-slate-200"
+        job.status === "parked" ? "border-dashed border-slate-300 opacity-60" : "border-slate-200"
       }`}
     >
-      <span
-        className={`h-1.5 w-1.5 shrink-0 rounded-full ${areaMeta(job.area).dot}`}
-      />
+      {GRAPH_STATUS_DOT[job.status] ? (
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: GRAPH_STATUS_DOT[job.status]!.color }}
+        />
+      ) : null}
+      {job.urgent ? <UrgentFlag className="h-3 w-3" /> : null}
       <span className="truncate">{job.title}</span>
     </div>
   );
 }
 
-type ListSortKey = "status" | "number" | "title" | "area" | "impact" | "ease" | "total";
+type ListSortKey =
+  | "status"
+  | "number"
+  | "title"
+  | "project"
+  | "area"
+  | "impact"
+  | "ease"
+  | "total";
 type ListGroup = "project" | "area" | "status" | "none";
 type ListSort = { key: ListSortKey; dir: "asc" | "desc" };
 
-const LIST_PREFS_KEY = "roadmap-list-prefs";
+// v2 (21 Oct): new status order and Live hidden by default; older saved prefs are ignored.
+const LIST_PREFS_KEY = "roadmap-list-prefs-v2";
 const DEFAULT_LIST_SORT: ListSort = { key: "status", dir: "asc" };
+const LIST_JOB_WIDTH_KEY = "roadmap-list-job-width";
+
+const LIST_SORT_OPTIONS: { key: ListSortKey; label: string }[] = [
+  { key: "total", label: "Total" },
+  { key: "impact", label: "Impact" },
+  { key: "ease", label: "Ease" },
+  { key: "status", label: "Status" },
+  { key: "project", label: "Project" },
+  { key: "area", label: "Category" },
+  { key: "title", label: "Name" },
+  { key: "number", label: "Number" },
+];
+
+const LIST_GROUP_OPTIONS: { key: ListGroup; label: string }[] = [
+  { key: "project", label: "Project" },
+  { key: "area", label: "Category" },
+  { key: "status", label: "Status" },
+  { key: "none", label: "Nothing" },
+];
 
 /** Impact plus ease, 2-10; null until both are scored. */
 function jobTotal(job: RoadmapJob): number | null {
@@ -1957,6 +3134,9 @@ function RoadmapListTable({
   addSlot,
   stickyTop,
   projects,
+  group,
+  sort,
+  onSortBy,
 }: {
   jobs: RoadmapJob[];
   areas: string[];
@@ -1970,82 +3150,42 @@ function RoadmapListTable({
   ) => React.ReactNode;
   stickyTop: number;
   projects: string[];
+  group: ListGroup;
+  sort: ListSort;
+  onSortBy: (key: ListSortKey) => void;
 }) {
-  // Only mounts in the browser once jobs have loaded, so it can read prefs up front.
-  const [prefs] = useState(() => {
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  /** The Job column's width; drag its right edge to stretch it. */
+  const [jobWidth, setJobWidth] = useState(() => {
     try {
-      const raw = window.localStorage.getItem(LIST_PREFS_KEY);
-      return raw
-        ? (JSON.parse(raw) as {
-            group?: ListGroup;
-            sort?: ListSort;
-            hidden?: RoadmapStatus[];
-          })
-        : null;
+      const saved = Number(window.localStorage.getItem(LIST_JOB_WIDTH_KEY));
+      return saved >= 240 && saved <= 960 ? saved : 440;
     } catch {
-      return null;
+      return 440;
     }
   });
-  const [group, setGroup] = useState<ListGroup>(prefs?.group ?? "area");
-  const [sort, setSort] = useState<ListSort>(prefs?.sort ?? DEFAULT_LIST_SORT);
-  /** Statuses switched off in the status filter. */
-  const [hidden, setHidden] = useState<Set<RoadmapStatus>>(
-    () => new Set(prefs?.hidden ?? [])
-  );
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
 
-  function savePrefs(next: {
-    group?: ListGroup;
-    sort?: ListSort;
-    hidden?: Set<RoadmapStatus>;
-  }) {
-    const merged = {
-      group: next.group ?? group,
-      sort: next.sort ?? sort,
-      hidden: [...(next.hidden ?? hidden)],
+  function startResize(e: React.PointerEvent) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = jobWidth;
+    let latest = startWidth;
+    const onMove = (ev: PointerEvent) => {
+      latest = Math.min(960, Math.max(240, startWidth + ev.clientX - startX));
+      setJobWidth(latest);
     };
-    try {
-      window.localStorage.setItem(LIST_PREFS_KEY, JSON.stringify(merged));
-    } catch {
-      /* noop */
-    }
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      try {
+        window.localStorage.setItem(LIST_JOB_WIDTH_KEY, String(latest));
+      } catch {
+        /* noop */
+      }
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   }
-
-  function sortBy(key: ListSortKey) {
-    // Scores open high-first; everything else reads top-down.
-    const numeric = key === "impact" || key === "ease" || key === "total";
-    const next: ListSort =
-      sort.key === key
-        ? { key, dir: sort.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: numeric ? "desc" : "asc" };
-    setSort(next);
-    savePrefs({ sort: next });
-  }
-
-  function changeGroup(next: ListGroup) {
-    setGroup(next);
-    setCollapsed(new Set());
-    savePrefs({ group: next });
-  }
-
-  function toggleStatus(status: RoadmapStatus) {
-    const next = new Set(hidden);
-    if (next.has(status)) next.delete(status);
-    else next.add(status);
-    setHidden(next);
-    savePrefs({ hidden: next });
-  }
-
-  const statusCounts = useMemo(() => {
-    const counts = new Map<RoadmapStatus, number>();
-    for (const j of jobs) counts.set(j.status, (counts.get(j.status) ?? 0) + 1);
-    return counts;
-  }, [jobs]);
-
-  const shown = useMemo(
-    () => jobs.filter((j) => !hidden.has(j.status)),
-    [jobs, hidden]
-  );
 
   const sorted = useMemo(() => {
     const statusRank = new Map(LIST_ORDER.map((s, i) => [s, i]));
@@ -2058,6 +3198,8 @@ function RoadmapListTable({
           return j.job_number;
         case "title":
           return j.title.toLowerCase();
+        case "project":
+          return j.project?.toLowerCase() ?? null;
         case "area":
           return areaRank.get(j.area) ?? 99;
         case "impact":
@@ -2069,7 +3211,9 @@ function RoadmapListTable({
       }
     };
     const sign = sort.dir === "asc" ? 1 : -1;
-    return [...shown].sort((a, b) => {
+    const urgentFirst = ["total", "impact", "ease", "status"].includes(sort.key);
+    return [...jobs].sort((a, b) => {
+      if (urgentFirst && a.urgent !== b.urgent) return a.urgent ? -1 : 1;
       const va = value(a);
       const vb = value(b);
       // Unscored rows sit at the bottom whichever way the sort runs.
@@ -2084,7 +3228,7 @@ function RoadmapListTable({
         a.created_at.localeCompare(b.created_at)
       );
     });
-  }, [shown, areas, sort]);
+  }, [jobs, areas, sort]);
 
   const groups = useMemo(() => {
     if (group === "area") {
@@ -2141,80 +3285,42 @@ function RoadmapListTable({
     ];
   }, [group, areas, projects, sorted]);
 
-  const scoredCount = shown.filter((j) => jobTotal(j) !== null).length;
-  const columns: { key: ListSortKey; label: string; right?: boolean }[] = [
-    { key: "title", label: "Job" },
-    { key: "status", label: "Status" },
-    ...(group === "area" ? [] : [{ key: "area" as const, label: "Category" }]),
-    { key: "impact", label: "Impact", right: true },
-    { key: "ease", label: "Ease", right: true },
-    { key: "total", label: "Total", right: true },
+  const scoredCount = jobs.filter((j) => jobTotal(j) !== null).length;
+  const columns: { key: ListSortKey; label: string; width: number; right?: boolean }[] = [
+    { key: "title", label: "Job", width: jobWidth },
+    { key: "status", label: "Status", width: 130 },
+    ...(group === "project" ? [] : [{ key: "project" as const, label: "Project", width: 180 }]),
+    ...(group === "area" ? [] : [{ key: "area" as const, label: "Category", width: 150 }]),
+    { key: "impact", label: "Impact", width: 150, right: true },
+    { key: "ease", label: "Ease", width: 150, right: true },
+    { key: "total", label: "Total", width: 80, right: true },
   ];
+  const tableWidth = columns.reduce((sum, c) => sum + c.width, 0);
 
   return (
-    <div className="mt-4 max-w-5xl pb-16">
+    <div className="mt-4 pb-16">
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-xs text-slate-500">
           <span className="font-semibold tabular-nums text-slate-700">
-            {scoredCount} of {shown.length}
+            {scoredCount} of {jobs.length}
           </span>{" "}
           scored
         </p>
         <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-200/70">
           <div
             className="h-full rounded-full bg-sky-500 transition-all"
-            style={{ width: `${shown.length ? (scoredCount / shown.length) * 100 : 0}%` }}
+            style={{ width: `${jobs.length ? (scoredCount / jobs.length) * 100 : 0}%` }}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-1" aria-label="Show statuses">
-          {LIST_ORDER.map((status) => {
-            const on = !hidden.has(status);
-            return (
-              <button
-                key={status}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggleStatus(status)}
-                title={on ? `Hide ${STATUS_META[status].label}` : `Show ${STATUS_META[status].label}`}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
-                  on
-                    ? STATUS_META[status].chip
-                    : "bg-transparent text-slate-400 line-through decoration-slate-300 ring-1 ring-inset ring-slate-200 hover:text-slate-600"
-                }`}
-              >
-                {STATUS_META[status].label}
-                <span className="font-medium tabular-nums opacity-60">
-                  {statusCounts.get(status) ?? 0}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <label className="ml-auto flex items-center gap-2 text-xs font-medium text-slate-500">
-          Group by
-          <select
-            value={group}
-            onChange={(e) => changeGroup(e.target.value as ListGroup)}
-            className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 focus:border-sky-400 focus:outline-none"
-          >
-            <option value="project">Project</option>
-            <option value="area">Category</option>
-            <option value="status">Status</option>
-            <option value="none">Nothing</option>
-          </select>
-        </label>
       </div>
 
       {/* Sideways scroll only below lg: an overflow box would stop the headings sticking. */}
       <div className="mt-2 overflow-x-auto lg:overflow-visible">
-        <table className="w-full min-w-[52rem] table-fixed text-left text-sm">
+        <table className="table-fixed text-left text-sm" style={{ width: tableWidth }}>
           <colgroup>
-            <col />
-            <col className="w-[8rem]" />
-            {group === "area" ? null : <col className="w-[9rem]" />}
-            <col className="w-[9rem]" />
-            <col className="w-[9rem]" />
-            <col className="w-[5rem]" />
+            {columns.map((col) => (
+              <col key={col.key} style={{ width: col.width }} />
+            ))}
           </colgroup>
           <thead className="text-xs font-medium text-slate-500">
             <tr>
@@ -2228,9 +3334,18 @@ function RoadmapListTable({
                       i === 0 ? "pl-[1.625rem] pr-4" : "px-3"
                     } ${col.right ? "text-right" : ""}`}
                   >
+                    {i === 0 ? (
+                      <span
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label="Drag to resize the Job column"
+                        onPointerDown={startResize}
+                        className="absolute inset-y-1 right-0 w-1.5 cursor-col-resize rounded-full transition hover:bg-sky-300 active:bg-sky-400"
+                      />
+                    ) : null}
                     <button
                       type="button"
-                      onClick={() => sortBy(col.key)}
+                      onClick={() => onSortBy(col.key)}
                       className={`inline-flex items-center gap-1 transition hover:text-slate-900 ${
                         active ? "text-slate-900" : ""
                       }`}
@@ -2302,14 +3417,10 @@ function RoadmapListTable({
                                 <span className="w-8 shrink-0 text-right text-xs font-medium text-slate-400">
                                   <JobNumber n={job.job_number} />
                                 </span>
+                                {job.urgent ? <UrgentFlag /> : null}
                                 <span className="truncate font-medium text-slate-900">
                                   {job.title}
                                 </span>
-                                {group !== "project" && job.project ? (
-                                  <span className="shrink-0 rounded bg-slate-200/70 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">
-                                    {job.project}
-                                  </span>
-                                ) : null}
                                 <span className="flex shrink-0 items-center gap-2">
                                   <JobMetaBadges job={job} />
                                 </span>
@@ -2322,6 +3433,13 @@ function RoadmapListTable({
                                 {STATUS_META[job.status].label}
                               </span>
                             </td>
+                            {group === "project" ? null : (
+                              <td className="px-3 py-2.5">
+                                <span className="block truncate text-xs text-slate-600">
+                                  {job.project ?? <span className="text-slate-300">–</span>}
+                                </span>
+                              </td>
+                            )}
                             {group === "area" ? null : (
                               <td className="px-3 py-2.5">
                                 <span className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -2367,10 +3485,8 @@ function RoadmapListTable({
           })}
         </table>
         {jobs.length === 0 ? (
-          <p className="py-6 text-sm text-slate-400">No jobs yet.</p>
-        ) : shown.length === 0 ? (
           <p className="py-6 text-sm text-slate-400">
-            Every status is switched off. Tap one above to show it.
+            No jobs match. Check the Filter menu.
           </p>
         ) : null}
       </div>

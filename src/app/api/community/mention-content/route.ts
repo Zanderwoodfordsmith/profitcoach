@@ -6,7 +6,12 @@ import { flattenSections } from "@/lib/academy/hubCatalog";
 import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
 import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
 import { loadArchiveHub } from "@/lib/academy/archiveHubLoad";
+import { loadVaultHub } from "@/lib/academy/vaultHubLoad";
+import type { HubCatalog } from "@/lib/academy/hubCatalog";
+import { parseLessonVideoChapters } from "@/lib/academy/lessonVideoChapters";
 import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
+
+export type MentionTreeChapter = { chapterId: string; title: string };
 
 export type MentionTreeLesson = {
   lessonId: string;
@@ -14,10 +19,12 @@ export type MentionTreeLesson = {
   emoji?: string | null;
   /** Section/group within a course (Programs courses are split into sections). */
   section?: string;
+  /** Video chapters, when the lesson is split into them. */
+  chapters?: MentionTreeChapter[];
 };
 
 export type MentionTreeCourse = {
-  area: "classroom" | "programs";
+  area: "classroom" | "programs" | "vault";
   courseId: string;
   title: string;
   category?: string;
@@ -56,18 +63,35 @@ async function requireStaff(request: Request): Promise<
   return { ok: true };
 }
 
-/** Title overrides keyed `${course_id}:${lesson_id}` (used for Programs lessons). */
-async function loadLessonTitleOverrides(): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+type LessonOverrides = {
+  /** Title overrides keyed `${course_id}:${lesson_id}` (Programs + Vault lessons). */
+  titles: Map<string, string>;
+  /** Chapters with a video, same keys. */
+  chapters: Map<string, MentionTreeChapter[]>;
+};
+
+async function loadLessonOverrides(): Promise<LessonOverrides> {
+  const titles = new Map<string, string>();
+  const chapters = new Map<string, MentionTreeChapter[]>();
   const { data } = await supabaseAdmin
     .from("academy_lesson_content")
-    .select("course_id, lesson_id, title");
+    .select("course_id, lesson_id, title, video_chapters");
   for (const row of data ?? []) {
-    const r = row as { course_id: string; lesson_id: string; title: string | null };
+    const r = row as {
+      course_id: string;
+      lesson_id: string;
+      title: string | null;
+      video_chapters: unknown;
+    };
+    const key = `${r.course_id}:${r.lesson_id}`;
     const t = r.title?.trim();
-    if (t) map.set(`${r.course_id}:${r.lesson_id}`, t);
+    if (t) titles.set(key, t);
+    const withVideo = parseLessonVideoChapters(r.video_chapters)
+      .filter((c) => c.video_url || c.source_lesson_id)
+      .map((c) => ({ chapterId: c.id, title: c.title }));
+    if (withVideo.length > 1) chapters.set(key, withVideo);
   }
-  return map;
+  return { titles, chapters };
 }
 
 async function loadClassroomCourses(): Promise<MentionTreeCourse[]> {
@@ -86,52 +110,47 @@ async function loadClassroomCourses(): Promise<MentionTreeCourse[]> {
   }));
 }
 
-function loadProgramsCourses(titleOverrides: Map<string, string>): MentionTreeCourse[] {
+function hubCourses(
+  area: "programs" | "vault",
+  hub: HubCatalog,
+  overrides: LessonOverrides,
+): MentionTreeCourse[] {
+  return hub.courses.map((course) => ({
+    area,
+    courseId: course.id,
+    title: course.title,
+    lessons: flattenSections(course.sections).flatMap((section) =>
+      section.lessons.map((lesson) => {
+        const key = `${contentSourceCourseId(lesson.id)}:${lesson.id}`;
+        return {
+          lessonId: lesson.id,
+          title: overrides.titles.get(key) ?? lesson.title,
+          section: section.title,
+          chapters: overrides.chapters.get(key),
+        };
+      }),
+    ),
+  }));
+}
+
+function loadProgramsCourses(overrides: LessonOverrides): MentionTreeCourse[] {
   const courses: MentionTreeCourse[] = [];
 
   try {
-    const hub = loadClassroomHub();
-    for (const course of hub.courses) {
-      courses.push({
-        area: "programs",
-        courseId: course.id,
-        title: course.title,
-        lessons: flattenSections(course.sections).flatMap((section) =>
-          section.lessons.map((lesson) => ({
-            lessonId: lesson.id,
-            title:
-              titleOverrides.get(
-                `${contentSourceCourseId(lesson.id)}:${lesson.id}`,
-              ) ?? lesson.title,
-            section: section.title,
-          })),
-        ),
-      });
-    }
+    courses.push(...hubCourses("programs", loadClassroomHub(), overrides));
   } catch {
-    // Classroom hub unavailable — continue with archive only.
+    // Classroom hub unavailable — continue with Vault and archive.
+  }
+
+  try {
+    courses.push(...hubCourses("vault", loadVaultHub(), overrides));
+  } catch {
+    // Vault unavailable.
   }
 
   // Admin archive: lessons not surfaced on the Classroom hub.
   try {
-    const archive = loadArchiveHub();
-    for (const course of archive.courses) {
-      courses.push({
-        area: "programs",
-        courseId: course.id,
-        title: course.title,
-        lessons: flattenSections(course.sections).flatMap((section) =>
-          section.lessons.map((lesson) => ({
-            lessonId: lesson.id,
-            title:
-              titleOverrides.get(
-                `${contentSourceCourseId(lesson.id)}:${lesson.id}`,
-              ) ?? lesson.title,
-            section: section.title,
-          })),
-        ),
-      });
-    }
+    courses.push(...hubCourses("programs", loadArchiveHub(), overrides));
   } catch {
     // Archive unavailable.
   }
@@ -149,7 +168,7 @@ export async function GET(request: Request) {
   try {
     const [classroom, overrides] = await Promise.all([
       loadClassroomCourses(),
-      loadLessonTitleOverrides(),
+      loadLessonOverrides(),
     ]);
     courses = [...classroom, ...loadProgramsCourses(overrides)];
   } catch {

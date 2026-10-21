@@ -228,12 +228,21 @@ function CommentCard({
   activeThreadId,
   onOpenThread,
   editable,
+  onEdit,
+  onDelete,
+  onDeleteReply,
 }: {
   comment: WorkshopComment;
   activeThreadId: string | null;
   onOpenThread: (commentId: string) => void;
   editable: boolean;
+  /** Passed only where comments can be edited and deleted. */
+  onEdit?: (text: string) => void;
+  onDelete?: () => void;
+  onDeleteReply?: (replyId: string) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.text);
   const authorLabel = displayAuthorName(comment.author, comment.authorName);
   const isThreadActive = activeThreadId === comment.id;
   const replyCount = comment.replies.length;
@@ -263,10 +272,57 @@ function CommentCard({
           <div className="flex items-baseline gap-2">
             <span className="text-sm font-semibold text-slate-900">{authorLabel}</span>
             <time className="text-xs text-slate-400">{formatCommentWhen(comment.createdAt)}</time>
+            {comment.editedAt ? <span className="text-xs text-slate-400">(edited)</span> : null}
           </div>
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
-            {comment.text}
-          </p>
+          {editing ? (
+            <div className="mt-1.5">
+              <textarea
+                autoFocus
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.stopPropagation();
+                    setEditing(false);
+                    setEditText(comment.text);
+                  }
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && editText.trim()) {
+                    onEdit?.(editText.trim());
+                    setEditing(false);
+                  }
+                }}
+                rows={3}
+                className="w-full resize-y rounded-md border border-slate-200 px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-sky-400"
+              />
+              <div className="mt-1.5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(false);
+                    setEditText(comment.text);
+                  }}
+                  className="rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!editText.trim()}
+                  onClick={() => {
+                    onEdit?.(editText.trim());
+                    setEditing(false);
+                  }}
+                  className="rounded-md bg-sky-600 px-2 py-1 text-xs font-semibold text-white disabled:opacity-40"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+              {comment.text}
+            </p>
+          )}
         </div>
       </div>
 
@@ -274,14 +330,44 @@ function CommentCard({
         <ul className="ml-9 mt-3 space-y-2 border-l-2 border-slate-100 pl-3">
           {comment.replies.map((reply) => (
             <li key={reply.id}>
-              <ReplyLine reply={reply} />
+              <ReplyLine
+                reply={reply}
+                onDelete={onDeleteReply ? () => onDeleteReply(reply.id) : undefined}
+              />
             </li>
           ))}
         </ul>
       ) : null}
 
       {editable || replyCount > 0 ? (
-        <div className="mt-2.5 flex items-center justify-end border-t border-slate-100 pt-2">
+        <div className="mt-2.5 flex items-center justify-end gap-3 border-t border-slate-100 pt-2">
+          {(onEdit || onDelete) && !editing ? (
+            <span className="mr-auto flex items-center gap-3">
+              {onEdit ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditText(comment.text);
+                    setEditing(true);
+                  }}
+                  className="text-xs font-medium text-slate-400 transition hover:text-slate-700"
+                >
+                  Edit
+                </button>
+              ) : null}
+              {onDelete ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Delete this comment and its replies?")) onDelete();
+                  }}
+                  className="text-xs font-medium text-slate-400 transition hover:text-rose-600"
+                >
+                  Delete
+                </button>
+              ) : null}
+            </span>
+          ) : null}
           {replyCount > 0 ? (
             <button
               type="button"
@@ -318,10 +404,16 @@ function CommentCard({
   );
 }
 
-function ReplyLine({ reply }: { reply: WorkshopCommentReply }) {
+function ReplyLine({
+  reply,
+  onDelete,
+}: {
+  reply: WorkshopCommentReply;
+  onDelete?: () => void;
+}) {
   const authorLabel = displayAuthorName(reply.author, reply.authorName);
   return (
-    <div className="flex items-start gap-2 py-1">
+    <div className="group flex items-start gap-2 py-1">
       <CommentAuthorAvatar author={reply.author} name={reply.authorName} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
@@ -330,6 +422,18 @@ function ReplyLine({ reply }: { reply: WorkshopCommentReply }) {
         </div>
         <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{reply.text}</p>
       </div>
+      {onDelete ? (
+        <button
+          type="button"
+          aria-label="Delete reply"
+          onClick={() => {
+            if (window.confirm("Delete this reply?")) onDelete();
+          }}
+          className="shrink-0 rounded p-0.5 text-slate-300 opacity-0 transition hover:text-rose-600 group-hover:opacity-100"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -345,6 +449,10 @@ export type WorkshopActivityPanelProps = {
   onActivityAppend: (event: Omit<WorkshopActivityEvent, "id" | "createdAt">) => void;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  /** Lets comments be edited and deleted (off for BOSS Pro). */
+  allowManage?: boolean;
+  /** Shown when there's no activity or comment yet. */
+  emptyText?: string;
 };
 
 export function WorkshopActivityPanel({
@@ -358,6 +466,8 @@ export function WorkshopActivityPanel({
   onActivityAppend,
   collapsed,
   onCollapsedChange,
+  allowManage = false,
+  emptyText = "No activity yet. Score changes and comments will appear here.",
 }: WorkshopActivityPanelProps) {
   const [draft, setDraft] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -495,6 +605,27 @@ export function WorkshopActivityPanel({
     setDraft("");
   };
 
+  const manageHandlers = (commentId: string) => ({
+    onEdit: (text: string) =>
+      onCommentsChange(
+        comments.map((c) =>
+          c.id === commentId ? { ...c, text, editedAt: new Date().toISOString() } : c
+        )
+      ),
+    onDelete: () => {
+      if (replyingTo === commentId) closeThread();
+      onCommentsChange(comments.filter((c) => c.id !== commentId));
+    },
+    onDeleteReply: (replyId: string) =>
+      onCommentsChange(
+        comments.map((c) =>
+          c.id === commentId
+            ? { ...c, replies: c.replies.filter((r) => r.id !== replyId) }
+            : c
+        )
+      ),
+  });
+
   if (collapsed) {
     return (
       <aside className="flex h-full min-h-0 shrink-0 flex-col self-stretch border-l border-slate-200 bg-slate-100">
@@ -537,9 +668,7 @@ export function WorkshopActivityPanel({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {feedSegments.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            No activity yet. Score changes and comments will appear here.
-          </p>
+          <p className="text-sm text-slate-400">{emptyText}</p>
         ) : (
           <ul className="space-y-3">
             {feedSegments.map((segment) =>
@@ -562,6 +691,9 @@ export function WorkshopActivityPanel({
                     activeThreadId={replyingTo}
                     onOpenThread={openThread}
                     editable={editable}
+                    {...(allowManage && editable
+                      ? manageHandlers(segment.entry.comment.id)
+                      : {})}
                   />
                 </li>
               )

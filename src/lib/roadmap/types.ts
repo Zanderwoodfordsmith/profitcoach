@@ -3,10 +3,10 @@
  */
 
 /**
- * Workflow order: todo -> up_next -> in_progress -> review -> done -> live.
- * Review = built, waiting for Zander to check it; only he moves it on to
- * done. Done = checked and pushed (deployed, may still be admin-only).
- * Live = released to coaches. Ideas sit outside the flow: evaluate (new,
+ * Workflow order: todo -> up_next -> in_progress -> review -> done -> staged -> live.
+ * Review = built, waiting for Zander to check it; only he moves it on.
+ * done (shown as "Ready") = checked, waiting for the next stage. staged =
+ * on staging.theprofitcoach.com, waiting to go live. Live = coaches have it. Ideas sit outside the flow: evaluate (new,
  * not scored or decided), parked (good one day, not now), vetoed (decided
  * against for now, kept as a log). "Blocked" is not a status — a job is blocked
  * when blocked_by is set, shown as a red flag on the card.
@@ -17,6 +17,7 @@ export const ROADMAP_STATUSES = [
   "in_progress",
   "review",
   "done",
+  "staged",
   "live",
   "evaluate",
   "parked",
@@ -67,8 +68,8 @@ export const ROADMAP_AREA_META: Record<
   platform: {
     label: "Platform",
     hint: "The app itself: Classroom, Ava plumbing, admin, fixes",
-    dot: "bg-slate-400",
-    chip: "bg-slate-200 text-slate-700",
+    dot: "bg-amber-500",
+    chip: "bg-amber-100 text-amber-800",
   },
 };
 
@@ -91,12 +92,21 @@ export const ROADMAP_IMPACT_HINT =
 export const ROADMAP_EASE_HINT =
   "5 under an hour · 4 half a day · 3 a day or two · 2 a week · 1 longer";
 
+/** Short names shown beside the number. */
 export const ROADMAP_EASE_LEVELS: Record<number, string> = {
-  5: "Under an hour, one prompt",
+  5: "Under an hour",
   4: "Half a day",
   3: "A day or two",
-  2: "About a week",
-  1: "Over a week, or waiting on others",
+  2: "A week",
+  1: "Longer",
+};
+
+export const ROADMAP_IMPACT_LEVELS: Record<number, string> = {
+  5: "Huge",
+  4: "Big",
+  3: "Medium",
+  2: "Small",
+  1: "Tiny",
 };
 
 /** Display form of a job number, e.g. 12 -> "#12" (support uses SUP-0410). */
@@ -116,11 +126,16 @@ export type RoadmapChecklistItem = {
   done: boolean;
 };
 
-export type RoadmapComment = {
+export type RoadmapCommentReply = {
   id: string;
   text: string;
   author: string | null;
   created_at: string;
+};
+
+export type RoadmapComment = RoadmapCommentReply & {
+  edited_at?: string | null;
+  replies?: RoadmapCommentReply[];
 };
 
 /** Reference image (design ref, screenshot) stored in the roadmap-images bucket. */
@@ -139,6 +154,8 @@ export type RoadmapJob = {
   job_number: number;
   title: string;
   notes: string | null;
+  /** What finished looks like; the line Review checks against. */
+  done_when: string | null;
   area: string;
   status: RoadmapStatus;
   blocked_by: string | null;
@@ -146,6 +163,8 @@ export type RoadmapJob = {
   visibility: RoadmapVisibility;
   /** Groups jobs under one piece of work, e.g. "Blueprint". Free text. */
   project: string | null;
+  /** Waiting costs money or risk: jumps the queue whatever its scores. */
+  urgent: boolean;
   /** 1-5, null until scored. See ROADMAP_IMPACT_HINT. */
   impact: number | null;
   /** 1-5, null until scored. See ROADMAP_EASE_HINT. */

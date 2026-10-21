@@ -28,8 +28,8 @@ export function CommunityAuthorAvatar({ profile, size = "md" }: Props) {
   const textSm = size === "sm" ? "text-xs" : "text-sm";
   const badge =
     size === "sm"
-      ? "absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold tabular-nums shadow-sm ring-[1.5px] ring-white"
-      : "absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold tabular-nums shadow-sm ring-[1.5px] ring-white";
+      ? "absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold tabular-nums shadow-sm ring-[1.5px] ring-white"
+      : "absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold tabular-nums shadow-sm ring-[1.5px] ring-white";
 
   const avatar = (
     <div className={`relative shrink-0 ${box}`}>
@@ -60,10 +60,10 @@ export function CommunityAuthorAvatar({ profile, size = "md" }: Props) {
           {lvl.ordinal}
         </span>
       ) : null}
-      {/* Top right: the ladder level owns the bottom-right corner. */}
+      {/* Bottom right; the ladder level sits top right. */}
       <OnlineDot
         userId={profile?.id}
-        className={size === "sm" ? "-right-0.5 -top-0.5 h-2.5 w-2.5" : "-right-0.5 -top-0.5 h-3 w-3"}
+        className={size === "sm" ? "-bottom-0.5 -right-0.5 h-2.5 w-2.5" : "-bottom-0.5 -right-0.5 h-3 w-3"}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, GraduationCap, Search, X } from "lucide-react";
+import { BookOpen, CornerDownRight, GraduationCap, Search, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { AcademyArea } from "@/lib/communityMentions";
 
@@ -10,6 +10,7 @@ type TreeLesson = {
   title: string;
   emoji?: string | null;
   section?: string;
+  chapters?: { chapterId: string; title: string }[];
 };
 type TreeCourse = {
   area: AcademyArea;
@@ -26,6 +27,9 @@ export type AcademyMentionPick =
       courseId: string;
       lessonId: string;
       title: string;
+      chapterId?: string;
+      /** Start time in seconds. */
+      t?: number;
     }
   | { type: "course"; area: AcademyArea; courseId: string; title: string };
 
@@ -41,9 +45,11 @@ type Row = {
   label: string;
   sublabel: string;
   emoji?: string | null;
+  /** Chapter row, shown indented under its lesson. */
+  chapter?: boolean;
 };
 
-const RESULT_LIMIT = 60;
+const RESULT_LIMIT = 80;
 
 /** Module-level cache so reopening the picker (or other composers) is instant. */
 let TREE_CACHE: TreeCourse[] | null = null;
@@ -64,19 +70,37 @@ async function fetchTree(): Promise<TreeCourse[]> {
 
 function areaLabel(area: AcademyArea): string {
   // Stored mention area keys are stable; labels match current product names.
-  return area === "programs" ? "Classroom" : "Compass";
+  if (area === "programs") return "Classroom";
+  if (area === "vault") return "Vault";
+  return "Compass";
+}
+
+/** "90", "4:30" or "1:02:03" to seconds; null when it is not a time. */
+function parseStartTime(text: string): number | null {
+  const parts = text.trim().split(":");
+  if (parts.length > 3 || parts.some((p) => !/^\d+$/.test(p))) return null;
+  return parts.reduce((total, p) => total * 60 + Number(p), 0);
+}
+
+function formatStartTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = String(seconds % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
 export function AcademyMentionPicker({ open, mode, onClose, onPick }: Props) {
   const [tree, setTree] = useState<TreeCourse[]>(() => TREE_CACHE ?? []);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const [startAt, setStartAt] = useState("");
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
     setQuery("");
+    setStartAt("");
     setHighlight(0);
     if (TREE_CACHE) {
       setTree(TREE_CACHE);
@@ -135,7 +159,12 @@ export function AcademyMentionPicker({ open, mode, onClose, onPick }: Props) {
     for (const course of tree) {
       for (const lesson of course.lessons) {
         const hay = `${lesson.title} ${course.title} ${lesson.section ?? ""} ${areaLabel(course.area)}`.toLowerCase();
-        if (needle && !hay.includes(needle)) continue;
+        const lessonMatch = !needle || hay.includes(needle);
+        // Find the lesson and every chapter shows; otherwise only matching chapters.
+        const chapters = (lesson.chapters ?? []).filter(
+          (c) => lessonMatch || c.title.toLowerCase().includes(needle)
+        );
+        if (!lessonMatch && chapters.length === 0) continue;
         const sub = [areaLabel(course.area), course.title, lesson.section]
           .filter(Boolean)
           .join(" · ");
@@ -151,6 +180,23 @@ export function AcademyMentionPicker({ open, mode, onClose, onPick }: Props) {
           sublabel: sub,
           emoji: lesson.emoji,
         });
+        const total = lesson.chapters?.length ?? 0;
+        for (const chapter of chapters) {
+          const n = (lesson.chapters ?? []).indexOf(chapter) + 1;
+          out.push({
+            pick: {
+              type: "lesson",
+              area: course.area,
+              courseId: course.courseId,
+              lessonId: lesson.lessonId,
+              title: `${lesson.title} - ${chapter.title}`,
+              chapterId: chapter.chapterId,
+            },
+            label: chapter.title,
+            sublabel: `Chapter ${n} of ${total}`,
+            chapter: true,
+          });
+        }
         if (out.length >= RESULT_LIMIT) break;
       }
       if (out.length >= RESULT_LIMIT) break;
@@ -159,6 +205,25 @@ export function AcademyMentionPicker({ open, mode, onClose, onPick }: Props) {
   }, [tree, query, mode]);
 
   const safeHighlight = rows.length === 0 ? 0 : Math.min(highlight, rows.length - 1);
+
+  const startSeconds = startAt.trim() ? parseStartTime(startAt) : 0;
+  const startInvalid = startSeconds === null;
+
+  /** Adds the start time (if any) to a lesson pick before handing it on. */
+  const pick = useCallback(
+    (row: Row) => {
+      if (row.pick.type !== "lesson" || !startSeconds) {
+        onPick(row.pick);
+        return;
+      }
+      onPick({
+        ...row.pick,
+        title: `${row.pick.title} at ${formatStartTime(startSeconds)}`,
+        t: startSeconds,
+      });
+    },
+    [onPick, startSeconds]
+  );
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -176,10 +241,10 @@ export function AcademyMentionPicker({ open, mode, onClose, onPick }: Props) {
       } else if (e.key === "Enter") {
         e.preventDefault();
         const row = rows[safeHighlight];
-        if (row) onPick(row.pick);
+        if (row && !startInvalid) pick(row);
       }
     },
-    [rows, safeHighlight, onClose, onPick]
+    [rows, safeHighlight, onClose, pick, startInvalid]
   );
 
   if (!open) return null;
@@ -243,28 +308,39 @@ export function AcademyMentionPicker({ open, mode, onClose, onPick }: Props) {
               return (
                 <li
                   key={`${row.pick.type}:${row.pick.area}:${row.pick.courseId}:${
-                    row.pick.type === "lesson" ? row.pick.lessonId : ""
+                    row.pick.type === "lesson"
+                      ? `${row.pick.lessonId}:${row.pick.chapterId ?? ""}`
+                      : ""
                   }`}
                   role="option"
                   aria-selected={active}
                 >
                   <button
                     type="button"
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm ${
-                      active ? "bg-amber-50" : "hover:bg-slate-50"
-                    }`}
+                    disabled={startInvalid}
+                    className={`flex w-full items-center gap-2.5 rounded-lg py-2 pr-2.5 text-left text-sm disabled:cursor-not-allowed ${
+                      row.chapter ? "pl-8" : "pl-2.5"
+                    } ${active ? "bg-amber-50" : "hover:bg-slate-50"}`}
                     onMouseEnter={() => setHighlight(idx)}
-                    onClick={() => onPick(row.pick)}
+                    onClick={() => pick(row)}
                   >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700">
-                      {row.emoji ? (
-                        <span className="text-base leading-none">{row.emoji}</span>
-                      ) : row.pick.type === "lesson" ? (
-                        <BookOpen className="h-4 w-4" strokeWidth={2} />
-                      ) : (
-                        <GraduationCap className="h-4 w-4" strokeWidth={2} />
-                      )}
-                    </span>
+                    {row.chapter ? (
+                      <CornerDownRight
+                        className="h-4 w-4 shrink-0 text-slate-400"
+                        strokeWidth={2}
+                        aria-hidden
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700">
+                        {row.emoji ? (
+                          <span className="text-base leading-none">{row.emoji}</span>
+                        ) : row.pick.type === "lesson" ? (
+                          <BookOpen className="h-4 w-4" strokeWidth={2} />
+                        ) : (
+                          <GraduationCap className="h-4 w-4" strokeWidth={2} />
+                        )}
+                      </span>
+                    )}
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate font-medium text-slate-900">
                         {row.label}
@@ -279,6 +355,34 @@ export function AcademyMentionPicker({ open, mode, onClose, onPick }: Props) {
             })
           )}
         </ul>
+
+        {mode === "lesson" ? (
+          <div className="border-t border-slate-100 px-4 py-3">
+            <div className="flex items-center gap-2 text-sm">
+              <label htmlFor="academy-mention-start" className="text-slate-700">
+                Start the video at
+              </label>
+              <input
+                id="academy-mention-start"
+                type="text"
+                inputMode="numeric"
+                value={startAt}
+                onChange={(e) => setStartAt(e.target.value)}
+                placeholder="0:00"
+                aria-invalid={startInvalid}
+                className={`w-20 rounded-lg border px-2 py-1 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
+                  startInvalid
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-400/20"
+                    : "border-slate-200 focus:border-sky-500 focus:ring-sky-500/20"
+                }`}
+              />
+              <span className="text-xs text-slate-400">optional</span>
+            </div>
+            {startInvalid ? (
+              <p className="mt-1.5 text-xs text-red-600">Type a time like 4:30</p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

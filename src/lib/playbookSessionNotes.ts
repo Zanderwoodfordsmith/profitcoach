@@ -553,6 +553,8 @@ export type WorkshopComment = {
   authorName?: string;
   text: string;
   createdAt: string;
+  /** Set when the text was changed after posting. */
+  editedAt?: string;
   replies: WorkshopCommentReply[];
 };
 

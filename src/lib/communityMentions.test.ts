@@ -9,6 +9,7 @@ import {
   extractBroadcastMentionGroups,
   extractMentionUserIds,
   mentionNotificationBodyOrFilter,
+  mentionTargetHref,
   parseMentionTarget,
   splitMentionSegments,
 } from "./communityMentions";
@@ -98,5 +99,55 @@ describe("broadcast mention tokens", () => {
     assert.match(filter, /mention:group:everyone/);
     assert.match(filter, /mention:group:coaches/);
     assert.match(filter, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
+  });
+});
+
+describe("lesson mention tokens", () => {
+  it("round-trips a Vault lesson with a chapter and start time", () => {
+    const target = buildMentionTarget({
+      type: "lesson",
+      area: "vault",
+      courseId: "stryvx",
+      lessonId: "stryvx-the-integral-map",
+      chapterId: "quadrants",
+      t: 270,
+    });
+    assert.equal(target, "lesson:vault:stryvx:stryvx-the-integral-map?chapter=quadrants&t=270");
+    const parsed = parseMentionTarget(target);
+    assert.deepEqual(parsed, {
+      type: "lesson",
+      area: "vault",
+      courseId: "stryvx",
+      lessonId: "stryvx-the-integral-map",
+      chapterId: "quadrants",
+      t: 270,
+    });
+    assert.equal(
+      mentionTargetHref(parsed),
+      "/coach/academy/vault/stryvx/stryvx-the-integral-map?chapter=quadrants&t=270"
+    );
+  });
+
+  it("keeps plain lesson links unchanged", () => {
+    const target = "lesson:programs:win-clients:win-clients-deliver-your-sales-pitch";
+    const parsed = parseMentionTarget(target);
+    assert.deepEqual(parsed, {
+      type: "lesson",
+      area: "programs",
+      courseId: "win-clients",
+      lessonId: "win-clients-deliver-your-sales-pitch",
+    });
+    assert.equal(
+      mentionTargetHref(parsed),
+      "/coach/academy/classroom/win-clients/win-clients-deliver-your-sales-pitch"
+    );
+  });
+
+  it("splits a lesson token in a body with its spot", () => {
+    const [seg] = splitMentionSegments(
+      "[@@Quadrants at 4:30](mention:lesson:vault:stryvx:stryvx-the-integral-map?t=270)"
+    );
+    assert.equal(seg.kind, "mention");
+    assert.equal(seg.kind === "mention" && seg.spot?.t, 270);
   });
 });

@@ -109,7 +109,7 @@ function renderSegments(
       return (
         <Link
           key={i}
-          href={lessonMentionHref(seg.area, seg.courseId, seg.lessonId)}
+          href={lessonMentionHref(seg.area, seg.courseId, seg.lessonId, seg.spot)}
           className={COMMUNITY_MENTION_LINK_CLASS}
           onClick={(e) => e.stopPropagation()}
         >

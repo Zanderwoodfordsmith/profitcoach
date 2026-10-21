@@ -14,6 +14,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { isDeltaIqContractor } from "@/lib/support/assignees";
+import { DEMO_COACH_SLUG } from "@/lib/primaryCoachConstants";
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
 import { resolveCommunityBio } from "@/lib/profileBioFields";
 
@@ -186,7 +187,10 @@ function useCommunityMemberDirectoryState() {
       if (!cErr && coachData) coaches = coachData as typeof coaches;
     }
 
-    const merged = mergeRoster(plist as StaffProfileRow[], coaches);
+    // Zander Demo is a test login, not a member.
+    const merged = mergeRoster(plist as StaffProfileRow[], coaches).filter(
+      (m) => m.slug !== DEMO_COACH_SLUG
+    );
     if (!includeLadder) {
       setRoster(merged);
       setRosterLoaded(true);

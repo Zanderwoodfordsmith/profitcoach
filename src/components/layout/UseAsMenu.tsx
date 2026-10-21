@@ -72,11 +72,15 @@ function coachDisplayName(coach: CoachListRow): string {
   );
 }
 
-function coachSearchText(coach: CoachListRow): string {
-  return [coach.full_name, coach.coach_business_name, coach.slug]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+/** Every typed word must start a word of the text. */
+function startsWords(text: string | null | undefined, q: string): boolean {
+  const words = (text ?? "")
+    .toLowerCase()
+    .split(/[\s\-'’.()&,]+/)
+    .filter(Boolean);
+  return q
+    .split(/\s+/)
+    .every((part) => words.some((word) => word.startsWith(part)));
 }
 
 function panelStyle(anchor: DOMRect): React.CSSProperties {
@@ -242,6 +246,8 @@ export function UseAsMenu({
   const scheduleClose = useCallback(() => {
     if (layout !== "flyout") return;
     cancelClose();
+    // Results shrink the panel out from under the pointer; stay open while searching.
+    if (inputRef.current?.value.trim()) return;
     closeTimer.current = window.setTimeout(() => {
       setOpen(false);
       setQuery("");
@@ -287,18 +293,34 @@ export function UseAsMenu({
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return coachRows;
-    return coachRows.filter((coach) => coachSearchText(coach).includes(q));
+    // First name matches, then surname (or other name word), then business name.
+    const byFirstName = coachRows.filter((coach) =>
+      coachDisplayName(coach).toLowerCase().startsWith(q)
+    );
+    const byName = coachRows.filter(
+      (coach) =>
+        !byFirstName.includes(coach) && startsWords(coachDisplayName(coach), q)
+    );
+    const byBusiness = coachRows.filter(
+      (coach) =>
+        !byFirstName.includes(coach) &&
+        !byName.includes(coach) &&
+        startsWords(`${coachDisplayName(coach)} ${coach.coach_business_name ?? ""}`, q)
+    );
+    return [...byFirstName, ...byName, ...byBusiness];
   }, [coachRows, query]);
 
   const searching = query.trim().length > 0;
   const recentRows = useMemo(() => {
-    if (searching) return [];
+    const pool = searching ? filteredRows : coachRows;
     return recentIds
-      .map((id) => coachRows.find((coach) => coach.id === id))
+      .map((id) => pool.find((coach) => coach.id === id))
       .filter((coach): coach is CoachListRow => Boolean(coach))
       .slice(0, MAX_RECENT);
-  }, [coachRows, recentIds, searching]);
-  const directoryRows = searching ? filteredRows : coachRows;
+  }, [coachRows, filteredRows, recentIds, searching]);
+  const directoryRows = searching
+    ? filteredRows.filter((coach) => !recentRows.includes(coach))
+    : coachRows;
 
   useEffect(() => {
     if (!open || !coachesLoaded || !impersonatingCoachId) return;
@@ -514,14 +536,16 @@ function UseAsPanel({
         </label>
       </div>
       <div className="max-h-80 min-h-0 overflow-y-auto py-1">
-        <IdentityRow
-          label="Admin"
-          active={!impersonatingCoachId}
-          busy={busyId === "admin"}
-          disabled={Boolean(busyId)}
-          onClick={onAdmin}
-        />
-        {demos.map((demo) => {
+        {searching ? null : (
+          <IdentityRow
+            label="Admin"
+            active={!impersonatingCoachId}
+            busy={busyId === "admin"}
+            disabled={Boolean(busyId)}
+            onClick={onAdmin}
+          />
+        )}
+        {(searching ? [] : demos).map((demo) => {
           const id = idsBySlug[demo.coachSlug];
           return (
             <IdentityRow
@@ -536,7 +560,7 @@ function UseAsPanel({
         })}
         {isAdmin ? (
           <>
-            <div className="mx-3 my-1 border-t border-slate-100" />
+            {searching ? null : <div className="mx-3 my-1 border-t border-slate-100" />}
             {loading ? (
               <div className="flex items-center justify-center gap-2 px-3 py-6 text-xs text-slate-500">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -580,7 +604,7 @@ function UseAsPanel({
                         />
                       ))}
                     </>
-                  ) : (
+                  ) : recentRows.length > 0 ? null : (
                     <p className="px-3 py-3 text-xs text-slate-500">No coaches match.</p>
                   )
                 ) : directoryRows.length > 0 ? (

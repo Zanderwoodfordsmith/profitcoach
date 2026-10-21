@@ -45,24 +45,32 @@ The Academy roadmap (/admin/roadmap, table `roadmap_jobs`) is the one queue.
 - If his check finds something to change, the job goes back to In progress
   with the change added to its checklist, then returns to Review. No
   second review column.
-- Two shortcuts, both Zander's. Never run either unless he asks:
-  - `stage` = `npm run typecheck && git add -A && git commit -m "…" && git push origin main:staging`.
-    Backs up to GitHub and builds https://staging.theprofitcoach.com (same
-    database as live; no crons; Stripe secret keys deliberately absent).
-  - `live` = `git push origin main`: production gets what's already staged.
-  - `ship` = `stage` then `live` in one go (staging stays in step).
-  - His text-replacement triggers are `;stage`, `;live`, `;ship`; in chat,
-    "stage it", "go live" or "ship it" mean the same.
+- Shipping commands (scripts in ~/.npm-global/bin). Run them only when
+  Zander asks (his text replacements `;stage`, `;live`, `;ship` expand to
+  plain instructions):
+  - `stage "message"`: typecheck, commit everything on main, push to the
+    `staging` branch → https://staging.theprofitcoach.com (Vercel-login
+    protected; same database as live; no crons; no Stripe secret keys).
+  - `live`: shows what would go live and changes nothing. Show Zander the
+    list; only after he says yes run `live --yes`, which puts staging (not
+    local main) on the live site.
 - Work stays on local main; never commit to `staging` directly or it stops
   fast-forwarding from main.
-- Columns: Review = check on 3002. Done = checked and staged.
-  Live = gone live. Zander drags Review → Done.
+- Columns: Review = check on 3002. Ready (status `done`) = checked, waiting
+  for stage. On staging (`staged`) = on staging. Live = coaches have it.
+  Zander drags Review → Ready. After `stage`, move every Ready job to On
+  staging; after `live --yes`, move every On staging job to Live.
 - Only a brand-new page or tab is built admin-only until it's ready. Changes
-  to pages coaches already see are not gated; they go live with `live`.
+  to pages coaches already see are not gated; they go live with `live --yes`.
 - Zander releases by name, never by job number: "release Scripts" = remove
   that page's admin gate and move its jobs to Live.
 - A new idea mid-session goes to Ideas → Evaluate as a new job; don't start
   building it unless Zander says so.
+- Every job has a **Done when** (its own field, above Scope): what finished
+  looks like in a sentence or two. Review checks against it; anything new
+  that isn't in it becomes a new job.
+- **Urgent** flag = waiting costs money or risk; it jumps the queue whatever
+  the scores. Only Zander sets it.
 
 ## Map: where the truth lives
 

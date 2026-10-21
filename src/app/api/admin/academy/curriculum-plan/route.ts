@@ -5,7 +5,7 @@ import {
   curriculumPlanItemFromDb,
   type CurriculumPlanItemDbRow,
 } from "@/lib/academy/curriculumPlan";
-import { classroomPlanCourses } from "@/lib/academy/curriculumPlanLoad";
+import { curriculumPlanCourses } from "@/lib/academy/curriculumPlanLoad";
 import { findLessonInCourse } from "@/lib/academy/hubCatalog";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -13,8 +13,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 export const runtime = "nodejs";
 
 /**
- * Create a plan row. With `lessonId` it is the plan for a current Classroom
- * lesson (one per lesson, so it upserts); without, it is a new lesson.
+ * Create a plan row. With `lessonId` it is the plan for a current lesson in
+ * any board course (one per lesson, so it upserts); without, it is a new lesson.
  */
 export async function POST(request: Request) {
   const auth = await requireAdmin(request);
@@ -33,9 +33,9 @@ export async function POST(request: Request) {
   const lessonId =
     typeof body.lessonId === "string" && body.lessonId.trim() ? body.lessonId.trim() : null;
 
-  const course = classroomPlanCourses().find((c) => c.id === courseId);
+  const course = curriculumPlanCourses().find((pc) => pc.course.id === courseId)?.course;
   if (!course) {
-    return NextResponse.json({ error: "Unknown Classroom course." }, { status: 400 });
+    return NextResponse.json({ error: "Unknown course." }, { status: 400 });
   }
   if (lessonId && !findLessonInCourse(course, lessonId)) {
     return NextResponse.json({ error: "That lesson is not in this course." }, { status: 400 });

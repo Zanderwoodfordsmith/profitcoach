@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  AlignLeft,
   ArrowRight,
+  Captions,
+  ChevronDown,
   Ellipsis,
   ExternalLink,
   FileText,
@@ -17,17 +20,20 @@ import {
   Presentation,
   Search,
   Trash2,
+  Video,
   X,
 } from "lucide-react";
 
 import {
   CURRENT_LESSON_DECISIONS,
+  CURRICULUM_CONTENT_KINDS,
   CURRICULUM_DECISION_HINTS,
   CURRICULUM_DECISION_LABELS,
   CURRICULUM_DECISIONS_LEAVING,
   CURRICULUM_DECISIONS_WITH_TARGET,
   CURRICULUM_LINK_FIELDS,
   CURRICULUM_RULES,
+  CURRICULUM_SCOPE_LABELS,
   CURRICULUM_STATUS_LABELS,
   CURRICULUM_STATUSES,
   LESSON_OPENING_STANDARD,
@@ -39,10 +45,13 @@ import {
   type CurriculumBoardRow,
   type CurriculumBoardSection,
   type CurriculumDecision,
+  type CurriculumDriveLeftovers,
   type CurriculumLinkKey,
   type CurriculumPlanItem,
   type CurriculumPlanPatch,
+  type CurriculumScope,
   type CurriculumStatus,
+  type LessonContentPresence,
 } from "@/lib/academy/curriculumPlan";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { StickyPageHeader } from "@/components/layout";
@@ -69,7 +78,13 @@ const LINK_ICONS: Record<CurriculumLinkKey, typeof FileText> = {
   sourceUrl: FolderOpen,
 };
 
-const COLUMN_COUNT = 5;
+const CONTENT_ICONS: Record<keyof LessonContentPresence, typeof FileText> = {
+  video: Video,
+  transcript: Captions,
+  written: AlignLeft,
+};
+
+const COLUMN_COUNT = 6;
 const COLLAPSED_STORAGE_KEY = "curriculum-board:collapsed";
 
 type SectionView = {
@@ -198,6 +213,25 @@ function LinkIcons({ plan }: { plan: CurriculumPlanItem | null }) {
           >
             <Icon className="h-4 w-4" />
           </a>
+        );
+      })}
+    </span>
+  );
+}
+
+/** What the lesson has today: lit when there, faint when missing. */
+function ContentIcons({ content }: { content: LessonContentPresence | null }) {
+  if (!content) return <span className="text-slate-300">–</span>;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {CURRICULUM_CONTENT_KINDS.map(({ key, label }) => {
+        const Icon = CONTENT_ICONS[key];
+        const has = content[key];
+        const text = `${label}: ${has ? "yes" : "missing"}`;
+        return (
+          <span key={key} title={text} aria-label={text} className={has ? "text-slate-700" : "text-slate-300"}>
+            <Icon className="h-4 w-4" strokeWidth={has ? 2 : 1.5} />
+          </span>
         );
       })}
     </span>
@@ -541,7 +575,9 @@ function GroupToggle({
 export function CurriculumPlanBoard({ board: initialBoard }: { board: CurriculumBoard }) {
   const router = useRouter();
   const [board, setBoard] = useState(initialBoard);
+  const [scope, setScope] = useState<CurriculumScope>("classroom");
   const [decisionFilter, setDecisionFilter] = useState<CurriculumDecision | "all">("all");
+  const [missingFilter, setMissingFilter] = useState<keyof LessonContentPresence | "all">("all");
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [openKey, setOpenKey] = useState<string | null>(null);
@@ -620,22 +656,28 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
   }, [board.rows]);
 
   const needle = query.trim().toLowerCase();
-  const filtering = Boolean(needle) || decisionFilter !== "all";
+  const filtering = Boolean(needle) || decisionFilter !== "all" || missingFilter !== "all";
   const visible = useCallback(
     (row: CurriculumBoardRow) => {
       if (decisionFilter !== "all" && rowDecision(row) !== decisionFilter) return false;
+      if (missingFilter !== "all" && (!row.content || row.content[missingFilter])) return false;
       if (needle) {
         const hay = `${rowDisplayTitle(row)} ${row.currentTitle ?? ""} ${row.plan?.note ?? ""}`.toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
     },
-    [decisionFilter, needle],
+    [decisionFilter, missingFilter, needle],
+  );
+
+  const scopeCourses = useMemo(
+    () => board.courses.filter((c) => c.scope === scope),
+    [board.courses, scope],
   );
 
   const groups = useMemo(
     () =>
-      board.courses
+      scopeCourses
         .map((course) => {
           const sections = buildSectionViews(course.id, course.sections, 0, rowByKey, visible);
           return {
@@ -647,7 +689,7 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
           };
         })
         .filter((c) => c.count > 0),
-    [board.courses, rowByKey, visible],
+    [scopeCourses, rowByKey, visible],
   );
 
   const allGroupKeys = useMemo(
@@ -781,6 +823,9 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
             <LessonCell row={row} intoTitle={intoTitle(row)} takesIn={takesInByKey.get(row.key) ?? []} />
           </td>
           <td className={`px-4 py-3 ${dim}`}>
+            <ContentIcons content={row.content} />
+          </td>
+          <td className={`px-4 py-3 ${dim}`}>
             <DecisionBadge decision={rowDecision(row)} />
           </td>
           <td className={`px-4 py-3 ${dim}`}>
@@ -850,7 +895,7 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
         title="Academy"
         description={
           <span className="text-lg leading-relaxed text-slate-600">
-            The new curriculum laid over the current Classroom: what each lesson
+            Every lesson in the Classroom and the Vault: what it has today, what it
             becomes, and where each new video is up to.
           </span>
         }
@@ -858,12 +903,31 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
       />
       <div className="flex w-full flex-col gap-4 pb-16">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="relative w-full sm:w-64">
+          <div className="inline-flex rounded-full bg-white p-1 ring-1 ring-inset ring-slate-200" role="tablist" aria-label="Where">
+            {(Object.keys(CURRICULUM_SCOPE_LABELS) as CurriculumScope[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                role="tab"
+                aria-selected={scope === s}
+                onClick={() => {
+                  setScope(s);
+                  setAdding(false);
+                }}
+                className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${
+                  scope === s ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {CURRICULUM_SCOPE_LABELS[s]}
+              </button>
+            ))}
+          </div>
+          <label className="relative w-full sm:w-48">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               className={`${fieldClass} pl-9`}
               value={query}
-              placeholder="Search titles and notes"
+              placeholder="Search lessons"
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
@@ -877,6 +941,19 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
             {Object.entries(CURRICULUM_DECISION_LABELS).map(([d, label]) => (
               <option key={d} value={d}>
                 {label}
+              </option>
+            ))}
+          </select>
+          <select
+            className={controlClass}
+            value={missingFilter}
+            onChange={(e) => setMissingFilter(e.target.value as keyof LessonContentPresence | "all")}
+            aria-label="Missing"
+          >
+            <option value="all">Any content</option>
+            {CURRICULUM_CONTENT_KINDS.map(({ key, label }) => (
+              <option key={key} value={key}>
+                No {label.toLowerCase()}
               </option>
             ))}
           </select>
@@ -915,8 +992,8 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
 
         {adding ? (
           <AddLessonForm
-            courses={board.courses}
-            defaultCourseId={board.courses[0]?.id ?? ""}
+            courses={scopeCourses}
+            defaultCourseId={scopeCourses[0]?.id ?? ""}
             sectionTitlesByCourse={sectionTitlesByCourse}
             onAdd={addNew}
           />
@@ -933,9 +1010,10 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
         ) : (
           // One table so a single sticky header lines up with every course.
           <div className="overflow-x-auto xl:overflow-visible">
-            <table ref={tableRef} className="w-full min-w-[56rem] table-fixed text-left text-sm xl:min-w-0">
+            <table ref={tableRef} className="w-full min-w-[63rem] table-fixed text-left text-sm xl:min-w-0">
               <colgroup>
                 <col />
+                <col className="w-[7rem]" />
                 <col className="w-[9rem]" />
                 <col className="w-[11rem]" />
                 <col className="w-[8rem]" />
@@ -943,7 +1021,7 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
               </colgroup>
               <thead className="text-xs font-medium text-slate-500">
                 <tr>
-                  {["Lesson", "Decision", "Status", "Links", "Notes"].map((label, i) => (
+                  {["Lesson", "Has", "Decision", "Status", "Links", "Notes"].map((label, i) => (
                     <th
                       key={label}
                       style={{ top: headerHeight }}
@@ -984,6 +1062,8 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
           </div>
         )}
 
+        {scope === "classroom" ? <DriveLeftovers leftovers={board.driveLeftovers} /> : null}
+
         <Modal
           open={rulesOpen}
           onClose={() => setRulesOpen(false)}
@@ -1014,6 +1094,60 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
         </Modal>
       </div>
     </div>
+  );
+}
+
+/** Old Academy transcripts in Drive with no lesson: source material for new ones. */
+function DriveLeftovers({ leftovers }: { leftovers: CurriculumDriveLeftovers }) {
+  const byFolder = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const f of leftovers.files) {
+      const cut = f.relativePath.lastIndexOf("/");
+      const folder = cut > 0 ? f.relativePath.slice(0, cut) : "Top folder";
+      const list = map.get(folder) ?? [];
+      list.push(cut > 0 ? f.relativePath.slice(cut + 1) : f.relativePath);
+      map.set(folder, list);
+    }
+    return [...map.entries()];
+  }, [leftovers.files]);
+
+  if (leftovers.files.length === 0) return null;
+  const checked = leftovers.checkedAt
+    ? new Date(leftovers.checkedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : null;
+
+  return (
+    <details className="group rounded-2xl bg-white ring-1 ring-inset ring-slate-200">
+      <summary className="flex cursor-pointer list-none items-center gap-2.5 px-4 py-3 sm:px-5">
+        <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-slate-500 transition-transform group-open:rotate-0" />
+        <span className="text-sm font-semibold text-slate-800">Old transcripts in Drive with no lesson</span>
+        <span className="text-xs font-medium tabular-nums text-slate-400">{leftovers.files.length}</span>
+      </summary>
+      <div className="border-t border-slate-200 px-4 pb-5 pt-3 sm:px-5">
+        <p className="text-sm leading-6 text-slate-600">
+          The Drive check{checked ? ` on ${checked}` : ""} could not match these to a lesson. Use them as the
+          source for a new or updated lesson. Some may have been added to a lesson since.
+          {leftovers.root ? (
+            <span className="mt-1 block break-all text-xs text-slate-400">{leftovers.root}</span>
+          ) : null}
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {byFolder.map(([folder, files]) => (
+            <div key={folder} className="min-w-0">
+              <p className="text-xs font-semibold text-slate-600">{folder}</p>
+              <ul className="mt-1.5 space-y-1">
+                {files.map((name, i) => (
+                  <li key={`${name}:${i}`} className="flex min-w-0 items-start gap-2 text-sm text-slate-700">
+                    <Captions className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="min-w-0 break-words">{name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </details>
   );
 }
 

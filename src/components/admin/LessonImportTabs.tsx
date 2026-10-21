@@ -9,12 +9,9 @@ export function LessonImportTabs() {
   const onRoadmap =
     pathname === "/admin/roadmap" ||
     Boolean(pathname?.startsWith("/admin/roadmap/"));
-  const onImport =
-    pathname === "/admin/lesson-import" ||
-    pathname === "/admin/lesson-import/";
-  const onCurriculum = Boolean(pathname?.startsWith("/admin/lesson-import/curriculum"));
-  const onArchivedLessons =
-    pathname === "/admin/academy/archive" ||
+  // Archived lesson pages open from the Curriculum board's "Not in Classroom" group.
+  const onCurriculum =
+    Boolean(pathname?.startsWith("/admin/lesson-import/curriculum")) ||
     Boolean(pathname?.startsWith("/admin/academy/archive/"));
 
   return (
@@ -29,21 +26,9 @@ export function LessonImportTabs() {
         },
         {
           kind: "link" as const,
-          href: "/admin/lesson-import",
-          label: "Import status",
-          active: onImport,
-        },
-        {
-          kind: "link" as const,
           href: "/admin/lesson-import/curriculum",
           label: "Curriculum",
           active: onCurriculum,
-        },
-        {
-          kind: "link" as const,
-          href: "/admin/academy/archive",
-          label: "Archived lessons",
-          active: onArchivedLessons,
         },
       ]}
     />

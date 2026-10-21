@@ -76,6 +76,7 @@ type Props = {
 export type MentionTextareaHandle = {
   toggleBold: () => void;
   openLink: () => void;
+  openLessonPicker: () => void;
 };
 
 /** Where the link form writes: an existing link, or a new one over [start, end). */
@@ -748,6 +749,8 @@ export function MentionTextarea({
               area: pick.area,
               courseId: pick.courseId,
               lessonId: pick.lessonId,
+              chapterId: pick.chapterId,
+              t: pick.t,
             })
           : buildMentionTarget({
               type: "course",
@@ -887,7 +890,6 @@ export function MentionTextarea({
     placeCaret(linkTarget.end, linkTarget.end, displayValue);
   }, [displayValue, linkTarget, placeCaret]);
 
-  useImperativeHandle(formatRef, () => ({ toggleBold, openLink }), [toggleBold, openLink]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -988,6 +990,17 @@ export function MentionTextarea({
     setPickerOpen(true);
     setMentionOpen(false);
   }, []);
+
+  const openLessonPicker = useCallback(() => {
+    captureTextareaSelection();
+    openEntityPicker("lesson");
+  }, [captureTextareaSelection, openEntityPicker]);
+
+  useImperativeHandle(
+    formatRef,
+    () => ({ toggleBold, openLink, openLessonPicker }),
+    [toggleBold, openLink, openLessonPicker]
+  );
 
   const applyLinePrefix = useCallback(
     (prefix: string) => {
@@ -1474,6 +1487,16 @@ export function CommentFormatButtons({
         title="Add link (select the words to link first)"
       >
         <Link2 className={iconClass} strokeWidth={2} />
+      </button>
+      <button
+        type="button"
+        className={buttonClass}
+        onMouseDown={keepFocus}
+        onClick={() => editorRef.current?.openLessonPicker()}
+        aria-label="Link a lesson"
+        title="Link a lesson"
+      >
+        <BookOpen className={iconClass} strokeWidth={2} />
       </button>
     </div>
   );

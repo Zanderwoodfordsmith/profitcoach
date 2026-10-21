@@ -195,9 +195,44 @@ export type CurriculumBoardRow = {
   /** Set on satellites (optional extras under a parent lesson). */
   parentLessonId: string | null;
   isDraft: boolean;
-  hasVideo: boolean;
+  /** What the lesson player would show today. Null for a new lesson. */
+  content: LessonContentPresence | null;
   adminHref: string | null;
   plan: CurriculumPlanItem | null;
+};
+
+/** Read the way the Classroom player reads it (renamed ids, chapters). */
+export type LessonContentPresence = {
+  video: boolean;
+  transcript: boolean;
+  /** Overview or guide text. */
+  written: boolean;
+};
+
+export const CURRICULUM_CONTENT_KINDS = [
+  { key: "video", label: "Video" },
+  { key: "transcript", label: "Transcript" },
+  { key: "written", label: "Written" },
+] as const satisfies ReadonlyArray<{ key: keyof LessonContentPresence; label: string }>;
+
+/** Classroom (with lessons not shown in it) or the Vault. */
+export type CurriculumScope = "classroom" | "vault";
+
+export const CURRICULUM_SCOPE_LABELS: Record<CurriculumScope, string> = {
+  classroom: "Classroom",
+  vault: "Vault",
+};
+
+/** Old Academy transcripts in Drive the last import could not match to a lesson. */
+export type CurriculumDriveLeftover = {
+  relativePath: string;
+  kind: string;
+};
+
+export type CurriculumDriveLeftovers = {
+  root: string | null;
+  checkedAt: string | null;
+  files: CurriculumDriveLeftover[];
 };
 
 export type CurriculumBoardSection = {
@@ -219,12 +254,14 @@ export function flattenBoardSections(sections: CurriculumBoardSection[]): Curric
 export type CurriculumBoardCourse = {
   id: string;
   title: string;
+  scope: CurriculumScope;
   sections: CurriculumBoardSection[];
 };
 
 export type CurriculumBoard = {
   courses: CurriculumBoardCourse[];
   rows: CurriculumBoardRow[];
+  driveLeftovers: CurriculumDriveLeftovers;
 };
 
 export function rowDecision(row: CurriculumBoardRow): CurriculumDecision {
