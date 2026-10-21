@@ -36,7 +36,12 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ImpersonationProvider>
-          <ScreenRecorderProvider>{children}</ScreenRecorderProvider>
+          {/* Screen recording is held back from staging and live for now. */}
+          {process.env.NODE_ENV === "development" ? (
+            <ScreenRecorderProvider>{children}</ScreenRecorderProvider>
+          ) : (
+            children
+          )}
         </ImpersonationProvider>
         <SpeedInsights />
       </body>
