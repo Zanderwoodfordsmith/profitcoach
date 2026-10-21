@@ -43,6 +43,9 @@ import type {
 
 const SAVE_DEBOUNCE_MS = 700;
 
+/** What BCA writes for every coach in one pass (admin surface). */
+const ONE_PASS_SECTIONS: ProfileSectionId[] = ["headline", "about", "banner"];
+
 function sectionHasDraft(
   section: ProfileSectionId | null,
   draft: ProfileOptimizerDraft
@@ -77,6 +80,7 @@ export function ProfileOptimizerPage() {
     Partial<Record<ProfileSectionId, RewriteChatTurn[]>>
   >({});
   const [rewriting, setRewriting] = useState(false);
+  const [writingAll, setWritingAll] = useState(false);
   const [copied, setCopied] = useState(false);
   const saveTimer = useRef<number | null>(null);
   const draftRef = useRef(draft);
@@ -175,6 +179,41 @@ export function ProfileOptimizerPage() {
     const recommended =
       result.data.variants.find((v) => v.recommended) ?? result.data.variants[0];
     if (recommended) applyVariant(recommended, section);
+  }
+
+  async function handleWriteAll() {
+    setError(null);
+    setWritingAll(true);
+    const results = await Promise.all(
+      ONE_PASS_SECTIONS.map(async (section) => ({
+        section,
+        result: await rewriteOptimizerSection(
+          { section, experienceIndex: 0 },
+          impersonate
+        ),
+      }))
+    );
+    setWritingAll(false);
+    let next = { ...draftRef.current };
+    const failed: string[] = [];
+    for (const { section, result } of results) {
+      const variants = result.ok ? result.data?.variants ?? [] : [];
+      const pick = variants.find((v) => v.recommended) ?? variants[0];
+      if (!pick) {
+        failed.push(SECTION_META.find((item) => item.id === section)?.label ?? section);
+        continue;
+      }
+      setThreads((prev) => ({
+        ...prev,
+        [section]: [...(prev[section] ?? []), { kind: "assistant" as const, variants }],
+      }));
+      if (section === "headline") next = { ...next, headline: pick.text };
+      if (section === "about") next = { ...next, about: pick.text };
+      if (section === "banner") next = { ...next, bannerCopy: pick.text };
+    }
+    updateDraft(next);
+    setActiveSection("headline");
+    if (failed.length) setError(`Couldn't write ${failed.join(" and ")}. Try again.`);
   }
 
   function applyVariant(
@@ -295,6 +334,20 @@ export function ProfileOptimizerPage() {
       ) : (
         <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-3 lg:flex-row lg:items-start">
           <div className="mx-auto flex min-w-0 w-full max-w-[760px] flex-col gap-3 lg:mx-0">
+          {prefix === "/admin" ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-sm text-slate-600">
+                Write the headline, About and banner from this coach&apos;s Blueprint in one go.
+              </p>
+              <PrimaryButton
+                onClick={() => void handleWriteAll()}
+                loading={writingAll}
+                disabled={writingAll || rewriting}
+              >
+                Write all three
+              </PrimaryButton>
+            </div>
+          ) : null}
           <ProfileProgressStrip
             snapshot={profile.snapshot}
             draft={draft}

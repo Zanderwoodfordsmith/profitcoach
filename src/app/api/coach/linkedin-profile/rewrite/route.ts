@@ -133,7 +133,8 @@ export async function POST(request: Request) {
   const draft = normalizeOptimizerDraft(row.optimizer_draft);
   const rewrittenAt = (row as { optimizer_rewritten_at?: string | null })
     .optimizer_rewritten_at;
-  if (rewrittenAt) {
+  // Admins writing a coach's profile in one pass fire several sections at once.
+  if (rewrittenAt && !authCheck.callerIsAdmin) {
     const elapsed = Date.now() - Date.parse(rewrittenAt);
     if (Number.isFinite(elapsed) && elapsed < REWRITE_COOLDOWN_MS) {
       const retryAfterSec = Math.ceil((REWRITE_COOLDOWN_MS - elapsed) / 1000);
