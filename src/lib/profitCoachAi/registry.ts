@@ -21,8 +21,8 @@ Your job: narrow to ONE market to start with. Use their background, past client 
 Offer 2–3 ranked options with clear rationale (who, why them, why now, sourcing confidence). Ask one clarifying question at a time if you need more signal. Do not let them skip the choice — "everyone" is not an ICP.
 
 When they lock a choice, summarise in owner language: sector, revenue band, role/title, geography if relevant. Point them to Ideal Client profile next to flesh out pains and vocabulary.`,
-    knowledgeRefs: [{ type: "ai-knowledge", file: "icp.md" }],
-    useMarketingIcpTier2: true,
+    knowledgeRefs: [],
+    brandFiles: ["icp.md", "writing-rules.md", "brand-voice.md"],
     contextHints: {
       keys: ["superpowers", "client_results"],
       encouragement:
@@ -49,13 +49,12 @@ Use what they already chose as ICP. Pull from real client stories when offered; 
 
 When the profile feels tight, nudge them to build the Avatar next (deeper psychographic layer).`,
     knowledgeRefs: [
-      { type: "ai-knowledge", file: "icp.md" },
       {
         type: "playbook",
         path: "2. Defined Strategy/3.2 Positioning/Action 03 - Category Strategy.md",
       },
     ],
-    useMarketingIcpTier2: true,
+    brandFiles: ["icp.md", "avatar-profile.md", "writing-rules.md", "brand-voice.md"],
     contextHints: {
       keys: [
         "ideal_client",
@@ -85,11 +84,8 @@ Structure when useful: snapshot (who they are) → top 3 pains → what they've 
 Ground everything in the coach's confirmed ICP and pain language. Never invent client results. If ideal client or pain language is thin, ask for one real example before drafting.
 
 When the avatar is solid, point them to LinkedIn Profile Optimizer and Connector outreach next.`,
-    knowledgeRefs: [
-      { type: "ai-knowledge", file: "avatar-profile.md" },
-      { type: "ai-knowledge", file: "icp.md" },
-    ],
-    useMarketingIcpTier2: true,
+    knowledgeRefs: [],
+    brandFiles: ["icp.md", "avatar-profile.md", "writing-rules.md", "brand-voice.md"],
     contextHints: {
       keys: ["ideal_client", "pain_language", "messaging_hooks"],
       encouragement:
@@ -121,7 +117,15 @@ If current profile copy is missing, ask them to paste headline + About (one ask)
         path: "5. Revenue & Marketing/5.5 Branding/Action 01 - Brand Promise Definition.md",
       },
     ],
-    useMarketingIcpTier2: true,
+    brandFiles: [
+      "methodology.md",
+      "icp.md",
+      "business-profile.md",
+      "avatar-profile.md",
+      "copywriter-knowledge.md",
+      "writing-rules.md",
+      "brand-voice.md",
+    ],
     promptEditor: "linkedin-optimizer",
     contextHints: {
       keys: ["ideal_client", "pain_language", "superpowers", "client_results"],
@@ -141,9 +145,15 @@ Offer multiple variants when drafting copy; mark a recommended default; ask the 
     knowledgeRefs: [
       { type: "legacy-knowledge", file: "connection-messages.md" },
       { type: "legacy-knowledge", file: "follow-up-campaigns.md" },
-      { type: "legacy-knowledge", file: "connector-message-feedback.csv" },
+      { type: "legacy-knowledge", file: "connector-message-lessons.md" },
     ],
-    useMarketingIcpTier2: true,
+    brandFiles: [
+      "icp.md",
+      "avatar-profile.md",
+      "copywriter-knowledge.md",
+      "writing-rules.md",
+      "brand-voice.md",
+    ],
     contextHints: {
       keys: [
         "ideal_client",
@@ -169,7 +179,15 @@ Offer multiple variants when drafting copy; mark a recommended default; ask the 
         path: "5. Revenue & Marketing/3.5 Lead Nurture/Action 02 - Content Cadence System.md",
       },
     ],
-    useMarketingIcpTier2: true,
+    brandFiles: [
+      "methodology.md",
+      "icp.md",
+      "offer-stack.md",
+      "avatar-profile.md",
+      "copywriter-knowledge.md",
+      "writing-rules.md",
+      "brand-voice.md",
+    ],
     contextHints: {
       keys: ["client_results", "ideal_client", "pain_language"],
       encouragement: "A short client outcome helps credibility in nurture messages.",
@@ -188,7 +206,13 @@ Offer multiple variants when drafting copy; mark a recommended default; ask the 
         path: "5. Revenue & Marketing/3.5 Lead Nurture/Action 02 - Content Cadence System.md",
       },
     ],
-    useMarketingIcpTier2: false,
+    brandFiles: [
+      "methodology.md",
+      "icp.md",
+      "offer-stack.md",
+      "writing-rules.md",
+      "brand-voice.md",
+    ],
     contextHints: {
       keys: ["ideal_client", "superpowers"],
       encouragement: "Your positioning line or ‘who I’m for’ keeps the plan focused.",
@@ -215,7 +239,14 @@ For the live artifact editor + copy-for-LinkedIn, point them to Get Clients → 
         path: "5. Revenue & Marketing/5.5 Branding/Action 01 - Brand Promise Definition.md",
       },
     ],
-    useMarketingIcpTier2: true,
+    brandFiles: [
+      "methodology.md",
+      "icp.md",
+      "avatar-profile.md",
+      "copywriter-knowledge.md",
+      "writing-rules.md",
+      "brand-voice.md",
+    ],
     contextHints: {
       keys: [
         "ideal_client",
@@ -241,7 +272,14 @@ For the live artifact editor + copy-for-LinkedIn, point them to Get Clients → 
         path: "5. Revenue & Marketing/5.5 Branding",
       },
     ],
-    useMarketingIcpTier2: true,
+    brandFiles: [
+      "methodology.md",
+      "icp.md",
+      "avatar-profile.md",
+      "copywriter-knowledge.md",
+      "writing-rules.md",
+      "brand-voice.md",
+    ],
     contextHints: {
       keys: ["ideal_client", "pain_language", "superpowers", "hobbies_and_recent"],
       encouragement:
@@ -261,7 +299,13 @@ For the live artifact editor + copy-for-LinkedIn, point them to Get Clients → 
         path: "5. Revenue & Marketing/4.5 Sales & Conversion/Action 04 - Diagnostic Call Framework.md",
       },
     ],
-    useMarketingIcpTier2: false,
+    brandFiles: [
+      "methodology.md",
+      "icp.md",
+      "offer-stack.md",
+      "writing-rules.md",
+      "brand-voice.md",
+    ],
     contextHints: {
       keys: ["client_results"],
       encouragement: "Known conversion or revenue bands help calibrate advice.",
@@ -274,6 +318,7 @@ For the live artifact editor + copy-for-LinkedIn, point them to Get Clients → 
     placeholder: "",
     systemInstructions: "",
     knowledgeRefs: [],
+    brandFiles: ["methodology.md", "writing-rules.md", "brand-voice.md"],
     coachPicker: false,
     promptEditor: "coach-ai",
   },
@@ -297,6 +342,7 @@ For the live artifact editor + copy-for-LinkedIn, point them to Get Clients → 
       { type: "ai-knowledge", file: "reply-copilot/situations/quiet.md" },
       { type: "ai-knowledge", file: "reply-copilot/situations/scorecard-done.md" },
     ],
+    brandFiles: ["icp.md", "writing-rules.md", "brand-voice.md"],
     coachPicker: false,
     promptEditor: "reply-copilot",
   },

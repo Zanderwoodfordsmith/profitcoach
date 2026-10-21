@@ -4,8 +4,8 @@ import * as path from "node:path";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
- * The brand knowledge ("verbal canon") files loaded into every Profit Coach
- * AI prompt. Repo files under content/ai-knowledge are the defaults; rows in
+ * The brand knowledge ("verbal canon") files the Profit Coach AI skills load
+ * (each skill lists its own in registry.ts brandFiles). Repo files under content/ai-knowledge are the defaults; rows in
  * brand_knowledge_files override them (editable from Admin → Brand → Canon).
  */
 
@@ -19,7 +19,7 @@ export type BrandKnowledgeFileMeta = {
   file: string;
   label: string;
   description: string;
-  /** core = loaded into every prompt; skill = loaded by specific skills. */
+  /** core = brand canon; skill = knowledge for specific skills. Skills pick which they load. */
   group: BrandKnowledgeGroup;
   /** Repo directory the default content lives in. */
   dir?: "ai-knowledge" | "legacy";
@@ -37,21 +37,21 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     file: "methodology.md",
     label: "Core methodology",
     description:
-      "The BOSS/Profit System canon (from Drive _brand) — loaded in every prompt.",
+      "The BOSS/Profit System canon (from Drive _brand) — loaded by the skills that list it.",
     group: "core",
   },
   {
     file: "icp.md",
     label: "ICP (compact)",
     description:
-      "Who BOSS serves, in brief (from Drive _brand) — loaded in every prompt.",
+      "Who BOSS serves, in brief (from Drive _brand) — loaded by the skills that list it.",
     group: "core",
   },
   {
     file: "business-profile.md",
     label: "Business profile",
     description:
-      "What BCA/Profit Coach is, offers, and claims (from Drive _brand) — loaded in every prompt.",
+      "What BCA/Profit Coach is, offers, and claims (from Drive _brand) — loaded by the skills that list it.",
     group: "core",
   },
   {
@@ -65,14 +65,14 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     file: "offer-stack.md",
     label: "Offer stack",
     description:
-      "Offers, pricing and claims (from Drive _brand) — loaded in every prompt so copy never invents prices.",
+      "Offers, pricing and claims (from Drive _brand) — loaded by the skills that talk about offers; the others are told never to state a price.",
     group: "core",
   },
   {
     file: "writing-rules.md",
     label: "Writing rules",
     description:
-      "Shared writing rules across brands (from Drive _brand) — loaded in every prompt.",
+      "Shared writing rules across brands (from Drive _brand) — loaded by every skill.",
     group: "core",
   },
   {
@@ -106,10 +106,17 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     group: "skill",
   },
   {
+    file: "connector-message-lessons.md",
+    label: "Connector message lessons",
+    description:
+      "What real connector messages and their feedback taught us — loaded by the outreach skills.",
+    group: "skill",
+  },
+  {
     file: "connector-message-feedback.csv",
     label: "Message feedback data (CSV)",
     description:
-      "Real connector message feedback — what got replies. Loaded by the outreach skills.",
+      "The raw connector message feedback behind Connector message lessons. Not loaded into prompts.",
     group: "skill",
   },
   {

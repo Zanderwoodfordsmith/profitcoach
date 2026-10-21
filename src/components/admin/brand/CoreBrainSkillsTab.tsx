@@ -128,6 +128,28 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
         </div>
       ) : null}
 
+      {skill.brandFiles.length > 0 ? (
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            Brand files loaded
+          </p>
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            {skill.brandFiles.map((file) => (
+              <li key={file}>
+                <a
+                  href={`/admin/brand?tab=brain&brainTab=knowledge&open=${encodeURIComponent(file)}`}
+                  className="hover:text-sky-700"
+                >
+                  <span className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200">
+                    {file}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {skill.knowledgeRefs.length > 0 ? (
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">

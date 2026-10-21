@@ -13,6 +13,17 @@ export type CoachAiContext = {
 
 export type AiContextKey = keyof CoachAiContext;
 
+/** Brand canon in content/ai-knowledge, editable in Admin → Brand → Core brain. */
+export type BrandFileName =
+  | "methodology.md"
+  | "icp.md"
+  | "business-profile.md"
+  | "brand-voice.md"
+  | "offer-stack.md"
+  | "writing-rules.md"
+  | "avatar-profile.md"
+  | "copywriter-knowledge.md";
+
 export type KnowledgeRef =
   | { type: "playbook"; path: string }
   | { type: "ai-knowledge"; file: string }
@@ -32,8 +43,8 @@ export type ProfitCoachOutputDefinition = {
   /** Skill-specific system instructions */
   systemInstructions: string;
   knowledgeRefs: KnowledgeRef[];
-  /** If true, load tier-2 marketing ICP extract */
-  useMarketingIcpTier2?: boolean;
+  /** The brand canon files (content/ai-knowledge) this skill reads; nothing else loads. */
+  brandFiles: BrandFileName[];
   /** Which ai_context keys improve this skill; model nudges when empty */
   contextHints?: {
     keys: AiContextKey[];

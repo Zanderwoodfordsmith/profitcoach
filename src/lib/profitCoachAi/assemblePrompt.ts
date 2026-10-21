@@ -2,9 +2,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { isContextKeyEmpty } from "./brainHints";
-import { getOutputById, getRoleById } from "./registry";
+import { getCoachPickerOutputs, getOutputById, getRoleById } from "./registry";
 import { resolveKnowledgeRefs } from "./resolveKnowledge";
-import type { CoachAiContext } from "./types";
+import { STUDIO_HUB_CARDS } from "./studioHub";
+import type { BrandFileName, CoachAiContext } from "./types";
 
 const ROOT = process.cwd();
 const ROUTER_PATH = path.join(
@@ -15,24 +16,11 @@ const ROUTER_PATH = path.join(
 );
 const ROUTER_MAX_CHARS = 6_000;
 
-/**
- * Always-loaded brand canon, synced from Drive (_brand/Profit Coach) via
- * scripts/sync-brand-knowledge-from-drive.ts; DB overrides win where set.
- */
-const BRAND_FILES_TIER1 = [
-  "methodology.md",
-  "icp.md",
-  "business-profile.md",
-  "brand-voice.md",
-  "offer-stack.md",
-  "writing-rules.md",
-] as const;
-
-/** Loaded for outward-facing copy skills (useMarketingIcpTier2). */
-const MARKETING_TIER2_FILES = [
-  "avatar-profile.md",
-  "copywriter-knowledge.md",
-] as const;
+/** The long marketing files get a tighter cap than the rest of the canon. */
+const BRAND_FILE_MAX_CHARS: Partial<Record<BrandFileName, number>> = {
+  "avatar-profile.md": 8_000,
+  "copywriter-knowledge.md": 8_000,
+};
 
 export type AssembleProfitCoachPromptArgs = {
   outputId: string;
@@ -66,38 +54,48 @@ function loadRouterMarkdown(
   return readCapped(ROUTER_PATH, ROUTER_MAX_CHARS);
 }
 
-function loadBrandTier1(overrides?: Record<string, string> | null): string {
-  const dir = path.join(ROOT, "content", "ai-knowledge");
-  const parts: string[] = [];
-  for (const f of BRAND_FILES_TIER1) {
-    const override = overrides?.[f];
-    if (override) {
-      parts.push(`### ${f}\n\n${capText(override, 12_000)}`);
-      continue;
-    }
-    const p = path.join(dir, f);
-    if (!fs.existsSync(p)) continue;
-    parts.push(`### ${f}\n\n${readCapped(p, 12_000)}`);
-  }
-  return parts.join("\n\n");
-}
-
-function loadMarketingTier2(
+/** Only the brand files the skill lists in registry.ts (DB overrides win). */
+function loadBrandFiles(
+  files: BrandFileName[],
   overrides?: Record<string, string> | null
 ): string {
   const dir = path.join(ROOT, "content", "ai-knowledge");
   const parts: string[] = [];
-  for (const f of MARKETING_TIER2_FILES) {
+  for (const f of files) {
+    const max = BRAND_FILE_MAX_CHARS[f] ?? 12_000;
     const override = overrides?.[f];
     if (override) {
-      parts.push(`### ${f}\n\n${capText(override, 8_000)}`);
+      parts.push(`### ${f}\n\n${capText(override, max)}`);
       continue;
     }
     const p = path.join(dir, f);
     if (!fs.existsSync(p)) continue;
-    parts.push(`### ${f}\n\n${readCapped(p, 8_000)}`);
+    parts.push(`### ${f}\n\n${readCapped(p, max)}`);
   }
   return parts.join("\n\n");
+}
+
+/** Skill list and Create hub cards, built from code so the router never goes stale. */
+function skillsAndCardsFromCode(): string {
+  const skills = getCoachPickerOutputs().map(
+    (o, i) => `| ${i + 1} | \`${o.id}\` | ${o.label} | ${o.description} |`
+  );
+  const cards = STUDIO_HUB_CARDS.filter((c) => !c.adminOnly).map((c) => {
+    const opens = c.dedicatedPath ? `\`${c.dedicatedPath}\`` : "AI workspace";
+    const ids = c.outputId ? [c.outputId] : c.relatedSkillIds ?? [];
+    return `| ${c.title} | ${opens} | ${ids.map((id) => `\`${id}\``).join(", ") || "-"} |`;
+  });
+  return [
+    "## Skills (programme order)",
+    "| # | Skill id | Name | Use when |",
+    "|---|----------|------|----------|",
+    ...skills,
+    "",
+    "## Create hub cards",
+    "| Card | Opens | Skill(s) |",
+    "|------|-------|----------|",
+    ...cards,
+  ].join("\n");
 }
 
 function formatBrain(ctx: CoachAiContext | null | undefined): string {
@@ -165,15 +163,12 @@ export function assembleProfitCoachSystemPrompt(
       ? `### Brain status (for this skill)\n${statusLines.join("\n")}`
       : "";
 
-  const brandTier1 = loadBrandTier1(args.brandOverrides);
-  const brandTier2 = out.useMarketingIcpTier2
-    ? loadMarketingTier2(args.brandOverrides)
-    : "";
+  const brandFiles = loadBrandFiles(out.brandFiles, args.brandOverrides);
 
   const sections: string[] = [];
 
   sections.push(
-    `# Router + identity\n\n${loadRouterMarkdown(args.brandOverrides)}\n\n${SAFETY_BLOCK}`
+    `# Router + identity\n\n${loadRouterMarkdown(args.brandOverrides)}\n\n${skillsAndCardsFromCode()}\n\n${SAFETY_BLOCK}`
   );
 
   sections.push(
@@ -197,12 +192,8 @@ export function assembleProfitCoachSystemPrompt(
   }
 
   sections.push(
-    `# Reference — Brand (tier 1)\n${brandTier1}\n\n## Non-negotiables\n- BOSS is a **system**, not therapy-first coaching positioning.\n- Prefer diagnostic, specific, maths-friendly framing; avoid hype urgency.\n- Use peer-owner language over generic “transform.”`
+    `# Reference — Brand files for this skill\n${brandFiles}\n\n## Non-negotiables\n- BOSS is a **system**, not therapy-first coaching positioning.\n- Prefer diagnostic, specific, maths-friendly framing; avoid hype urgency.\n- Use peer-owner language over generic “transform.”\n- Never state a price or offer term that isn't in these files or the coach's own details.`
   );
-
-  if (brandTier2) {
-    sections.push(`# Reference — ICP (marketing slice, tier 2)\n${brandTier2}`);
-  }
 
   sections.push(
     `# Reference — Playbooks & knowledge files\n${args.playbookExcerptText || "(no files resolved)"}`

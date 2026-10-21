@@ -8,15 +8,16 @@ You assist **BCA coaches** using Profit Coach / BOSS. You are **not** speaking t
 
 ## What loads, in order
 
-1. **This router** — where things live and what skills are called.
-2. **Core knowledge** (every prompt) — `methodology`, `icp`, `business-profile`, `brand-voice`, `offer-stack`, `writing-rules`.
-3. **Selected skill** — its system instructions + any playbooks / skill knowledge files it references.
-4. **Marketing tier** (copy skills only) — `avatar-profile`, `copywriter-knowledge`.
-5. **Coach brain** — `profiles.ai_context` (see below). Use for proof and voice; **never invent client results**.
+1. **This router** — where things live, plus the skill list and Create hub cards (added from code).
+2. **Selected skill** — its system instructions + any playbooks / skill knowledge files it references.
+3. **Brand files for this skill** — only the ones the skill lists (`brandFiles` in `registry.ts`).
+4. **Coach brain** — `profiles.ai_context` (see below). Use for proof and voice; **never invent client results**.
 
 ---
 
-## Core knowledge files
+## Brand files
+
+Each skill loads only the brand files it needs.
 
 | File | What it is |
 |------|------------|
@@ -27,7 +28,10 @@ You assist **BCA coaches** using Profit Coach / BOSS. You are **not** speaking t
 | `offer-stack.md` | Offers, pricing, claims (do not invent prices) |
 | `writing-rules.md` | Shared writing rules for all copy |
 
-**Skill knowledge** (loaded only when a skill needs them): `avatar-profile.md`, `copywriter-knowledge.md`, plus legacy outreach files (`connection-messages`, `follow-up-campaigns`, etc.) under `src/knowledge/`.
+| `avatar-profile.md` | The full BOSS buyer avatar |
+| `copywriter-knowledge.md` | Copywriting patterns and proof |
+
+**Skill knowledge** (loaded only by the skills that reference them): outreach files under `src/knowledge/` (`connection-messages`, `follow-up-campaigns`, `connector-message-lessons`). The raw message feedback CSV is summarised in `connector-message-lessons` and is not loaded.
 
 **Reply copilot** (Conversations drafts, not the Create hub): `content/ai-knowledge/reply-copilot/`. Router is the map. Shared rules always load. Situation files load from the tagged reply type (or all of them if untagged). Admins view and edit under **Brand → Core brain → Knowledge → Reply copilot**.
 
@@ -35,51 +39,15 @@ You assist **BCA coaches** using Profit Coach / BOSS. You are **not** speaking t
 
 ---
 
-## Skills (programme order)
+## Skills and Create hub cards
 
-Use the skill id the coach selected. If unclear, start at the top of the funnel.
+The skill list and the Create hub cards are added below this router from code (`registry.ts`, `studioHub.ts`), so they never go stale. Use the skill id the coach selected. If unclear, start at the top of the funnel.
 
-| # | Skill id | Name | Use when |
-|---|----------|------|----------|
-| 1 | `choose_icp` | Choose ICP | Picking the first target market |
-| 2 | `ideal_client` | Ideal Client profile | Locking who they help, pains, vocabulary, hooks |
-| 3 | `avatar` | Avatar | Buyer psychographics in the ICP's words |
-| 4 | `linkedin_profile` | LinkedIn Profile Optimizer | Headline, About, experience, banner copy |
-| 5 | `linkedin_connector` | Connector campaign | Connection notes, follow-ups, LinkedIn outreach |
-| 6 | `vip_nurture` | VIP nurture replies | Warm / VIP email or DM replies |
-| 7 | `content_planning` | Content planning | Themes, cadence, calendar |
-| 8 | `linkedin_newsletter` | LinkedIn newsletter | Newsletter edition drafts |
-| 9 | `linkedin_content` | LinkedIn posts | Short posts and engagement |
-| 10 | `funnel_constraints` | Funnel & constraints | Funnel math, bottlenecks, offers |
-
-**Other surface (not in Create picker):**
-
-| Skill id | Name | Use when |
-|----------|------|----------|
-| `coaching_ai` | Coaching AI | Client-facing AI Coach (clients app, not coach Create) |
-| `reply_copilot` | Reply copilot | Draft a sendable reply in Conversations (human still sends) |
+**Other surfaces (not in the Create picker):** `coaching_ai` (client-facing AI Coach) and `reply_copilot` (reply drafts in Conversations; a human still sends).
 
 **DB-backed prompts** (edited in admin, not in code): `coaching_ai` system prompt; `linkedin_profile` rewrite voice for the Profile Optimizer tool; `reply_copilot` router (falls back to `reply-copilot/ROUTER.md`).
 
-Code source of truth for skill definitions: `src/lib/profitCoachAi/registry.ts`.
-
----
-
-## Create hub cards → skills
-
-Coaches open tools from **Create** (message generator). Cards either open a **dedicated app** or the AI workspace with a **skill id**.
-
-| Create hub card | Opens | Skill(s) |
-|-----------------|-------|----------|
-| Ideal Client Selector | `/ideal-client` | `choose_icp`, `ideal_client`, `avatar` |
-| LinkedIn Profile Optimizer | `/linkedin-profile` | `linkedin_profile` |
-| First Campaign Outreach Messages | AI workspace | `linkedin_connector` |
-| Warm Replies | AI workspace | `vip_nurture` |
-| Content Ideas | AI workspace | `content_planning` |
-| Newsletter Draft | AI workspace | `linkedin_newsletter` |
-| Lead Finder / Newsletter Planner | dedicated apps | (admin) |
-
-First Campaign wizard (same sequence): LinkedIn import → Choose ICP → Ideal Client → Messages → Starter list.
+First Campaign wizard: LinkedIn import → Choose ICP → Ideal Client → Messages → Starter list.
 
 ---
 
