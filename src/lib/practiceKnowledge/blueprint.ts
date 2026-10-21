@@ -250,17 +250,6 @@ const GROUPS: BlueprintGroup[] = [
               { path: "market.avoid", label: "Who you will not take", kind: "list", required: true, example: "Start-ups with no revenue\nAnyone looking for a quick fix", help: "Left off your prospect lists. One per line.", ask: "Who will you not work with, whatever they pay?" },
             ],
           },
-          {
-            id: "bio",
-            key: "story:bio",
-            title: "Your bio",
-            source: "we_build",
-            about: "We write this for you from your answers above: a short bio, a one-line introduction, and a version for partners and events.",
-            from: ["Story and proof sections above"],
-            feeds: "LinkedIn About, introductions, newsletter sign-off, the 90-day brochure in Toolkit",
-            needs: [],
-            uses: { fields: ["proof.career_results", "proof.client_results", "proof.superpowers", "proof.uniqueness", "proof.proudest", "proof.problems_asked", "market.roles_held", "market.industries_worked", "market.industries_credibility", ...VOICE_STYLE_PATHS], sources: ["linkedin", "transcript"] },
-          },
         ],
       },
       {
@@ -319,11 +308,9 @@ const GROUPS: BlueprintGroup[] = [
             about: "Values, pet peeves, and the people you click with. We use this so copy takes your side, not a generic coach's.",
             feeds: "Every message BCA writes for you",
             fields: [
-              { path: "practice.voice_values", label: "Values that matter to you", kind: "list", example: "Graft\nSay it straight\nLook after your people", help: "One per line.", ask: "What values are important to you?" },
-              { path: "practice.voice_qualities", label: "Qualities that matter to you", kind: "list", example: "Reliability\nHumour under pressure\nNo drama", help: "One per line. In yourself, and in the people you work with.", ask: "Which qualities matter to you?" },
-              { path: "practice.voice_like_in_people", label: "What you like in a person", kind: "list", example: "Gets stuck in\nOwns a mistake\nCan take a joke", help: "One per line.", ask: "What do you like in a person?" },
-              { path: "practice.voice_dislike_in_people", label: "What you do not like in a person", kind: "list", example: "Blame shifting\nAll talk\nTreating staff as a cost", help: "One per line.", ask: "What do you not like in a person?" },
-              { path: "practice.voice_pet_peeves", label: "Pet peeves", kind: "list", example: "Jargon for the sake of it\nMeetings with no decision\nPeople who say they have no time but live in the weeds", help: "One per line. The things that make you wince, in business or in people.", ask: "What are your pet peeves?" },
+              { path: "practice.voice_values", label: "What you stand for", kind: "list", example: "Graft\nSay it straight\nLook after your people", help: "The values and qualities that matter to you, in yourself and in the people you work with. One per line.", ask: "What do you stand for? The values and qualities that matter most to you." },
+              { path: "practice.voice_like_in_people", label: "What you like in people", kind: "list", example: "Gets stuck in\nOwns a mistake\nCan take a joke", help: "One per line.", ask: "What do you like in a person?" },
+              { path: "practice.voice_pet_peeves", label: "What annoys you", kind: "list", example: "Blame shifting\nJargon for the sake of it\nMeetings with no decision", help: "Pet peeves, and what you do not like in people or in business. One per line.", ask: "What annoys you, in people or in business?" },
             ],
           },
           {
@@ -353,8 +340,7 @@ const GROUPS: BlueprintGroup[] = [
             id: "sound",
             title: "How you sound",
             source: "we_build",
-            face: "stored",
-            about: "Your voice guide, written from your tone, the kind of coach you are, and how you talk. Kept for the writers. The boxes above are the working copy.",
+            about: "Your voice guide, written from your answers above. Every message we write follows it, so change anything that does not sound like you.",
             from: ["Your tone", "Sounds like you", "How you want to be known", "What you stand for", "What you draw on", "Conversation transcript", "LinkedIn About and posts"],
             feeds: "LinkedIn rewrite, campaign messaging, newsletters",
             needs: [],
@@ -367,9 +353,7 @@ const GROUPS: BlueprintGroup[] = [
                 "practice.voice_known_for",
                 "practice.voice_coaching_style",
                 "practice.voice_values",
-                "practice.voice_qualities",
                 "practice.voice_like_in_people",
-                "practice.voice_dislike_in_people",
                 "practice.voice_pet_peeves",
                 "practice.voice_favourite_book",
                 "practice.voice_favourite_film",
@@ -398,7 +382,6 @@ const GROUPS: BlueprintGroup[] = [
             feeds: "Booking page, reminders, BCA team",
             fields: [
               { path: "identity.phone", label: "Phone", kind: "text", widget: "phone", required: true, example: "7700 900123", help: "For booking reminders and for the BCA team. Never shown on your public pages.", ask: "What is the best mobile number for us and for booking reminders?" },
-              { path: "identity.whatsapp", label: "WhatsApp", kind: "text", widget: "whatsapp", help: "Filled in from your phone. Change it if WhatsApp is on a different number." },
               { path: "identity.practice_email", label: "Email", kind: "text", widget: "email", help: "Connect Gmail or Outlook. Practice emails go out from it, and the address appears here once it is connected." },
               { path: "identity.timezone", label: "Time zone", kind: "text", widget: "timezone", help: "Taken from your account, or from this browser if your account does not have one yet. Booked calls use it." },
               { path: "identity.address", label: "Address", kind: "text", example: "Unit 4, Wellington Court", help: "Where BCA can send things, and for your website or booking page if you want it shown." },
@@ -419,33 +402,6 @@ const GROUPS: BlueprintGroup[] = [
             extras: ["socials"],
             fields: [
               { path: "identity.website", label: "Website", kind: "text", placeholder: "yoursite.com, or leave blank and we use your Profit Coach page", help: "Your site, if you have one. Leave this blank and campaigns link to your Profit Coach page." },
-            ],
-          },
-          {
-            id: "visibility",
-            // Moved from the LinkedIn page; the stored key keeps its answers, sign-off and comments.
-            key: "linkedin:visibility",
-            title: "Going public",
-            source: "from_you",
-            // Hidden 19 Oct: we want members who can say what they do, so everyone writes as public.
-            // Writers treat a blank answer as public. Remove this line to ask again.
-            face: "stored",
-            about: "Whether your LinkedIn can say you coach yet. Turn it off if you are still employed or have a non-compete, and we write a discreet version.",
-            from: ["Conversation: can you say you are a business coach yet?"],
-            feeds: "Profile rewrite, and everything we write for LinkedIn",
-            fields: [
-              {
-                path: "identity.linkedin_visibility",
-                label: "My LinkedIn can say I coach",
-                kind: "enum",
-                widget: "switch",
-                help: "Off keeps the coaching off your profile until you are ready.",
-                ask: "Can your LinkedIn say you are a business coach, or do you need to stay discreet for now (still employed, or a non-compete)?",
-                options: [
-                  { value: "public", label: "Public: I can say I coach" },
-                  { value: "discreet", label: "Discreet for now" },
-                ],
-              },
             ],
           },
           {
@@ -553,24 +509,11 @@ const GROUPS: BlueprintGroup[] = [
             id: "pains",
             title: "Pain points",
             source: "we_build",
-            face: "stored",
-            about: "Written from the pains and what makes them act. Kept for campaigns. The boxes above are the working copy.",
+            about: "Written from the pains and what makes them act. Campaigns, newsletters and your call script all use it, so check it sounds like your clients.",
             from: ["What they are going through", "What makes them act"],
             feeds: "Campaign messaging, newsletters, call script",
             needs: ["market:avatar"],
             uses: { fields: ["client.pains_now", "client.desires_now", "client.says", "client.buying_triggers", "client.objections"], sources: ["library", "transcript"] },
-          },
-          {
-            id: "criteria",
-            title: "Prospect list",
-            source: "we_build",
-            face: "closed",
-            about: "Built from this page and used in Get Clients. Open it for the list rules the team works from.",
-            from: ["The walkthrough", "Your market"],
-            feeds: "Get Clients prospect pool",
-            needs: ["market:avatar"],
-            uses: { fields: ["market.industries_credibility", "market.buyer_roles", "market.avoid", "client.characteristics"], sources: ["library"] },
-            link: { href: "/coach/prospects", label: "Open your prospects" },
           },
         ],
       },
@@ -603,6 +546,18 @@ const GROUPS: BlueprintGroup[] = [
             about: "Your LinkedIn as owners see it. Switch between today and the new version, click any part to rewrite it from your Blueprint, then copy it across to LinkedIn.",
             from: ["LinkedIn import", "Your voice", "Your ideal client", "Your offer", "Story and proof"],
             feeds: "The coach's LinkedIn profile",
+          },
+          {
+            id: "bio",
+            // Moved from Your Story and Proof so About You holds only the coach's answers; the stored key keeps every bio.
+            key: "story:bio",
+            title: "Your bio",
+            source: "we_build",
+            about: "Written from your Story and Proof: a short bio, a one-line introduction, and a version for partners and events.",
+            from: ["Story and proof"],
+            feeds: "LinkedIn About, introductions, newsletter sign-off, the 90-day brochure in Toolkit",
+            needs: [],
+            uses: { fields: ["proof.career_results", "proof.client_results", "proof.superpowers", "proof.uniqueness", "proof.proudest", "proof.problems_asked", "market.roles_held", "market.industries_worked", "market.industries_credibility", ...VOICE_STYLE_PATHS], sources: ["linkedin", "transcript"] },
           },
         ],
       },
@@ -645,40 +600,6 @@ const GROUPS: BlueprintGroup[] = [
             feeds: "Get Clients reactivation campaign",
             needs: ["story:bio", "voice:sound"],
             uses: { fields: ["market.roles_held", "market.industries_worked", "proof.career_results", "proof.client_results", "proof.superpowers", ...VOICE_STYLE_PATHS, "practice.voice_stories", "practice.voice_hobbies"], sources: ["linkedin"] },
-            link: { href: "/coach/campaigns", label: "Open your campaigns" },
-          },
-          {
-            id: "nurture",
-            title: "Ongoing nurture",
-            source: "we_build",
-            about: "For connections who are not ready yet. A message every two weeks that gives them something useful: a tool, an insight or the BOSS Scorecard.",
-            from: ["Pain points", "Your voice"],
-            feeds: "Get Clients nurture campaign",
-            needs: ["market:pains", "voice:sound"],
-            uses: { fields: ["client.pains_now", "client.desires_now", "client.words_avoid", "practice.voice_values", ...VOICE_STYLE_PATHS, ...VOICE_COLOUR_PATHS], sources: ["library"] },
-            link: { href: "/coach/campaigns", label: "Open your campaigns" },
-          },
-          {
-            id: "followup",
-            key: "conversations:followup",
-            title: "Replies",
-            source: "we_build",
-            about: "Ready answers to the replies you will get: questions, objections and not now. Each one moves to a single next step.",
-            from: ["Connection campaign", "Pain points", "Price and terms", "Your voice"],
-            feeds: "Your replies in Conversations",
-            needs: ["campaigns:messaging"],
-            uses: { fields: ["client.objections", "client.words_avoid", "practice.min_fee", "working_times.prospect_call_hours"] },
-            link: { href: "/coach/conversations", label: "Open your conversations" },
-          },
-          {
-            id: "interested",
-            title: "Reply interested",
-            source: "we_build",
-            about: "When someone says yes or shows interest. Quick, personal replies that move them to your value session or the scorecard, then confirm the call and remind them.",
-            from: ["Connection campaign", "Your value session", "When you take calls", "Your voice"],
-            feeds: "Get Clients reply interested campaign",
-            needs: ["campaigns:messaging", "sales:value"],
-            uses: { fields: ["working_times.prospect_call_hours", "identity.timezone"] },
             link: { href: "/coach/campaigns", label: "Open your campaigns" },
           },
         ],
@@ -751,23 +672,12 @@ const GROUPS: BlueprintGroup[] = [
           },
           // The issue and its pieces are still written here, and shown in the Newsletter tab (Get Clients, Content).
           {
-            id: "checklist",
-            title: "How to run it",
-            source: "we_build",
-            face: "stored",
-            about: "The weekly habit: publish, send the inbox note to your top 100, and stay visible on LinkedIn.",
-            from: ["Your ideal client", "Your voice"],
-            feeds: "Your LinkedIn habit",
-            needs: ["market:pains"],
-            uses: { fields: ["market.industries_credibility", "client.characteristics"] },
-          },
-          {
             id: "newsletter",
             title: "Newsletter",
             source: "we_build",
             face: "stored",
             about: "Five strategies, three things to avoid, a seven-point checklist, and a call to book a Discovery call.",
-            from: ["Pain points", "Commercial achievements", "Your voice", "Your value session"],
+            from: ["Pain points", "Commercial achievements", "Your voice"],
             feeds: "LinkedIn newsletter",
             needs: ["market:pains", "voice:sound"],
             uses: {
@@ -950,35 +860,12 @@ const GROUPS: BlueprintGroup[] = [
             key: "deliver:format",
             title: "How you deliver",
             source: "from_you",
-            about: "How you run client work. Leave the rhythm empty to use the BCA format.",
+            about: "How you run client work, in one line. Empty means the BCA format.",
             tip: "The BCA format: weekly sessions for the first four to six weeks for quick wins, then two 90-minute sessions a month. Stack clients on the same days.",
-            from: ["Conversation: one-to-one or group, session rhythm"],
+            from: ["Conversation: how you work with clients"],
             feeds: "Your offer, proposal, client onboarding",
             fields: [
-              {
-                path: "practice.delivery_format",
-                label: "One-to-one or group",
-                kind: "enum",
-                help: "Most coaches start one-to-one.",
-                options: [
-                  { value: "one_to_one", label: "One-to-one" },
-                  { value: "group", label: "Group" },
-                  { value: "hybrid", label: "Both" },
-                ],
-              },
-              { path: "practice.session_rhythm", label: "Session rhythm", kind: "text", example: "Weekly for six weeks, then every other Tuesday", help: "Only if you work differently from the BCA format above." },
-              {
-                path: "practice.delivery_model",
-                label: "How you like to work",
-                kind: "enum",
-                help: "Coaching helps owners do it themselves. Consulting does it for them. Advisory sits in between.",
-                options: [
-                  { value: "coaching", label: "Coaching" },
-                  { value: "consulting", label: "Consulting" },
-                  { value: "advisory", label: "Advisory" },
-                  { value: "hybrid", label: "A mix" },
-                ],
-              },
+              { path: "practice.session_rhythm", label: "How you deliver", kind: "longtext", example: "One-to-one coaching, weekly for the first six weeks, then two 90-minute sessions a month", help: "Leave it empty and we use the BCA format. Change it only if you work differently.", ask: "Do you want to work the BCA way, one-to-one and weekly at first, or differently?" },
             ],
           },
           {
@@ -990,33 +877,19 @@ const GROUPS: BlueprintGroup[] = [
             from: ["Conversation: guarantee or not, and the terms"],
             feeds: "Your offer, call script, proposal",
             fields: [
-              {
-                path: "practice.guarantee",
-                label: "Guarantee",
-                kind: "enum",
-                help: "Trial: they can stop after a first period. Results: a promise tied to doing the work.",
-                ask: "Would you offer a guarantee, such as a trial period they can stop after, or would you rather not?",
-                options: [
-                  { value: "none", label: "No guarantee" },
-                  { value: "trial", label: "Trial period: stop if it is not right" },
-                  { value: "results", label: "Results-based, if they do the work" },
-                ],
-              },
-              { path: "practice.guarantee_terms", label: "The terms", kind: "longtext", showIf: { path: "practice.guarantee", in: ["trial", "results"] }, example: "Try it for 60 days. If it is not right for you, stop and pay nothing more.", help: "In your words. We write the short and medium versions from it." },
+              { path: "practice.guarantee_terms", label: "Guarantee", kind: "longtext", example: "Try it for 60 days. If it is not right for you, stop and pay nothing more.", help: "In your words. Leave it empty for no guarantee. We write the short versions from it.", ask: "Would you offer a guarantee, such as a trial period they can stop after, or would you rather not?" },
             ],
           },
           {
             id: "fee",
             title: "Price and terms",
             source: "from_you",
-            about: "What you charge and how clients pay. BCA proposes the final price, and you agree it on the Decision Call.",
+            about: "What you charge and how clients pay. We draft it in BCA's standard wording from your Blueprint Call, and you change the numbers.",
             tip: "Taki puts payment after the promise and the guarantee. Most BCA coaches start at £1,450 a month and add £500 every two to four clients. Offer six months upfront as the alternative to monthly.",
-            from: ["Conversation: minimum fee, payment terms, how many clients you want"],
+            from: ["Blueprint Call: price and payment terms"],
             feeds: "Your offer, proposal and payment, 90-day plan",
             fields: [
-              { path: "practice.min_fee", label: "Minimum monthly fee", kind: "text", required: true, example: "£1,500 a month", help: "The least that makes a client worth it for you. We never price you below it.", ask: "What is the least you would take per client per month?" },
-              { path: "practice.payment_terms", label: "How clients pay", kind: "text", example: "Monthly with a six-month minimum, or six months upfront", help: "Monthly, upfront, and any minimum term.", ask: "How would you like clients to pay: monthly, upfront, or both, and is there a minimum term?" },
-              { path: "practice.capacity", label: "Clients you want", kind: "text", example: "Six at once", help: "How many clients you can serve well at the same time.", ask: "How many clients do you want at once?" },
+              { path: "practice.min_fee", label: "Price and terms", kind: "longtext", required: true, example: "£1,500 a month with a six-month minimum, or six months upfront", help: "We draft this in BCA's standard wording. Change the numbers if they are not right. We never quote below it.", ask: "What do you want to charge a month, and how should clients pay?" },
             ],
           },
           {
@@ -1035,10 +908,7 @@ const GROUPS: BlueprintGroup[] = [
                 "practice.less_of",
                 "practice.help_with",
                 "practice.offer_timeframe",
-                "practice.guarantee",
                 "practice.guarantee_terms",
-                "practice.delivery_model",
-                "practice.delivery_format",
                 "practice.session_rhythm",
                 "proof.superpowers",
                 "proof.uniqueness",
@@ -1062,16 +932,16 @@ const GROUPS: BlueprintGroup[] = [
             from: ["The offer", "The destination", "Guarantee", "Your voice"],
             feeds: "LinkedIn headline and About, introductions, messages, the 90-day brochure, proposals",
             needs: ["offer:direction"],
-            uses: { fields: ["practice.more_of", "practice.less_of", "practice.help_with", "practice.guarantee", "practice.guarantee_terms", "proof.career_results", "proof.client_results"] },
+            uses: { fields: ["practice.more_of", "practice.less_of", "practice.help_with", "practice.guarantee_terms", "proof.career_results", "proof.client_results"] },
           },
         ],
       },
       {
         slug: "sales",
-        title: "Your Sales Conversation",
+        title: "Your Personalised Pitch",
         href: "/coach/blueprint/sales",
         heading: "Know exactly what to say when a prospect is interested",
-        summary: "A value session that earns the Discovery call, and a pitch script built around your avatar's pain and objections.",
+        summary: "The Profit System pitch in your words: learn it once, then tailor it to each owner's number-one problem.",
         learn: [
           { label: "What is a value session", href: `${CLASSROOM}/win-clients/win-clients-getting-paid-clients-using-value-sessions-what-is-a-value-session` },
           { label: "How to deliver a value session", href: `${CLASSROOM}/win-clients/win-clients-getting-paid-clients-using-value-sessions-how-to-deliver-a-value-session` },
@@ -1079,36 +949,15 @@ const GROUPS: BlueprintGroup[] = [
         ],
         sections: [
           {
-            id: "value",
-            title: "Your value session",
-            source: "we_build",
-            about: "A free, pitch-free session built on your superpower. It earns the sales conversation.",
-            from: ["Superpowers", "Pain points", "Your voice"],
-            feeds: "Booking messages, newsletter sign-off, LinkedIn",
-            needs: ["market:pains", "voice:sound"],
-            uses: { fields: ["proof.superpowers", "proof.problems_asked", "client.desires_now", "client.objections"], sources: ["library"] },
-          },
-          {
             id: "script",
-            title: "Your call script",
+            title: "Your personalised pitch",
             source: "we_build",
-            about: "What to say on the sales call, from the opening to the close, with your avatar's objections answered.",
+            about: "What to say on the sales call, from the opening to the price and close, with your clients' objections answered. Ava can tailor it to each prospect before a call.",
             from: ["BCA sales conversation", "Your avatar", "Pain points", "Your offer"],
             feeds: "Your sales calls",
             needs: ["offer:direction", "market:pains"],
             uses: { fields: ["proof.career_results", "proof.client_results", "client.objections", "practice.min_fee"] },
             link: { href: "/coach/calls", label: "Open your call reviews" },
-          },
-          {
-            id: "payment",
-            key: "offer:payment",
-            title: "Proposal and payment",
-            source: "we_build",
-            about: "Your price options, what to say if they ask early, how to close, and a one-page proposal outline.",
-            from: ["The offer", "Price and terms", "Guarantee"],
-            feeds: "Proposal and payment link",
-            needs: ["offer:direction"],
-            uses: { fields: ["practice.min_fee", "practice.payment_terms", "practice.capacity", "practice.delivery_model", "practice.guarantee", "practice.guarantee_terms"] },
           },
         ],
       },
@@ -1135,7 +984,7 @@ const GROUPS: BlueprintGroup[] = [
             from: ["Your offer", "Price and terms", "When you take calls"],
             feeds: "Your weekly check-ins with BCA",
             needs: ["offer:direction"],
-            uses: { fields: ["practice.min_fee", "practice.capacity", "working_times.prospect_call_hours"] },
+            uses: { fields: ["practice.min_fee", "working_times.prospect_call_hours"] },
           },
         ],
       },
@@ -1336,12 +1185,12 @@ export function commandCenter(row: PracticeKnowledgeRow): CommandCenterModel {
   } else if (!row.coach_reviewed_at) {
     lead = "You are preparing the Decision Call.";
     detail = "BCA has drafted your market options and a campaign angle. Your next step is to read them and note what feels off.";
-    action = { label: "Review the recommendation", href: "/coach/blueprint/decisions" };
+    action = { label: "Review the recommendation", href: "/coach/blueprint/market#s-market-options" };
     building = "Market options and a campaign angle are drafted. The Decision Call locks them.";
     milestone = "You review the recommendation";
   } else if (row.status === "ready_to_build" || row.status === "building") {
     lead = "You are preparing to launch your first campaign.";
-    detail = "The Decision Record is the source. BCA builds LinkedIn, the campaign, follow-ups, and nurture from it.";
+    detail = "Your Blueprint is the source. BCA builds LinkedIn, the campaign, follow-ups, and nurture from it.";
     action = { label: "See what is being built", href: "/coach/blueprint/campaigns" };
     building = "LinkedIn, the first campaign, follow-ups, and nurture are queued.";
     milestone = "First campaign";
@@ -1351,7 +1200,7 @@ export function commandCenter(row: PracticeKnowledgeRow): CommandCenterModel {
       ? "Your call is booked. Read the recommendation before you join."
       : "Your next step is to book the Decision Call.";
     action = booked
-      ? { label: "Read the recommendation", href: "/coach/blueprint/decisions" }
+      ? { label: "Read the recommendation", href: "/coach/blueprint/market#s-market-options" }
       : { label: "Book the Decision Call", href: "/welcome" };
     building = "Holding the recommendation until the call locks one market, one offer, and one angle.";
     milestone = "Decision Call";

@@ -11,6 +11,12 @@ describe("Ava call protocol", () => {
     assert.equal(avaCallProtocol("2026-10-17T12:00:00.000Z"), "followup");
   });
 
+  it("ticks the Blueprint Call once the booked call time has passed", () => {
+    const base = { interviewCompletedAt: "2026-10-17T12:00:00.000Z", builtSections: {}, now: Date.parse("2026-10-20T12:00:00.000Z") };
+    assert.equal(practiceStepStates({ ...base, callAt: "2026-10-21T09:00:00.000Z" }).pam, "current");
+    assert.equal(practiceStepStates({ ...base, callAt: "2026-10-19T09:00:00.000Z" }).pam, "done");
+  });
+
   it("ticks a step only once that part is finished", () => {
     const open = practiceStepStates({ interviewCompletedAt: null, decisionLockedAt: null, builtSections: {} });
     assert.deepEqual(open, { ava: "current", pam: "waiting", build: "waiting" });
@@ -35,8 +41,8 @@ describe("Ava call protocol", () => {
       builtSections: {
         "linkedin:rewrite": {},
         "campaigns:messaging": {},
-        "conversations:followup": {},
-        "campaigns:nurture": {},
+        "campaigns:conversation": {},
+        "campaigns:reactivation": {},
       },
     });
     assert.deepEqual(built, { ava: "done", pam: "done", build: "done" });

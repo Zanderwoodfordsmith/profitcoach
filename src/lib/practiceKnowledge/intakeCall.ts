@@ -22,8 +22,8 @@ export type PracticeStepState = "done" | "current" | "waiting";
 export const BUILD_READY_SECTIONS = [
   "linkedin:rewrite",
   "campaigns:messaging",
-  "conversations:followup",
-  "campaigns:nurture",
+  "campaigns:conversation",
+  "campaigns:reactivation",
 ] as const;
 
 export const PRACTICE_STEPS: { id: PracticeStepId; label: string }[] = [
@@ -35,13 +35,18 @@ export const PRACTICE_STEPS: { id: PracticeStepId; label: string }[] = [
 /** The first unfinished step is the current one. A tick means that step is finished. */
 export function practiceStepStates(input: {
   interviewCompletedAt: string | null | undefined;
-  decisionLockedAt: string | null | undefined;
+  /** Old coaches only: a Decision Record locked on the call. */
+  decisionLockedAt?: string | null | undefined;
+  /** When the booked Blueprint Call starts. Once that time has passed, the call is done. */
+  callAt?: string | null | undefined;
   builtSections: Record<string, unknown> | null | undefined;
+  now?: number;
 }): Record<PracticeStepId, PracticeStepState> {
   const built = input.builtSections ?? {};
+  const callAt = input.callAt ? Date.parse(input.callAt) : NaN;
   const done: Record<PracticeStepId, boolean> = {
     ava: Boolean(input.interviewCompletedAt),
-    pam: Boolean(input.decisionLockedAt),
+    pam: Boolean(input.decisionLockedAt) || callAt < (input.now ?? Date.now()),
     build: BUILD_READY_SECTIONS.every((key) => Boolean(built[key])),
   };
   const firstOpen = PRACTICE_STEPS.find((step) => !done[step.id])?.id;

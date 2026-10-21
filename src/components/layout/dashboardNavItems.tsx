@@ -1,16 +1,19 @@
 import type React from "react";
 import {
   CalendarDays,
-  DraftingCompass,
   FileDown,
+  GraduationCap,
+  Handshake,
   LayoutGrid,
   Library,
+  Map as MapIcon,
   MessagesSquare,
   Newspaper,
   Palette,
   PhoneCall,
   Rocket,
   Sparkles,
+  UserPlus,
   Wallet,
   Wrench,
 } from "lucide-react";
@@ -20,6 +23,8 @@ export type DashboardNavItem = {
   href: string;
   label: string;
   icon: (props: { className?: string }) => React.ReactElement;
+  /** One plain line under the name in the sidebar hover card. */
+  description?: string;
   /** When set, item is hidden unless the coach has this feature. */
   requiredFeature?: CoachFeature;
   /** Tools hub: sidebar stays active across every tab in the hub. */
@@ -37,23 +42,15 @@ export type AdminSectionNavItem = DashboardNavItem & {
 };
 
 function IconBlueprint({ className }: { className?: string }) {
-  return <DraftingCompass className={className} strokeWidth={1.5} />;
+  return <MapIcon className={className} />;
 }
 
 function IconBriefcase({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
-    </svg>
-  );
+  return <Handshake className={className} />;
 }
 
 function IconUserPlus({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
-    </svg>
-  );
+  return <UserPlus className={className} />;
 }
 
 function IconBookOpen({ className }: { className?: string }) {
@@ -65,13 +62,7 @@ function IconBookOpen({ className }: { className?: string }) {
 }
 
 function IconAcademy({ className }: { className?: string }) {
-  // Tight viewBox: the paths only fill the middle of 24x24, so it read small beside lucide icons.
-  return (
-    <svg className={className} fill="none" viewBox="3 4.5 18 18" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l7-3.5L12 7 5 10.5 12 14z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 10.5V16.5l7 3.5 7-3.5v-6M5 16.5l7 3.5 7-3.5" />
-    </svg>
-  );
+  return <GraduationCap className={className} />;
 }
 
 function IconCalendar({ className }: { className?: string }) {
@@ -115,6 +106,7 @@ export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
     {
       href: `${prefix}/community`,
       label: "Community",
+      description: "Posts, wins and questions from other coaches",
       icon: IconMessagesSquare,
       requiredFeature: "community.feed",
     },
@@ -123,12 +115,14 @@ export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
     {
       href: `${prefix}/academy`,
       label: "Classroom",
+      description: "Lessons and training, in order",
       icon: IconAcademy,
       requiredFeature: "nav.classroom",
     },
     {
       href: `${prefix}/community/calendar`,
       label: "Calendar",
+      description: "Live calls, trainings and recordings",
       icon: IconCalendar,
       requiredFeature: "calendar.momentum_only",
     }
@@ -261,6 +255,7 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
         {
           href: prefix === "/coach" ? "/coach/blueprint" : "/admin/blueprint/coach",
           label: "My Blueprint",
+          description: "Your practice plan, built from your answers",
           icon: IconBlueprint,
         },
       ]
@@ -270,6 +265,7 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
     {
       href: `${prefix}/conversations`,
       label: "Get Clients",
+      description: "Campaigns, conversations and sales calls",
       icon: IconUserPlus,
       requiredFeature: "nav.marketing",
       toolsHub: "get-clients",
@@ -277,6 +273,7 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
     {
       href: `${prefix}/clients`,
       label: "Keep Clients",
+      description: "Your clients, their BOSS Scores and playbooks",
       icon: IconBriefcase,
       requiredFeature: "nav.delivery",
       toolsHub: "coach-clients",
@@ -313,6 +310,8 @@ export function isToolsHubPath(
 export type ToolsHubTabItem = {
   href: string;
   label: string;
+  /** Shown in the hover card on the tab. */
+  description?: string;
   /** Gear-only tab at the end of the Get Clients hub. */
   iconOnly?: boolean;
   /**
@@ -326,6 +325,7 @@ export type ToolsHubTabItem = {
 export type CoachClientsTabItem = {
   href: string;
   label: string;
+  description?: string;
   /** Stable key for active-state matching */
   key: string;
   adminPreview?: boolean;
@@ -334,7 +334,7 @@ export type CoachClientsTabItem = {
 /**
  * Get Clients peer tabs — Classroom Get Calls order:
  * Campaigns generate conversations, conversations book calls.
- * Campaigns → Conversations → Calls → Prospects → Content → Toolkit
+ * Campaigns → Conversations → Calls → Prospects → Script → Content → Toolkit
  * Create tools live in Profit Coach AI (fullscreen Create tab).
  *
  * Toolkit holds Links (`/share`, its first sub-tab, so it does not collide
@@ -347,28 +347,38 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
     {
       href: `${prefix}/campaigns`,
       label: "Campaigns",
+      description: "LinkedIn campaigns that start conversations",
     },
     {
       href: `${prefix}/conversations`,
       label: "Conversations",
+      description: "Your messages from LinkedIn, WhatsApp and email",
     },
-    { href: `${prefix}/calls`, label: "Calls" },
-    { href: `${prefix}/prospects`, label: "Prospects" },
+    {
+      href: `${prefix}/calls`,
+      label: "Calls",
+      description: "Sales calls booked in your calendar",
+    },
+    {
+      href: `${prefix}/prospects`,
+      label: "Prospects",
+      description: "People you've added or who took your BOSS Score",
+    },
+    {
+      href: `${prefix}/script`,
+      label: "Script",
+      description: "Your sales call script, step by step",
+    },
   ];
-  if (prefix === "/admin") {
-    items.push({
-      href: "/admin/linkedin",
-      label: "Content",
-    });
-  } else {
-    items.push({
-      href: "/coach/linkedin",
-      label: "Content",
-    });
-  }
+  items.push({
+    href: prefix === "/admin" ? "/admin/linkedin" : "/coach/linkedin",
+    label: "Content",
+    description: "Plan and write your LinkedIn posts",
+  });
   items.push({
     href: `${prefix}/share`,
     label: "Toolkit",
+    description: "Your links, brochure and ready-made graphics",
   });
   return items;
 }
@@ -452,9 +462,24 @@ export function coachClientsTabItems(
   prefix: "/coach" | "/admin"
 ): CoachClientsTabItem[] {
   return [
-    { key: "clients", href: `${prefix}/clients`, label: "Clients" },
-    { key: "boss-pro", href: `${prefix}/boss-pro`, label: "BOSS Score" },
-    { key: "playbooks", href: `${prefix}/playbooks`, label: "Playbooks" },
+    {
+      key: "clients",
+      href: `${prefix}/clients`,
+      label: "Clients",
+      description: "Everyone you coach, with price and join date",
+    },
+    {
+      key: "boss-pro",
+      href: `${prefix}/boss-pro`,
+      label: "BOSS Score",
+      description: "Your clients' BOSS Scores and reports",
+    },
+    {
+      key: "playbooks",
+      href: `${prefix}/playbooks`,
+      label: "Playbooks",
+      description: "Guides to share with clients, with your link added",
+    },
   ];
 }
 

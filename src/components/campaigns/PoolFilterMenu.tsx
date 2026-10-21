@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, UserRoundCheck, UserRoundX } from "lucide-react";
+import { ChevronDown, UserRoundCheck, UserRoundX, X } from "lucide-react";
 import {
   POOL_CONTACT_FILTER_OPTIONS,
   POOL_DATE_ADDED_FILTER_OPTIONS,
@@ -209,6 +209,33 @@ export function PoolFilterMenu(props: Props) {
   const hiddenSummary =
     props.excludeTags.length === 0 ? null : props.excludeTags.join(", ");
 
+  const activeCount =
+    (props.sourceFilter !== "all" ? 1 : 0) +
+    (props.campaignIdFilter || props.campaignFilter !== "all" ? 1 : 0) +
+    (props.contactFilter !== "all" ? 1 : 0) +
+    (props.linkedinFilter !== "all" ? 1 : 0) +
+    (props.dateAddedFilter !== "all" ? 1 : 0) +
+    (props.headcountFilter.length > 0 ? 1 : 0) +
+    (props.cityFilter.trim() ? 1 : 0) +
+    (props.postcodeFilter.trim() ? 1 : 0) +
+    (props.industryFilter.trim() ? 1 : 0) +
+    (props.tagFilter !== "all" ? 1 : 0) +
+    (props.excludeTags.length > 0 ? 1 : 0);
+
+  function clearAll() {
+    props.onSourceFilter("all");
+    props.onCampaignFilter("all");
+    props.onContactFilter("all");
+    props.onLinkedinFilter("all");
+    props.onDateAddedFilter("all");
+    props.onHeadcountFilter([]);
+    props.onCityFilter("");
+    props.onPostcodeFilter("");
+    props.onIndustryFilter("");
+    props.onTagFilter("all");
+    props.onExcludeTags([]);
+  }
+
   return (
     <div
       role="dialog"
@@ -217,6 +244,32 @@ export function PoolFilterMenu(props: Props) {
         props.align === "end" ? "right-0" : "left-0"
       }`}
     >
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3.5 py-2">
+        <span className="text-xs font-semibold text-slate-700">
+          Filters
+          {activeCount > 0 ? (
+            <span className="ml-1.5 font-medium text-slate-500">
+              {activeCount} on
+            </span>
+          ) : null}
+        </span>
+        <button
+          type="button"
+          disabled={activeCount === 0}
+          onClick={clearAll}
+          className="inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-rose-700 outline-none hover:bg-rose-50 focus-visible:ring-2 focus-visible:ring-rose-500 disabled:text-slate-400 disabled:hover:bg-transparent"
+        >
+          <span
+            className={`flex h-4 w-4 items-center justify-center rounded-full ${
+              activeCount === 0 ? "bg-slate-300" : "bg-rose-600"
+            } text-white`}
+            aria-hidden
+          >
+            <X className="h-3 w-3" strokeWidth={3} />
+          </span>
+          Clear all filters
+        </button>
+      </div>
       <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-3.5">
         <Group label="Company size" columns="sizes">
           <Choice

@@ -10,8 +10,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { AvaDock } from "@/components/ava/AvaDock";
 import { useAvaPageHost } from "@/components/ava/avaPageHost";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
+import { AppPresenceHeartbeat } from "@/components/presence/AppPresenceHeartbeat";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
-import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
@@ -42,6 +42,8 @@ export default function AdminLayout({
   }, [pathname]);
 
   const playbooksReader = isPlaybooksReaderPath(pathname);
+  /** Long table: a flat canvas keeps its row lines readable all the way down. */
+  const curriculumBoardPage = pathname.startsWith("/admin/lesson-import/curriculum");
   const blueprintPage = pathname.startsWith("/admin/blueprint");
   const coachesBlueprintPage =
     pathname === "/admin/client-success/blueprint" || pathname.startsWith("/admin/client-success/blueprint/");
@@ -148,10 +150,11 @@ export default function AdminLayout({
       className={`group/appshell ${
         fullHeightPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
-        playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
+        playbooksReader ? "bg-[#fbfbfa]" : curriculumBoardPage ? "bg-[#f7f9fb]" : "app-canvas-bg"
       }`}
     >
       <UsageTracker />
+      <AppPresenceHeartbeat />
       <GetClientsHubWarmup />
       <DashboardChromeProvider
         variant="admin"
@@ -170,16 +173,11 @@ export default function AdminLayout({
               <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
             </div>
           ) : null}
-          {!playbooksReader ? (
-            <BossProNavToggle
-              expanded={sidebarExpanded}
-              onToggle={() => setSidebarOpen((o) => !o)}
-            />
-          ) : null}
           {sidebarMounted ? (
             <DashboardSidebar
               variant="admin"
               collapsed={sidebarCollapsed}
+              onToggleCollapsed={() => setSidebarOpen((o) => !o)}
               signingOut={signingOut}
               onSignOut={handleSignOut}
             />

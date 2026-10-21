@@ -70,6 +70,7 @@ export function AvaReplyAlertsCard() {
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pushNote, setPushNote] = useState<string | null>(null);
+  const [pushOnHere, setPushOnHere] = useState(false);
   const [busy, setBusy] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState<string | null>(null);
   const [phoneSaving, setPhoneSaving] = useState(false);
@@ -89,6 +90,19 @@ export function AvaReplyAlertsCard() {
       cancelled = true;
     };
   }, [impersonatingCoachId]);
+
+  // This device already allowed alerts and holds a subscription: show it as on.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    void navigator.serviceWorker
+      .getRegistration()
+      .then((reg) => reg?.pushManager.getSubscription())
+      .then((sub) => {
+        if (sub) setPushOnHere(true);
+      })
+      .catch(() => undefined);
+  }, []);
 
   const save = async (patch: Partial<Settings>) => {
     const headers = await getCoachAuthHeaders(impersonatingCoachId);
@@ -156,6 +170,7 @@ export function AvaReplyAlertsCard() {
         headers,
         body: JSON.stringify({ subscription: sub.toJSON(), test: true }),
       });
+      if (res.ok) setPushOnHere(true);
       setPushNote(res.ok ? "Alerts are on for this device. You should see a test alert now." : "Couldn't turn on alerts. Try again.");
     } catch {
       setPushNote("Couldn't turn on alerts on this device.");
@@ -238,14 +253,17 @@ export function AvaReplyAlertsCard() {
                   <input id="ava-push" type="checkbox" checked={s.notify_push} onChange={(e) => void save({ notify_push: e.target.checked })} />
                   This phone or computer
                 </label>
-                <button
-                  type="button"
-                  onClick={() => void enablePush()}
-                  disabled={busy}
-                  className="inline-flex h-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50"
-                >
-                  {busy ? "Turning on…" : "Turn on here"}
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  {pushOnHere ? <span className="text-xs font-medium text-emerald-700">On here</span> : null}
+                  <button
+                    type="button"
+                    onClick={() => void enablePush()}
+                    disabled={busy}
+                    className="inline-flex h-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50"
+                  >
+                    {busy ? (pushOnHere ? "Sending…" : "Turning on…") : pushOnHere ? "Send test" : "Turn on here"}
+                  </button>
+                </div>
               </div>
               {pushNote ? <p className="py-1.5 text-xs leading-relaxed text-slate-600">{pushNote}</p> : null}
 

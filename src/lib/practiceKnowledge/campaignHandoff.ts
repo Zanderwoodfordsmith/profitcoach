@@ -17,7 +17,7 @@ type Step = {
 
 export type CampaignHandoff = {
   /** Short name the agent and the API use. */
-  id: "connection" | "messaging" | "reactivation" | "nurture" | "reply_interested";
+  id: "connection" | "messaging" | "reactivation";
   /** The Blueprint section it comes from. */
   section: string;
   name: string;
@@ -42,8 +42,6 @@ export const CAMPAIGN_HANDOFFS: CampaignHandoff[] = [
   },
   { id: "messaging", section: "campaigns:conversation", name: "Blueprint · Messaging campaign", headings: ["sequence"], invite: "none", waits: [72, 96, 120] },
   { id: "reactivation", section: "campaigns:reactivation", name: "Blueprint · Reactivation", headings: ["sequence"], invite: "none", waits: [120, 336] },
-  { id: "nurture", section: "campaigns:nurture", name: "Blueprint · Ongoing nurture", headings: ["sequence"], invite: "none", waits: [336, 336, 336] },
-  { id: "reply_interested", section: "campaigns:interested", name: "Blueprint · Reply interested", headings: ["sequence"], invite: "none", waits: [48, 72] },
 ];
 
 export function handoffForSection(key: string): CampaignHandoff | null {

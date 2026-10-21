@@ -1,5 +1,6 @@
 "use client";
 
+import { isViewingAsCoach } from "@/contexts/ImpersonationContext";
 import { markCommunityPostReadInStorage } from "@/lib/communityPostFeedLocalState";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -172,6 +173,13 @@ export function markNotificationSectionRead(
 
 export function loadNotificationReadState(uid: string): NotificationReadState {
   if (typeof window === "undefined") return EMPTY_NOTIFICATION_READ_STATE;
+  if (isViewingAsCoach(uid)) {
+    // Drop marks saved by earlier view-as sessions.
+    window.localStorage.removeItem(
+      `${COMMUNITY_NOTIFICATION_READ_KEY_PREFIX}:${uid}`
+    );
+    return EMPTY_NOTIFICATION_READ_STATE;
+  }
   const raw = window.localStorage.getItem(
     `${COMMUNITY_NOTIFICATION_READ_KEY_PREFIX}:${uid}`
   );
@@ -190,6 +198,7 @@ function persistNotificationReadStateLocal(
   next: NotificationReadState
 ): void {
   if (typeof window === "undefined") return;
+  if (isViewingAsCoach(uid)) return;
   window.localStorage.setItem(
     `${COMMUNITY_NOTIFICATION_READ_KEY_PREFIX}:${uid}`,
     JSON.stringify(next)
@@ -219,6 +228,7 @@ async function upsertNotificationReadStateServer(
 }
 
 function scheduleServerPersist(uid: string, state: NotificationReadState): void {
+  if (isViewingAsCoach(uid)) return;
   pendingServerPersist = { uid, state };
   if (serverPersistTimer) clearTimeout(serverPersistTimer);
   serverPersistTimer = setTimeout(() => {
@@ -267,7 +277,10 @@ export async function hydrateNotificationReadState(
   );
   persistNotificationReadStateLocal(uid, merged);
   // Mirror server-side only when something changed (covers first-time seed).
-  if (error || JSON.stringify(merged) !== JSON.stringify(remote)) {
+  if (
+    !isViewingAsCoach(uid) &&
+    (error || JSON.stringify(merged) !== JSON.stringify(remote))
+  ) {
     void upsertNotificationReadStateServer(uid, merged);
   }
   return merged;

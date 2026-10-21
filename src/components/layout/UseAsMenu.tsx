@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import { Check, ChevronRight, Loader2, Search } from "lucide-react";
+import { Check, ChevronRight, Loader2, Search, Users } from "lucide-react";
 
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -400,7 +400,7 @@ export function UseAsMenu({
   );
 
   return (
-    <div className={layout === "inline" ? "mb-3" : "border-t border-slate-100"}>
+    <div className={layout === "inline" ? "mt-3" : "-mb-1 border-t border-slate-200"}>
       <button
         ref={buttonRef}
         type="button"
@@ -420,13 +420,14 @@ export function UseAsMenu({
         }}
         className={
           layout === "inline"
-            ? "flex w-full items-center gap-2 rounded-xl bg-white px-3 py-2.5 text-left text-sm font-medium text-slate-900 shadow-sm"
-            : "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            ? "flex w-full items-center gap-2 rounded-xl bg-slate-200 px-3 py-2.5 text-left text-sm font-medium text-slate-900 shadow-sm"
+            : "flex w-full items-center gap-2 bg-slate-100 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-200"
         }
       >
+        <Users className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
         <span className="min-w-0 flex-1">Use as</span>
         <ChevronRight
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
             open && layout === "inline" ? "rotate-90" : ""
           }`}
           aria-hidden

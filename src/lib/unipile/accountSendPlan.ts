@@ -46,10 +46,12 @@ export type AccountSendSettings = {
   rate_limited_until: string | null;
   daily_send_plan: unknown;
   ssi_score: number | null;
+  pending_invites_total?: number | null;
+  pending_invites_counted_at?: string | null;
 };
 
 const ACCOUNT_SELECT =
-  "id, coach_id, unipile_account_id, status, provider, weekly_invite_target, daily_message_target, daily_react_target, min_action_delay_seconds, max_action_delay_seconds, timezone, send_rules, warmup_started_at, warmup_enabled, invite_paused_until, rate_limited_until, daily_send_plan, ssi_score";
+  "id, coach_id, unipile_account_id, status, provider, weekly_invite_target, daily_message_target, daily_react_target, min_action_delay_seconds, max_action_delay_seconds, timezone, send_rules, warmup_started_at, warmup_enabled, invite_paused_until, rate_limited_until, daily_send_plan, ssi_score, pending_invites_total, pending_invites_counted_at";
 
 export async function loadAccountSendSettings(
   accountId: string
@@ -85,7 +87,16 @@ export async function countInvitesInRollingDays(
   coachId: string,
   days: number
 ): Promise<number> {
-  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  return countInvitesSince(
+    coachId,
+    new Date(Date.now() - days * 86_400_000).toISOString()
+  );
+}
+
+export async function countInvitesSince(
+  coachId: string,
+  since: string
+): Promise<number> {
   const { data: jobs } = await supabaseAdmin
     .from("linkedin_send_jobs")
     .select("id, step_id, provider_ref")

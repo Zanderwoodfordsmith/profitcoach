@@ -484,15 +484,15 @@ export function CommunityMembersView() {
                       </span>
                     ) : null}
                   </div>
-                  {profileHref ? (
-                    <Link
-                      href={profileHref}
-                      className="mt-3 inline-flex rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700"
-                    >
-                      View profile
-                    </Link>
-                  ) : null}
                 </div>
+                {profileHref ? (
+                  <Link
+                    href={profileHref}
+                    className="inline-flex shrink-0 self-start whitespace-nowrap rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700"
+                  >
+                    View profile
+                  </Link>
+                ) : null}
               </div>
             </li>
           );

@@ -1,5 +1,7 @@
 # Pitch patterns (not scripts to recite)
 
+Step names: these examples are numbered 1 to 9. Use the current names: Aligned Vision, Defined Strategy, Disciplined Planning, Profit & Cash Flow, Revenue & Marketing, Operations & Delivery, Financials & Metrics, Infrastructure & Systems, Team & Leadership. Step 8 is processes, systems and automation, and the management that keeps them improving.
+
 Use these when the Golden Thread matches. Copy the shape, then rewrite from this prospect's notes. If you could read a paragraph unchanged to a different owner, it is still the example, not their pitch.
 
 ## 1. More customers
@@ -86,7 +88,7 @@ Use these when the Golden Thread matches. Copy the shape, then rewrite from this
 
 Same step, different so-what.
 
-- Profit and Cash might mean "can we afford to get you off the tools?"
+- Profit & Cash Flow might mean "can we afford to get you off the tools?"
 - Or "are the customers we are winning actually profitable?"
 - Or "where are weak systems leaking margin?"
 

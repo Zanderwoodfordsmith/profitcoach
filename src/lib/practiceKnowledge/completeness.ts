@@ -4,7 +4,6 @@ import { isFilledSourced, listValue } from "./sourced";
 export const MISSING_FIELD_LABELS: Record<string, string> = {
   "identity.linkedin_url": "LinkedIn URL",
   "working_times.prospect_call_hours": "Hours they will take calls",
-  "practice.delivery_model": "Coaching, consulting, or hybrid",
   "market.industries_worked": "Industries they have worked in",
   "market.avoid": "Who they will not work with",
   "proof.career_results": "A career or client result with a number",
@@ -20,7 +19,6 @@ export function labelMissingField(field: string): string {
 export const COMPLETENESS_FIELDS = [
   "identity.linkedin_url",
   "working_times.prospect_call_hours",
-  "practice.delivery_model",
   "market.industries_worked",
   "market.avoid",
   "proof.career_results",
@@ -51,9 +49,6 @@ export function computeCompleteness(payload: PracticeKnowledgePayload): {
   }
   if (!isFilledSourced(payload.working_times.prospect_call_hours)) {
     missing.push("working_times.prospect_call_hours");
-  }
-  if (!isFilledSourced(payload.practice.delivery_model)) {
-    missing.push("practice.delivery_model");
   }
   if (listValue(payload.market.industries_worked).length === 0) {
     missing.push("market.industries_worked");

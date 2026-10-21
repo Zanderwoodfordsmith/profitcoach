@@ -325,18 +325,39 @@ function displayToRawText(display: string, knownMentions: KnownMention[]): strin
   return out;
 }
 
-/** Parses a member @mention at the caret: contiguous non-whitespace after the last `@`. */
+/** Longest name a member @mention query can grow to, e.g. "Mary Ann van der Berg". */
+const MENTION_QUERY_MAX_WORDS = 5;
+
+/**
+ * Parses a member @mention at the caret: the text after the last `@` on the
+ * same line. Spaces are allowed so "Daniel M" can narrow to a surname; the
+ * picker closes once a multi-word query has no one left (see `noMatchRef`).
+ */
 export function getActiveMentionQuery(
   text: string,
-  selectionStart: number
+  selectionStart: number,
+  knownMentions: KnownMention[] = []
 ): { start: number; query: string } | null {
   const before = text.slice(0, selectionStart);
   const lastAt = before.lastIndexOf("@");
   if (lastAt === -1) return null;
   // Avoid treating `@` inside `[@Name](mention:…)` as a new mention query.
   if (lastAt >= 1 && before[lastAt - 1] === "[") return null;
+  // Typing on after a picked "@Daniel Mirrorist" is the sentence, not a search.
+  const finished = knownMentions.some((mention) => {
+    const tokenStart = lastAt + 1 - mention.prefix.length;
+    const token = `${mention.prefix}${mention.label}`;
+    const tokenEnd = tokenStart + token.length;
+    return (
+      tokenStart >= 0 &&
+      text.startsWith(token, tokenStart) &&
+      (selectionStart > tokenEnd || (selectionStart === tokenEnd && /\s/.test(mention.label)))
+    );
+  });
+  if (finished) return null;
   const fragment = before.slice(lastAt + 1);
-  if (/\s/.test(fragment)) return null;
+  if (/^\s|\n/.test(fragment)) return null;
+  if (fragment.trim().split(/\s+/).length > MENTION_QUERY_MAX_WORDS) return null;
   return { start: lastAt, query: fragment };
 }
 
@@ -467,6 +488,8 @@ export function MentionTextarea({
   const [pickerMode, setPickerMode] = useState<"lesson" | "course">("lesson");
   const fetchSeq = useRef(0);
   const mentionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Multi-word @ query that matched no one; longer queries from it stay closed. */
+  const noMatchRef = useRef<{ start: number; query: string } | null>(null);
 
   // The raw value this editor last emitted or loaded. A parent echo of our own
   // onChange matches it and is ignored (rehydrating would move the caret); any
@@ -591,20 +614,49 @@ export function MentionTextarea({
       setHighlightIdx(
         query.length === 0 && merged.length > broadcastCount ? broadcastCount : 0
       );
+      return merged.length;
     },
     [allowBroadcastMentions]
   );
 
+  const closeMention = useCallback(() => {
+    if (mentionDebounceRef.current) {
+      clearTimeout(mentionDebounceRef.current);
+      mentionDebounceRef.current = null;
+    }
+    fetchSeq.current += 1;
+    setMentionOpen(false);
+    setMentionLoading(false);
+  }, []);
+
   const runMentionFetch = useCallback(
-    (query: string) => {
+    ({ start, query }: { start: number; query: string }) => {
+      // "Daniel M" keeps searching; once a multi-word query finds no one, the
+      // picker closes and stays closed while the user types on from there.
+      const multiWord = /\s/.test(query.trim());
+      const dead = noMatchRef.current;
+      if (multiWord && dead && dead.start === start && query.startsWith(dead.query)) {
+        closeMention();
+        return;
+      }
+      const applyOrClose = (users: MentionUser[]) => {
+        if (applyMentionUsers(users, query) === 0 && multiWord) {
+          noMatchRef.current = { start, query };
+          closeMention();
+          return false;
+        }
+        return true;
+      };
+
       setMentionOpen(true);
 
       const cached = readMentionCache(query, prioritizeUserId);
       if (cached) {
-        applyMentionUsers(cached, query);
+        if (!applyOrClose(cached)) return;
         setMentionLoading(false);
       } else {
-        applyMentionUsers([], query);
+        // After a space, keep the last matches up until the narrower list lands.
+        if (!/\s/.test(query)) applyMentionUsers([], query);
         setMentionLoading(true);
       }
 
@@ -613,13 +665,11 @@ export function MentionTextarea({
         fetchMentionUsers(query, prioritizeUserId)
           .then((users) => {
             if (fetchSeq.current !== seq) return;
-            applyMentionUsers(users, query);
-            setMentionLoading(false);
+            if (applyOrClose(users)) setMentionLoading(false);
           })
           .catch(() => {
             if (fetchSeq.current !== seq) return;
-            applyMentionUsers([], query);
-            setMentionLoading(false);
+            if (applyOrClose([])) setMentionLoading(false);
           });
       };
 
@@ -635,19 +685,19 @@ export function MentionTextarea({
 
       mentionDebounceRef.current = setTimeout(doFetch, MENTION_SEARCH_DEBOUNCE_MS);
     },
-    [applyMentionUsers, prioritizeUserId]
+    [applyMentionUsers, closeMention, prioritizeUserId]
   );
 
   const syncMentionFromDom = useCallback(() => {
     const el = taRef.current;
     if (!el) return;
-    const q = getActiveMentionQuery(displayValue, el.selectionStart ?? 0);
+    const q = getActiveMentionQuery(displayValue, el.selectionStart ?? 0, knownMentions);
     if (!q) {
       setMentionOpen(false);
       return;
     }
-    runMentionFetch(q.query);
-  }, [displayValue, runMentionFetch]);
+    runMentionFetch(q);
+  }, [displayValue, knownMentions, runMentionFetch]);
 
   const insertMention = useCallback(
     (user: MentionUser) => {
@@ -730,14 +780,14 @@ export function MentionTextarea({
       if (forceCaret || fixed.display !== typed) {
         placeCaret(fixed.caret, fixed.caret, fixed.display);
       }
-      const ctx = getActiveMentionQuery(fixed.display, fixed.caret);
+      const ctx = getActiveMentionQuery(fixed.display, fixed.caret, knownMentions);
       if (!ctx) {
         setMentionOpen(false);
         return;
       }
-      runMentionFetch(ctx.query);
+      runMentionFetch(ctx);
     },
-    [commitFromDisplay, placeCaret, runMentionFetch]
+    [commitFromDisplay, knownMentions, placeCaret, runMentionFetch]
   );
 
   const toggleBold = useCallback(() => {

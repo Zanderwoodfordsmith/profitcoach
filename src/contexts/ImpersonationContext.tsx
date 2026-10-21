@@ -73,6 +73,15 @@ function setStoredCoachId(id: string | null) {
   }
 }
 
+/**
+ * True when an admin is viewing the app as this coach. Read marks and other
+ * "what I've seen" state must not be saved under the coach's id then: they
+ * would sit in the admin's browser and show again the next time anyone views as them.
+ */
+export function isViewingAsCoach(id: string | null | undefined): boolean {
+  return Boolean(id) && getStoredCoachId() === id;
+}
+
 function getStoredContactId(): string | null {
   if (typeof window === "undefined") return null;
   try {

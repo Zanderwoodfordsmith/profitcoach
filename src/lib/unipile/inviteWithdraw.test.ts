@@ -59,6 +59,13 @@ describe("remainingAutoQuota", () => {
     );
   });
 
+  it("cleans faster once pending reaches the pause line", () => {
+    const policy = { mode: "cap" as const, value: 600, ranOn: null, ranCount: 0 };
+    assert.equal(remainingAutoQuota(policy, "2026-09-12", false, 749), 25);
+    assert.equal(remainingAutoQuota(policy, "2026-09-12", false, 760), 40);
+    assert.equal(remainingAutoQuota(policy, "2026-09-12", true, 760), 0);
+  });
+
   it("skips weekends", () => {
     assert.equal(
       remainingAutoQuota(
@@ -110,6 +117,15 @@ describe("selectInvitesToWithdraw", () => {
       NOW
     );
     assert.deepEqual(ids, ["i0"]);
+  });
+
+  it("splits the day's quota across the four cron ticks", () => {
+    const pile = invites(Array.from({ length: 700 }, (_, i) => i + 1));
+    const normal = selectInvitesToWithdraw(pile, { mode: "cap", value: 600 }, 25, NOW);
+    assert.equal(normal.length, 7);
+    const high = invites(Array.from({ length: 800 }, (_, i) => i + 1));
+    const fast = selectInvitesToWithdraw(high, { mode: "cap", value: 600 }, 40, NOW);
+    assert.equal(fast.length, 10);
   });
 
   it("returns nothing when off or quota is 0", () => {

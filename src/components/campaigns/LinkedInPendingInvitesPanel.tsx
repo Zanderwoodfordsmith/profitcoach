@@ -8,12 +8,14 @@ import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { PendingInvitesSpeedDial } from "@/components/campaigns/PendingInvitesSpeedDial";
 import {
   AUTO_DAILY_MAX,
+  AUTO_DAILY_MAX_HIGH,
   DEFAULT_KEEP_UNDER,
   MANUAL_WITHDRAW_MAX,
   inviteAgeDays,
   withdrawPolicySummary,
   type InviteWithdrawPolicy,
 } from "@/lib/unipile/inviteWithdraw";
+import { PENDING_PAUSE_AT } from "@/lib/unipile/pendingInviteDial";
 
 type Invite = {
   id: string;
@@ -279,7 +281,9 @@ export function LinkedInPendingInvitesPanel() {
             <h2 className="text-sm font-semibold text-slate-900">Auto-clean</h2>
             <p className="mt-0.5 text-xs leading-snug text-slate-600">
               Keep under {DEFAULT_KEEP_UNDER}. Oldest first, up to{" "}
-              {AUTO_DAILY_MAX}/day on weekdays.
+              {AUTO_DAILY_MAX}/day on weekdays ({AUTO_DAILY_MAX_HIGH} at{" "}
+              {PENDING_PAUSE_AT}+). New invites slow over {DEFAULT_KEEP_UNDER}{" "}
+              and pause at {PENDING_PAUSE_AT}.
             </p>
           </div>
           <button

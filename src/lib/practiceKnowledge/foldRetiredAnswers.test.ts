@@ -48,3 +48,38 @@ describe("folding retired Who You Help answers", () => {
     assert.deepEqual(foldRetiredAnswers(once), once);
   });
 });
+
+describe("folding the voice and offer boxes trimmed on 20 Oct", () => {
+  function withOldOffer() {
+    const empty = emptyPracticePayload();
+    return mergePracticePayload(empty, {
+      practice: {
+        ...empty.practice,
+        voice_values: sourced(["Graft"], "coach_edit", AT),
+        voice_qualities: sourced(["Reliability", "graft"], "coach_edit", AT),
+        voice_dislike_in_people: sourced(["Blame shifting"], "coach_edit", AT),
+        min_fee: sourced("£1,500 a month", "coach_edit", AT),
+        payment_terms: sourced("Six-month minimum", "coach_edit", AT),
+        delivery_format: sourced("one_to_one", "coach_edit", AT),
+        delivery_model: sourced("coaching", "coach_edit", AT),
+        guarantee: sourced("trial", "coach_edit", AT),
+      },
+    });
+  }
+
+  it("moves values, dislikes and payment terms into the boxes that replaced them", () => {
+    const out = foldRetiredAnswers(withOldOffer());
+    assert.deepEqual(out.practice.voice_values?.value, ["Graft", "Reliability"]);
+    assert.deepEqual(out.practice.voice_pet_peeves?.value, ["Blame shifting"]);
+    assert.equal(out.practice.min_fee?.value, "£1,500 a month\nSix-month minimum");
+    assert.deepEqual(out.practice.voice_qualities?.value, []);
+  });
+
+  it("writes old dropdown answers into the new How you deliver and Guarantee boxes", () => {
+    const out = foldRetiredAnswers(withOldOffer());
+    assert.equal(out.practice.session_rhythm?.value, "One-to-one coaching");
+    assert.equal(out.practice.guarantee_terms?.value, "A trial period: they can stop if it is not right.");
+    // The brochure and website still read the dropdown answers.
+    assert.equal(out.practice.delivery_format?.value, "one_to_one");
+  });
+});

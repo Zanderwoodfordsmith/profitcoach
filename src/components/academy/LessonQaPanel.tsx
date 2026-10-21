@@ -50,6 +50,7 @@ const LESSON_QA_SELECT = `
   visibility,
   feed_comment_count,
   feed_like_count,
+  poll,
   feed_poll_vote_count,
   last_comment_at,
   category:community_categories!category_id ( id, slug, label ),
@@ -68,6 +69,7 @@ const LESSON_QA_SELECT_LEGACY = `
   created_at,
   category_id,
   visibility,
+  poll,
   feed_poll_vote_count,
   category:community_categories!category_id ( id, slug, label ),
   author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )

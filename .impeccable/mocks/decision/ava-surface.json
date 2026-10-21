@@ -1,0 +1,167 @@
+{
+  "title": "How Ava’s brain is shown",
+  "question": "Three ways to see and edit Ava without talking to her. The world stays the admin you already have. Lock the composition.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "The spine",
+      "kicker": "THE ROLL",
+      "thesis": "Ava’s brain as a left-to-right spine: who she is, how she routes, the skill she opens, the knowledge it pulls.",
+      "palette": ["#e9eef4", "#ffffff", "#0f172a", "#0c5290", "#1a8fd4"],
+      "materials": ["white cards", "sky underline tabs", "hairline slate rings", "navy sidebar"],
+      "viewport": "Sticky header Ava with Structure, Skills, Knowledge. A horizontal spine of four nodes. Click a node and the markdown opens on the right.",
+      "risk": "A pipeline can look like a tutorial diagram and hide the file you came to edit.",
+      "raised": [
+        { "from": "variable-font-specimen", "raise": "Changing tone remakes the identity plaque live, the same way a weight slider remakes every glyph." },
+        { "from": "labanotation", "raise": "The spine reads as one turn: always-loaded layers sit under the working skill, not beside it as equals." },
+        { "from": "metro-tiles", "raise": "The selected node’s name is the largest type on the page." }
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "Ava · Structure Skills Knowledge", "x": 0, "y": 0, "w": 12, "h": 1 },
+          { "label": "Identity", "x": 0, "y": 2, "w": 3, "h": 2, "accent": true },
+          { "label": "Router", "x": 3, "y": 2, "w": 3, "h": 2 },
+          { "label": "Skill", "x": 6, "y": 2, "w": 3, "h": 2 },
+          { "label": "References", "x": 9, "y": 2, "w": 3, "h": 2 },
+          { "label": "AGENT.md editor", "x": 0, "y": 5, "w": 12, "h": 5, "accent": true }
+        ]
+      }
+    },
+    {
+      "id": "layers",
+      "label": "The stack",
+      "thesis": "The protocol itself is the page — five stacked layers, click any one to read and edit it.",
+      "palette": ["#e9eef4", "#ffffff", "#0f172a", "#0c5290", "#1a8fd4"],
+      "materials": ["white cards", "sky underline tabs", "hairline slate rings", "navy sidebar"],
+      "viewport": "Full-width stack: Identity, Router, Skills, References, This coach. Selecting Skills expands the capability list in place.",
+      "risk": "A stack is honest and can feel like a spec sheet.",
+      "comp": ".impeccable/mocks/decision/layers.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "Ava header", "x": 0, "y": 0, "w": 12, "h": 1 },
+          { "label": "0 Identity · AGENT.md", "x": 0, "y": 1, "w": 12, "h": 1, "accent": true },
+          { "label": "1 Router · ROUTER.md", "x": 0, "y": 2, "w": 12, "h": 1 },
+          { "label": "2 Skills · 13 capabilities", "x": 0, "y": 3, "w": 12, "h": 3, "accent": true },
+          { "label": "3 References · writing rules, quality", "x": 0, "y": 6, "w": 12, "h": 2 },
+          { "label": "4 This coach · working artifacts", "x": 0, "y": 8, "w": 12, "h": 2 }
+        ]
+      }
+    },
+    {
+      "id": "atlas",
+      "label": "The atlas",
+      "thesis": "First you see everything she can do, grouped the way a job actually runs.",
+      "palette": ["#e9eef4", "#ffffff", "#0f172a", "#0c5290", "#1a8fd4"],
+      "materials": ["white cards", "sky underline tabs", "hairline slate rings", "navy sidebar"],
+      "viewport": "Identity plaque at the top. Four clusters: Blueprint, Prospects, Campaigns, Guide. Click Fill the gaps and the inspector opens CONTEXT.md plus blueprint-quality.",
+      "risk": "A map of skills can bury identity, tone, and shared knowledge.",
+      "comp": ".impeccable/mocks/decision/atlas.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "Ava · Hi, I'm Ava · tone rules", "x": 0, "y": 0, "w": 12, "h": 2, "accent": true },
+          { "label": "Blueprint", "x": 0, "y": 3, "w": 6, "h": 3 },
+          { "label": "Prospects", "x": 6, "y": 3, "w": 6, "h": 3 },
+          { "label": "Campaigns", "x": 0, "y": 6, "w": 6, "h": 4 },
+          { "label": "Guide · Admin", "x": 6, "y": 6, "w": 6, "h": 4 }
+        ]
+      }
+    },
+    {
+      "id": "transit",
+      "label": "The interchange",
+      "verdict": "wins",
+      "lineage": "midnight transit diagram",
+      "thesis": "Jobs are lines. Skills are stations. You trace a request the way she routes it.",
+      "palette": ["#e9eef4", "#ffffff", "#0f172a", "#0c5290", "#1a8fd4"],
+      "materials": ["white cards", "sky underline tabs", "coloured skill lines", "interchange node"],
+      "viewport": "Identity as the central interchange. Four coloured lines — Blueprint, Prospects, Campaigns, Guide — with stations named for skills. Click a station and the file opens beside the map.",
+      "case": "Beats the spine on both axes: Blueprint versus Campaigns are different lines, and the interchange is identity.",
+      "risk": "A pretty network that you cannot edit is a poster.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram.webp",
+      "comp": ".impeccable/mocks/decision/transit.webp"
+    },
+    {
+      "id": "acetate",
+      "label": "The manual",
+      "verdict": "competitive",
+      "lineage": "acetate tab board",
+      "thesis": "Skills, knowledge, and identity as a tabbed manual — the current tab is the whole board.",
+      "palette": ["#e9eef4", "#ffffff", "#0f172a", "#0c5290", "#1a8fd4"],
+      "materials": ["white cards", "fore-edge tabs", "stacked leaves", "sky underline"],
+      "viewport": "Fore-edge tabs Identity, Skills, Knowledge, Flow. Skills is a list of CONTEXT files as stacked leaves; open one to edit.",
+      "case": "Holds identification because you asked for tabs, and hides the graph until you click.",
+      "risk": "Becomes Brand’s Core brain with a new title.",
+      "hero": "https://impeccable.style/worlds/cards/rw-manual-acetate-tab-board-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/rw-manual-acetate-tab-board.webp",
+      "comp": ".impeccable/mocks/decision/acetate.webp"
+    },
+    {
+      "id": "boarding",
+      "label": "The board",
+      "verdict": "competitive",
+      "lineage": "boarding pass and gate board",
+      "thesis": "The always-on pass sits still; the board reranks what she would open for this job.",
+      "palette": ["#e9eef4", "#ffffff", "#0f172a", "#0c5290", "#1a8fd4"],
+      "materials": ["segmented pass", "ranked rows", "hold-until-noticed alert", "white cards"],
+      "viewport": "Left: a segmented always-loaded pass for AGENT.md and ROUTER.md. Right: a ranked board of skills. Picking Fill the gaps lights its references and holds them.",
+      "case": "Holds the always-versus-opened split; the airport metaphor is extra.",
+      "risk": "Cute metaphor, unclear that you can edit the files.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board.webp",
+      "comp": ".impeccable/mocks/decision/boarding.webp"
+    },
+    {
+      "id": "specimen",
+      "label": "Live tone",
+      "verdict": "declined",
+      "lineage": "variable font specimen",
+      "thesis": "Tone sliders remake the identity preview the way a weight axis remakes every glyph.",
+      "palette": ["#e9eef4", "#ffffff", "#0f172a", "#0c5290"],
+      "materials": ["axis sliders", "live plaque"],
+      "viewport": "A giant Ava mark. Drag Directness and the identity text thickens.",
+      "case": "Shows tone, hides the graph of skills and knowledge.",
+      "kept": "A change remakes the preview live.",
+      "risk": "A specimen is not a map of her brain.",
+      "hero": "https://impeccable.style/worlds/cards/variable-font-specimen-hero.webp"
+    },
+    {
+      "id": "labanotation",
+      "label": "The score",
+      "verdict": "declined",
+      "lineage": "labanotation",
+      "thesis": "A turn reads upward: always-loaded layers below, the opened skill above.",
+      "palette": ["#e9eef4", "#ffffff", "#0f172a", "#0c5290"],
+      "materials": ["center staff", "duration blocks"],
+      "viewport": "A vertical staff. Identity and router as the beat. A skill block whose height is how much context it loads.",
+      "case": "Beautiful, and an admin cannot find AGENT.md.",
+      "kept": "A turn reads as stacked time.",
+      "risk": "Notation that needs a key fails Operate.",
+      "hero": "https://impeccable.style/worlds/cards/notation-diagram-systems-labanotation-hero.webp"
+    },
+    {
+      "id": "metro",
+      "label": "Giant tiles",
+      "verdict": "declined",
+      "lineage": "metro typographic tiles",
+      "thesis": "Each layer is a colour field; the selected name is the interface.",
+      "palette": ["#e9eef4", "#0c5290", "#1a8fd4", "#ffffff"],
+      "materials": ["flat tiles", "cropped type"],
+      "viewport": "Four huge tiles: Identity, Skills, Knowledge, Flow. The open tile floods sky.",
+      "case": "Fights the admin world and deletes the file.",
+      "kept": "The selected name is the largest type.",
+      "risk": "A tile panorama is a Start screen, not a brain.",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-metro-typographic-tiles-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "steer": true,
+  "buildPath": { "value": "comp", "toggle": true }
+}

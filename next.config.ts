@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
       "./content/ai-knowledge/**/*",
       "./content/practice-skills/**/*",
     ],
+    "/api/coach/sales-call/**": ["./content/agent/references/**/*"],
   },
   async rewrites() {
     return {

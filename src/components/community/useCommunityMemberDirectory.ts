@@ -13,9 +13,9 @@ import {
 import { usePathname, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isCommunityOnline } from "@/lib/communityPresence";
+import { isDeltaIqContractor } from "@/lib/support/assignees";
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
 import { resolveCommunityBio } from "@/lib/profileBioFields";
-import { getSessionUser } from "@/lib/supabaseAccessToken";
 
 export type CommunityRosterMember = {
   id: string;
@@ -169,7 +169,8 @@ function useCommunityMemberDirectoryState() {
       .is("access_removed_at", null);
 
     if (pErr) throw pErr;
-    const plist = profiles ?? [];
+    // The Delta IQ contractor login is a third party, not a member or admin of the community.
+    const plist = (profiles ?? []).filter((p) => !isDeltaIqContractor(p));
     const ids = plist.map((p) => p.id);
 
     let coaches: Array<{
@@ -227,29 +228,6 @@ function useCommunityMemberDirectoryState() {
     setPresenceRows((data ?? []) as PresenceRow[]);
   }, [presenceUnavailable]);
 
-  const touchPresence = useCallback(async () => {
-    if (presenceUnavailable) return;
-    const user = await getSessionUser();
-    if (!user) return;
-
-    const { error } = await supabaseClient.from("community_presence").upsert(
-      { user_id: user.id, last_seen_at: new Date().toISOString() },
-      { onConflict: "user_id" }
-    );
-
-    if (error) {
-      const msg = (error.message ?? "").toLowerCase();
-      if (
-        msg.includes("community_presence") &&
-        (msg.includes("does not exist") ||
-          msg.includes("schema cache") ||
-          msg.includes("not find"))
-      ) {
-        setPresenceUnavailable(true);
-      }
-    }
-  }, [presenceUnavailable]);
-
   const refresh = useCallback(async () => {
     try {
       setLoadError(null);
@@ -283,8 +261,6 @@ function useCommunityMemberDirectoryState() {
             if (!cancelled) void loadRoster({ includeLadder: false });
           }, 1200);
         }
-        if (!cancelled) await touchPresence();
-        if (!cancelled) await loadPresence();
       } catch (e) {
         if (!cancelled) {
           setLoadError(
@@ -301,7 +277,6 @@ function useCommunityMemberDirectoryState() {
     needsFullRoster,
     loadRoster,
     loadPresence,
-    touchPresence,
     pathname,
     searchParams,
   ]);
@@ -313,14 +288,11 @@ function useCommunityMemberDirectoryState() {
       if (needsFullRoster) {
         void refresh();
       } else {
-        void (async () => {
-          await touchPresence();
-          await loadPresence();
-        })();
+        void loadPresence();
       }
     }, tickMs);
     return () => window.clearInterval(id);
-  }, [needsFullRoster, refresh, loadPresence, touchPresence]);
+  }, [needsFullRoster, refresh, loadPresence]);
 
   const counts = useMemo(() => {
     const members = roster.length;

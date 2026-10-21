@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, CheckCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { DateTime } from "luxon";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
+import { peekCommunityDraftHandoff } from "@/lib/communityDraftHandoff";
 import { PostCard } from "@/components/community/PostCard";
 import {
   communityAccessHint,
@@ -61,6 +62,10 @@ import {
 import { extractMentionUserIds } from "@/lib/communityMentions";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { capitalizeFirstUnicodeLetter } from "@/lib/communityPostCapitalize";
+import {
+  normalizeCommunityPostPoll,
+  type CommunityPostPoll,
+} from "@/lib/communityPostPoll";
 import {
   communityFeedBootstrapPathname,
   communityPostPath,
@@ -158,6 +163,7 @@ const COMMUNITY_POST_LIST_SELECT = `
         category_id,
         feed_comment_count,
         feed_like_count,
+        poll,
         feed_poll_vote_count,
         last_comment_at,
         category:community_categories!category_id ( id, slug, label ),
@@ -174,6 +180,7 @@ const COMMUNITY_POST_LIST_SELECT_LEGACY = `
         published_at,
         created_at,
         category_id,
+        poll,
         feed_poll_vote_count,
         category:community_categories!category_id ( id, slug, label ),
         author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
@@ -213,16 +220,14 @@ const COMMUNITY_POST_FAVOURITE_EMBED_SELECT_LEGACY = `
     published_at,
     created_at,
     category_id,
+    poll,
     feed_poll_vote_count,
     category:community_categories!category_id ( id, slug, label ),
     author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
   )
 `;
 
-export type CommunityPostPoll = {
-  kind: "poll";
-  options: { id: string; text: string }[];
-};
+export type { CommunityPostPoll } from "@/lib/communityPostPoll";
 
 export type ProfileRow = {
   id: string;
@@ -394,10 +399,7 @@ function normalizeRawPostRows(rows: RawCommunityPostRow[]): NormalizedPostRow[] 
           }
         : null;
 
-    const poll =
-      row.poll && typeof row.poll === "object"
-        ? (row.poll as CommunityPostPoll)
-        : null;
+    const poll = normalizeCommunityPostPoll(row.poll);
     const poll_vote_count = typeof feedPollVoteCount === "number" ? feedPollVoteCount : 0;
     return {
       ...rowCore,
@@ -1002,6 +1004,7 @@ export function CommunityFeed() {
   const {
     snapshot: feedLocalSnapshot,
     markPostRead,
+    markAllPostsRead,
     markPostUnread,
     markCommentsSeenUpTo,
     markOwnPostsRead,
@@ -1848,6 +1851,10 @@ export function CommunityFeed() {
         }
 
         if (!cancelled) setFeedBootstrapOk(true);
+        // "Post as me" from view-as mode: reopen the composer with the draft.
+        if (!cancelled && peekCommunityDraftHandoff(pathname)?.kind === "post") {
+          setComposeOpen(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -2288,11 +2295,25 @@ export function CommunityFeed() {
                 </p>
               ) : readFilterEmptyOnPage ? (
                 <p className="text-sm text-slate-500">
-                  No {readFilter} posts on this page. Try another page or set
-                  the filter to All posts.
+                  {readFilter === "unread"
+                    ? "You're all caught up on this page."
+                    : `No ${readFilter} posts on this page. Try another page or set the filter to All posts.`}
                 </p>
               ) : (
                 <>
+                  {readFilter === "unread" ? (
+                    <div className="-my-2 flex items-center justify-between gap-3 px-1 text-sm">
+                      <span className="text-slate-500">Showing unread posts</span>
+                      <button
+                        type="button"
+                        onClick={markAllPostsRead}
+                        className="inline-flex items-center gap-1.5 font-medium text-sky-700 hover:text-sky-900"
+                      >
+                        <CheckCheck className="h-4 w-4" aria-hidden />
+                        Mark all as read
+                      </button>
+                    </div>
+                  ) : null}
                   {canPreviewScheduledPosts && displayedScheduledPosts.length > 0 ? (
                     <section className="mb-1">
                       <button

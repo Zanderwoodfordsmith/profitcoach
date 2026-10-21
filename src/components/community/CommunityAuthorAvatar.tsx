@@ -7,6 +7,7 @@ import {
 import type { ProfileRow } from "@/components/community/CommunityFeed";
 import { getLadderLevel } from "@/lib/ladder";
 import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
+import { OnlineDot } from "@/components/presence/OnlineDot";
 
 type Props = {
   profile: ProfileRow | null;
@@ -59,6 +60,11 @@ export function CommunityAuthorAvatar({ profile, size = "md" }: Props) {
           {lvl.ordinal}
         </span>
       ) : null}
+      {/* Top right: the ladder level owns the bottom-right corner. */}
+      <OnlineDot
+        userId={profile?.id}
+        className={size === "sm" ? "-right-0.5 -top-0.5 h-2.5 w-2.5" : "-right-0.5 -top-0.5 h-3 w-3"}
+      />
     </div>
   );
 

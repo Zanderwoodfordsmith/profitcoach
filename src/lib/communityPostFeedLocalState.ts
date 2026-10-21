@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { isViewingAsCoach } from "@/contexts/ImpersonationContext";
 
 const STORAGE_PREFIX = "profitCoach.community.feedState.v1";
 
@@ -10,6 +11,8 @@ export type CommunityFeedLocalState = {
   unreadPostIds: Record<string, true>;
   /** Max comment `created_at` (ISO) the user has seen in the thread for that post. */
   commentsSeenUpTo: Record<string, string>;
+  /** "Mark all as read": posts published at or before this ISO time count as read. */
+  readAllBefore?: string;
 };
 
 export type CommunityPostViewerEngagement = {
@@ -28,15 +31,29 @@ export function communityPostHasViewerEngagement(
 }
 
 export function isCommunityPostReadOnFeed(
-  post: CommunityPostViewerEngagement & { id: string },
+  post: CommunityPostViewerEngagement & {
+    id: string;
+    published_at?: string | null;
+    created_at?: string;
+  },
   snapshot: CommunityFeedLocalState
 ): boolean {
   // Explicit unread always wins (including over likes/comments).
   if (snapshot.unreadPostIds?.[post.id]) return false;
   return (
     Boolean(snapshot.readPostIds[post.id]) ||
-    communityPostHasViewerEngagement(post)
+    communityPostHasViewerEngagement(post) ||
+    isBeforeReadAll(post.published_at ?? post.created_at, snapshot.readAllBefore)
   );
+}
+
+function isBeforeReadAll(
+  postIso: string | null | undefined,
+  readAllBefore: string | undefined
+): boolean {
+  if (!postIso || !readAllBefore) return false;
+  const at = new Date(postIso).getTime();
+  return !Number.isNaN(at) && at <= new Date(readAllBefore).getTime();
 }
 
 function emptyState(): CommunityFeedLocalState {
@@ -51,6 +68,15 @@ export function loadCommunityFeedLocalState(
   scopeId: string
 ): CommunityFeedLocalState {
   if (typeof window === "undefined") return emptyState();
+  if (isViewingAsCoach(scopeId)) {
+    // Drop marks saved by earlier view-as sessions.
+    try {
+      localStorage.removeItem(storageKey(scopeId));
+    } catch {
+      // ignore
+    }
+    return emptyState();
+  }
   try {
     const raw = localStorage.getItem(storageKey(scopeId));
     if (!raw) return emptyState();
@@ -69,22 +95,29 @@ export function loadCommunityFeedLocalState(
         typeof parsed.commentsSeenUpTo === "object"
           ? parsed.commentsSeenUpTo
           : {},
+      readAllBefore:
+        typeof parsed.readAllBefore === "string"
+          ? parsed.readAllBefore
+          : undefined,
     };
   } catch {
     return emptyState();
   }
 }
 
+/** False when nothing was saved: server render, or an admin viewing as the coach. */
 function persistCommunityFeedLocalState(
   scopeId: string,
   next: CommunityFeedLocalState
-): void {
-  if (typeof window === "undefined") return;
+): boolean {
+  if (typeof window === "undefined") return false;
+  if (isViewingAsCoach(scopeId)) return false;
   try {
     localStorage.setItem(storageKey(scopeId), JSON.stringify(next));
   } catch {
     // ignore quota / private mode
   }
+  return true;
 }
 
 function maxIso(a: string, b: string): string {
@@ -111,12 +144,11 @@ export function markCommunityPostReadInStorage(
   if (prev.readPostIds[postId] && !hadUnread) return false;
   const unreadPostIds = { ...prev.unreadPostIds };
   if (hadUnread) delete unreadPostIds[postId];
-  persistCommunityFeedLocalState(scopeId, {
+  return persistCommunityFeedLocalState(scopeId, {
     ...prev,
     readPostIds: { ...prev.readPostIds, [postId]: true },
     unreadPostIds,
   });
-  return true;
 }
 
 /** Marks feed posts authored by `scopeId` as read (author's own posts). */
@@ -139,11 +171,10 @@ export function markOwnCommunityPostsReadInStorage(
     changed = true;
   }
   if (!changed) return false;
-  persistCommunityFeedLocalState(scopeId, {
+  return persistCommunityFeedLocalState(scopeId, {
     ...prev,
     readPostIds,
   });
-  return true;
 }
 
 /** Marks posts the viewer engaged with (comment, like, poll vote) as read in localStorage. */
@@ -166,11 +197,10 @@ export function markEngagedCommunityPostsReadInStorage(
     changed = true;
   }
   if (!changed) return false;
-  persistCommunityFeedLocalState(scopeId, {
+  return persistCommunityFeedLocalState(scopeId, {
     ...prev,
     readPostIds,
   });
-  return true;
 }
 
 export function markCommunityPostUnreadInStorage(
@@ -186,13 +216,12 @@ export function markCommunityPostUnreadInStorage(
   delete readPostIds[postId];
   const commentsSeenUpTo = { ...prev.commentsSeenUpTo };
   delete commentsSeenUpTo[postId];
-  persistCommunityFeedLocalState(scopeId, {
+  return persistCommunityFeedLocalState(scopeId, {
     ...prev,
     readPostIds,
     unreadPostIds: { ...prev.unreadPostIds, [postId]: true },
     commentsSeenUpTo,
   });
-  return true;
 }
 
 export function markCommunityCommentsSeenInStorage(
@@ -206,11 +235,20 @@ export function markCommunityCommentsSeenInStorage(
     ? maxIso(existing, latestCommentIso)
     : latestCommentIso;
   if (existing === merged) return false;
-  persistCommunityFeedLocalState(scopeId, {
+  return persistCommunityFeedLocalState(scopeId, {
     ...prev,
     commentsSeenUpTo: { ...prev.commentsSeenUpTo, [postId]: merged },
   });
-  return true;
+}
+
+/** Marks every post published up to now as read and clears explicit unreads. */
+export function markAllCommunityPostsReadInStorage(scopeId: string): void {
+  const prev = loadCommunityFeedLocalState(scopeId);
+  persistCommunityFeedLocalState(scopeId, {
+    ...prev,
+    unreadPostIds: {},
+    readAllBefore: new Date().toISOString(),
+  });
 }
 
 export function useCommunityFeedCardLocalState(scopeId: string | null) {
@@ -270,9 +308,16 @@ export function useCommunityFeedCardLocalState(scopeId: string | null) {
     [scopeId, bump]
   );
 
+  const markAllPostsRead = useCallback(() => {
+    if (!scopeId) return;
+    markAllCommunityPostsReadInStorage(scopeId);
+    bump();
+  }, [scopeId, bump]);
+
   return {
     snapshot,
     markPostRead,
+    markAllPostsRead,
     markPostUnread,
     markCommentsSeenUpTo,
     markOwnPostsRead,

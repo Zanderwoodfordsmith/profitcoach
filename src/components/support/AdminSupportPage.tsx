@@ -1376,7 +1376,7 @@ export function AdminSupportPage() {
                               }}
                               className={`flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left ${
                                 isWaiting
-                                  ? "opacity-60 hover:bg-white/80 hover:opacity-100"
+                                  ? "opacity-65 hover:bg-white/80 hover:opacity-100"
                                   : "hover:bg-slate-50"
                               }`}
                             >
@@ -1494,7 +1494,7 @@ export function AdminSupportPage() {
                                 active
                                   ? "bg-sky-50/80 ring-1 ring-sky-200"
                                   : isWaiting
-                                    ? "opacity-60 hover:bg-white/80 hover:opacity-100"
+                                    ? "opacity-65 hover:bg-white/80 hover:opacity-100"
                                     : "hover:bg-slate-50"
                               }`}
                             >

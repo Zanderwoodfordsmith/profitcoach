@@ -1,4 +1,4 @@
-/** Consider a member “online” if their community heartbeat is within this window. */
+/** Consider a member “online” if their app heartbeat (AppPresenceHeartbeat, any coach or admin page) is within this window. */
 export const COMMUNITY_ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
 export function isCommunityOnline(

@@ -4,6 +4,7 @@ import { useId } from "react";
 import {
   PENDING_DIAL_MAX,
   PENDING_KEEP_UNDER,
+  pendingInviteBrake,
   pendingInviteZone,
   pendingInviteZoneColor,
   pendingInviteZoneLabel,
@@ -49,6 +50,13 @@ export function PendingInvitesSpeedDial({
   const zoneColor = count == null ? "#94a3b8" : pendingInviteZoneColor(value);
   const zoneLabel = count == null ? "—" : pendingInviteZoneLabel(value);
   const label = loading || count == null ? "—" : String(Math.round(value));
+  const brake = loading ? "none" : pendingInviteBrake(count);
+  const subLabel =
+    brake === "pause"
+      ? "New invites paused"
+      : brake === "slow"
+        ? "Invites slowed"
+        : `Keep under ${keepUnder}`;
 
   return (
     <div
@@ -99,8 +107,12 @@ export function PendingInvitesSpeedDial({
         >
           {label}
         </p>
-        <p className="mt-1 text-[11px] font-medium text-slate-500">
-          Keep under {keepUnder}
+        <p
+          className={`mt-1 text-[11px] font-medium ${
+            brake === "none" ? "text-slate-500" : "text-slate-700"
+          }`}
+        >
+          {subLabel}
         </p>
       </div>
     </div>

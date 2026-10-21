@@ -59,7 +59,12 @@ export async function GET(request: Request) {
       maxItems: full ? PENDING_LIST_MAX : 1,
       deadlineAt: Date.now() + 45_000,
     });
-    const quota = remainingAutoQuota(data.withdraw, utcDateYmd());
+    const quota = remainingAutoQuota(
+      data.withdraw,
+      utcDateYmd(),
+      false,
+      data.total
+    );
     const wouldWithdraw = selectInvitesToWithdraw(
       data.invitations.map((invite) => ({
         id: invite.id,

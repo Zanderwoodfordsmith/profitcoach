@@ -216,6 +216,7 @@ const cells = (...keys: string[]) => (r: Record<string, unknown>) =>
 
 /**
  * Who You Help used to ask for the same person in 26 boxes. It now asks in 11.
+ * The voice and price boxes were trimmed the same way on 20 Oct.
  * Answers in a retired box move into the box that replaced it, once, and the
  * retired box is cleared with an explicit edit so the next save removes it.
  * Lines already in the kept box are not added twice, so this is safe to rerun.
@@ -272,6 +273,22 @@ const FOLDS: {
     kind: "text",
     from: [{ path: ["client", "trust"], row: cells("authority", "social_proof", "scarcity"), empty: [] }],
   },
+  // 20 Oct: What you stand for went from five boxes to three, and price and payment terms became one box.
+  {
+    into: ["practice", "voice_values"],
+    kind: "list",
+    from: [{ path: ["practice", "voice_qualities"], empty: [] }],
+  },
+  {
+    into: ["practice", "voice_pet_peeves"],
+    kind: "list",
+    from: [{ path: ["practice", "voice_dislike_in_people"], empty: [] }],
+  },
+  {
+    into: ["practice", "min_fee"],
+    kind: "text",
+    from: [{ path: ["practice", "payment_terms"], empty: "" }],
+  },
 ];
 
 export function foldRetiredAnswers(payload: PracticeKnowledgePayload): PracticeKnowledgePayload {
@@ -305,7 +322,37 @@ export function foldRetiredAnswers(payload: PracticeKnowledgePayload): PracticeK
     );
     out = mergePracticePayload(out, patch as Partial<PracticeKnowledgePayload>);
   }
-  return out;
+  return foldOfferChoices(out);
+}
+
+const FORMAT_WORDS: Record<string, string> = { one_to_one: "One-to-one", group: "Group", hybrid: "One-to-one and group" };
+const MODEL_WORDS: Record<string, string> = { coaching: "coaching", consulting: "consulting", advisory: "advisory", hybrid: "coaching and consulting" };
+const GUARANTEE_WORDS: Record<string, string> = {
+  trial: "A trial period: they can stop if it is not right.",
+  results: "Results-based, as long as they do the work.",
+};
+
+/**
+ * 20 Oct: How you deliver and Guarantee each became one written box. An old
+ * dropdown answer becomes the words in the new box when that box is empty.
+ * The dropdown answers stay stored, because the brochure and website read them.
+ */
+function foldOfferChoices(payload: PracticeKnowledgePayload): PracticeKnowledgePayload {
+  const practice = payload.practice;
+  const patch: Record<string, Sourced<unknown>> = {};
+  const format = FORMAT_WORDS[String(practice.delivery_format?.value ?? "")];
+  const model = MODEL_WORDS[String(practice.delivery_model?.value ?? "")];
+  if (!textValue(practice.session_rhythm) && (format || model)) {
+    const words = [format, model].filter(Boolean).join(" ");
+    const from = practice.delivery_format ?? practice.delivery_model!;
+    patch.session_rhythm = sourced(words.charAt(0).toUpperCase() + words.slice(1), from.source, from.updated_at);
+  }
+  const guarantee = GUARANTEE_WORDS[String(practice.guarantee?.value ?? "")];
+  if (!textValue(practice.guarantee_terms) && guarantee) {
+    patch.guarantee_terms = sourced(guarantee, practice.guarantee!.source, practice.guarantee!.updated_at);
+  }
+  if (!Object.keys(patch).length) return payload;
+  return mergePracticePayload(payload, { practice: patch } as unknown as Partial<PracticeKnowledgePayload>);
 }
 
 export function textValue(field: Sourced<string> | null | undefined): string {

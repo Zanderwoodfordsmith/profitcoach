@@ -67,6 +67,13 @@ export const GATED_ROUTES: GatedRoute[] = [
       "See every prospect on a simple board — who’s new, who’s in calls, and who needs a follow-up.",
   },
   {
+    prefix: "/coach/script",
+    feature: "nav.marketing",
+    title: "Script",
+    description:
+      "Run your sales call step by step, with a pitch written around what each owner tells you.",
+  },
+  {
     prefix: "/coach/calls",
     feature: "nav.marketing",
     title: "Calls",
@@ -199,6 +206,7 @@ export const ACADEMY_COURSE_TITLES: Record<string, string> = {
   stryvx: "StryvX",
   books: "Books & Talks",
   "how-to": "How To",
+  "coach-talks": "From our coaches",
 };
 
 const ACADEMY_RESERVED_SEGMENTS = new Set([

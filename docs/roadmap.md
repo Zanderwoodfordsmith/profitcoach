@@ -68,7 +68,6 @@ Top priority ahead of Beat 1. Six cards on `/admin/roadmap` (area
 | 8 | Cut 5 Sales Nav classroom videos → tool-based lessons | todo | Get Calls / Win Clients groups |
 | 9 | Pilot walkthrough with 2–3 real coaches | todo | After 1–4 |
 | 10 | Wizard QA walkthrough end-to-end (punch list) | todo | Agent can run this on request |
-| 11 | Delete/lock legacy unauthenticated `/api/message-generator` | todo | Security housekeeping |
 
 ## Beat 2 — content studio (target: mid-Sept)
 

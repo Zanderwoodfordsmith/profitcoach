@@ -137,7 +137,7 @@ const SEEDS: Seed[] = [
 
   // ── Beat 1 — September relaunch ────────────────────────────────────────
   {
-    area: "beat1",
+    area: "general",
     sort_order: 10,
     title: "Release the acquisition core to coaches",
     notes:
@@ -153,7 +153,7 @@ const SEEDS: Seed[] = [
     ],
   },
   {
-    area: "beat1",
+    area: "general",
     sort_order: 11,
     title: "Switch on native booking + Conversations",
     notes:
@@ -166,7 +166,7 @@ const SEEDS: Seed[] = [
     ],
   },
   {
-    area: "beat1",
+    area: "general",
     sort_order: 12,
     title: "Profile Optimizer: launch scope",
     notes:
@@ -178,7 +178,7 @@ const SEEDS: Seed[] = [
     ],
   },
   {
-    area: "beat1",
+    area: "general",
     sort_order: 13,
     title: "'Activated in an hour' onboarding path",
     notes:
@@ -190,23 +190,17 @@ const SEEDS: Seed[] = [
     ],
   },
   {
-    area: "beat1",
+    area: "general",
     sort_order: 14,
     title: "Classroom: swap Sales Nav videos for the tools",
     notes:
       "Replace the five click-by-click Sales Navigator videos with short 'use the tool' lessons.",
     checklist: ["Get Calls group", "Win Clients group"],
   },
-  {
-    area: "beat1",
-    sort_order: 15,
-    title: "Remove legacy unauthenticated /api/message-generator",
-    notes: "Security housekeeping \u2014 endpoint has no auth.",
-  },
 
   // ── Beat 2 — Content studio (mid-September) ────────────────────────────
   {
-    area: "beat2",
+    area: "general",
     sort_order: 1,
     title: "Content studio for coaches",
     notes:
@@ -394,26 +388,6 @@ async function main() {
       console.log(`Inserted ${toInsert.length} Get Clients cards.`);
     }
 
-    const beat1UpNext = rows.filter(
-      (j) => j.area === "beat1" && j.status === "up_next"
-    );
-    if (beat1UpNext.length === 0) {
-      console.log("No Beat 1 up-next jobs to demote.");
-    } else {
-      const { error } = await supabase
-        .from("roadmap_jobs")
-        .update({ status: "todo", updated_at: new Date().toISOString() })
-        .in(
-          "id",
-          beat1UpNext.map((j) => j.id)
-        );
-      if (error) throw new Error(error.message);
-      console.log(
-        `Demoted ${beat1UpNext.length} Beat 1 job(s) from up_next → todo: ${beat1UpNext
-          .map((j) => j.title)
-          .join(", ")}`
-      );
-    }
     return;
   }
 

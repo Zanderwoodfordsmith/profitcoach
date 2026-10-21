@@ -6,8 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
+import { AppPresenceHeartbeat } from "@/components/presence/AppPresenceHeartbeat";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
-import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
@@ -259,6 +259,7 @@ export default function CoachLayout({
       }`}
     >
       <UsageTracker />
+      <AppPresenceHeartbeat />
       <GetClientsHubWarmup />
       <DashboardChromeProvider
         variant="coach"
@@ -278,16 +279,11 @@ export default function CoachLayout({
             <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
           </div>
         ) : null}
-      {!playbooksReader ? (
-        <BossProNavToggle
-          expanded={sidebarExpanded}
-          onToggle={() => setSidebarOpen((o) => !o)}
-        />
-      ) : null}
       {sidebarMounted ? (
         <DashboardSidebar
           variant="coach"
           collapsed={sidebarCollapsed}
+          onToggleCollapsed={() => setSidebarOpen((o) => !o)}
           signingOut={signingOut}
           onSignOut={handleSignOut}
           coachHasFeature={hasFeature}

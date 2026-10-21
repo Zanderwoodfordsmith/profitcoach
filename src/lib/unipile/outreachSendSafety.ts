@@ -1,12 +1,14 @@
 /**
  * Shared LinkedIn outreach send gate: hours, account quotas, campaign daily
- * invite/message limits. Used by the campaign worker and remind fallbacks.
+ * invite/message limits, pending-invite brake. Used by the campaign worker
+ * and remind fallbacks.
  */
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { DailySendPlan } from "@/lib/unipile/accountSendSafety";
 import {
   bumpDailyPlanAssigned,
+  countInvitesSince,
   countSucceededActionToday,
   ensureDailySendPlan,
   isInvitePaused,
@@ -22,12 +24,20 @@ import {
   nextCampaignSendAt,
   parseCampaignSendRules,
 } from "@/lib/unipile/campaignSendWindow";
+import {
+  PENDING_KEEP_UNDER,
+  PENDING_PAUSE_AT,
+  PENDING_SLOW_DAILY_INVITES,
+  pendingInviteBrake,
+} from "@/lib/unipile/pendingInviteDial";
 
 export const INVITE_STEP_TYPES = ["invite", "instagram_follow"] as const;
 export const MESSAGE_STEP_TYPES = ["message", "instagram", "messenger"] as const;
 export const REACT_STEP_TYPES = ["react", "instagram_react"] as const;
 
 export const SEND_HOURS_GRACE_MS = 15_000;
+/** Paused invites re-check after this; the withdraw cron recounts every 6h. */
+export const PENDING_PAUSE_RECHECK_MS = 3 * 3600_000;
 
 export type OutreachSendKind = "invite" | "message" | "react" | "other";
 
@@ -41,6 +51,8 @@ export type OutreachSendSafetyEvalInput = {
   kind: OutreachSendKind;
   rateLimitedUntil: Date | null;
   invitePausedUntil: Date | null;
+  /** Last pending count plus invites sent since; null when never counted. */
+  pendingInvites?: number | null;
   plan: Pick<
     DailySendPlan,
     | "invitesAssigned"
@@ -127,6 +139,31 @@ export function evaluateOutreachSendSafety(
   }
 
   const quotaDefer = jittered(input.nextWindowStart, input.quotaJitterSeconds);
+
+  if (input.kind === "invite") {
+    const brake = pendingInviteBrake(input.pendingInvites);
+    if (brake === "pause") {
+      return {
+        ok: false,
+        reason: `Pending invites at ${PENDING_PAUSE_AT}+; paused while auto-clean brings them down.`,
+        deferUntil: jittered(
+          new Date(nowMs + PENDING_PAUSE_RECHECK_MS),
+          input.quotaJitterSeconds
+        ),
+      };
+    }
+    if (
+      brake === "slow" &&
+      input.plan &&
+      input.plan.invitesAssigned >= PENDING_SLOW_DAILY_INVITES
+    ) {
+      return {
+        ok: false,
+        reason: `Pending invites over ${PENDING_KEEP_UNDER}; slowed to ${PENDING_SLOW_DAILY_INVITES} invites a day.`,
+        deferUntil: quotaDefer,
+      };
+    }
+  }
 
   if (input.plan) {
     if (
@@ -239,6 +276,19 @@ export async function checkOutreachSendSafety(input: {
 
   let campaignInvitesToday = 0;
   let campaignMessagesToday = 0;
+  let pendingInvites: number | null = null;
+  if (
+    input.kind === "invite" &&
+    sendAccount?.pending_invites_total != null &&
+    sendAccount.pending_invites_counted_at
+  ) {
+    pendingInvites =
+      sendAccount.pending_invites_total +
+      (await countInvitesSince(
+        input.coachId,
+        sendAccount.pending_invites_counted_at
+      ));
+  }
   if (input.kind === "invite") {
     campaignInvitesToday = await countSucceededActionToday(
       input.coachId,
@@ -271,6 +321,7 @@ export async function checkOutreachSendSafety(input: {
           ? new Date(sendAccount.invite_paused_until)
           : new Date(now.getTime() + 3600_000)
         : null,
+    pendingInvites,
     plan,
     campaignInvitesToday,
     campaignMessagesToday,

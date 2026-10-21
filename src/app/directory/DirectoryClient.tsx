@@ -230,7 +230,7 @@ export default function DirectoryClient() {
                       <img
                         src={c.avatar_url}
                         alt=""
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover object-[center_20%]"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-sm text-slate-400">

@@ -27,8 +27,15 @@ import {
 import { placeCampaignAtTopOfList } from "@/lib/unipile/campaignListPlacement";
 import { loadCampaignActivity } from "@/lib/unipile/activityHeatmap";
 import { abStatsForCampaign } from "@/lib/unipile/interest";
+import {
+  loadCampaignLeadProfile,
+  openCampaignLeadAsProspect,
+} from "@/lib/unipile/campaignLeadProfile";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+const LEAD_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(request: Request, ctx: Ctx) {
   const auth = await requireOutreachCoach(request);
@@ -36,8 +43,20 @@ export async function GET(request: Request, ctx: Ctx) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
   const { id } = await ctx.params;
-  const part = new URL(request.url).searchParams.get("part");
+  const params = new URL(request.url).searchParams;
+  const part = params.get("part");
   try {
+    if (part === "lead") {
+      const leadId = params.get("lead") ?? "";
+      if (!LEAD_ID_RE.test(leadId)) {
+        return NextResponse.json({ error: "Not found." }, { status: 404 });
+      }
+      const profile = await loadCampaignLeadProfile(auth.coachId, id, leadId);
+      if (!profile) {
+        return NextResponse.json({ error: "Not found." }, { status: 404 });
+      }
+      return NextResponse.json({ profile });
+    }
     if (part === "extras") {
       const owned = await campaignOwnedByCoach(auth.coachId, id);
       if (!owned) {
@@ -165,6 +184,18 @@ export async function PATCH(request: Request, ctx: Ctx) {
         id,
         body.library_template_id
       );
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "open_lead" && typeof body.lead_id === "string") {
+      if (!LEAD_ID_RE.test(body.lead_id)) {
+        return NextResponse.json({ error: "Not found." }, { status: 404 });
+      }
+      const result = await openCampaignLeadAsProspect({
+        coachId: auth.coachId,
+        campaignId: id,
+        leadId: body.lead_id,
+      });
       return NextResponse.json(result);
     }
 

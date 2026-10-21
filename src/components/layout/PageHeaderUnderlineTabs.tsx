@@ -12,20 +12,21 @@ import {
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Menu, MoreHorizontal } from "lucide-react";
+import { NavHoverHints } from "@/components/layout/NavHoverHints";
 import {
   planOverflowNav,
   type OverflowNavPlan,
 } from "@/lib/layout/overflowNav";
 
-/** Matches admin Coaches hub tabs (Coaches / Client success / Revenue). px-1 gives each tab 4px either side. */
+/** Matches admin Coaches hub tabs (Coaches / Client success / Revenue). px-0.5 gives each tab 2px either side. */
 const tabBase =
-  "-mb-px flex-none whitespace-nowrap border-b-[3px] px-1 pb-2 text-sm font-semibold leading-tight transition-colors sm:text-base";
+  "-mb-px flex-none whitespace-nowrap border-b-[3px] px-0.5 pb-2 text-sm font-semibold leading-tight transition-colors sm:text-base";
 const tabActive = "border-sky-600 text-sky-700";
 const tabInactive =
   "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800";
 
 const tabSubtleBase =
-  "-mb-px min-w-max shrink-0 whitespace-nowrap border-b-[3px] px-1 pb-2 text-sm font-medium leading-tight transition-colors";
+  "-mb-px min-w-max shrink-0 whitespace-nowrap border-b-[3px] px-0.5 pb-2 text-sm font-medium leading-tight transition-colors";
 const tabSubtleActive = "border-slate-400 text-slate-600";
 const tabSubtleInactive =
   "border-transparent text-slate-400 hover:border-slate-200 hover:text-slate-600";
@@ -43,6 +44,8 @@ export type PageHeaderUnderlineTabLinkItem = {
   onPrefetch?: () => void;
   /** Lower-emphasis tab (e.g. admin-only preview). */
   variant?: "default" | "subtle";
+  /** One plain line shown in a card when the pointer rests on the tab. */
+  description?: string;
 };
 
 export type PageHeaderUnderlineTabButtonItem = {
@@ -52,6 +55,7 @@ export type PageHeaderUnderlineTabButtonItem = {
   active: boolean;
   onClick: () => void;
   variant?: "default" | "subtle";
+  description?: string;
 };
 
 export type PageHeaderUnderlineTabItem =
@@ -213,6 +217,12 @@ function OverflowMenu({
 
 function TabItem({ item }: { item: PageHeaderUnderlineTabItem }) {
   const cls = tabClassName(item);
+  const hint = item.description
+    ? {
+        "data-hint-label": typeof item.label === "string" ? item.label : undefined,
+        "data-hint-description": item.description,
+      }
+    : {};
   if (item.kind === "link") {
     return (
       <Link
@@ -223,13 +233,14 @@ function TabItem({ item }: { item: PageHeaderUnderlineTabItem }) {
         onFocus={() => item.onPrefetch?.()}
         onClick={item.onNavigate}
         className={cls}
+        {...hint}
       >
         {item.label}
       </Link>
     );
   }
   return (
-    <button type="button" onClick={item.onClick} className={cls}>
+    <button type="button" onClick={item.onClick} className={cls} {...hint}>
       {item.label}
     </button>
   );
@@ -394,6 +405,7 @@ export function PageHeaderUnderlineTabs({
           />
         </div>
       ) : null}
+      <NavHoverHints container={navRef} mode="rest" placement="below" />
     </nav>
   );
 }

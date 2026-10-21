@@ -1,76 +1,105 @@
-<!-- rafter:start -->
-## Security: Rafter (on-demand)
+# Profit Coach app
 
-Rafter is available in this project but **not part of the implement loop**.
-Do not run `rafter run`, `rafter secrets`, skill walks, or the rafter
-sub-agent after normal feature work, before marking done, or before a PR
-unless the user explicitly asks (e.g. “run rafter”, “security scan”).
+## What this is
 
-When they do ask:
+The Business Coach Academy (BCA) platform for Profit Coaches. One Next.js 16
+app (App Router, Turbopack, Tailwind v4) on Supabase (Postgres, auth,
+storage, migrations in `supabase/migrations`), Stripe billing, Vercel hosting.
+**Pushing `main` deploys to production.**
 
-- Diff review → **`rafter-code-review`** and/or `rafter run`
-- Feature design they want reviewed first → **`rafter-secure-design`**
-- Installing or forwarding a third-party SKILL.md / MCP / agent config
-  → **`rafter-skill-review`** (still do this before copying third-party agent assets)
-- Angle unclear → **`rafter`** router skill
+- **Coaches** use the member app: Blueprint, Get / Win / Serve clients,
+  Classroom, Vault, community. **Ava** is the in-app AI assistant.
+- **Admins** (Zander and BCA staff) work under `/admin`.
+- **Marketing pages** sell the BOSS Score funnel to UK owner-led businesses
+  doing £1M+. Product and brand context: `PRODUCT.md`.
+- Local dev runs on **localhost:3002**. Secrets are in `.env.local`: grep the
+  one key you need, never `source` the file. Test as **Zander Demo** only.
 
-**CLI** (export only `RAFTER_API_KEY` from `.env.local`; never `source` the file):
+## How to work here
 
-- `rafter run` — remote SAST + SCA + secrets (needs `RAFTER_API_KEY`)
-- `rafter secrets .` — local secrets only (NOT a code-security scan)
-- `rafter run --mode plus` — agentic deep-dive when asked
-<!-- rafter:end -->
+- **Zander reviewing on 3002:** just edit the files. No commit, push or
+  screenshots unless he says. One or two lines on what changed.
+- **Overnight builds** ("I'm off to bed"): don't ask, decide. Work on a
+  branch, commit only your own files, additive migrations, no spend, no
+  LinkedIn sends. Write `docs/<feature>-morning-review.md` with "Decisions I
+  made (overturn any of these)".
+- **Design changes:** add the new version beside the old one. Never replace
+  or delete a version he has seen.
+- **Keep navigation flat:** group by the thing itself, few layers, one
+  sensible default instead of parallel variants.
+- **Copy:** follow `content/ai-knowledge/writing-rules.md` (binding for all
+  copy). Everyday words a 12-year-old understands. Never name or credit Jack.
+- **Never delete profiles or auth users as cleanup.** Community tables cascade
+  from profiles. Keep the name, remove the login (admin "Remove access").
+- **After styling changes,** confirm the new classes landed in the served CSS.
+  Turbopack can serve stale CSS: stop the server, delete `.next/dev`, restart.
+- **Security scans (Rafter) only when he asks.** Steps: `docs/security-scan.md`.
 
-## Code Security Engine (on-demand, this project)
+## Roadmap workflow (every session)
 
-Do **not** scan on every meaningful change. Ship the work; run CSE when asked.
+The Academy roadmap (/admin/roadmap, table `roadmap_jobs`) is the one queue.
 
-When asked to scan:
-
-1. Export **only** `RAFTER_API_KEY` from `.env.local` (do not `source` the
-   whole file). Never pass `--api-key`. The CLI's dotenv loader only reads `.env`.
-   `export RAFTER_API_KEY="$(grep -E '^RAFTER_API_KEY=' .env.local | cut -d= -f2- | tr -d "'\"")"`
-2. `rafter secrets .` on the working tree, then `rafter run --format json`.
-   Add `--mode plus` only if they want a deep-dive and quota remains.
-3. A secrets-only pass is not a code-security scan.
-
-`rafter run` analyzes the **pushed GitHub ref**. Scan local uncommitted work
-with `rafter secrets`; push the branch if CSE should see those commits.
+- Starting work on a job: move it to In progress. Finishing: move it to
+  Review with "Where to look:" (a localhost:3002 link) and "What to check:"
+  at the top of its notes. Never move a job to Done or Live yourself.
+- If his check finds something to change, the job goes back to In progress
+  with the change added to its checklist, then returns to Review. No
+  second review column.
+- Two shortcuts, both Zander's. Never run either unless he asks:
+  - `stage` = `npm run typecheck && git add -A && git commit -m "…" && git push origin main:staging`.
+    Backs up to GitHub and builds https://staging.theprofitcoach.com (same
+    database as live; no crons; Stripe secret keys deliberately absent).
+  - `live` = `git push origin main`: production gets what's already staged.
+  - `ship` = `stage` then `live` in one go (staging stays in step).
+  - His text-replacement triggers are `;stage`, `;live`, `;ship`; in chat,
+    "stage it", "go live" or "ship it" mean the same.
+- Work stays on local main; never commit to `staging` directly or it stops
+  fast-forwarding from main.
+- Columns: Review = check on 3002. Done = checked and staged.
+  Live = gone live. Zander drags Review → Done.
+- Only a brand-new page or tab is built admin-only until it's ready. Changes
+  to pages coaches already see are not gated; they go live with `live`.
+- Zander releases by name, never by job number: "release Scripts" = remove
+  that page's admin gate and move its jobs to Live.
+- A new idea mid-session goes to Ideas → Evaluate as a new job; don't start
+  building it unless Zander says so.
 
 ## Map: where the truth lives
 
-This folder is a map, not a knowledge base. Read the source of truth at these
-paths when needed; do not duplicate their content here or anywhere in `.claude/`.
+This file is a map, not a knowledge base. Read the source of truth at these
+paths when needed; do not copy their content here or anywhere in `.claude/`.
 
 **Brand and product truth**
 
-- `PRODUCT.md` (repo root) — durable product and brand context for design work.
+- `PRODUCT.md` (repo root): durable product and brand context for design work.
   Impeccable reads it before every design command. Zander edits this directly.
-- `content/ai-knowledge/PROFIT_COACH_AI_ROUTER.md` — **short map only** (skills,
-  knowledge files, Create hub, coach brain keys). Loaded first in every coach AI
-  prompt. Edit in app: **Admin → Brand → Core brain → Knowledge**. Do not bloat
-  it with canon; that lives in the other files below.
-- `content/ai-knowledge/` — brand brain canon: `methodology.md`, `icp.md`,
+- `content/ai-knowledge/PROFIT_COACH_AI_ROUTER.md`: **short map only**, loaded
+  first in every coach AI prompt. Edit in app: **Admin → Brand → Core brain →
+  Knowledge**. Do not bloat it with canon.
+- `content/ai-knowledge/`: brand brain canon (`methodology.md`, `icp.md`,
   `business-profile.md`, `brand-voice.md`, `offer-stack.md`, `writing-rules.md`
-  (always loaded); `avatar-profile.md`, `copywriter-knowledge.md` (copy skills).
-- `src/lib/profitCoachAi/registry.ts` — skill ids, programme order, instructions.
-- `src/lib/profitCoachAi/studioHub.ts` — Create hub cards and skill links.
-- Admin UI: **Brand → Core brain** — Knowledge (canon files), **Skills & tools**
-  (Create hub cards + linked skills in programme order).
-- `content/ai-knowledge/writing-rules.md` — binding for ALL copy. No em dashes.
+  always loaded; `avatar-profile.md`, `copywriter-knowledge.md` for copy skills).
+- `content/agent/`: Ava's context (`AGENT.md`, `ROUTER.md`, one
+  `capabilities/*/CONTEXT.md` per capability, loaded when opened).
+- `src/lib/profitCoachAi/registry.ts` (skill ids, programme order) and
+  `studioHub.ts` (Create hub cards). Admin UI: **Brand → Core brain**.
 
 **Key marketing surfaces**
 
-- `src/app/home-v3/` — new brand homepage (staging URL, noindex until promoted)
-- `src/app/pam/` — Pam's live coach page (theprofitcoach.com/pam)
-- `src/app/score` + `src/app/landing/` — BOSS Score opt-in funnel
-- `src/components/profitSystem/` — brand graphics (roadmap, levels, hexagons)
-- `src/components/BossCharts/BossWheel.tsx` — app wheel (marketing pages use the
-  custom wheel inside `home-v3` instead)
+- `/` is the Scrollcraft site v4 (`public/site-v4`, rewrite in `next.config.ts`).
+  `src/app/home-v3/` is kept for comparison.
+- `src/app/pam/`: Pam's live coach page (theprofitcoach.com/pam).
+- `src/app/score` + `src/app/landing/`: BOSS Score opt-in funnel.
+- `src/components/profitSystem/`: brand graphics (roadmap, levels, hexagons).
+- `src/components/BossCharts/BossWheel.tsx`: app wheel.
 
 **Design tooling**
 
-- `.claude/skills/impeccable/` and `.cursor/skills/impeccable/` — installed
-  copies of the Impeccable design skill. Managed by `npx impeccable update`;
-  never hand-edit.
-- `.cursor/hooks.json` — pre-edit design-slop detector hook (offline).
+- `.claude/skills/impeccable/` and `.cursor/skills/impeccable/`: installed by
+  `npx impeccable update`; never hand-edit.
+- `.cursor/hooks.json`: pre-edit design-slop detector hook (offline).
+
+## Keeping this file useful
+
+Corrected on the same thing twice? Add one line here, or to the canon file it
+belongs in, rather than only to memory. Keep this file under ~120 lines.

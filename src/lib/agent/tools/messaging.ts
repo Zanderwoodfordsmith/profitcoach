@@ -186,8 +186,6 @@ export const messagingTools: AgentToolDef[] = [
         blueprint_campaign_messaging: section("campaigns:messaging"),
         blueprint_messaging_campaign: section("campaigns:conversation"),
         blueprint_reactivation: section("campaigns:reactivation"),
-        blueprint_nurture: section("campaigns:nurture"),
-        blueprint_reply_interested: section("campaigns:interested"),
         blueprint: blueprint || null,
       };
     },
@@ -197,7 +195,7 @@ export const messagingTools: AgentToolDef[] = [
     label: "Bringing in the blueprint messages",
     needsCoach: true,
     description:
-      'Replace a campaign\'s steps with one of the coach\'s Practice Blueprint campaigns. campaign: "connection" (connection note and five follow-ups, for new 2nd and 3rd degree owners), "messaging" (messages only, a conversation into the BOSS Scorecard for connections who fit), "reactivation" (messages only, for people the coach already knows), "nurture" (a useful message every two weeks), or "reply_interested" (for people who said yes). Messages go on remind.',
+      'Replace a campaign\'s steps with one of the coach\'s Practice Blueprint campaigns. campaign: "connection" (connection note and five follow-ups, for new 2nd and 3rd degree owners), "messaging" (messages only, a conversation into the BOSS Scorecard for connections who fit), or "reactivation" (messages only, for people the coach already knows). Messages go on remind. Nurture and replies to people who said yes are not written per coach: use the Ongoing nurture and Positive replies templates from list_campaign_templates.',
     input_schema: {
       type: "object",
       properties: {

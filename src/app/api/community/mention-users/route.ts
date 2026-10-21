@@ -5,9 +5,11 @@ import {
   compareAdminMentionOrder,
   compareMentionSearchResults,
   mentionMatchScore,
+  mentionQueryWords,
   type MentionProfileRow,
 } from "@/lib/communityMentionUsers";
 import { isHiddenFromMentionPicker } from "@/lib/communityFormerStaff";
+import { isDeltaIqContractor } from "@/lib/support/assignees";
 import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 const PROFILE_SELECT =
@@ -50,8 +52,17 @@ function escapeIlikePattern(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
+/** PostgREST `or` filter; "daniel m" also finds first "Daniel" + last "M…". */
 function profileNameSearchFilter(needle: string): string {
-  const p = escapeIlikePattern(needle);
+  const words = mentionQueryWords(needle).map((word) =>
+    escapeIlikePattern(word.replace(/[,()]/g, ""))
+  );
+  if (words.length > 1) {
+    const first = words[0];
+    const last = words[words.length - 1];
+    return `full_name.ilike.%${words.join("%")}%,and(first_name.ilike.${first}%,last_name.ilike.${last}%)`;
+  }
+  const p = words[0] ?? "";
   return `first_name.ilike.${p}%,last_name.ilike.${p}%,full_name.ilike.%${p}%`;
 }
 
@@ -60,9 +71,20 @@ type ProfileRow = MentionProfileRow & {
   access_removed_at?: string | null;
 };
 
-/** Former staff, and anyone whose access an admin has removed. */
-function isHiddenProfile(row: Pick<ProfileRow, "id" | "access_removed_at">): boolean {
-  return isHiddenFromMentionPicker(row.id) || Boolean(row.access_removed_at);
+/** Former staff, anyone whose access an admin has removed, and the Delta IQ contractor login. */
+function isHiddenProfile(
+  row: Pick<ProfileRow, "id" | "access_removed_at" | "full_name" | "first_name" | "last_name">
+): boolean {
+  return (
+    isHiddenFromMentionPicker(row.id) ||
+    Boolean(row.access_removed_at) ||
+    isDeltaIqContractor({
+      id: row.id,
+      full_name: row.full_name ?? null,
+      first_name: row.first_name ?? null,
+      last_name: row.last_name ?? null,
+    })
+  );
 }
 
 async function loadSlugByCoachId(coachIds: string[]): Promise<Record<string, string>> {
@@ -91,7 +113,7 @@ async function searchMentionProfiles(
     supabaseAdmin
       .from("coaches")
       .select("id, slug")
-      .ilike("slug", `${escapeIlikePattern(pattern)}%`)
+      .ilike("slug", `${escapeIlikePattern(mentionQueryWords(pattern).join("-"))}%`)
       .limit(25),
   ]);
 

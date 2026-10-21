@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
+import { AdminBlueprintBoxes } from "@/components/admin/AdminBlueprintBoxes";
 import { AdminBlueprintFlow } from "@/components/admin/AdminBlueprintFlow";
 import { PageHeaderUnderlineTabs, StickyPageHeader } from "@/components/layout";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
@@ -16,7 +17,11 @@ const TABS = [
   { key: "skills", label: "Skills" },
   { key: "knowledge", label: "Knowledge" },
   { key: "flow", label: "Flow" },
+  { key: "boxes", label: "Boxes" },
 ] as const;
+
+/** Tabs that fill the page themselves, without the file sidebar. */
+const FULL_TABS: TabKey[] = ["flow", "boxes"];
 
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -68,6 +73,7 @@ function structureNav(): NavSection[] {
       label: "This coach",
       pages: [
         { id: "flow", label: "Blueprint flow", href: "/admin/ava?tab=flow" },
+        { id: "boxes", label: "Blueprint boxes", href: "/admin/ava?tab=boxes" },
         { id: "replies", label: "Reply review", href: "/admin/ava/replies" },
       ],
     },
@@ -178,14 +184,14 @@ export function AvaAdmin() {
     void load();
   }, [load]);
 
-  const sections = useMemo(() => (catalog && tab !== "flow" ? navFor(tab, catalog) : []), [catalog, tab]);
+  const sections = useMemo(() => (catalog && !FULL_TABS.includes(tab) ? navFor(tab, catalog) : []), [catalog, tab]);
   const pages = useMemo(() => flattenPages(sections), [sections]);
   const selected = pages.find((p) => p.fileId === openId || p.id === openId) ?? pages[0] ?? null;
   const selectedFile = selected?.fileId ? catalog?.files.find((f) => f.id === selected.fileId) : null;
   const selectedCap = catalog?.capabilities.find((c) => c.fileId === selectedFile?.id);
 
   useEffect(() => {
-    if (!catalog || tab === "flow" || openId || !pages[0]?.fileId) return;
+    if (!catalog || FULL_TABS.includes(tab) || openId || !pages[0]?.fileId) return;
     setLocation(tab, pages[0].fileId);
   }, [catalog, tab, openId, pages, setLocation]);
 
@@ -217,10 +223,7 @@ export function AvaAdmin() {
               id: t.key,
               label: t.label,
               active: tab === t.key,
-              onClick: () => {
-                if (t.key === "flow") setLocation("flow");
-                else setLocation(t.key);
-              },
+              onClick: () => setLocation(t.key),
             }))}
           />
         }
@@ -240,7 +243,13 @@ export function AvaAdmin() {
         </div>
       ) : null}
 
-      {catalog && tab !== "flow" ? (
+      {catalog && tab === "boxes" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <AdminBlueprintBoxes />
+        </div>
+      ) : null}
+
+      {catalog && !FULL_TABS.includes(tab) ? (
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <aside className="w-full shrink-0 border-b border-slate-200/70 bg-[#f8fafc] lg:h-full lg:w-[16.5rem] lg:overflow-y-auto lg:border-b-0 lg:border-r">
             <nav aria-label="Ava pages" className="space-y-1 px-3 py-4">

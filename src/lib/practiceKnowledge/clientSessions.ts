@@ -269,7 +269,7 @@ export const GUIDE_PAGES: GuidePage[] = [
             links: [
               {
                 label: "Using the COACH method (from minute 17)",
-                href: "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview?u=efaf59d5-853a-4581-b503-f6b76c7942ce",
+                href: "/coach/academy/classroom/coach-clients/coach-clients-certification-week-1-coach-foundations?chapter=using-coach",
               },
             ],
           },

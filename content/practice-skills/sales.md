@@ -33,8 +33,8 @@ The Profit System does not change. Vision, Velocity, Value, and the nine steps s
 **Learn these (same every call, so they can practise):**
 - Opening: reflect their outcome, problem, impact, desired future and personal why. "Have I understood that correctly?" Then pause.
 - The pillars: Vision (where we are going), Velocity (profitable growth), Value (a business that works without them).
-- The nine step names, in order: Alignment Accelerator, Detailed Strategy, Dynamic Planning, Profit and Cash, Revenue and Marketing, Operations and Product, Financials and KPIs, Innovation and Management, Team and Leadership.
-- Three-link rhythm on every step: because you told me / what we will do / which means.
+- The nine step names, in order: Aligned Vision, Defined Strategy, Disciplined Planning, Profit & Cash Flow, Revenue & Marketing, Operations & Delivery, Financials & Metrics, Infrastructure & Systems, Team & Leadership.
+- Three-link rhythm on every step: because you told me / what we will do / which means. It's the logic, not a phrase, so vary the words.
 - Close: "How do you feel about the structure and approach specifically?"
 
 **Adapt these (this owner only):**

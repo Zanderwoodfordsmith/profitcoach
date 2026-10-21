@@ -87,13 +87,15 @@ export function mentionMatchScore(
   slug: string | null | undefined,
   query: string
 ): number {
-  const needle = query.trim().toLowerCase();
+  const needle = query.trim().toLowerCase().replace(/\s+/g, " ");
   if (!needle) return 0;
 
   const slugNorm = (slug ?? "").trim().toLowerCase();
   const name = displayNameFromProfile(row).toLowerCase();
   const first = (row.first_name ?? "").trim().toLowerCase();
   const last = (row.last_name ?? "").trim().toLowerCase();
+
+  if (needle.includes(" ")) return multiWordMentionScore(name, slugNorm, needle);
 
   if (slugNorm === needle) return 1000;
   if (slugNorm.startsWith(needle)) return 900;
@@ -108,6 +110,30 @@ export function mentionMatchScore(
 
   if (row.id.toLowerCase().startsWith(needle)) return 50;
   return 0;
+}
+
+/**
+ * "daniel m" style queries: every typed word must start a word of the name, in
+ * order (Daniel Mirrorist, Daniel Anne Mirrorist), or the slug in dashed form.
+ */
+function multiWordMentionScore(name: string, slug: string, needle: string): number {
+  if (name.startsWith(needle)) return 800;
+  if (slug && slug.startsWith(needle.replace(/ /g, "-"))) return 700;
+
+  const typed = needle.split(" ");
+  const words = name.split(/\s+/).filter(Boolean);
+  let wordIdx = 0;
+  for (const part of typed) {
+    while (wordIdx < words.length && !words[wordIdx]!.startsWith(part)) wordIdx += 1;
+    if (wordIdx === words.length) return name.includes(needle) ? 100 : 0;
+    wordIdx += 1;
+  }
+  return 600;
+}
+
+/** Name words of a mention query, e.g. "Daniel  M " → ["daniel", "m"]. */
+export function mentionQueryWords(query: string): string[] {
+  return query.trim().toLowerCase().split(/\s+/).filter(Boolean);
 }
 
 export function compareMentionSearchResults(

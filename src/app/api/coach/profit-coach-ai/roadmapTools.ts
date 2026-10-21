@@ -2,9 +2,11 @@ import type Anthropic from "@anthropic-ai/sdk";
 
 import {
   createRoadmapJob,
+  formatRoadmapJobNumber,
   isRoadmapStatus,
   isRoadmapVisibility,
   listRoadmapJobs,
+  resolveRoadmapJobId,
   updateRoadmapJob,
   type RoadmapJob,
 } from "@/lib/roadmap/core";
@@ -25,12 +27,12 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
         area: {
           type: "string",
           description:
-            "Filter by area: get-clients, beat1, beat2, website, ai-panel, q4, general",
+            "Filter by area: set-up, get-clients, keep-clients, platform",
         },
         status: {
           type: "string",
           description:
-            "Filter by status: todo, up_next, in_progress, done, live, parked",
+            "Filter by status: todo, up_next, in_progress, review, done, live, evaluate, parked, vetoed",
         },
       },
     },
@@ -50,12 +52,16 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
         },
         area: {
           type: "string",
+          description: "set-up, get-clients, keep-clients, or platform",
+        },
+        project: {
+          type: "string",
           description:
-            "get-clients, beat1, beat2, website, ai-panel, q4, or general",
+            "Project label grouping related jobs, e.g. Blueprint, Ava, Scripts & BOSS Review, Classroom. Reuse an existing label from list_roadmap_jobs.",
         },
         status: {
           type: "string",
-          description: "todo (default), up_next, in_progress, done, live, parked",
+          description: "todo (default), up_next, in_progress, review, done, live, evaluate, parked, vetoed",
         },
         blocked_by: {
           type: "string",
@@ -71,6 +77,16 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
           items: { type: "string" },
           description: "Initial checklist items (steps toward the outcome)",
         },
+        impact: {
+          type: "number",
+          description:
+            "1-5: how much better it makes BCA. 5 = a big move on coach results (calls, clients), cash (sales, upgrades, retention), member happiness, or Zander's time (less manual work). Only set when the admin gives or agrees a score.",
+        },
+        ease: {
+          type: "number",
+          description:
+            "1-5: time until live, including review and anyone else it needs. 5 = under an hour (one prompt), 4 = half a day, 3 = a day or two, 2 = about a week, 1 = longer or waiting on others. Only set when the admin gives or agrees a score.",
+        },
       },
       required: ["title"],
     },
@@ -78,24 +94,41 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
   {
     name: "update_roadmap_job",
     description:
-      "Update an existing roadmap job (status, title, notes, blocked_by, area, visibility, app_path). Requires the job id from list_roadmap_jobs.",
+      "Update an existing roadmap job (status, title, notes, blocked_by, area, project, visibility, app_path, impact, ease). Requires the job id or number from list_roadmap_jobs.",
     input_schema: {
       type: "object",
       properties: {
-        id: { type: "string", description: "Job id (uuid)" },
+        id: {
+          type: "string",
+          description: "Job id (uuid) or job number, e.g. #12 or 12",
+        },
         status: {
           type: "string",
-          description: "todo, up_next, in_progress, done, live, parked",
+          description: "todo, up_next, in_progress, review, done, live, evaluate, parked, vetoed",
         },
         title: { type: "string" },
         notes: { type: "string" },
         blocked_by: { type: "string" },
         area: { type: "string" },
+        project: {
+          type: "string",
+          description: "Project label; empty string clears it",
+        },
         app_path: { type: "string" },
         visibility: {
           type: "string",
           description:
             "internal (default) or members (shows on the public member roadmap later)",
+        },
+        impact: {
+          type: "number",
+          description:
+            "1-5: how much better it makes BCA. 5 = a big move on coach results (calls, clients), cash (sales, upgrades, retention), member happiness, or Zander's time (less manual work). Only set when the admin gives or agrees a score.",
+        },
+        ease: {
+          type: "number",
+          description:
+            "1-5: time until live, including review and anyone else it needs. 5 = under an hour (one prompt), 4 = half a day, 3 = a day or two, 2 = about a week, 1 = longer or waiting on others. Only set when the admin gives or agrees a score.",
         },
         add_checklist_items: {
           type: "array",
@@ -116,11 +149,14 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
 
 export const ROADMAP_TOOLS_SYSTEM_SECTION = `# Build roadmap tools (admin only)
 You can read and write the internal build roadmap (jobs to be done) using tools.
-- Granularity rule: a job = an outcome/deliverable. Steps, sub-tasks, and inputs belong on an existing job's checklist — prefer add_checklist_items over creating a new job. Only create a new job for a genuinely new deliverable.
+- Granularity rule: a job = one result that can be shipped and reviewed in one sitting, named so it is obvious when it's finished (e.g. "Blueprint: voice call hands over to checking", not "Ava"). Steps belong on its checklist. A bigger piece of work is a project label shared by several jobs. A new idea that comes up mid-job is a new job in the same project, not more checklist on the current one.
+- Notes start with the why, then a "Done when:" line saying exactly what finished looks like.
 - Always call list_roadmap_jobs before updating, and never invent job ids.
-- Areas: get-clients (Campaign Builder Monday push — current priority), beat1 (Sept relaunch), beat2 (content studio), website, ai-panel, q4, general.
-- Statuses (workflow order): todo, up_next, in_progress, done, live. parked = backlog/someday. Visibility: internal (default) or members.
-- "done" means built and verified; "live" means released to coaches/members. "Shipped" or "released" from the admin means live.
+- Every job has a number shown as #12. The admin may say "12", "#12", "BLD-12" or "build 12": that is job number 12. Use #12 when referring to a job.
+- Areas, in coach-journey order: set-up (practice install: Blueprint, brand, website, profile, onboarding), get-clients (leads, replies, bookings, closes), keep-clients (deliver for clients and keep them), platform (the app itself: Classroom, Ava plumbing, admin, fixes).
+- Scores: impact and ease, each 1-5. Impact = how much better it makes BCA: coach results (calls, clients), cash (sales, upgrades, retention), member happiness, or Zander's time (less manual work, more automated); 5 = a big move on any one. Ease = time until live including review and anyone else needed: 5 under an hour (one prompt), 4 half a day, 3 a day or two, 2 about a week, 1 longer or waiting on others. Suggest scores if asked, but only write them when the admin gives or agrees them.
+- Statuses (workflow order): todo, up_next, in_progress, review, done, live. Ideas sit outside the flow: evaluate = a new idea saved with a description, not scored or decided yet (put new ideas here unless the admin says otherwise); parked = a good idea for one day, not now; vetoed = decided against for now, kept as a log of what was ruled out (check it before suggesting something similar). Visibility: internal (default) or members.
+- "review" = built, waiting for the admin to check it; when you finish building a job, move it to review, never straight to done. "done" = the admin checked it and it's pushed (deployed, may still be admin-only). "live" = released to coaches/members. "Shipped" or "released" from the admin means live.
 - Blocked is NOT a status: to mark a job blocked, set blocked_by to the reason (keep its status). To unblock, set blocked_by to an empty string.
 - When the admin says "add a job here" or refers to "this page", set app_path from the current app path in context.
 - Write notes crisp enough that an autonomous agent could pick the job up later.
@@ -131,12 +167,16 @@ You can read and write the internal build roadmap (jobs to be done) using tools.
 function compactJob(j: RoadmapJob) {
   return {
     id: j.id,
+    number: formatRoadmapJobNumber(j.job_number),
     title: j.title,
     area: j.area,
+    project: j.project,
     status: j.status,
     blocked_by: j.blocked_by,
     app_path: j.app_path,
     visibility: j.visibility,
+    impact: j.impact,
+    ease: j.ease,
     notes: j.notes ? j.notes.slice(0, 400) : null,
     checklist: (j.checklist ?? []).map((c) => ({
       text: c.text,
@@ -169,6 +209,11 @@ function str(input: ToolInput, key: string): string | undefined {
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
 
+function score(input: ToolInput, key: string): number | null {
+  const v = Number(input[key]);
+  return Number.isFinite(v) && v >= 1 && v <= 5 ? Math.round(v) : null;
+}
+
 export async function executeRoadmapTool(
   name: string,
   rawInput: unknown
@@ -192,9 +237,12 @@ export async function executeRoadmapTool(
         title,
         notes: str(input, "notes") ?? null,
         area: str(input, "area") ?? null,
+        project: str(input, "project") ?? null,
         status: statusRaw && isRoadmapStatus(statusRaw) ? statusRaw : null,
         blockedBy: str(input, "blocked_by") ?? null,
         appPath: str(input, "app_path") ?? null,
+        impact: score(input, "impact"),
+        ease: score(input, "ease"),
       });
       const checklistTexts = strArray(input, "checklist");
       const withChecklist =
@@ -207,8 +255,10 @@ export async function executeRoadmapTool(
     }
 
     if (name === "update_roadmap_job") {
-      const id = str(input, "id");
-      if (!id) return JSON.stringify({ error: "id is required" });
+      const ref = str(input, "id");
+      if (!ref) return JSON.stringify({ error: "id is required" });
+      const id = await resolveRoadmapJobId(ref);
+      if (!id) return JSON.stringify({ error: `No job ${ref}.` });
       const statusRaw = str(input, "status");
       const visibilityRaw = str(input, "visibility");
 
@@ -236,6 +286,7 @@ export async function executeRoadmapTool(
         ...(str(input, "title") ? { title: str(input, "title") } : {}),
         ...(str(input, "notes") ? { notes: str(input, "notes") } : {}),
         ...(str(input, "area") ? { area: str(input, "area") } : {}),
+        ...("project" in input ? { project: str(input, "project") ?? null } : {}),
         // blocked_by: present-but-empty clears the blocked flag.
         ...("blocked_by" in input
           ? { blockedBy: str(input, "blocked_by") ?? null }
@@ -249,6 +300,10 @@ export async function executeRoadmapTool(
         ...(visibilityRaw && isRoadmapVisibility(visibilityRaw)
           ? { visibility: visibilityRaw }
           : {}),
+        ...(score(input, "impact") !== null
+          ? { impact: score(input, "impact") }
+          : {}),
+        ...(score(input, "ease") !== null ? { ease: score(input, "ease") } : {}),
       });
       return JSON.stringify({ updated: compactJob(job) });
     }

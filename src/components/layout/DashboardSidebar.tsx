@@ -13,6 +13,7 @@ import {
   CircleHelp,
   CreditCard,
   Settings,
+  Smartphone,
 } from "lucide-react";
 import {
   adminSectionNavItemActive,
@@ -35,6 +36,10 @@ import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { UseAsMenu } from "@/components/layout/UseAsMenu";
+import { useInstallDevice } from "@/lib/installDevice";
+import { GetAppModal } from "@/components/install/GetAppModal";
+import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
+import { NavHoverHints } from "@/components/layout/NavHoverHints";
 import { loadCoachDirectory } from "@/lib/admin/coachDirectoryClient";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { prefetchGetClientsHref } from "@/lib/getClients/hubFetchers";
@@ -71,6 +76,8 @@ type DashboardSidebarProps = {
    * Desktop: icon-only rail. The mobile bottom nav ignores it and is always shown.
    */
   collapsed?: boolean;
+  /** Shows the collapse button on the line above Support. */
+  onToggleCollapsed?: () => void;
 };
 
 function isCommunityCalendarActive(pathname: string | null, communityHref: string) {
@@ -111,7 +118,7 @@ function AdminNavHeader({
         onClick={onToggle}
         aria-expanded={expanded}
         aria-label={toggleLabel}
-        title="Admin"
+        data-hint-label="Admin"
         className={`${ADMIN_HEADER_CLASS} w-full justify-center px-0 py-2 hover:bg-white/10`}
       >
         <Chevron className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -149,6 +156,7 @@ export function DashboardSidebar({
   membershipTierEnforcementEnabled = false,
   coachAccessTier = null,
   collapsed = false,
+  onToggleCollapsed,
 }: DashboardSidebarProps) {
   const { pathname, markPending } = useOptimisticPathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
@@ -156,6 +164,7 @@ export function DashboardSidebar({
   const supportActive = Boolean(pathname?.startsWith(supportHref));
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const railRef = useRef<HTMLElement>(null);
   const [adminNavExpanded, setAdminNavExpanded] = useState(true);
   const [getClientsHref, setGetClientsHref] = useState(() =>
     getClientsHubHomeHref(prefix)
@@ -263,11 +272,11 @@ export function DashboardSidebar({
     />
   );
 
-  const navLinkClass = (active: boolean) =>
+  const navLinkClass = (active: boolean, padding = "px-4") =>
     `relative flex items-center rounded-md leading-snug ${
       collapsed
         ? "justify-center px-0 py-2.5"
-        : "gap-3 px-4 py-2.5 text-[0.9375rem]"
+        : `gap-3 ${padding} py-2.5 text-[0.9375rem]`
     } ${
       active ? SIDEBAR_NAV_ACTIVE : "text-slate-100/90 hover:bg-white/10"
     }`;
@@ -294,6 +303,12 @@ export function DashboardSidebar({
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
   const settingsActive =
     pathname === settingsHref || Boolean(pathname?.startsWith(`${settingsHref}/`));
+  // Billing lives on the coach Settings page only; admin accounts have no billing tab.
+  const billingHref = variant === "coach" ? "/coach/settings?tab=billing" : null;
+  // Opened from the home screen means it's installed, so the install link has done its job.
+  const installDevice = useInstallDevice();
+  const showGetApp = installDevice !== null && installDevice !== "installed";
+  const [getAppOpen, setGetAppOpen] = useState(false);
   const alreadyPremiumOrVip =
     coachAccessTier === "premium" || coachAccessTier === "vip";
   const inProgrammeBuild = coachAccessTier === "programme";
@@ -404,6 +419,7 @@ export function DashboardSidebar({
   return (
     <>
       <aside
+        ref={railRef}
         className={`fixed bottom-0 left-0 top-0 z-40 hidden border-r border-white/10 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] text-white transition-[width] duration-200 md:flex md:flex-col ${
           collapsed ? "w-14" : "w-56"
         }`}
@@ -460,7 +476,8 @@ export function DashboardSidebar({
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    title={collapsed ? item.label : undefined}
+                    data-hint-label={item.label}
+                    data-hint-description={item.description}
                     onClick={() => markPending(item.href)}
                     className={navLinkClass(active)}
                   >
@@ -498,7 +515,8 @@ export function DashboardSidebar({
                   <li key={item.toolsHub ?? item.href}>
                     <Link
                       href={href}
-                      title={collapsed ? item.label : undefined}
+                      data-hint-label={item.label}
+                    data-hint-description={item.description}
                       onClick={() => markPending(href)}
                       onMouseEnter={() => {
                         if (item.toolsHub === "get-clients") {
@@ -544,7 +562,8 @@ export function DashboardSidebar({
                       <li key={item.href}>
                         <Link
                           href={item.href}
-                          title={collapsed ? item.label : undefined}
+                          data-hint-label={item.label}
+                    data-hint-description={item.description}
                           className={
                             collapsed
                               ? navLinkClass(active)
@@ -578,10 +597,17 @@ export function DashboardSidebar({
           </div>
         ) : null}
         <div
-          className={`shrink-0 border-t border-white/15 py-3 ${
+          className={`relative shrink-0 border-t border-white/15 py-3 ${
             collapsed ? "px-1.5" : "px-3"
           }`}
         >
+          {onToggleCollapsed ? (
+            <BossProNavToggle
+              expanded={!collapsed}
+              onToggle={onToggleCollapsed}
+              hidden={accountMenuOpen}
+            />
+          ) : null}
           {showJoinPremiumPromo ? (
             <MembershipSidebarPromo
               active={membershipPageActive}
@@ -591,7 +617,7 @@ export function DashboardSidebar({
           {showMembershipNav ? (
             <Link
               href="/coach/membership"
-              title={collapsed ? "Membership" : undefined}
+              data-hint-label={collapsed ? "Membership" : undefined}
               onClick={() => markPending("/coach/membership")}
               className={`mb-1 ${navLinkClass(membershipPageActive)}`}
             >
@@ -605,10 +631,12 @@ export function DashboardSidebar({
           ) : null}
           <Link
             href={supportHref}
-            title={collapsed ? "Support" : undefined}
+            data-hint-label="Support"
+            data-hint-description="Ask the team for help"
             aria-label={supportAriaLabel}
             onClick={() => markPending(supportHref)}
-            className={`mb-1 ${navLinkClass(supportActive)}`}
+            // Short right padding centres the reply badge under the account row's arrows.
+            className={`mb-1 ${navLinkClass(supportActive, "pl-4 pr-1.5")}`}
           >
             <span className="relative shrink-0">
               <CircleHelp className="h-5 w-5 shrink-0 opacity-95" />
@@ -626,16 +654,19 @@ export function DashboardSidebar({
               aria-expanded={accountMenuOpen}
               aria-haspopup="menu"
               aria-label="Account menu"
-              title={collapsed ? (profileLoading ? "Account" : avatarLabel) : undefined}
+              data-hint-label={collapsed ? (profileLoading ? "Account" : avatarLabel) : undefined}
               onClick={() => setAccountMenuOpen((open) => !open)}
               className={`flex w-full items-center rounded-md text-left leading-snug ${
                 collapsed
                   ? "justify-center px-0 py-2"
-                  : "gap-3 px-3 py-2 text-[0.9375rem]"
+                  : "gap-2 py-2 pl-3 pr-2 text-[0.9375rem]"
               } ${
                 accountMenuOpen || settingsActive || supportActive
                   ? SIDEBAR_NAV_ACTIVE
-                  : "text-slate-100/90 hover:bg-white/10"
+                  : collapsed
+                    ? "text-slate-100/90 hover:bg-white/10"
+                    : // A resting tint so coaches can tell the row opens a menu.
+                      "bg-white/5 text-white hover:bg-white/10"
               }`}
             >
               <span className="relative shrink-0">
@@ -644,25 +675,26 @@ export function DashboardSidebar({
                   <img
                     src={avatarImageUrl}
                     alt=""
-                    className="h-8 w-8 rounded-full object-cover ring-1 ring-white/35"
+                    className={`${
+                      collapsed ? "h-8 w-8" : "h-7 w-7"
+                    } rounded-full object-cover ring-1 ring-white/35`}
                   />
                 ) : (
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-[11px] font-semibold text-white ring-1 ring-white/30">
+                  <span
+                    className={`flex ${
+                      collapsed ? "h-8 w-8" : "h-7 w-7"
+                    } items-center justify-center rounded-full bg-white/20 text-[11px] font-semibold text-white ring-1 ring-white/30`}
+                  >
                     {profileInitialsFromName(avatarLabel)}
                   </span>
                 )}
               </span>
               {!collapsed ? (
                 <>
-                  <span className="relative min-w-0 flex-1">
-                    <span className="block text-[0.8125rem] font-medium leading-snug line-clamp-2">
-                      {profileLoading ? "Loading..." : avatarLabel}
-                    </span>
-                    <span className="block text-[0.75rem] leading-snug opacity-80">
-                      Settings
-                    </span>
+                  <span className="min-w-0 flex-1 text-[0.8125rem] font-medium leading-snug line-clamp-2">
+                    {profileLoading ? "Loading..." : avatarLabel}
                   </span>
-                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                  <ChevronsUpDown className="h-4 w-4 shrink-0" aria-hidden />
                 </>
               ) : null}
             </button>
@@ -675,11 +707,14 @@ export function DashboardSidebar({
                     : "bottom-full left-0 right-0"
                 }`}
               >
-                <div className="border-b border-slate-100 px-3 py-2">
-                  <p className="truncate text-sm font-semibold text-slate-900">
-                    {profileLoading ? "Loading..." : avatarLabel}
-                  </p>
-                </div>
+                {/* Expanded, the name is already on the button that opened this. */}
+                {collapsed ? (
+                  <div className="border-b border-slate-100 px-3 py-2">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {profileLoading ? "Loading..." : avatarLabel}
+                    </p>
+                  </div>
+                ) : null}
                 <Link
                   href={settingsHref}
                   role="menuitem"
@@ -689,10 +724,31 @@ export function DashboardSidebar({
                   <Settings className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   Settings
                 </Link>
-                <UseAsMenu
-                  isAdmin={profile?.role === "admin"}
-                  onAction={() => setAccountMenuOpen(false)}
-                />
+                {billingHref ? (
+                  <Link
+                    href={billingHref}
+                    role="menuitem"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setAccountMenuOpen(false)}
+                  >
+                    <CreditCard className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                    Billing
+                  </Link>
+                ) : null}
+                {showGetApp ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      setGetAppOpen(true);
+                    }}
+                  >
+                    <Smartphone className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                    Get the app
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   role="menuitem"
@@ -706,11 +762,20 @@ export function DashboardSidebar({
                   <LogOut className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   {signingOut ? "Signing out..." : "Log out"}
                 </button>
+                <UseAsMenu
+                  isAdmin={profile?.role === "admin"}
+                  onAction={() => setAccountMenuOpen(false)}
+                />
               </div>
             ) : null}
           </div>
         </div>
       </aside>
+      <NavHoverHints
+        container={railRef}
+        mode={collapsed ? "instant" : "rest"}
+        placement="right"
+      />
 
       {/* Mobile: 4 primary tabs + settings (opens more sheet), always shown */}
       <nav
@@ -891,11 +956,6 @@ export function DashboardSidebar({
                   Membership
                 </Link>
               ) : null}
-              <UseAsMenu
-                layout="inline"
-                isAdmin={profile?.role === "admin"}
-                onAction={closeMobileSheets}
-              />
               <p className="mb-1 mt-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
                 Settings
               </p>
@@ -925,6 +985,29 @@ export function DashboardSidebar({
                 <Settings className="h-5 w-5 shrink-0 opacity-95" />
                 Settings
               </Link>
+              {billingHref ? (
+                <Link
+                  href={billingHref}
+                  onClick={closeMobileSheets}
+                  className="mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] text-slate-100/90 hover:bg-white/10"
+                >
+                  <CreditCard className="h-5 w-5 shrink-0 opacity-95" />
+                  Billing
+                </Link>
+              ) : null}
+              {showGetApp ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileSheets();
+                    setGetAppOpen(true);
+                  }}
+                  className="mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-[0.9375rem] text-slate-100/90 hover:bg-white/10"
+                >
+                  <Smartphone className="h-5 w-5 shrink-0 opacity-95" />
+                  Get the app
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {
@@ -937,10 +1020,16 @@ export function DashboardSidebar({
                 <LogOut className="h-5 w-5 shrink-0 opacity-95" />
                 {signingOut ? "Signing out..." : "Log out"}
               </button>
+              <UseAsMenu
+                layout="inline"
+                isAdmin={profile?.role === "admin"}
+                onAction={closeMobileSheets}
+              />
             </div>
           </div>
         </div>
       ) : null}
+      <GetAppModal open={getAppOpen} onClose={() => setGetAppOpen(false)} />
     </>
   );
 }

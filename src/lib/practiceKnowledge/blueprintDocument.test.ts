@@ -195,7 +195,7 @@ describe("campaigns and contracts", () => {
     payload.practice.min_fee = sourced("£1,500 a month", "interview");
     payload.client.pains_now = sourced(["Cash is always tight"], "interview");
     const user = skillUserPrompt({
-      key: "offer:payment",
+      key: "sales:script",
       row: row({ payload }),
       coachName: "Pam",
       linkedinSummary: "",

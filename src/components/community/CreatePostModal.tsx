@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Globe2, ImagePlus, Lock, Video, X } from "lucide-react";
+import { CalendarDays, Globe2, ImagePlus, Lock, Plus, Video, Vote, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { CommunityCategory } from "@/components/community/CommunityFeed";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
@@ -18,6 +18,11 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { ActingAsNotice } from "@/components/community/ActingAsNotice";
+import {
+  clearCommunityDraftHandoff,
+  peekCommunityDraftHandoff,
+} from "@/lib/communityDraftHandoff";
 import {
   coachPersonaForCommunity,
   getCommunityAuthorId,
@@ -31,6 +36,12 @@ import {
 } from "@/lib/academy/lessonCommunityChannel";
 import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
 import { FEEDBACK_REQUEST_CATEGORY_SLUG } from "@/lib/coachAccess/tiers";
+import {
+  buildCommunityPostPoll,
+  COMMUNITY_POLL_MAX_OPTIONS,
+  COMMUNITY_POLL_MIN_OPTIONS,
+  COMMUNITY_POLL_OPTION_MAX_LENGTH,
+} from "@/lib/communityPostPoll";
 
 export type CreatePostLessonContext = {
   courseId: string;
@@ -79,8 +90,15 @@ export function CreatePostModal({
 }: Props) {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const [handoff] = useState(() => {
+    const h = peekCommunityDraftHandoff(pathname);
+    return h?.kind === "post" && !lessonContext ? h : null;
+  });
+  const [title, setTitle] = useState(handoff?.title ?? "");
+  const [body, setBody] = useState(handoff?.body ?? "");
+  useEffect(() => {
+    if (handoff) clearCommunityDraftHandoff();
+  }, [handoff]);
   const [categoryId, setCategoryId] = useState("");
   const [lessonVisibility, setLessonVisibility] = useState<"public" | "private">(
     "public"
@@ -94,6 +112,8 @@ export function CreatePostModal({
   const [authorRole, setAuthorRole] = useState<string | null>(null);
   const [schedulePopoverOpen, setSchedulePopoverOpen] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
+  const [pollOpen, setPollOpen] = useState(false);
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const isAuthorAdmin = authorRole === "admin";
   const isLessonQa = Boolean(lessonContext);
   const lessonCategorySlug = lessonContext
@@ -247,6 +267,14 @@ export function CreatePostModal({
         return;
       }
     }
+    let poll: ReturnType<typeof buildCommunityPostPoll> | null = null;
+    if (pollOpen && !isLessonQa) {
+      poll = buildCommunityPostPoll(pollOptions);
+      if ("error" in poll) {
+        setError(poll.error);
+        return;
+      }
+    }
     setSaving(true);
     setError(null);
     try {
@@ -297,6 +325,7 @@ export function CreatePostModal({
             ? scheduledAtIso
             : new Date().toISOString(),
       };
+      if (poll) insertRow.poll = poll;
 
       if (lessonContext) {
         insertRow.post_scope = "lesson_qa";
@@ -347,6 +376,8 @@ export function CreatePostModal({
     pathname,
     viewerIsAdmin,
     pendingMedia,
+    pollOpen,
+    pollOptions,
     lessonCategory?.id,
     lessonChannelLabel,
     revokeAllPending,
@@ -437,6 +468,15 @@ export function CreatePostModal({
           showFormattingToolbar
           className="w-full border-0 bg-transparent px-0 pb-1 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
         />
+        <ActingAsNotice
+          coachPersonaId={coachPersonaForCommunity(
+            pathname,
+            impersonatingCoachId,
+            viewerIsAdmin
+          )}
+          active={Boolean(title.trim() || body.trim())}
+          draft={{ kind: "post", title, body }}
+        />
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -467,6 +507,25 @@ export function CreatePostModal({
               >
                 <Video className="h-4 w-4" strokeWidth={1.75} />
               </button>
+              {!isLessonQa ? (
+                <button
+                  type="button"
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
+                    pollOpen
+                      ? "border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                      : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                  title={pollOpen ? "Remove poll" : "Add a poll"}
+                  aria-label={pollOpen ? "Remove poll" : "Add a poll"}
+                  aria-pressed={pollOpen}
+                  onClick={() => {
+                    setPollOpen((open) => !open);
+                    if (error) setError(null);
+                  }}
+                >
+                  <Vote className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              ) : null}
             </div>
             <div className="flex flex-col items-end gap-1.5">
               <div className="flex items-center gap-2">
@@ -613,6 +672,65 @@ export function CreatePostModal({
               ) : null}
             </div>
           </div>
+          {pollOpen && !isLessonQa ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Poll
+                </p>
+                <button
+                  type="button"
+                  className="text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600"
+                  onClick={() => setPollOpen(false)}
+                >
+                  Remove poll
+                </button>
+              </div>
+              <ul className="mt-2 space-y-2">
+                {pollOptions.map((text, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={text}
+                      maxLength={COMMUNITY_POLL_OPTION_MAX_LENGTH}
+                      placeholder={`Option ${i + 1}`}
+                      aria-label={`Poll option ${i + 1}`}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setPollOptions((prev) =>
+                          prev.map((t, j) => (j === i ? value : t))
+                        );
+                        if (error) setError(null);
+                      }}
+                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    />
+                    {pollOptions.length > COMMUNITY_POLL_MIN_OPTIONS ? (
+                      <button
+                        type="button"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        aria-label={`Remove option ${i + 1}`}
+                        onClick={() =>
+                          setPollOptions((prev) => prev.filter((_, j) => j !== i))
+                        }
+                      >
+                        <X className="h-4 w-4" strokeWidth={2} />
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {pollOptions.length < COMMUNITY_POLL_MAX_OPTIONS ? (
+                <button
+                  type="button"
+                  className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-sky-700 hover:underline"
+                  onClick={() => setPollOptions((prev) => [...prev, ""])}
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2} />
+                  Add option
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {pendingPreviews.length > 0 ? (
             <ul className="flex flex-wrap gap-2">
               {pendingPreviews.map((p) => (

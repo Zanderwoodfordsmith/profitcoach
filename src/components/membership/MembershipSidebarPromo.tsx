@@ -20,7 +20,7 @@ export function MembershipSidebarPromo({
       <Link
         href="/coach/membership#plans"
         onClick={onNavigate}
-        title="Join Premium"
+        data-hint-label="Join Premium"
         className={`mb-1 flex items-center justify-center rounded-md border border-emerald-300/25 bg-gradient-to-br from-emerald-500/90 to-teal-600/90 p-2 shadow-sm transition hover:brightness-105 ${className}`}
         aria-current={active ? "page" : undefined}
         aria-label="Join Premium"

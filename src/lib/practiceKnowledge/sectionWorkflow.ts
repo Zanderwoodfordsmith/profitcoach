@@ -30,12 +30,13 @@ export type SectionWorkflow = {
 const BCA_GATE = new Set(["linkedin:rewrite", ...CAMPAIGN_HANDOFFS.map((h) => h.section)]);
 
 /**
- * Who a section waits on while it is To do. The coach's own pages (About You)
- * wait on the coach. Everything after waits on BCA: we write it, or research it
- * and fill it in after the Blueprint Call, and the coach reviews it.
+ * Who a section waits on while it is To do. Everything in About You waits on
+ * the coach, including what BCA writes from those answers (it needs them
+ * first). Everything after waits on BCA: we write it, or research it and fill
+ * it in after the Blueprint Call, and the coach reviews it.
  */
 export function todoOwner(ref: SectionRef): WorkflowOwner {
-  return ref.section.source === "we_build" || !ref.group.yours ? "bca" : "coach";
+  return ref.group.yours ? "coach" : "bca";
 }
 
 function stampAt(payload: PracticeKnowledgePayload, key: string, which: "coach" | "bca"): string | null {

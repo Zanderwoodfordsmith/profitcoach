@@ -136,6 +136,15 @@
         ],
         "createdAt": "2026-10-19T12:38:00.871Z",
         "reason": "Claude: the img is inside a LinkedIn HTML string used as a parser test fixture, never rendered"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/salesCall/SalesCallWorkspace.tsx"
+        ],
+        "createdAt": "2026-10-20T09:02:26.971Z",
+        "reason": "Claude: false positive, ternaries pair gray text with slate-100/white backgrounds and white text with sky-600; detector reads both branches as one"
       }
     ]
   }

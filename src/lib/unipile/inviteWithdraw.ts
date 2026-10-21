@@ -6,16 +6,24 @@
  * Client cannot set last-run fields; daily caps bound blast radius.
  *
  * Product default: keep pending under PENDING_KEEP_UNDER, oldest first,
- * up to AUTO_DAILY_MAX/day on weekdays only.
+ * up to AUTO_DAILY_MAX/day on weekdays only (AUTO_DAILY_MAX_HIGH at or over
+ * PENDING_PAUSE_AT, so a pile near LinkedIn's wall comes down in a day or two).
  */
 
-import { PENDING_KEEP_UNDER } from "@/lib/unipile/pendingInviteDial";
+import {
+  PENDING_KEEP_UNDER,
+  PENDING_PAUSE_AT,
+} from "@/lib/unipile/pendingInviteDial";
 
 export const INVITE_WITHDRAW_MODES = ["off", "daily", "cap", "age"] as const;
 export type InviteWithdrawMode = (typeof INVITE_WITHDRAW_MODES)[number];
 
 export const MANUAL_WITHDRAW_MAX = 50;
 export const AUTO_DAILY_MAX = 25;
+/** Faster daily clean once pending reaches PENDING_PAUSE_AT. */
+export const AUTO_DAILY_MAX_HIGH = 40;
+/** The withdraw cron runs every 6 hours (vercel.json). */
+export const WITHDRAW_TICKS_PER_DAY = 4;
 /** LinkedIn’s practical pending wall is ~800; allow a little headroom for the dial. */
 export const PENDING_LIST_MAX = 1000;
 /** Default auto rule: keep pending at or below this. */
@@ -121,17 +129,24 @@ export function parseInviteWithdrawPolicy(row: {
 }
 
 /** Max auto-withdraws for a calendar day (weekends: none). */
-export function autoDailyCapForDay(isWeekend: boolean): number {
-  return isWeekend ? 0 : AUTO_DAILY_MAX;
+export function autoDailyCapForDay(
+  isWeekend: boolean,
+  pending: number | null = null
+): number {
+  if (isWeekend) return 0;
+  return pending != null && pending >= PENDING_PAUSE_AT
+    ? AUTO_DAILY_MAX_HIGH
+    : AUTO_DAILY_MAX;
 }
 
 export function dailyAutoQuota(
   mode: InviteWithdrawMode,
   value: number,
-  isWeekend = false
+  isWeekend = false,
+  pending: number | null = null
 ): number {
   if (mode === "off") return 0;
-  const dayCap = autoDailyCapForDay(isWeekend);
+  const dayCap = autoDailyCapForDay(isWeekend, pending);
   if (mode === "daily") {
     return Math.min(dayCap, clampWithdrawValue("daily", value));
   }
@@ -141,9 +156,10 @@ export function dailyAutoQuota(
 export function remainingAutoQuota(
   policy: InviteWithdrawPolicy,
   todayYmd: string,
-  isWeekend = false
+  isWeekend = false,
+  pending: number | null = null
 ): number {
-  const quota = dailyAutoQuota(policy.mode, policy.value, isWeekend);
+  const quota = dailyAutoQuota(policy.mode, policy.value, isWeekend, pending);
   if (quota <= 0) return 0;
   if (policy.ranOn === todayYmd) {
     return Math.max(0, quota - policy.ranCount);
@@ -151,8 +167,10 @@ export function remainingAutoQuota(
   return quota;
 }
 
-/** Soft cap per cron tick so we sprinkle across the day (~4 ticks × 6). */
-export const AUTO_WITHDRAW_PER_TICK = 6;
+/** Soft cap per cron tick so the day's quota is sprinkled across all ticks. */
+export function autoWithdrawPerTick(pending: number): number {
+  return Math.ceil(autoDailyCapForDay(false, pending) / WITHDRAW_TICKS_PER_DAY);
+}
 
 export function selectInvitesToWithdraw(
   invites: DatedInvite[],
@@ -162,7 +180,7 @@ export function selectInvitesToWithdraw(
 ): string[] {
   const limit = Math.min(
     MANUAL_WITHDRAW_MAX,
-    AUTO_WITHDRAW_PER_TICK,
+    autoWithdrawPerTick(invites.length),
     Math.max(0, Math.floor(quota))
   );
   if (limit <= 0 || policy.mode === "off" || invites.length === 0) return [];
@@ -202,7 +220,7 @@ export function withdrawPolicySummary(
     if (over === 0) {
       return `Keeping pending at ${policy.value} or fewer. You’re under that now.`;
     }
-    return `You’re ${over} over ${policy.value}. We’ll withdraw the oldest, up to ${AUTO_DAILY_MAX}/day on weekdays.`;
+    return `You’re ${over} over ${policy.value}. We’ll withdraw the oldest, up to ${autoDailyCapForDay(false, pending)}/day on weekdays.`;
   }
   return `We’ll withdraw requests waiting ${policy.value} day${
     policy.value === 1 ? "" : "s"

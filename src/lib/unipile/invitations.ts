@@ -390,15 +390,17 @@ export async function processInviteWithdrawForAccount(account: {
   const policy = parseInviteWithdrawPolicy(account);
   const today = utcDateYmd();
   const weekend = isWeekendInTimezone(account.timezone);
-  const quota = remainingAutoQuota(policy, today, weekend);
-  if (quota <= 0) {
-    return { accountId: account.id, withdrawn: 0, attempted: 0, skipped: true };
-  }
 
+  // Always list: it refreshes the pending count the send brake reads,
+  // even on weekends or with auto-clean off.
   const listed = await listPendingInvitesForCoach(account.coach_id, {
     maxItems: PENDING_LIST_MAX,
     outreachAccountId: account.id,
   });
+  const quota = remainingAutoQuota(policy, today, weekend, listed.total);
+  if (quota <= 0) {
+    return { accountId: account.id, withdrawn: 0, attempted: 0, skipped: true };
+  }
   const targets = selectInvitesToWithdraw(
     listed.invitations.map((invite) => ({
       id: invite.id,
@@ -457,7 +459,8 @@ export async function processDueInviteWithdrawals(options?: {
     .select(`${ACCOUNT_SELECT}, coach_id`)
     .eq("status", "OK")
     .ilike("provider", "linkedin")
-    .neq("invite_withdraw_mode", "off");
+    // Stalest count first, so a tight budget still rotates through everyone.
+    .order("pending_invites_counted_at", { ascending: true, nullsFirst: true });
   if (error) throw new Error(error.message);
 
   const results = [];

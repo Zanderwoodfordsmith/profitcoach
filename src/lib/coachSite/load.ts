@@ -1,6 +1,7 @@
 import "server-only";
 
 import { findPracticeKnowledge } from "@/lib/practiceKnowledge/store";
+import type { PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { coachSiteFromBlueprint } from "./fromBlueprint";
 import { sitePhotosFor } from "./photos";
@@ -38,8 +39,16 @@ export function isCoachSlug(raw: string): boolean {
  */
 export async function loadCoachSite(
   rawSlug: string,
-  { approvedOnly }: { approvedOnly: boolean }
+  options: { approvedOnly: boolean }
 ): Promise<CoachSite | null> {
+  return (await loadCoachSiteAndRow(rawSlug, options))?.site ?? null;
+}
+
+/** The website content plus the Blueprint row it came from, for documents that need more fields. */
+export async function loadCoachSiteAndRow(
+  rawSlug: string,
+  { approvedOnly }: { approvedOnly: boolean }
+): Promise<{ site: CoachSite; row: PracticeKnowledgeRow | null } | null> {
   const slug = rawSlug.trim().toLowerCase();
   if (!isCoachSlug(slug)) return null;
 
@@ -62,7 +71,7 @@ export async function loadCoachSite(
   const row = await findPracticeKnowledge(coach.id);
   const photos = sitePhotosFor(coach.slug, name);
 
-  return coachSiteFromBlueprint({
+  const site = coachSiteFromBlueprint({
     slug: coach.slug,
     name,
     avatarUrl: profile?.avatar_url?.trim() || null,
@@ -74,4 +83,5 @@ export async function loadCoachSite(
     stagePhoto: photos.stage,
     approvedOnly,
   });
+  return { site, row };
 }

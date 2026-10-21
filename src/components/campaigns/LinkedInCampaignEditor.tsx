@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { ChevronRight, Pencil, SlidersHorizontal } from "lucide-react";
 import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
+import type { CampaignLeadProfile } from "@/lib/unipile/campaignLeadProfile";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import {
   poolImportStatusPath,
@@ -736,6 +737,54 @@ export function LinkedInCampaignEditor() {
     }
   }
 
+  async function loadLeadProfile(
+    leadId: string
+  ): Promise<CampaignLeadProfile | null> {
+    if (!campaignId) return null;
+    const headers = await authHeaders(impersonatingCoachId);
+    if (!headers) return null;
+    const res = await fetch(
+      `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}?part=lead&lead=${encodeURIComponent(leadId)}`,
+      { headers }
+    );
+    if (!res.ok) return null;
+    const body = (await res.json().catch(() => ({}))) as {
+      profile?: CampaignLeadProfile;
+    };
+    return body.profile ?? null;
+  }
+
+  /** Leads added from the pool may have no contact yet; this creates and links one. */
+  async function openLead(leadId: string) {
+    if (!campaignId) return;
+    const headers = await authHeaders(impersonatingCoachId);
+    if (!headers) return;
+    const res = await fetch(
+      `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ action: "open_lead", lead_id: leadId }),
+      }
+    );
+    const body = (await res.json().catch(() => ({}))) as {
+      contactId?: string;
+      error?: string;
+    };
+    const href = prospectDetailHref(body.contactId, prefix === "/admin");
+    if (!res.ok || !body.contactId || !href) {
+      window.alert(body.error || "Could not open this prospect.");
+      return;
+    }
+    const contactId = body.contactId;
+    setLeads((current) =>
+      current.map((lead) =>
+        lead.id === leadId ? { ...lead, contact_id: contactId } : lead
+      )
+    );
+    router.push(href);
+  }
+
   async function deleteLeads(leadIds: string[]) {
     if (!campaignId || leadIds.length === 0) return;
     setBusy(true);
@@ -1252,6 +1301,8 @@ export function LinkedInCampaignEditor() {
             prospectHref={(lead) =>
               prospectDetailHref(lead.contact_id, prefix === "/admin")
             }
+            loadLeadProfile={loadLeadProfile}
+            onOpenLead={openLead}
             busy={busy}
             campaigns={otherCampaigns}
             onAdd={openAddLeads}

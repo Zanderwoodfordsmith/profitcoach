@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   ROADMAP_STATUSES,
   ROADMAP_VISIBILITIES,
+  parseRoadmapJobNumber,
   type RoadmapChecklistItem,
   type RoadmapComment,
   type RoadmapJob,
@@ -11,8 +12,11 @@ import {
 } from "@/lib/roadmap/types";
 export {
   ROADMAP_AREAS,
+  ROADMAP_AREA_META,
   ROADMAP_STATUSES,
   ROADMAP_VISIBILITIES,
+  formatRoadmapJobNumber,
+  parseRoadmapJobNumber,
   type RoadmapChecklistItem,
   type RoadmapComment,
   type RoadmapJob,
@@ -32,7 +36,7 @@ export {
 export const ROADMAP_IMAGES_BUCKET = "roadmap-images";
 
 const JOB_COLUMNS =
-  "id, title, notes, area, status, blocked_by, app_path, visibility, checklist, comments, images, sort_order, created_at, updated_at";
+  "id, job_number, title, notes, area, project, status, blocked_by, app_path, visibility, impact, ease, checklist, comments, images, sort_order, created_at, updated_at";
 
 function sanitizeChecklist(value: unknown): RoadmapChecklistItem[] {
   if (!Array.isArray(value)) return [];
@@ -82,6 +86,14 @@ function sanitizeImages(value: unknown): RoadmapJobImage[] {
     .filter((v) => v.path.length > 0 && v.url.length > 0);
 }
 
+/** A 1-5 score, or null to clear it. Anything else is undefined (ignored). */
+function sanitizeScore(value: unknown): number | null | undefined {
+  if (value === null) return null;
+  const n = typeof value === "string" ? Number(value) : value;
+  if (typeof n !== "number" || !Number.isFinite(n)) return undefined;
+  return Math.min(5, Math.max(1, Math.round(n)));
+}
+
 export function isRoadmapStatus(v: unknown): v is RoadmapStatus {
   return (
     typeof v === "string" && (ROADMAP_STATUSES as readonly string[]).includes(v)
@@ -121,14 +133,30 @@ export async function getRoadmapJob(id: string): Promise<RoadmapJob | null> {
   return (data as RoadmapJob | null) ?? null;
 }
 
+/** Resolves a job reference: its uuid, or its number ("BLD-0012", "12"). */
+export async function resolveRoadmapJobId(ref: string): Promise<string | null> {
+  const n = parseRoadmapJobNumber(ref);
+  if (n === null) return ref.trim() || null;
+  const { data, error } = await supabaseAdmin
+    .from("roadmap_jobs")
+    .select("id")
+    .eq("job_number", n)
+    .maybeSingle();
+  if (error) throw new Error(`resolveRoadmapJobId: ${error.message}`);
+  return (data?.id as string | undefined) ?? null;
+}
+
 export type CreateRoadmapJobInput = {
   title: string;
   notes?: string | null;
   area?: string | null;
+  project?: string | null;
   status?: RoadmapStatus | null;
   blockedBy?: string | null;
   appPath?: string | null;
   visibility?: RoadmapVisibility | null;
+  impact?: number | null;
+  ease?: number | null;
   sortOrder?: number | null;
 };
 
@@ -142,7 +170,8 @@ export async function createRoadmapJob(
     .insert({
       title: title.slice(0, 300),
       notes: input.notes?.trim() || null,
-      area: input.area?.trim() || "general",
+      area: input.area?.trim() || "platform",
+      project: input.project?.trim().slice(0, 80) || null,
       status: input.status && isRoadmapStatus(input.status) ? input.status : "todo",
       blocked_by: input.blockedBy?.trim() || null,
       app_path: input.appPath?.trim() || null,
@@ -150,6 +179,8 @@ export async function createRoadmapJob(
         input.visibility && isRoadmapVisibility(input.visibility)
           ? input.visibility
           : "internal",
+      impact: sanitizeScore(input.impact) ?? null,
+      ease: sanitizeScore(input.ease) ?? null,
       ...(typeof input.sortOrder === "number" ? { sort_order: input.sortOrder } : {}),
     })
     .select(JOB_COLUMNS)
@@ -164,10 +195,13 @@ export type UpdateRoadmapJobInput = {
   title?: string;
   notes?: string | null;
   area?: string;
+  project?: string | null;
   status?: RoadmapStatus;
   blockedBy?: string | null;
   appPath?: string | null;
   visibility?: RoadmapVisibility;
+  impact?: number | null;
+  ease?: number | null;
   sortOrder?: number;
   checklist?: RoadmapChecklistItem[];
   comments?: RoadmapComment[];
@@ -188,6 +222,9 @@ export async function updateRoadmapJob(
   if (typeof patch.area === "string" && patch.area.trim()) {
     update.area = patch.area.trim();
   }
+  if (patch.project !== undefined) {
+    update.project = patch.project?.trim().slice(0, 80) || null;
+  }
   if (patch.status !== undefined) {
     if (!isRoadmapStatus(patch.status)) {
       throw new Error(`updateRoadmapJob: invalid status "${patch.status}".`);
@@ -207,6 +244,14 @@ export async function updateRoadmapJob(
       );
     }
     update.visibility = patch.visibility;
+  }
+  if (patch.impact !== undefined) {
+    const impact = sanitizeScore(patch.impact);
+    if (impact !== undefined) update.impact = impact;
+  }
+  if (patch.ease !== undefined) {
+    const ease = sanitizeScore(patch.ease);
+    if (ease !== undefined) update.ease = ease;
   }
   if (typeof patch.sortOrder === "number") update.sort_order = patch.sortOrder;
   if (patch.checklist !== undefined) {

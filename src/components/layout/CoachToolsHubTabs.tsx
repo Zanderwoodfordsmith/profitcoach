@@ -98,6 +98,7 @@ function CoachClientsTabsNav({
           Boolean(item.adminPreview && showAdminPreview)
         ),
         active: coachClientsTabActive(pathname, search, item.key),
+        description: item.description,
         scroll: false,
         variant:
           item.adminPreview && showAdminPreview
@@ -159,6 +160,7 @@ function GetClientsTabsNav({
           href: item.href,
           label,
           active,
+          description: item.description,
           scroll: false,
           variant: preview ? ("subtle" as const) : ("default" as const),
           onNavigate: () => {

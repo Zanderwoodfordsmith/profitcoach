@@ -1,4 +1,5 @@
 import { ClassroomCourseOverviewCard } from "@/components/academy/ClassroomCourseOverviewCard";
+import { VaultCoachTalks } from "@/components/academy/VaultCoachTalks";
 import { firstLessonInCourse, flattenSections } from "@/lib/academy/hubCatalog";
 import { loadVaultHub } from "@/lib/academy/vaultHubLoad";
 
@@ -33,13 +34,17 @@ const VAULT_COVERS: Record<
   },
 };
 
+/** Shown as a row of single talks under the course cards, not as a card. */
+const COACH_TALKS_ID = "coach-talks";
+
 export function VaultCatalogGrid({ basePath }: Props) {
   const catalog = loadVaultHub();
+  const talks = catalog.courses.find((course) => course.id === COACH_TALKS_ID);
 
   return (
     <div className="mx-auto w-[80%] max-w-6xl pt-5">
       <div className="grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-y-8">
-        {catalog.courses.map((course) => {
+        {catalog.courses.filter((course) => course.id !== COACH_TALKS_ID).map((course) => {
           const meta = VAULT_COVERS[course.id] ?? {
             eyebrow: "Programme",
             eyebrowClassName: "text-[#0c5290]",
@@ -68,6 +73,7 @@ export function VaultCatalogGrid({ basePath }: Props) {
           );
         })}
       </div>
+      {talks ? <VaultCoachTalks course={talks} basePath={basePath} /> : null}
     </div>
   );
 }

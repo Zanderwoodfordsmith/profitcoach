@@ -57,18 +57,21 @@ export function CommunityAreaLayout({
             kind: "link",
             href: base,
             label: "Feed",
+            description: "Posts, wins and questions from coaches",
             active: isFeed,
           },
           {
             kind: "link",
             href: `${base}/members`,
             label: "Members",
+            description: "Every coach in the community",
             active: isMembers,
           },
           {
             kind: "link",
             href: `${base}?tab=map`,
             label: "Map",
+            description: "Where coaches are around the world",
             active: isMap,
           },
         ]}

@@ -180,4 +180,45 @@ describe("outreachSendSafety", () => {
     assert.equal(result.reason, "Account rate-limited; deferred.");
     assert.equal(result.deferUntil.getTime(), until.getTime());
   });
+  it("pauses invites once pending reaches the pause line", () => {
+    const result = evaluateOutreachSendSafety(base({ pendingInvites: 750 }));
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.match(result.reason, /paused/);
+      assert.ok(result.deferUntil.getTime() > now.getTime() + 3 * 3600_000 - 1);
+    }
+  });
+
+  it("slows invites to the clean's daily rate between keep-under and pause", () => {
+    const plan = {
+      invitesAssigned: 25,
+      inviteQuota: 40,
+      messagesAssigned: 0,
+      messageQuota: 20,
+      reactsAssigned: 0,
+      reactQuota: 12,
+    };
+    const slowed = evaluateOutreachSendSafety(
+      base({ pendingInvites: 640, plan, campaignInviteLimit: 50 })
+    );
+    assert.equal(slowed.ok, false);
+    if (!slowed.ok) assert.match(slowed.reason, /slowed/);
+
+    const under = evaluateOutreachSendSafety(
+      base({ pendingInvites: 640, plan: { ...plan, invitesAssigned: 24 }, campaignInviteLimit: 50 })
+    );
+    assert.equal(under.ok, true);
+
+    const healthy = evaluateOutreachSendSafety(
+      base({ pendingInvites: 599, plan, campaignInviteLimit: 50 })
+    );
+    assert.equal(healthy.ok, true);
+  });
+
+  it("leaves messages alone when pending is high", () => {
+    const result = evaluateOutreachSendSafety(
+      base({ kind: "message", pendingInvites: 900 })
+    );
+    assert.equal(result.ok, true);
+  });
 });

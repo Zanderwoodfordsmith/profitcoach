@@ -131,40 +131,6 @@ Blocks, in this order:
 4. callout (tone "tip"): personalise the first line for every person, and start with the warmest 50.
 Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
   },
-  "campaigns:nurture": {
-    file: "nurture.md",
-    maxTokens: 6000,
-    task: `Write the ongoing nurture: for connections who are not ready yet, a message every two weeks that gives them something useful. These messages have room to sound like them. Match the kind of coach they are. Use a story, book, film or hobby they named in at least one of the four messages as the way in to the tool. Never invent one. If they named none, stay with the tool and the avatar's pain.
-Blocks, in this order:
-1. lede: what the nurture keeps doing for these owners, in one sentence, in their kind of coach.
-2. heading "Who gets it", then a callout (tone "tip") on who goes on the top 100 list and the rhythm (every two weeks).
-3. heading "The sequence", then four message blocks, two weeks apart. Each gives away one BCA tool that fits the avatar's pains (for example "Profit Maximiser", "Cashflow Forecaster", "Time Value Tracker", "Pairwise Prioritisation"), opens with a personal first line in square brackets, has three emoji-numbered benefits, and ends with [link to the tool]. Put the timing in each note. One of the four should open from a story, book, film or hobby they named, if they named one.
-4. heading "Nurture rhythm", then a timeline for people who said not now (for example Week 2, Week 5, Week 8, Day 90).
-Every story, anecdote, number and result about the coach must come from their record. If a message needs one the record does not have, write a [square-bracket prompt] for the coach to fill instead. Never make one up.
-Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
-  },
-  "conversations:followup": {
-    file: "replies.md",
-    maxTokens: 5000,
-    task: `Write the replies for this coach's campaigns: what to send back to the common replies, other than a clear yes (that is Reply interested).
-Blocks, in this order:
-1. lede: how to handle replies in one sentence.
-2. heading "When they reply", then for each common reply a message block whose label is the prospect's reply (for example "They say: How much is it?") and whose body is what to send back. Cover: what is it exactly, how much is it, not right now, we are doing fine, who are you, a neutral one-liner, send me some info. Each moves to one next step. Never quote below their minimum fee.
-3. heading "Avoid", then bullets (the reply mistakes, short).
-Every story, anecdote, number and result about the coach must come from their record. If a message needs one the record does not have, write a [square-bracket prompt] for the coach to fill instead. Never make one up.
-Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
-  },
-  "campaigns:interested": {
-    file: "replies.md",
-    maxTokens: 5000,
-    task: `Write the reply interested messages: for when someone says yes or shows interest. They move the owner to the value session or the BOSS Scorecard, then confirm the call and remind them.
-Blocks, in this order:
-1. lede: the goal in one sentence (book the value session within a day of the yes).
-2. heading "The sequence", then three message blocks: "First reply" (straight after they say yes: thank them, name the value session and what they get from it, offer two named days inside their prospect call times, and the BOSS Scorecard if they would rather start there), "Nudge" (2 days), "Last offer" (3 days). Put the timing in each note.
-3. heading "Once it is booked", then three message blocks: "Confirmation", "The day before", "If they do not show".
-4. callout (tone "tip"): reply within the hour while they are warm.
-Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
-  },
   "offer:direction": {
     file: "offer.md",
     maxTokens: 5000,
@@ -188,30 +154,6 @@ Blocks, in this order:
 3. heading "Long", then a message block (label "Paragraph") of 60 to 100 words: who it is for, the gap you close, how, and the best proof, with a note "Use in: LinkedIn About, the 90-day brochure, the opening of a proposal".
 4. If the coach has a guarantee (not "none"), heading "Your guarantee", then two message blocks (labels "Guarantee, short" and "Guarantee, medium") written from their terms. If they have none, skip this.`,
   },
-  "offer:payment": {
-    file: "offer.md",
-    task: `Write the proposal and payment options for this coach.
-Blocks, in this order:
-1. lede: how the price is framed in one sentence.
-2. table with columns Option, Investment, Best for. Include monthly and six months upfront (with a split payment). Respect their minimum fee: never price below it.
-3. heading "If they ask the price early", then a message block with the anchor script, in their voice.
-4. heading "At the end of the call", then a message block with the either-or close.
-5. heading "Proposal outline", then steps (the sections of a one-page proposal).
-6. heading "Raising your price", then a paragraph on when and by how much.`,
-  },
-  "sales:value": {
-    file: "sales.md",
-    maxTokens: 8000,
-    task: `Design this coach's value session and its launch kit: the free, pitch-free session built around their superpower and the avatar's main pain.
-Blocks, in this order:
-1. lede: the name of the session and what the owner walks away with.
-2. pairs: Name, Length, Who it is for, What they get, The promise.
-3. heading "The questions", then a table with columns Area, Question, Red looks like, Green looks like (eight to ten rows, built on the coach's superpower and the avatar's pains).
-4. heading "Your opening questions", then numbered: the four questions (challenge, 12 months from now, why it matters personally, what they have tried) reworded for this avatar.
-5. heading "The magic question", then a message block with the magic question and the bridge into the offer (three things tied to pain, goal and personal driver).
-6. heading "The launch kit", then message blocks: "Launch email" (subject line on the first line), "Nudge email", "LinkedIn DM invite", "LinkedIn DM nudge", "LinkedIn Featured description", "Calendar page description".
-7. heading "If they say not now", then a paragraph.`,
-  },
   "sales:script": {
     file: "sales.md",
     maxTokens: 7000,
@@ -220,7 +162,7 @@ Blocks, in this order:
 1. lede: what this call does, one sentence.
 2. heading "Opening", then a message block: reflect outcome, problem, impact, desired future and personal why, then "Have I understood that correctly?"
 3. heading "The system you walk them through", then a paragraph naming Vision, Velocity, Value and the nine steps in order. This never changes.
-4. heading "The game plan", then steps: the nine Profit System steps (Alignment Accelerator, Detailed Strategy, Dynamic Planning, Profit and Cash, Revenue and Marketing, Operations and Product, Financials and KPIs, Innovation and Management, Team and Leadership). Each step is three short spoken lines (because you told me / what we will do / which means), written for this avatar's main pain, with a [bracket] for the line they swap for this owner. A check-in they can skip after each.
+4. heading "The game plan", then steps: the nine Profit System steps (Aligned Vision, Defined Strategy, Disciplined Planning, Profit & Cash Flow, Revenue & Marketing, Operations & Delivery, Financials & Metrics, Infrastructure & Systems, Team & Leadership). Each step is three short spoken lines following the logic because you told me / what we will do / which means, worded differently on each step (never open every step with "because you told me"), written for this avatar's main pain, with a [bracket] for the line they swap for this owner. A check-in they can skip after each.
 5. heading "Bringing it together", then a message block ending with "How do you feel about the structure and approach specifically?"
 6. heading "What you adapt on the call", then bullets: the five facts (priority, pain, result, number, personal why), and that every "for you" line must use this owner's words.
 7. heading "Results and proof", then a paragraph with the coach's real proof only.

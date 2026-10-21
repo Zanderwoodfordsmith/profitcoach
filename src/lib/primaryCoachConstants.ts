@@ -31,7 +31,7 @@ export const DEMO_COACH_SLUG = "zander-demo";
 export const DEMO_COACH_LABEL = "Zander Demo";
 /** Pam's staff coach identity (same auth user as her admin login). */
 export const PAM_DEMO_COACH_SLUG = "pam";
-export const PAM_DEMO_COACH_LABEL = "Pam Demo";
+export const PAM_DEMO_COACH_LABEL = "Pam Woodford";
 
 const SYSTEM_COACH_SLUGS = new Set([
   PRIMARY_COACH_SLUG_FALLBACK,

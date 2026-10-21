@@ -45,6 +45,7 @@ import type {
 import { MentionBody } from "@/components/community/MentionBody";
 import { CommunityPostMarkdownBody } from "@/components/community/CommunityPostMarkdownBody";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
+import { CommunityPostPoll } from "@/components/community/CommunityPostPoll";
 import {
   CommentFormatButtons,
   MentionTextarea,
@@ -78,6 +79,11 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { ActingAsNotice } from "@/components/community/ActingAsNotice";
+import {
+  clearCommunityDraftHandoff,
+  peekCommunityDraftHandoff,
+} from "@/lib/communityDraftHandoff";
 import {
   coachPersonaForCommunity,
   getCommunityAuthorId,
@@ -707,7 +713,16 @@ export function PostDetailModal({
   const [nameById, setNameById] = useState<Record<string, string>>({});
   const [mentionProfileHrefByUserId, setMentionProfileHrefByUserId] =
     useState<Record<string, string>>({});
-  const [newComment, setNewComment] = useState("");
+  const [handoff] = useState(() => {
+    const h = peekCommunityDraftHandoff(pathname);
+    return h && h.kind !== "post" && h.postId === post.id ? h : null;
+  });
+  useEffect(() => {
+    if (handoff) clearCommunityDraftHandoff();
+  }, [handoff]);
+  const [newComment, setNewComment] = useState(
+    handoff?.kind === "comment" ? handoff.body : ""
+  );
   const [commentComposerFocused, setCommentComposerFocused] = useState(false);
   // Bold/link buttons sit in each composer's own button row.
   const topCommentEditorRef = useRef<MentionTextareaHandle>(null);
@@ -720,8 +735,12 @@ export function PostDetailModal({
   const [replyPendingImages, setReplyPendingImages] = useState<
     Record<string, PendingCommentImage[]>
   >({});
-  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
-  const [replyOpenFor, setReplyOpenFor] = useState<string | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>(() =>
+    handoff?.kind === "reply" ? { [handoff.replyTo]: handoff.body } : {}
+  );
+  const [replyOpenFor, setReplyOpenFor] = useState<string | null>(
+    handoff?.kind === "reply" ? handoff.replyTo : null
+  );
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [commentEditDrafts, setCommentEditDrafts] = useState<
     Record<string, string>
@@ -1539,6 +1558,21 @@ export function PostDetailModal({
     post.liked_by_me,
   ]);
 
+  const handlePollVoteChange = useCallback(
+    (next: { total: number; myOptionId: string | null }) => {
+      if (next.myOptionId) onMarkPostRead(post.id);
+      if (onPostLocalUpdate) {
+        onPostLocalUpdate(post.id, () => ({
+          poll_vote_count: next.total,
+          poll_voted_option_id: next.myOptionId,
+        }));
+      } else {
+        void onPostsChanged();
+      }
+    },
+    [onMarkPostRead, onPostLocalUpdate, onPostsChanged, post.id]
+  );
+
   const handleToggleCommentLike = useCallback(
     async (commentId: string, currentlyLiked: boolean) => {
       if (commentLikeBusyId !== null) return;
@@ -2160,6 +2194,14 @@ export function PostDetailModal({
                       </>
                     )}
                   </div>
+                  {post.poll ? (
+                    <CommunityPostPoll
+                      postId={post.id}
+                      poll={post.poll}
+                      canSeeResultsWithoutVoting={canManagePost}
+                      onVoteChange={handlePollVoteChange}
+                    />
+                  ) : null}
                 </div>
               )}
             </div>
@@ -2386,6 +2428,16 @@ export function PostDetailModal({
                                 placeholder="Write a reply…"
                                 rows={3}
                                 className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                              />
+                              <ActingAsNotice
+                                coachPersonaId={coachPersona}
+                                active={Boolean((replyDrafts[c.id] ?? "").trim())}
+                                draft={{
+                                  kind: "reply",
+                                  postId: post.id,
+                                  replyTo: c.id,
+                                  body: replyDrafts[c.id] ?? "",
+                                }}
                               />
                               <CommentImageComposer
                                 pending={replyPendingImages[c.id] ?? []}
@@ -2650,6 +2702,16 @@ export function PostDetailModal({
                                               rows={3}
                                               className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                             />
+                                            <ActingAsNotice
+                                              coachPersonaId={coachPersona}
+                                              active={Boolean((replyDrafts[r.id] ?? "").trim())}
+                                              draft={{
+                                                kind: "reply",
+                                                postId: post.id,
+                                                replyTo: r.id,
+                                                body: replyDrafts[r.id] ?? "",
+                                              }}
+                                            />
                                             <CommentImageComposer
                                               pending={replyPendingImages[r.id] ?? []}
                                               onChange={(next) =>
@@ -2842,6 +2904,12 @@ export function PostDetailModal({
                     </div>
                   )}
                 </div>
+                <ActingAsNotice
+                  coachPersonaId={coachPersona}
+                  active={Boolean(newComment.trim())}
+                  draft={{ kind: "comment", postId: post.id, body: newComment }}
+                  className="mt-2"
+                />
                 {actionError ? (
                   <p
                     className="mt-2 whitespace-pre-wrap text-sm text-rose-700"

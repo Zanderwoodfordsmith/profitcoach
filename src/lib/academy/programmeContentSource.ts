@@ -40,6 +40,7 @@ const PROGRAMME_PREFIXES: ReadonlyArray<readonly [string, string]> = [
   ["stryvx-", "stryvx"],
   ["books-", "books"],
   ["how-to-", "how-to"],
+  ["coach-talks-", "coach-talks"],
 ];
 
 /** Programme that owns this lesson, or null when the prefix is unknown. */

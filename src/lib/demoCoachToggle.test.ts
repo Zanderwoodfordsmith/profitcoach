@@ -15,7 +15,7 @@ describe("staff demo access", () => {
     );
     assert.equal(
       demoCoachToggleUserForEmail("pam@businesscoachacademy.com")?.label,
-      "Pam Demo"
+      "Pam Woodford"
     );
   });
 

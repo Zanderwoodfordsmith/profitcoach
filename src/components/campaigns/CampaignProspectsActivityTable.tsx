@@ -13,14 +13,21 @@ import {
   CircleDashed,
   Clock,
   Layers,
+  Mail,
+  MapPin,
   MessageCircle,
   Minus,
   Pause,
   Play,
   Search,
   Trash2,
+  Users,
 } from "lucide-react";
-import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
+import {
+  ProspectTableAvatar,
+  prospectInitials,
+} from "@/components/prospects/ProspectTableAvatar";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
@@ -55,6 +62,7 @@ import {
   type LeadStatusIcon,
   type LeadStatusTone,
 } from "@/lib/unipile/campaignLeadActivity";
+import type { CampaignLeadProfile } from "@/lib/unipile/campaignLeadProfile";
 
 type SortField = "name" | "progress" | "status" | "nextStep" | "when" | "started";
 type GroupField = "status" | "nextStep" | "when" | null;
@@ -69,6 +77,8 @@ type Props = {
   campaignStatus: string;
   campaigns?: CampaignOption[];
   prospectHref?: (lead: CampaignActivityLead) => string | null;
+  loadLeadProfile?: (leadId: string) => Promise<CampaignLeadProfile | null>;
+  onOpenLead?: (leadId: string) => Promise<void>;
   busy?: boolean;
   onAdd: (choice?: CampaignAddChoice) => void;
   onDelete: (leadIds: string[]) => void;
@@ -114,6 +124,12 @@ const ROW = "flex items-center gap-x-3 px-3";
 const PROGRESS_POPOVER_WIDTH = 360;
 const PROGRESS_OPEN_MS = 80;
 const PROGRESS_CLOSE_MS = 160;
+const CONTACT_CARD_WIDTH = 400;
+/** Long enough that sweeping down the list does not flash cards. */
+const CONTACT_OPEN_MS = 450;
+const CONTACT_CLOSE_MS = 180;
+/** Hover card profiles by lead id, shared across rows and re-renders. */
+const profileCache = new Map<string, CampaignLeadProfile | null>();
 
 function StatusIcon({ kind }: { kind: LeadStatusIcon }) {
   const cls = "h-3 w-3 shrink-0";
@@ -218,6 +234,8 @@ export function CampaignProspectsActivityTable({
   campaignStatus,
   campaigns = [],
   prospectHref,
+  loadLeadProfile,
+  onOpenLead,
   busy = false,
   onAdd,
   onDelete,
@@ -751,39 +769,16 @@ export function CampaignProspectsActivityTable({
                               className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                             />
                           </div>
-                          <div className={`flex ${contactCol} shrink-0 items-center gap-3`}>
-                            <ProspectTableAvatar name={row.name} />
-                            <span className="min-w-0 flex-1">
-                              {href ? (
-                                <Link
-                                  href={href}
-                                  title={row.name}
-                                  className="block truncate font-medium text-[#0c5290] hover:underline"
-                                >
-                                  {row.name}
-                                </Link>
-                              ) : (
-                                <span
-                                  title={row.name}
-                                  className="block truncate font-medium text-slate-900"
-                                >
-                                  {row.name}
-                                </span>
-                              )}
-                              {row.subtitle ? (
-                                <span
-                                  title={row.subtitle}
-                                  className="mt-0.5 block truncate text-xs text-slate-500"
-                                >
-                                  {row.subtitle}
-                                </span>
-                              ) : null}
-                              <span className="mt-0.5 block truncate text-xs text-slate-500 lg:hidden">
-                                {row.nextStep}
-                                {row.when !== "—" ? ` · ${row.when}` : ""}
-                              </span>
-                            </span>
-                          </div>
+                          <ContactCell
+                            className={contactCol}
+                            lead={row.lead}
+                            name={row.name}
+                            subtitle={row.subtitle}
+                            href={href}
+                            mobileNext={`${row.nextStep}${row.when !== "—" ? ` · ${row.when}` : ""}`}
+                            loadProfile={loadLeadProfile}
+                            onOpenLead={onOpenLead}
+                          />
                           <div className={`${COL_PROGRESS} shrink-0`}>
                             <ProgressHoverCard
                               name={row.name}
@@ -833,6 +828,316 @@ export function CampaignProspectsActivityTable({
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+function ContactCell({
+  className,
+  lead,
+  name,
+  subtitle,
+  href,
+  mobileNext,
+  loadProfile,
+  onOpenLead,
+}: {
+  className: string;
+  lead: CampaignActivityLead;
+  name: string;
+  subtitle: string;
+  href: string | null;
+  mobileNext: string;
+  loadProfile?: (leadId: string) => Promise<CampaignLeadProfile | null>;
+  onOpenLead?: (leadId: string) => Promise<void>;
+}) {
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const panelId = useId();
+  const [open, setOpen] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [profile, setProfile] = useState<CampaignLeadProfile | null | undefined>(
+    () => profileCache.get(lead.id)
+  );
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(
+    null
+  );
+  const openTimerRef = useRef<number | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
+  const canOpen = Boolean(href || onOpenLead);
+
+  const clearTimers = useCallback(() => {
+    if (openTimerRef.current !== null) {
+      window.clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const show = useCallback(() => {
+    clearTimers();
+    openTimerRef.current = window.setTimeout(() => setOpen(true), CONTACT_OPEN_MS);
+  }, [clearTimers]);
+
+  const scheduleHide = useCallback(() => {
+    clearTimers();
+    closeTimerRef.current = window.setTimeout(() => setOpen(false), CONTACT_CLOSE_MS);
+  }, [clearTimers]);
+
+  useEffect(() => () => clearTimers(), [clearTimers]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Fetched once per lead on first open, then kept for the session.
+  useEffect(() => {
+    if (!open || profile !== undefined || !loadProfile) return;
+    let cancelled = false;
+    void loadProfile(lead.id)
+      .catch(() => null)
+      .then((next) => {
+        profileCache.set(lead.id, next);
+        if (!cancelled) setProfile(next);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, profile, loadProfile, lead.id]);
+
+  // Beside the contact column, so moving down the list never runs into the card.
+  // Positioned before paint, so a stale position from the last open never shows.
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+
+    function updatePosition() {
+      const el = triggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const panelWidth = Math.min(CONTACT_CARD_WIDTH, window.innerWidth - 24);
+      let left = rect.right + 8;
+      if (left + panelWidth > window.innerWidth - 12) {
+        left = Math.max(12, window.innerWidth - panelWidth - 12);
+      }
+      const estimatedHeight = 280;
+      const top = Math.max(
+        12,
+        Math.min(rect.top - 8, window.innerHeight - estimatedHeight - 12)
+      );
+      setPosition({ left, top });
+    }
+
+    updatePosition();
+    const scrollOpts = { capture: true } as const;
+    window.addEventListener("scroll", updatePosition, scrollOpts);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, scrollOpts);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open]);
+
+  async function openLead() {
+    if (!onOpenLead || opening) return;
+    clearTimers();
+    setOpen(false);
+    setOpening(true);
+    try {
+      await onOpenLead(lead.id);
+    } finally {
+      setOpening(false);
+    }
+  }
+
+  const headline =
+    profile?.headline ||
+    [formatProspectJobTitle(lead.title), formatBusinessLabel(lead.company)]
+      .filter(Boolean)
+      .join(" at ");
+  const photoUrl = photoFailed ? null : profile?.photoUrl ?? null;
+  const facts = [
+    profile?.location ? { icon: MapPin, text: profile.location } : null,
+    profile?.teamSize ? { icon: Users, text: `${profile.teamSize} staff` } : null,
+    profile?.tenure ? { icon: Clock, text: profile.tenure } : null,
+    profile?.email ? { icon: Mail, text: profile.email } : null,
+  ].filter((fact): fact is { icon: typeof MapPin; text: string } => Boolean(fact));
+
+  const identity = (
+    <>
+      <ProspectTableAvatar name={name} />
+      <span className="min-w-0 flex-1">
+        <span
+          className={`block truncate font-medium ${
+            canOpen ? "text-[#0c5290] group-hover:underline" : "text-slate-900"
+          }`}
+        >
+          {opening ? "Opening…" : name}
+        </span>
+        {subtitle ? (
+          <span className="mt-0.5 block truncate text-xs text-slate-500">
+            {subtitle}
+          </span>
+        ) : null}
+        <span className="mt-0.5 block truncate text-xs text-slate-500 lg:hidden">
+          {mobileNext}
+        </span>
+      </span>
+    </>
+  );
+  const identityClass =
+    "group -mx-1.5 -my-1 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1.5 py-1 text-left hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30";
+  const focusProps = {
+    "aria-describedby": open ? panelId : undefined,
+    onFocus: show,
+    onBlur: scheduleHide,
+  };
+
+  const panel =
+    open && position ? (
+      <div
+        id={panelId}
+        role="tooltip"
+        className="fixed z-[220] rounded-xl border border-slate-200 bg-white p-4 shadow-xl ring-1 ring-slate-900/5"
+        style={{
+          left: position.left,
+          top: position.top,
+          width: Math.min(CONTACT_CARD_WIDTH, window.innerWidth - 24),
+        }}
+        onMouseEnter={show}
+        onMouseLeave={scheduleHide}
+      >
+        <div className="flex items-start gap-3">
+          {photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- LinkedIn CDN photo, sized here
+            <img
+              src={photoUrl}
+              alt=""
+              onError={() => setPhotoFailed(true)}
+              className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+            />
+          ) : (
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#d8eee4] text-sm font-semibold text-[#1f5c43] ring-1 ring-inset ring-[#b7dcc8]/90">
+              {prospectInitials(name)}
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-slate-900">{name}</p>
+            {headline ? (
+              <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{headline}</p>
+            ) : null}
+          </div>
+          <span
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${TONE_CLASS[leadStatusTone(lead.status)]}`}
+          >
+            <StatusIcon kind={leadStatusIcon(lead.status)} />
+            {leadStatusLabel(lead.status)}
+          </span>
+        </div>
+        {profile === undefined && loadProfile ? (
+          <div className="mt-3 space-y-1.5" aria-hidden>
+            <div className="h-3 w-11/12 animate-pulse rounded bg-slate-100" />
+            <div className="h-3 w-3/4 animate-pulse rounded bg-slate-100" />
+          </div>
+        ) : null}
+        {facts.length ? (
+          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+            {facts.map((fact) => (
+              <span
+                key={fact.text}
+                className="flex min-w-0 max-w-full items-center gap-1 text-xs text-slate-500"
+              >
+                <fact.icon className="h-3 w-3 shrink-0" aria-hidden />
+                <span className="truncate">{fact.text}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {profile?.about ? (
+          <p className="mt-3 line-clamp-5 whitespace-pre-line text-[13px] leading-relaxed text-slate-700">
+            {profile.about}
+          </p>
+        ) : null}
+        {canOpen || lead.linkedin_url ? (
+          <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
+            {href ? (
+              <Link
+                href={href}
+                className="inline-flex h-8 items-center rounded-lg bg-[#0c5290] px-3 text-xs font-semibold text-white hover:bg-[#0a457a]"
+              >
+                Open prospect
+              </Link>
+            ) : onOpenLead ? (
+              <button
+                type="button"
+                onClick={() => void openLead()}
+                className="inline-flex h-8 items-center rounded-lg bg-[#0c5290] px-3 text-xs font-semibold text-white hover:bg-[#0a457a]"
+              >
+                Open prospect
+              </button>
+            ) : null}
+            {lead.linkedin_url ? (
+              <a
+                href={lead.linkedin_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:border-slate-400 hover:bg-slate-50"
+              >
+                <LinkedInSolidIcon className="h-3.5 w-3.5" />
+                LinkedIn
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    ) : null;
+
+  return (
+    <div
+      ref={triggerRef}
+      className={`flex ${className} shrink-0`}
+      onMouseEnter={show}
+      onMouseLeave={scheduleHide}
+    >
+      {href ? (
+        <Link
+          href={href}
+          title={name}
+          {...focusProps}
+          onClick={() => {
+            clearTimers();
+            setOpen(false);
+          }}
+          className={identityClass}
+        >
+          {identity}
+        </Link>
+      ) : onOpenLead ? (
+        <button
+          type="button"
+          title={name}
+          {...focusProps}
+          disabled={opening}
+          onClick={() => void openLead()}
+          className={identityClass}
+        >
+          {identity}
+        </button>
+      ) : (
+        <div title={name} className="flex min-w-0 flex-1 items-center gap-3">
+          {identity}
+        </div>
+      )}
+      {typeof document !== "undefined" && panel
+        ? createPortal(panel, document.body)
+        : null}
     </div>
   );
 }

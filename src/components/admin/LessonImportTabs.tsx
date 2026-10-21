@@ -12,9 +12,6 @@ export function LessonImportTabs() {
   const onImport =
     pathname === "/admin/lesson-import" ||
     pathname === "/admin/lesson-import/";
-  const onOldLinks =
-    pathname === "/admin/lesson-import/old-academy-links" ||
-    Boolean(pathname?.startsWith("/admin/lesson-import/old-academy-links/"));
   const onCurriculum = Boolean(pathname?.startsWith("/admin/lesson-import/curriculum"));
   const onArchivedLessons =
     pathname === "/admin/academy/archive" ||
@@ -47,12 +44,6 @@ export function LessonImportTabs() {
           href: "/admin/academy/archive",
           label: "Archived lessons",
           active: onArchivedLessons,
-        },
-        {
-          kind: "link" as const,
-          href: "/admin/lesson-import/old-academy-links",
-          label: "Archive links",
-          active: onOldLinks,
         },
       ]}
     />

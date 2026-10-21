@@ -26,6 +26,7 @@ export function PracticeSteps() {
   const states = practiceStepStates({
     interviewCompletedAt: knowledge.interview_completed_at,
     decisionLockedAt: decision?.locked_at,
+    callAt: payload?.review.decision_call_booked_at?.value,
     builtSections: knowledge.built_sections,
   });
   const pamBooked = Boolean(payload?.review.decision_call_booked_at?.value);
@@ -124,7 +125,7 @@ function StepControl({
   const to =
     id === "pam"
       ? state === "done"
-        ? href("/coach/blueprint/decisions")
+        ? href("/coach/blueprint/market#s-market-options")
         : PAM_DECISION_CALL_PATH
       : href("/coach/blueprint/campaigns");
 

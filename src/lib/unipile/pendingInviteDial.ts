@@ -5,6 +5,20 @@
 
 export const PENDING_DIAL_MAX = 1000;
 export const PENDING_KEEP_UNDER = 600;
+/** At or over this, new connection requests pause until the pile drops. */
+export const PENDING_PAUSE_AT = 750;
+/** Between keep-under and pause: no more invites a day than auto-clean can withdraw. */
+export const PENDING_SLOW_DAILY_INVITES = 25;
+
+export type PendingInviteBrake = "none" | "slow" | "pause";
+
+/** Send brake for an (estimated) pending count. */
+export function pendingInviteBrake(count: number | null | undefined): PendingInviteBrake {
+  if (count == null || !Number.isFinite(count)) return "none";
+  if (count >= PENDING_PAUSE_AT) return "pause";
+  if (count >= PENDING_KEEP_UNDER) return "slow";
+  return "none";
+}
 
 export type PendingInviteZone = "green" | "yellow" | "orange" | "red";
 

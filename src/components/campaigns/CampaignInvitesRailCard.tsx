@@ -7,9 +7,14 @@ import { PendingInvitesSpeedDial } from "@/components/campaigns/PendingInvitesSp
 import { DEMO_PREVIEW_INVITE_TOTAL } from "@/lib/campaigns/demoPreview";
 import {
   AUTO_DAILY_MAX,
+  AUTO_DAILY_MAX_HIGH,
   DEFAULT_KEEP_UNDER,
   type InviteWithdrawPolicy,
 } from "@/lib/unipile/inviteWithdraw";
+import {
+  PENDING_PAUSE_AT,
+  PENDING_SLOW_DAILY_INVITES,
+} from "@/lib/unipile/pendingInviteDial";
 
 const LINKEDIN_SENT_INVITES =
   "https://www.linkedin.com/mynetwork/invitation-manager/sent/";
@@ -70,11 +75,31 @@ function AutoCleanInfo() {
         <span
           id={panelId}
           role="tooltip"
-          className="absolute left-0 bottom-full z-40 mb-1.5 w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-slate-600 shadow-lg"
+          className="absolute left-0 bottom-full z-40 mb-1.5 w-72 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-slate-600 shadow-lg"
         >
-          Withdraws the oldest unanswered invites until you’re under{" "}
-          {DEFAULT_KEEP_UNDER} — up to {AUTO_DAILY_MAX}/day on weekdays. Under
-          that, we leave them alone.
+          <span className="block">
+            Withdraws your oldest unanswered invites until you’re under{" "}
+            {DEFAULT_KEEP_UNDER}. Up to {AUTO_DAILY_MAX} a day on weekdays, or{" "}
+            {AUTO_DAILY_MAX_HIGH} a day at {PENDING_PAUSE_AT} or more.
+          </span>
+          <span className="mt-2 block font-medium text-slate-800">
+            New invites slow down too
+          </span>
+          <span className="mt-0.5 block">
+            So sending can’t outrun the clean-up and hit LinkedIn’s limit
+            (about 800):
+          </span>
+          <span className="mt-1 block">
+            Under {DEFAULT_KEEP_UNDER}: invites go out as normal.
+          </span>
+          <span className="block">
+            {DEFAULT_KEEP_UNDER} to {PENDING_PAUSE_AT - 1}: no more than{" "}
+            {PENDING_SLOW_DAILY_INVITES} a day.
+          </span>
+          <span className="block">
+            {PENDING_PAUSE_AT} or more: new invites pause until it drops.
+            Messages keep going.
+          </span>
           <a
             href={LINKEDIN_SENT_INVITES}
             target="_blank"
