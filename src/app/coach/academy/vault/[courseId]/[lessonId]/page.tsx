@@ -3,9 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { ClassroomLessonPlayer } from "@/components/academy/ClassroomLessonPlayer";
 import { LessonProgressProvider } from "@/components/academy/LessonProgressControls";
 import { classroomLessonQueryString } from "@/lib/academy/classroomIdAliases";
-import { loadClassroomLessonPayload } from "@/lib/academy/classroomLessonPayload";
 import { findHubCourse, findLessonInCourse } from "@/lib/academy/hubCatalog";
-import { stripInactiveLessonBodies } from "@/lib/academy/lessonContent";
+import { slimLessonShell, stripInactiveLessonBodies } from "@/lib/academy/lessonContent";
 import { legacyConsolidatedChapterRedirect } from "@/lib/academy/lessonVideoChapters";
 import { applyLegacyCourseVisibility } from "@/lib/academy/lessonVisibility";
 import { loadVaultHub } from "@/lib/academy/vaultHubLoad";
@@ -36,21 +35,25 @@ export default async function CoachAcademyVaultLessonPage({ params, searchParams
   const baseLesson = findLessonInCourse(baseCourse, lessonId);
   if (!baseLesson) notFound();
 
+  // Titles only: video, text and transcript load through the lesson API,
+  // which needs a member login (the server can't see the login here).
   const shellCourse = stripInactiveLessonBodies(
     applyLegacyCourseVisibility(baseCourse),
-    lessonId,
+    null,
   );
-
-  // Do not await — the rail and title paint from hub JSON while this loads.
-  const contentPromise = loadClassroomLessonPayload(baseCourse, lessonId);
+  const contentUrl = `/api/academy/lesson?${new URLSearchParams({
+    hub: "vault",
+    courseId,
+    lessonId,
+  })}`;
 
   return (
     <div>
       <LessonProgressProvider courseId={courseId} activeLessonId={lessonId}>
         <ClassroomLessonPlayer
           course={shellCourse}
-          lesson={baseLesson}
-          contentPromise={contentPromise}
+          lesson={slimLessonShell(baseLesson)}
+          contentUrl={contentUrl}
           basePath={BASE}
           classroomHref={BASE}
           initialChapterId={initialChapterId ?? null}

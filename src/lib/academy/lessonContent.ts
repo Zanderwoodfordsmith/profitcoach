@@ -210,12 +210,15 @@ function slimInactiveLesson(
   return slim;
 }
 
-/** Drop markdown / transcripts from lessons the player is not showing. */
+/**
+ * Drop markdown / transcripts from lessons the player is not showing.
+ * Pass null to strip every lesson (coach pages send content via the lesson API).
+ */
 export function stripInactiveLessonBodies(
   course: HubCourse,
-  activeLessonId: string
+  activeLessonId: string | null
 ): HubCourse {
-  const keepIds = new Set<string>([activeLessonId]);
+  const keepIds = new Set<string>(activeLessonId ? [activeLessonId] : []);
   return {
     ...course,
     sections: course.sections.map((section) => {
@@ -227,6 +230,11 @@ export function stripInactiveLessonBodies(
       return slimSection(section);
     }),
   };
+}
+
+/** Title, length and flags only: no video links, text or transcript. */
+export function slimLessonShell(lesson: HubLesson): HubLesson {
+  return slimInactiveLesson(lesson, new Set());
 }
 
 async function loadLessonContentRowsForCourses(

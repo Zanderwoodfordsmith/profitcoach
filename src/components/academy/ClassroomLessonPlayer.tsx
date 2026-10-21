@@ -25,6 +25,7 @@ import { ClassroomLessonBodySkeleton } from "@/components/academy/ClassroomLesso
 import { LessonPageEyebrow } from "@/components/academy/LessonPageEyebrow";
 import { LessonPlayerTabs } from "@/components/academy/LessonPlayerTabs";
 import type { ClassroomLessonPayload } from "@/lib/academy/classroomLessonPayload";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { LessonSeekRequest } from "@/lib/academy/lessonSeekRequest";
 import {
   hasInAppLessonContent,
@@ -115,6 +116,11 @@ type Props = {
    * data; video and markdown stream in when this promise resolves.
    */
   contentPromise?: Promise<ClassroomLessonPayload>;
+  /**
+   * Coach pages: the lesson API path (`/api/academy/lesson?...`). Content is
+   * fetched in the browser with the member's login, never sent in page HTML.
+   */
+  contentUrl?: string;
   /** When true, treat the viewer as admin for Ask & Share / impersonation. */
   viewerIsAdmin?: boolean | null;
   /**
@@ -681,15 +687,37 @@ function ClassroomLessonStreamedFields({
   onPayload,
   children,
 }: {
-  contentPromise: Promise<ClassroomLessonPayload>;
+  contentPromise: Promise<ClassroomLessonPayload | null>;
   onPayload: (payload: ClassroomLessonPayload) => void;
   children: (payload: ClassroomLessonPayload) => ReactNode;
 }) {
   const payload = use(contentPromise);
   useEffect(() => {
-    onPayload(payload);
+    if (payload) onPayload(payload);
   }, [onPayload, payload]);
+  if (!payload) {
+    return (
+      <p className="mt-6 text-sm text-slate-500">
+        This lesson didn&apos;t load. Refresh the page to try again.
+      </p>
+    );
+  }
   return children(payload);
+}
+
+/** Null when the member isn't signed in, lacks the programme, or the call fails. */
+async function fetchLessonPayload(
+  contentUrl: string
+): Promise<ClassroomLessonPayload | null> {
+  try {
+    const headers = await getCoachAuthHeaders();
+    if (!headers) return null;
+    const res = await fetch(contentUrl, { headers, cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as ClassroomLessonPayload;
+  } catch {
+    return null;
+  }
 }
 
 export function ClassroomLessonPlayer({
@@ -706,6 +734,7 @@ export function ClassroomLessonPlayer({
   transcriptText = null,
   lessonResources = [],
   contentPromise,
+  contentUrl,
   viewerIsAdmin = null,
   contentSource = "course",
   canEditLessons = false,
@@ -724,6 +753,13 @@ export function ClassroomLessonPlayer({
   const handlePayload = useCallback((payload: ClassroomLessonPayload) => {
     setCourse(payload.course);
   }, []);
+  const [fetchedContent, setFetchedContent] =
+    useState<Promise<ClassroomLessonPayload | null> | null>(null);
+  useEffect(() => {
+    if (!contentUrl) return;
+    setFetchedContent(fetchLessonPayload(contentUrl));
+  }, [contentUrl]);
+  const streamedContent = contentPromise ?? fetchedContent;
   const [openSectionIds, setOpenSectionIds] = useState<Set<string>>(() =>
     initialOpenSectionIds(courseProp, lesson.id)
   );
@@ -1218,7 +1254,7 @@ export function ClassroomLessonPlayer({
                     </Link>
                   </p>
                 ) : null}
-                {!contentPromise && !inApp ? (
+                {!contentPromise && !contentUrl && !inApp ? (
                   <p className="mt-2 text-sm text-slate-500">Content coming soon</p>
                 ) : null}
               </div>
@@ -1228,10 +1264,10 @@ export function ClassroomLessonPlayer({
               </div>
             </header>
 
-            {contentPromise ? (
+            {streamedContent ? (
               <Suspense fallback={<ClassroomLessonBodySkeleton />}>
                 <ClassroomLessonStreamedFields
-                  contentPromise={contentPromise}
+                  contentPromise={streamedContent}
                   onPayload={handlePayload}
                 >
                   {(payload) => (
@@ -1249,6 +1285,8 @@ export function ClassroomLessonPlayer({
                   )}
                 </ClassroomLessonStreamedFields>
               </Suspense>
+            ) : contentUrl ? (
+              <ClassroomLessonBodySkeleton />
             ) : (
               <LessonBodyFromFields
                 videoUrl={videoUrl}
