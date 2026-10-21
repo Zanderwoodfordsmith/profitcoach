@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { isValidIanaTimeZone } from "@/lib/booking/bookingTime";
 import {
   findOrCreateProspectContact,
@@ -6,6 +6,7 @@ import {
   loadCoachBySlug,
   loadCoachCalendarBySlug,
 } from "@/lib/booking/bookingService";
+import { sendCoachBookingAlert } from "@/lib/booking/coachBookingAlert";
 import { createCalendarBooking } from "@/lib/booking/createCalendarBooking";
 
 export async function GET(
@@ -120,6 +121,21 @@ export async function POST(
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
+
+  // A prospect booked: tell the coach once the prospect has their answer.
+  after(() =>
+    sendCoachBookingAlert({
+      coachId: coach.id,
+      calendarName: calendar.name,
+      guestName: `${firstName} ${lastName}`,
+      guestEmail: email,
+      guestPhone: phone,
+      startsAtIso: result.data.booking.starts_at,
+      endsAtIso: result.data.booking.ends_at,
+      whereLabel: result.data.whereLabel,
+      notes: body.notes ?? null,
+    }).catch((err) => console.error("coach booking alert:", err))
+  );
 
   return NextResponse.json({
     id: result.data.booking.id,
