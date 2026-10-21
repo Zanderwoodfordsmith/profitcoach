@@ -133,6 +133,25 @@ function statusLabel(status: string | null, cancelAtPeriodEnd: boolean): string 
   return status ?? "No active subscription";
 }
 
+const BRAND_LABELS: Record<string, string> = {
+  amex: "American Express",
+  diners: "Diners Club",
+  jcb: "JCB",
+  unionpay: "UnionPay",
+  bacs_debit: "Bacs Direct Debit",
+  sepa_debit: "SEPA Direct Debit",
+};
+
+/** Stripe sends brands in lower case ("mastercard"); show them as names. */
+function brandLabel(value: string): string {
+  const known = BRAND_LABELS[value.toLowerCase()];
+  if (known) return known;
+  return value
+    .split(/[_\s]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function billingKindLabel(kind: PaymentBillingKind | null): string {
   if (!kind || kind === "other") return "Payment";
   if (kind === "recurring") return "Subscription";
@@ -172,6 +191,7 @@ export function BillingSettingsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<MembershipPlanKey | null>(null);
   const getHeaders = authHeaders(impersonatingCoachId);
 
   const load = useCallback(async () => {
@@ -246,6 +266,41 @@ export function BillingSettingsTab() {
     }
   }
 
+  // Signed-in checkout: an active subscription switches price straight away,
+  // otherwise Stripe Checkout opens on the coach's own Stripe customer.
+  async function startCheckout(plan: PlanInfo, switchesNow: boolean) {
+    if (
+      switchesNow &&
+      !window.confirm(
+        `Move to ${plan.label} at £${plan.monthlyPriceGbp.toLocaleString("en-GB")} a month? Your card is charged or credited the difference for this month.`
+      )
+    ) {
+      return;
+    }
+    setCheckoutPlan(plan.key);
+    setError(null);
+    try {
+      const res = await fetch("/api/coach/membership", {
+        method: "POST",
+        headers: await getHeaders(),
+        body: JSON.stringify({ plan: plan.key, interval: "month" }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !body.url) {
+        setError(body.error ?? "Could not start checkout.");
+        return;
+      }
+      window.location.assign(body.url);
+    } catch {
+      setError("Could not start checkout. Please try again.");
+    } finally {
+      setCheckoutPlan(null);
+    }
+  }
+
   if (loading) return <BillingSkeleton />;
 
   if (error || !data) {
@@ -267,6 +322,11 @@ export function BillingSettingsTab() {
   }
 
   const hasSubscription = Boolean(data.subscription.status);
+  // Mirrors the server: these statuses get switched in place, not sent to checkout.
+  const subscriptionActive =
+    data.subscription.status === "active" ||
+    data.subscription.status === "trialing" ||
+    data.subscription.status === "past_due";
   const isComplimentary = data.recurringPaymentStatus === "complimentary";
   const isIncludedPeriod = data.recurringPaymentStatus === "first_6_months";
   const hasCoveredArrangement =
@@ -274,7 +334,9 @@ export function BillingSettingsTab() {
     isIncludedPeriod ||
     isComplimentary;
   const nextBillingDate = formatDate(data.subscription.currentPeriodEnd);
-  const visiblePlans = data.plans.filter((plan) => plan.checkoutAvailable.month);
+  const visiblePlans = data.plans.filter(
+    (plan) => plan.key !== "core" && plan.checkoutAvailable.month
+  );
   const succeededPayments = data.payments.filter((payment) =>
     isSucceededPayment(payment.status)
   );
@@ -291,9 +353,9 @@ export function BillingSettingsTab() {
     isComplimentary || isIncludedPeriod
       ? "No payment method required"
       : data.paymentMethod?.last4
-        ? `${data.paymentMethod.brand ?? "Card"} ending ${data.paymentMethod.last4}`
+        ? `${data.paymentMethod.brand ? brandLabel(data.paymentMethod.brand) : "Card"} ending ${data.paymentMethod.last4}`
         : data.paymentMethod
-          ? data.paymentMethod.type
+          ? brandLabel(data.paymentMethod.type)
           : "Managed securely in Stripe";
   const planDescription = hasSubscription
     ? nextBillingDate
@@ -455,7 +517,7 @@ export function BillingSettingsTab() {
               <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {visiblePlans.map((plan) => {
               const current = plan.isCurrent;
               return (
@@ -481,15 +543,23 @@ export function BillingSettingsTab() {
                     <span className="text-slate-400"> / month</span>
                   </p>
                   {!current ? (
-                    <Link
-                      href={`/api/coach/membership/checkout?plan=${encodeURIComponent(
-                        plan.key
-                      )}&interval=month`}
-                      className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0c5290] hover:text-[#063056]"
+                    <button
+                      type="button"
+                      onClick={() => void startCheckout(plan, subscriptionActive)}
+                      disabled={checkoutPlan !== null}
+                      className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0c5290] hover:text-[#063056] disabled:cursor-wait disabled:opacity-60"
                     >
-                      {plan.relation === "upgrade" ? "Upgrade" : "Switch plan"}
-                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                    </Link>
+                      {plan.relation === "upgrade"
+                        ? "Upgrade"
+                        : plan.relation === "current"
+                          ? "Restart plan"
+                          : "Switch plan"}
+                      {checkoutPlan === plan.key ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      ) : (
+                        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                    </button>
                   ) : null}
                 </div>
               );
@@ -519,22 +589,22 @@ export function BillingSettingsTab() {
             {succeededPayments.map((payment) => (
               <div
                 key={payment.id}
-                className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+                className="flex items-center justify-between gap-3 px-5 py-2.5 sm:px-6"
               >
-                <div className="flex min-w-0 items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                    <FileText className="h-4 w-4" aria-hidden />
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                    <FileText className="h-3.5 w-3.5" aria-hidden />
                   </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-900">
+                  <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
+                    <span className="truncate font-medium text-slate-900">
                       {billingKindLabel(payment.billingKind)}
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    </span>
+                    <span className="text-xs text-slate-500">
                       {formatPaymentDate(payment.paidAt)}
-                    </p>
-                  </div>
+                    </span>
+                  </p>
                 </div>
-                <div className="flex items-center justify-between gap-4 pl-11 sm:pl-0">
+                <div className="flex shrink-0 items-center gap-4">
                   <span
                     className={`rounded-full px-2 py-1 text-[11px] font-semibold capitalize ${paymentStatusClass(
                       payment.status

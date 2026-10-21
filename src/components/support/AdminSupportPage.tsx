@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  ClipboardList,
   ExternalLink,
   Plus,
   Search,
@@ -32,6 +33,7 @@ import {
   notifySupportCountsChanged,
 } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
+import { useScreenRecorder } from "@/contexts/ScreenRecorderContext";
 import type { SupportCallContactPrefill } from "@/lib/support/supportCallPrefillQuery";
 import type { SupportCallHostSlug } from "@/lib/support/supportCallHosts";
 import { SupportCallAdminSettings } from "@/components/support/SupportCallAdminSettings";
@@ -895,6 +897,22 @@ export function AdminSupportPage() {
     [listTickets, selectedId]
   );
 
+  // Coming back with a screen recording: open the ticket (or new ticket) it's for.
+  const recordingKey = useScreenRecorder()?.ready?.target.key ?? null;
+  useEffect(() => {
+    if (!recordingKey) return;
+    if (recordingKey === "new-ticket:admin") {
+      setCreateOpen(true);
+      return;
+    }
+    const ticketId = recordingKey.startsWith("admin:")
+      ? recordingKey.slice("admin:".length)
+      : null;
+    if (ticketId && listTickets.some((r) => r.id === ticketId)) {
+      setSelectedId(ticketId);
+    }
+  }, [recordingKey, listTickets]);
+
   useEffect(() => {
     if (groupMode === "people" && !selectedPersonKey) {
       setSelectedId(null);
@@ -1753,6 +1771,16 @@ export function AdminSupportPage() {
                           >
                             <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
                             Their inbox
+                          </a>
+                          <a
+                            href={`/admin/blueprint/records/${encodeURIComponent(selected.created_by)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Open their Blueprint in admin"
+                            className="col-span-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap border-t border-sky-200 px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+                          >
+                            <ClipboardList className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            Blueprint
                           </a>
                         </div>
                       ) : null}

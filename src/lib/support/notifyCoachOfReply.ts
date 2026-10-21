@@ -143,16 +143,31 @@ function lastStaffSignature(replies: StaffReplyForEmail[]): string | null {
   return null;
 }
 
+/** Videos aren't attached (size, spam): a still with a play button links to the video. */
+function supportEmailVideoHtml(video: CommunityPostMediaItem): string {
+  const href = escapeHtml(video.url);
+  const link = `<a href="${href}" style="color:#0369a1;text-decoration:underline;">Watch the video</a>`;
+  if (!video.poster) {
+    return `<p style="margin:0 0 20px;">&#9654; ${link}</p>`;
+  }
+  return `<p style="margin:0 0 6px;"><a href="${href}"><img src="${escapeHtml(
+    video.poster
+  )}" alt="Play the video" width="480" style="display:block;width:100%;max-width:480px;height:auto;border:1px solid #e2e8f0;border-radius:8px;"></a></p>
+<p style="font-size:14px;margin:0 0 20px;">${link}</p>`;
+}
+
 export function buildSupportReplyEmailHtml(input: {
   replyBody: string;
   signatureName: string | null;
   supportUrl: string;
+  videos?: CommunityPostMediaItem[];
 }): string {
   const preview = input.replyBody.trim().slice(0, 2000);
   const bodyHtml = supportMarkdownToEmailInnerHtml(preview);
   const signature = input.signatureName?.trim() || "Profit Coach Support";
+  const videosHtml = (input.videos ?? []).map(supportEmailVideoHtml).join("\n");
   return `<p style="margin:0 0 20px;">${bodyHtml}</p>
-<p style="color:#334155;font-size:14px;margin:0 0 20px;">You can reply to this email or <a href="${escapeHtml(
+${videosHtml ? `${videosHtml}\n` : ""}<p style="color:#334155;font-size:14px;margin:0 0 20px;">You can reply to this email or <a href="${escapeHtml(
     input.supportUrl
   )}" style="color:#0369a1;text-decoration:underline;">open Support in the app</a>, whichever is easiest.</p>
 <p style="color:#334155;font-size:14px;margin:0;">${escapeHtml(signature)}</p>`;
@@ -190,7 +205,7 @@ async function emailAttachmentsFromSupportMedia(
   const files: Array<{ blob: Blob; filename: string }> = [];
   for (const [index, item] of media.entries()) {
     const url = item.url.trim();
-    if (!url || seen.has(url)) continue;
+    if (item.kind === "video" || !url || seen.has(url)) continue;
     seen.add(url);
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
@@ -317,9 +332,8 @@ export async function processDueSupportReplyEmails(
     }
 
     const replyBody = formatStaffReplyBodies(staffReplies);
-    const attachments = await emailAttachmentsFromSupportMedia(
-      staffReplies.flatMap((r) => r.media)
-    );
+    const staffMedia = staffReplies.flatMap((r) => r.media);
+    const attachments = await emailAttachmentsFromSupportMedia(staffMedia);
 
     const result = await notifyCoachOfSupportReply({
       ticketId: ticket.id,
@@ -330,6 +344,7 @@ export async function processDueSupportReplyEmails(
       recipient,
       unipileEmailId: ticket.unipile_email_id,
       attachments,
+      videos: staffMedia.filter((item) => item.kind === "video"),
       request,
     });
 
@@ -477,6 +492,7 @@ export async function notifyCoachOfSupportReply(input: {
   recipient: SupportNotifyRecipient;
   unipileEmailId?: string | null;
   attachments?: Array<{ blob: Blob; filename: string }>;
+  videos?: CommunityPostMediaItem[];
   request?: Request;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!isUnipileConfigured()) {
@@ -505,6 +521,7 @@ export async function notifyCoachOfSupportReply(input: {
     replyBody: input.replyBody,
     signatureName: input.signatureName,
     supportUrl,
+    videos: input.videos,
   });
 
   const subject = supportReplyEmailSubject(subjectTitle, input.ticketNumber);
@@ -662,6 +679,7 @@ export async function sendSupportCreatedTicketEmail(input: {
     recipient,
     unipileEmailId: ticket.unipile_email_id,
     attachments,
+    videos: media.filter((item) => item.kind === "video"),
     request: input.request,
   });
 

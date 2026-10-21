@@ -71,4 +71,22 @@ describe("buildSupportReplyEmailHtml", () => {
     assert.match(html, />Book a support call</);
     assert.doesNotMatch(html, /\[Book a support call\]/);
   });
+
+  it("links a video thumbnail to the video instead of attaching it", () => {
+    const html = buildSupportReplyEmailHtml({
+      replyBody: "Here's how to do it",
+      signatureName: "Zander",
+      supportUrl: "https://example.com/coach/support",
+      videos: [
+        {
+          url: "https://x.supabase.co/storage/v1/object/public/community-posts/u/a.mp4",
+          kind: "video",
+          poster: "https://x.supabase.co/storage/v1/object/public/community-posts/u/p.jpg",
+        },
+        { url: "https://x.supabase.co/storage/v1/object/public/community-posts/u/b.webm", kind: "video" },
+      ],
+    });
+    assert.match(html, /<a href="[^"]+\/a\.mp4"><img src="[^"]+\/p\.jpg" alt="Play the video"/);
+    assert.match(html, /<a href="[^"]+\/b\.webm"[^>]*>Watch the video<\/a>/);
+  });
 });

@@ -54,6 +54,13 @@ describe("supportReplyBodyForEmail", () => {
       "Screenshot below\n\nImage attached."
     );
   });
+
+  it("does not say a video is attached (the email links a thumbnail instead)", () => {
+    assert.equal(
+      supportReplyBodyForEmail("Watch this", [{ url: "https://x/a.mp4", kind: "video" }]),
+      "Watch this"
+    );
+  });
 });
 
 describe("supportEmailAttachmentFilename", () => {

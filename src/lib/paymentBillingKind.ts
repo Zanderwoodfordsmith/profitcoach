@@ -1,3 +1,5 @@
+import { knownPlanInstallmentCount } from "@/lib/cashFlowForecast/paymentPlanInference";
+
 export type PaymentBillingKind = "recurring" | "initial" | "installment" | "other";
 
 export const PAYMENT_BILLING_KINDS: PaymentBillingKind[] = [
@@ -243,6 +245,8 @@ type ClassifyContext = {
   succeededIndex: number;
   /** Sum of earlier succeeded payments from this customer in the same currency. */
   priorSucceededTotalCents: number;
+  /** Earlier succeeded payments from this customer with the same amount and currency. */
+  priorSameAmountCount: number;
 };
 
 function classifySubscriptionTierPayment(
@@ -325,6 +329,21 @@ function classifySucceededPayment(
     return "initial";
   }
 
+  // Later payments on a known plan (e.g. £1,500 × 7) stay Plan until the last
+  // one, even after the running total passes the established-customer line.
+  const planLength = knownPlanInstallmentCount(
+    payment.amount_cents,
+    payment.currency
+  );
+  if (
+    planLength != null &&
+    !isSubscriptionTierAmount(payment.amount_cents, payment.currency) &&
+    ctx.priorSameAmountCount > 0 &&
+    ctx.priorSameAmountCount < planLength
+  ) {
+    return "installment";
+  }
+
   if (isEstablishedCustomer(ctx.priorSucceededTotalCents, payment.currency)) {
     return classifyEstablishedCustomerPayment(payment, ctx);
   }
@@ -370,12 +389,20 @@ export function buildPaymentBillingKindIndex(
       const currency = normalizeCurrency(payment.currency);
       const priorTotal = runningTotalByCurrency.get(currency) ?? 0;
       const succeededIndex = succeeded.findIndex((row) => row.id === payment.id);
+      const priorSameAmountCount = succeeded
+        .slice(0, Math.max(0, succeededIndex))
+        .filter(
+          (row) =>
+            row.amount_cents === payment.amount_cents &&
+            normalizeCurrency(row.currency) === currency
+        ).length;
 
       inferredIndex.set(
         payment.id,
         classifySucceededPayment(payment, {
           succeededIndex: Math.max(0, succeededIndex),
           priorSucceededTotalCents: priorTotal,
+          priorSameAmountCount,
         })
       );
 

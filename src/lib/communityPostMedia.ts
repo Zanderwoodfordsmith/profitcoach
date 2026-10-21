@@ -1,5 +1,6 @@
 import { resolveSupabaseBrowserSession } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { videoPosterFile } from "@/lib/videoPoster";
 
 export type CommunityPostMediaKind = "image" | "video" | "audio" | "file";
 
@@ -8,6 +9,8 @@ export type CommunityPostMediaItem = {
   kind: CommunityPostMediaKind;
   /** Original filename for documents. Omitted for images, video, and audio. */
   name?: string;
+  /** Still frame with a play button, for videos. Shown in support emails. */
+  poster?: string;
 };
 
 export const COMMUNITY_POST_MEDIA_MAX = 6;
@@ -16,6 +19,8 @@ export const COMMUNITY_POST_MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 export const COMMUNITY_POST_MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB
 export const COMMUNITY_POST_MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25MB
 export const SUPPORT_MAX_DOCUMENT_BYTES = 20 * 1024 * 1024; // 20MB
+/** Support allows longer videos than the feed (screen recordings). */
+export const SUPPORT_MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100MB
 
 export const SUPPORT_DOCUMENT_ACCEPT =
   ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv,application/rtf";
@@ -171,7 +176,8 @@ export function validateSupportMediaFile(
     };
   }
   const kind = mediaKindForMime(mime)!;
-  const maxBytes = maxBytesForCommunityPostMime(mime);
+  const maxBytes =
+    kind === "video" ? SUPPORT_MAX_VIDEO_BYTES : maxBytesForCommunityPostMime(mime);
   if (file.size > maxBytes) {
     const mb = Math.round(maxBytes / (1024 * 1024));
     return { error: `File must be ${mb}MB or smaller.` };
@@ -214,7 +220,15 @@ export function parseStoredCommunityPostMedia(raw: unknown): CommunityPostMediaI
       ? kindRaw
       : inferCommunityPostMediaKindFromUrl(url);
     const name = storedMediaName((el as { name?: unknown }).name);
-    out.push(name ? { url: url.trim(), kind, name } : { url: url.trim(), kind });
+    const posterRaw = (el as { poster?: unknown }).poster;
+    const poster =
+      typeof posterRaw === "string" && posterRaw.trim() ? posterRaw.trim() : undefined;
+    out.push({
+      url: url.trim(),
+      kind,
+      ...(name ? { name } : {}),
+      ...(poster ? { poster } : {}),
+    });
     if (out.length >= COMMUNITY_POST_MEDIA_MAX) break;
   }
   return out.length > 0 ? out : null;
@@ -325,5 +339,16 @@ export async function uploadSupportMediaFile(
   if ("error" in validated) {
     return validated;
   }
-  return uploadValidatedMediaFile(file, validated);
+  const up = await uploadValidatedMediaFile(file, validated);
+  if ("error" in up || validated.kind !== "video") return up;
+
+  // Emails link a still of the video instead of attaching it. Best effort.
+  const posterFile = await videoPosterFile(file);
+  if (!posterFile) return up;
+  const posterUp = await uploadValidatedMediaFile(posterFile, {
+    mime: "image/jpeg",
+    kind: "image",
+  });
+  if ("error" in posterUp) return up;
+  return { media: { ...up.media, poster: posterUp.media.url } };
 }

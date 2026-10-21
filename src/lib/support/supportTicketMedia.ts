@@ -41,13 +41,12 @@ export function supportReplyBodyForEmail(
   const trimmed = body.trim();
   const imageCount = media.filter((item) => item.kind === "image").length;
   const hasAudio = media.some((item) => item.kind === "audio");
-  const hasVideo = media.some((item) => item.kind === "video");
   const fileCount = media.filter((item) => item.kind === "file").length;
   const notes: string[] = [];
   if (imageCount === 1) notes.push("Image attached.");
   if (imageCount > 1) notes.push("Images attached.");
   if (hasAudio) notes.push("Voice note attached.");
-  if (hasVideo) notes.push("Video attached.");
+  // Videos aren't attached: the email shows a thumbnail that links to them.
   if (fileCount === 1) notes.push("Document attached.");
   if (fileCount > 1) notes.push("Documents attached.");
 
@@ -57,9 +56,6 @@ export function supportReplyBodyForEmail(
   const extra = notes.filter((note) => {
     if (note.startsWith("Voice") && /voice note/i.test(trimmed)) return false;
     if (note.startsWith("Image") && /image attached|sent an image/i.test(trimmed)) {
-      return false;
-    }
-    if (note.startsWith("Video") && /video attached|sent a video/i.test(trimmed)) {
       return false;
     }
     if (note.startsWith("Document") && /document attached|sent a document/i.test(trimmed)) {

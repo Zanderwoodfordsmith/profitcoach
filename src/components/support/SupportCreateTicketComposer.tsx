@@ -11,6 +11,10 @@ import {
   type PendingSupportVoice,
 } from "@/components/support/SupportVoiceRecorder";
 import {
+  ScreenRecordButton,
+  useScreenRecordingFor,
+} from "@/contexts/ScreenRecorderContext";
+import {
   COMMUNITY_POST_MEDIA_MAX,
   inferCommunityPostMediaKindFromUrl,
   uploadSupportMediaFile,
@@ -310,6 +314,12 @@ export function SupportCreateTicketComposer({
     }
     setPendingMedia(next);
   }
+
+  const recordingKey = `new-ticket:${isAdminCreate ? "admin" : "member"}`;
+  useScreenRecordingFor(recordingKey, (file) => {
+    setError(null);
+    addPendingFiles([file]);
+  });
 
   function removePending(key: string) {
     const removed = pendingMedia.find((p) => p.key === key);
@@ -684,6 +694,10 @@ export function SupportCreateTicketComposer({
                     }}
                   />
                 </label>
+                <ScreenRecordButton
+                  target={{ key: recordingKey, label: "your new ticket" }}
+                  disabled={saving || pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
+                />
                 <SupportDocumentAttachButton
                   disabled={saving || pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
                   onPick={(files) => addPendingFiles(Array.from(files ?? []))}

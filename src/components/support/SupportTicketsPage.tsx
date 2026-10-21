@@ -31,6 +31,7 @@ import {
 } from "@/components/support/SupportHelpfulPanel";
 import { SupportTicketChat } from "@/components/support/SupportTicketChat";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useScreenRecorder } from "@/contexts/ScreenRecorderContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { expandCommunityCalendar } from "@/lib/communityCalendarExpand";
 import { loadCommunityCalendarData } from "@/lib/communityCalendarData";
@@ -750,6 +751,24 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
   const hasWorkBesidesResolved = sections.some(
     (section) => section.id !== "resolved"
   );
+
+  // Coming back with a screen recording: open the ticket (or new ticket) it's for.
+  const recordingKey = useScreenRecorder()?.ready?.target.key ?? null;
+  useEffect(() => {
+    if (!recordingKey) return;
+    if (recordingKey === "new-ticket:member") {
+      setSelectedTicketId(null);
+      setComposeOpen(true);
+      return;
+    }
+    const ticketId = recordingKey.startsWith("member:")
+      ? recordingKey.slice("member:".length)
+      : null;
+    if (ticketId && tickets.some((ticket) => ticket.id === ticketId)) {
+      setComposeOpen(false);
+      setSelectedTicketId(ticketId);
+    }
+  }, [recordingKey, tickets]);
 
   const selected =
     tickets.find((ticket) => ticket.id === selectedTicketId) ?? null;

@@ -16,6 +16,10 @@ import {
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import { SupportChatThread } from "@/components/support/SupportChatBubbles";
 import {
+  ScreenRecordButton,
+  useScreenRecordingFor,
+} from "@/contexts/ScreenRecorderContext";
+import {
   SupportVoiceRecorder,
   pendingSupportVoiceToFile,
   revokePendingSupportVoice,
@@ -196,8 +200,7 @@ export function SupportTicketChat({
     setPendingImages(next);
   }
 
-  function addPendingVideo(files: FileList | null) {
-    const file = files?.[0];
+  function addPendingVideo(file: File | undefined) {
     if (!file) return;
     const validated = validateSupportMediaFile(file);
     if ("error" in validated) {
@@ -211,6 +214,13 @@ export function SupportTicketChat({
     if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
     setPendingVideo({ file, url: URL.createObjectURL(file) });
   }
+
+  const recordingKey = `member:${ticket.id}`;
+  useScreenRecordingFor(recordingKey, (file) => {
+    setError(null);
+    addPendingVideo(file);
+    setComposerOpen(true);
+  });
 
   function addPendingDocuments(files: FileList | null) {
     const room =
@@ -507,7 +517,7 @@ export function SupportTicketChat({
                         className="hidden"
                         disabled={busy || Boolean(pendingVideo)}
                         onChange={(e) => {
-                          addPendingVideo(e.target.files);
+                          addPendingVideo(e.target.files?.[0]);
                           e.target.value = "";
                         }}
                       />
@@ -520,6 +530,10 @@ export function SupportTicketChat({
                       >
                         <Video className="h-4 w-4" strokeWidth={1.75} />
                       </button>
+                      <ScreenRecordButton
+                        target={{ key: recordingKey, label: "your ticket" }}
+                        disabled={busy}
+                      />
                       <SupportDocumentAttachButton
                         disabled={
                           busy ||

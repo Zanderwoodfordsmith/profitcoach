@@ -3,6 +3,7 @@ import { geist as geistSans, geistMono } from "@/fonts";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
+import { ScreenRecorderProvider } from "@/contexts/ScreenRecorderContext";
 
 export const metadata: Metadata = {
   title: "Profit Coach",
@@ -34,7 +35,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ImpersonationProvider>{children}</ImpersonationProvider>
+        <ImpersonationProvider>
+          <ScreenRecorderProvider>{children}</ScreenRecorderProvider>
+        </ImpersonationProvider>
         <SpeedInsights />
       </body>
     </html>
