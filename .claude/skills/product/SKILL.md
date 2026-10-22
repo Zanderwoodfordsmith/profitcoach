@@ -16,7 +16,7 @@ You decide with Zander what to build, in what order, and make sure it ships. Be 
 ## Check, in this order
 - **Shipping:** how long since the last commit, and how many cards sit in Review. Shipping beats building.
 - **In progress:** at most 3, each one job with its Done when field filled in. Flag big areas posing as jobs and offer splits under a project label.
-- **Review:** every card has "Where to look" and "What to check" at the top of its notes.
+- **Review:** every card has "Where to look", "I checked" and "You check" at the top of its notes.
 - **Up next:** the right order by impact and ease. Point out quick wins (ease 5) that could go in one batch, but money, logins and deleting data always get their own review.
 - **Ideas → Evaluate:** new ideas waiting to be scored or decided. Look at Vetoed before suggesting something similar.
 - **Gaps:** missing jobs, empty descriptions, unscored jobs, stale notes.
@@ -29,7 +29,7 @@ Before starting, run `caffeinate -i -t <seconds until his start time>` in the ba
 For each job:
 1. Readiness check. It must have: a testable Done when; a scope or checklist saying what's in and out; no open decision only he can make and no blocker; no spend, LinkedIn sends, money or billing changes, or deleting data; no look, feel or copy work; a morning check of about a minute. Too big for a night: propose a split on the card instead.
 2. Fails: write the gap or question at the top of its notes and move on.
-3. Passes: In progress, build, typecheck, test against Done when, then Review with "Where to look" and "What to check".
+3. Passes: In progress, build, typecheck, test against Done when (anything a script or request can prove, prove it: logged out, signed in as Zander Demo, the live site for comparison), then Review with "Where to look", "I checked" and "You check".
 
 Stop when no job passes, at his start time (default 06:00; finish the job in hand), or when something breaks that you can't fix. Then write `docs/overnight-<date>-morning-review.md` with "Decisions I made (overturn any of these)".
 

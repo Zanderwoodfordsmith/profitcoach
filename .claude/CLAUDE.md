@@ -40,8 +40,11 @@ storage, migrations in `supabase/migrations`), Stripe billing, Vercel hosting.
 The Academy roadmap (/admin/roadmap, table `roadmap_jobs`) is the one queue.
 
 - Starting work on a job: move it to In progress. Finishing: move it to
-  Review with "Where to look:" (a localhost:3002 link) and "What to check:"
-  at the top of its notes. Never move a job to Done or Live yourself.
+  Review with three lines at the top of its notes: "Where to look:" (a
+  localhost:3002 link), "I checked:" (each test you ran and what happened)
+  and "You check:" (only what you couldn't test: taste, copy, real data,
+  real admin logins; "Nothing" if so). Never move a job to Done or Live
+  yourself.
 - If his check finds something to change, the job goes back to In progress
   with the change added to its checklist, then returns to Review. No
   second review column.

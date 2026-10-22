@@ -1,18 +1,22 @@
 "use client";
 
+import { Suspense } from "react";
+
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
-import { SalesCallWorkspace } from "@/components/salesCall/SalesCallWorkspace";
+import { ScriptsOverview } from "@/components/salesCall/ScriptsOverview";
 
-export default function CoachScriptPage() {
+export default function CoachScriptsPage() {
   return (
     <div className="flex flex-col">
       <StickyPageHeader
         title="Get Clients"
-        description="Your sales call script, step by step. Type or listen while you talk, and the pitch writes itself around what they tell you."
+        description="Every script for your conversations with owners, from first contact to the close."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
-      <SalesCallWorkspace />
+      <Suspense fallback={null}>
+        <ScriptsOverview />
+      </Suspense>
     </div>
   );
 }

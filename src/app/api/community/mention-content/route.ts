@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { listCoursesFlat } from "@/lib/academy/compassCatalog";
-import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
 import { flattenSections } from "@/lib/academy/hubCatalog";
 import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
-import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
-import { loadArchiveHub } from "@/lib/academy/archiveHubLoad";
+import { classroomCoursesByIds, loadClassroomHub } from "@/lib/academy/classroomHubLoad";
+import {
+  CLASSROOM_PATH_COURSE_IDS,
+  CLASSROOM_START_COURSE_IDS,
+} from "@/lib/academy/classroomIds";
 import { loadVaultHub } from "@/lib/academy/vaultHubLoad";
-import type { HubCatalog } from "@/lib/academy/hubCatalog";
+import type { HubCourse } from "@/lib/academy/hubCatalog";
+import { withClassroomMetadata } from "@/lib/academy/lessonContent";
+import { applyLegacyCourseVisibility } from "@/lib/academy/lessonVisibility";
 import { parseLessonVideoChapters } from "@/lib/academy/lessonVideoChapters";
+import { RESOURCE_GROUPS, flattenResourcePages } from "@/lib/resources/library";
+import { BLUEPRINT_GROUPS, sectionKey } from "@/lib/practiceKnowledge/blueprint";
 import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 export type MentionTreeChapter = { chapterId: string; title: string };
@@ -17,18 +22,42 @@ export type MentionTreeLesson = {
   lessonId: string;
   title: string;
   emoji?: string | null;
-  /** Section/group within a course (Programs courses are split into sections). */
-  section?: string;
   /** Video chapters, when the lesson is split into them. */
   chapters?: MentionTreeChapter[];
 };
 
+export type MentionTreeSection = { title: string; lessons: MentionTreeLesson[] };
+
 export type MentionTreeCourse = {
-  area: "classroom" | "programs" | "vault";
+  /** `programs` = Classroom, `vault` = Vault (stored mention area keys). */
+  area: "programs" | "vault";
   courseId: string;
   title: string;
-  category?: string;
-  lessons: MentionTreeLesson[];
+  sections: MentionTreeSection[];
+};
+
+export type MentionTreeDocument = {
+  slug: string;
+  title: string;
+  dek?: string;
+  group: string;
+};
+
+export type MentionTreeBlueprintSection = {
+  title: string;
+  /** Element id on the page: `s-<page>-<id>`. */
+  anchor: string;
+  /** Answer boxes, anchored `f-<path>`. */
+  boxes: { path: string; label: string }[];
+};
+
+export type MentionTreeBlueprintPage = {
+  slug: string;
+  title: string;
+  href: string;
+  /** Chapter: About You, Get Calls, Win Clients. */
+  group: string;
+  sections: MentionTreeBlueprintSection[];
 };
 
 async function requireStaff(request: Request): Promise<
@@ -63,99 +92,83 @@ async function requireStaff(request: Request): Promise<
   return { ok: true };
 }
 
-type LessonOverrides = {
-  /** Title overrides keyed `${course_id}:${lesson_id}` (Programs + Vault lessons). */
-  titles: Map<string, string>;
-  /** Chapters with a video, same keys. */
-  chapters: Map<string, MentionTreeChapter[]>;
-};
-
-async function loadLessonOverrides(): Promise<LessonOverrides> {
-  const titles = new Map<string, string>();
+/** Chapters with a video, keyed `${course_id}:${lesson_id}`. */
+async function loadLessonChapters(): Promise<Map<string, MentionTreeChapter[]>> {
   const chapters = new Map<string, MentionTreeChapter[]>();
   const { data } = await supabaseAdmin
     .from("academy_lesson_content")
-    .select("course_id, lesson_id, title, video_chapters");
+    .select("course_id, lesson_id, video_chapters");
   for (const row of data ?? []) {
-    const r = row as {
-      course_id: string;
-      lesson_id: string;
-      title: string | null;
-      video_chapters: unknown;
-    };
-    const key = `${r.course_id}:${r.lesson_id}`;
-    const t = r.title?.trim();
-    if (t) titles.set(key, t);
+    const r = row as { course_id: string; lesson_id: string; video_chapters: unknown };
     const withVideo = parseLessonVideoChapters(r.video_chapters)
       .filter((c) => c.video_url || c.source_lesson_id)
       .map((c) => ({ chapterId: c.id, title: c.title }));
-    if (withVideo.length > 1) chapters.set(key, withVideo);
+    if (withVideo.length > 1) chapters.set(`${r.course_id}:${r.lesson_id}`, withVideo);
   }
-  return { titles, chapters };
+  return chapters;
 }
 
-async function loadClassroomCourses(): Promise<MentionTreeCourse[]> {
-  // Same source the classroom renders from: JSON catalog + DB title/content overrides.
-  const catalog = await loadAcademyCatalogWithDb();
-  return listCoursesFlat(catalog).map(({ category, course }) => ({
-    area: "classroom" as const,
-    courseId: course.id,
-    title: course.title,
-    category: category.title,
-    lessons: (course.lessons ?? []).map((lesson) => ({
-      lessonId: lesson.id,
-      title: lesson.title,
-      emoji: lesson.emoji ?? null,
-    })),
-  }));
-}
-
-function hubCourses(
+/**
+ * Courses as coaches see them: DB titles, hidden lessons left out, and
+ * sections with no lessons left dropped.
+ */
+async function treeCourses(
   area: "programs" | "vault",
-  hub: HubCatalog,
-  overrides: LessonOverrides,
-): MentionTreeCourse[] {
-  return hub.courses.map((course) => ({
-    area,
-    courseId: course.id,
-    title: course.title,
-    lessons: flattenSections(course.sections).flatMap((section) =>
-      section.lessons.map((lesson) => {
-        const key = `${contentSourceCourseId(lesson.id)}:${lesson.id}`;
-        return {
-          lessonId: lesson.id,
-          title: overrides.titles.get(key) ?? lesson.title,
-          section: section.title,
-          chapters: overrides.chapters.get(key),
-        };
-      }),
+  courses: HubCourse[],
+  chapters: Map<string, MentionTreeChapter[]>,
+): Promise<MentionTreeCourse[]> {
+  const visible = await Promise.all(
+    courses.map(async (course) =>
+      applyLegacyCourseVisibility(await withClassroomMetadata(course)),
     ),
-  }));
+  );
+  return visible
+    .map((course) => ({
+      area,
+      courseId: course.id,
+      title: course.title,
+      sections: flattenSections(course.sections)
+        .map((section) => ({
+          title: section.title,
+          lessons: section.lessons.map((lesson) => ({
+            lessonId: lesson.id,
+            title: lesson.title,
+            chapters: chapters.get(`${contentSourceCourseId(lesson.id)}:${lesson.id}`),
+          })),
+        }))
+        .filter((section) => section.lessons.length > 0),
+    }))
+    .filter((course) => course.sections.length > 0);
 }
 
-function loadProgramsCourses(overrides: LessonOverrides): MentionTreeCourse[] {
-  const courses: MentionTreeCourse[] = [];
+function resourceDocuments(): MentionTreeDocument[] {
+  return RESOURCE_GROUPS.flatMap((group) =>
+    flattenResourcePages(group.pages).map((page) => ({
+      slug: page.slug,
+      title: page.title,
+      dek: page.dek,
+      group: group.title,
+    })),
+  );
+}
 
-  try {
-    courses.push(...hubCourses("programs", loadClassroomHub(), overrides));
-  } catch {
-    // Classroom hub unavailable — continue with Vault and archive.
-  }
-
-  try {
-    courses.push(...hubCourses("vault", loadVaultHub(), overrides));
-  } catch {
-    // Vault unavailable.
-  }
-
-  // Admin archive: lessons not surfaced on the Classroom hub.
-  try {
-    courses.push(...hubCourses("programs", loadArchiveHub(), overrides));
-  } catch {
-    // Archive unavailable.
-  }
-
-  return courses;
+/** Every coach's Blueprint has the same pages, sections and boxes, so one link opens each reader's own. */
+function blueprintPages(): MentionTreeBlueprintPage[] {
+  return BLUEPRINT_GROUPS.flatMap((group) =>
+    group.pages.map((page) => ({
+      slug: page.slug,
+      title: page.title,
+      href: page.href,
+      group: group.label,
+      sections: page.sections
+        .filter((section) => section.face !== "stored")
+        .map((section) => ({
+          title: section.title,
+          anchor: `s-${sectionKey(page, section).replace(":", "-")}`,
+          boxes: (section.fields ?? []).map((field) => ({ path: field.path, label: field.label })),
+        })),
+    })),
+  );
 }
 
 export async function GET(request: Request) {
@@ -164,16 +177,22 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: auth.message }, { status: auth.status });
   }
 
-  let courses: MentionTreeCourse[];
   try {
-    const [classroom, overrides] = await Promise.all([
-      loadClassroomCourses(),
-      loadLessonOverrides(),
+    const chapters = await loadLessonChapters();
+    const classroom = classroomCoursesByIds(loadClassroomHub(), [
+      ...CLASSROOM_START_COURSE_IDS,
+      ...CLASSROOM_PATH_COURSE_IDS,
     ]);
-    courses = [...classroom, ...loadProgramsCourses(overrides)];
+    const [classroomCourses, vaultCourses] = await Promise.all([
+      treeCourses("programs", classroom, chapters),
+      treeCourses("vault", loadVaultHub().courses, chapters),
+    ]);
+    return NextResponse.json({
+      courses: [...classroomCourses, ...vaultCourses],
+      documents: resourceDocuments(),
+      blueprint: blueprintPages(),
+    });
   } catch {
     return NextResponse.json({ error: "Could not load Academy." }, { status: 500 });
   }
-
-  return NextResponse.json({ courses });
 }

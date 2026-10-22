@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
+import { hydratePracticeFromProfile } from "@/lib/practiceKnowledge/hydrate";
 
 type Body = {
   sessionId?: string | null;
@@ -112,6 +113,13 @@ export async function POST(request: Request) {
 
     if (insertError) {
       return NextResponse.json({ error: "Unable to track usage." }, { status: 500 });
+    }
+
+    // Each new visit makes sure the coach has a Blueprint for admins to open.
+    if (role === "coach") {
+      await hydratePracticeFromProfile(user.id).catch((err) => {
+        console.error("usage/session blueprint:", err instanceof Error ? err.message : "failed");
+      });
     }
 
     return NextResponse.json({ ok: true, sessionId: newSessionId }, { status: 201 });

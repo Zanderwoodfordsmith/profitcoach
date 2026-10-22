@@ -33,6 +33,7 @@ import {
   Plus,
   Rows3,
   ScatterChart,
+  Search,
   Sigma,
   Tag,
   Trash2,
@@ -230,6 +231,17 @@ function JobNumber({ n }: { n: number }) {
 
 type ViewMode = "board" | "list" | "graph";
 
+/** Every word in the search box must appear in the job's number, title, notes, Done when or project. */
+function matchesSearch(job: RoadmapJob, query: string): boolean {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const text = [`#${job.job_number}`, job.title, job.notes, job.done_when, job.project]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return words.every((w) => text.includes(w));
+}
+
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -245,6 +257,8 @@ export default function AdminRoadmapPage() {
   const [areaFilter, setAreaFilter] = useState<Set<string>>(() => new Set());
   /** Projects ticked in Filter (NO_PROJECT for jobs without one); empty = all. */
   const [projectFilter, setProjectFilter] = useState<Set<string>>(() => new Set());
+  const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [toolbarMenu, setToolbarMenu] = useState<
     "filter" | "sort" | "group" | "cards" | null
   >(null);
@@ -613,9 +627,10 @@ export default function AdminRoadmapPage() {
         (j) =>
           !hiddenStatuses.has(j.status) &&
           (areaFilter.size === 0 || areaFilter.has(j.area)) &&
-          (projectFilter.size === 0 || projectFilter.has(j.project ?? NO_PROJECT))
+          (projectFilter.size === 0 || projectFilter.has(j.project ?? NO_PROJECT)) &&
+          matchesSearch(j, search)
       ),
-    [jobs, areaFilter, projectFilter, hiddenStatuses]
+    [jobs, areaFilter, projectFilter, hiddenStatuses, search]
   );
 
   const openJob = openJobId
@@ -1220,7 +1235,57 @@ export default function AdminRoadmapPage() {
             </div>
           ) : null}
         </div>
-        <div className="relative ml-auto">
+        {searchOpen || search ? (
+          <div className="relative ml-auto">
+            <Search
+              className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+              aria-hidden
+            />
+            <input
+              type="search"
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onBlur={() => {
+                if (!search.trim()) setSearchOpen(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setSearch("");
+                  setSearchOpen(false);
+                }
+              }}
+              placeholder="Find a job"
+              aria-label="Find a job"
+              className="w-44 rounded-lg border border-slate-200 bg-white py-1.5 pl-7 pr-7 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 [&::-webkit-search-cancel-button]:hidden"
+            />
+            {search ? (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setSearch("");
+                  setSearchOpen(false);
+                }}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="ml-auto inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+            aria-label="Find a job"
+            title="Find a job"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        )}
+        <div className="relative">
           <button
             type="button"
             onClick={() =>

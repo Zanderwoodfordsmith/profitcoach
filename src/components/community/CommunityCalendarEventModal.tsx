@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   Ellipsis,
@@ -115,6 +115,48 @@ export function CommunityCalendarEventModal({
     setCancellationReasonError(null);
   }, [occurrence]);
 
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // The page behind stays put while the card is open.
+  useEffect(() => {
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, []);
+
+  // Wheel over the backdrop does nothing; wheel over the card scrolls only the card.
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    const trapWheel = (e: WheelEvent) => {
+      const scrollEl = scrollContainerRef.current;
+      if (!scrollEl || !scrollEl.contains(e.target as Node)) {
+        e.preventDefault();
+        return;
+      }
+      const { scrollTop, scrollHeight, clientHeight } = scrollEl;
+      if (scrollHeight <= clientHeight + 1) {
+        e.preventDefault();
+        return;
+      }
+      const dy = e.deltaY;
+      if (dy < 0 && scrollTop <= 0) e.preventDefault();
+      else if (dy > 0 && scrollTop + clientHeight >= scrollHeight - 1) {
+        e.preventDefault();
+      }
+    };
+
+    overlay.addEventListener("wheel", trapWheel, { passive: false });
+    return () => overlay.removeEventListener("wheel", trapWheel);
+  }, []);
+
   const isPast = useMemo(() => {
     const endUtc = DateTime.fromISO(occurrence.endsAtIso, { zone: "utc" });
     return endUtc.isValid && endUtc <= DateTime.now().toUTC();
@@ -207,7 +249,10 @@ export function CommunityCalendarEventModal({
   ]);
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/55 p-4 sm:p-6">
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/55 p-4 sm:p-6"
+    >
       <button
         type="button"
         aria-label="Close event card"
@@ -269,20 +314,36 @@ export function CommunityCalendarEventModal({
           <X className="h-4 w-4" />
         </button>
         <CommunityCalendarCoverImage occurrence={occurrence} variant="hero" />
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div
+          ref={scrollContainerRef}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        >
           <div className="space-y-3 p-5">
           {occurrence.isCancelled ? (
             <p className={communityCalendarCancelledBadgeClass()}>Cancelled</p>
           ) : null}
-          <h2
-            className={`text-2xl font-bold leading-tight ${
-              occurrence.isCancelled
-                ? "text-rose-600 line-through"
-                : "text-slate-900"
-            }`}
-          >
-            {occurrence.title}
-          </h2>
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+            <h2
+              className={`min-w-0 text-2xl font-bold leading-tight ${
+                occurrence.isCancelled
+                  ? "text-rose-600 line-through"
+                  : "text-slate-900"
+              }`}
+            >
+              {occurrence.title}
+            </h2>
+            {isPast && watchUrl && !occurrence.isCancelled ? (
+              <a
+                href={watchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+              >
+                <Video className="h-4 w-4" />
+                Watch recording
+              </a>
+            ) : null}
+          </div>
           <p className="flex items-start gap-2 text-sm text-slate-700">
             <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
             <span>{whenLabel}</span>
@@ -375,19 +436,6 @@ export function CommunityCalendarEventModal({
                     </p>
                   );
                 })}
-            </div>
-          ) : null}
-          {isPast && watchUrl && !occurrence.isCancelled ? (
-            <div className="border-t border-slate-100 pt-3">
-              <a
-                href={watchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
-              >
-                <Video className="h-4 w-4" />
-                Watch recording
-              </a>
             </div>
           ) : null}
           {isPast && canManage && !occurrence.isCancelled ? (

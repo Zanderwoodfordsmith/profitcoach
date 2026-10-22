@@ -72,14 +72,19 @@ function namesMatch(a: string | null | undefined, b: string | null | undefined):
   return Boolean(left && right && left === right);
 }
 
+/** Drop a trailing Ltd / Limited / PLC / LLP / Inc; keeps the casing as typed. */
+export function stripBusinessLegalSuffix(text: string): string {
+  const trimmed = text.trim();
+  return trimmed.replace(BUSINESS_LEGAL_SUFFIX, "").trim() || trimmed;
+}
+
 /** Title-case a company name and drop trailing Ltd / Limited / LLC / Inc. */
 export function formatBusinessLabel(
   text: string | null | undefined
 ): string | null {
   const formatted = formatProspectLabel(text);
   if (!formatted) return null;
-  const stripped = formatted.replace(BUSINESS_LEGAL_SUFFIX, "").trim();
-  return stripped || formatted;
+  return stripBusinessLegalSuffix(formatted);
 }
 
 export function businessNamesMatch(

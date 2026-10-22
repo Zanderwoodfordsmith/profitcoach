@@ -1,0 +1,64 @@
+Email infrastructure and deliverability is not just important, it's mandatory for your cold email campaigns in 2026 and 2027.
+And so in today's video, I want to react to slash share some top posts from influencers talking about how to run infrastructure and give that value to you.
+Let's jump into it.
+By the way, if you want us to run your cold email campaigns for you, you can go to coldemailmachine.com.
+Next up is Mohan Mathu, who's talking about recovering from deliverability drops.
+How do you define or how do you identify when you have a deliverability issue?
+So the key thing here to note is that when you send emails at scale, even when you have a great offer, you're going to get people say to you they're not interested.
+If we run a campaign and actually it's just a really bad offer, if deliverability is not the issue, we'll get loads of replies just saying like, oh, we're not interested in this, right?
+or whatever it might be. So don't look at bad replies as a desirability issue, because, you know,
+if you're getting replies, it's because people are receiving the message most likely in their
+primary inbox. But if you're getting no replies, it's a very high chance that you have a
+deliverability issue. You can look at your reply rates. And if they're below 1%, if they're point
+anything, there's a high chance that that's the issue. This next one is a post from Eric
+Nowelski where he's talking about automating unhealthy domain swaps. Here's the problem.
+domains get flagged as unhealthy but they're still in active campaigns so he automated it with
+cursor first he runs a deliverability audit which sorts their domains into three statuses active
+backup domains and cancelled then cursor hits the smart lead api to pull all the active campaigns
+pull all the domains and inboxes attached to each campaign then cursor checks supabase to get the
+status of each domain find the unused active domains available for swapping and it swaps them
+in. This is an easy win if you're running cold email at scale. I know some of our clients are
+burning domains every two weeks. It's an outlier, but still it's good to know when you can swap them
+in and out. Most clients can keep domains three to six months. If you're under that, it's mostly
+because you're in a sketchy industry. This client I'm talking about is in kind of a sketchy gray hat
+industry. And so that's why he has to swap more often. But this post from Eric Nowalski has a
+pretty good way to automate that swap. This next one's from Nick Abraham. He's kind of ringing the
+bell of doom and gloom a little bit. He's saying that all of these platform providers and everything
+are getting wiped off the map and getting destroyed. And his main purpose of this is take a
+breath, chill out, and most importantly, have backup infrastructure, which means if you're
+running on email bison, maybe have instantly there in the background. If you're running on instantly,
+maybe have smart lead there, maybe run some campaigns through all three. I know we run
+through a lot of different infrastructure providers. We're touching all the different
+verification platforms, whether we're pulling from Scraper City or we're verifying with Lead Magic,
+whatever it ends up being, we are all over the place because having that backup infrastructure
+is so necessary. You never know when these tools are going to get taken down. Matthew Lucero also
+did a cool post about stopping misleading tests. So a lot of people think the bottleneck is
+deliverability. A lot of people don't do split tests properly and people tend to overstate the
+importance of scripts and understate the importance of lists. Offer plus targeting is key. And I 100%
+agree with that. If you have a solid offer and you have a great list and you have good
+infrastructure to send to that list, then you can basically send these people any copy and it will
+go through. So if you're A-B testing your copy, you're actually A-B testing the wrong thing. You
+should be testing the offer and the list. I'll give you an example. Right now we're spinning up
+a campaign with cold email machine targeting to start 15 to 30,000 cents a month. And instead of
+sending all of these different copy variations, we have it split into two markets. We're going to
+send to niche number one and niche number two. And based on which one wins, we're going to scale up
+the winning niche. Speaking of clients, Josh Whitfield here has a post about managing infrastructure
+across clients. They'll separate the client infrastructure. Each client needs their own
+domains, inboxes, billing, deliverability history, sending assignments and campaign data, and setup
+is crucial for improving performance. He also sets his limits at the inbox level because a monthly
+volume target doesn't mean much if the underlying inboxes are unhealthy. New domains need time to
+warm before carrying real volume. And he puts verification before instantly. They source through
+APIs, MCP connections, and our own data cache. That's totally true. I use Scraper City and Lead
+magic for my stack. I also sometimes use find email and million verifier as well inside of our
+verification waterfall before anything goes to a sending tool. He also uses CLI and API for
+repeatable work. That means he's talking to Claude agents or chat GPT agents to run most of his AB
+tests, his sender assignments, et cetera, programmatically without having to have a bunch
+more manual work assigned to him or his team. Then he reconciles the provider state instead of
+trusting the dashboard, which sounds like AI slop, but basically means he has all the URLs and he
+checks those specifically rather than looking at a UI to see what's up. And I've seen the same in
+our analytics. And then you feed campaign performance back into the system and he's using
+codecs to automatically improve his cold email campaigns. Did you like this type of video? Let
+me know down in the comments what you learned and if you want to see more like this. Otherwise,
+I'll talk to you soon. If you need leads, check out Scraper City. For cold email support,
+go to Galadon Gold. And if you want my favorite tools to grow your business, go to alexberman.com
+slash tools. The next video is coming up now.

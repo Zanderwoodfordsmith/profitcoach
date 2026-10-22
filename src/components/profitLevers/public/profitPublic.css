@@ -1,0 +1,680 @@
+/*
+ * Profit levers, the public page. BCA look (bca-website app/design-tokens.css): Figtree in two weights, the light
+ * #f6f8fb ground, navy pills. The table and bars come from the Targets tab styles (../targets/targets.css).
+ */
+
+.pp {
+  --pp-ink: #0d1f31;
+  --pp-slate: #5b6b80;
+  --pp-faint: #9aa7b6;
+  --pp-line: #e3e8ef;
+  --pp-ground: #f6f8fb;
+  --pp-navy: #0c5290;
+  --pp-navy-50: #eef4fa;
+  --pp-sky: #1a8fd4;
+  --pp-gradient: linear-gradient(90deg, #051e36 0%, #0c5290 48%, #1a8fd4 100%);
+  /* The Targets styles read these. */
+  --dash-ink: var(--pp-ink);
+  --dash-muted: var(--pp-slate);
+  --dash-line: var(--pp-line);
+  --dash-accent: var(--pp-navy);
+  --tgt-now: var(--pp-navy);
+
+  display: block;
+  min-height: 100vh;
+  background: var(--pp-ground);
+  color: var(--pp-ink);
+  font-family: var(--cs-font), system-ui, sans-serif;
+  caret-color: var(--pp-navy);
+}
+
+.pp ::selection {
+  background: rgba(26, 143, 212, 0.22);
+  color: var(--pp-ink);
+}
+
+.pp :focus-visible {
+  outline: 2px solid var(--pp-sky);
+  outline-offset: 2px;
+}
+
+.pp-top {
+  display: flex;
+  align-items: center;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 22px 24px 0;
+}
+
+.pp-top__logo {
+  display: block;
+  height: 36px;
+  width: auto;
+}
+
+.pp-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px 72px;
+}
+
+/* Intro: the BCA two-weight headline */
+
+.pp-intro {
+  padding: 56px 0 28px;
+  text-align: center;
+}
+
+.pp-title {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-size: clamp(2.125rem, 4.6vw, 3.5rem);
+  letter-spacing: -0.03em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.pp-title__light {
+  color: var(--pp-slate);
+  font-weight: 300;
+}
+
+.pp-title__bold {
+  color: var(--pp-ink);
+  font-weight: 700;
+}
+
+.pp-lede {
+  max-width: 34rem;
+  margin: 18px auto 0;
+  color: var(--pp-slate);
+  font-size: 1.1875rem;
+  line-height: 1.5;
+}
+
+/* Cards */
+
+.pp-card {
+  border: 1px solid var(--pp-line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(13, 31, 49, 0.04), 0 8px 24px -12px rgba(13, 31, 49, 0.08);
+}
+
+.pp-h2 {
+  margin: 0;
+  color: var(--pp-ink);
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Last year and the three profit targets */
+
+.pp-start {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 24px 48px;
+  padding: 28px 32px;
+}
+
+.pp-start__group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pp-start__group + .pp-start__group {
+  padding-left: 48px;
+  border-left: 1px solid var(--pp-line);
+}
+
+.pp-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pp-fields.is-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pp-field__label {
+  color: var(--pp-slate);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pp-field__note {
+  color: var(--pp-slate);
+  font-size: 0.8125rem;
+}
+
+.pp-check {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ecf8f0;
+  color: #166534;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.pp-check svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.pp-check.is-off {
+  background: #fff8e6;
+  color: #854d0e;
+}
+
+/* The number boxes: white, bordered, clearly something to type in. */
+
+.pp-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 6.5rem;
+  height: 38px;
+  padding: 0 10px;
+  border: 1.5px solid #cbd4df;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--pp-ink);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pp-box:hover {
+  border-color: #86afd3;
+}
+
+.pp-box:focus-within {
+  border-color: var(--pp-navy);
+  box-shadow: 0 0 0 4px rgba(26, 143, 212, 0.16);
+}
+
+.pp-box input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  outline: none;
+}
+
+.pp-box input::placeholder {
+  color: var(--pp-faint);
+}
+
+.pp-box__unit {
+  color: var(--pp-slate);
+  font-weight: 500;
+}
+
+.pp-box.is-lg {
+  height: 52px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 1.3125rem;
+  font-weight: 650;
+}
+
+.pp-box.is-lg input {
+  text-align: left;
+}
+
+/* A target: the same box, quieter, so Now reads first. */
+.pp-box.is-quiet {
+  border-style: dashed;
+  border-color: #cbd4df;
+  background: var(--pp-ground);
+  color: var(--pp-slate);
+  font-weight: 500;
+}
+
+.pp-box.is-quiet:focus-within {
+  border-style: solid;
+  background: #fff;
+  color: var(--pp-ink);
+}
+
+/* Profit a year, and the slider that moves all seven */
+
+.pp-result {
+  overflow: hidden;
+}
+
+.pp-hero.tgt-hero {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 28px 32px 24px;
+}
+
+.pp-hero-was {
+  margin-right: 12px;
+  color: var(--pp-faint);
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pp-hero-what {
+  color: var(--pp-sky);
+}
+
+.pp-improve {
+  display: grid;
+  grid-template-columns: minmax(200px, 300px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px 32px;
+  padding: 20px 32px 24px;
+  border-top: 1px solid var(--pp-line);
+  background: linear-gradient(180deg, #fbfcfe, #f6f8fb);
+}
+
+.pp-improve__label {
+  color: var(--pp-ink);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.pp-improve__control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pp-improve input[type="range"] {
+  --pp-fill: 0%;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  cursor: ew-resize;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.pp-improve input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background:
+    var(--pp-gradient) 0 0 / var(--pp-fill) 100% no-repeat,
+    #e3e8ef;
+}
+
+.pp-improve input[type="range"]::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #e3e8ef;
+}
+
+.pp-improve input[type="range"]::-moz-range-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--pp-gradient);
+}
+
+.pp-improve input[type="range"]::-webkit-slider-thumb {
+  width: 26px;
+  height: 26px;
+  margin-top: -8px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: var(--pp-navy);
+  box-shadow: 0 0 0 1px rgba(13, 31, 49, 0.18), 0 4px 10px -2px rgba(12, 82, 144, 0.45);
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.pp-improve input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+.pp-improve input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: var(--pp-navy);
+  box-shadow: 0 0 0 1px rgba(13, 31, 49, 0.18), 0 4px 10px -2px rgba(12, 82, 144, 0.45);
+}
+
+.pp-improve__stops {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.pp-improve__stops button {
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pp-faint);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.pp-improve__stops button:hover {
+  color: var(--pp-navy);
+}
+
+.pp-improve__stops button.is-on {
+  color: var(--pp-navy);
+}
+
+.pp-improve__value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 6.5rem;
+  margin: 0;
+  color: var(--pp-slate);
+  font-size: 0.9375rem;
+}
+
+.pp-improve__value strong {
+  color: var(--pp-navy);
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* The table */
+
+.pp-table.tgt-panel {
+  border-color: var(--pp-line);
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(13, 31, 49, 0.04), 0 8px 24px -12px rgba(13, 31, 49, 0.08);
+}
+
+.pp-table .tgt-panel__head {
+  align-items: center;
+  padding: 20px 24px 16px;
+}
+
+.pp-hint {
+  color: var(--pp-slate);
+  font-size: 0.875rem;
+}
+
+.pp-table .tgt-grid-table td,
+.pp-table .tgt-grid-table tbody th {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.pp-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 11rem;
+}
+
+.pp-step__name {
+  color: var(--pp-ink);
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+
+.pp-step__hint {
+  max-width: 15rem;
+  white-space: normal;
+  color: var(--pp-slate);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.pp-table .pp-box {
+  width: 7.5rem;
+}
+
+.pp-worked {
+  display: inline-block;
+  padding-right: 12px;
+  color: var(--pp-ink);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-bottom: 1px dotted var(--pp-faint);
+  cursor: help;
+}
+
+.pp-total th,
+.pp-total td {
+  background: var(--pp-navy-50);
+}
+
+.pp-total .pp-step__name {
+  font-size: 1rem;
+}
+
+/* End */
+
+.pp-end {
+  padding: 24px 0 0;
+  text-align: center;
+}
+
+.pp-note {
+  margin: 0 0 32px;
+  color: var(--pp-slate);
+  font-size: 0.9375rem;
+}
+
+.pp-cta-line {
+  margin: 0 0 14px;
+  color: var(--pp-ink);
+  font-size: 1.375rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.pp-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: var(--pp-navy);
+  color: #fff;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  text-decoration: none;
+  box-shadow: 0 6px 18px -8px rgba(12, 82, 144, 0.6);
+  transition: background-color 0.15s ease, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pp-cta:hover {
+  background: #0a467b;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1000px) {
+  .pp-start {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pp-start__group + .pp-start__group {
+    padding-left: 0;
+    padding-top: 22px;
+    border-left: 0;
+    border-top: 1px solid var(--pp-line);
+  }
+
+  .pp-improve {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .pp-improve__label {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .pp-top,
+  .pp-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .pp-intro {
+    padding: 36px 0 12px;
+  }
+
+  .pp-start,
+  .pp-hero.tgt-hero,
+  .pp-improve {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .pp-fields.is-three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pp-hero.tgt-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .pp-improve {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .pp-improve__stops button {
+    padding: 2px 0;
+    font-size: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pp-box,
+  .pp-cta,
+  .pp-improve input[type="range"]::-webkit-slider-thumb {
+    transition: none;
+  }
+}
+
+/* Worked-out rows: cost per lead, cost to win a customer, lifetime gross value. */
+
+.pp-worked-row th,
+.pp-worked-row td {
+  background: #fbfcfe;
+}
+
+.pp-worked-row .pp-step__name {
+  font-weight: 600;
+}
+
+.pp-target-text {
+  color: var(--pp-slate);
+  font-weight: 500;
+}
+
+/* The two numbers that matter most */
+
+.pp-keys {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--pp-line);
+}
+
+.pp-keys__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 32px 24px;
+}
+
+.pp-keys__item + .pp-keys__item {
+  border-left: 1px solid var(--pp-line);
+}
+
+.pp-keys dt {
+  color: var(--pp-slate);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pp-keys dd {
+  margin: 0;
+  color: var(--pp-ink);
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.pp-keys__item.is-ratio dd {
+  color: var(--pp-navy);
+}
+
+.pp-keys__was {
+  margin-right: 8px;
+  color: var(--pp-faint);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.pp-keys__what {
+  color: var(--pp-sky);
+}
+
+.pp-keys p {
+  margin: 0;
+  color: var(--pp-slate);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 760px) {
+  .pp-keys {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pp-keys__item {
+    padding: 16px 18px;
+  }
+
+  .pp-keys__item + .pp-keys__item {
+    border-left: 0;
+    border-top: 1px solid var(--pp-line);
+  }
+}

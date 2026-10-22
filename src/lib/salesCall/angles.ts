@@ -7,7 +7,7 @@
  */
 
 import { PAM_ANGLES } from "./pamAngles";
-import { PITCH_PHASES, STANDARD_BRIDGE, STANDARD_RECAP, STANDARD_STEPS, STANDARD_TOGETHER } from "./script";
+import { STANDARD_PHASED, STANDARD_STEPS, STANDARD_TOGETHER } from "./script";
 
 export type AngleId = "standard" | "customers" | "off-tools" | "profit" | "systems" | "team";
 
@@ -33,9 +33,7 @@ export const ANGLES: PitchAngle[] = [
     line: "Works for any owner",
     steps: STANDARD_STEPS,
     together: STANDARD_TOGETHER,
-    bridge: STANDARD_BRIDGE,
-    phases: PITCH_PHASES.map((p) => ({ text: p.text, check: p.check })),
-    recap: STANDARD_RECAP,
+    ...STANDARD_PHASED,
   },
   ...PAM_ANGLES,
 ];

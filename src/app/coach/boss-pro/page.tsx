@@ -97,6 +97,9 @@ function CoachWorkshopPageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const contactFromUrl = searchParams.get("contact")?.trim() ?? "";
+  // From the BOSS Score Review script: ?name=…&business=… opens a new person with those filled in.
+  const nameFromUrl = searchParams.get("name")?.trim() ?? "";
+  const businessFromUrl = searchParams.get("business")?.trim() ?? "";
   const { impersonatingCoachId } = useImpersonation();
 
   const syncContactUrl = useCallback(
@@ -115,12 +118,12 @@ function CoachWorkshopPageContent() {
   const chrome = useBossWorkshopChrome();
   const isMinimalChrome = chrome?.isMinimalWorkshopChrome ?? false;
   const [contacts, setContacts] = useState<PickRow[]>([]);
-  const [selectedId, setSelectedId] = useState<string>(() => contactFromUrl);
+  const [selectedId, setSelectedId] = useState<string>(() => contactFromUrl || (nameFromUrl ? NEW_PERSON_VALUE : ""));
   const [deepLinkedContact, setDeepLinkedContact] =
     useState<WorkshopSessionSummary | null>(null);
-  const [newPersonName, setNewPersonName] = useState("");
+  const [newPersonName, setNewPersonName] = useState(nameFromUrl);
   const [newPersonTitle, setNewPersonTitle] = useState("");
-  const [newPersonBusiness, setNewPersonBusiness] = useState("");
+  const [newPersonBusiness, setNewPersonBusiness] = useState(businessFromUrl);
   const [newPersonConfirmError, setNewPersonConfirmError] = useState<string | null>(
     null
   );

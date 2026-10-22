@@ -294,6 +294,7 @@ export function coachClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
     `${prefix}/clients`,
     `${prefix}/playbooks`,
     `${prefix}/boss-pro`,
+    `${prefix}/profit-levers`,
   ];
 }
 
@@ -334,7 +335,7 @@ export type CoachClientsTabItem = {
 /**
  * Get Clients peer tabs — Classroom Get Calls order:
  * Campaigns generate conversations, conversations book calls.
- * Campaigns → Conversations → Calls → Prospects → Script → Content → Toolkit
+ * Campaigns → Conversations → Calls → Prospects → Scripts → Content → Toolkit
  * Create tools live in Profit Coach AI (fullscreen Create tab).
  *
  * Toolkit holds Links (`/share`, its first sub-tab, so it does not collide
@@ -366,8 +367,8 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
     },
     {
       href: `${prefix}/script`,
-      label: "Script",
-      description: "Your sales call script, step by step",
+      label: "Scripts",
+      description: "Every script for your calls with owners",
     },
   ];
   items.push({
@@ -480,6 +481,13 @@ export function coachClientsTabItems(
       label: "Playbooks",
       description: "Guides to share with clients, with your link added",
     },
+    {
+      key: "profit-levers",
+      href: `${prefix}/profit-levers`,
+      label: "Profit levers",
+      description: "What small moves on six numbers are worth",
+      adminPreview: true,
+    },
   ];
 }
 
@@ -509,6 +517,9 @@ export function coachClientsTabActive(
       Boolean(pathname.startsWith("/coach/playbooks/")) ||
       Boolean(pathname.startsWith("/admin/playbooks/"))
     );
+  }
+  if (tabKey === "profit-levers") {
+    return pathname === "/coach/profit-levers" || pathname === "/admin/profit-levers";
   }
   if (tabKey === "boss-pro") {
     return (

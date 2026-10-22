@@ -1,6 +1,7 @@
 /**
- * The sales call, step by step, for a coach selling to an owner. Discovery
- * follows Pam's value session (Value Session Mastery Workbook). The rest
+ * The Profit Roadmap call (call 2), step by step, for a coach selling to an
+ * owner. Discovery follows Pam's Discovery Call script, building on the BOSS
+ * Score Review (her value session now runs as the review). The rest
  * follows BCA's ClickUp call script (doc 2cq3b-23195: Transition & Pitch,
  * Committing / Temp Check, Investment, Taking Payment, Book A Next Steps),
  * reworded for an owner. The read-back and the pitch are also written live
@@ -69,33 +70,139 @@ export function togetherLine(outcome = ""): string {
 
 export const STANDARD_TOGETHER = togetherLine();
 
-export const STANDARD_BRIDGE =
-  "So, {name}, you want help with {problem}, and you want to get to {result}. Here's what we'll do. There are three phases: we get clear, we fix what matters, then we make it last. Three things stay with you, because only you can do them. Turn up and be honest about what's really going on. Make the decisions. And do what we agree, or get it done through your team. My job is to make sure you always know the next move, and that it happens.";
-
-export const STANDARD_RECAP =
-  "So, in the first month we get clear and you have a 90-day plan. In months two and three we fix what matters, starting with {problem}. From month four we make it last, with a new plan every 90 days and a business that doesn't depend on you for everything. Your part is to be honest, make the decisions, and do what we agree. My job is to make sure you always know the next move. That's how we get you to {result}.";
-
-/** The phased pitch, in order, with the standard words for each phase. */
+/** The three phases, in order. The words come from phasedPitch. */
 export const PITCH_PHASES = [
-  {
-    name: "Get clear",
-    when: "The first month",
-    text: "In the first month we meet every week. We score the business across every area and find what's really behind {problem}, because the obvious problem isn't always the real one. We agree where the business is going, then build a 90-day plan: what, who, when, and how we'll know. Which means you stop guessing, and you know your first move towards {result}.",
-    check: "Does that make sense so far?",
-  },
-  {
-    name: "Fix what matters",
-    when: "Months two and three",
-    text: "In months two and three we work the plan, starting with {problem}. Quick wins first, often profit and cash. We set up a weekly scoreboard, a few numbers your team fills in and you can read in under a minute. Every session asks the same three things: what got done, what's stuck, what's next. Which means things actually change, not another list of ideas.",
-    check: "Can you see how that would work for you?",
-  },
-  {
-    name: "Make it last",
-    when: "From month four",
-    text: "From month four we meet twice a month. Every 90 days we score the business again, see what's moved, and set the next plan. We work on the numbers, the systems and the team, so the business doesn't depend on you for everything. Which means {result} sticks.",
-    check: "Want me to show you how it all fits together?",
-  },
+  { name: "Get clear", when: "The first month" },
+  { name: "Fix what matters", when: "Months two and three" },
+  { name: "Make it last", when: "From month four" },
 ];
+
+/**
+ * What one ready-made three-phase pitch says that another doesn't. The rest
+ * is shared, so every angle keeps the same shape and length.
+ */
+export type PhasedAngle = {
+  /** Bridge: what the problem looks like day to day, or "" for the standard pitch. */
+  looksLike: string;
+  /** Phase 1: what the scores find. */
+  find: string;
+  /** Phase 2: where the quick wins usually are. */
+  quickWins: string;
+  /** Phase 2: what the weekly scoreboard tracks. */
+  scoreboard: string;
+  /** Phase 2: what changes, after "So for you, that means". */
+  change: string;
+  /** Phase 2's check-in. */
+  check: string;
+  /** Phase 3's last point: what keeps this fix in place. */
+  keep: string;
+  /** Recap: what Phase 3 leaves them with. */
+  lasts: string;
+};
+
+/**
+ * The three-phase pitch, in the shape and near the length of the BCA Trusted
+ * Advisor pitch (bridge, three phases with what we do and what it means,
+ * support, recap), turned round for a coach talking to an owner. Points are
+ * lines starting "• " so they read as a list. Fill-ins: {name} {problem}
+ * {pain} {result} {why}.
+ */
+export function phasedPitch(a: PhasedAngle): { bridge: string; phases: { text: string; check: string }[]; recap: string } {
+  return {
+    bridge: [
+      `So, {name}, you know how you said {problem} is what's holding the business back?${a.looksLike ? ` ${a.looksLike}` : ""} And it's costing you {pain}.`,
+      "So here's what we're going to do.",
+      "We bring the Profit System into your business, and I work alongside you as your trusted advisor. Someone in your corner every month, who helps you see clearly, make better decisions and follow through on them.",
+      "And the part that matters most is this. We do the thinking, the planning and the follow-up together, so it leaves just three things for you to do:",
+      "1. Turn up and be honest about what's really going on.\n2. Make the decisions.\n3. Do what we agree, or get it done through your team.",
+      "My job is to make sure you always know the next move, and that it happens.",
+      "That's what takes you from where you are today to {result}. And there are three phases to it. We get clear, we fix what matters, then we make it last.",
+      "Let me take you through each one.",
+    ].join("\n\n"),
+    phases: [
+      {
+        text: [
+          "So as you'll know, when you're running a business it's hard to step back and see what's really going on. You're busy keeping everything moving, and everyone has a view on what's wrong. That's nobody's fault, it's just what happens when you're in it every day. But it means the real problem can stay hidden, and a year later it's still there.",
+          "So Phase 1 is where we get clear. That's the first month, and we meet every week.",
+          [
+            `• First, we score the business across all nine areas of the Profit System, so you see in one picture what's strong and what's weak. And we find ${a.find}, because the obvious problem isn't always the real one.`,
+            "• From there, we agree where the business is going. Where you want it in three years, and what has to be true for you to get to {result}.",
+            "• And finally, we build your 90-day plan. The few things that matter most, who does each one, by when, and how we'll know it's working.",
+          ].join("\n"),
+          "And we don't wait for the plan to start. We start on {problem} from the first or second session, so you feel a difference straight away.",
+          "And just to stress, we build all of this together, around your business and your numbers. Nothing comes off the shelf.",
+          "So what that means for you is that by the end of the first month you stop guessing. You know what's really going on, you've got your plan, and you're already working on {problem}.",
+        ].join("\n\n"),
+        check: "Does that make sense so far?",
+      },
+      {
+        text: [
+          "So now you've got the plan. You know what's really going on and what comes first, so we move on to the next phase.",
+          "Phase 2 is where we fix what matters. That's months two and three.",
+          "You know how you said {problem} is the first thing you want fixed? By now you've already made a start on it. Phase 2 is where we finish the job, and make sure it stays fixed.",
+          [
+            "• We get to what's really causing {problem}, and you and your team fix it at the root, so it doesn't come back.",
+            `• We keep the quick wins coming, ${a.quickWins}.`,
+            `• We set up a weekly scoreboard. ${a.scoreboard}, which your team fills in and you can read in under a minute, so you know straight away if things are on track.`,
+            "• And every session asks the same three questions. What got done, what's stuck, and what's next. Every job has an owner and a date, so nothing drifts.",
+          ].join("\n"),
+          "And the reason it works is simple. We do a few things properly, in the right order, and I make sure they happen. That's the difference between this and another list of good ideas.",
+          "And you're not doing it on your own. Each week we look at the scoreboard together, and if something's stuck, we work out why and what to do next, before it costs you.",
+          "Your part in this phase is to make the decisions, and do what we agree or get your team to. And to give you an idea of your time, it's our sessions plus the work you'd be doing anyway. Just now it's the right work.",
+          `So for you, that means ${a.change}.`,
+        ].join("\n\n"),
+        check: a.check,
+      },
+      {
+        text: [
+          "So by now things are moving. The plan's working, and the numbers are heading the right way.",
+          "The next phase is about making it last, so the business keeps getting better without everything depending on you.",
+          "You know how you said you want {result}? And that for you, it really comes down to {why}? Phase 3 is where we make that stick. From month four, we meet twice a month.",
+          [
+            "• Every 90 days we score the business again, see what's moved, and set the next 90-day plan. So you're always working on what matters most right now.",
+            "• We put the right numbers in front of you, so you can see how the business is doing at a glance.",
+            "• We work out the systems the business needs, and your team puts them in, so the work gets done the same way every time.",
+            `• ${a.keep}`,
+          ].join("\n"),
+          "And as the business changes, the plan changes with it. A key person leaves, a big customer lands, a bad month. We deal with it in the session, so it doesn't knock you off course.",
+          "And the biggest shift from where you are now is that the business stops needing you for everything. You lead it, and your team runs it. I'm there as your trusted advisor, to help you make better decisions and make sure they happen. That's what gets the result, and it's why this takes a few hours a month of your time, not more of your week.",
+          "So with all three phases in place, you get to {result}, and it lasts.",
+        ].join("\n\n"),
+        check: "Does all of that make sense?",
+      },
+    ],
+    recap: [
+      "So, to recap.",
+      [
+        "Phase 1, we get clear and start on {problem} straight away. We find what's really going on, agree where the business is going, and build your 90-day plan.",
+        "Phase 2, we fix what matters. We finish the job on {problem} and make sure it stays fixed, with the scoreboard and our sessions keeping it moving.",
+        `Phase 3, we make it last, with a new plan every 90 days and ${a.lasts}.`,
+      ].join("\n"),
+      "And I'm with you the whole way through.",
+      "The only parts on you are being honest, making the decisions, and doing what we agree. My job is to make sure you always know the next move, and that it happens.",
+      "So that's how we get you from {problem} to {result}, so you don't have to deal with {pain} again.",
+    ].join("\n\n"),
+  };
+}
+
+export const STANDARD_PHASED = phasedPitch({
+  looksLike: "",
+  find: "what's really behind {problem}",
+  quickWins: "often in profit and cash, because more money in the bank gives you room to fix everything else",
+  scoreboard: "A handful of numbers",
+  change: "{problem} stops being something you live with, and becomes something you're fixing week by week",
+  check: "Can you see how that would work for you?",
+  keep: "And we get the right people owning the right things, so decisions stop landing on your desk.",
+  lasts: "a business that doesn't depend on you for everything",
+});
+
+/** Optional, after the bridge, when they want to know who they'd be working with. The gaps are the coach's own. */
+export const PHASED_ABOUT =
+  "And so you know who you'd be working with, here's a bit about me. [your background in a line or two]. [a result you got for an owner like them].";
+
+/** After Phase 3, before the recap. Same for every angle. */
+export const PHASED_SUPPORT =
+  "And from day one, you're not on your own. If something comes up between sessions, you message me and we talk it through. And your scores, your plan and your scoreboard are always there, so you can see exactly where things stand.\n\nSo you've always got someone by your side while the business grows.";
 
 export const FACTS: { key: FactKey; label: string; ask: string }[] = [
   {
@@ -135,52 +242,140 @@ export type Phase = {
   blocks: Block[];
 };
 
+/**
+ * Discovery on the Profit Roadmap call (call 2). Pam's BCA Discovery Call
+ * script (Oct 2026), turned round for a coach and an owner: where hers builds
+ * on the setter's notes, this builds on the BOSS Score Review. The action
+ * check and the admission question come from the review doc (20 Oct).
+ */
 const discovery: Block[] = [
   info(
     "How this call works",
-    "This is Pam's value session: a free, pitch-free conversation built around your superpower and their main pain. You give real value first, and the sale follows from that.",
-    "Your job in this part is to get the five facts in their words. Listen more than you talk. The notes panel shows what's still missing.",
+    "This is the second call. The review gave them value. This call goes deeper, then shows them how you'd help and what it costs, and they decide.",
+    "Your job in this part is to get the five facts in their words, building on your notes from the review. Listen more than you talk. The notes panel shows what's still missing.",
+    "If you're running the review and this call back to back, skip the rapport and the action check, and start at Current situation.",
   ),
-  h("Warm rapport"),
-  note("Two to three minutes."),
-  say("Great to meet you, {name}. Thanks for making the time. I'd love to understand more about where you're at right now and where you'd like to go."),
-  say("So what made you want to book this today?"),
-  h("Set the frame"),
-  say("Just so you know how this works: the point of today is for me to understand where the business is and where you want it to go. I'll ask you a few questions, I'll share a couple of things that should genuinely help, and if I think I can help further, I'll tell you how. Sound good?"),
-  note("Wait for the yes."),
-  h("Their biggest challenge"),
-  note("Gets you: their priority, and what it's costing them."),
-  say("What's the biggest challenge or opportunity you're facing right now that's stopping the business being where you want it to be?"),
-  say("And what's that costing you at the moment? In money, in time, or in how you feel?"),
-  info("Dig deeper", "How long has this been going on? What does it look like day to day? Who else does it affect? Use their words, and repeat them back."),
-  h("Where they want to be"),
+  h("Intro"),
+  say("Hey {name}, good to have you back. How've you been since the review?"),
+  say("So I've got my notes from the review. You're looking to [their goal], and [their constraint] is what's holding the business back most. Is that still right?"),
+  r(
+    "blue",
+    "You gave them something to do, and they've had time to do it",
+    say("And how did you get on with [the action from the review]?"),
+    r("green", "They did it", say("Great. What did you notice?"), note("Build on the win.")),
+    r("yellow", "They didn't", say("That's normal. Most owners don't act on standalone advice, even good advice. That's exactly what I'm there for.")),
+  ),
+  note("Skip the action if the review was yesterday, or back to back with this call."),
+  h("Agenda"),
+  say("So for today, I just want to start by asking you some questions about you and where you want the business to go. Then if it sounds like I can help, I'll show you how I'd get {business} there, over the next few years and not just the next few months, how the work runs and what it costs, and we take it from there. Sound good?"),
+  say("And just before we get into it, aside from the review, what were you hoping to get out of today? Just so I make sure we cover what's relevant to you."),
+  h("Current situation"),
+  note("You already know this from the review: how the business runs, their week and their numbers. Don't ask it again. Check what's changed, and only ask what your notes don't have."),
+  say("Has anything changed since we spoke?"),
+  r(
+    "blue",
+    "Your notes are thin on it",
+    say("Just to give me some context, talk me through a normal week for you in the business at the moment."),
+    say("How long have you been running it? And what took you into it in the first place?"),
+  ),
+  h("Goal and current position"),
   note("Gets you: the result they want, and their numbers."),
-  say("If we were having this same conversation 12 months from now, what would need to have changed in your business for you to feel genuinely happy with your progress?"),
-  say("Is there a number on that? Revenue, profit, hours a week, team size?"),
-  info("Why this matters", "This creates the gap between where they are and where they want to be. Everything you pitch later closes that gap."),
-  h("Why it matters to them"),
-  note("Gets you: their personal why."),
-  say("Why is solving this important to you personally, beyond just the numbers?"),
-  info("Listen for", "Family, freedom, pride, legacy, health. This is what you're really selling. Someone who wants systems so they can go away for two weeks without the phone ringing is buying those two weeks."),
-  h("What they've tried"),
-  say("What have you tried so far, and how has that worked out?"),
-  note("Respect their journey. Repeat it back."),
-  say("If nothing changed, and six months from now you were in exactly the same position, how would you feel about that?"),
-  note("Let it land. This is the cost of standing still."),
-  h("Give them value"),
-  say("Based on what you've told me, would you like me to share a couple of insights and strategies that I think will make a real difference?"),
-  info(
-    "The audit",
-    "On a value session, this is your 15-minute audit: your questions, scored red, amber or green. Don't just ask. Give them one or two things they can act on straight away. If there's a lot of red, frame it as opportunity.",
+  say("So what's the goal? Where do you want the business to be in 12 months?"),
+  say("Is there a number on that? Turnover, profit, hours a week?"),
+  say("And where is it now?"),
+  say("And looking further ahead, say three to five years, where do you want it to be? Bigger, easier to run, ready to sell, or something else?"),
+  say("And where are you in that picture? Still running it day to day, stepping back, or out of it altogether?"),
+  note("The long-term goal is what the plan builds towards. The 12 months is the first stretch of it."),
+  h("Problem isolation"),
+  note("Gets you: their priority."),
+  say("So how's it going in the business at the moment?"),
+  say("What would you say is the biggest thing stopping you getting to {result} right now, if anything?"),
+  r(
+    "blue",
+    "They're not sure what's holding them back",
+    say("In your BOSS Score, [your lowest area] came out lowest. When you look at that, does it feel like the real problem, or a sign of something else?"),
   ),
-  h("The magic question"),
-  note("After the aha moment."),
-  say("Would you like to see how I help my clients solve exactly this, and get results faster?"),
-  note("Wait for the yes. Then read it back."),
+  r(
+    "blue",
+    "What they say doesn't match their score",
+    say("That's interesting. Your score had [the area] lower than [what they just said]. Why do you think that is?"),
+  ),
+  r(
+    "blue",
+    "They name something big and vague, like growth",
+    say("You came out at level [their level], [the level name]. What do you think it would take to get to the next level?"),
+  ),
+  note("Vague? Use the problem audit at the bottom of this page."),
+  h("Dig deeper"),
+  note("Keep going until you hear the real problem, not the first answer. Use as many of these as you need."),
+  say("Tell me more about that."),
+  say("What does that look like day to day? Give me a recent example."),
+  say("Why do you think that keeps happening?"),
+  say("And why's that?"),
+  say("If you had to put a number on what it costs you in a year, what would it be?"),
+  say("And how long has this been an issue for?"),
+  say("And besides speaking to me today, what are you actively doing to move towards this right now? How's that working out for you?"),
+  h("Summarise the problem and pain"),
+  note("Gets you: what it's costing them."),
+  say("Got it. So it sounds like the biggest thing here is {problem}, and that's costing you {pain}. Would you agree with me on that?"),
+  h("Impact"),
+  say("And how's that been for you over the last [months or years]?"),
+  say("And if nothing changes, what does it cost you over the next 12 months? In money, in time, in the work you have to turn down?"),
+  say("And what kind of effect has that had at home?"),
+  note("Only if they've brought home or family into it themselves."),
+  h("What they've tried"),
+  say("Have you done anything before now to try and fix this? An accountant, a consultant, a coach, a course, anything like that?"),
+  r("blue", "Yes", say("How did that go? What worked, what didn't?")),
+  r("blue", "No", say("What's stopped you getting help with it before now?")),
+  say("Can I ask you an honest question? What do you think has kept you from fixing this on your own?"),
+  info(
+    "The admission",
+    "Listen for one of three answers: they can't do it alone, they want it faster, or they want a way that's proven. Each one is a reason to work with you, in their words.",
+    "If they say they could do it themselves: \"Then you may not need me. What would stop you starting tomorrow?\"",
+  ),
+  h("Reason and trigger point"),
+  r("blue", "They've never had help", say("So given you've never worked with anyone on this before, what's prompted you to look at getting help with it now?")),
+  r(
+    "blue",
+    "They tried before and it didn't work",
+    say("So given you tried [what they tried] before and it didn't quite work out, what made you feel this time might be different?"),
+    say("And what's prompted you to look at getting help with it now?"),
+  ),
+  h("Ideal criteria"),
+  say("So in terms of potentially working with someone to help you with this, what are you ideally looking for? Just to see if we're on the same page."),
+  note("A partner or co-owner comes up? Use the partner questions at the bottom of this page."),
+  h("Desired situation"),
+  note("Gets you: their personal why."),
+  say("Okay. So let's imagine for a second you've got all of that. You're at {result}, and {problem} is sorted. What does that allow you to do that you can't do now?"),
+  say("And once you're there, is that you sorted, or is that just the start?"),
+  say("And what would that mean for you personally?"),
+  say("And how would that feel, finally having [what they just said]?"),
+  h("Consequence and commitment"),
+  say("And with things as they are right now, how close do you honestly feel you are to getting to {result}?"),
+  say("And how much longer do you want to stay where you are?"),
+  say("And for you, what does it look like moving forward if you keep things the way they are? [The thing they're most afraid of, in their words: another year of the same, the same conversation next year.]"),
+  say("So is now the time to do something about this?"),
+  h("Pinpoint specifics"),
+  say("Okay, so just to really nail this. If we had to dial it right down, what specifically do you feel you need help with to get you to {result}?"),
   h("Read it back"),
   live("readback"),
   say("Have I understood that correctly?"),
-  note("Pause. Let them correct you."),
+  note("Pause. Let them correct you. They must agree with the diagnosis before you show the plan."),
+  h("Transition to the pitch"),
+  say("Got it. I think that's me done on the questions. I've got a solid understanding of you, where the business is now, and more importantly where you want it to go. And from what you've told me, I'm very confident I can help you with this. So with your permission, I'd like to walk you through exactly how I'd do that, my process for getting you from where you are now to where you want to be. How does that sound?"),
+  h("If they're vague: problem audit"),
+  note("Only if they're vague or just want information."),
+  say("Okay, got it. Usually the owners I speak to know the business could be doing better, but they're not sure exactly what's holding it back, or what to fix first."),
+  say("But it sounds like things are going fairly well for you. So is there anything you'd change, if you could?"),
+  say("Why would you change that? And why is that important to you now?"),
+  note("If still nothing clear:"),
+  say("Do you mind if I ask you something, and this might seem direct? From what you've said, things seem to be going fine. But the fact you took time out of a full week for a second call tells me there has to be something missing, something you want that you haven't got yet. So what's really going on?"),
+  note("Then back to the main script."),
+  h("If a partner comes up"),
+  note("Only if a partner or co-owner has come up."),
+  say("You mentioned [person]. What part do they play in a decision like this?"),
+  say("What would they need to see to be comfortable with it?"),
+  note("Then back to the main script."),
 ];
 
 const transition: Block[] = [
@@ -319,7 +514,7 @@ const investment: Block[] = [
 ];
 
 export const PHASES: Phase[] = [
-  { id: "discovery", title: "Discovery", goal: "Get the five facts in their words, then read them back.", blocks: discovery },
+  { id: "discovery", title: "Discovery", goal: "Build on the review. Get the five facts in their words, then read them back.", blocks: discovery },
   { id: "pitch", title: "The Pitch", goal: "Take command, then nine steps or three phases. Every part tied to their problem.", blocks: [...transition, ...afterPitch] },
   { id: "investment", title: "Investment", goal: "Check they're a 9 or 10 on the approach, then share the investment once and stop talking.", blocks: investment },
   { id: "objections", title: "Objections", goal: "The first objection is rarely the real one. Find it, then handle it.", blocks: [] },

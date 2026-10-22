@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 
 import { ANGLES } from "./angles";
 
-const FILL_INS = new Set(["name", "problem", "result"]);
+const FILL_INS = new Set(["name", "problem", "result", "pain", "why"]);
 
 describe("ready-made pitches", () => {
   it("has the standard pitch first, then Pam's five angles", () => {
@@ -26,6 +26,12 @@ describe("ready-made pitches", () => {
         assert.ok(!/because you told me/i.test(text), `"because you told me" in: ${text.slice(0, 60)}`);
         for (const [, key] of text.matchAll(/\{(\w+)\}/g)) assert.ok(FILL_INS.has(key), `unknown fill-in {${key}}`);
       }
+    });
+
+    it(`${angle.title}: the three phases keep the Trusted Advisor pitch's length`, () => {
+      const words = (t: string) => t.split(/\s+/).filter(Boolean).length;
+      assert.ok(words([angle.bridge, ...angle.phases.map((p) => p.text), angle.recap].join(" ")) >= 900);
+      for (const p of angle.phases) assert.ok(words(p.text) >= 180, `a phase is only ${words(p.text)} words`);
     });
   }
 });

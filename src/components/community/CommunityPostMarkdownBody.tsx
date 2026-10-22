@@ -81,7 +81,7 @@ function buildComponents(
 
         if (parsed && parsed.type !== "user") {
           const contentHref = mentionTargetHref(parsed);
-          const label = fromLink || (parsed.type === "lesson" ? "lesson" : "course");
+          const label = fromLink || parsed.type;
           const mentionLabel = `@${label}`;
           if (contentHref) {
             return (

@@ -69,9 +69,9 @@ export const GATED_ROUTES: GatedRoute[] = [
   {
     prefix: "/coach/script",
     feature: "nav.marketing",
-    title: "Script",
+    title: "Scripts",
     description:
-      "Run your sales call step by step, with a pitch written around what each owner tells you.",
+      "Every script for your calls with owners, from first contact to the close, with a pitch written around what each owner tells you.",
   },
   {
     prefix: "/coach/calls",

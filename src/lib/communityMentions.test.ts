@@ -151,3 +151,29 @@ describe("lesson mention tokens", () => {
     assert.equal(seg.kind === "mention" && seg.spot?.t, 270);
   });
 });
+
+describe("page mention tokens", () => {
+  it("round-trips an app page and a Resources document", () => {
+    for (const path of [
+      "/coach/community",
+      "/coach/academy/resources/client-agreement",
+      "/coach/blueprint/offer#s-offer-fee",
+      "/coach/blueprint/offer#f-practice.min_fee",
+    ]) {
+      const target = buildMentionTarget({ type: "page", path });
+      assert.equal(target, `page:${path}`);
+      const parsed = parseMentionTarget(target);
+      assert.deepEqual(parsed, { type: "page", path });
+      assert.equal(mentionTargetHref(parsed), path);
+    }
+  });
+
+  it("refuses paths outside the coach app", () => {
+    assert.equal(parseMentionTarget("page://evil.example"), null);
+    assert.equal(parseMentionTarget("page:/admin/coaches"), null);
+    assert.equal(parseMentionTarget("page:https://evil.example"), null);
+    assert.equal(parseMentionTarget("page:/coach/../admin"), null);
+    assert.equal(parseMentionTarget("page:/coach/blueprint#a#b"), null);
+    assert.equal(parseMentionTarget("page:/coach/blueprint#\"onload"), null);
+  });
+});

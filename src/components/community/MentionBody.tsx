@@ -129,6 +129,18 @@ function renderSegments(
         </Link>
       );
     }
+    if (seg.mentionType === "page" && seg.path) {
+      return (
+        <Link
+          key={i}
+          href={seg.path}
+          className={COMMUNITY_MENTION_LINK_CLASS}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {`@${seg.labelFromToken ?? "page"}`}
+        </Link>
+      );
+    }
     const userId = seg.userId ?? "";
     const label = nameById[userId] ?? seg.labelFromToken ?? "member";
     const href = profileHrefByUserId?.[userId];

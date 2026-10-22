@@ -47,6 +47,7 @@ export const MENTION_MARKDOWN_REGEX =
  *   - broadcast: `group:everyone` | `group:coaches`
  *   - lesson: `lesson:courseId:lessonId` (optional `?chapter=…&t=…`)
  *   - course: `course:courseId`
+ *   - page: `page:/coach/…[#spot]` (an app page, Resources document or Blueprint spot)
  */
 export const MENTION_TOKEN_REGEX =
   /\[(@{1,3})([^\]]+)\]\(mention:([^)\s]+)\)/gi;
@@ -59,7 +60,13 @@ const MENTION_ANY_SOURCE =
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export type MentionEntityType = "user" | "lesson" | "course" | "group";
+export type MentionEntityType = "user" | "lesson" | "course" | "page" | "group";
+
+/**
+ * App paths a page mention may open: coach pages only, no query or spaces,
+ * plus an optional spot on the page (`#s-offer-fee`, `#f-practice.min_fee`).
+ */
+const PAGE_PATH_RE = /^\/coach(\/[A-Za-z0-9_-]+)*(#[A-Za-z0-9_.-]+)?$/;
 
 export const BROADCAST_MENTION_GROUPS = ["everyone", "coaches"] as const;
 export type BroadcastMentionGroup = (typeof BROADCAST_MENTION_GROUPS)[number];
@@ -78,6 +85,7 @@ export type ParsedMentionTarget =
   | { type: "group"; group: BroadcastMentionGroup }
   | ({ type: "lesson"; area: AcademyArea; courseId: string; lessonId: string } & LessonMentionSpot)
   | { type: "course"; area: AcademyArea; courseId: string }
+  | { type: "page"; path: string }
   | null;
 
 /** Reads `chapter` and `t` from a lesson target's `?…` suffix. */
@@ -114,6 +122,7 @@ function parseBroadcastMentionTarget(target: string): BroadcastMentionGroup | nu
  *   - `lesson:<area>:<courseId>:<lessonId>[?chapter=<id>&t=<seconds>]`
  *     (legacy `lesson:<courseId>:<lessonId>` ⇒ classroom)
  *   - `course:<area>:<courseId>` (legacy `course:<courseId>` ⇒ classroom)
+ *   - `page:/coach/<path>`
  */
 export function parseMentionTarget(target: string): ParsedMentionTarget {
   if (UUID_RE.test(target)) {
@@ -153,6 +162,10 @@ export function parseMentionTarget(target: string): ParsedMentionTarget {
     if (!courseId) return null;
     return { type: "course", area: "classroom", courseId };
   }
+  if (target.startsWith("page:")) {
+    const path = target.slice("page:".length);
+    return PAGE_PATH_RE.test(path) ? { type: "page", path } : null;
+  }
   return null;
 }
 
@@ -163,19 +176,21 @@ export function buildMentionTarget(
     | { type: "group"; group: BroadcastMentionGroup }
     | ({ type: "lesson"; area: AcademyArea; courseId: string; lessonId: string } & LessonMentionSpot)
     | { type: "course"; area: AcademyArea; courseId: string }
+    | { type: "page"; path: string }
 ): string {
   if (ref.type === "user") return ref.userId;
   if (ref.type === "group") return broadcastMentionTarget(ref.group);
   if (ref.type === "lesson") {
     return `lesson:${ref.area}:${ref.courseId}:${ref.lessonId}${lessonSpotQuery(ref)}`;
   }
+  if (ref.type === "page") return `page:${ref.path}`;
   return `course:${ref.area}:${ref.courseId}`;
 }
 
 /** Number of leading `@` characters used in the composer display for an entity type. */
 export function atPrefixForMentionType(type: MentionEntityType): string {
   if (type === "lesson") return "@@";
-  if (type === "course") return "@@@";
+  if (type === "course" || type === "page") return "@@@";
   return "@";
 }
 
@@ -210,6 +225,7 @@ export function mentionTargetHref(target: ParsedMentionTarget): string | null {
   if (target.type === "course") {
     return courseMentionHref(target.area, target.courseId);
   }
+  if (target.type === "page") return target.path;
   return null;
 }
 
@@ -304,6 +320,8 @@ export type MentionSegment =
       lessonId?: string;
       /** Chapter + start time (lesson mentions that open one spot). */
       spot?: LessonMentionSpot;
+      /** App path (page mentions). */
+      path?: string;
       labelFromToken?: string;
     };
 
@@ -346,6 +364,8 @@ export function splitMentionSegments(body: string): MentionSegment[] {
           courseId: parsed.courseId,
           labelFromToken: label,
         });
+      } else if (parsed?.type === "page") {
+        out.push({ kind: "mention", mentionType: "page", path: parsed.path, labelFromToken: label });
       } else {
         // Unrecognised target: keep raw text so nothing is silently dropped.
         out.push({ kind: "text", text: m[0] });

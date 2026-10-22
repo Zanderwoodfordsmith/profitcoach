@@ -1,0 +1,1635 @@
+/*
+ * Profit levers v2: a copy of the BCA dashboard's Targets tab styles (bca-website components/dashboard/targets.css,
+ * 22 Oct 2026), with the few shared dashboard rules it leans on. Keep it in step with that file by hand.
+ */
+
+.dash {
+  --dash-ink: #0f172a;
+  --dash-muted: #64748b;
+  --dash-line: rgba(15, 23, 42, 0.09);
+  --dash-panel: #fff;
+  --dash-accent: #0c5290;
+  --dash-showed: #16a34a;
+  --dash-showed-tint: rgba(22, 163, 74, 0.11);
+  --dash-showed-text: #166534;
+  --dash-noshow: #f5c400;
+  --dash-noshow-tint: rgba(245, 196, 0, 0.32);
+  --dash-noshow-text: #854d0e;
+  --dash-cancelled: #dc2626;
+  --dash-cancelled-tint: rgba(220, 38, 38, 0.09);
+  --dash-cancelled-text: #991b1b;
+  --dash-stage-mid: #42a1ee;
+  --dash-stage-mid-tint: #e4f4ff;
+  --dash-stage-mid-text: #1d73c4;
+  --dash-stage-late: #0e8f86;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--dash-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dash-views {
+  display: inline-flex;
+  border: 1px solid var(--dash-line);
+  border-radius: 10px;
+  background: var(--dash-panel);
+  overflow: hidden;
+}
+
+.dash-views__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--dash-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dash-views__link + .dash-views__link {
+  border-left: 1px solid var(--dash-line);
+}
+
+.dash-views__link.is-on {
+  background: var(--dash-accent);
+  color: #fff;
+}
+
+/* ---- From targets.css ---- */
+
+/* Dashboard → Targets. Navy is "now" everywhere; sky is what a target needs. */
+
+.tgt {
+  --tgt-now: var(--dash-accent);
+  --tgt-target: var(--dash-stage-mid);
+  --tgt-track: #e6eef7;
+  --tgt-card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+@keyframes tgt-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Controls: one row above everything they change */
+
+.tgt-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.tgt-controls__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.tgt-controls__label {
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tgt-controls__range {
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+}
+
+.tgt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tgt-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--dash-line);
+  border-radius: 999px;
+  background: var(--dash-panel);
+  color: var(--dash-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.tgt-chip:hover {
+  border-color: rgba(12, 82, 144, 0.35);
+}
+
+.tgt-chip.is-on {
+  border-color: var(--tgt-now);
+  background: #eef5fc;
+}
+
+.tgt-chip:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.tgt-chip__check {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 5px;
+  background: var(--dash-panel);
+}
+
+.tgt-chip.is-on .tgt-chip__check {
+  border-color: var(--tgt-now);
+  background: var(--tgt-now);
+}
+
+.tgt-chip.is-on .tgt-chip__check::after {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border-bottom: 2px solid #fff;
+  border-left: 2px solid #fff;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+/* Hero: sold a month now, against the targets */
+
+.tgt-hero {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+  padding: 22px 26px;
+  border: 1px solid var(--dash-line);
+  border-radius: 16px;
+  background: var(--dash-panel);
+  box-shadow: var(--tgt-card-shadow);
+}
+
+.tgt-hero__figure {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tgt-hero__label {
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tgt-hero__value {
+  font-size: 3.25rem;
+  font-weight: 700;
+  font-variant-numeric: proportional-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.tgt-hero__sub {
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.tgt-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 26px;
+}
+
+.tgt-meter__track {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--tgt-track);
+}
+
+.tgt-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 8px;
+  border-radius: 999px;
+  background: var(--tgt-now);
+  transform-origin: left center;
+  animation: tgt-grow 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Cash, stacked: new members, payment plans, recurring. */
+.tgt-meter__stack {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  gap: 2px;
+  min-width: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  transform-origin: left center;
+  animation: tgt-grow 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tgt-meter__part {
+  flex-basis: 0;
+  min-width: 3px;
+}
+
+.tgt-meter__part.is-new,
+.tgt-meter__swatch.is-new,
+.tgt-meter__part.is-estimate,
+.tgt-meter__swatch.is-estimate {
+  background: var(--tgt-now);
+}
+
+.tgt-meter__part.is-plan,
+.tgt-meter__swatch.is-plan {
+  background: var(--dash-stage-mid);
+}
+
+.tgt-meter__part.is-recurring,
+.tgt-meter__swatch.is-recurring {
+  background: var(--dash-stage-late);
+}
+
+.tgt-meter__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+  list-style: none;
+}
+
+.tgt-meter__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tgt-meter__legend strong {
+  color: var(--dash-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tgt-meter__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.tgt-meter__tick {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--dash-ink);
+}
+
+.tgt-meter__tick-label {
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  color: var(--dash-ink);
+  font-size: 0.75rem;
+  font-weight: 650;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.tgt-meter__tick.is-end .tgt-meter__tick-label {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.tgt-meter__readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--dash-muted);
+  font-size: 0.875rem;
+}
+
+.tgt-meter__readout strong {
+  color: var(--dash-ink);
+  font-weight: 700;
+}
+
+/* Panels */
+
+.tgt-panel {
+  overflow: hidden;
+  border: 1px solid var(--dash-line);
+  border-radius: 14px;
+  background: var(--dash-panel);
+  box-shadow: var(--tgt-card-shadow);
+}
+
+.tgt-panel__head {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--dash-line);
+}
+
+.tgt-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.tgt-panel__sub {
+  margin: 4px 0 0;
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+/* Column tables: efficiency, volume and cost */
+
+.tgt-scroll {
+  /* relative, so screen-reader text in the far cells stays inside the scroll box on phones */
+  position: relative;
+  overflow-x: auto;
+}
+
+.tgt-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tgt-grid-table thead th {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--dash-line);
+  color: var(--dash-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tgt-grid-table tbody th,
+.tgt-grid-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dash-line);
+  font-weight: 400;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tgt-grid-table tbody:last-child tr:last-child > * {
+  border-bottom: 0;
+}
+
+.tgt-grid-table .tgt-num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tgt-row-name {
+  color: var(--dash-ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* One number per cell; what's behind it is on hover. */
+.tgt-value {
+  color: var(--dash-ink);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.tgt-value.is-whatif {
+  color: var(--dash-stage-mid-text);
+}
+
+/* Fewer than ten people behind it: a dotted underline, and the hover says so. */
+.tgt-value.is-few {
+  text-decoration: underline dotted rgba(100, 116, 139, 0.7);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
+
+/* Target, Rate and Diff sit together: narrow columns, small gaps. */
+.tgt-grid-table .tgt-tight {
+  width: 1%;
+  padding-right: 6px;
+  padding-left: 6px;
+}
+
+.tgt-grid-table .tgt-target {
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tgt-grid-table .tgt-diff {
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.tgt-grid-table .tgt-diff.is-better {
+  color: var(--dash-showed-text);
+}
+
+.tgt-grid-table .tgt-diff.is-worse {
+  color: var(--dash-cancelled-text);
+}
+
+.tgt-grid-table .tgt-month {
+  border-left: 1px solid var(--dash-line);
+}
+
+.tgt-grid-table .tgt-gain {
+  color: var(--dash-showed-text);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+/* Lead to roadmap opens to show the setter and VSL rates behind it. */
+.tgt-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: -2px -6px -2px -6px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tgt-expand:hover {
+  background: #f1f5f9;
+}
+
+.tgt-expand:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+.tgt-expand svg {
+  width: 12px;
+  height: 12px;
+  color: var(--dash-muted);
+  transition: transform 0.15s ease;
+}
+
+.tgt-expand[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.tgt-sub-row th,
+.tgt-sub-row td {
+  background: #fbfcfe;
+}
+
+.tgt-grid-table .tgt-sub-row > th {
+  padding-left: 40px;
+}
+
+.tgt-grid-table .tgt-subgroup-row th {
+  padding: 6px 12px 4px 40px;
+  background: #fbfcfe;
+  color: var(--dash-muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.tgt-sub-row .tgt-row-name {
+  color: #334155;
+  font-weight: 500;
+}
+
+.tgt-input-row .tgt-row-name {
+  color: var(--dash-accent);
+}
+
+.tgt-result th,
+.tgt-result td {
+  background: #f8fafc;
+}
+
+.tgt-result .tgt-row-name,
+.tgt-result .tgt-value {
+  font-weight: 700;
+}
+
+.tgt-muted {
+  color: var(--dash-muted);
+}
+
+.tgt-cap {
+  border-bottom: 1px dashed var(--dash-line);
+  cursor: default;
+}
+
+.tgt-cap__card {
+  gap: 12px;
+}
+
+.tgt-cap__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.tgt-cap__stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tgt-cap__stepper button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: var(--dash-panel);
+  color: var(--dash-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.tgt-cap__stepper button:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.tgt-cap__stepper button:disabled {
+  color: var(--dash-line);
+  cursor: default;
+}
+
+.tgt-cap__stepper button:focus-visible {
+  outline: 2px solid var(--dash-ink);
+  outline-offset: -2px;
+}
+
+.tgt-cap__value {
+  min-width: 36px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.tgt-over {
+  color: var(--dash-cancelled-text);
+  font-weight: 600;
+}
+
+.tgt-group-row th {
+  padding: 7px 14px 5px;
+  background: #f8fafc;
+  color: var(--dash-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Targets: one panel with efficiency, volume and cost sections */
+
+.tgt-panel.tgt-targets {
+  /* clip, not hidden, so the readout can stick while the table scrolls past */
+  overflow: clip;
+}
+
+.tgt-targets__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 20px;
+}
+
+.tgt-targets__head > div {
+  max-width: 720px;
+}
+
+.tgt-targets__title {
+  font-size: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tgt-targets__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.tgt-whatif-note {
+  color: var(--dash-stage-mid-text);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.tgt-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  border: 1px solid rgba(29, 115, 196, 0.35);
+  border-radius: 999px;
+  background: var(--dash-panel);
+  color: var(--dash-stage-mid-text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.tgt-reset:hover {
+  border-color: var(--dash-stage-mid-text);
+  background: var(--dash-stage-mid-tint);
+}
+
+.tgt-reset:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.tgt-reset svg {
+  width: 13px;
+  height: 13px;
+}
+
+.tgt-grid-table thead tr:first-child th {
+  border-top: 1px solid var(--dash-line);
+}
+
+/* The step column is only as wide as its names, so Target sits right next to them. */
+.tgt-one-table thead th:first-child,
+.tgt-one-table tbody tr:not(.tgt-group-row) > th {
+  width: 1%;
+  padding-right: 20px;
+  white-space: nowrap;
+}
+
+/* Both bars share the same width and thickness. */
+.tgt-grid-table .tgt-bar-col {
+  width: 26%;
+  min-width: 160px;
+}
+
+.tgt-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  outline: none;
+  cursor: help;
+}
+
+.tgt-tip:focus-visible {
+  box-shadow: 0 0 0 2px #38bdf8;
+}
+
+/* Only the tip's own text: a tip inside a card stays hidden until its own icon is hovered. */
+.tgt-tip:hover > .tgt-why,
+.tgt-tip:focus-visible > .tgt-why {
+  opacity: 1;
+  transform: none;
+}
+
+.tgt-tip--end > .tgt-why {
+  right: 0;
+  left: auto;
+  text-align: left;
+}
+
+.tgt-step-name {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px;
+  outline: none;
+  cursor: help;
+}
+
+.tgt-step-name:focus-visible {
+  box-shadow: 0 0 0 2px #38bdf8;
+}
+
+.tgt-step-name__icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+  transition: color 0.12s ease;
+}
+
+.tgt-step-name:hover .tgt-step-name__icon,
+.tgt-step-name:focus-visible .tgt-step-name__icon {
+  color: var(--dash-ink);
+}
+
+/* Above the name, so the table's scroll box never cuts it off at the bottom. */
+.tgt-why {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 6;
+  width: max-content;
+  max-width: 320px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--dash-ink);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(2px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+/* Rate bar: red, amber and green bands show the target; the dot is us. On rate rows the dot is a range input. */
+.tgt-bar {
+  position: relative;
+  display: block;
+  height: 24px;
+}
+
+.tgt-bar::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 999px;
+  background: var(--bands);
+}
+
+/* Worked out, not draggable: a short thick line, the bar's own height, so it never looks like a handle. */
+.tgt-bar__dot {
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 10px;
+  margin: -5px 0 0 -2px;
+  border-radius: 2px;
+  background: var(--tgt-now);
+}
+
+/* A what-if: the number before it moved, greyed, then an arrow to the new one. */
+.tgt-was {
+  color: var(--dash-muted);
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.tgt-month .tgt-value {
+  white-space: nowrap;
+}
+
+.tgt-was__arrow {
+  margin: 0 3px;
+  color: var(--dash-muted);
+  font-weight: 400;
+}
+
+/* A what-if: where we really are stays as a faint dot, and a dotted line runs to the dragged dot. */
+.tgt-bar__from {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 999px;
+  background: var(--tgt-now);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.tgt-bar__gap {
+  position: absolute;
+  top: 50%;
+  margin-top: -1px;
+  border-top: 2px dotted var(--tgt-now);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.tgt-bar input[type="range"] {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  cursor: ew-resize;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.tgt-bar input[type="range"]:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+.tgt-bar input[type="range"]::-webkit-slider-runnable-track {
+  height: 24px;
+  background: transparent;
+}
+
+.tgt-bar input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  border: 2.5px solid #fff;
+  border-radius: 999px;
+  background: var(--tgt-now);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.22), 0 1px 3px rgba(15, 23, 42, 0.25);
+  transition: transform 0.12s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* The dragged dot becomes a small target: a white ring inside the dot. */
+.tgt-bar input[type="range"].is-moved::-webkit-slider-thumb {
+  background: radial-gradient(circle, var(--tgt-now) 0 1.6px, #fff 1.6px 3.2px, var(--tgt-now) 3.2px);
+}
+
+.tgt-bar input[type="range"].is-moved::-moz-range-thumb {
+  background: radial-gradient(circle, var(--tgt-now) 0 1.6px, #fff 1.6px 3.2px, var(--tgt-now) 3.2px);
+}
+
+.tgt-bar input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.tgt-bar input[type="range"]::-moz-range-track {
+  height: 24px;
+  background: transparent;
+}
+
+.tgt-bar input[type="range"]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 2.5px solid #fff;
+  border-radius: 999px;
+  background: var(--tgt-now);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.22);
+}
+
+/* Volume: now as a bar, with a tick for what each target needs */
+
+.tgt-vrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tgt-vbar {
+  position: relative;
+  display: block;
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--tgt-track);
+}
+
+.tgt-vend {
+  min-width: 3.2em;
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tgt-vend.is-over {
+  color: var(--dash-cancelled-text);
+}
+
+.tgt-vbar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--tgt-now);
+  transform-origin: left center;
+  animation: tgt-grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tgt-vbar.is-input input[type="range"] {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: -8px;
+  width: calc(100% + 16px);
+  height: 24px;
+  margin: -12px 0 0;
+  background: transparent;
+  cursor: ew-resize;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.tgt-vbar.is-input input[type="range"]:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid #38bdf8;
+}
+
+.tgt-vbar.is-input input[type="range"]::-webkit-slider-runnable-track {
+  height: 24px;
+  background: transparent;
+}
+
+.tgt-vbar.is-input input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  border: 2.5px solid #fff;
+  border-radius: 999px;
+  background: var(--tgt-now);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.22), 0 1px 3px rgba(15, 23, 42, 0.25);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.tgt-vbar.is-input input[type="range"]::-moz-range-track {
+  height: 24px;
+  background: transparent;
+}
+
+.tgt-vbar.is-input input[type="range"]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 2.5px solid #fff;
+  border-radius: 999px;
+  background: var(--tgt-now);
+}
+
+.tgt-vbar__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--dash-ink);
+}
+
+.tgt-vbar__tick.is-over {
+  background: var(--dash-cancelled);
+}
+
+.tgt-vhead {
+  position: relative;
+  display: block;
+  height: 1.1em;
+}
+
+.tgt-vhead__label {
+  position: absolute;
+  top: 0;
+  color: var(--dash-ink);
+  font-weight: 700;
+  transform: translateX(-50%);
+}
+
+.tgt-vhead__label.is-end {
+  right: 0;
+  transform: none;
+}
+
+.tgt-status {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px 0 7px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.tgt-status svg {
+  width: 12px;
+  height: 12px;
+}
+
+.tgt-status--good {
+  background: var(--dash-showed-tint);
+  color: var(--dash-showed-text);
+}
+
+.tgt-status--close {
+  background: var(--dash-noshow-tint);
+  color: var(--dash-noshow-text);
+}
+
+.tgt-status--below {
+  background: var(--dash-cancelled-tint);
+  color: var(--dash-cancelled-text);
+}
+
+.tgt-status--none {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+@media (max-width: 900px) {
+  .tgt-hero {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tgt-hero {
+    padding: 18px;
+  }
+
+  .tgt-hero__value {
+    font-size: 2.75rem;
+  }
+
+  .tgt-grid-table td,
+  .tgt-grid-table tbody th,
+  .tgt-grid-table thead th {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .tgt-row-name {
+    white-space: normal;
+  }
+
+  .tgt-grid-table tbody th {
+    min-width: 130px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tgt-meter__fill,
+  .tgt-meter__stack,
+  .tgt-vbar__fill {
+    animation: none;
+  }
+
+  .tgt-chip,
+  .tgt-expand svg,
+  .tgt-why,
+  .tgt-bar input[type="range"]::-webkit-slider-thumb {
+    transition: none;
+  }
+}
+
+/* The card that opens over a bar: Poor / Okay / Good, with handles to move the lines */
+
+@keyframes tgt-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.tgt-linecard {
+  position: fixed;
+  z-index: 50;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background: var(--dash-panel);
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.22), 0 2px 6px rgba(15, 23, 42, 0.08);
+  color: var(--dash-ink);
+  text-align: left;
+  white-space: normal;
+  cursor: default;
+  animation: tgt-card-in 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tgt-linecard__title {
+  margin: 0 0 12px;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.tgt-linecard__bar {
+  position: relative;
+  height: 28px;
+}
+
+.tgt-linecard__bar::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 14px;
+  margin-top: -7px;
+  border-radius: 999px;
+  background: var(--bands);
+}
+
+/* Two range inputs on one track: only their handles take the pointer. */
+.tgt-linecard__bar input[type="range"] {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.tgt-linecard__bar input[type="range"]:focus-visible {
+  outline: none;
+}
+
+.tgt-linecard__bar input[type="range"]::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.tgt-linecard__bar input[type="range"]::-webkit-slider-thumb {
+  width: 10px;
+  height: 26px;
+  margin-top: 1px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  background: var(--dash-ink);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+  cursor: ew-resize;
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.tgt-linecard__bar input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px #38bdf8;
+}
+
+.tgt-linecard__bar input[type="range"]::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.tgt-linecard__bar input[type="range"]::-moz-range-thumb {
+  width: 6px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  background: var(--dash-ink);
+  cursor: ew-resize;
+  pointer-events: auto;
+}
+
+.tgt-linecard__scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  color: var(--dash-muted);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.tgt-linecard__bands {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tgt-linecard__band {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tgt-linecard__name::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -0.5px;
+}
+
+.tgt-linecard__band.is-poor .tgt-linecard__name::before {
+  background: rgba(220, 38, 38, 0.5);
+}
+
+.tgt-linecard__band.is-okay .tgt-linecard__name::before {
+  background: rgba(214, 170, 0, 0.85);
+}
+
+.tgt-linecard__band.is-good .tgt-linecard__name::before {
+  background: rgba(22, 163, 74, 0.6);
+}
+
+.tgt-linecard__name {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tgt-linecard__range {
+  padding-left: 15px;
+  color: var(--dash-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.tgt-linecard__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dash-line);
+}
+
+.tgt-linecard__state,
+.tgt-linecard__note {
+  margin: 0;
+  color: var(--dash-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.tgt-linecard__note {
+  margin-top: 12px;
+}
+
+.tgt-linecard__state.is-error {
+  color: var(--dash-cancelled-text);
+  font-weight: 600;
+}
+
+.tgt-linecard__reset {
+  flex: none;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--dash-line);
+  border-radius: 999px;
+  background: var(--dash-panel);
+  color: var(--dash-ink);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.tgt-linecard__reset:hover {
+  background: #f8fafc;
+}
+
+.tgt-linecard__reset:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tgt-linecard {
+    animation: none;
+  }
+}
+
+/* The closer calendar card: four blocks of five working days, by kind of call */
+
+.tgt-calcard {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background: var(--dash-panel);
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.22), 0 2px 6px rgba(15, 23, 42, 0.08);
+  color: var(--dash-ink);
+  text-align: left;
+  white-space: normal;
+  cursor: default;
+  animation: tgt-card-in 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tgt-calcard__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.tgt-calcard__sub {
+  margin-top: -6px;
+  color: var(--dash-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.tgt-calcard__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tgt-calcard__row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 10px;
+}
+
+.tgt-calcard__label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.tgt-calcard__ahead {
+  color: var(--dash-muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.tgt-calcard__bar {
+  display: flex;
+  gap: 1px;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tgt-track);
+}
+
+.tgt-calcard__part.is-roadmap,
+.tgt-calcard__swatch.is-roadmap {
+  background: var(--tgt-now);
+}
+
+.tgt-calcard__part.is-fit,
+.tgt-calcard__swatch.is-fit {
+  background: var(--dash-stage-mid);
+}
+
+.tgt-calcard__part.is-review,
+.tgt-calcard__swatch.is-review {
+  background: var(--dash-stage-late);
+}
+
+.tgt-calcard__part.is-lateCancel,
+.tgt-calcard__swatch.is-lateCancel {
+  background: #94a3b8;
+}
+
+.tgt-calcard__total {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tgt-calcard__total.is-over {
+  color: var(--dash-cancelled-text);
+}
+
+.tgt-calcard__of {
+  color: var(--dash-muted);
+  font-weight: 500;
+}
+
+.tgt-calcard__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--dash-line);
+  color: var(--dash-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.tgt-calcard__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tgt-calcard__swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tgt-calcard {
+    animation: none;
+  }
+}
+
+/* ---- Profit levers additions: their numbers typed in, and the three named £ targets ---- */
+
+.pl-board {
+  padding-bottom: 48px;
+}
+
+.pl-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  background: var(--dash-panel);
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+
+.pl-input:focus-within {
+  border-color: var(--tgt-now);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+}
+
+.pl-input input {
+  width: 4.6em;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dash-ink);
+  font: inherit;
+  text-align: right;
+  outline: none;
+}
+
+.pl-input__unit {
+  color: var(--dash-muted);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.pl-chip {
+  padding: 0 6px 0 0;
+  gap: 4px;
+}
+
+.pl-chip__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 6px 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pl-chip__toggle:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+.pl-chip__amount {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--dash-panel);
+  color: var(--dash-muted);
+  font-weight: 600;
+}
+
+.pl-chip__amount input {
+  width: 6.2em;
+  border: 0;
+  background: transparent;
+  color: var(--dash-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+
+.pl-hero-was {
+  margin-right: 10px;
+  color: var(--dash-muted);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pl-hero-whatif {
+  color: var(--dash-stage-mid-text);
+}
+
+.pl-foot {
+  margin: 0;
+  padding: 12px 20px 16px;
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+}
+
+/* Two targets close together: one label moves up a line. */
+.tgt-vhead.pl-two-rows {
+  height: 2.3em;
+}
+
+.tgt-vhead.pl-two-rows .tgt-vhead__label {
+  top: auto;
+  bottom: 0;
+}
+
+.tgt-vhead.pl-two-rows .tgt-vhead__label.is-up {
+  bottom: 1.2em;
+}
+
+.tgt-meter.pl-two-rows {
+  padding-top: 44px;
+}
+
+.tgt-meter__tick.is-up .tgt-meter__tick-label {
+  bottom: calc(100% + 22px);
+}
+
+.pl-head-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+/* On a phone the bar is too short for amounts on its ticks; the chips above carry them. */
+@media (max-width: 640px) {
+  .pl-tick-amount {
+    display: none;
+  }
+}

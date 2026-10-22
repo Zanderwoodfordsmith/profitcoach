@@ -1,20 +1,23 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, CheckCircle2, Circle, Info, ListOrdered, Loader2, Mic, MicOff, NotebookPen, PanelRightClose, RefreshCw, Route, Sparkles, UserRound } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronRight, LayoutList, CheckCircle2, Circle, FileText, Lightbulb, ListOrdered, Loader2, Mic, MicOff, NotebookPen, PanelRightClose, RefreshCw, Route, Sparkles, UserRound } from "lucide-react";
 
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { Facts, FactsResult, PhasedResult, PitchResult } from "@/lib/salesCall/ai";
-import { ANGLES, type AngleId, angleById } from "@/lib/salesCall/angles";
+import { ANGLES, type AngleId, angleById, type PitchAngle } from "@/lib/salesCall/angles";
 import type { Block, LivePart } from "@/lib/salesCall/blocks";
 import { type ObjectionId, type ObjectionPage, pageById, pagesIn } from "@/lib/salesCall/objections";
-import { FACTS, PHASES, type Phase, type PhaseId, PITCH_KINDS, PITCH_PHASES, type PitchKind, READ_BACK, STEP_NAMES, STEPS_INTRO } from "@/lib/salesCall/script";
+import { FACTS, PHASED_ABOUT, PHASED_SUPPORT, PHASES, type Phase, type PhaseId, PITCH_KINDS, PITCH_PHASES, type PitchKind, READ_BACK, STEP_NAMES, STEPS_INTRO } from "@/lib/salesCall/script";
 import { techniqueById, type TechniqueId } from "@/lib/salesCall/techniques";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 import { CoachingNotes, collectNotes, ObjectionPages, SCRIPT_COLUMN, SECTION, Sheet, SheetBody, TechniqueModal } from "./ScriptSheet";
 import { type SlotKey, type Slots, fillText } from "./slots";
+import { useGaps } from "./useGaps";
 
 /**
  * Get Clients → Script. Left: the phases of the call. Middle: what to
@@ -34,6 +37,15 @@ const PILLARS = [
 /** Steps that are a list of pages in the rail rather than one script, and which pages they hold. */
 const PAGED: Partial<Record<PhaseId, ObjectionPage["group"]>> = { objections: "objection", closes: "close", next: "next" };
 const PHASE_OF: Record<ObjectionPage["group"], PhaseId> = { objection: "objections", close: "closes", next: "next" };
+
+/** "How the close really works", on the Win Clients lesson it was made for. */
+const CLOSE_VIDEO = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/academy-lessons/win-clients/win-clients-client-closing-find-the-real-objection/source.mp4`;
+
+/** Steps that open on an overview: a video top right and the pages to pick from. */
+const OVERVIEWS: Partial<Record<ObjectionPage["group"], { video: { title: string; src: string } }>> = {
+  objection: { video: { title: "How the close really works", src: CLOSE_VIDEO } },
+  close: { video: { title: "How the close really works", src: CLOSE_VIDEO } },
+};
 
 /** The open objection in the rail: light blue, navy text. */
 const OBJECTION_OPEN = "bg-sky-100 font-semibold text-[#0c5290]";
@@ -157,6 +169,78 @@ function SayLine({ label, text }: { label: string; text: ReactNode }) {
   );
 }
 
+/** The blue gradient the Scripts overview uses to mark what's active. */
+const ACTIVE_GRADIENT = "bg-[linear-gradient(155deg,#0a6fa8_0%,#1aa3e0_100%)]";
+
+type Readiness = "low" | "ok" | "best";
+
+/** Personalise needs three facts to start and all five for its best. The button's colour says which. */
+const READINESS: Record<Readiness, { line: string; button: string }> = {
+  low: {
+    line: "It needs their priority, what it's costing them and the result they want. Your notes fill these in as you go.",
+    button: "bg-slate-200 text-slate-500",
+  },
+  ok: {
+    line: "Ready to write. Their numbers and why it matters to them make it stronger.",
+    button: "bg-amber-500 text-white hover:bg-amber-600",
+  },
+  best: {
+    line: "All five facts are in. This will be the strongest version.",
+    button: "bg-emerald-600 text-white hover:bg-emerald-700",
+  },
+};
+
+/** Who a ready-made pitch is for, in the version menu. */
+function angleLine(a: PitchAngle): string {
+  return a.id === "standard" ? "Works for any owner." : `For owners who say: "${a.line}"`;
+}
+
+function VersionOption({
+  selected,
+  icon,
+  title,
+  line,
+  suggested = false,
+  disabled = false,
+  onPick,
+}: {
+  selected: boolean;
+  icon: ReactNode;
+  title: string;
+  line: string;
+  suggested?: boolean;
+  disabled?: boolean;
+  onPick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={selected}
+      disabled={disabled}
+      onClick={onPick}
+      className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors disabled:cursor-default ${
+        selected ? "bg-sky-50" : "hover:bg-slate-50 disabled:hover:bg-transparent"
+      }`}
+    >
+      <span
+        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-500"}`}
+        aria-hidden
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className={`text-sm font-semibold ${selected ? "text-sky-800" : "text-slate-900"}`}>{title}</span>
+          {suggested ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[0.6875rem] font-semibold text-emerald-700">Suggested</span> : null}
+        </span>
+        <span className="mt-0.5 block text-sm text-slate-600">{line}</span>
+      </span>
+      {selected ? <Check className="mt-1 h-4 w-4 shrink-0 text-sky-600" aria-hidden /> : null}
+    </button>
+  );
+}
+
 function SayThis({ label, text }: { label: string; text: ReactNode }) {
   return (
     <div className="rounded-2xl bg-[#06223d] px-5 py-4 text-white shadow-[0_10px_30px_-18px_rgba(6,34,61,0.8)]">
@@ -218,16 +302,27 @@ export function SalesCallWorkspace() {
   const { impersonatingCoachId } = useImpersonation();
   const [coachId, setCoachId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [phase, setPhase] = useState<PhaseId>("discovery");
+  const scriptsHref = usePathname()?.startsWith("/admin") ? "/admin/script" : "/coach/script";
+  // Other scripts link straight to a step, e.g. ?part=objections.
+  const params = useSearchParams();
+  const askedPhase = params.get("part");
+  /** Earlier version pickers, kept to compare: ?v=1 a box and pills, ?v=2 one menu. */
+  const picker = params.get("v") === "1" ? 1 : params.get("v") === "2" ? 2 : 3;
+  const [phase, setPhase] = useState<PhaseId>(PHASES.find((p) => p.id === askedPhase)?.id ?? "discovery");
   const [objection, setObjection] = useState<ObjectionId>("think");
+  const [overview, setOverview] = useState(() => askedPhase === "objections" || askedPhase === "closes");
   const [notesOpen, setNotesOpen] = useState(true);
   const [coachingOpen, setCoachingOpen] = useState(false);
   const [technique, setTechnique] = useState<TechniqueId | null>(null);
   const [price, setPrice] = useState("");
+  const [coachFirstName, setCoachFirstName] = useState("");
+  const gaps = useGaps();
   const [guarantee, setGuarantee] = useState("");
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [factsBusy, setFactsBusy] = useState(false);
   const [pitchBusy, setPitchBusy] = useState<Record<PitchKind, boolean>>({ steps: false, phases: false });
+  const [versionOpen, setVersionOpen] = useState(false);
+  const versionMenu = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const lastFactsFor = useRef("");
@@ -260,6 +355,7 @@ export function SalesCallWorkspace() {
         ]);
         if (cancelled) return;
         setPrice(typeof ctx?.price === "string" ? ctx.price : "");
+        setCoachFirstName(typeof ctx?.name === "string" ? (ctx.name.trim().split(/\s+/)[0] ?? "") : "");
         setGuarantee(typeof ctx?.guarantee === "string" ? ctx.guarantee : "");
         setProspects(Array.isArray(list?.prospects) ? (list.prospects as Prospect[]).slice(0, 500) : []);
       } catch {
@@ -322,7 +418,7 @@ export function SalesCallWorkspace() {
   }, [draft.notes, draft.prospect, headers, update]);
 
   const writePitch = useCallback(
-    async (kind: PitchKind) => {
+    async (kind: PitchKind, base?: AngleId) => {
       const notes = draft.notes.trim();
       if (!notes) return;
       const from = JSON.stringify(draft.facts);
@@ -331,7 +427,7 @@ export function SalesCallWorkspace() {
         const res = await fetch("/api/coach/sales-call/pitch", {
           method: "POST",
           headers: { ...(await headers()), "Content-Type": "application/json" },
-          body: JSON.stringify({ notes, prospect: draft.prospect, facts: draft.facts, kind, angle: draft.angle }),
+          body: JSON.stringify({ notes, prospect: draft.prospect, facts: draft.facts, kind, angle: base ?? draft.angle }),
         });
         const body = (await res.json()) as (PitchResult | PhasedResult) & { error?: string };
         if (!res.ok) throw new Error(body.error ?? "Could not write the pitch.");
@@ -361,6 +457,32 @@ export function SalesCallWorkspace() {
   const personal = kindWritten && draft.pitchView === "personal";
   const pitch = personal ? draft.pitch : null;
   const phased = personal ? draft.phased : null;
+  // The tabs: Personalised shows the written pitch, or what it needs before it can be written.
+  const [personalTab, setPersonalTab] = useState(false);
+  const tab: "personal" | "ready" = kindWritten ? (draft.pitchView === "personal" ? "personal" : "ready") : personalTab ? "personal" : "ready";
+  const waitingToPersonalise = picker === 3 && tab === "personal" && !kindWritten && !pitchBusy[kind];
+  const pickTab = (t: "personal" | "ready") => {
+    setPersonalTab(t === "personal");
+    setVersionOpen(false);
+    if (kindWritten) update({ pitchView: t });
+  };
+  /** How much of the five facts Personalise has to work with: their priority, cost and result first, then the other two. */
+  const readiness: Readiness = !draft.notes.trim() || !coreReady ? "low" : FACTS.every((f) => draft.facts[f.key]) ? "best" : "ok";
+
+  // The version menu closes on a click outside it or Esc.
+  useEffect(() => {
+    if (!versionOpen) return;
+    const away = (e: MouseEvent) => {
+      if (!versionMenu.current?.contains(e.target as Node)) setVersionOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setVersionOpen(false);
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [versionOpen]);
 
   // Listening: the microphone in short chunks, each transcribed onto the end of the notes.
   const stopListening = useCallback(() => {
@@ -434,6 +556,7 @@ export function SalesCallWorkspace() {
     stopListening();
     lastFactsFor.current = "";
     update(emptyDraft());
+    gaps.clearAll();
     goPhase("discovery");
   };
 
@@ -449,7 +572,10 @@ export function SalesCallWorkspace() {
     why: draft.facts.why,
     price,
     guarantee,
+    me: coachFirstName,
   };
+  const personalTitle = `Personalised${slots.name ? ` for ${slots.name}` : ""}`;
+  const personalLine = `Built from your notes${kindEdited ? ", with your edits" : ""}. Click any ${kind === "phases" ? "phase" : "step"} to change it.`;
   // Editing a fill-in in the script updates the call details, without moving the page.
   const SLOT_DETAIL: Partial<Record<SlotKey, string>> = {
     name: "first_name",
@@ -469,11 +595,13 @@ export function SalesCallWorkspace() {
         if (detail) editDetail(detail, value);
       },
       setTechnique,
+      gaps,
     );
   const openPage = (id: ObjectionId) => {
     const target = PHASE_OF[pageById(id)?.group ?? "objection"];
     if (phase !== target) goPhase(target);
     setObjection(id);
+    setOverview(false);
   };
   const editDetail = (key: string, value: string) =>
     update((d) => ({
@@ -483,7 +611,8 @@ export function SalesCallWorkspace() {
   const current = PHASES.find((p) => p.id === phase) ?? PHASES[0];
   // On a step with pages, the header names the page you're on, not the step.
   const pagedGroup = PAGED[phase];
-  const shownPage = pagedGroup ? pageById(objection) : null;
+  const showOverview = Boolean(pagedGroup && OVERVIEWS[pagedGroup] && overview);
+  const shownPage = pagedGroup && !showOverview ? pageById(objection) : null;
   const coachingNotes = collectNotes(shownPage ? shownPage.blocks : current.blocks);
 
   // Notes matter while they talk; on objections the script needs the room.
@@ -493,6 +622,7 @@ export function SalesCallWorkspace() {
     if (group) {
       setNotesOpen(false);
       setObjection((cur) => (pageById(cur)?.group === group ? cur : pagesIn(group)[0].id));
+      if (id !== phase) setOverview(true);
     }
     if (id === "discovery" || id === "pitch") setNotesOpen(true);
   };
@@ -582,109 +712,355 @@ export function SalesCallWorkspace() {
           </p>
         ) : null}
 
-        {/* Which version to read: personalised first, the ready-made ones as the fallback. Switching keeps both. */}
-        <div className="border-t border-slate-100 pt-4">
-          <p className="text-sm font-semibold text-slate-800">Which version?</p>
-          <div
-            className={`mt-2 flex flex-wrap items-center gap-3 rounded-2xl border-2 px-4 py-3 transition ${
-              personal ? "border-sky-600 bg-sky-50" : "border-slate-200 bg-white"
-            }`}
-          >
-            <button
-              type="button"
-              aria-pressed={personal}
-              disabled={!kindWritten || pitchBusy[kind]}
-              onClick={() => update({ pitchView: "personal" })}
-              className="flex min-w-0 flex-1 items-start gap-3 text-left disabled:cursor-default"
+        {picker === 1 ? (
+          // Which version to read: personalised first, the ready-made ones as the fallback. Switching keeps both.
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-800">Which version?</p>
+            <div
+              className={`mt-2 flex flex-wrap items-center gap-3 rounded-2xl border-2 px-4 py-3 transition ${
+                personal ? "border-sky-600 bg-sky-50" : "border-slate-200 bg-white"
+              }`}
             >
-              <span
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${personal ? "bg-sky-600 text-white" : "bg-sky-100 text-sky-700"}`}
-                aria-hidden
-              >
-                {pitchBusy[kind] ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-              </span>
-              <span className="min-w-0">
-                <span className={`block text-base font-semibold ${personal ? "text-sky-800" : "text-slate-900"}`}>
-                  Personalised{slots.name ? ` for ${slots.name}` : ""}
-                </span>
-                <span className="mt-0.5 block text-sm text-slate-600">
-                  {pitchBusy[kind]
-                    ? "Writing it around what they told you…"
-                    : kindWritten
-                      ? !personal
-                        ? "Written. Click to use it again."
-                        : notesMoved
-                          ? "Your notes have more in them since, so you can update it."
-                          : kindEdited
-                            ? "Built from your notes, with your edits."
-                            : `Built from your notes. Click any ${kind === "phases" ? "phase" : "step"} to change it.`
-                      : !draft.notes.trim()
-                        ? "Take notes in Discovery first, then write it here."
-                        : coreReady
-                          ? "Rewritten around everything they told you. The strongest version."
-                          : "Works best once your notes have their priority, what it's costing them and the result they want."}
-                </span>
-              </span>
-            </button>
-            {!kindWritten || (personal && notesMoved) ? (
               <button
                 type="button"
-                onClick={() => void writePitch(kind)}
-                disabled={pitchBusy[kind] || !draft.notes.trim()}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                aria-pressed={personal}
+                disabled={!kindWritten || pitchBusy[kind]}
+                onClick={() => update({ pitchView: "personal" })}
+                className="flex min-w-0 flex-1 items-start gap-3 text-left disabled:cursor-default"
               >
-                {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
-                {kindWritten ? "Update with new notes" : "Personalise"}
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${personal ? "bg-sky-600 text-white" : "bg-sky-100 text-sky-700"}`}
+                  aria-hidden
+                >
+                  {pitchBusy[kind] ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+                </span>
+                <span className="min-w-0">
+                  <span className={`block text-base font-semibold ${personal ? "text-sky-800" : "text-slate-900"}`}>
+                    Personalised{slots.name ? ` for ${slots.name}` : ""}
+                  </span>
+                  <span className="mt-0.5 block text-sm text-slate-600">
+                    {pitchBusy[kind]
+                      ? "Writing it around what they told you…"
+                      : kindWritten
+                        ? !personal
+                          ? "Written. Click to use it again."
+                          : notesMoved
+                            ? "Your notes have more in them since, so you can update it."
+                            : kindEdited
+                              ? "Built from your notes, with your edits."
+                              : `Built from your notes. Click any ${kind === "phases" ? "phase" : "step"} to change it.`
+                        : !draft.notes.trim()
+                          ? "Take notes in Discovery first, then write it here."
+                          : coreReady
+                            ? "Rewritten around everything they told you. The strongest version."
+                            : "Works best once your notes have their priority, what it's costing them and the result they want."}
+                  </span>
+                </span>
               </button>
-            ) : personal && !pitchBusy[kind] ? (
-              <button
-                type="button"
-                onClick={() => void writePitch(kind)}
-                className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900"
-              >
-                <RefreshCw className="h-4 w-4" aria-hidden />
-                Write again
-              </button>
+              {!kindWritten || (personal && notesMoved) ? (
+                <button
+                  type="button"
+                  onClick={() => void writePitch(kind)}
+                  disabled={pitchBusy[kind] || !draft.notes.trim()}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                >
+                  {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
+                  {kindWritten ? "Update with new notes" : "Personalise"}
+                </button>
+              ) : personal && !pitchBusy[kind] ? (
+                <button
+                  type="button"
+                  onClick={() => void writePitch(kind)}
+                  className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900"
+                >
+                  <RefreshCw className="h-4 w-4" aria-hidden />
+                  Write again
+                </button>
+              ) : null}
+            </div>
+
+            <p className="mt-4 text-sm text-slate-500">Or read a ready-made one:</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {ANGLES.map((a) => {
+                const on = !personal && a.id === angle.id;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    aria-pressed={on}
+                    title={a.line}
+                    onClick={() => update({ angle: a.id, pitchView: "ready" })}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      on ? "bg-sky-600 text-white" : "bg-white text-slate-700 ring-1 ring-slate-200 hover:ring-sky-300"
+                    }`}
+                  >
+                    {a.title}
+                    {draft.angleFit === a.id && a.id !== "standard" ? (
+                      <span className={`h-1.5 w-1.5 rounded-full ${on ? "bg-emerald-300" : "bg-emerald-500"}`} aria-label="Suggested" />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            {!personal ? (
+              <p className="mt-2 text-sm text-slate-500">
+                {angle.id === "standard" ? "Works for any owner." : `Pam's angle for owners who say: "${angle.line}"`}
+                {draft.angleFit && draft.angleFit !== "standard" && draft.angleFit !== angle.id
+                  ? ` Their notes sound most like ${angleById(draft.angleFit).title}.`
+                  : ""}
+                {kindWritten ? "" : " Personalise builds on the one you pick."}
+              </p>
             ) : null}
           </div>
-
-          <p className="mt-4 text-sm text-slate-500">Or read a ready-made one:</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {ANGLES.map((a) => {
-              const on = !personal && a.id === angle.id;
-              return (
-                <button
-                  key={a.id}
-                  type="button"
-                  aria-pressed={on}
-                  title={a.line}
-                  onClick={() => update({ angle: a.id, pitchView: "ready" })}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                    on ? "bg-sky-600 text-white" : "bg-white text-slate-700 ring-1 ring-slate-200 hover:ring-sky-300"
-                  }`}
+        ) : picker === 2 ? (
+          // Which version to read, in one menu: the personalised one first, then the ready-made ones, each explained. Switching keeps them all.
+          <div ref={versionMenu} className="relative border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-800">Which version?</p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={versionOpen}
+                onClick={() => setVersionOpen((o) => !o)}
+                className={`flex min-w-0 flex-1 basis-72 items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition ${
+                  personal ? "border-sky-600 bg-sky-50" : "border-slate-200 bg-white hover:border-slate-300"
+                }`}
+              >
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${personal ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-500"}`}
+                  aria-hidden
                 >
-                  {a.title}
-                  {draft.angleFit === a.id && a.id !== "standard" ? (
-                    <span className={`h-1.5 w-1.5 rounded-full ${on ? "bg-emerald-300" : "bg-emerald-500"}`} aria-label="Suggested" />
-                  ) : null}
+                  {pitchBusy[kind] ? <Loader2 className="h-5 w-5 animate-spin" /> : personal ? <Sparkles className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold text-slate-500">{personal ? "Written for this owner" : "Ready-made"}</span>
+                  <span className={`block text-base font-semibold ${personal ? "text-sky-800" : "text-slate-900"}`}>
+                    {personal ? personalTitle : angle.title}
+                  </span>
+                  <span className="mt-0.5 block text-sm text-slate-600">
+                    {pitchBusy[kind]
+                      ? "Writing it around what they told you…"
+                      : personal
+                        ? notesMoved
+                          ? "Your notes have more in them since, so you can update it."
+                          : personalLine
+                        : `${angleLine(angle)}${
+                            draft.angleFit && draft.angleFit !== "standard" && draft.angleFit !== angle.id
+                              ? ` Their notes sound most like ${angleById(draft.angleFit).title}.`
+                              : ""
+                          } ${kindWritten ? "Your personalised one is still in this list." : "Personalise rewrites it around what they told you."}`}
+                  </span>
+                </span>
+                <ChevronDown className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${versionOpen ? "rotate-180" : ""}`} aria-hidden />
+              </button>
+              {pitchBusy[kind] ? null : !kindWritten || (personal && notesMoved) ? (
+                <button
+                  type="button"
+                  onClick={() => void writePitch(kind)}
+                  disabled={!draft.notes.trim()}
+                  title={draft.notes.trim() ? undefined : "Take notes in Discovery first"}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                >
+                  {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
+                  {kindWritten ? "Update with new notes" : "Personalise"}
                 </button>
-              );
-            })}
-          </div>
-          {!personal ? (
-            <p className="mt-2 text-sm text-slate-500">
-              {angle.id === "standard" ? "Works for any owner." : `Pam's angle for owners who say: "${angle.line}"`}
-              {draft.angleFit && draft.angleFit !== "standard" && draft.angleFit !== angle.id
-                ? ` Their notes sound most like ${angleById(draft.angleFit).title}.`
-                : ""}
-              {kindWritten ? "" : " Personalise builds on the one you pick."}
-            </p>
-          ) : null}
-        </div>
+              ) : personal ? (
+                <button
+                  type="button"
+                  onClick={() => void writePitch(kind)}
+                  className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900"
+                >
+                  <RefreshCw className="h-4 w-4" aria-hidden />
+                  Write again
+                </button>
+              ) : null}
+            </div>
 
-        {kind === "phases" ? (
+            {versionOpen ? (
+              <div role="listbox" aria-label="Which version?" className="absolute inset-x-0 z-20 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-20px_rgba(6,34,61,0.45)]">
+                <p className="px-3 pb-1 pt-2 text-xs font-semibold text-slate-500">Written for this owner</p>
+                <VersionOption
+                  selected={personal}
+                  icon={<Sparkles className="h-4 w-4" />}
+                  title={personalTitle}
+                  line={
+                    kindWritten
+                      ? personalLine
+                      : draft.notes.trim()
+                        ? "Not written yet. Pick a ready-made one below to build on, then press Personalise."
+                        : "Take notes in Discovery first, then press Personalise."
+                  }
+                  disabled={!kindWritten}
+                  onPick={() => {
+                    update({ pitchView: "personal" });
+                    setVersionOpen(false);
+                  }}
+                />
+                <p className="mt-2 border-t border-slate-100 px-3 pb-1 pt-3 text-xs font-semibold text-slate-500">
+                  Ready-made{" "}
+                  <span className="font-normal">
+                    {kind === "phases" ? "· Built with Pam's know-how, with their details dropped in" : "· In Pam's words, with their details dropped in"}
+                  </span>
+                </p>
+                {ANGLES.map((a) => (
+                  <VersionOption
+                    key={a.id}
+                    selected={!personal && a.id === angle.id}
+                    icon={<FileText className="h-4 w-4" />}
+                    title={a.title}
+                    line={angleLine(a)}
+                    suggested={draft.angleFit === a.id && a.id !== "standard"}
+                    onPick={() => {
+                      update({ angle: a.id, pitchView: "ready" });
+                      setVersionOpen(false);
+                    }}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          // Two tabs: the pitch written for this owner, or a ready-made one. Each keeps its own, so switching loses nothing.
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-800">Which version?</p>
+            {/* One box: the tabs across the top, the chosen tab's panel straight under them. */}
+            <div className="mt-2 rounded-2xl border border-slate-200 bg-white">
+            <div role="tablist" aria-label="Which version?" className="grid grid-cols-2 gap-1 rounded-t-[15px] border-b border-slate-200 bg-slate-100 p-1">
+              {(["personal", "ready"] as const).map((t) => {
+                const on = t === tab;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => pickTab(t)}
+                    className={`flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                      on ? `${ACTIVE_GRADIENT} text-white shadow-sm` : "text-slate-500 hover:bg-white/70 hover:text-slate-800"
+                    }`}
+                  >
+                    {t === "personal" ? (
+                      pitchBusy[kind] ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden /> : <Sparkles className={`h-4 w-4 shrink-0 ${on ? "" : "text-sky-600"}`} aria-hidden />
+                    ) : (
+                      <FileText className="h-4 w-4 shrink-0" aria-hidden />
+                    )}
+                    <span className="truncate">{t === "personal" ? personalTitle : "Ready-made"}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {tab === "personal" ? (
+              kindWritten || pitchBusy[kind] ? (
+                <div className="flex flex-wrap items-center gap-3 px-4 py-4">
+                  <p className="min-w-0 flex-1 text-sm text-slate-600">
+                    {pitchBusy[kind]
+                      ? "Writing it around what they told you. It takes about 20 seconds."
+                      : notesMoved
+                        ? "Your notes have more in them since, so you can update it."
+                        : personalLine}
+                  </p>
+                  {pitchBusy[kind] ? null : notesMoved ? (
+                    <button
+                      type="button"
+                      onClick={() => void writePitch(kind, draft.angleFit || "standard")}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold ${READINESS[readiness].button}`}
+                    >
+                      <RefreshCw className="h-4 w-4" aria-hidden />
+                      Update with new notes
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void writePitch(kind, draft.angleFit || "standard")}
+                      className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900"
+                    >
+                      <RefreshCw className="h-4 w-4" aria-hidden />
+                      Write again
+                    </button>
+                  )}
+                </div>
+              ) : (
+                // Not written yet: what it needs, and a button whose colour says how ready the notes are.
+                // What it says and the button on the left, the five facts as a list on the right.
+                <div className="grid gap-x-8 gap-y-4 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <div>
+                    <p className="text-base font-semibold text-slate-900">Write it around {slots.name || "this owner"}</p>
+                    <p className="mt-1 text-sm text-slate-600">{READINESS[readiness].line}</p>
+                    <button
+                      type="button"
+                      onClick={() => void writePitch(kind, draft.angleFit || "standard")}
+                      disabled={readiness === "low"}
+                      className={`mt-4 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed ${READINESS[readiness].button}`}
+                    >
+                      <Sparkles className="h-4 w-4" aria-hidden />
+                      Personalise
+                    </button>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {FACTS.map((f) => {
+                      const has = Boolean(draft.facts[f.key]);
+                      return (
+                        <li key={f.key} className={`flex items-center gap-1.5 text-sm ${has ? "text-slate-800" : "text-slate-400"}`}>
+                          {has ? <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden /> : <Circle className="h-4 w-4" aria-hidden />}
+                          {f.label}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )
+            ) : (
+              <div ref={versionMenu} className="relative px-4 py-4">
+                <button
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={versionOpen}
+                  onClick={() => setVersionOpen((o) => !o)}
+                  className="flex w-full items-center gap-3 rounded-2xl border-2 border-slate-200 bg-white px-4 py-3 text-left transition hover:border-slate-300"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-semibold text-slate-900">{angle.title}</span>
+                    <span className="mt-0.5 block text-sm text-slate-600">
+                      {angleLine(angle)}
+                      {draft.angleFit && draft.angleFit !== "standard" && draft.angleFit !== angle.id
+                        ? ` Their notes sound most like ${angleById(draft.angleFit).title}.`
+                        : ""}
+                    </span>
+                  </span>
+                  <ChevronDown className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${versionOpen ? "rotate-180" : ""}`} aria-hidden />
+                </button>
+                {versionOpen ? (
+                  <div role="listbox" aria-label="Ready-made pitches" className="absolute inset-x-4 z-20 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-20px_rgba(6,34,61,0.45)]">
+                    {ANGLES.map((a) => (
+                      <VersionOption
+                        key={a.id}
+                        selected={a.id === angle.id}
+                        icon={<FileText className="h-4 w-4" />}
+                        title={a.title}
+                        line={angleLine(a)}
+                        suggested={draft.angleFit === a.id && a.id !== "standard"}
+                        onPick={() => {
+                          update({ angle: a.id, pitchView: "ready" });
+                          setVersionOpen(false);
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                <p className="mt-2 text-sm text-slate-500">
+                  {kind === "phases" ? "Built with Pam's know-how, with their details dropped in." : "In Pam's words, with their details dropped in."}
+                </p>
+              </div>
+            )}
+            </div>
+          </div>
+        )}
+
+        {waitingToPersonalise ? null : kind === "phases" ? (
           <>
             <SayLine label="The bridge" text={phased ? phased.bridge : fill(angle.bridge)} />
+            <SayLine label="About you (optional, if they want to know who they'd be working with)" text={phased?.about || fill(PHASED_ABOUT)} />
             {PITCH_PHASES.map((ph, i) => {
               const written = phased ? phaseText.get(i + 1) : null;
               const ready = angle.phases[i];
@@ -698,7 +1074,7 @@ export function SalesCallWorkspace() {
                     {written ? (
                       <AutoText ariaLabel={`Phase ${i + 1}`} value={written.text} onChange={(v) => editPhase(i + 1, v)} />
                     ) : (
-                      <p className={READY_TEXT}>{fill(ready.text)}</p>
+                      <p className={`whitespace-pre-line ${READY_TEXT}`}>{fill(ready.text)}</p>
                     )}
                   </div>
                   <p className="mt-2 text-sm text-slate-600">
@@ -707,6 +1083,7 @@ export function SalesCallWorkspace() {
                 </section>
               );
             })}
+            <SayLine label="Support" text={phased?.support || fill(PHASED_SUPPORT)} />
             <SayLine label="Recap" text={phased ? phased.recap : fill(angle.recap)} />
           </>
         ) : (
@@ -757,6 +1134,17 @@ export function SalesCallWorkspace() {
         aria-label="Call phases"
         className="min-w-0 shrink-0 border-b border-slate-200 bg-[#f3f6fa] px-3 py-3 lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:w-60 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-5"
       >
+        <Link href={scriptsHref} className="mb-3 inline-flex items-center gap-1.5 px-3 text-sm font-medium text-slate-500 hover:text-slate-900">
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          All scripts
+        </Link>
+        <p className="mb-2 hidden px-3 text-sm font-semibold text-slate-900 lg:block">Profit Roadmap call</p>
+        <Link href={`${scriptsHref}/roadmap`} className="mb-1.5 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-white/80">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-slate-500 ring-1 ring-slate-200">
+            <LayoutList className="h-3.5 w-3.5" aria-hidden />
+          </span>
+          Overview
+        </Link>
         <ol className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
           {PHASES.map((p, i) => {
             const active = p.id === phase;
@@ -785,14 +1173,32 @@ export function SalesCallWorkspace() {
                 </button>
                 {PAGED[p.id] && active ? (
                   <ul className="mt-1.5 hidden space-y-0.5 pb-2 pl-9 lg:block">
+                    {OVERVIEWS[PAGED[p.id] ?? "objection"] ? (
+                      <li>
+                        <button
+                          type="button"
+                          aria-current={showOverview ? "page" : undefined}
+                          onClick={() => setOverview(true)}
+                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors ${
+                            showOverview ? OBJECTION_OPEN : OBJECTION_IDLE
+                          }`}
+                        >
+                          <LayoutList aria-hidden className="h-4 w-5 shrink-0" />
+                          <span>Overview</span>
+                        </button>
+                      </li>
+                    ) : null}
                     {pagesIn(PAGED[p.id] ?? "objection").map((o) => (
                       <li key={o.id}>
                         <button
                           type="button"
-                          aria-current={o.id === objection ? "page" : undefined}
-                          onClick={() => setObjection(o.id)}
+                          aria-current={!showOverview && o.id === objection ? "page" : undefined}
+                          onClick={() => {
+                            setObjection(o.id);
+                            setOverview(false);
+                          }}
                           className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors ${
-                            o.id === objection ? OBJECTION_OPEN : OBJECTION_IDLE
+                            !showOverview && o.id === objection ? OBJECTION_OPEN : OBJECTION_IDLE
                           }`}
                         >
                           <span aria-hidden className="w-5 shrink-0 text-center">{o.emoji}</span>
@@ -833,8 +1239,8 @@ export function SalesCallWorkspace() {
               onClick={() => setCoachingOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3.5 py-2 text-sm font-medium text-[#0c5290] hover:bg-sky-100"
             >
-              <Info className="h-4 w-4" aria-hidden />
-              Coaching notes
+              <Lightbulb className="h-4 w-4" aria-hidden />
+              Tips
             </button>
           ) : null}
           {!notesOpen ? (
@@ -844,18 +1250,54 @@ export function SalesCallWorkspace() {
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#f3f6fa] px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200/60 hover:text-slate-900"
             >
               <NotebookPen className="h-4 w-4" aria-hidden />
-              Show notes · {factCount}/5
+              Call notes · {factCount}/5
             </button>
           ) : null}
           </div>
         </header>
 
-        {pagedGroup ? (
+        {pagedGroup && showOverview ? (
+          // The video top right (on top on a phone), and every page to pick from.
+          <div className="@container">
+          <div className="grid gap-8 @[44rem]:grid-cols-[minmax(0,1fr)_20rem]">
+            <figure className="@[44rem]:order-2">
+              <video
+                controls
+                preload="metadata"
+                src={OVERVIEWS[pagedGroup]?.video.src}
+                className="aspect-video w-full rounded-xl bg-slate-900"
+              />
+              <figcaption className="mt-2 text-sm text-slate-600">{OVERVIEWS[pagedGroup]?.video.title}</figcaption>
+            </figure>
+            <ul className="space-y-2 @[44rem]:order-1">
+              {pagesIn(pagedGroup).map((o) => (
+                <li key={o.id}>
+                  <button
+                    type="button"
+                    onClick={() => openPage(o.id)}
+                    className="flex w-full items-start gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/40"
+                  >
+                    <span aria-hidden className="w-6 shrink-0 text-center text-lg leading-6">{o.emoji}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-base font-semibold text-slate-900">{o.title}</span>
+                      <span className="mt-0.5 block text-sm text-slate-600">{o.summary}</span>
+                    </span>
+                    <ChevronRight aria-hidden className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          </div>
+        ) : pagedGroup ? (
           <>
             <select
               aria-label="Page"
               value={objection}
-              onChange={(e) => setObjection(e.target.value as ObjectionId)}
+              onChange={(e) => {
+                setObjection(e.target.value as ObjectionId);
+                setOverview(false);
+              }}
               className="w-full rounded-lg bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.06)] lg:hidden"
             >
               {pagesIn(pagedGroup).map((o) => (

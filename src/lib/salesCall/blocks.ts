@@ -20,8 +20,20 @@ export type Block =
   | { type: "goto"; text: string; to: ObjectionId }
   /** A YouTube video that plays in place. Shorts are upright. */
   | { type: "video"; title: string; youtubeId: string; upright?: boolean }
+  /** Opens BOSS Pro in a new tab on a new person, with the owner's name and business from the gaps. */
+  | { type: "bossPro"; text: string }
+  /** Opens Profit levers in a new tab, titled with the owner's business from the gaps. */
+  | { type: "levers"; text: string }
+  /** Pick the owner's level and constraint, and see that playbook's questions and this-week wins. */
+  | { type: "playbook" }
   /** Where the call screen drops in something written live: the read-back or the pitch. */
-  | { type: "live"; part: LivePart };
+  | { type: "live"; part: LivePart }
+  /** Something the coach sends rather than says: a text, an email, a DM. Shown in a box with Copy. */
+  | { type: "message"; label: string; text: string }
+  /** A plain list of guidance, not lines to say. */
+  | { type: "list"; items: string[] }
+  /** A link to another script, or one part of it. */
+  | { type: "see"; text: string; script: string; part?: string };
 
 export type LivePart = "readback" | "pitch";
 
@@ -41,4 +53,10 @@ export const info = (title: string, ...body: string[]): Block => ({ type: "info"
 export const r = (tone: Tone, label: string, ...blocks: Block[]): Block => ({ type: "response", tone, label, blocks });
 export const go = (text: string, to: ObjectionId): Block => ({ type: "goto", text, to });
 export const live = (part: LivePart): Block => ({ type: "live", part });
+export const bossPro = (text: string): Block => ({ type: "bossPro", text });
+export const levers = (text: string): Block => ({ type: "levers", text });
+export const playbook = (): Block => ({ type: "playbook" });
+export const message = (label: string, text: string): Block => ({ type: "message", label, text });
+export const list = (...items: string[]): Block => ({ type: "list", items });
+export const see = (text: string, script: string, part?: string): Block => ({ type: "see", text, script, part });
 export const video = (title: string, youtubeId: string, upright = false): Block => ({ type: "video", title, youtubeId, upright });

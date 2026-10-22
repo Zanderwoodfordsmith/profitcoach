@@ -21,6 +21,7 @@ import { FACTS, type FactKey, PITCH_PHASES, type PitchKind, STEP_NAMES } from ".
  */
 
 const MODEL = "claude-opus-5-5";
+const FAST_MODEL = "claude-haiku-5-5";
 
 export type Facts = Record<FactKey, string>;
 
@@ -53,9 +54,13 @@ export type PitchResult = {
 export type PhasedStep = { phase: number; text: string; check: string };
 
 export type PhasedResult = {
-  /** Their problem read back, what we'll do, the three phases in a line, and their part. */
+  /** Their problem read back, what we'll do, their part, and the three phases in a line. */
   bridge: string;
+  /** Optional: who they'd be working with, from the coach's record. "" when the record has nothing. */
+  about: string;
   phases: PhasedStep[];
+  /** Not on your own between sessions. */
+  support: string;
   recap: string;
 };
 
@@ -117,6 +122,7 @@ const PHASED_SCHEMA = {
   type: "object",
   properties: {
     bridge: { type: "string" },
+    about: { type: "string" },
     phases: {
       type: "array",
       items: {
@@ -126,9 +132,10 @@ const PHASED_SCHEMA = {
         additionalProperties: false,
       },
     },
+    support: { type: "string" },
     recap: { type: "string" },
   },
-  required: ["bridge", "phases", "recap"],
+  required: ["bridge", "about", "phases", "support", "recap"],
   additionalProperties: false,
 };
 
@@ -138,15 +145,17 @@ async function ask(opts: {
   schema: Record<string, unknown>;
   effort: "low" | "medium";
   maxTokens: number;
+  /** The facts check runs on every pause in the notes, so it uses the cheap model. */
+  fast?: boolean;
 }): Promise<unknown> {
   client ??= new Anthropic();
   const params = {
-    model: MODEL,
+    model: opts.fast ? FAST_MODEL : MODEL,
     max_tokens: opts.maxTokens,
     system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: opts.user }],
-    betas: [DEFAULT_FALLBACK_BETA],
-    fallbacks: "default",
+    // Haiku has no server-side fallback for a refusal.
+    ...(opts.fast ? {} : { betas: [DEFAULT_FALLBACK_BETA], fallbacks: "default" }),
     output_config: { effort: opts.effort, format: { type: "json_schema", schema: opts.schema } },
   };
   const response = await client.beta.messages.create(
@@ -196,7 +205,7 @@ Owner: ${input.prospect || "[name]"}
 <notes>
 ${input.notes}
 </notes>`;
-  const out = (await ask({ system, user, schema: factSchema(), effort: "low", maxTokens: 4000 })) as FactsResult;
+  const out = (await ask({ system, user, schema: factSchema(), effort: "low", maxTokens: 4000, fast: true })) as FactsResult;
   return {
     facts: Object.fromEntries(FACTS.map((f) => [f.key, String(out.facts?.[f.key] ?? "").trim()])) as Facts,
     first_name: String(out.first_name ?? "").trim(),
@@ -225,8 +234,8 @@ function startedFrom(id: string | undefined, part: "steps" | "phases"): string {
   const words =
     part === "steps"
       ? angle.steps.map((t, i) => `${i + 1}. ${t}`).join("\n")
-      : angle.phases.map((p, i) => `${i + 1}. ${p.text}`).join("\n");
-  return `The coach started from this ready-made pitch (${angle.title}${angle.id === "standard" ? "" : `, Pam's angle for owners who say "${angle.line}"`}). Keep its angle and rhythm where it fits this owner, and make every line theirs. {name}, {problem} and {result} are fill-ins: write the owner's words instead.\n${words}`;
+      : [`Bridge:\n${angle.bridge}`, ...angle.phases.map((p, i) => `Phase ${i + 1}:\n${p.text}\nCheck in: ${p.check}`), `Recap:\n${angle.recap}`].join("\n\n");
+  return `The coach started from this ready-made pitch (${angle.title}${angle.id === "standard" ? "" : `, Pam's angle for owners who say "${angle.line}"`}). Keep its angle and rhythm where it fits this owner, and make every line theirs. {name}, {problem}, {pain}, {result} and {why} are fill-ins: write the owner's words instead.\n${words}`;
 }
 
 export async function writePitch(input: {
@@ -288,10 +297,13 @@ export async function writePhasedPitch(input: {
 The three phases, in order:
 ${PHASE_LIST}
 
-bridge: a short spoken paragraph. Read their problem and its cost back in a line or two, say what we will do, name the three phases in one line, then their part (the three things only they can do) and that the coach's job is making sure they always know the next move and that it happens.
-phases: one per phase, in order. text is a short spoken paragraph that opens with this owner's worry or goal in their words and passes the three-link test: because you told me, what we will do, which means. The links are a test, not words to repeat, so vary how each phase opens and never say "because you told me that". Do not start with the phase name, the screen shows it. check is one short check-in question to ask after it.
+Keep the shape and the length of the ready-made pitch the coach started from (about 1,000 words in all). It is a full spoken walkthrough, not a summary: every part below is there, and no phase is shorter than the ready-made one. Paragraphs are separated by a blank line. Points are lines starting "• ".
+bridge: read their problem back ("you know how you said ...") and what it is costing them, then "So here's what we're going to do." Say what they get: the Profit System in their business and the coach as their trusted advisor. Then the part that matters most: the three things only they can do, as a numbered list (turn up and be honest, make the decisions, do what we agree or get it done through the team), and that the coach's job is making sure they always know the next move and that it happens. Then how this takes them from where they are to their result, the three phases in one line, and "Let me take you through each one."
+about: two or three spoken sentences on who they'd be working with, from the coach's record only. "" if the record has no background or results.
+phases: one per phase, in order. Each text opens by setting the scene (why this phase matters to an owner like them, or where they are now), says what the phase is and when it happens, ties it to this owner's worry or goal in their words ("You know how you said ..."), then three or four points, one per line, each saying what we do and why it matters to them. Then their part or the time it takes where it fits, and close with "So what that means for you is ..." in their words. Each phase passes the three-link test: because you told me, what we will do, which means. The links are a test, not words to repeat, so never say "because you told me that". Do not start with the phase name, the screen shows it. check is one short check-in question to ask after it. Phase 1 says we go after their problem from the first or second session, without waiting for the plan. Phase 2 finishes the job on it and makes sure it stays fixed. Never blame the owner for the problem: being too close to it every day is nobody's fault. The coach is an advisor, not a done-for-you service: we work things out together, and the owner and their team do the work. Keep it calm and easy to take in, never a wall of promises.
 Say how often sessions run. If the coach's session rhythm below does not say how often, use the BCA format in plain words (weekly for the first four to six weeks, then two 90-minute sessions a month), never a square-bracket gap.
-recap: one line per phase, their part in one line, then tie it back to their result and why it matters to them. No question at the end.
+support: a short spoken paragraph: from day one they're not on their own, and how they reach the coach between sessions if the coach's details say so.
+recap: "So, to recap." then one line per phase, that the coach is with them the whole way, their part in one line with the coach's job, then from their problem to their result, so they don't have to deal with what it is costing them again. No question at the end.
 
 ${RULES}
 
@@ -322,10 +334,12 @@ ${input.notes}
   const out = (await ask({ system, user, schema: PHASED_SCHEMA, effort: "low", maxTokens: 8000 })) as PhasedResult;
   return {
     bridge: String(out.bridge ?? "").trim(),
+    about: String(out.about ?? "").trim(),
     phases: (out.phases ?? [])
       .map((p) => ({ phase: Number(p.phase), text: String(p.text ?? "").trim(), check: String(p.check ?? "").trim() }))
       .filter((p) => p.phase >= 1 && p.phase <= PITCH_PHASES.length && p.text)
       .sort((a, b) => a.phase - b.phase),
+    support: String(out.support ?? "").trim(),
     recap: String(out.recap ?? "").trim(),
   };
 }

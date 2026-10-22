@@ -2,6 +2,12 @@
  * LinkedIn outreach merge fields — keep worker + templates in sync.
  */
 
+import {
+  outreachCompanyName,
+  outreachFirstName,
+  outreachLastName,
+} from "@/lib/unipile/outreachNames";
+
 export type OutreachLeadFields = {
   first_name?: string | null;
   last_name?: string | null;
@@ -121,10 +127,10 @@ export function outreachTemplateVars(
   lead: OutreachLeadFields,
   extras?: Record<string, string | null | undefined>
 ): Record<string, string> {
-  const first = (lead.first_name || "").trim();
-  const last = (lead.last_name || "").trim();
+  const first = outreachFirstName(lead.first_name);
+  const last = outreachLastName(lead.last_name);
   const full = [first, last].filter(Boolean).join(" ");
-  const company = (lead.company || "").trim();
+  const company = outreachCompanyName(lead.company);
   const title = (lead.title || "").trim();
   const city = (lead.city || "").trim();
   const location = (lead.location || city || "").trim();

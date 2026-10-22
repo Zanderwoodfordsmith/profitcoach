@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpRight, Check, ChevronDown, ChevronUp, GripVertical, Lightbulb, Loader2, MoreHorizontal, Plus, Sparkles, X } from "lucide-react";
 
 import {
@@ -27,6 +27,9 @@ import { LinkedInProfileSection } from "./LinkedInProfileSection";
 import { StatusSwitch } from "./StatusMenu";
 import { InfoTip } from "./InfoTip";
 import { SetupSocials, SetupWidget } from "./SetupPanels";
+
+/** Sent with a section's anchor (`s-page-id`) to open it when a link points at it. */
+export const OPEN_SECTION_EVENT = "bp-open-section";
 
 function formatDate(iso: string | undefined | null) {
   if (!iso) return "";
@@ -1091,6 +1094,15 @@ export function SectionView({
   const { section, key, page } = sectionRef;
   const folded = asLine || section.face === "closed";
   const [open, setOpen] = useState(startOpen ?? !folded);
+  // A link to this section (#s-page-id) opens it when it is shut.
+  useEffect(() => {
+    const anchor = `s-${key.replace(":", "-")}`;
+    const onOpen = (e: Event) => {
+      if ((e as CustomEvent<string>).detail === anchor) setOpen(true);
+    };
+    window.addEventListener(OPEN_SECTION_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SECTION_EVENT, onOpen);
+  }, [key]);
   const title = lineTitle ?? section.title;
   if (!knowledge || !payload) return null;
 

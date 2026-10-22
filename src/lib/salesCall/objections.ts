@@ -731,7 +731,7 @@ export const OBJECTION_PAGES: ObjectionPage[] = [
       note("You've just complimented them again by asking who's \"as successful as you\"."),
       h("3. Give them the words"),
       say("Would you be against a quick three-way message? I can send you a few lines to copy and paste, if that's easier."),
-      say("It just says: \"I've just started working with [your name] on [their priority]. Thought you might want a chat with them too. I'll let you two take it from here.\""),
+      say("It just says: \"I've just started working with {me} on [their priority]. Thought you might want a chat with them too. I'll let you two take it from here.\""),
       note("Make it dead simple. Send the words while you're still on the call."),
       h("4. Ask for more"),
       r("green", "They give you a name", say("Great, thank you. Anyone else come to mind?"), note("Keep going until they run out.")),

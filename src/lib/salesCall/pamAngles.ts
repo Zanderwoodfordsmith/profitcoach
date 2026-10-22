@@ -4,12 +4,13 @@
  * "we would", "you" where she says "the owner" (the coach is talking to the
  * owner), em dashes out, and Step 8 widened from Innovation and Management to
  * Infrastructure and Systems by adding processes, systems and automation to
- * her text. Her outcome line closes Bringing it together. The three phases for each angle are ours (Alex's
- * structure), not Pam's. angles.test.ts keeps the shape and the house rules.
+ * her text. Her outcome line closes Bringing it together. The three phases
+ * for each angle are ours, not Pam's: the shared phasedPitch with this
+ * angle's own lines. angles.test.ts keeps the shape and the house rules.
  */
 
 import type { PitchAngle } from "./angles";
-import { togetherLine } from "./script";
+import { phasedPitch, togetherLine } from "./script";
 
 export const PAM_ANGLES: PitchAngle[] = [
   {
@@ -28,13 +29,16 @@ export const PAM_ANGLES: PitchAngle[] = [
       "Finally, we make sure new customer acquisition doesn't depend entirely on you. We clarify who owns marketing, follow-up, sales, pipeline management and customer retention. That creates a business where winning customers becomes a team capability, rather than something that only happens when you personally drive it.",
     ],
     together: togetherLine("The result is a more predictable, profitable and scalable way of winning new customers."),
-    bridge: "So, {name}, you want help with {problem}. Right now new customers come in fits and starts, and you want to get to {result}. Here's what we'll do. There are three phases: we get clear, we fix what matters, then we make it last. Three things stay with you, because only you can do them. Turn up and be honest about what's really going on. Make the decisions. And do what we agree, or get it done through your team. My job is to make sure you always know the next move, and that it happens.",
-    phases: [
-      { text: "In the first month we meet every week. You said the work comes in fits and starts, so we score the business across every area and find where customers are really being lost. It might be the leads, the follow-up or the offer. We agree who you want to win and how many, then build a 90-day plan: what, who, when, and how we'll know. Which means you stop guessing and know your first move towards {result}.", check: "Does that make sense so far?" },
-      { text: "In months two and three we work the plan, starting with the gaps where customers slip away. Quick wins first, often following up people who have already shown interest. We set up a weekly scoreboard of leads, conversions and value that your team fills in and you read in under a minute. Every session asks what got done, what's stuck and what's next. Which means more of the right work starts coming in, not another list of ideas.", check: "Can you see how that would bring in more of the right customers?" },
-      { text: "From month four we meet twice a month. Every 90 days we score the business again, see what's moved, and set the next plan. We make sure the team owns the marketing and follow-up, and that delivery keeps up. Which means winning customers becomes predictable, and it doesn't depend on you chasing every lead.", check: "Want me to show you how it all fits together?" },
-    ],
-    recap: "So, in the first month we find where customers are being lost and you have a 90-day plan. In months two and three we fix what matters, starting with {problem}. From month four we make it last, with a new plan every 90 days and a team that keeps the work coming in. Your part is to be honest, make the decisions, and do what we agree. My job is to make sure you always know the next move. That's how we get you to {result}.",
+    ...phasedPitch({
+      looksLike: "Right now new customers come in fits and starts.",
+      find: "where customers are really being lost, whether that's the leads, the follow-up or the offer",
+      quickWins: "often following up people who've already shown interest, because that's the quickest money there is",
+      scoreboard: "Leads, conversions and what each customer is worth",
+      change: "more of the right customers start coming in, and you can see exactly where they come from",
+      check: "Can you see how that would bring in more of the right customers?",
+      keep: "And we make sure your team owns the marketing and the follow-up, and that delivery keeps up with the extra work.",
+      lasts: "a team that keeps the work coming in",
+    }),
   },
   {
     id: "off-tools",
@@ -52,13 +56,16 @@ export const PAM_ANGLES: PitchAngle[] = [
       "Finally, we build a team that takes ownership. We clarify roles, decision-making, accountability and leadership, so people know what they're responsible for and what good performance looks like. That means the business becomes less dependent on you, and more dependent on clear structure and capable people.",
     ],
     together: togetherLine("The result is less time on the tools, and more time leading, growing and owning the business."),
-    bridge: "So, {name}, you want help with {problem}. Too much still runs through you, and you want to get to {result}. Here's what we'll do. There are three phases: we get clear, we fix what matters, then we make it last. Three things stay with you, because only you can do them. Turn up and be honest about what's really going on. Make the decisions. And do what we agree, or get it done through your team. My job is to make sure you always know the next move, and that it happens.",
-    phases: [
-      { text: "In the first month we meet every week. You said everything comes back to you, so we score the business across every area and list exactly what still needs you: the jobs, the decisions, the fires. We agree what your role should become, then build a 90-day handover plan: what moves, to whom, when, and how we'll know. Which means you know the first thing to let go of.", check: "Does that make sense so far?" },
-      { text: "In months two and three we work the plan, starting with the jobs that eat most of your time. Quick wins first, often things someone else could do straight away with a clear process. We set up a weekly scoreboard your team fills in, so you can see how things are going in under a minute without checking up. Every session asks what got done, what's stuck and what's next. Which means hours start coming back to you, not another list of ideas.", check: "Can you see how that would take some of the load off you?" },
-      { text: "From month four we meet twice a month. Every 90 days we score the business again, see what's moved, and set the next plan. We build the roles, the managers and the systems, so the business runs on structure rather than on you. Which means you're leading the business, not stuck in it.", check: "Want me to show you how it all fits together?" },
-    ],
-    recap: "So, in the first month we find what still depends on you and you have a 90-day handover plan. In months two and three we fix what matters, starting with {problem}. From month four we make it last, with a new plan every 90 days and roles that don't need you in every job. Your part is to be honest, make the decisions, and do what we agree. My job is to make sure you always know the next move. That's how we get you to {result}.",
+    ...phasedPitch({
+      looksLike: "Right now too much still runs through you.",
+      find: "exactly what still needs you: the jobs, the decisions and the fires",
+      quickWins: "often jobs someone else could take on straight away with a clear process",
+      scoreboard: "A handful of numbers",
+      change: "hours start coming back to you, week by week, without things slipping",
+      check: "Can you see how that would take some of the load off you?",
+      keep: "And we shape the roles and help your managers grow into them, so the business runs on structure instead of on you.",
+      lasts: "roles that don't need you in every job",
+    }),
   },
   {
     id: "profit",
@@ -76,13 +83,16 @@ export const PAM_ANGLES: PitchAngle[] = [
       "Finally, we make sure the team understands its impact on profit. We create clearer accountability around margin, waste, productivity, customer value and cost control. That means profitability becomes everybody's responsibility, not just yours.",
     ],
     together: togetherLine("The result is more profit from the work, customers and resources the business already has."),
-    bridge: "So, {name}, you want help with {problem}. You're working flat out, but not enough of it turns into profit, and you want to get to {result}. Here's what we'll do. There are three phases: we get clear, we fix what matters, then we make it last. Three things stay with you, because only you can do them. Turn up and be honest about what's really going on. Make the decisions. And do what we agree, or get it done through your team. My job is to make sure you always know the next move, and that it happens.",
-    phases: [
-      { text: "In the first month we meet every week. You said the business is busy but the profit isn't there, so we score the business across every area and find exactly where the money leaks. It might be pricing, certain customers, or time lost on jobs. We agree what profitable growth looks like for you, then build a 90-day plan: what, who, when, and how we'll know. Which means you stop guessing and know your first move towards {result}.", check: "Does that make sense so far?" },
-      { text: "In months two and three we work the plan, starting with the biggest leaks. Quick wins first, often pricing, costs and cash. We set up a weekly scoreboard of a few numbers like margin and cost per job, which your team fills in and you read in under a minute. Every session asks what got done, what's stuck and what's next. Which means more of what you earn starts to stay in the business, not another list of ideas.", check: "Can you see how that would start to lift your profit?" },
-      { text: "From month four we meet twice a month. Every 90 days we score the business again, see what's moved, and set the next plan. We work on the numbers, the systems and the team, so everyone helps protect the margin, not just you. Which means the extra profit sticks, rather than leaking away again.", check: "Want me to show you how it all fits together?" },
-    ],
-    recap: "So, in the first month we find where the profit leaks and you have a 90-day plan. In months two and three we fix what matters, starting with {problem}. From month four we make it last, with a new plan every 90 days and a team that protects the margin. Your part is to be honest, make the decisions, and do what we agree. My job is to make sure you always know the next move. That's how we get you to {result}.",
+    ...phasedPitch({
+      looksLike: "Right now you're working flat out, but not enough of it turns into profit.",
+      find: "exactly where the money leaks, whether that's pricing, certain customers or time lost on jobs",
+      quickWins: "often pricing, costs and cash, because that's money you've already earned",
+      scoreboard: "Margin, cost per job and cash",
+      change: "more of what you earn starts to stay in the business",
+      check: "Can you see how that would start to lift your profit?",
+      keep: "And we get your team protecting the margin too, so it isn't just you watching every pound.",
+      lasts: "a team that protects the margin",
+    }),
   },
   {
     id: "systems",
@@ -100,13 +110,16 @@ export const PAM_ANGLES: PitchAngle[] = [
       "Finally, we make sure people actually follow and own the systems. We clarify responsibilities, standards, accountability and leadership expectations. That means the systems become part of how the business operates, not just documents sitting in a folder.",
     ],
     together: togetherLine("The result is a business that runs consistently, because the systems are clear, measurable and owned by the team."),
-    bridge: "So, {name}, you want help with {problem}. Too much lives in people's heads, and too often in yours, and you want to get to {result}. Here's what we'll do. There are three phases: we get clear, we fix what matters, then we make it last. Three things stay with you, because only you can do them. Turn up and be honest about what's really going on. Make the decisions. And do what we agree, or get it done through your team. My job is to make sure you always know the next move, and that it happens.",
-    phases: [
-      { text: "In the first month we meet every week. You said things get stuck and come back to you, so we score the business across every area and find where missing systems cost you most. We agree what the business needs to run like, then build a 90-day plan: which systems first, who owns each one, when, and how we'll know. Which means you stop guessing and know your first move towards {result}.", check: "Does that make sense so far?" },
-      { text: "In months two and three we work the plan, starting with the gaps that cause the most mistakes and interruptions. Quick wins first, often the handovers and the work that never gets billed. We set up a weekly scoreboard your team fills in, so you can see in under a minute whether the new ways of working are holding. Every session asks what got done, what's stuck and what's next. Which means the systems actually go in, not another list of ideas.", check: "Can you see how that would stop things landing back on you?" },
-      { text: "From month four we meet twice a month. Every 90 days we score the business again, see what's moved, and set the next plan. We get your managers reviewing and updating the systems, and the team owning them, so the business doesn't depend on you remembering everything. Which means the business runs the same way every time, even when you're not there.", check: "Want me to show you how it all fits together?" },
-    ],
-    recap: "So, in the first month we find where missing systems hurt most and you have a 90-day plan. In months two and three we fix what matters, starting with {problem}. From month four we make it last, with a new plan every 90 days and a team that owns the systems. Your part is to be honest, make the decisions, and do what we agree. My job is to make sure you always know the next move. That's how we get you to {result}.",
+    ...phasedPitch({
+      looksLike: "Right now too much lives in people's heads, and too often in yours.",
+      find: "where missing systems cost you most: the mistakes, the handovers and the interruptions",
+      quickWins: "often the handovers and the work that never gets billed",
+      scoreboard: "A handful of numbers",
+      change: "the systems actually go in, and fewer things land back on you",
+      check: "Can you see how that would stop things landing back on you?",
+      keep: "And we get your managers reviewing the systems and your team owning them, so nothing depends on you remembering it.",
+      lasts: "a team that owns the systems",
+    }),
   },
   {
     id: "team",
@@ -124,12 +137,15 @@ export const PAM_ANGLES: PitchAngle[] = [
       "Finally, we build the culture of accountability. We clarify expectations, decision-making, leadership behaviours and ownership. That means people stop waiting to be told what to do, and start taking responsibility for results.",
     ],
     together: togetherLine("The result is a stronger, more capable team that takes ownership, and lets you lead rather than constantly manage every detail."),
-    bridge: "So, {name}, you want help with {problem}. Too much still lands back on you because the team isn't taking ownership, and you want to get to {result}. Here's what we'll do. There are three phases: we get clear, we fix what matters, then we make it last. Three things stay with you, because only you can do them. Turn up and be honest about what's really going on. Make the decisions. And do what we agree, or get it done through your team. My job is to make sure you always know the next move, and that it happens.",
-    phases: [
-      { text: "In the first month we meet every week. You said the team won't step up, so we score the business across every area and find what's really holding them back. It might be roles, standards, training, or how often you step in. We agree the structure the business needs, then build a 90-day people plan: what moves, to whom, when, and how we'll know. Which means you stop guessing and know your first move towards {result}.", check: "Does that make sense so far?" },
-      { text: "In months two and three we work the plan, starting with the roles and standards that cause the most confusion. Quick wins first, often making clear who owns what. We set up a weekly scoreboard the team fills in themselves, so you can read in under a minute whether they're delivering. Every session asks what got done, what's stuck and what's next. Which means people start owning their work, not another list of ideas.", check: "Can you see how that would get the team taking more on?" },
-      { text: "From month four we meet twice a month. Every 90 days we score the business again, see what's moved, and set the next plan. We develop your managers to coach, solve and review, so fewer issues reach you and the business doesn't depend on you for everything. Which means you lead and the team owns the work.", check: "Want me to show you how it all fits together?" },
-    ],
-    recap: "So, in the first month we find what's holding the team back and you have a 90-day people plan. In months two and three we fix what matters, starting with {problem}. From month four we make it last, with a new plan every 90 days and managers who handle more without you. Your part is to be honest, make the decisions, and do what we agree. My job is to make sure you always know the next move. That's how we get you to {result}.",
+    ...phasedPitch({
+      looksLike: "Right now too much lands back on you, because the team isn't taking ownership.",
+      find: "what's really holding the team back, whether that's roles, standards, training or how often you step in",
+      quickWins: "often making clear who owns what",
+      scoreboard: "A handful of numbers the team owns",
+      change: "people start owning their work, and fewer things come back to you",
+      check: "Can you see how that would get the team taking more on?",
+      keep: "And I help your managers learn to coach, solve problems and review the work, so fewer issues reach you.",
+      lasts: "managers who handle more without you",
+    }),
   },
 ];

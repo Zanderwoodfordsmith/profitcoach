@@ -1,0 +1,110 @@
+/* Profit levers: the dot is what could be, a faint dot is where they are now, a dotted line the gap. From the BCA dashboard's Targets tab. */
+
+.pl-bar {
+  --pl-now: #0c5290;
+  position: relative;
+  display: block;
+  height: 24px;
+}
+
+.pl-bar::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 999px;
+  background: #e8eef5;
+}
+
+.pl-bar__from {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 999px;
+  background: var(--pl-now);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.pl-bar__gap {
+  position: absolute;
+  top: 50%;
+  margin-top: -1px;
+  border-top: 2px dotted var(--pl-now);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.pl-bar input[type="range"] {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  cursor: ew-resize;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.pl-bar input[type="range"]:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+.pl-bar input[type="range"]::-webkit-slider-runnable-track {
+  height: 24px;
+  background: transparent;
+}
+
+.pl-bar input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  border: 2.5px solid #fff;
+  border-radius: 999px;
+  background: var(--pl-now);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.22), 0 1px 3px rgba(15, 23, 42, 0.25);
+  transition: transform 0.12s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.pl-bar input[type="range"].is-moved::-webkit-slider-thumb {
+  background: radial-gradient(circle, var(--pl-now) 0 1.6px, #fff 1.6px 3.2px, var(--pl-now) 3.2px);
+}
+
+.pl-bar input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.pl-bar input[type="range"]::-moz-range-track {
+  height: 24px;
+  background: transparent;
+}
+
+.pl-bar input[type="range"]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 2.5px solid #fff;
+  border-radius: 999px;
+  background: var(--pl-now);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.22);
+}
+
+.pl-bar input[type="range"].is-moved::-moz-range-thumb {
+  background: radial-gradient(circle, var(--pl-now) 0 1.6px, #fff 1.6px 3.2px, var(--pl-now) 3.2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-bar input[type="range"]::-webkit-slider-thumb {
+    transition: none;
+  }
+}

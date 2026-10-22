@@ -12,7 +12,7 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Bold, GraduationCap, Heading1, Heading2, Heading3, Link2, List, Users } from "lucide-react";
+import { BookOpen, Bold, Heading1, Heading2, Heading3, Link2, List, Users } from "lucide-react";
 import { safeExternalHref } from "@/lib/communityAutolink";
 import {
   LINK_MARKER,
@@ -31,9 +31,9 @@ import {
 } from "@/lib/communityMentions";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import {
-  AcademyMentionPicker,
-  type AcademyMentionPick,
-} from "@/components/community/AcademyMentionPicker";
+  ContentLinkPicker,
+  type ContentLinkPick,
+} from "@/components/community/ContentLinkPicker";
 import { broadcastMentionsForQuery } from "@/lib/communityMentionUsers";
 
 export type MentionUser = {
@@ -486,7 +486,6 @@ export function MentionTextarea({
   const [mentionLoading, setMentionLoading] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerMode, setPickerMode] = useState<"lesson" | "course">("lesson");
   const fetchSeq = useRef(0);
   const mentionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Multi-word @ query that matched no one; longer queries from it stay closed. */
@@ -732,9 +731,9 @@ export function MentionTextarea({
     [commitFromDisplay, displayValue, knownMentions]
   );
 
-  /** Inserts a lesson/course mention (from the Academy picker) at the saved caret. */
+  /** Inserts a lesson/course/page mention (from the content picker) at the saved caret. */
   const insertEntityMention = useCallback(
-    (pick: AcademyMentionPick) => {
+    (pick: ContentLinkPick) => {
       setPickerOpen(false);
       const el = taRef.current;
       if (!el) return;
@@ -752,11 +751,13 @@ export function MentionTextarea({
               chapterId: pick.chapterId,
               t: pick.t,
             })
-          : buildMentionTarget({
-              type: "course",
-              area: pick.area,
-              courseId: pick.courseId,
-            });
+          : pick.type === "course"
+            ? buildMentionTarget({
+                type: "course",
+                area: pick.area,
+                courseId: pick.courseId,
+              })
+            : buildMentionTarget({ type: "page", path: pick.path });
 
       const mentionText = `${prefix}${safeLabel}`;
       const prevChar = displayValue[start - 1] ?? "";
@@ -985,15 +986,14 @@ export function MentionTextarea({
     [applyTypedEdit]
   );
 
-  const openEntityPicker = useCallback((mode: "lesson" | "course") => {
-    setPickerMode(mode);
+  const openEntityPicker = useCallback(() => {
     setPickerOpen(true);
     setMentionOpen(false);
   }, []);
 
   const openLessonPicker = useCallback(() => {
     captureTextareaSelection();
-    openEntityPicker("lesson");
+    openEntityPicker();
   }, [captureTextareaSelection, openEntityPicker]);
 
   useImperativeHandle(
@@ -1334,26 +1334,12 @@ export function MentionTextarea({
                 preventToolbarBlur(e);
                 captureTextareaSelection();
               }}
-              onClick={() => openEntityPicker("lesson")}
-              aria-label="Insert lesson"
-              title="Insert a lesson link"
+              onClick={openEntityPicker}
+              aria-label="Link to content"
+              title="Link a course, lesson, page or resource"
             >
               <BookOpen className="h-4 w-4" strokeWidth={2.1} />
-              <span className="leading-none">Lesson</span>
-            </button>
-            <button
-              type="button"
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-slate-200 px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-              onMouseDown={(e) => {
-                preventToolbarBlur(e);
-                captureTextareaSelection();
-              }}
-              onClick={() => openEntityPicker("course")}
-              aria-label="Insert course"
-              title="Insert a course link"
-            >
-              <GraduationCap className="h-4 w-4" strokeWidth={2.1} />
-              <span className="leading-none">Course</span>
+              <span className="leading-none">Content</span>
             </button>
           </div>
           {linkPanel}
@@ -1436,12 +1422,9 @@ export function MentionTextarea({
           )
         : null}
 
-      <AcademyMentionPicker
-        open={pickerOpen}
-        mode={pickerMode}
-        onClose={() => setPickerOpen(false)}
-        onPick={insertEntityMention}
-      />
+      {pickerOpen ? (
+        <ContentLinkPicker onClose={() => setPickerOpen(false)} onPick={insertEntityMention} />
+      ) : null}
     </div>
   );
 }
@@ -1493,8 +1476,8 @@ export function CommentFormatButtons({
         className={buttonClass}
         onMouseDown={keepFocus}
         onClick={() => editorRef.current?.openLessonPicker()}
-        aria-label="Link a lesson"
-        title="Link a lesson"
+        aria-label="Link to content"
+        title="Link a course, lesson, page or resource"
       >
         <BookOpen className={iconClass} strokeWidth={2} />
       </button>

@@ -1,12 +1,18 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
-import { ArrowRight, ChevronDown, Info, MousePointerClick, Play, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { ArrowRight, Check, ChevronDown, Copy, ExternalLink, Info, LayoutGrid, MousePointerClick, Play, Search, X } from "lucide-react";
+import { AREAS, type BossPlaybook, PLAYBOOKS } from "@/lib/bossData";
 
 import { type Block, type Tone, inToneOrder } from "@/lib/salesCall/blocks";
 import { OBJECTION_PAGES, type ObjectionId, pageById } from "@/lib/salesCall/objections";
 import type { Technique } from "@/lib/salesCall/techniques";
 import { Modal } from "@/components/ui/Modal";
+import type { PlaybookContent } from "@/lib/playbookContentTypes";
+
+import { useGaps } from "./useGaps";
 
 /**
  * Every step and objection page, laid out like the ClickUp call script: lines to say in bold,
@@ -51,7 +57,7 @@ function segments(blocks: Block[]): Segment[] {
   const out: Segment[] = [];
   for (const b of blocks) {
     const last = out[out.length - 1];
-    // Coaching notes live in the page's Coaching notes panel, not in the script.
+    // Coaching notes live in the page's Tips panel, not in the script.
     if (b.type === "info") continue;
     // A note after one of their replies explains it, so it hides behind an ⓘ on the reply.
     if (b.type === "note" && last?.kind === "one" && last.block.type === "they" && !last.why) {
@@ -99,11 +105,359 @@ function One({ block, ctx }: { block: Block; ctx: Ctx }) {
           ))}
         </ul>
       );
+    case "list": {
+      // "1. Call straight away" items read as steps, so they get a numbered list.
+      const numbered = block.items.every((item) => /^\d+\. /.test(item));
+      const Tag = numbered ? "ol" : "ul";
+      return (
+        <Tag className={`${numbered ? "list-decimal" : "list-disc"} space-y-1.5 pl-5 text-slate-700 marker:text-slate-400 ${BODY}`}>
+          {block.items.map((item) => (
+            <li key={item}>{fill(numbered ? item.replace(/^\d+\. /, "") : item)}</li>
+          ))}
+        </Tag>
+      );
+    }
+    case "message":
+      return <Message block={block} fill={fill} />;
+    case "see":
+      return <See block={block} />;
     case "video":
       return <Video block={block} />;
+    case "bossPro":
+      return <BossProLink text={block.text} />;
+    case "levers":
+      return <LeversLink text={block.text} />;
+    case "playbook":
+      return <PlaybookHelp fill={fill} />;
     default:
       return null;
   }
+}
+
+/** A text, email or DM to send: the words in a quiet box, with Copy that keeps the [fill-ins] as they are. */
+function Message({ block, fill }: { block: Extract<Block, { type: "message" }>; fill: Ctx["fill"] }) {
+  const [copied, setCopied] = useState(false);
+  const body = useRef<HTMLParagraphElement>(null);
+  const copy = async () => {
+    try {
+      // Copy what's on screen, filled-in names included, with the gaps still in [brackets].
+      const clone = body.current?.cloneNode(true) as HTMLElement | undefined;
+      clone?.querySelectorAll("[data-gap]").forEach((el) => {
+        el.textContent = `[${el.textContent}]`;
+      });
+      await navigator.clipboard.writeText(clone?.textContent ?? block.text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked: the words are still on the page */
+    }
+  };
+  return (
+    <div className="rounded-xl bg-[#f3f6fa] px-5 py-4">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className={`font-medium text-slate-500 ${SMALL}`}>{block.label}</p>
+        <button
+          type="button"
+          onClick={copy}
+          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-[#0c5290] hover:bg-white ${SMALL}`}
+        >
+          {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <p ref={body} className={`whitespace-pre-line text-slate-900 ${BODY}`}>{fill(block.text)}</p>
+    </div>
+  );
+}
+
+/** A link to another script, under /coach or /admin, whichever the coach is on. */
+function See({ block }: { block: Extract<Block, { type: "see" }> }) {
+  const prefix = usePathname()?.startsWith("/admin") ? "/admin" : "/coach";
+  const href = `${prefix}/script/${block.script}${block.part ? `?part=${block.part}` : ""}`;
+  return (
+    <Link href={href} className={`inline-flex items-center gap-1.5 text-[#0c5290] hover:underline ${BODY}`}>
+      {block.text}
+      <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+    </Link>
+  );
+}
+
+/** BOSS Pro in a new tab, on a new person with the name and business typed into the script's gaps. */
+function BossProLink({ text }: { text: string }) {
+  const prefix = usePathname()?.startsWith("/admin") ? "/admin" : "/coach";
+  const { values } = useGaps();
+  const query = new URLSearchParams();
+  if (values.name) query.set("name", values.name);
+  const business = values.business || values.company;
+  if (business) query.set("business", business);
+  const href = `${prefix}/boss-pro${query.size ? `?${query}` : ""}`;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={`inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-4 py-2 font-medium text-[#0c5290] hover:bg-sky-100 ${SMALL}`}
+    >
+      {text}
+      <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
+    </a>
+  );
+}
+
+/** Profit levers in a new tab. Admin only until the page is released to coaches. */
+function LeversLink({ text }: { text: string }) {
+  const onAdmin = usePathname()?.startsWith("/admin") ?? false;
+  const { values } = useGaps();
+  if (!onAdmin) return null;
+  const business = values.business || values.company;
+  const href = `/admin/profit-levers${business ? `?${new URLSearchParams({ business })}` : ""}`;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={`inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-4 py-2 font-medium text-[#0c5290] hover:bg-sky-100 ${SMALL}`}
+    >
+      {text}
+      <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
+    </a>
+  );
+}
+
+const PLAYBOOK_LEVELS = ["Overwhelmed", "Overworked", "Organised", "Overseer", "Owner"];
+const PLAYBOOK_KEY = "scripts:playbook";
+
+/** Their level and constraint, kept in this browser so the review opens where the coach left it. */
+const pickListeners = new Set<() => void>();
+let pickMemory = "{}";
+
+function readPick(): string {
+  try {
+    return localStorage.getItem(PLAYBOOK_KEY) ?? pickMemory;
+  } catch {
+    return pickMemory;
+  }
+}
+
+function writePick(next: { level: string; area: string }) {
+  pickMemory = JSON.stringify(next);
+  try {
+    localStorage.setItem(PLAYBOOK_KEY, pickMemory);
+  } catch {
+    /* memory keeps it for this visit */
+  }
+  pickListeners.forEach((l) => l());
+}
+
+function subscribePick(listener: () => void) {
+  pickListeners.add(listener);
+  return () => {
+    pickListeners.delete(listener);
+  };
+}
+
+/** "What's the question? The rest explains it." → the question, then the explanation. */
+function splitQuestion(text: string): { ask: string; why: string } {
+  const at = text.indexOf("?");
+  return at > 0 ? { ask: text.slice(0, at + 1), why: text.slice(at + 1).trim() } : { ask: text, why: "" };
+}
+
+/** Pick the owner's level and constraint, and the coach gets that playbook's questions and this-week wins to coach with. */
+function PlaybookHelp({ fill }: { fill: Ctx["fill"] }) {
+  const raw = useSyncExternalStore(subscribePick, readPick, () => "{}");
+  const pick = useMemo<{ level: string; area: string }>(() => {
+    try {
+      return { level: "", area: "", ...JSON.parse(raw) };
+    } catch {
+      return { level: "", area: "" };
+    }
+  }, [raw]);
+  const ref = pick.level && pick.area ? `${pick.level}.${pick.area}` : "";
+  // What came back, and for which playbook, so a new pick shows Loading until its own answer arrives.
+  const [loaded, setLoaded] = useState<{ ref: string; playbook: PlaybookContent | null }>({ ref: "", playbook: null });
+  useEffect(() => {
+    if (!ref) return;
+    let live = true;
+    fetch(`/api/playbooks/${ref}`)
+      .then((res) => (res.ok ? (res.json() as Promise<PlaybookContent>) : Promise.reject()))
+      .then((content) => live && setLoaded({ ref, playbook: content }))
+      .catch(() => live && setLoaded({ ref, playbook: null }));
+    return () => {
+      live = false;
+    };
+  }, [ref]);
+  const playbook = loaded.ref === ref ? loaded.playbook : null;
+  const failed = loaded.ref === ref && !loaded.playbook;
+  const choose = (next: Partial<typeof pick>) => writePick({ ...pick, ...next });
+  const select = `rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 ${SMALL}`;
+  const [query, setQuery] = useState("");
+  const [browsing, setBrowsing] = useState(false);
+  const pickPlaybook = (p: BossPlaybook) => {
+    choose({ level: String(p.level), area: String(p.area) });
+    setQuery("");
+    setBrowsing(false);
+  };
+  // Search names, areas and levels, so "cash" finds Cash Flow and "overworked" finds that level's ten.
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = words.length
+    ? PLAYBOOKS.filter((p) => {
+        const hay = `${p.name} ${AREAS[p.area].name} ${PLAYBOOK_LEVELS[p.level - 1]}`.toLowerCase();
+        return words.every((w) => hay.includes(w));
+      })
+        .sort((a, b) => Number(!words.every((w) => a.name.toLowerCase().includes(w))) - Number(!words.every((w) => b.name.toLowerCase().includes(w))) || a.level - b.level)
+        .slice(0, 8)
+    : [];
+  return (
+    <div className="rounded-xl bg-[#f3f6fa] px-5 py-4">
+      {/* Find one fast: search, or scan all 50 the way BOSS Pro lays them out. */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <label className="relative min-w-0 flex-1 basis-60">
+          <span className="sr-only">Search playbooks</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search playbooks, e.g. cash flow"
+            className={`w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-slate-900 ${SMALL}`}
+          />
+        </label>
+        <button
+          type="button"
+          aria-expanded={browsing}
+          onClick={() => setBrowsing((b) => !b)}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-medium ${SMALL} ${
+            browsing ? "bg-[#0c5290] text-white" : "bg-white text-[#0c5290] ring-1 ring-slate-200 hover:ring-sky-300"
+          }`}
+        >
+          <LayoutGrid className="h-4 w-4" aria-hidden />
+          {browsing ? "Hide all playbooks" : "Browse all playbooks"}
+        </button>
+      </div>
+      {words.length ? (
+        <ul className="mb-4 overflow-hidden rounded-lg bg-white ring-1 ring-slate-200">
+          {matches.length ? (
+            matches.map((p) => (
+              <li key={p.ref} className="border-b border-slate-100 last:border-b-0">
+                <button type="button" onClick={() => pickPlaybook(p)} className="flex w-full items-baseline justify-between gap-3 px-3 py-2 text-left hover:bg-sky-50">
+                  <span className={`font-semibold text-slate-900 ${SMALL}`}>{p.name}</span>
+                  <span className={`text-slate-500 ${SMALL}`}>
+                    {AREAS[p.area].name} · Level {p.level}, {PLAYBOOK_LEVELS[p.level - 1]}
+                  </span>
+                </button>
+              </li>
+            ))
+          ) : (
+            <li className={`px-3 py-2 text-slate-500 ${SMALL}`}>No playbook matches that.</li>
+          )}
+        </ul>
+      ) : null}
+      {browsing ? (
+        <div className="mb-4 overflow-x-auto rounded-lg bg-white ring-1 ring-slate-200">
+          <table className={`w-full min-w-[40rem] border-collapse text-left ${SMALL}`}>
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-500">
+                <th className="px-3 py-2 font-medium">Area</th>
+                {PLAYBOOK_LEVELS.map((name, i) => (
+                  <th key={name} className="px-2 py-2 font-medium">
+                    {i + 1}. {name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {AREAS.map((a) => (
+                <tr key={a.id} className="border-b border-slate-100 last:border-b-0">
+                  <th scope="row" className="px-3 py-1.5 font-medium text-slate-700">{a.name}</th>
+                  {PLAYBOOK_LEVELS.map((_, i) => {
+                    const p = PLAYBOOKS.find((x) => x.level === i + 1 && x.area === a.id);
+                    if (!p) return <td key={i} />;
+                    const on = p.ref === ref;
+                    return (
+                      <td key={i} className="px-1 py-1">
+                        <button
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => pickPlaybook(p)}
+                          className={`w-full rounded-md px-2 py-1.5 text-left transition-colors ${
+                            on ? "bg-[#0c5290] font-semibold text-white" : "bg-[#f3f6fa] text-slate-800 hover:bg-sky-100"
+                          }`}
+                        >
+                          {p.name}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      <div className="flex flex-wrap gap-3">
+        <label className={`flex flex-col gap-1 font-medium text-slate-500 ${SMALL}`}>
+          Their level
+          <select value={pick.level} onChange={(e) => choose({ level: e.target.value })} className={select}>
+            <option value="">Pick one</option>
+            {PLAYBOOK_LEVELS.map((name, i) => (
+              <option key={name} value={i + 1}>
+                {i + 1}. {name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={`flex flex-col gap-1 font-medium text-slate-500 ${SMALL}`}>
+          Their constraint
+          <select value={pick.area} onChange={(e) => choose({ area: e.target.value })} className={select}>
+            <option value="">Pick one</option>
+            {AREAS.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {!ref ? null : failed ? (
+        <p className={`mt-4 text-slate-600 ${BODY}`}>Couldn&apos;t load that playbook. Check your connection.</p>
+      ) : !playbook ? (
+        <p className={`mt-4 text-slate-500 ${BODY}`}>Loading the playbook…</p>
+      ) : (
+        <div className="mt-5 space-y-5">
+          <p className={`text-slate-600 ${BODY}`}>
+            Playbook:{" "}
+            <a href={`/playbooks/${ref}`} target="_blank" rel="noreferrer" className="font-semibold text-[#0c5290] hover:underline">
+              {playbook.name}
+            </a>
+          </p>
+          <div>
+            <p className={`mb-2 font-medium text-slate-500 ${SMALL}`}>Questions to ask</p>
+            <ul className="space-y-3">
+              {playbook.thingsToThinkAbout.map((item) => {
+                const { ask, why } = splitQuestion(item);
+                return (
+                  <li key={item}>
+                    <p className={`font-semibold text-slate-900 ${BODY}`}>{fill(ask)}</p>
+                    {why ? <p className={`mt-1 text-slate-600 ${SMALL}`}>{why}</p> : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          {playbook.quickWins.length ? (
+            <div>
+              <p className={`mb-2 font-medium text-slate-500 ${SMALL}`}>Quick wins for this week (pick one for their action)</p>
+              <ul className={`list-disc space-y-1.5 pl-5 text-slate-700 marker:text-slate-400 ${BODY}`}>
+                {playbook.quickWins.map((win) => (
+                  <li key={win}>{win.replace(/^This week:\s*/i, "")}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** An ⓘ that shows why on hover, or on tap where there's no hover. Tapping again or moving away hides it. */
@@ -195,12 +549,15 @@ function Toggle({
   open,
   onToggle,
   dim = false,
+  inline = false,
 }: {
   block: Extract<Block, { type: "response" }>;
   ctx: Ctx;
   open: boolean;
   onToggle: () => void;
   dim?: boolean;
+  /** Keep an "(e.g. …)" example on the same line, smaller, so a stacked list reads one row each. */
+  inline?: boolean;
 }) {
   const tone = TONE[block.tone];
   const { main, example } = splitExample(block.label);
@@ -215,10 +572,17 @@ function Toggle({
         } ${dim ? "opacity-45 hover:opacity-80" : ""}`}
       >
         <span aria-hidden className={`mt-[0.4rem] h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot}`} />
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-[1.0625rem] leading-[1.3] tracking-[-0.01em] text-slate-900">{ctx.fill(main)}</span>
-          {example ? <span className={`text-slate-600 ${SMALL}`}>{ctx.fill(example)}</span> : null}
-        </span>
+        {inline ? (
+          <span className="min-w-0 flex-1 text-[1.0625rem] leading-[1.3] tracking-[-0.01em] text-slate-900">
+            {ctx.fill(main)}
+            {example ? <span className={`ml-2 text-slate-500 ${SMALL}`}>{ctx.fill(example)}</span> : null}
+          </span>
+        ) : (
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-[1.0625rem] leading-[1.3] tracking-[-0.01em] text-slate-900">{ctx.fill(main)}</span>
+            {example ? <span className={`text-slate-600 ${SMALL}`}>{ctx.fill(example)}</span> : null}
+          </span>
+        )}
         <ChevronDown
           aria-hidden
           className={`mt-0.5 h-5 w-5 shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
@@ -243,10 +607,20 @@ const MOST_IN_A_ROW = 4;
  * picking one fades the others and picking it again clears it. On a call
  * you only ever take one path.
  */
-function Answers({ blocks, ctx }: { blocks: Extract<Block, { type: "response" }>[]; ctx: Ctx }) {
+function Answers({ blocks, ctx, stack = false }: { blocks: Extract<Block, { type: "response" }>[]; ctx: Ctx; stack?: boolean }) {
   const [picked, setPicked] = useState<number | null>(null);
   const pick = (i: number) => setPicked((cur) => (cur === i ? null : i));
-  if (blocks.length === 1) return <Toggle block={blocks[0]} ctx={ctx} open={picked === 0} onToggle={() => pick(0)} />;
+  if (blocks.length === 1) return <Toggle block={blocks[0]} ctx={ctx} open={picked === 0} onToggle={() => pick(0)} inline={stack} />;
+  // A section that is only answers reads like an FAQ: one per row, no hint.
+  if (stack) {
+    return (
+      <div className="space-y-1.5">
+        {blocks.map((b, i) => (
+          <Toggle key={i} block={b} ctx={ctx} open={picked === i} onToggle={() => pick(i)} dim={picked !== null && picked !== i} inline />
+        ))}
+      </div>
+    );
+  }
   const chosen = picked === null ? null : blocks[picked];
   const hint = (
     <p className={`mb-1.5 flex items-center gap-1.5 pt-3 text-slate-400 ${SMALL}`}>
@@ -260,7 +634,7 @@ function Answers({ blocks, ctx }: { blocks: Extract<Block, { type: "response" }>
         {hint}
         <div className="space-y-1.5">
           {blocks.map((b, i) => (
-            <Toggle key={i} block={b} ctx={ctx} open={picked === i} onToggle={() => pick(i)} dim={picked !== null && picked !== i} />
+            <Toggle key={i} block={b} ctx={ctx} open={picked === i} onToggle={() => pick(i)} dim={picked !== null && picked !== i} inline />
           ))}
         </div>
       </div>
@@ -342,7 +716,7 @@ function Links({ blocks, ctx }: { blocks: Extract<Block, { type: "goto" }>[]; ct
   return <div className="flex flex-wrap gap-x-5 gap-y-1.5">{blocks.map(link)}</div>;
 }
 
-function Blocks({ blocks, ctx }: { blocks: Block[]; ctx: Ctx }) {
+function Blocks({ blocks, ctx, stack = false }: { blocks: Block[]; ctx: Ctx; stack?: boolean }) {
   const list = segments(blocks);
   return (
     <div className="space-y-3.5">
@@ -364,7 +738,7 @@ function Blocks({ blocks, ctx }: { blocks: Block[]; ctx: Ctx }) {
             className={`min-w-0 ${TEXT_ONLY} ${tucked ? "!mt-1" : afterAnswers ? "!mt-7" : afterScript ? "!mt-6" : ""}`}
           >
             {seg.kind === "answers" ? (
-              <Answers blocks={seg.blocks} ctx={ctx} />
+              <Answers blocks={seg.blocks} ctx={ctx} stack={stack} />
             ) : seg.kind === "links" ? (
               <Links blocks={seg.blocks} ctx={ctx} />
             ) : (
@@ -443,15 +817,15 @@ export function CoachingNotes({
       <div aria-hidden onClick={onClose} className="fixed inset-x-0 bottom-0 top-[57px] z-40 bg-slate-900/10" />
       <aside
         role="dialog"
-        aria-label="Coaching notes"
+        aria-label="Tips"
         className="fixed bottom-0 right-0 top-[57px] z-50 flex w-[min(28rem,100vw)] flex-col border-l border-slate-200 bg-white shadow-[-12px_0_30px_-18px_rgba(15,23,42,0.35)]"
       >
         <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-6 py-5">
           <div>
-            <p className={`text-slate-500 ${SMALL}`}>Coaching notes</p>
+            <p className={`text-slate-500 ${SMALL}`}>Tips</p>
             <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-slate-900">{title}</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close coaching notes" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+          <button type="button" onClick={onClose} aria-label="Close tips" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
             <X className="h-5 w-5" aria-hidden />
           </button>
         </header>
@@ -478,29 +852,73 @@ export function CoachingNotes({
   );
 }
 
-/** Sections split by headings, divided by faint rules: the body of every step and objection page. */
-export function SheetBody({ blocks, fill, open }: Ctx & { blocks: Block[] }) {
+/**
+ * Sections split by headings, divided by faint rules: the body of every step and objection page.
+ * tight: for guidance you scan rather than read out (like the No-show rules), no rules and smaller gaps.
+ */
+export function SheetBody({ blocks, fill, open, tight = false }: Ctx & { blocks: Block[]; tight?: boolean }) {
   return (
     <div>
       {sections(blocks).map((section, i) => {
         // A note or a reply straight under a heading describes the section, so it sits in the header.
         const first = section.blocks[0];
         const lead = section.heading && (first?.type === "note" || first?.type === "they") ? first : null;
+        const body = lead ? section.blocks.slice(1) : section.blocks;
+        const shown = body.filter((b) => b.type !== "info");
+        const onlyAnswers = shown.length > 1 && shown.every((b) => b.type === "response");
         return (
-          <section key={i} className="py-8 first:pt-0 last:pb-0">
-            {i > 0 ? <div aria-hidden className={`-mt-8 mb-8 h-px bg-slate-100 ${TEXT_ONLY}`} /> : null}
+          <section key={i} className={tight ? "pb-9 last:pb-0" : "py-8 first:pt-0 last:pb-0"}>
+            {i > 0 && !tight ? <div aria-hidden className={`-mt-8 mb-8 h-px bg-slate-100 ${TEXT_ONLY}`} /> : null}
             {section.heading ? (
-              <header className={`mb-4 ${TEXT_ONLY}`}>
+              <header className={`${shown.length ? "mb-4" : ""} ${TEXT_ONLY}`}>
                 <h3 className={SECTION}>{section.heading}</h3>
                 {lead ? (
                   <p className={`mt-1 text-slate-500 ${lead.type === "they" ? "italic" : ""} ${BODY}`}>{fill(lead.text)}</p>
                 ) : null}
               </header>
             ) : null}
-            <Blocks blocks={lead ? section.blocks.slice(1) : section.blocks} ctx={{ fill, open }} />
+            <Blocks blocks={body} ctx={{ fill, open }} stack={onlyAnswers} />
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/** Above this, a note that opens a page goes behind the Tips button; at or below, it sits at the top. */
+const SHORT_NOTE = 350;
+
+/**
+ * Splits off the short "why" notes that open a page (before its first
+ * heading), so they can sit at the top instead of behind a button.
+ */
+export function splitIntro(blocks: Block[]): { intro: Extract<Block, { type: "info" }>[]; rest: Block[] } {
+  const intro: Extract<Block, { type: "info" }>[] = [];
+  const rest: Block[] = [];
+  let opening = true;
+  for (const b of blocks) {
+    if (b.type === "heading") opening = false;
+    if (opening && b.type === "info" && b.body.join(" ").length <= SHORT_NOTE) intro.push(b);
+    else rest.push(b);
+  }
+  return { intro, rest };
+}
+
+/** Those notes at the top of the page, set like any section (heading, then grey text) so the left edge stays clean. */
+export function PageIntro({ notes, fill }: { notes: Extract<Block, { type: "info" }>[]; fill: Ctx["fill"] }) {
+  if (!notes.length) return null;
+  return (
+    <div className={`mb-9 space-y-9 ${TEXT_ONLY}`}>
+      {notes.map((n) => (
+        <div key={n.title}>
+          <h3 className={SECTION}>{n.title}</h3>
+          {n.body.map((para) => (
+            <p key={para} className={`mt-1 text-slate-500 ${BODY}`}>
+              {fill(para)}
+            </p>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

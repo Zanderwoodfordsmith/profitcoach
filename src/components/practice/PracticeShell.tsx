@@ -15,6 +15,7 @@ import { setAvaPageHost } from "@/components/ava/avaPageHost";
 import { useSectionComments } from "./comments/SectionCommentsContext";
 import { CommentsButton, PageCommentBadge } from "./comments/SectionCommentsUI";
 import { DownloadMenu, PageBlurb } from "./document/DocumentParts";
+import { OPEN_SECTION_EVENT } from "./document/SectionView";
 import { PageIcon } from "./pageIcons";
 import { usePractice } from "./PracticeProvider";
 import { useMatchesBreakpoint } from "@/hooks/useBreakpoint";
@@ -235,14 +236,35 @@ export function PracticeShell({
     if (open && open.page.slug !== page.slug) openList();
   }, [panelOpen, page?.slug, openKey, openList]);
 
-  // A link to a section (#s-page-id) lands before the blueprint has loaded, so scroll once it is on screen.
+  // A link to a section (#s-page-id) or one box (#f-group.key) lands before the blueprint has
+  // loaded, so once it is on screen: open a shut section, scroll to the spot and light it up.
   const shown = Boolean(ready);
   useEffect(() => {
     if (!shown) return;
-    const id = window.location.hash.slice(1);
-    if (!id.startsWith("s-")) return;
-    const frame = window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
-    return () => window.cancelAnimationFrame(frame);
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!id.startsWith("s-") && !id.startsWith("f-")) return;
+    if (id.startsWith("s-")) window.dispatchEvent(new CustomEvent(OPEN_SECTION_EVENT, { detail: id }));
+    let tries = 0;
+    let timer = 0;
+    const find = () => {
+      const el = document.getElementById(id);
+      if (!el) {
+        // Boxes can take a few seconds on a slow load.
+        if (++tries < 120) timer = window.setTimeout(find, 50);
+        return;
+      }
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ block: id.startsWith("f-") ? "center" : "start", behavior: still ? "auto" : "smooth" });
+      // Ava's glow (bp-ava-focus), run as an animation: a box redraws its own classes while it loads.
+      const lit = "0 0 0 3px rgba(26, 143, 212, 0.5), 0 0 0 10px rgba(26, 143, 212, 0.12)";
+      const off = "0 0 0 3px rgba(26, 143, 212, 0), 0 0 0 10px rgba(26, 143, 212, 0)";
+      el.animate(
+        [{ boxShadow: lit }, { boxShadow: lit, offset: 0.4 }, { boxShadow: still ? lit : off }],
+        { duration: 2600, easing: "ease-out" },
+      );
+    };
+    find();
+    return () => window.clearTimeout(timer);
   }, [shown]);
 
   // After the scroll to the top on a new page, so Ava's section wins. The page may still be rendering, so look for a moment.
