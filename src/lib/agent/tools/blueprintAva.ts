@@ -12,6 +12,7 @@ import {
 } from "@/lib/practiceKnowledge/blueprint";
 import { formatFieldValue } from "@/lib/practiceKnowledge/exportMarkdown";
 import { sanitizePayloadPatch } from "@/lib/practiceKnowledge/sanitize";
+import { TONE_START, asVoiceTone } from "@/lib/practiceKnowledge/voiceTone";
 import { addSectionComment } from "@/lib/practiceKnowledge/sectionComments";
 import { sectionWorkflow } from "@/lib/practiceKnowledge/sectionWorkflow";
 import { ensurePracticeKnowledge, patchPracticeKnowledge, saveBuiltSection } from "@/lib/practiceKnowledge/store";
@@ -445,7 +446,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
     label: "Marking it checked",
     needsCoach: true,
     description:
-      "Record that the coach has looked over a section and is happy with it as it is now. Only after they say so in this conversation: their yes is the sign-off, there is nothing for them to click. Sections waiting on BCA are not theirs to sign off.",
+      "Record that the coach has looked over a section and is happy with it as it is now. Only after they say so in this conversation: their yes is the sign-off, there is nothing for them to click. Sections waiting on BCA are not theirs to sign off. Your tone shows a starting point on the page until it is saved; if they are happy with the sliders as shown, sign it off and that keeps them.",
     input_schema: {
       type: "object",
       properties: {
@@ -458,7 +459,13 @@ export const blueprintAvaTools: AgentToolDef[] = [
       const coach = coachOf(ctx);
       const ref = sectionRef(input);
       if (!str(input, "coach_words")) throw new AgentToolError("Quote the coach saying they are happy with it.");
-      const row = await ensurePracticeKnowledge(coach.id);
+      let row = await ensurePracticeKnowledge(coach.id);
+      // Your tone shows a starting point until it is saved. Their yes keeps it, as "Keep this" does on the page.
+      if (ref.section.fields?.some((f) => f.path === "practice.tone") && !asVoiceTone(row.payload.practice.tone?.value)) {
+        const source = ctx.mode === "admin" ? "admin" : "coach_edit";
+        const tone = sanitizePayloadPatch({ practice: { tone: { value: TONE_START, source, updated_at: new Date().toISOString() } } }, source);
+        row = await patchPracticeKnowledge({ coachId: coach.id, payloadPatch: tone });
+      }
       const work = sectionWorkflow(ref, row);
       if (!work.tracked) throw new AgentToolError(`${where(ref)} has nothing in it to sign off.`);
       if (work.status === "done") return { signed_off: true, already: true };
