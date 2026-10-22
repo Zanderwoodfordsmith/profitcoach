@@ -2,6 +2,28 @@ import { NextResponse } from "next/server";
 import { requireContentPublisher } from "@/lib/linkedinAdminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+type ComposerSettings = {
+  display_headline?: string | null;
+  website_label?: string | null;
+  website_url?: string | null;
+  quote_handle?: string | null;
+};
+
+function pick(...values: (string | null | undefined)[]): string | null {
+  for (const v of values) if (typeof v === "string" && v.trim()) return v.trim();
+  return null;
+}
+
+/** Content → Settings, whichever way LinkedIn is connected; the older connection's values as a fallback. */
+async function loadComposerSettings(userId: string): Promise<ComposerSettings | null> {
+  const { data } = await supabaseAdmin
+    .from("linkedin_composer_settings")
+    .select("display_headline, website_label, website_url, quote_handle")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
+
 export async function GET(request: Request) {
   const auth = await requireContentPublisher(request);
   if (auth.error || !auth.userId) {
@@ -29,13 +51,16 @@ export async function GET(request: Request) {
     [profileRow?.first_name, profileRow?.last_name].filter(Boolean).join(" ").trim() ||
     null;
 
+  const settings = await loadComposerSettings(auth.userId);
+
   if (outreach?.unipile_account_id) {
     return NextResponse.json({
       connected: true,
       via: "unipile",
       connection: {
         linkedin_sub: outreach.unipile_account_id,
-        scope: "unipile",
+        // A list, as for OAuth connections (a plain string crashed Content → Settings).
+        scope: [],
         token_expires_at: null,
         updated_at: outreach.last_synced_at,
       },
@@ -50,11 +75,11 @@ export async function GET(request: Request) {
       },
       profile: {
         name: outreach.display_name || profileName,
-        headline: null,
+        headline: pick(settings?.display_headline),
         photo_url: profileRow?.avatar_url ?? null,
-        website_label: "Visit my website",
-        website_url: null,
-        quote_handle: "Profit Coach",
+        website_label: pick(settings?.website_label) ?? "Visit my website",
+        website_url: pick(settings?.website_url),
+        quote_handle: pick(settings?.quote_handle) ?? "Profit Coach",
       },
     });
   }
@@ -107,19 +132,11 @@ export async function GET(request: Request) {
       : null,
     profile: {
       name: profileName,
-      headline:
-        (typeof data?.display_headline === "string" && data.display_headline.trim()) ||
-        snap?.headline ||
-        null,
+      headline: pick(settings?.display_headline, data?.display_headline, snap?.headline),
       photo_url: profileRow?.avatar_url || snap?.photoUrl || null,
-      website_label:
-        (typeof data?.website_label === "string" && data.website_label.trim()) ||
-        "Visit my website",
-      website_url:
-        (typeof data?.website_url === "string" && data.website_url.trim()) || null,
-      quote_handle:
-        (typeof data?.quote_handle === "string" && data.quote_handle.trim()) ||
-        "Profit Coach",
+      website_label: pick(settings?.website_label, data?.website_label) ?? "Visit my website",
+      website_url: pick(settings?.website_url, data?.website_url),
+      quote_handle: pick(settings?.quote_handle, data?.quote_handle) ?? "Profit Coach",
     },
   });
 }
@@ -130,38 +147,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
   }
 
-  const { data: outreach } = await supabaseAdmin
-    .from("linkedin_outreach_accounts")
-    .select("id")
-    .eq("coach_id", auth.userId)
-    .eq("status", "OK")
-    .ilike("provider", "linkedin")
-    .limit(1)
-    .maybeSingle();
-
-  if (outreach) {
-    return NextResponse.json({ ok: true, via: "unipile" });
-  }
-
   const body = (await request.json().catch(() => ({}))) as {
     display_headline?: string | null;
     website_label?: string | null;
     website_url?: string | null;
     quote_handle?: string | null;
   };
-
-  const { data: existing } = await supabaseAdmin
-    .from("linkedin_member_connections")
-    .select("user_id")
-    .eq("user_id", auth.userId)
-    .maybeSingle();
-
-  if (!existing) {
-    return NextResponse.json(
-      { error: "Connect LinkedIn in Campaigns before saving settings." },
-      { status: 400 }
-    );
-  }
 
   const patch: Record<string, string | null> = {};
   if ("display_headline" in body) {
@@ -177,14 +168,18 @@ export async function PATCH(request: Request) {
     patch.quote_handle = body.quote_handle?.trim() || null;
   }
 
+  // Saved for every coach, however LinkedIn is connected (Unipile coaches used to get "ok" and nothing stored).
   const { error } = await supabaseAdmin
-    .from("linkedin_member_connections")
-    .update(patch)
-    .eq("user_id", auth.userId);
+    .from("linkedin_composer_settings")
+    .upsert({ user_id: auth.userId, ...patch, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("linkedin composer settings:", error.message);
+    return NextResponse.json({ error: "Could not save your settings." }, { status: 500 });
   }
+
+  // Keep the older connection's copy in step for anything that still reads it.
+  await supabaseAdmin.from("linkedin_member_connections").update(patch).eq("user_id", auth.userId);
 
   return NextResponse.json({ ok: true });
 }

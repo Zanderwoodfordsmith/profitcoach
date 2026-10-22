@@ -190,7 +190,7 @@ function contentProfileFromStatus(statusBody: {
       photoUrl: statusBody.profile?.photo_url ?? null,
       email: statusBody.account?.email ?? null,
       tokenExpiry: statusBody.connection?.token_expires_at ?? null,
-      scopes: statusBody.connection?.scope ?? [],
+      scopes: Array.isArray(statusBody.connection?.scope) ? statusBody.connection.scope : [],
       websiteLabel: statusBody.profile?.website_label || "Visit my website",
       websiteUrl: statusBody.profile?.website_url ?? null,
       quoteHandle: statusBody.profile?.quote_handle || "Profit Coach",

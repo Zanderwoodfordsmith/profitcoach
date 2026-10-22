@@ -733,7 +733,7 @@ export function LinkedInSchedulerPanel() {
                 Token expires {new Date(profile.tokenExpiry).toLocaleString()}
               </p>
             ) : null}
-            {profile.scopes.length ? (
+            {Array.isArray(profile.scopes) && profile.scopes.length ? (
               <p className="text-[11px] text-slate-400">
                 Scopes: {profile.scopes.join(", ")}
               </p>
