@@ -18,6 +18,8 @@ import {
   timing,
   welcome,
   yourCall,
+  EXPLAINER_CALLS,
+  type ExplainerCall,
   type ExplainerLength,
   type TimelineRow,
 } from "@/lib/coachExplainer/copy";
@@ -39,6 +41,8 @@ type Props = {
   origin: string;
   /** SVG markup for a QR code to the coach's BOSS Score page. */
   qrSvg: string | null;
+  /** Before the BOSS Score Review (short, no phase detail) or the Profit Roadmap call; null = the full brochure. */
+  call?: ExplainerCall | null;
 };
 
 type Tone = "blue" | "sky" | "teal";
@@ -47,20 +51,25 @@ const TONES: Tone[] = ["blue", "sky", "teal"];
 /** One sheet; `title` puts it in the contents list. */
 type SheetDef = { key: string; title?: string; render: (page: number) => ReactNode };
 
-export function CoachExplainer({ coach, length, showFee, origin, qrSvg }: Props) {
+export function CoachExplainer({ coach, length, showFee, origin, qrSvg, call = null }: Props) {
   const site = coach.site;
   const scoreLink = `${origin.replace(/^https?:\/\//, "")}${site.links.score}`;
   const footName = site.name;
 
   const sheets: SheetDef[] = [
-    { key: "cover", render: () => <Cover coach={coach} /> },
-    { key: "welcome", render: (page) => <Welcome page={page} foot={footName} showFee={showFee} contents={contents} /> },
+    { key: "cover", render: () => <Cover coach={coach} call={call} /> },
+    { key: "welcome", render: (page) => <Welcome page={page} foot={footName} showFee={showFee} contents={contents} call={call} /> },
     { key: "now", title: "Where you are now", render: (page) => <WhereYouAre page={page} foot={footName} coach={coach} /> },
     { key: "score", title: "Data before advice", render: (page) => <Score page={page} foot={footName} /> },
     { key: "how", title: "How it works", render: (page) => <HowItWorks page={page} foot={footName} length={length} /> },
-    { key: "p1", render: (page) => <PhaseOne page={page} foot={footName} /> },
-    { key: "p2", render: (page) => <PhaseTwo page={page} foot={footName} coach={coach} /> },
-    { key: "p3", render: (page) => <PhaseThree page={page} foot={footName} length={length} /> },
+    // The short version for the first call leaves the phase detail for the second.
+    ...(call === "review"
+      ? []
+      : [
+          { key: "p1", render: (page: number) => <PhaseOne page={page} foot={footName} /> },
+          { key: "p2", render: (page: number) => <PhaseTwo page={page} foot={footName} coach={coach} /> },
+          { key: "p3", render: (page: number) => <PhaseThree page={page} foot={footName} length={length} /> },
+        ]),
     { key: "coach", title: "Who you’ll work with", render: (page) => <Coach page={page} foot={footName} coach={coach} /> },
     ...(showFee && coach.fee
       ? [{ key: "price", title: "Your investment", render: (page: number) => <Investment page={page} foot={footName} coach={coach} length={length} /> }]
@@ -68,7 +77,7 @@ export function CoachExplainer({ coach, length, showFee, origin, qrSvg }: Props)
     {
       key: "faq",
       title: "Your questions",
-      render: (page) => <Questions page={page} foot={footName} coach={coach} length={length} showFee={showFee} />,
+      render: (page) => <Questions page={page} foot={footName} coach={coach} length={length} showFee={showFee} call={call} />,
     },
     { key: "call", title: "Before our call", render: (page) => <YourCall page={page} foot={footName} scoreLink={scoreLink} /> },
     { key: "back", render: () => <BackCover coach={coach} scoreLink={scoreLink} qrSvg={qrSvg} /> },
@@ -193,14 +202,15 @@ function Checks({ items, two }: { items: string[]; two?: boolean }) {
 
 /* ---------- Cover ---------- */
 
-function Cover({ coach }: { coach: ExplainerCoach }) {
+function Cover({ coach, call }: { coach: ExplainerCoach; call: ExplainerCall | null }) {
   const site = coach.site;
+  const kicker = EXPLAINER_CALLS.find((c) => c.value === call)?.kicker ?? cover.kicker;
   const stats = coach.facts.length >= 2 ? coach.facts.slice(0, 3) : cover.fallbackStats;
   return (
     <section className="cx-cover">
       <div className="cx-cover__top">
         <Brand light />
-        <span>{cover.kicker}</span>
+        <span>{kicker}</span>
       </div>
       <div className="cx-cover__text">
         <h1 className="cx-cover__title">
@@ -242,13 +252,15 @@ function Welcome({
   foot,
   showFee,
   contents,
+  call,
 }: {
   page: number;
   foot: string;
   showFee: boolean;
   contents: { title: string; page: number }[];
+  call: ExplainerCall | null;
 }) {
-  const w = welcome(showFee);
+  const w = welcome(showFee, call);
   return (
     <Sheet page={page} foot={foot}>
       <Title label={w.label} light={w.light} bold={w.bold} size="lg" />
@@ -815,12 +827,14 @@ function Questions({
   coach,
   length,
   showFee,
+  call,
 }: {
   page: number;
   foot: string;
   coach: ExplainerCoach;
   length: ExplainerLength;
   showFee: boolean;
+  call: ExplainerCall | null;
 }) {
   const q = questions({
     length,
@@ -829,6 +843,7 @@ function Questions({
     rhythm: coach.rhythm,
     guarantee: coach.guarantee,
     whoIHelp: coach.site.whoIHelp,
+    call,
   });
   return (
     <Sheet page={page} foot={foot}>

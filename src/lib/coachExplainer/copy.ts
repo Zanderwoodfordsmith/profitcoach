@@ -22,6 +22,23 @@ export function parseExplainerLength(raw: string | undefined): ExplainerLength {
 
 export const FOOT = "Read this before our call";
 
+/**
+ * Which call the owner is reading this before. The BOSS Score Review is the
+ * first call (no price, the short version). The Profit Roadmap call is the
+ * second (the price, and the detail of how each phase works). No call set
+ * means the full A4 brochure as before.
+ */
+export type ExplainerCall = "review" | "roadmap";
+
+export const EXPLAINER_CALLS: { value: ExplainerCall; label: string; kicker: string }[] = [
+  { value: "review", label: "Before the BOSS Score Review", kicker: "Read this before our call" },
+  { value: "roadmap", label: "Before the Profit Roadmap call", kicker: "Read this before our next call" },
+];
+
+export function parseExplainerCall(raw: string | undefined): ExplainerCall | null {
+  return raw === "review" || raw === "roadmap" ? raw : null;
+}
+
 export const cover = {
   kicker: "Read this before our call",
   light: "From running everything",
@@ -36,16 +53,31 @@ export const cover = {
   ],
 };
 
-export function welcome(showFee: boolean) {
+const OUTCOMES = {
+  review: [
+    { title: "Where the business stands", text: "Your BOSS Score, area by area." },
+    { title: "What’s holding it back most", text: "The one or two areas costing you the most time and money." },
+    { title: "What the next 90 days could look like", text: "Three priorities, and the numbers that show they’re working." },
+    { title: "Whether to talk again", text: "If I can help, we book a second call to map your plan. If I can’t, I’ll tell you." },
+  ],
+  roadmap: [
+    { title: "Your first 90 days", text: "The plan, built from your BOSS Score, with three priorities." },
+    { title: "How we’d work together", text: "The sessions, what you do between them, and how we track it." },
+    { title: "What it costs", text: "One price, set out in full. No surprises." },
+    { title: "An honest yes or no", text: "Whether we go ahead. Either answer is fine." },
+  ],
+};
+
+export function welcome(showFee: boolean, call?: ExplainerCall | null) {
   return {
     label: "Welcome",
-    light: "Before we speak,",
+    light: call === "roadmap" ? "Before we speak again," : "Before we speak,",
     bold: "here’s the plan.",
     lead: `I want you to know how I work and what we’d do together${
       showFee ? ", and what it costs" : ""
     }. Then our call can be about your business.`,
-    outcomesHeading: "In our call, we’ll work out",
-    outcomes: [
+    outcomesHeading: call === "roadmap" ? "In our next call, we’ll work out" : "In our call, we’ll work out",
+    outcomes: call ? OUTCOMES[call] : [
       { title: "Where the business stands", text: "Your BOSS Score, area by area." },
       { title: "What’s holding it back most", text: "The one or two areas costing you the most time and money." },
       { title: "What the next 90 days could look like", text: "Three priorities, and the numbers that show they’re working." },
@@ -349,6 +381,7 @@ export function questions(input: {
   rhythm: string | null;
   guarantee: string | null;
   whoIHelp: string | null;
+  call?: ExplainerCall | null;
 }) {
   const howLong =
     input.length === "ninety"
@@ -391,7 +424,9 @@ export function questions(input: {
         a:
           input.showFee && input.fee
             ? `${input.fee}. One price, and no surprises.`
-            : "We’ll cover it on the call, once we both know it fits.",
+            : input.call === "review"
+              ? "We cover it on our second call, once we both know it fits."
+              : "We’ll cover it on the call, once we both know it fits.",
       },
       {
         q: "What if it isn’t right for us?",

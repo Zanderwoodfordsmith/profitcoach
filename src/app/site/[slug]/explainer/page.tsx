@@ -5,8 +5,9 @@ import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { cache } from "react";
 import { CoachExplainer } from "@/components/coachExplainer/CoachExplainer";
+import { PrintOnLoad } from "@/components/coachExplainer/PrintOnLoad";
 import { figtree } from "@/fonts";
-import { EXPLAINER_LENGTHS, parseExplainerLength, type ExplainerLength } from "@/lib/coachExplainer/copy";
+import { EXPLAINER_LENGTHS, parseExplainerCall, parseExplainerLength, type ExplainerLength } from "@/lib/coachExplainer/copy";
 import { explainerFromBlueprint } from "@/lib/coachExplainer/fromBlueprint";
 import { loadCoachSiteAndRow } from "@/lib/coachSite/load";
 import { coachSiteMode } from "@/lib/coachSite/mode";
@@ -15,7 +16,7 @@ import { coachSiteMode } from "@/lib/coachSite/mode";
  * A coach's before-our-call explainer, filled from their Blueprint. Same
  * release rule as the coach website: local preview only until coach sites go
  * live. ?length=ongoing|ninety|blend and ?fee=1 set the version; print the
- * page to save the PDF.
+ * page to save the PDF. ?call=review|roadmap matches the digital explainer.
  */
 
 type PageProps = {
@@ -50,6 +51,9 @@ export default async function CoachExplainerPage({ params, searchParams }: PageP
 
   const length = parseExplainerLength(one(query.length));
   const showFee = one(query.fee) === "1";
+  // Set by the digital explainer's "Save as PDF": same version, then the print dialog.
+  const call = parseExplainerCall(one(query.call));
+  const print = one(query.print) === "1";
   const host = head.get("x-forwarded-host") ?? head.get("host") ?? "theprofitcoach.com";
   const origin = host.startsWith("localhost") ? "theprofitcoach.com" : host;
   const coach = explainerFromBlueprint(loaded.site, loaded.row);
@@ -91,7 +95,8 @@ export default async function CoachExplainerPage({ params, searchParams }: PageP
           </Link>
         </div>
       </nav>
-      <CoachExplainer coach={coach} length={length} showFee={showFee} origin={origin} qrSvg={qrSvg} />
+      <CoachExplainer coach={coach} length={length} showFee={showFee} origin={origin} qrSvg={qrSvg} call={call} />
+      {print ? <PrintOnLoad /> : null}
     </div>
   );
 }

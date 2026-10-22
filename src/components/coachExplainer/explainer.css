@@ -1807,6 +1807,14 @@
 
 /* Screen only: the settings bar above the sheets */
 .cx-bar {
+  /* The bar sits outside .cx, so it carries the tokens it uses. */
+  --ds-line: #e3e8ef;
+  --ds-slate-300: #cbd4df;
+  --ds-blue: #0c5290;
+  --ds-sky: #1f7bc7;
+  --ds-ink: #0d1f31;
+  --ds-muted: #5b6b80;
+  --font-sans: var(--cs-font), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   position: sticky;
   top: 0;
   z-index: 10;
