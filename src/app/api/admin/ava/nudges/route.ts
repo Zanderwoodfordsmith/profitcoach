@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { runNudgeScan } from "@/lib/ava/nudges";
+import { postApprovedNudges, runNudgeScan } from "@/lib/ava/nudges";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -75,6 +75,15 @@ export async function PATCH(request: Request) {
     .maybeSingle();
   if (error) return NextResponse.json({ error: "Could not save." }, { status: 500 });
   if (!data) return NextResponse.json({ error: "That nudge was already decided." }, { status: 409 });
+  if (body.action === "approve") {
+    // Goes out now unless a guardrail holds it; the hourly run tries again.
+    try {
+      const post = await postApprovedNudges(data.id as string);
+      if (post.posted) data.status = "posted";
+    } catch (err) {
+      console.error("nudge post:", err instanceof Error ? err.message : err);
+    }
+  }
   return NextResponse.json({ ok: true, nudge: data });
 }
 

@@ -1,4 +1,5 @@
 import { loadCoachHealth, type CoachHealthRow } from "@/lib/coachHealth";
+import { addSectionComment } from "@/lib/practiceKnowledge/sectionComments";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
@@ -87,4 +88,53 @@ export async function runNudgeScan(today = new Date().toISOString().slice(0, 10)
       .eq("status", "queued");
   }
   return { coaches: rows.length, stuck: stuck.length, queued, kept, skipped: skipIds.length };
+}
+
+/** Which Blueprint section thread each nudge belongs in. */
+export const NUDGE_SECTION: Record<string, string> = {
+  "Not logging in": "story:experience",
+  "Blueprint not finished": "story:results",
+  "LinkedIn not connected": "linkedin:profile",
+  "LinkedIn connection broken": "linkedin:profile",
+  "Not sending": "campaigns:messaging",
+  "Sending too little": "campaigns:messaging",
+  "Few people accept": "campaigns:messaging",
+  "Interest isn't turning into calls": "campaigns:conversation",
+  "Slow replies": "campaigns:conversation",
+};
+
+export function nudgeSection(stuckAt: string): string {
+  return NUDGE_SECTION[stuckAt] ?? "story:experience";
+}
+
+type ApprovedNudge = { id: string; coach_id: string; stuck_at: string; body: string };
+
+/** Posts one approved nudge into the coach's Blueprint thread, as Ava. */
+async function postNudge(n: ApprovedNudge): Promise<boolean> {
+  const comment = await addSectionComment({
+    coachId: n.coach_id,
+    sectionKey: nudgeSection(n.stuck_at),
+    authorId: null,
+    side: "ava",
+    body: n.body,
+  });
+  const { error } = await supabaseAdmin
+    .from("ava_nudges")
+    .update({ status: "posted", posted_at: new Date().toISOString(), post_ref: comment.id, updated_at: new Date().toISOString() })
+    .eq("id", n.id)
+    .eq("status", "approved");
+  if (error) throw new Error(error.message);
+  return true;
+}
+
+/** Posts every approved nudge that hasn't gone out yet. */
+export async function postApprovedNudges(onlyId?: string) {
+  let query = supabaseAdmin.from("ava_nudges").select("id, coach_id, stuck_at, body").eq("status", "approved").order("decided_at");
+  if (onlyId) query = query.eq("id", onlyId);
+  const { data } = await query;
+  let posted = 0;
+  for (const n of (data ?? []) as ApprovedNudge[]) {
+    if (await postNudge(n)) posted += 1;
+  }
+  return { approved: (data ?? []).length, posted };
 }

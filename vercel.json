@@ -67,7 +67,7 @@
     },
     {
       "path": "/api/cron/ava-nudges",
-      "schedule": "0 6 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }
