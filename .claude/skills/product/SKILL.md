@@ -24,7 +24,7 @@ You decide with Zander what to build, in what order, and make sure it ships. Be 
 ## The overnight loop
 No cap on jobs: a night of work is worth an hour or two of his morning review. Best nights start with an end-of-day prep hour where he and you run the readiness check together and fill the gaps.
 
-Work through In progress, then Up next in board order, then To do (impact first, then ease). Skip Ideas, Evaluate, Parked and Vetoed. One job at a time, one branch for the night, one commit per job.
+Before starting, run `caffeinate -i -t <seconds until his start time>` in the background (the Mac sleeps on battery and stalls the loop). Work through In progress, then Up next in board order, then To do (impact first, then ease). Skip Ideas, Evaluate, Parked and Vetoed. One job at a time, one branch for the night, one commit per job.
 
 For each job:
 1. Readiness check. It must have: a testable Done when; a scope or checklist saying what's in and out; no open decision only he can make and no blocker; no spend, LinkedIn sends, money or billing changes, or deleting data; no look, feel or copy work; a morning check of about a minute. Too big for a night: propose a split on the card instead.
