@@ -124,7 +124,8 @@ export async function createProviderConnectLink(
     providers: [provider],
     name: coachId,
     success_redirect_url: `${base}${successPath}`,
-    failure_redirect_url: `${base}${failurePath}`,
+    // Settings says which platform failed, so it can give that platform's advice.
+    failure_redirect_url: `${base}${failurePath}${failurePath.includes("?") ? "&" : "?"}failed_provider=${provider}`,
     notify_url: `${base}/api/unipile/notify`,
     bypass_success_screen: true,
     ...hostedAuthMailCalendarScopes(provider),

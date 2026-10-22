@@ -1,5 +1,6 @@
 "use client";
 
+import { connectFailedMessage, INSTAGRAM_CONNECT_TIP } from "@/lib/unipile/connectHelp";
 import {
   useCallback,
   useEffect,
@@ -409,6 +410,8 @@ export function IntegrationsSettingsTab() {
   } | null>(null);
   const [zoomJustConnected, setZoomJustConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Why a connect just failed. Kept apart from `error`, which every reload clears.
+  const [connectFailed, setConnectFailed] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -457,7 +460,7 @@ export function IntegrationsSettingsTab() {
     if (!connected && !googleFlag && !zoomFlag) return;
 
     if (connected === "failed") {
-      setError("Connection failed. Try again.");
+      setConnectFailed(connectFailedMessage(params.get("failed_provider")));
     } else if (connected) {
       const provider = normalizeUnipileProvider(connected);
       if (isConnectableProvider(provider)) setJustConnected(provider);
@@ -487,6 +490,7 @@ export function IntegrationsSettingsTab() {
     }
 
     params.delete("connected");
+    params.delete("failed_provider");
     params.delete("google_calendar");
     params.delete("zoom");
     if (!params.get("tab")) params.set("tab", "profile");
@@ -675,6 +679,11 @@ export function IntegrationsSettingsTab() {
           {message}
         </p>
       ) : null}
+      {connectFailed ? (
+        <p role="alert" className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-800 ring-1 ring-inset ring-rose-200">
+          {connectFailed}
+        </p>
+      ) : null}
       {error ? <p className="mb-3 text-xs text-rose-600">{error}</p> : null}
 
       {loading ? (
@@ -773,7 +782,9 @@ export function IntegrationsSettingsTab() {
                         ? "Messages send from this WhatsApp. We don't pull your recent chats. A chat appears only when that person is already in your pool, on your prospects list, or saved as a client — and only as new messages arrive. Open a chat and choose Don't import to leave someone out."
                         : provider === "LINKEDIN"
                           ? LINKEDIN_CONNECT_TIP
-                          : null
+                          : provider === "INSTAGRAM"
+                            ? INSTAGRAM_CONNECT_TIP
+                            : null
                     }
                     last={last}
                     status={
