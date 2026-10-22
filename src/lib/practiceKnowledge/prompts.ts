@@ -1,5 +1,7 @@
 import type { InterviewTurn, PracticeKnowledgePayload } from "./types";
 import { hoursLabel } from "./brief";
+import { careerLine } from "./careerRoles";
+import { resultKind, resultLine } from "./results";
 import { foldRetiredAnswers, listValue, textValue } from "./sourced";
 import { TONE_START, asVoiceTone, toneInstructions } from "./voiceTone";
 
@@ -14,6 +16,7 @@ Rules:
 - Never invent numbers, companies, or results.
 - If they give a vague result ("we grew a lot", "big turnaround"), ask for the number twice. If they still cannot give one, mark that result precise=false and move on.
 - Prefer career proof OR client proof — they only need one path.
+- For each result, first find out if it was in their own career, for a client they have now, or for a past client, and set proof_type. For a client, ask the client's name and business if they are happy to share. A website or case study link is a bonus: ask once, never push.
 - Do not ask a vague "who is your ideal client?". Ask the specific Still open question: the industries first, then the person (who they are, what hurts and what they want, what they say and think, what makes them act, and why the coach).
 - Do not re-ask facts already filled in Current knowledge unless they contradict LinkedIn.
 - Stay warm, direct, and short. UK English.
@@ -23,7 +26,7 @@ Rules:
 - Proof first (results, superpowers, problems solved), then the market, then the practical setup (phone, LinkedIn public or discreet, fee). Call hours, website, email and time zone are set on the Practice Setup page, not in this conversation.
 - Accept short answers for practical items. Do not push twice on those.
 - If the coach says they do not know yet, record nothing for that item and move on.
-- When the proof is in (one result with numbers, or a client story, plus what they are known for, and the problems people already ask them to solve) and they want to stop, or when "Still open" is empty, close. Thank them in one line. Say BCA will draft two or three markets and a campaign angle for them to read, and their next step is to book the Blueprint Call with Pam to lock one market, one offer, and one angle. Set done=true. Do not draft the LinkedIn profile, the campaigns, or the script on this call.
+- When the proof is in (one result with numbers, or a client result, plus what they are known for, and the problems people already ask them to solve) and they want to stop, or when "Still open" is empty, close. Thank them in one line. Say BCA will draft two or three markets and a campaign angle for them to read, and their next step is to book the Blueprint Call with Pam to lock one market, one offer, and one angle. Set done=true. Do not draft the LinkedIn profile, the campaigns, or the script on this call.
 
 Return ONLY JSON:
 {
@@ -31,11 +34,10 @@ Return ONLY JSON:
   "done": false,
   "extraction": {
     "proof": {
-      "career_results": { "value": [{ "id": "r1", "company": "", "role": "", "metric_from": "", "metric_to": "", "timeframe": "", "mechanism": "", "proof_type": "career", "precise": true }], "source": "interview", "updated_at": "ISO" },
+      "career_results": { "value": [{ "id": "r1", "proof_type": "career | current_client | past_client", "metric_from": "", "metric_to": "", "timeframe": "", "summary": "the result in words, only when there is no before and after", "role": "", "company": "their company, or the client's business", "client_name": "", "website": "", "case_study_url": "", "mechanism": "", "quote": "what the client said, if they shared it", "precise": true }], "source": "interview", "updated_at": "ISO" },
       "superpowers": { "value": "", "source": "interview", "updated_at": "ISO" },
       "uniqueness": { "value": "", "source": "interview", "updated_at": "ISO" },
       "problems_asked": { "value": [], "source": "interview", "updated_at": "ISO" },
-      "client_results": { "value": [{ "id": "c1", "title": "short name", "story": "what changed, with numbers" }], "source": "interview", "updated_at": "ISO" },
       "proudest": { "value": [], "source": "interview", "updated_at": "ISO" }
     },
     "market": {
@@ -167,6 +169,7 @@ export function summarizeKnowledgeForPrompt(
   push("practice.help_with", "What they help with", listValue(payload.practice.help_with).join("; "));
   push("practice.offer_timeframe", "First result they can point to", textValue(payload.practice.offer_timeframe));
   push("identity.linkedin_headline", "LinkedIn headline today", textValue(payload.identity.linkedin_headline));
+  push("market.career", "Career", (payload.market.career?.value ?? []).filter((r) => r.show).map(careerLine).join("; "));
   push("market.roles_held", "Roles", listValue(payload.market.roles_held).join(", "));
   push("market.industries_worked", "Industries worked", listValue(payload.market.industries_worked).join(", "));
   push("market.industries_credibility", "Credibility in", listValue(payload.market.industries_credibility).join(", "));
@@ -203,17 +206,18 @@ export function summarizeKnowledgeForPrompt(
   push("practice.voice_stories", "A story they would share", textValue(payload.practice.voice_stories));
   const results = payload.proof.career_results?.value ?? [];
   if (results.length && wanted("proof.career_results")) {
-    lines.push("Career results:");
+    lines.push("Results:");
     for (const r of results) {
+      const extra = [
+        r.mechanism && `by ${r.mechanism}`,
+        r.quote && `they said "${r.quote}"`,
+        r.website && `website ${r.website}`,
+        r.case_study_url && `case study ${r.case_study_url}`,
+      ].filter(Boolean);
       lines.push(
-        `- ${[r.role, r.company].filter(Boolean).join(" at ")}: ${r.metric_from || "?"} to ${r.metric_to || "?"} in ${r.timeframe || "?"}${r.mechanism ? ` by ${r.mechanism}` : ""} (${r.precise ? "precise" : "needs a number"})`
+        `- ${resultKind(r) || "Not said if career or client"}: ${resultLine(r) || "?"}${extra.length ? `; ${extra.join("; ")}` : ""} (${r.precise ? "precise" : "needs a number"})`
       );
     }
-  }
-  const stories = payload.proof.client_results?.value ?? [];
-  if (stories.length && wanted("proof.client_results")) {
-    lines.push("Client stories:");
-    for (const c of stories) lines.push(`- ${c.title}: ${c.story}`);
   }
   push("proof.superpowers", "Superpowers", textValue(payload.proof.superpowers));
   push("proof.uniqueness", "Uniqueness", textValue(payload.proof.uniqueness));

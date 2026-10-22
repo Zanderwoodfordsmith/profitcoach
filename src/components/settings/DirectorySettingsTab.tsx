@@ -820,14 +820,14 @@ export function DirectorySettingsTab({
               >
                 Browse directory
               </Link>
-              {publicHref && directoryListed ? (
+              {publicHref ? (
                 <Link
                   href={publicHref}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
-                  Your public page
+                  Edit your page
                 </Link>
               ) : null}
               <button

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { emptyPracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
+import { emptyPracticePayload, foldRetiredAnswers, sourced } from "@/lib/practiceKnowledge/sourced";
 import type { BlueprintBlock, PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 import { coachSiteFromBlueprint } from "./fromBlueprint";
 
@@ -19,7 +19,8 @@ function row(built: Record<string, BlueprintBlock[]>): PracticeKnowledgeRow {
   return {
     coach_id: "c1",
     status: "capturing",
-    payload,
+    // As loaded from the database: the old client story is now a client result.
+    payload: foldRetiredAnswers(payload),
     linkedin_seeded_at: null,
     form_completed_at: null,
     interview_completed_at: null,

@@ -28,7 +28,7 @@ export type DashboardNavItem = {
   /** When set, item is hidden unless the coach has this feature. */
   requiredFeature?: CoachFeature;
   /** Tools hub: sidebar stays active across every tab in the hub. */
-  toolsHub?: "get-clients" | "coach-clients";
+  toolsHub?: "get-clients" | "coach-clients" | "blueprint";
 };
 
 export type AdminSectionNavItem = DashboardNavItem & {
@@ -238,8 +238,8 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
 
 /**
  * Coach sidebar: Marketing + Delivery collapsed into two Tools hubs.
- * Get Clients href is Conversations on first visit; the sidebar overrides it
- * with the last hub tab from this session.
+ * Each link opens its home on first visit; the sidebar overrides it with the
+ * last page or tab from this session (see `lib/getClients/lastHubTab`).
  */
 /**
  * Blueprint link at the top of Tools. Admins always see it. Released to
@@ -257,6 +257,7 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
           label: "My Blueprint",
           description: "Your practice plan, built from your answers",
           icon: IconBlueprint,
+          toolsHub: "blueprint",
         },
       ]
     : [];

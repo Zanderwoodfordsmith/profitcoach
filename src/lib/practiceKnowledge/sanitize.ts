@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { asVoiceTone } from "./voiceTone";
 import type {
   CareerResult,
+  CareerRole,
   ClientResultStory,
   ClientStuckRow,
   ClientTrustRow,
@@ -105,9 +106,40 @@ function asCareerResults(value: unknown): CareerResult[] | null {
       mechanism: clip(r.mechanism, TEXT),
       proof_type: asProofType(r.proof_type),
       precise: Boolean(r.precise),
+      summary: clip(r.summary, SHORT),
+      client_name: clip(r.client_name, SHORT),
+      photo_url: clip(r.photo_url, TEXT),
+      website: clip(r.website, SHORT),
+      case_study_url: clip(r.case_study_url, TEXT),
+      quote: clip(r.quote, TEXT),
     });
   }
   return rows.length ? rows : null;
+}
+
+function asCareerRoles(value: unknown): CareerRole[] | null {
+  if (!Array.isArray(value)) return null;
+  const rows: CareerRole[] = [];
+  for (const item of value.slice(0, 30)) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    const title = clip(r.title, SHORT);
+    const company = clip(r.company, SHORT);
+    if (!title && !company) continue;
+    rows.push({
+      id: clip(r.id, 64) || randomUUID(),
+      kind: r.kind === "own" ? "own" : "job",
+      title,
+      company,
+      industry: clip(r.industry, SHORT),
+      from: clip(r.from, 32),
+      to: clip(r.to, 32),
+      note: clip(r.note, TEXT),
+      show: r.show !== false,
+    });
+  }
+  // Keep an empty list. Null would not clear the roles the coach just removed.
+  return rows;
 }
 
 function asStuckRows(value: unknown): ClientStuckRow[] | null {
@@ -372,6 +404,7 @@ export function sanitizePayloadPatch(
   }
   if (market) {
     patch.market = {
+      career: asSourced(market.career, asCareerRoles, fallback),
       industries_worked: asSourced(market.industries_worked, asStringList, fallback),
       roles_held: asSourced(market.roles_held, asStringList, fallback),
       industries_understand: asSourced(

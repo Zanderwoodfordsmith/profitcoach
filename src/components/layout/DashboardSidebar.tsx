@@ -46,7 +46,10 @@ import { prefetchGetClientsHref } from "@/lib/getClients/hubFetchers";
 import {
   getClientsHubHomeHref,
   readGetClientsLastTabHref,
+  readToolsHubPageHref,
   rememberGetClientsLastTab,
+  rememberToolsHubPage,
+  toolsHubHomeHref,
 } from "@/lib/getClients/lastHubTab";
 
 /** Selected nav pill — restrained cooler-blue gradient (between solid sky and full wash). */
@@ -169,6 +172,12 @@ export function DashboardSidebar({
   const [getClientsHref, setGetClientsHref] = useState(() =>
     getClientsHubHomeHref(prefix)
   );
+  const [blueprintHref, setBlueprintHref] = useState(() =>
+    toolsHubHomeHref("blueprint", prefix)
+  );
+  const [keepClientsHref, setKeepClientsHref] = useState(() =>
+    toolsHubHomeHref("keep-clients", prefix)
+  );
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const showAdminSection = variant === "admin";
 
@@ -197,6 +206,10 @@ export function DashboardSidebar({
   useEffect(() => {
     rememberGetClientsLastTab(pathname ?? "");
     setGetClientsHref(readGetClientsLastTabHref(prefix));
+    rememberToolsHubPage("blueprint", pathname ?? "");
+    setBlueprintHref(readToolsHubPageHref("blueprint", prefix));
+    rememberToolsHubPage("keep-clients", pathname ?? "");
+    setKeepClientsHref(readToolsHubPageHref("keep-clients", prefix));
   }, [pathname, prefix]);
 
   const toggleAdminNav = () => {
@@ -288,8 +301,12 @@ export function DashboardSidebar({
   const getClientsHrefs = getClientsHubPaths(prefix);
   const coachClientsHrefs = coachClientsTabHrefs(prefix);
 
-  const resolveToolsHref = (item: DashboardNavItem) =>
-    item.toolsHub === "get-clients" ? getClientsHref : item.href;
+  const resolveToolsHref = (item: DashboardNavItem) => {
+    if (item.toolsHub === "get-clients") return getClientsHref;
+    if (item.toolsHub === "coach-clients") return keepClientsHref;
+    if (item.toolsHub === "blueprint") return blueprintHref;
+    return item.href;
+  };
 
   const isToolsNavActive = (item: DashboardNavItem) => {
     if (item.toolsHub === "get-clients") {

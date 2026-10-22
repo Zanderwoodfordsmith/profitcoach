@@ -82,4 +82,31 @@ describe("folding the voice and offer boxes trimmed on 20 Oct", () => {
     // The brochure and website still read the dropdown answers.
     assert.equal(out.practice.delivery_format?.value, "one_to_one");
   });
+
+  it("moves old client stories into Results, leaving career or client for the coach", () => {
+    const payload = emptyPracticePayload();
+    payload.proof.career_results = sourced(
+      [{ id: "r1", company: "CAMMS", role: "", metric_from: "£2.5k ARR", metric_to: "£2.6m ARR", timeframe: "", mechanism: "", proof_type: "career", precise: true }],
+      "coach_edit",
+      AT
+    );
+    payload.proof.client_results = sourced(
+      [
+        { id: "a", title: "Boards at war", story: "Stopped the war and rebuilt the board." },
+        { id: "b", title: "John Davy, business owner (testimonial)", story: "Pam is the best coach I have had." },
+      ],
+      "coach_edit",
+      AT
+    );
+    const out = foldRetiredAnswers(payload);
+    const results = out.proof.career_results?.value ?? [];
+    assert.deepEqual(results.map((r) => [r.id, r.proof_type]), [["r1", "career"], ["story-a", ""], ["story-b", "client"]]);
+    assert.equal(results[1].summary, "Boards at war");
+    assert.equal(results[1].mechanism, "Stopped the war and rebuilt the board.");
+    assert.equal(results[2].client_name, "John Davy, business owner");
+    assert.equal(results[2].quote, "Pam is the best coach I have had.");
+    assert.deepEqual(out.proof.client_results?.value, []);
+    // Running it again adds nothing.
+    assert.equal(foldRetiredAnswers(mergePracticePayload(out, { proof: { ...out.proof, client_results: payload.proof.client_results } })).proof.career_results?.value.length, 3);
+  });
 });

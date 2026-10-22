@@ -52,6 +52,7 @@ export function seedPayloadFromLinkedIn(
       linkedin_about: about ? sourced(about, "linkedin", at) : null,
     },
     market: {
+      career: null,
       industries_worked: industries.length
         ? sourced(industries.slice(0, 12), "linkedin", at)
         : null,

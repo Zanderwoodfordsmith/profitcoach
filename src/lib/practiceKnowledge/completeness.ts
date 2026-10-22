@@ -1,4 +1,5 @@
-import type { CareerResult, PracticeKnowledgePayload } from "./types";
+import type { PracticeKnowledgePayload } from "./types";
+import { isUsableResult } from "./results";
 import { isFilledSourced, listValue } from "./sourced";
 
 export const MISSING_FIELD_LABELS: Record<string, string> = {
@@ -29,15 +30,6 @@ export const COMPLETENESS_FIELDS = [
 
 export type CompletenessField = (typeof COMPLETENESS_FIELDS)[number];
 
-function hasPreciseCareerResult(results: CareerResult[] | undefined): boolean {
-  return (results ?? []).some(
-    (r) =>
-      r.precise &&
-      (r.metric_from.trim() || r.metric_to.trim()) &&
-      r.timeframe.trim()
-  );
-}
-
 export function computeCompleteness(payload: PracticeKnowledgePayload): {
   score: number;
   missing_fields: string[];
@@ -57,9 +49,8 @@ export function computeCompleteness(payload: PracticeKnowledgePayload): {
     missing.push("market.avoid");
   }
 
-  const career = payload.proof.career_results?.value ?? [];
-  const client = payload.proof.client_results?.value ?? [];
-  if (!hasPreciseCareerResult(career) && client.length === 0) {
+  const results = payload.proof.career_results?.value ?? [];
+  if (!results.some(isUsableResult)) {
     missing.push("proof.career_results");
   }
   if (!isFilledSourced(payload.proof.superpowers)) {

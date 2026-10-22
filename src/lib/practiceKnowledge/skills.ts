@@ -39,12 +39,9 @@ Blocks, in this order:
 1. lede: two sentences describing how they come across, matching the tone sliders and the kind of coach they are.
 2. heading "Sounds like", then bullets: three short lines written in their voice, in the rhythm of their own example.
 3. heading "Does not sound like", then bullets: three lines to avoid, including anything from their "Never sounds like" notes.
-4. heading "The kind of coach you are", then a paragraph: how they want to be known, and the mix of fun, serious, strict, nurturing, kick up the backside, boot camp or hugs they named.
+4. heading "The kind of coach you are", then a paragraph: how they want to be known, and where they sit on mentor to coach, growth to lifestyle, and tough love to nurturing.
 5. heading "What you stand for", then bullets from their values, qualities, likes, dislikes and pet peeves. Skip this heading if they gave none.
-6. heading "Words and phrases to use", then bullets.
-7. heading "Words to avoid", then bullets.
-8. heading "What to draw on", then bullets of analogies from their favourite book, film, hobbies, sports and any story they offered. Skip this heading if they named none.
-9. heading "A message in your voice", then a message block (label "Example") of 60 to 90 words to an owner in their market.`,
+6. heading "What to draw on", then bullets of analogies from their favourite book, film, hobbies, sports and any story they offered. Skip this heading if they named none.`,
   },
   "market:options": {
     file: "core-client.md",

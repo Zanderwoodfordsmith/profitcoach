@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpRight, Check, ChevronDown, ChevronUp, GripVertical, Lightbulb, Loader2, MoreHorizontal, Plus, Sparkles, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpRight, Briefcase, Building2, Camera, Check, ChevronDown, ChevronUp, GripVertical, Handshake, History, Lightbulb, Loader2, MoreHorizontal, Plus, Sparkles, X } from "lucide-react";
 
 import {
   fieldFilled,
@@ -17,6 +17,10 @@ import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 import { handoffForSection } from "@/lib/practiceKnowledge/campaignHandoff";
 import { isNewsletterOverviewKey, stripStandingFacts } from "@/lib/practiceKnowledge/newsletters";
+import { careerFromExperiences, careerFromTitles, careerLists, careerYears } from "@/lib/practiceKnowledge/careerRoles";
+import { resultLine } from "@/lib/practiceKnowledge/results";
+import type { CareerResult, CareerRole } from "@/lib/practiceKnowledge/types";
+import { getOptimizer } from "@/components/linkedinProfileOptimizer/api";
 
 import { useSectionComments } from "../comments/SectionCommentsContext";
 import { CommentButton } from "../comments/SectionCommentsUI";
@@ -26,7 +30,7 @@ import { Blocks } from "./Blocks";
 import { LinkedInProfileSection } from "./LinkedInProfileSection";
 import { StatusSwitch } from "./StatusMenu";
 import { InfoTip } from "./InfoTip";
-import { SetupSocials, SetupWidget } from "./SetupPanels";
+import { SetupBusinessName, SetupSocials, SetupWidget } from "./SetupPanels";
 
 /** Sent with a section's anchor (`s-page-id`) to open it when a link points at it. */
 export const OPEN_SECTION_EVENT = "bp-open-section";
@@ -220,20 +224,78 @@ function EnumBox({ field }: { field: FieldSpec }) {
   );
 }
 
-type CardPart = { key: string; label: string; placeholder: string; long?: boolean };
+type CardPart = { key: string; label: string; placeholder: string; long?: boolean; url?: boolean };
+
+/** Where a result came from. Asked first, because it decides the boxes underneath. */
+const RESULT_KINDS = [
+  { value: "career", label: "In a job", icon: Briefcase },
+  { value: "own_business", label: "My own business", icon: Building2 },
+  { value: "current_client", label: "Current client", icon: Handshake },
+  { value: "past_client", label: "Past client", icon: History },
+] as const;
+
+const isClientKind = (kind: string) => kind === "current_client" || kind === "past_client" || kind === "client";
 
 /** What a result card asks, in the order a coach thinks of it: what changed, where, then how. */
-const RESULT_PARTS: CardPart[][] = [
-  [
-    { key: "metric_from", label: "Before", placeholder: "e.g. 74 debtor days" },
-    { key: "metric_to", label: "After", placeholder: "e.g. 31 debtor days" },
-    { key: "timeframe", label: "How long it took", placeholder: "e.g. 9 months" },
-  ],
-  [
-    { key: "role", label: "Your role", placeholder: "e.g. Finance Director" },
-    { key: "company", label: "Company", placeholder: "e.g. Harlow & Pike" },
-  ],
-  [{ key: "mechanism", label: "How you did it", placeholder: "e.g. A weekly cash meeting and new credit terms for the top 20 customers", long: true }],
+function resultParts(kind: string): CardPart[][] {
+  const client = isClientKind(kind);
+  return [
+    [
+      { key: "metric_from", label: "Before", placeholder: "e.g. £300k profit" },
+      { key: "metric_to", label: "After", placeholder: "e.g. £600k profit" },
+      { key: "timeframe", label: "How long it took", placeholder: "e.g. 18 months" },
+    ],
+    [{ key: "summary", label: "No numbers? Say the result in words", placeholder: "e.g. Grew profit by 10%" }],
+    ...(client
+      ? [
+          [
+            { key: "client_name", label: "Client's name", placeholder: "e.g. Sarah Jones" },
+            { key: "company", label: "Their business", placeholder: "e.g. Jones Build Ltd" },
+          ],
+        ]
+      : kind === "career"
+        ? [
+            [
+              { key: "role", label: "Your role", placeholder: "e.g. Finance Director" },
+              { key: "company", label: "Company", placeholder: "e.g. Harlow & Pike" },
+            ],
+          ]
+        : kind === "own_business"
+          ? [
+              [
+                { key: "role", label: "Your role", placeholder: "e.g. Founder" },
+                { key: "company", label: "Business name", placeholder: "e.g. Pike Electrical Ltd" },
+              ],
+            ]
+          : []),
+    [{ key: "mechanism", label: "How you did it", placeholder: "e.g. A weekly cash meeting and new credit terms for the top 20 customers", long: true }],
+    ...(client
+      ? [
+          [{ key: "quote", label: "What they said about you (if you have it)", placeholder: "Their words, as they said them.", long: true }],
+          [
+            { key: "website", label: "Their website (if you have it)", placeholder: "e.g. jonesbuild.co.uk", url: true },
+            { key: "case_study_url", label: "Case study link (if you have one)", placeholder: "e.g. a link to the write-up", url: true },
+          ],
+        ]
+      : []),
+  ];
+}
+
+/** Every key a result card stores, shown or not. */
+const RESULT_KEYS = [
+  "proof_type",
+  "metric_from",
+  "metric_to",
+  "timeframe",
+  "summary",
+  "role",
+  "company",
+  "client_name",
+  "photo_url",
+  "mechanism",
+  "quote",
+  "website",
+  "case_study_url",
 ];
 
 const STORY_PARTS: CardPart[][] = [
@@ -243,6 +305,75 @@ const STORY_PARTS: CardPart[][] = [
 
 type CardDraft = { id: string; rest: Record<string, unknown>; cells: Record<string, string> };
 
+/** The client's photo: a small circle that uploads on pick. Optional. */
+function ClientPhoto({ resultId, url, onChange }: { resultId: string; url: string; onChange: (url: string) => void }) {
+  const { authHeaders, sample } = usePractice();
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function upload(file: File) {
+    setBusy(true);
+    setError("");
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Not signed in.");
+      // The browser sets the multipart Content-Type itself.
+      const auth = Object.fromEntries(Object.entries(headers).filter(([name]) => name.toLowerCase() !== "content-type"));
+      const form = new FormData();
+      form.append("file", file);
+      form.append("result_id", resultId);
+      const res = await fetch("/api/coach/practice/result-photo", { method: "POST", headers: auth, body: form });
+      const body = (await res.json().catch(() => null)) as { photo_url?: string; error?: string } | null;
+      if (!res.ok || !body?.photo_url) throw new Error(body?.error || "Could not save the photo.");
+      onChange(body.photo_url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the photo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-1">
+      <span className="mb-1 block px-0.5 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">Photo</span>
+      <button
+        type="button"
+        disabled={busy || sample}
+        onClick={() => input.current?.click()}
+        aria-label={url ? "Change the client's photo" : "Add the client's photo"}
+        className="flex h-[2.875rem] w-[2.875rem] items-center justify-center overflow-hidden rounded-full border border-dashed border-[#c8d4e0] bg-[#f4f7fa] text-[#8aa0b4] hover:border-[var(--bp-blue)] hover:text-[var(--bp-blue)]"
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        ) : url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <Camera className="h-4 w-4" aria-hidden />
+        )}
+      </button>
+      {url && !busy ? (
+        <button type="button" onClick={() => onChange("")} className="text-xs text-[var(--bp-faint)] hover:text-[var(--bp-ink)] hover:underline">
+          Remove
+        </button>
+      ) : null}
+      {error ? <span className="max-w-[8rem] text-center text-xs text-[#b42318]">{error}</span> : null}
+      <input
+        ref={input}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void upload(file);
+        }}
+      />
+    </div>
+  );
+}
+
 /**
  * Results and client stories as cards: one per result, each with its own
  * boxes, and "Add another" underneath. Saves when you leave a box.
@@ -250,8 +381,7 @@ type CardDraft = { id: string; rest: Record<string, unknown>; cells: Record<stri
 function ResultCards({ field }: { field: FieldSpec }) {
   const { payload, saveField, setAssistantOpen, sample } = usePractice();
   const stories = field.kind === "stories";
-  const parts = stories ? STORY_PARTS : RESULT_PARTS;
-  const keys = parts.flat().map((part) => part.key);
+  const keys = stories ? STORY_PARTS.flat().map((part) => part.key) : RESULT_KEYS;
   const noun = stories ? "story" : "result";
 
   const current = payload ? fieldValue(payload, field.path)?.value : null;
@@ -272,6 +402,10 @@ function ResultCards({ field }: { field: FieldSpec }) {
   const [cards, setCards] = useState<CardDraft[]>(() => (stored.length ? stored : [blank()]));
   const [seen, setSeen] = useState(storedKey);
   const [focus, setFocus] = useState(false);
+  // Filled cards start folded to one line; empty and new ones start open.
+  const [open, setOpen] = useState<string[]>(() =>
+    (stored.length ? stored : cards).filter((card) => !keys.some((key) => card.cells[key].trim())).map((card) => card.id)
+  );
 
   if (storedKey !== seen && !focus) {
     setSeen(storedKey);
@@ -285,7 +419,6 @@ function ResultCards({ field }: { field: FieldSpec }) {
         const cells = Object.fromEntries(keys.map((key) => [key, card.cells[key].trim()]));
         if (stories) return { id: card.id, ...cells };
         return {
-          proof_type: "career",
           ...card.rest,
           id: card.id,
           ...cells,
@@ -304,59 +437,126 @@ function ResultCards({ field }: { field: FieldSpec }) {
 
   return (
     <div className="space-y-3">
-      {cards.map((card, index) => (
-        <div key={card.id} className="rounded-2xl border border-[#e3e9f0] bg-white p-3.5 @lg:p-4">
-          <div className="mb-2.5 flex items-center justify-between gap-2">
-            <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--bp-muted)]">
-              {stories ? "Story" : "Result"} {index + 1}
-            </p>
-            {cards.length > 1 || keys.some((key) => card.cells[key]) ? (
+      {cards.map((card, index) => {
+        const kind = card.cells.proof_type ?? "";
+        const parts = stories ? STORY_PARTS : resultParts(kind);
+        const photoRow = stories || !isClientKind(kind) ? -1 : 2;
+        const isOpen = open.includes(card.id);
+        const filled = keys.some((key) => card.cells[key]?.trim());
+        const line = stories ? card.cells.title?.trim() : resultLine(card.cells as unknown as CareerResult);
+        const kindLabel = RESULT_KINDS.find((option) => option.value === kind)?.label;
+        return (
+          <div key={card.id} className="rounded-2xl border border-[#e3e9f0] bg-white">
+            <div className="flex items-center gap-2 px-3.5 py-2.5 @lg:px-4">
               <button
                 type="button"
-                className={NUDGE}
-                aria-label={`Remove ${noun} ${index + 1}`}
-                onClick={() => persist(cards.filter((item) => item.id !== card.id))}
+                id={isOpen ? undefined : index === 0 ? `f-${field.path}` : undefined}
+                aria-expanded={isOpen}
+                onClick={() => setOpen((prev) => (isOpen ? prev.filter((id) => id !== card.id) : [...prev, card.id]))}
+                className="flex min-w-0 flex-1 items-center gap-2.5 py-0.5 text-left"
               >
-                <X className="h-4 w-4" aria-hidden />
+                {kindLabel && !stories ? (
+                  <span className="shrink-0 rounded-full bg-[var(--bp-tint-strong)] px-2 py-0.5 text-[0.6875rem] font-semibold text-[var(--bp-blue)]">
+                    {kindLabel}
+                  </span>
+                ) : null}
+                <span className={`min-w-0 truncate text-[0.9375rem] ${line ? "font-semibold text-[var(--bp-ink)]" : "font-medium text-[var(--bp-faint)]"}`}>
+                  {line || `${stories ? "Story" : "Result"} ${index + 1}`}
+                </span>
+                <ChevronDown className={`ml-auto h-4 w-4 shrink-0 text-[var(--bp-faint)] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden />
               </button>
+              {cards.length > 1 || filled ? (
+                <button
+                  type="button"
+                  className={NUDGE}
+                  aria-label={`Remove ${noun} ${index + 1}`}
+                  onClick={() => persist(cards.filter((item) => item.id !== card.id))}
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+            {isOpen ? (
+            <div className="border-t border-[#eef1f5] px-3.5 pb-4 pt-3 @lg:px-4">
+            {stories ? null : (
+              <div className="mb-4">
+                <span className="mb-1.5 block px-0.5 text-[0.875rem] font-semibold text-[var(--bp-ink)]">Where was this result?</span>
+                <div role="group" aria-label="Where was this result?" className="grid grid-cols-2 gap-2 @2xl:grid-cols-4">
+                  {RESULT_KINDS.map((option) => {
+                    const on = kind === option.value;
+                    const Icon = option.icon;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => persist(edit(card.id, "proof_type", option.value))}
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
+                          on
+                            ? "border-[var(--bp-blue)] bg-[var(--bp-tint)] text-[var(--bp-ink)] shadow-[inset_0_0_0_1px_var(--bp-blue)]"
+                            : "border-[#dbe3ec] bg-white text-[var(--bp-muted)] hover:border-[#9cc9ec] hover:text-[var(--bp-ink)]"
+                        }`}
+                      >
+                        <Icon className={`h-4 w-4 shrink-0 ${on ? "text-[var(--bp-blue)]" : "text-[var(--bp-faint)]"}`} aria-hidden />
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="space-y-2.5">
+              {parts.map((row, r) => (
+                <div key={r} className={r === photoRow ? "flex items-start gap-2.5" : undefined}>
+                  {r === photoRow ? (
+                    <ClientPhoto
+                      resultId={card.id}
+                      url={card.cells.photo_url ?? ""}
+                      onChange={(url) => persist(edit(card.id, "photo_url", url))}
+                    />
+                  ) : null}
+                  <div className={`grid min-w-0 flex-1 gap-2.5 ${row.length === 3 ? "@lg:grid-cols-3" : row.length === 2 ? "@lg:grid-cols-2" : ""}`}>
+                    {row.map((part) => {
+                      const id = `f-${field.path}-${card.id}-${part.key}`;
+                      const props = {
+                        id: isOpen && index === 0 && r === 0 && part === row[0] ? `f-${field.path}` : id,
+                        value: card.cells[part.key] ?? "",
+                        placeholder: part.placeholder,
+                        onFocus: () => setFocus(true),
+                        onChange: (event: { target: { value: string } }) => setCards(edit(card.id, part.key, event.target.value)),
+                        onBlur: (event: { target: { value: string } }) => {
+                          setFocus(false);
+                          persist(edit(card.id, part.key, event.target.value));
+                        },
+                      };
+                      return (
+                        <label key={part.key} htmlFor={props.id} className="block min-w-0">
+                          <span className="mb-1 block px-0.5 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">{part.label}</span>
+                          {part.long ? (
+                            <textarea {...props} rows={3} className={`${INPUT_BOX} resize-y`} />
+                          ) : (
+                            <input {...props} type={part.url ? "url" : "text"} inputMode={part.url ? "url" : undefined} className={INPUT_BOX} />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            </div>
             ) : null}
           </div>
-          <div className="space-y-2.5">
-            {parts.map((row, r) => (
-              <div key={r} className={`grid gap-2.5 ${row.length === 3 ? "@lg:grid-cols-3" : row.length === 2 ? "@lg:grid-cols-2" : ""}`}>
-                {row.map((part) => {
-                  const id = `f-${field.path}-${card.id}-${part.key}`;
-                  const props = {
-                    id: index === 0 && r === 0 && part === row[0] ? `f-${field.path}` : id,
-                    value: card.cells[part.key] ?? "",
-                    placeholder: part.placeholder,
-                    onFocus: () => setFocus(true),
-                    onChange: (event: { target: { value: string } }) => setCards(edit(card.id, part.key, event.target.value)),
-                    onBlur: (event: { target: { value: string } }) => {
-                      setFocus(false);
-                      persist(edit(card.id, part.key, event.target.value));
-                    },
-                  };
-                  return (
-                    <label key={part.key} htmlFor={props.id} className="block min-w-0">
-                      <span className="mb-1 block px-0.5 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">{part.label}</span>
-                      {part.long ? (
-                        <textarea {...props} rows={3} className={`${INPUT_BOX} resize-y`} />
-                      ) : (
-                        <input {...props} type="text" className={INPUT_BOX} />
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+        );
+      })}
       <div className="bp-no-print flex flex-wrap items-center gap-x-4 gap-y-1 px-0.5">
         <button
           type="button"
-          onClick={() => setCards((prev) => [...prev, blank()])}
+          onClick={() => {
+            const card = blank();
+            setCards((prev) => [...prev, card]);
+            setOpen((prev) => [...prev, card.id]);
+          }}
           className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline"
         >
           <Plus className="h-4 w-4" aria-hidden />
@@ -588,6 +788,8 @@ function LineListEditor({ field }: { field: FieldSpec }) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+  // About You lists: lines wrap to fit a sentence, and the controls sit in a row, shown on hover.
+  const wrap = Boolean(field.lines);
 
   return (
     <div className="relative">
@@ -605,13 +807,13 @@ function LineListEditor({ field }: { field: FieldSpec }) {
               next.splice(index, 0, row);
               setItems(next);
             }}
-            className={`flex items-center gap-1 ${dragId === item.id ? "opacity-50" : ""}`}
+            className={`group flex gap-1 ${wrap ? "items-start" : "items-center"} ${dragId === item.id ? "opacity-50" : ""}`}
           >
             <button
               type="button"
               draggable
               aria-label="Drag to reorder"
-              className={`${NUDGE} cursor-grab active:cursor-grabbing`}
+              className={`${NUDGE} cursor-grab active:cursor-grabbing ${wrap ? "mt-2.5" : ""}`}
               onDragStart={(event) => {
                 setDragId(item.id);
                 event.dataTransfer.effectAllowed = "move";
@@ -624,29 +826,59 @@ function LineListEditor({ field }: { field: FieldSpec }) {
             >
               <GripVertical className="h-3.5 w-3.5" aria-hidden />
             </button>
-            <input
-              id={index === 0 ? `f-${field.path}` : undefined}
-              value={item.text}
-              placeholder={examples[index] ? `e.g. ${examples[index]}` : (index === 0 && field.placeholder) || "Type here"}
-              onChange={(event) => {
-                const text = event.target.value;
-                setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, text } : row)));
-              }}
-              onFocus={() => setFocus(true)}
-              onBlur={(event) => {
-                setFocus(false);
-                persist(itemsRef.current.map((row) => (row.id === item.id ? { ...row, text: event.target.value } : row)));
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter") return;
-                event.preventDefault();
-                const next = itemsRef.current.slice();
-                next.splice(index + 1, 0, newLine());
-                setItems(next);
-              }}
-              className={`${INPUT_BOX} py-2`}
-            />
-            <div className="flex shrink-0 flex-col items-center">
+            {wrap ? (
+              <textarea
+                rows={1}
+                id={index === 0 ? `f-${field.path}` : undefined}
+                value={item.text}
+                placeholder={examples[index] ? `e.g. ${examples[index]}` : (index === 0 && field.placeholder) || "Type here"}
+                onChange={(event) => {
+                  const text = event.target.value;
+                  setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, text } : row)));
+                }}
+                onFocus={() => setFocus(true)}
+                onBlur={(event) => {
+                  setFocus(false);
+                  persist(itemsRef.current.map((row) => (row.id === item.id ? { ...row, text: event.target.value } : row)));
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  const next = itemsRef.current.slice();
+                  next.splice(index + 1, 0, newLine());
+                  setItems(next);
+                }}
+                className={`${INPUT_BOX} resize-none py-2 [field-sizing:content]`}
+              />
+            ) : (
+              <input
+                id={index === 0 ? `f-${field.path}` : undefined}
+                value={item.text}
+                placeholder={examples[index] ? `e.g. ${examples[index]}` : (index === 0 && field.placeholder) || "Type here"}
+                onChange={(event) => {
+                  const text = event.target.value;
+                  setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, text } : row)));
+                }}
+                onFocus={() => setFocus(true)}
+                onBlur={(event) => {
+                  setFocus(false);
+                  persist(itemsRef.current.map((row) => (row.id === item.id ? { ...row, text: event.target.value } : row)));
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  const next = itemsRef.current.slice();
+                  next.splice(index + 1, 0, newLine());
+                  setItems(next);
+                }}
+                className={`${INPUT_BOX} py-2`}
+              />
+            )}
+            <div
+              className={`flex shrink-0 items-center ${
+                wrap ? "mt-2 gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100" : "flex-col"
+              }`}
+            >
               <button type="button" className={NUDGE} aria-label="Move up" disabled={index === 0} onClick={() => move(index, -1)}>
                 <ChevronUp className="h-3.5 w-3.5" aria-hidden />
               </button>
@@ -697,13 +929,298 @@ function LineListEditor({ field }: { field: FieldSpec }) {
   );
 }
 
+const CHIP =
+  "inline-flex max-w-full items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-left text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+const CHIP_OFF = "border-[#d6dfe9] bg-white text-[var(--bp-body)] hover:border-[#9cc9ec] hover:bg-[var(--bp-tint)]";
+const CHIP_ON = "border-[var(--bp-blue)] bg-[var(--bp-blue)] text-white hover:bg-[#0a4578]";
+
+/** Tap to pick, up to a limit, with "Add your own" at the end. Saves on every tap. */
+function ChipsField({ field }: { field: FieldSpec }) {
+  const { payload, saveField } = usePractice();
+  const picked = asLineList(payload ? fieldValue(payload, field.path)?.value : null);
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const options = (field.options ?? []).map((option) => option.label);
+  const own = picked.filter((item) => !options.some((option) => same(option, item)));
+  const full = field.max != null && picked.length >= field.max;
+  const [adding, setAdding] = useState(false);
+  const [text, setText] = useState("");
+
+  function save(next: string[]) {
+    saveField(field, field.joined ? next.join("\n") : next);
+  }
+
+  function toggle(label: string) {
+    if (picked.some((item) => same(item, label))) save(picked.filter((item) => !same(item, label)));
+    else if (!full) save([...picked, label]);
+  }
+
+  function addOwn() {
+    const value = text.trim();
+    setText("");
+    setAdding(false);
+    if (!value || full || picked.some((item) => same(item, value))) return;
+    save([...picked, value]);
+  }
+
+  return (
+    <div>
+      <div role="group" aria-label={field.label} className="flex flex-wrap gap-2">
+        {[...options, ...own].map((label, index) => {
+          const on = picked.some((item) => same(item, label));
+          return (
+            <button
+              key={label}
+              id={index === 0 ? `f-${field.path}` : undefined}
+              type="button"
+              aria-pressed={on}
+              disabled={!on && full}
+              onClick={() => toggle(label)}
+              className={`${CHIP} ${on ? CHIP_ON : CHIP_OFF}`}
+            >
+              {on ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
+              <span className="min-w-0">{label}</span>
+            </button>
+          );
+        })}
+        {adding ? (
+          <input
+            autoFocus
+            value={text}
+            placeholder="Type, then press Enter"
+            aria-label={`Add your own: ${field.label}`}
+            onChange={(event) => setText(event.target.value)}
+            onBlur={addOwn}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                addOwn();
+              }
+              if (event.key === "Escape") {
+                setText("");
+                setAdding(false);
+              }
+            }}
+            className="min-w-[12rem] rounded-full border border-[#bfdcf2] bg-white px-3.5 py-1.5 text-sm text-[var(--bp-ink)] shadow-[0_0_0_4px_rgba(26,143,212,0.12)] outline-none placeholder:text-[#9aa8b8]"
+          />
+        ) : (
+          <button
+            type="button"
+            disabled={full}
+            onClick={() => setAdding(true)}
+            className={`${CHIP} border-dashed border-[#c8d4e0] bg-transparent text-[var(--bp-blue)] hover:border-[var(--bp-blue)] hover:bg-[var(--bp-tint)]`}
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            Add your own
+          </button>
+        )}
+      </div>
+      {field.max ? (
+        <p className="mt-2 px-0.5 text-xs text-[var(--bp-faint)]">
+          {picked.length} of {field.max} picked{full ? ". Untick one to pick another." : ""}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** The older answers the career list keeps filled, so the writers and pages that read them stay right. */
+const ROLES_FIELD: FieldSpec = { path: "market.roles_held", label: "Roles", kind: "list" };
+const INDUSTRIES_FIELD: FieldSpec = { path: "market.industries_worked", label: "Industries and companies", kind: "list" };
+
+function blankRole(kind: CareerRole["kind"]): CareerRole {
+  return { id: crypto.randomUUID(), kind, title: "", company: "", industry: "", from: "", to: "", note: "", show: true };
+}
+
+/**
+ * Your career: one row per role, from LinkedIn until the coach changes
+ * anything. Tick what we use, open a row to edit it or say what they did.
+ */
+function CareerEditor({ field }: { field: FieldSpec }) {
+  const { payload, saveField, coachId, sample } = usePractice();
+  const raw = payload ? fieldValue(payload, field.path)?.value : null;
+  const saved = Array.isArray(raw) ? (raw as CareerRole[]) : null;
+  const titles = payload ? asLineList(fieldValue(payload, "market.roles_held")?.value) : [];
+  const [linkedin, setLinkedin] = useState<CareerRole[] | null>(null);
+  const [rows, setRows] = useState<CareerRole[] | null>(saved);
+  const [open, setOpen] = useState<string[]>([]);
+  const [focus, setFocus] = useState(false);
+  const savedKey = JSON.stringify(saved);
+  const [seen, setSeen] = useState(savedKey);
+
+  if (savedKey !== seen && !focus) {
+    setSeen(savedKey);
+    setRows(saved);
+  }
+
+  // Nothing saved yet: start from the LinkedIn import, so the coach only checks it.
+  useEffect(() => {
+    if (saved || sample) return;
+    let cancelled = false;
+    void getOptimizer(coachId).then((result) => {
+      if (cancelled) return;
+      setLinkedin(careerFromExperiences(result.ok ? result.data?.profile?.snapshot?.experiences : null));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Only when the page opens with nothing saved.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coachId, sample]);
+
+  const fromLinkedIn = !rows && Boolean(linkedin?.length);
+  const shown = rows ?? (linkedin?.length ? linkedin : careerFromTitles(titles));
+
+  function persist(next: CareerRole[]) {
+    setRows(next);
+    const kept = next.filter((r) => r.title.trim() || r.company.trim());
+    setSeen(JSON.stringify(kept));
+    saveField(field, kept);
+    const lists = careerLists(kept);
+    saveField(ROLES_FIELD, lists.roles);
+    saveField(INDUSTRIES_FIELD, lists.industries);
+  }
+
+  const change = (id: string, patch: Partial<CareerRole>) => shown.map((r) => (r.id === id ? { ...r, ...patch } : r));
+
+  function add(kind: CareerRole["kind"]) {
+    const role = blankRole(kind);
+    setRows(kind === "own" ? [role, ...shown] : [...shown, role]);
+    setOpen((prev) => [...prev, role.id]);
+  }
+
+  function input(role: CareerRole, key: "title" | "company" | "industry" | "from" | "to", label: string, placeholder: string) {
+    const id = `career-${role.id}-${key}`;
+    return (
+      <label htmlFor={id} className="block min-w-0">
+        <span className="mb-1 block px-0.5 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">{label}</span>
+        <input
+          id={id}
+          value={role[key]}
+          placeholder={placeholder}
+          inputMode={key === "from" || key === "to" ? "numeric" : undefined}
+          onFocus={() => setFocus(true)}
+          onChange={(event) => setRows(change(role.id, { [key]: event.target.value }))}
+          onBlur={(event) => {
+            setFocus(false);
+            persist(change(role.id, { [key]: event.target.value.trim() }));
+          }}
+          className={INPUT_BOX}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <div>
+      {fromLinkedIn ? (
+        <p className="mb-2.5 px-0.5 text-sm text-[var(--bp-muted)]">From your LinkedIn. Untick anything you do not want us to use.</p>
+      ) : null}
+      <ul className="flex flex-col gap-2">
+        {shown.map((role, index) => {
+          const isOpen = open.includes(role.id);
+          const own = role.kind === "own";
+          const sub = [role.company, role.industry].filter(Boolean).join(" · ");
+          return (
+            <li key={role.id} className="rounded-2xl border border-[#e3e9f0] bg-white">
+              <div className="flex items-center gap-3 px-3.5 py-2.5">
+                <button
+                  type="button"
+                  role="checkbox"
+                  id={index === 0 ? `f-${field.path}` : undefined}
+                  aria-checked={role.show}
+                  aria-label={role.show ? `Use ${role.title || "this role"}` : `Leave out ${role.title || "this role"}`}
+                  onClick={() => persist(change(role.id, { show: !role.show }))}
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                    role.show ? "border-[var(--bp-blue)] bg-[var(--bp-blue)] text-white" : "border-[#c8d4e0] bg-white hover:border-[var(--bp-blue)]"
+                  }`}
+                >
+                  {role.show ? <Check className="h-3.5 w-3.5" aria-hidden /> : null}
+                </button>
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpen((prev) => (isOpen ? prev.filter((id) => id !== role.id) : [...prev, role.id]))}
+                  className={`flex min-w-0 flex-1 items-center gap-3 text-left ${role.show ? "" : "opacity-50"}`}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className={`truncate text-[0.9375rem] ${role.title ? "font-semibold text-[var(--bp-ink)]" : "font-medium text-[var(--bp-faint)]"}`}>
+                        {role.title || (own ? "Your own business" : "New role")}
+                      </span>
+                      {own ? (
+                        <span className="shrink-0 rounded-full bg-[var(--bp-tint-strong)] px-2 py-0.5 text-[0.6875rem] font-semibold text-[var(--bp-blue)]">
+                          Own business
+                        </span>
+                      ) : null}
+                    </span>
+                    {sub ? <span className="block truncate text-sm text-[var(--bp-muted)]">{sub}</span> : null}
+                  </span>
+                  <span className="hidden shrink-0 text-sm tabular-nums text-[var(--bp-muted)] @md:block">{careerYears(role)}</span>
+                  <ChevronDown className={`h-4 w-4 shrink-0 text-[var(--bp-faint)] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden />
+                </button>
+              </div>
+              {isOpen ? (
+                <div className="space-y-2.5 border-t border-[#eef1f5] px-3.5 pb-4 pt-3">
+                  <div className="grid gap-2.5 @lg:grid-cols-2">
+                    {input(role, "title", own ? "Your role" : "Role", own ? "e.g. Founder" : "e.g. Finance Director")}
+                    {input(role, "company", own ? "Business name" : "Company", own ? "e.g. Pike Electrical Ltd" : "e.g. Harlow & Pike")}
+                  </div>
+                  <div className="grid gap-2.5 @lg:grid-cols-[1fr_7rem_7rem]">
+                    {input(role, "industry", "Industry", "e.g. Building services")}
+                    {input(role, "from", "From", "e.g. 2016")}
+                    {input(role, "to", "To", "Blank if now")}
+                  </div>
+                  <label htmlFor={`career-${role.id}-note`} className="block">
+                    <span className="mb-1 block px-0.5 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">What you did there (optional)</span>
+                    <textarea
+                      id={`career-${role.id}-note`}
+                      rows={2}
+                      value={role.note}
+                      placeholder="e.g. Ran a team of 40 and took margin from 4% to 9%. Owners in building services still know the name."
+                      onFocus={() => setFocus(true)}
+                      onChange={(event) => setRows(change(role.id, { note: event.target.value }))}
+                      onBlur={(event) => {
+                        setFocus(false);
+                        persist(change(role.id, { note: event.target.value.trim() }));
+                      }}
+                      className={`${INPUT_BOX} resize-y`}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => persist(shown.filter((r) => r.id !== role.id))}
+                    className="px-0.5 text-xs font-medium text-[var(--bp-faint)] hover:text-[#b42318] hover:underline"
+                  >
+                    Remove this {own ? "business" : "role"}
+                  </button>
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="bp-no-print mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 px-0.5">
+        <button type="button" onClick={() => add("job")} className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline">
+          <Plus className="h-4 w-4" aria-hidden />
+          Add a role
+        </button>
+        <button type="button" onClick={() => add("own")} className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline">
+          <Plus className="h-4 w-4" aria-hidden />
+          Add your own business
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** One answer. A section with a single box uses its own title, so the box is not labelled again. */
 function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; solo?: boolean }) {
   const { payload } = usePractice();
   if (!payload) return null;
   const structured = field.kind === "results" || field.kind === "stories";
   const paired = Boolean(field.pair);
-  const list = field.kind === "list" && !paired;
+  const lines = field.kind === "list" && (paired || Boolean(field.lines));
+  const list = field.kind === "list" && !lines;
   const showHelp = Boolean(field.help) && !lineHintOnly(field.help);
   // No "Needed" badge: the section's To do already says so.
   const mark = changed ? (
@@ -734,8 +1251,12 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
         <EnumBox field={field} />
       ) : field.kind === "rows" ? (
         <RowsEditor field={field} />
-      ) : paired && field.kind === "list" ? (
+      ) : lines ? (
         <LineListEditor field={field} />
+      ) : field.kind === "chips" ? (
+        <ChipsField field={field} />
+      ) : field.kind === "career" ? (
+        <CareerEditor field={field} />
       ) : structured ? (
         <ResultCards field={field} />
       ) : (
@@ -755,6 +1276,7 @@ function Fields({ section, changedFields, bcaFills }: { section: BlueprintSectio
   const { payload, href } = usePractice();
   const fields = (section.fields ?? [])
     .filter((f) => {
+      if (f.hidden) return false;
       if (!f.showIf || !payload) return true;
       const answer = fieldValue(payload, f.showIf.path)?.value;
       return typeof answer === "string" && f.showIf.in.includes(answer);
@@ -765,6 +1287,7 @@ function Fields({ section, changedFields, bcaFills }: { section: BlueprintSectio
   const short = (f: FieldSpec) => !f.widget && !f.pair && (f.kind === "text" || f.kind === "enum");
   const shortCount = fields.filter(short).length;
   const showSocials = section.extras?.includes("socials");
+  const showBusiness = section.extras?.includes("business");
   const inline = section.layout === "inline";
   const cells: { key: string; wide: boolean; nodes: FieldSpec[] }[] = [];
   for (const field of fields) {
@@ -777,17 +1300,24 @@ function Fields({ section, changedFields, bcaFills }: { section: BlueprintSectio
   }
   return (
     <div className={inline ? "grid gap-y-3" : "grid gap-x-4 gap-y-5 @xl:grid-cols-2"}>
+      {showBusiness ? (
+        <div className={inline ? "bp-inline min-w-0" : "min-w-0 @xl:col-span-2"}>
+          <SetupBusinessName />
+        </div>
+      ) : null}
       {cells.map((cell) => (
         <Fragment key={cell.key}>
           <div
             className={
               [
+                // min-w-0 so a long folded line truncates instead of widening the grid.
+                "min-w-0",
                 cell.wide ? "@xl:col-span-2" : "",
                 inline ? "bp-inline" : "",
                 cell.nodes.length > 1 ? "grid grid-cols-1 gap-x-4 gap-y-5 min-[22rem]:grid-cols-2" : "",
               ]
                 .filter(Boolean)
-                .join(" ") || undefined
+                .join(" ")
             }
           >
             {cell.nodes.map((field) =>

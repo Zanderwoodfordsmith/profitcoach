@@ -306,8 +306,8 @@ export function SalesCallWorkspace() {
   // Other scripts link straight to a step, e.g. ?part=objections.
   const params = useSearchParams();
   const askedPhase = params.get("part");
-  /** Earlier version pickers, kept to compare: ?v=1 a box and pills, ?v=2 one menu. */
-  const picker = params.get("v") === "1" ? 1 : params.get("v") === "2" ? 2 : 3;
+  /** Earlier version pickers, kept to compare: ?v=1 a box and pills, ?v=2 one menu, ?v=3 tabs with a ready-made menu. */
+  const picker = params.get("v") === "1" ? 1 : params.get("v") === "2" ? 2 : params.get("v") === "3" ? 3 : 4;
   const [phase, setPhase] = useState<PhaseId>(PHASES.find((p) => p.id === askedPhase)?.id ?? "discovery");
   const [objection, setObjection] = useState<ObjectionId>("think");
   const [overview, setOverview] = useState(() => askedPhase === "objections" || askedPhase === "closes");
@@ -460,7 +460,7 @@ export function SalesCallWorkspace() {
   // The tabs: Personalised shows the written pitch, or what it needs before it can be written.
   const [personalTab, setPersonalTab] = useState(false);
   const tab: "personal" | "ready" = kindWritten ? (draft.pitchView === "personal" ? "personal" : "ready") : personalTab ? "personal" : "ready";
-  const waitingToPersonalise = picker === 3 && tab === "personal" && !kindWritten && !pitchBusy[kind];
+  const waitingToPersonalise = picker >= 3 && tab === "personal" && !kindWritten && !pitchBusy[kind];
   const pickTab = (t: "personal" | "ready") => {
     setPersonalTab(t === "personal");
     setVersionOpen(false);
@@ -1010,6 +1010,27 @@ export function SalesCallWorkspace() {
                   </ul>
                 </div>
               )
+            ) : picker === 4 ? (
+              // Every ready-made one in view, so nobody misses that there's a choice.
+              <div className="px-4 py-4">
+                <p className="text-sm text-slate-600">
+                  Pick one. {kind === "phases" ? "Each is built with Pam's know-how" : "Each is in Pam's words"}, with their details dropped in.
+                  {draft.angleFit && draft.angleFit !== "standard" ? ` Their notes sound most like ${angleById(draft.angleFit).title}.` : ""}
+                </p>
+                <div role="listbox" aria-label="Ready-made pitches" className="mt-2 grid gap-1 sm:grid-cols-2">
+                  {ANGLES.map((a) => (
+                    <VersionOption
+                      key={a.id}
+                      selected={a.id === angle.id}
+                      icon={<FileText className="h-4 w-4" />}
+                      title={a.title}
+                      line={angleLine(a)}
+                      suggested={draft.angleFit === a.id && a.id !== "standard"}
+                      onPick={() => update({ angle: a.id, pitchView: "ready" })}
+                    />
+                  ))}
+                </div>
+              </div>
             ) : (
               <div ref={versionMenu} className="relative px-4 py-4">
                 <button

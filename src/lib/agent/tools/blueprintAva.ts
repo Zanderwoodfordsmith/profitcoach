@@ -73,10 +73,12 @@ function shapeValue(field: FieldSpec, raw: unknown): unknown {
     case "longtext":
       if (typeof raw !== "string" || !raw.trim()) throw new AgentToolError(`${field.label} needs text.`);
       return raw.trim();
-    case "list": {
+    case "list":
+    case "chips": {
       const items = (Array.isArray(raw) ? raw : [raw]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean);
       if (!items.length) throw new AgentToolError(`${field.label} needs a list of short items.`);
-      return items;
+      // Chips on an answer that was text are stored one per line.
+      return field.kind === "chips" && field.joined ? items.join("\n") : items;
     }
     case "enum": {
       const value = typeof raw === "string" ? raw.trim() : "";

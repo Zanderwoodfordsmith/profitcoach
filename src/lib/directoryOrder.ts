@@ -18,6 +18,9 @@ export const FEATURED_DIRECTORY_SLUGS = [
 
 export const DEMOTED_DIRECTORY_SLUGS = ["adam-msw", "anne"];
 
+/** Shown across the top of the directory while browsing. Change by hand each month. */
+export const COACH_OF_THE_MONTH_SLUG = "will";
+
 export function applyDirectoryOrder<T extends { slug: string }>(list: T[]): T[] {
   const rank = (slug: string) => {
     const f = FEATURED_DIRECTORY_SLUGS.indexOf(slug);

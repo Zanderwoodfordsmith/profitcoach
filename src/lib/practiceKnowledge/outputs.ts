@@ -59,7 +59,6 @@ export const BLUEPRINT_OUTPUTS: BlueprintOutput[] = [
     uses: {
       fields: [
         "proof.problems_asked",
-        "proof.client_results",
         "proof.career_results",
         "practice.help_with",
         "practice.offer_timeframe",
@@ -74,7 +73,7 @@ export const BLUEPRINT_OUTPUTS: BlueprintOutput[] = [
     id: "website",
     title: "Coach website",
     needs: ["offer:lines", "offer:direction", "story:bio"],
-    uses: { fields: ["proof.client_results", "proof.problems_asked"] },
+    uses: { fields: ["proof.career_results", "proof.problems_asked"] },
     method: "src/app/site/[slug]",
     signOff: "Signed-off sections only, in production",
     goesTo: "/site/{slug}",

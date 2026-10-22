@@ -56,7 +56,7 @@ describe("practice knowledge completeness", () => {
     );
     const patch = brainPatchFromPractice(payload);
     assert.match(patch.superpowers ?? "", /weekly rhythm/);
-    assert.equal(patch.client_results?.[0]?.title, "IBM · Sales Director");
+    assert.equal(patch.client_results?.[0]?.title, "Career · IBM · Sales Director");
     assert.match(patch.client_results?.[0]?.story ?? "", /\$10M ARR/);
   });
 });

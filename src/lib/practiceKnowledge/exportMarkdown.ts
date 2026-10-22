@@ -1,8 +1,11 @@
 import { blocksToMarkdown } from "./blocks";
 import { BLUEPRINT_GROUPS, fieldValue, sectionKey, type BlueprintLink, type FieldSpec } from "./blueprint";
 import { DECISION_GROUPS, proposedDecision } from "./decisionDefaults";
+import { careerLine } from "./careerRoles";
+import { isClientResult, resultChange, resultKind } from "./results";
 import type {
   CareerResult,
+  CareerRole,
   ClientResultStory,
   DecisionRecordRow,
   PracticeKnowledgePayload,
@@ -23,6 +26,9 @@ export function formatFieldValue(payload: PracticeKnowledgePayload, field: Field
     return tone ? TONE_DIMENSIONS.map((d) => `${d.left} to ${d.right}: ${d.stops[tone[d.key] - 1]}`) : [];
   }
   switch (field.kind) {
+    case "career":
+      return (raw as CareerRole[]).filter((r) => r.show).map(careerLine);
+    case "chips":
     case "list": {
       const items = Array.isArray(raw) ? raw : String(raw).split(/\n+/);
       return items.map(String).map((v) => v.trim()).filter(Boolean);
@@ -30,10 +36,14 @@ export function formatFieldValue(payload: PracticeKnowledgePayload, field: Field
     case "results":
       return (raw as CareerResult[]).map((r) =>
         [
-          [r.role, r.company].filter(Boolean).join(", "),
-          r.metric_from || r.metric_to ? `${r.metric_from || "?"} to ${r.metric_to || "?"}` : "",
+          resultKind(r),
+          isClientResult(r) ? [r.client_name, r.company].filter(Boolean).join(", ") : [r.role, r.company].filter(Boolean).join(", "),
+          resultChange(r),
           r.timeframe,
           r.mechanism ? `by ${r.mechanism}` : "",
+          r.quote ? `"${r.quote}"` : "",
+          r.website,
+          r.case_study_url,
         ]
           .filter(Boolean)
           .join(" · ")

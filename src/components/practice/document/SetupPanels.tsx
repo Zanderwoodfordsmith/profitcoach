@@ -24,6 +24,14 @@ import {
 
 import { getCountries, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 import { TONE_DIMENSIONS, TONE_START, asVoiceTone, type VoiceTone } from "@/lib/practiceKnowledge/voiceTone";
+import {
+  COACH_STYLE_DIMENSIONS,
+  COACH_STYLE_MIDDLE,
+  coachStyleText,
+  parseCoachStyle,
+  type CoachStyle,
+} from "@/lib/practiceKnowledge/coachStyle";
+import { Modal } from "@/components/ui/Modal";
 
 import { usePractice } from "../PracticeProvider";
 import { InfoTip } from "./InfoTip";
@@ -251,6 +259,85 @@ function PhoneInput({
         }}
         className={`${INPUT} min-w-0 flex-1`}
       />
+    </div>
+  );
+}
+
+/** The business name owners see. Lives on the coach's profile, the same one as Settings, so it is set once. */
+export function SetupBusinessName() {
+  const { sample, authHeaders } = usePractice();
+  const [name, setName] = useState("");
+  const [loaded, setLoaded] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (sample) return;
+    let cancel = false;
+    void (async () => {
+      const headers = await authHeaders();
+      if (!headers || cancel) return;
+      const res = await fetch("/api/coach/profile", { headers });
+      const body = (await res.json().catch(() => ({}))) as { coach_business_name?: string | null };
+      if (cancel) return;
+      const current = body.coach_business_name?.trim() ?? "";
+      setName(current);
+      setLoaded(current);
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [sample, authHeaders]);
+
+  async function save() {
+    const next = name.trim();
+    if (sample || next === loaded) return;
+    setError("");
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch("/api/coach/profile", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ coach_business_name: next || null }),
+    });
+    if (!res.ok) {
+      setError("Could not save the name. Try again.");
+      return;
+    }
+    setLoaded(next);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  }
+
+  return (
+    <div>
+      <FieldLabel
+        label="Business name"
+        help="The name owners see on your directory page, your BOSS Score pages and your dashboards. It is the same name as in Settings, so changing it here changes it there."
+      />
+      <div className="relative">
+        <input
+          value={name}
+          disabled={sample}
+          placeholder="e.g. Pike Business Coaching"
+          aria-label="Business name"
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => void save()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          className={`${INPUT} bp-input`}
+        />
+        <span
+          aria-live="polite"
+          className={`pointer-events-none absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 text-xs font-medium text-[#17663a] transition-opacity ${
+            saved ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <Check className="h-3 w-3" aria-hidden /> Saved
+        </span>
+      </div>
+      {error ? <p className="mt-1 text-sm text-[#9b1c1c]">{error}</p> : null}
     </div>
   );
 }
@@ -939,6 +1026,80 @@ export function SetupSocials() {
   );
 }
 
+type Scale = { key: string; left: string; right: string; stops: readonly string[] };
+
+/**
+ * Sliders from 1 to 5, one row per scale, with the stop's name above the
+ * track. The end you lean to darkens once saved. Saves when you let go.
+ */
+function ScaleSliders({
+  scales,
+  value,
+  set,
+  disabled,
+  onMove,
+  onCommit,
+}: {
+  scales: readonly Scale[];
+  value: Record<string, number>;
+  set: boolean;
+  disabled: boolean;
+  onMove: (key: string, n: number) => void;
+  onCommit: (key: string, n: number) => void;
+}) {
+  return (
+    <div className="divide-y divide-[#eef1f5] rounded-2xl border border-[#e3e9f0] bg-white px-4 @xl:px-5">
+      {scales.map((d) => {
+        const n = value[d.key];
+        const id = `scale-${d.key}`;
+        return (
+          <div key={d.key} className="py-3.5">
+            <div className="mb-2 flex items-center justify-between gap-3 text-[0.8125rem]">
+              <span className={`font-medium ${n <= 2 && set ? "text-[var(--bp-ink)]" : "text-[var(--bp-muted)]"}`}>{d.left}</span>
+              <label htmlFor={id} className="rounded-full bg-[var(--bp-tint-strong)] px-2.5 py-0.5 text-xs font-semibold text-[var(--bp-blue)]">
+                {d.stops[n - 1]}
+              </label>
+              <span className={`font-medium ${n >= 4 && set ? "text-[var(--bp-ink)]" : "text-[var(--bp-muted)]"}`}>{d.right}</span>
+            </div>
+            <div className="relative">
+              <div aria-hidden className="pointer-events-none absolute inset-x-[6px] top-1/2 flex -translate-y-1/2 justify-between">
+                {d.stops.map((_, i) => (
+                  <span key={i} className={`h-1.5 w-1.5 rounded-full ${i + 1 === n ? "bg-transparent" : "bg-[#c6d1de]"}`} />
+                ))}
+              </div>
+              <input
+                id={id}
+                type="range"
+                min={1}
+                max={5}
+                step={1}
+                value={n}
+                disabled={disabled}
+                aria-valuetext={d.stops[n - 1]}
+                onChange={(e) => onMove(d.key, Number(e.target.value))}
+                onPointerUp={(e) => onCommit(d.key, Number(e.currentTarget.value))}
+                onKeyUp={(e) => onCommit(d.key, Number(e.currentTarget.value))}
+                className="bp-scale relative block w-full cursor-pointer"
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SavedNote({ saved }: { saved: boolean }) {
+  return (
+    <p
+      aria-live="polite"
+      className={`mt-1.5 inline-flex items-center gap-1 px-0.5 text-xs font-medium text-[#17663a] transition-opacity ${saved ? "opacity-100" : "opacity-0"}`}
+    >
+      <Check className="h-3 w-3" aria-hidden /> Saved
+    </p>
+  );
+}
+
 /** Your Voice: five 1 to 5 sliders. Saves when you let go. */
 function ToneSliders({ field, changed }: { field: FieldSpec; changed?: boolean }) {
   const { payload, saveField, sample } = usePractice();
@@ -964,8 +1125,8 @@ function ToneSliders({ field, changed }: { field: FieldSpec; changed?: boolean }
     <div>
       {changed ? <FieldLabel label={field.label} mark="Changed" /> : null}
       {stored ? null : (
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-0.5">
-          <p className="text-sm text-[var(--bp-muted)]">A good place to start for business owners. Move any slider to sound more like you.</p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl bg-[var(--bp-tint)] px-3.5 py-2.5">
+          <p className="text-sm text-[var(--bp-body)]">A good place to start for business owners. Move any slider to sound more like you.</p>
           {sample ? null : (
             <button
               type="button"
@@ -977,48 +1138,108 @@ function ToneSliders({ field, changed }: { field: FieldSpec; changed?: boolean }
           )}
         </div>
       )}
-      <div className="space-y-4 rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-4 py-4 @xl:px-5">
-        {TONE_DIMENSIONS.map((d) => {
-          const value = tone[d.key];
-          const id = `tone-${d.key}`;
-          return (
-            <div key={d.key}>
-              <div className="mb-1 flex items-baseline justify-between gap-3 text-[0.8125rem]">
-                <span className="font-medium text-[var(--bp-muted)]">{d.left}</span>
-                <label htmlFor={id} className={`font-semibold ${stored ? "text-[var(--bp-ink)]" : "text-[var(--bp-faint)]"}`}>
-                  {d.stops[value - 1]}
-                </label>
-                <span className="font-medium text-[var(--bp-muted)]">{d.right}</span>
-              </div>
-              <input
-                id={id}
-                type="range"
-                min={1}
-                max={5}
-                step={1}
-                value={value}
-                disabled={sample}
-                aria-valuetext={d.stops[value - 1]}
-                onChange={(e) => setTone((t) => ({ ...t, [d.key]: Number(e.target.value) }))}
-                onPointerUp={(e) => commit({ ...tone, [d.key]: Number(e.currentTarget.value) })}
-                onKeyUp={(e) => commit({ ...tone, [d.key]: Number(e.currentTarget.value) })}
-                className="block w-full cursor-pointer accent-[var(--bp-blue)]"
-              />
-              <div aria-hidden className="mt-0.5 flex justify-between px-[7px]">
-                {d.stops.map((_, i) => (
-                  <span key={i} className={`h-1.5 w-px ${i + 1 === value ? "bg-[var(--bp-blue)]" : "bg-[#c6d1de]"}`} />
+      <ScaleSliders
+        scales={TONE_DIMENSIONS}
+        value={tone}
+        set={Boolean(stored)}
+        disabled={sample}
+        onMove={(key, n) => setTone((t) => ({ ...t, [key]: n }))}
+        onCommit={(key, n) => commit({ ...tone, [key]: n })}
+      />
+      <SavedNote saved={saved} />
+    </div>
+  );
+}
+
+/** The kind of coach you are: the three scales from the coaching style lesson, saved as plain lines. */
+function CoachStyleSliders({ field, changed }: { field: FieldSpec; changed?: boolean }) {
+  const { payload, saveField, sample } = usePractice();
+  const text = payload ? String(fieldValue(payload, field.path)?.value ?? "").trim() : "";
+  const stored = parseCoachStyle(text);
+  // An answer written before the scales: shown, so nothing the coach said is lost from view.
+  const written = text && !stored ? text : "";
+  const [style, setStyle] = useState<CoachStyle>(stored ?? COACH_STYLE_MIDDLE);
+  const [saved, setSaved] = useState(false);
+  const [explain, setExplain] = useState(false);
+  const storedKey = JSON.stringify(stored);
+  const [seen, setSeen] = useState(storedKey);
+  if (seen !== storedKey) {
+    setSeen(storedKey);
+    if (stored) setStyle(stored);
+  }
+
+  function commit(next: CoachStyle) {
+    if (sample || JSON.stringify(next) === storedKey) return;
+    saveField(field, coachStyleText(next));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  }
+
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center gap-2 px-0.5">
+        <span className="text-[0.875rem] font-semibold text-[var(--bp-ink)]">{field.label}</span>
+        <button
+          type="button"
+          onClick={() => setExplain(true)}
+          className="text-[0.8125rem] font-semibold text-[var(--bp-blue)] hover:underline"
+        >
+          How to choose
+        </button>
+        {changed ? (
+          <span className="rounded-full bg-[#fff4e0] px-2 py-px text-[0.6875rem] font-semibold text-[#8a5300]">Changed</span>
+        ) : null}
+      </div>
+      <Modal
+        glass
+        open={explain}
+        onClose={() => setExplain(false)}
+        title="The kind of coach you are"
+        titleId="coach-style-title"
+        subtitle="Three scales. None is better than another, and both ends get owners great results. Pick where you really sit, not where you think you should."
+        maxWidthClassName="max-w-2xl"
+        overlayClassName="z-[95]"
+      >
+        <div className="space-y-6 px-10 pb-9 pt-5">
+          {COACH_STYLE_DIMENSIONS.map((d) => (
+            <section key={d.key}>
+              <h3 className="text-base font-semibold text-slate-900">{d.title}</h3>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                {d.ends.map((text, i) => (
+                  <div key={i} className="rounded-2xl bg-white/60 px-4 py-3">
+                    <p className="text-sm font-semibold text-[#0c5290]">{i === 0 ? d.left : d.right}</p>
+                    <p className="mt-0.5 text-[0.9375rem] leading-relaxed text-slate-700">{text}</p>
+                  </div>
                 ))}
               </div>
-            </div>
-          );
-        })}
-      </div>
-      <p
-        aria-live="polite"
-        className={`mt-1.5 inline-flex items-center gap-1 px-0.5 text-xs font-medium text-[#17663a] transition-opacity ${saved ? "opacity-100" : "opacity-0"}`}
-      >
-        <Check className="h-3 w-3" aria-hidden /> Saved
-      </p>
+            </section>
+          ))}
+          <p className="text-[0.9375rem] leading-relaxed text-slate-700">
+            Most coaches sit somewhere in the middle on at least one. Our writers use your answers so messages sound like working
+            with you, and you attract owners who suit how you coach.
+          </p>
+        </div>
+      </Modal>
+      {stored ? null : (
+        <p className="mb-2.5 px-0.5 text-sm text-[var(--bp-muted)]">
+          {written ? (
+            <>
+              You told us: <span className="text-[var(--bp-body)]">&ldquo;{written}&rdquo;</span> Move the sliders to where you sit and we use them instead.
+            </>
+          ) : (
+            "Move each slider to where you really sit. None is better than another."
+          )}
+        </p>
+      )}
+      <ScaleSliders
+        scales={COACH_STYLE_DIMENSIONS}
+        value={style}
+        set={Boolean(stored)}
+        disabled={sample}
+        onMove={(key, n) => setStyle((t) => ({ ...t, [key]: n }))}
+        onCommit={(key, n) => commit({ ...style, [key]: n })}
+      />
+      <SavedNote saved={saved} />
     </div>
   );
 }
@@ -1030,6 +1251,7 @@ export function SetupWidget({ field, changed }: { field: FieldSpec; changed?: bo
   if (field.widget === "hours") return <CallHours field={field} changed={changed} />;
   if (field.widget === "email") return <EmailConnect field={field} />;
   if (field.widget === "tone") return <ToneSliders field={field} changed={changed} />;
+  if (field.widget === "style") return <CoachStyleSliders field={field} changed={changed} />;
   if (field.widget === "switch") return <SwitchRow field={field} changed={changed} />;
   return null;
 }

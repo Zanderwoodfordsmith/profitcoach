@@ -1,3 +1,4 @@
+import { isClientResult, resultChange } from "@/lib/practiceKnowledge/results";
 import { listValue, textValue } from "@/lib/practiceKnowledge/sourced";
 import type {
   BlueprintBlock,
@@ -176,10 +177,15 @@ function citeFromTitle(title: string): string {
   return title.replace(/\s*\((testimonial|client testimonial)\)\s*$/i, "").trim();
 }
 
+/** What clients said, from the client results that have their words and a name. */
 function readTestimonials(row: PracticeKnowledgeRow | null): CoachSiteQuote[] {
-  const stories = row?.payload.proof.client_results?.value ?? [];
-  return stories
-    .map((s) => ({ quote: clean(unquote(s.story)) ?? "", cite: citeFromTitle(s.title) }))
+  const results = row?.payload.proof.career_results?.value ?? [];
+  return results
+    .filter(isClientResult)
+    .map((r) => ({
+      quote: clean(unquote(r.quote ?? "")) ?? "",
+      cite: citeFromTitle([r.client_name?.trim(), r.company.trim()].filter(Boolean).join(", ")),
+    }))
     .filter((q) => q.quote && q.cite);
 }
 
@@ -220,12 +226,12 @@ function formatDelivery(format: DeliveryFormat | ""): string | null {
 }
 
 function formatCareer(result: CareerResult): string | null {
-  const from = result.metric_from.trim();
-  const to = result.metric_to.trim();
-  const range = from && to ? `${from} to ${to}` : from || to;
+  if (!resultChange(result)) return null;
   const when = result.timeframe.trim();
-  const where = [result.role.trim(), result.company.trim()].filter(Boolean).join(" at ");
-  const line = [range, when, where].filter(Boolean).join(", ");
+  const where = isClientResult(result)
+    ? [result.client_name?.trim(), result.company.trim()].filter(Boolean).join(" at ")
+    : [result.role.trim(), result.company.trim()].filter(Boolean).join(" at ");
+  const line = [resultChange(result), when, where].filter(Boolean).join(", ");
   return clean(line);
 }
 

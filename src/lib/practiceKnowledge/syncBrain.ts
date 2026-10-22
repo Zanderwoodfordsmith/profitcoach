@@ -1,5 +1,6 @@
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
+import { isClientResult, resultChange, resultKind } from "./results";
 import type { PracticeKnowledgePayload } from "./types";
 import { foldRetiredAnswers, listValue, textValue } from "./sourced";
 
@@ -7,16 +8,14 @@ function formatCareerStories(payload: PracticeKnowledgePayload): Array<{
   title: string;
   story: string;
 }> {
-  const fromCareer = (payload.proof.career_results?.value ?? []).map((r) => {
-    const title = [r.company, r.role].filter(Boolean).join(" · ") || "Career result";
-    const metric =
-      r.metric_from && r.metric_to
-        ? `${r.metric_from} → ${r.metric_to}`
-        : r.metric_to || r.metric_from;
+  const fromResults = (payload.proof.career_results?.value ?? []).map((r) => {
+    const who = isClientResult(r) ? [r.client_name, r.company] : [r.company, r.role];
+    const title = [resultKind(r), ...who].filter(Boolean).join(" · ") || "Result";
     const parts = [
-      metric,
+      resultChange(r),
       r.timeframe ? `in ${r.timeframe}` : "",
       r.mechanism ? `by ${r.mechanism}` : "",
+      r.quote ? `They said: "${r.quote}"` : "",
     ].filter(Boolean);
     return { title, story: parts.join(" ") };
   });
@@ -24,7 +23,7 @@ function formatCareerStories(payload: PracticeKnowledgePayload): Array<{
     title: r.title,
     story: r.story,
   }));
-  return [...fromCareer, ...fromClient].filter((r) => r.title || r.story);
+  return [...fromResults, ...fromClient].filter((r) => r.title || r.story);
 }
 
 export function brainPatchFromPractice(

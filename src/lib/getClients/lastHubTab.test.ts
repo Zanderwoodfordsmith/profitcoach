@@ -1,13 +1,19 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getClientsTabItems } from "../../components/layout/dashboardNavItems";
+import {
+  coachClientsTabItems,
+  getClientsTabItems,
+} from "../../components/layout/dashboardNavItems";
 import {
   GET_CLIENTS_LAST_TAB_KEYS,
   getClientsHubHomeHref,
   getClientsLastTabKeyForPathname,
   hrefForGetClientsLastTab,
   readGetClientsLastTabHref,
+  readToolsHubPageHref,
   rememberGetClientsLastTab,
+  rememberToolsHubPage,
+  toolsHubPageForPathname,
   type StorageLike,
 } from "./lastHubTab";
 
@@ -112,6 +118,49 @@ describe("getClientsTabItems stay rememberable", () => {
         );
         assert.equal(hrefForGetClientsLastTab(prefix, key), item.href);
         assert.ok(GET_CLIENTS_LAST_TAB_KEYS.includes(key));
+      }
+    }
+  });
+});
+
+describe("Blueprint and Keep Clients last page", () => {
+  it("remembers the last Blueprint page", () => {
+    const storage = memoryStorage();
+    assert.equal(readToolsHubPageHref("blueprint", "/coach", storage), "/coach/blueprint");
+    rememberToolsHubPage("blueprint", "/coach/blueprint/market", storage);
+    rememberToolsHubPage("blueprint", "/coach/community", storage);
+    assert.equal(readToolsHubPageHref("blueprint", "/coach", storage), "/coach/blueprint/market");
+    rememberToolsHubPage("blueprint", "/admin/blueprint/coach/offer", storage);
+    assert.equal(
+      readToolsHubPageHref("blueprint", "/admin", storage),
+      "/admin/blueprint/coach/offer"
+    );
+    rememberToolsHubPage("blueprint", "/coach/blueprint", storage);
+    assert.equal(readToolsHubPageHref("blueprint", "/coach", storage), "/coach/blueprint");
+  });
+
+  it("remembers the last Keep Clients tab, nested pages count as their tab", () => {
+    const storage = memoryStorage();
+    assert.equal(readToolsHubPageHref("keep-clients", "/coach", storage), "/coach/clients");
+    rememberToolsHubPage("keep-clients", "/coach/playbooks/some-guide", storage);
+    assert.equal(readToolsHubPageHref("keep-clients", "/coach", storage), "/coach/playbooks");
+    rememberToolsHubPage("keep-clients", "/coach/clients/coaching", storage);
+    assert.equal(readToolsHubPageHref("keep-clients", "/coach", storage), "/coach/clients");
+  });
+
+  it("ignores garbage stored values", () => {
+    const storage = memoryStorage({
+      "pc-blueprint-last-page:/coach": "//evil.example/coach/blueprint",
+      "pc-keep-clients-last-tab:/coach": "/admin/clients",
+    });
+    assert.equal(readToolsHubPageHref("blueprint", "/coach", storage), "/coach/blueprint");
+    assert.equal(readToolsHubPageHref("keep-clients", "/coach", storage), "/coach/clients");
+  });
+
+  it("maps every Keep Clients tab href to itself", () => {
+    for (const prefix of ["/coach", "/admin"] as const) {
+      for (const item of coachClientsTabItems(prefix)) {
+        assert.equal(toolsHubPageForPathname("keep-clients", item.href), item.href);
       }
     }
   });

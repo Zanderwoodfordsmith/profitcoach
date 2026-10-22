@@ -1,4 +1,5 @@
 import type {
+  CareerResult,
   KnowledgeSource,
   PracticeKnowledgePayload,
   Sourced,
@@ -67,6 +68,7 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       newsletter_added: null,
     },
     market: {
+      career: null,
       industries_worked: null,
       roles_held: null,
       industries_understand: null,
@@ -322,7 +324,51 @@ export function foldRetiredAnswers(payload: PracticeKnowledgePayload): PracticeK
     );
     out = mergePracticePayload(out, patch as Partial<PracticeKnowledgePayload>);
   }
-  return foldOfferChoices(out);
+  return foldClientStories(foldOfferChoices(out));
+}
+
+const TESTIMONIAL = /\s*\((client )?testimonial\)\s*$/i;
+
+/**
+ * 22 Oct: client stories joined the Results list. Each old story becomes a
+ * result with "Where was this?" left for the coach to answer, because many
+ * were career wins. A testimonial ("John Davy, business owner (testimonial)")
+ * keeps its words as what the client said. Safe to rerun: moved ids are kept.
+ */
+function foldClientStories(payload: PracticeKnowledgePayload): PracticeKnowledgePayload {
+  const old = payload.proof.client_results;
+  const stories = old?.value ?? [];
+  if (!old || !stories.length) return payload;
+  const kept = payload.proof.career_results;
+  const results = kept?.value ?? [];
+  const ids = new Set(results.map((r) => r.id));
+  const moved: CareerResult[] = stories
+    .map((story) => {
+      const testimonial = TESTIMONIAL.test(story.title);
+      return {
+        id: `story-${story.id}`,
+        company: "",
+        role: "",
+        metric_from: "",
+        metric_to: "",
+        timeframe: "",
+        mechanism: testimonial ? "" : story.story,
+        proof_type: testimonial ? "client" : "",
+        precise: false,
+        summary: testimonial ? "" : story.title,
+        client_name: testimonial ? story.title.replace(TESTIMONIAL, "").trim() : "",
+        quote: testimonial ? story.story : "",
+      } satisfies CareerResult;
+    })
+    .filter((r) => !ids.has(r.id));
+  const latest = [kept?.updated_at ?? "", old.updated_at].sort().pop()!;
+  return mergePracticePayload(payload, {
+    proof: {
+      ...payload.proof,
+      career_results: sourced([...results, ...moved], kept && isFilledSourced(kept) ? kept.source : old.source, latest),
+      client_results: sourced([], "coach_edit", old.updated_at),
+    },
+  });
 }
 
 const FORMAT_WORDS: Record<string, string> = { one_to_one: "One-to-one", group: "Group", hybrid: "One-to-one and group" };

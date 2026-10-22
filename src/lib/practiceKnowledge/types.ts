@@ -80,7 +80,8 @@ export type GuaranteeType = (typeof GUARANTEE_TYPES)[number];
 export const OFFER_OUTCOMES = ["money", "time", "team"] as const;
 export type OfferOutcome = (typeof OFFER_OUTCOMES)[number];
 
-export const PROOF_TYPES = ["career", "client"] as const;
+/** Where a result came from. "client" is from before we asked current or past; "" is not said yet. */
+export const PROOF_TYPES = ["career", "own_business", "current_client", "past_client", "client", ""] as const;
 export type ProofType = (typeof PROOF_TYPES)[number];
 
 export const ASSET_KINDS = [
@@ -91,6 +92,23 @@ export const ASSET_KINDS = [
 ] as const;
 export type IntakeAssetKind = (typeof ASSET_KINDS)[number];
 
+/** One role on Your career: a job, or a business the coach ran. Roles held and industries worked follow the shown ones. */
+export type CareerRole = {
+  id: string;
+  kind: "job" | "own";
+  title: string;
+  company: string;
+  industry: string;
+  /** Years, e.g. "2016". An empty end means they are still there. */
+  from: string;
+  to: string;
+  /** What they did there, in a line. Optional. */
+  note: string;
+  /** Unticked roles stay on the list and are left out of everything we write. */
+  show: boolean;
+};
+
+/** One result, from the coach's career or for a client. For a client, company is the client's business. */
 export type CareerResult = {
   id: string;
   company: string;
@@ -101,6 +119,14 @@ export type CareerResult = {
   mechanism: string;
   proof_type: ProofType;
   precise: boolean;
+  /** The result in words, for when there is no before and after. */
+  summary?: string;
+  client_name?: string;
+  photo_url?: string;
+  website?: string;
+  case_study_url?: string;
+  /** What the client said about the coach. */
+  quote?: string;
 };
 
 export type ClientResultStory = {
@@ -210,6 +236,8 @@ export type PracticeKnowledgePayload = {
     newsletter_added: Sourced<string[]> | null;
   };
   market: {
+    /** Your career: roles from LinkedIn or added by hand. */
+    career: Sourced<CareerRole[]> | null;
     industries_worked: Sourced<string[]> | null;
     roles_held: Sourced<string[]> | null;
     industries_understand: Sourced<string[]> | null;

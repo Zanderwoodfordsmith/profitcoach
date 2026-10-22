@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   DashboardPageSection,
@@ -13,7 +14,6 @@ import { BillingSettingsTab } from "@/components/settings/BillingSettingsTab";
 import { IntegrationsSettingsTab } from "@/components/settings/IntegrationsSettingsTab";
 import { AvaReplyAlertsCard } from "@/components/settings/AvaReplyAlertsCard";
 import { AddToPhoneCard } from "@/components/settings/AddToPhoneCard";
-import { DirectorySettingsTab } from "@/components/settings/DirectorySettingsTab";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
 import {
   ProfileFieldRow,
@@ -53,18 +53,15 @@ type ProfileData = {
   longitude?: number | null;
   location_geocoded_source?: string | null;
   reply_copilot_notes?: string | null;
+  coach_slug?: string | null;
+  directory_listed?: boolean;
 };
 
-export type BossDashboardSettingsTabId =
-  | "profile"
-  | "billing"
-  | "directory"
-  | "ladder";
+export type BossDashboardSettingsTabId = "profile" | "billing" | "ladder";
 
 const SETTINGS_TAB_IDS: BossDashboardSettingsTabId[] = [
   "profile",
   "billing",
-  "directory",
   "ladder",
 ];
 
@@ -75,6 +72,8 @@ function parseSettingsTab(
   if (!raw) return null;
   // Legacy deep link — Integrations now lives on Profile.
   if (raw === "integrations") return "profile";
+  // Legacy deep link — the directory page is now edited on the page itself.
+  if (raw === "directory") return "profile";
   if (raw === "billing" && variant !== "coach") return null;
   if (SETTINGS_TAB_IDS.includes(raw as BossDashboardSettingsTabId)) {
     return raw as BossDashboardSettingsTabId;
@@ -494,14 +493,15 @@ export function BossDashboardSettings({
     ...(variant === "coach"
       ? [{ id: "billing" as const, label: "Billing" }]
       : []),
-    { id: "directory", label: "Directory" },
     { id: "ladder", label: "My Ladder" },
   ];
+
+  const directorySlug = profile.coach_slug?.trim() || null;
 
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Profile, billing, directory, and ladder."
+      description="Profile, billing, and ladder."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -672,6 +672,35 @@ export function BossDashboardSettings({
           </ProfileFieldRow>
         </ProfileSectionCard>
 
+        {directorySlug ? (
+          <ProfileSectionCard
+            title="Directory page"
+            description="What business owners see when they find you. You change it on the page itself."
+            action={
+              <Link
+                href={`/directory/${encodeURIComponent(directorySlug)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+              >
+                Edit your page
+              </Link>
+            }
+          >
+            <p className="flex items-center gap-2 py-1 text-sm text-slate-600">
+              <span
+                className={`h-2 w-2 shrink-0 rounded-full ${
+                  profile.directory_listed ? "bg-emerald-500" : "bg-slate-300"
+                }`}
+                aria-hidden
+              />
+              {profile.directory_listed
+                ? "Shown in the directory"
+                : "Hidden. Only you can see it."}
+            </p>
+          </ProfileSectionCard>
+        ) : null}
+
         <ProfileSectionCard
           title="Reply style"
           description="Optional notes for the replies Ava drafts for you: how you sign off, what you never pitch, phrases you like."
@@ -727,13 +756,6 @@ export function BossDashboardSettings({
         </div>
       ) : null}
 
-      {activeTab === "directory" ? (
-        <DirectorySettingsTab
-          variant={variant}
-          onEditProfile={() => selectTab("profile")}
-        />
-      ) : null}
-
       {activeTab === "billing" && variant === "coach" ? (
         <BillingSettingsTab />
       ) : null}
@@ -758,7 +780,6 @@ export function BossDashboardSettings({
 
   const wideTab =
     activeTab === "ladder" ||
-    activeTab === "directory" ||
     (activeTab === "profile" && variant === "coach");
 
   return (

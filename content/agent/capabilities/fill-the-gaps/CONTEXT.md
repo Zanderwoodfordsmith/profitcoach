@@ -31,7 +31,7 @@ This is the collecting half: one flowing conversation, five to ten minutes. Do n
 ## Saving answers
 - `coach_words` is the coach's own words that the answer comes from. If you tidied them into a cleaner answer, read it back first and save only after they say yes.
 - Text fields take text. List fields take a list of short items, one idea each. Choices take one of the option values.
-- Results (`proof.career_results`) take entries like `{ "id": "r1", "company": "", "role": "", "metric_from": "", "metric_to": "", "timeframe": "", "mechanism": "", "proof_type": "career", "precise": true }`. Set `precise: false` when they could not give real numbers. Client stories take `{ "id": "c1", "title": "", "story": "" }`.
+- Results (`proof.career_results`) take entries like `{ "id": "r1", "proof_type": "career", "metric_from": "", "metric_to": "", "timeframe": "", "summary": "", "role": "", "company": "", "client_name": "", "website": "", "case_study_url": "", "mechanism": "", "quote": "", "precise": true }`. Career results and client results go in the same list. First ask where it came from and set `proof_type`: `career` (their own job), `current_client` or `past_client`. For a client, `company` is the client's business and `client_name` is the person. `summary` is the result in words, only when there is no before and after. Set `precise: false` when they could not give real numbers. Ask once for a website or case study link; most coaches won't have one.
 - Adding to a list or results that already has entries: use `read_section` to get the current entries, add theirs, and save the whole list with `replace: true`.
 - Questions marked as set on the page (phone, hours, time zone, tone) are not yours: tell them where on the page to set it.
 

@@ -1,3 +1,4 @@
+import { isClientResult, isUsableResult, resultChange, resultKind } from "./results";
 import type { CareerResult, PracticeKnowledgePayload, PracticeReportPayload } from "./types";
 import { listValue, sourced, textValue } from "./sourced";
 import type { KnowledgeSource, Sourced } from "./types";
@@ -106,12 +107,10 @@ function prose(
 }
 
 function careerSentence(result: CareerResult): string {
-  const who = [result.role, result.company].filter(Boolean).join(" at ");
-  const move =
-    result.metric_from && result.metric_to
-      ? `${result.metric_from} to ${result.metric_to}`
-      : result.metric_to || result.metric_from;
-  const bits = [who, move, result.timeframe ? `in ${result.timeframe}` : "", result.mechanism]
+  const who = isClientResult(result)
+    ? [result.client_name, result.company].filter(Boolean).join(" at ")
+    : [result.role, result.company].filter(Boolean).join(" at ");
+  const bits = [resultKind(result), who, resultChange(result), result.timeframe ? `in ${result.timeframe}` : "", result.mechanism]
     .map((v) => v.trim())
     .filter(Boolean);
   return bits.join(", ");
@@ -147,7 +146,7 @@ export function buildPracticeBrief(
   ].filter((b): b is BriefBlock => Boolean(b));
 
   const career = payload.proof.career_results?.value ?? [];
-  const careerFilled = career.some((r) => r.company || r.metric_from || r.metric_to);
+  const careerFilled = career.some((r) => r.company || r.metric_from || r.metric_to || resultChange(r) || r.quote);
   const client = payload.proof.client_results?.value ?? [];
   const clientText = client
     .map((r) => [r.title, r.story].filter(Boolean).join(". "))
@@ -609,12 +608,8 @@ export function patchFromBriefEdit(
 
 export function readyForRecommendation(payload: PracticeKnowledgePayload): boolean {
   const career = payload.proof.career_results?.value ?? [];
-  const precise = career.some(
-    (r) => r.precise && (r.metric_from.trim() || r.metric_to.trim()) && r.timeframe.trim()
-  );
-  const client = (payload.proof.client_results?.value ?? []).length > 0;
   return (
-    (precise || client) &&
+    career.some(isUsableResult) &&
     Boolean(textValue(payload.proof.superpowers) || textValue(payload.proof.uniqueness)) &&
     listValue(payload.proof.problems_asked).length > 0
   );

@@ -1,4 +1,5 @@
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
+import { resultLine } from "@/lib/practiceKnowledge/results";
 import { findPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import { listValue, textValue } from "@/lib/practiceKnowledge/sourced";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -30,14 +31,7 @@ export async function loadSalesCallCoach(coachId: string): Promise<SalesCallCoac
     supabaseAdmin.from("profiles").select("full_name").eq("id", coachId).maybeSingle(),
   ]);
   const payload = row?.payload;
-  const career = (payload?.proof.career_results?.value ?? [])
-    .map((r) => {
-      const change = r.metric_from && r.metric_to ? `from ${r.metric_from} to ${r.metric_to}` : r.metric_to || r.metric_from;
-      return [change, r.timeframe && `in ${r.timeframe}`, r.role && `as ${r.role}`, r.company && `at ${r.company}`]
-        .filter(Boolean)
-        .join(" ");
-    })
-    .filter(Boolean);
+  const career = (payload?.proof.career_results?.value ?? []).map(resultLine).filter(Boolean);
   const stories = (payload?.proof.client_results?.value ?? [])
     .map((s) => [s.title, s.story].filter(Boolean).join(": "))
     .filter(Boolean);
