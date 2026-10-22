@@ -27,7 +27,8 @@ No cap on jobs: a night of work is worth an hour or two of his morning review. B
 Before starting, run `caffeinate -i -t <seconds until his start time>` in the background (the Mac sleeps on battery and stalls the loop). Work through In progress, then Up next in board order, then To do (impact first, then ease). Skip Ideas, Evaluate, Parked and Vetoed. One job at a time, one branch for the night, one commit per job.
 
 For each job:
-1. Readiness check. It must have: a testable Done when; a scope or checklist saying what's in and out; no open decision only he can make and no blocker; no spend, LinkedIn sends, money or billing changes, or deleting data; no look, feel or copy work; a morning check of about a minute. Too big for a night: propose a split on the card instead.
+1. Readiness check. It must have: a testable Done when; a scope or checklist saying what's in and out; no open decision only he can make and no blocker; no spend, LinkedIn sends, money or billing changes, or deleting data; a morning check of about a minute. Too big for a night: propose a split on the card instead.
+   Screens and first-draft copy are fine overnight (Zander, 22 Oct): keep on brand, use impeccable spacing and the design systems, and build a new design beside the old one so he can choose.
 2. Fails: write the gap or question at the top of its notes and move on.
 3. Passes: In progress, build, typecheck, test against Done when (anything a script or request can prove, prove it: logged out, signed in as Zander Demo, the live site for comparison), then Review with "Where to look", "I checked" and "You check".
 
