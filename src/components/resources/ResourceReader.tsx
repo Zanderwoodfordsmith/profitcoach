@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { useEffect, useState, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ReactMarkdown, { type Components } from "react-markdown";
@@ -16,13 +16,15 @@ import {
   PlayCircle,
 } from "lucide-react";
 
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import {
   driveFileUrl,
-  findResourcePage,
   sheetCopyUrl,
   sheetUrl,
   slidesUrl,
   type ResourceBlock,
+  type ResourceGroup,
   type ResourcePage,
 } from "@/lib/resources/library";
 import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
@@ -30,8 +32,9 @@ import { useRecordRecentVisit } from "@/lib/search/recentVisits";
 
 import { ALL_PAGES, KindTile } from "./librarySearch";
 
-type Props = {
-  slug: string;
+type Loaded = {
+  page: ResourcePage;
+  group: ResourceGroup;
   /** Markdown for the page's doc blocks, keyed by file. */
   docs: Record<string, string>;
 };
@@ -73,12 +76,44 @@ function videoEmbedUrl(url: string): string | null {
   return toYouTubeEmbedUrl(url);
 }
 
+/**
+ * One resource page. The page sends only the slug; the blocks (sheet, deck and
+ * file links) and the document text load for a signed-in member.
+ */
+export function ResourceReader({ slug }: { slug: string }) {
+  const { impersonatingCoachId } = useImpersonation();
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (cancelled) return;
+      const res = headers ? await fetch(`/api/academy/resources?slug=${encodeURIComponent(slug)}`, { headers }).catch(() => null) : null;
+      const body = (await res?.json().catch(() => null)) as Loaded | null;
+      if (cancelled) return;
+      if (res?.ok && body?.page) setLoaded(body);
+      else setFailed(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, impersonatingCoachId]);
+
+  if (loaded) return <ResourceReaderPage slug={slug} found={loaded} docs={loaded.docs} />;
+  return (
+    <div className="px-1 py-10 text-sm text-[var(--bp-muted,#5b6b80)]" aria-live="polite">
+      {failed ? "This resource didn't load. Sign in again, or refresh the page." : "Loading…"}
+    </div>
+  );
+}
+
 /** One resource page, headed the way Blueprint pages are: the title, one line, then the content. */
-export function ResourceReader({ slug, docs }: Props) {
+function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded; docs: Record<string, string> }) {
   const pathname = usePathname() ?? "";
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
   const base = `${prefix}/academy/resources`;
-  const found = findResourcePage(slug);
   useRecordRecentVisit(
     found ? { kind: "resource", title: found.page.title, detail: found.group.title } : null
   );

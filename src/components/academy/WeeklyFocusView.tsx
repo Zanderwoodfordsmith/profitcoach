@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-import { AcademyMarkdown } from "@/components/academy/AcademyMarkdown";
+import { WeeklyFocusContent } from "@/components/academy/WeeklyFocusContent";
 import {
   getCurrentWeeklyFocus,
   getPastWeeklyFocuses,
@@ -71,22 +71,8 @@ export function WeeklyFocusView({ basePath, weekId }: Props) {
             </p>
           </div>
 
-          {selected.audioUrl ? (
-            <div className="mt-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Listen
-              </p>
-              <audio className="mt-3 w-full" controls src={selected.audioUrl}>
-                Your browser does not support the audio element.
-              </audio>
-            </div>
-          ) : null}
-
-          {selected.bodyMarkdown?.trim() ? (
-            <div className="mt-8 border-t border-slate-200/80 pt-6">
-              <AcademyMarkdown markdown={selected.bodyMarkdown} />
-            </div>
-          ) : null}
+          {/* Audio and lesson text load for a signed-in member, not with the page. */}
+          <WeeklyFocusContent weekId={selected.id} />
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link

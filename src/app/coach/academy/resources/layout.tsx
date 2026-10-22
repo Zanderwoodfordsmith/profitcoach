@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 
 import { ResourcesShell } from "@/components/resources/ResourcesShell";
-import { loadResourceSearchText } from "@/lib/resources/loadLibrary";
 
-export default async function CoachResourcesLayout({ children }: { children: ReactNode }) {
-  const searchText = await loadResourceSearchText();
-  return <ResourcesShell searchText={searchText}>{children}</ResourcesShell>;
+/** The search text loads after sign-in (/api/academy/resources?search=1), not with the page. */
+export default function CoachResourcesLayout({ children }: { children: ReactNode }) {
+  return <ResourcesShell>{children}</ResourcesShell>;
 }

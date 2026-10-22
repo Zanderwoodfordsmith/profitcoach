@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { RESOURCE_GROUPS, findResourcePage, flattenResourcePages, type ResourceBlock } from "./library";
+import { flattenResourcePages, type ResourceBlock } from "./library";
+import { RESOURCE_GROUPS, findResourcePage } from "./libraryData";
 
 async function readDoc(file: string): Promise<string> {
   return readFile(path.join(process.cwd(), "content/resources", file), "utf8");

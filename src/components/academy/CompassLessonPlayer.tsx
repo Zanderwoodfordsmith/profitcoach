@@ -24,12 +24,17 @@ import {
   LessonProgressSidebarControl,
   useReportLessonWatchProgress,
 } from "./LessonProgressControls";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import type { CompassLessonContent } from "@/lib/academy/compassLessonContent";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { LessonSeekRequest } from "@/lib/academy/lessonSeekRequest";
 
 type Props = {
   category: AcademyCategory;
   course: AcademyCourse;
   lesson: AcademyLesson;
+  /** Where the lesson's video, text and transcript load from, once signed in (the page sends titles only). */
+  contentUrl?: string;
   /** e.g. `/coach/academy/compass` — used for sidebar and “all courses” links */
   basePath: string;
   viewerIsAdmin?: boolean | null;
@@ -38,10 +43,28 @@ type Props = {
 export function CompassLessonPlayer({
   category,
   course,
-  lesson,
+  lesson: lessonShell,
+  contentUrl,
   basePath,
   viewerIsAdmin = null,
 }: Props) {
+  const { impersonatingCoachId } = useImpersonation();
+  const [content, setContent] = useState<CompassLessonContent | null>(null);
+  useEffect(() => {
+    if (!contentUrl) return;
+    let cancelled = false;
+    void (async () => {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers || cancelled) return;
+      const res = await fetch(contentUrl, { headers }).catch(() => null);
+      const body = (await res?.json().catch(() => null)) as CompassLessonContent | null;
+      if (!cancelled && res?.ok && body) setContent(body);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [contentUrl, impersonatingCoachId]);
+  const lesson: AcademyLesson = content ? { ...lessonShell, ...content } : lessonShell;
   const pathname = usePathname();
   const router = useRouter();
   const lessons = course.lessons ?? [];

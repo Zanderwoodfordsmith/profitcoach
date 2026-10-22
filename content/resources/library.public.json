@@ -1,0 +1,682 @@
+{
+  "groups": [
+    {
+      "section": "Get clients",
+      "title": "BOSS Scorecard marketing",
+      "about": "The workshop plan for turning the BOSS Scorecard into leads: LinkedIn profile, message sequences, newsletter and follow-up.",
+      "pages": [
+        {
+          "slug": "boss-scorecard-marketing",
+          "title": "Workshop overview",
+          "dek": "The plan for turning the BOSS Scorecard into leads: posts, messages, newsletter and follow-up.",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "linkedin-profile-updates",
+          "title": "LinkedIn profile updates",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "vip-200-sequence",
+          "title": "VIP 200 sequence",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "lead-nurture-campaign",
+          "title": "Lead nurture: 5-day campaign",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "vip-100-campaign",
+          "title": "VIP 100 campaign",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "newsletter-plan",
+          "title": "Newsletter plan",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "13-week-tracker",
+          "title": "13-week measurement tracker",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "past-connections-message",
+          "title": "Message past connections",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "personalised-links",
+          "title": "Send personalised links with the CRM",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "scorecard-follow-up-emails",
+          "title": "BOSS Scorecard follow-up emails",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "sales-navigator-search",
+          "title": "Sales Navigator base search",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "linkedin-reply-playbooks",
+          "title": "LinkedIn reply follow-up playbooks",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Keep clients",
+      "title": "Client onboarding",
+      "about": "Set up the client's masterfile, then run the first four sessions in order.",
+      "pages": [
+        {
+          "slug": "client-masterfile",
+          "title": "Client Masterfile",
+          "dek": "One Google Sheet per client. Each tab is used at a set point in the first four sessions.",
+          "updated": "2026-07-01",
+          "blocks": [
+            {
+              "type": "sheet"
+            }
+          ]
+        },
+        {
+          "slug": "session-1",
+          "title": "Session 1: Profit System & Dashboard",
+          "dek": "Address initial issues and opportunities, and complete the Profit-Fun Matrix and Dashboard.",
+          "lesson": "/coach/academy/classroom/coach-clients/coach-clients-client-onboarding-session-1-profit-systems-dashboard",
+          "updated": "2026-07-01",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "session-2",
+          "title": "Session 2: Leverage & Critical Issues",
+          "dek": "Make real progress on the biggest issue or opportunity from Session 1.",
+          "lesson": "/coach/academy/classroom/coach-clients/coach-clients-client-onboarding-session-2-leverage-critical-issues",
+          "updated": "2026-07-01",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "session-3",
+          "title": "Session 3: Align 3-Year Plan",
+          "dek": "Connect personal and business goals, then build the 3 Year Orbit.",
+          "lesson": "/coach/academy/classroom/coach-clients/coach-clients-client-onboarding-session-3-align-3-year-plan",
+          "updated": "2026-07-01",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "session-4",
+          "title": "Session 4: Ninety Day Plan",
+          "dek": "Turn the 3-year plan into three projects for the next 90 days.",
+          "lesson": "/coach/academy/classroom/coach-clients/coach-clients-client-onboarding-session-4-ninety-day-plan",
+          "updated": "2026-07-01",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Keep clients",
+      "title": "Every session",
+      "about": "How to open and close each session, and keep the client moving between them.",
+      "pages": [
+        {
+          "slug": "start-a-session",
+          "title": "How to start a coaching session",
+          "dek": "The G.O.A.L. and R.P.M.S. frameworks for the first 25 minutes.",
+          "lesson": "/coach/academy/classroom/coach-clients/coach-clients-coachiing-session-structure-how-to-start-a-coaching-session",
+          "updated": "2026-07-01",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "finish-a-session",
+          "title": "How to finish a coaching session",
+          "dek": "The FINISH framework, and what to send afterwards.",
+          "lesson": "/coach/academy/classroom/coach-clients/coach-clients-coachiing-session-structure-how-eo-end-a-coaching-session",
+          "updated": "2026-07-01",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "coaching-sheet-in-sessions",
+          "title": "How to use the coaching sheet",
+          "dek": "Before, during and after every session.",
+          "lesson": "/coach/academy/classroom/coach-clients/coach-clients-coachiing-session-structure-how-to-use-the-coaching-sheet-in-sessions",
+          "updated": "2026-07-01",
+          "blocks": [
+            {
+              "type": "doc"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Profit System",
+      "area": 1,
+      "pillar": "Vision",
+      "title": "Aligned Vision",
+      "about": "Why the business exists and where it is going.",
+      "pages": [
+        {
+          "slug": "aligned-vision-reading",
+          "title": "Reading list",
+          "dek": "Greg McKeown on strategic intent.",
+          "blocks": [
+            {
+              "type": "links"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Profit System",
+      "area": 2,
+      "pillar": "Vision",
+      "title": "Defined Strategy",
+      "about": "Who the business serves and what it sells: the Customers and Offering modules.",
+      "pages": [
+        {
+          "slug": "customers",
+          "title": "Customers",
+          "dek": "Module 05: the coaching guide, the deck and what to say on each slide, and the Customer Scoreboard.",
+          "blocks": [
+            {
+              "type": "doc"
+            },
+            {
+              "type": "slides"
+            },
+            {
+              "type": "doc"
+            },
+            {
+              "type": "slides"
+            },
+            {
+              "type": "links"
+            }
+          ]
+        },
+        {
+          "slug": "offering",
+          "title": "Offering",
+          "dek": "Module 06: the coaching guide, the deck and what to say on each slide, and the Neats worksheet.",
+          "blocks": [
+            {
+              "type": "doc"
+            },
+            {
+              "type": "slides"
+            },
+            {
+              "type": "doc"
+            },
+            {
+              "type": "doc"
+            },
+            {
+              "type": "file"
+            },
+            {
+              "type": "links"
+            }
+          ]
+        },
+        {
+          "slug": "defined-strategy-reading",
+          "title": "Reading list",
+          "dek": "What customers really value, in consumer and business markets.",
+          "blocks": [
+            {
+              "type": "links"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Profit System",
+      "area": 4,
+      "pillar": "Velocity",
+      "title": "Profit & Cash Flow",
+      "about": "Forecast cash, free it up, and lift profit.",
+      "pages": [
+        {
+          "slug": "cashflow-forecaster",
+          "title": "Cashflow Forecaster",
+          "dek": "Forecast cash in and cash out, week by week, for the next 13 weeks.",
+          "blocks": [
+            {
+              "type": "sheet"
+            }
+          ]
+        },
+        {
+          "slug": "cashflow-maximiser",
+          "title": "Cashflow Maximiser",
+          "dek": "A checklist of ways to free up cash, ticked off as the client puts them in place.",
+          "blocks": [
+            {
+              "type": "sheet"
+            }
+          ]
+        },
+        {
+          "slug": "profit-maximiser",
+          "title": "Profit Maximiser",
+          "dek": "Show how much profit rises when costs come down, then list every expense with an action to cut it.",
+          "blocks": [
+            {
+              "type": "sheet"
+            },
+            {
+              "type": "image"
+            }
+          ]
+        },
+        {
+          "slug": "profit-first",
+          "title": "Profit First",
+          "dek": "Split every deposit into profit, owner's pay, tax and running costs.",
+          "blocks": [
+            {
+              "type": "video"
+            },
+            {
+              "type": "sheet"
+            }
+          ]
+        },
+        {
+          "slug": "debt-eradication",
+          "title": "Debt Eradication",
+          "dek": "List every debt and plan the order to clear them, inside the Dream Life Calculator.",
+          "blocks": [
+            {
+              "type": "sheet"
+            },
+            {
+              "type": "video"
+            }
+          ]
+        },
+        {
+          "slug": "profitability-engine-short-term",
+          "title": "Profitability Engine: short term",
+          "dek": "5 Steps to Max Profit: the five areas where small gains compound into big profit.",
+          "blocks": [
+            {
+              "type": "slides"
+            }
+          ]
+        },
+        {
+          "slug": "profitability-engine-long-term",
+          "title": "Profitability Engine: long term",
+          "dek": "The long-term Profitability Engine presentation.",
+          "blocks": [
+            {
+              "type": "slides"
+            }
+          ]
+        },
+        {
+          "slug": "profit-cash-reading",
+          "title": "Reading list",
+          "dek": "Pricing psychology.",
+          "blocks": [
+            {
+              "type": "links"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Profit System",
+      "area": 5,
+      "pillar": "Velocity",
+      "title": "Revenue & Marketing",
+      "about": "Bring in leads and convert them: the accelerator, marketing plan, website, and the Marketing and Sales modules.",
+      "pages": [
+        {
+          "slug": "revenue-growth-accelerator",
+          "title": "Revenue Growth Accelerator",
+          "dek": "Track orders and invoiced sales every day against the monthly target.",
+          "blocks": [
+            {
+              "type": "file"
+            },
+            {
+              "type": "doc"
+            }
+          ]
+        },
+        {
+          "slug": "marketing-goal-strategy",
+          "title": "Marketing G.O.A.L. & Strategy",
+          "dek": "The client's marketing plan, as a PowerPoint template.",
+          "blocks": [
+            {
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "slug": "marketing-strategy",
+          "title": "Marketing Strategy",
+          "dek": "Module 07 presentation.",
+          "blocks": [
+            {
+              "type": "slides"
+            },
+            {
+              "type": "links"
+            }
+          ]
+        },
+        {
+          "slug": "sales-strategies",
+          "title": "Sales Strategies",
+          "dek": "Modules 08 and 09, in two presentations.",
+          "blocks": [
+            {
+              "type": "slides"
+            },
+            {
+              "type": "slides"
+            }
+          ]
+        },
+        {
+          "slug": "the-perfect-website",
+          "title": "The Perfect Website",
+          "dek": "Build a website that sells, one section at a time.",
+          "blocks": [
+            {
+              "type": "doc"
+            },
+            {
+              "type": "file"
+            },
+            {
+              "type": "file"
+            },
+            {
+              "type": "links"
+            }
+          ]
+        },
+        {
+          "slug": "free-offers",
+          "title": "The 7 ways to use free offers",
+          "dek": "Two short videos on using free offers to bring in customers.",
+          "blocks": [
+            {
+              "type": "video"
+            },
+            {
+              "type": "video"
+            }
+          ]
+        },
+        {
+          "slug": "revenue-reading",
+          "title": "Reading list",
+          "dek": "Articles on positioning, platforms, landing pages, lead magnets, conversion, referrals and B2B sales.",
+          "blocks": [
+            {
+              "type": "links"
+            },
+            {
+              "type": "links"
+            },
+            {
+              "type": "links"
+            },
+            {
+              "type": "links"
+            },
+            {
+              "type": "links"
+            },
+            {
+              "type": "links"
+            },
+            {
+              "type": "links"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Profit System",
+      "area": 6,
+      "pillar": "Velocity",
+      "title": "Operations & Delivery",
+      "about": "Deliver well, keep customers longer, and keep improving what you sell.",
+      "pages": [
+        {
+          "slug": "innovation-discontinuous-improvement",
+          "title": "Innovation: discontinuous improvement",
+          "dek": "David Hall on innovation, part 1.",
+          "blocks": [
+            {
+              "type": "video"
+            }
+          ]
+        },
+        {
+          "slug": "operations-reading",
+          "title": "Reading list",
+          "dek": "Two articles on customer lifetime value.",
+          "blocks": [
+            {
+              "type": "links"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Profit System",
+      "area": 7,
+      "pillar": "Value",
+      "title": "Financials & Metrics",
+      "about": "Management accounts, critical drivers and the KPIs that matter.",
+      "pages": [
+        {
+          "slug": "management-accounts-review",
+          "title": "Management Accounts Review",
+          "dek": "A monthly profit and loss review against budget and the prior year.",
+          "blocks": [
+            {
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "slug": "critical-drivers",
+          "title": "Critical Drivers",
+          "dek": "Three to five drivers per person, each with a goal, tracked every week.",
+          "blocks": [
+            {
+              "type": "sheet"
+            }
+          ]
+        },
+        {
+          "slug": "financial-kpi-summary",
+          "title": "Financial KPI Summary",
+          "dek": "Cash, profitability, balance sheet and sales indicators against the prior year.",
+          "blocks": [
+            {
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "slug": "kpi-reading",
+          "title": "Reading list",
+          "dek": "Bernie Smith on choosing, designing and simplifying KPIs.",
+          "blocks": [
+            {
+              "type": "links"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Profit System",
+      "area": 8,
+      "pillar": "Value",
+      "title": "Infrastructure & Systems",
+      "about": "Systemise the business and manage it well.",
+      "pages": [
+        {
+          "slug": "systematising-the-business",
+          "title": "Systematising the business",
+          "dek": "The Systemisation presentation.",
+          "blocks": [
+            {
+              "type": "slides"
+            }
+          ]
+        },
+        {
+          "slug": "management",
+          "title": "Management",
+          "dek": "Modules 12 and 13, in two presentations.",
+          "blocks": [
+            {
+              "type": "slides"
+            },
+            {
+              "type": "slides"
+            }
+          ]
+        },
+        {
+          "slug": "systems-reading",
+          "title": "Reading list",
+          "dek": "Best practice for invoicing, bookkeeping and payroll.",
+          "blocks": [
+            {
+              "type": "links"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Profit System",
+      "area": 9,
+      "pillar": "Value",
+      "title": "Team & Leadership",
+      "about": "Hire well, and grow the people who lead.",
+      "pages": [
+        {
+          "slug": "leadership-and-management",
+          "title": "Leadership and Management",
+          "dek": "Module 15 presentation.",
+          "blocks": [
+            {
+              "type": "slides"
+            }
+          ]
+        },
+        {
+          "slug": "team-reading",
+          "title": "Reading list",
+          "dek": "Hiring with Topgrading, and writing job posts.",
+          "blocks": [
+            {
+              "type": "links"
+            },
+            {
+              "type": "links"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

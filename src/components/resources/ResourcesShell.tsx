@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, ChevronRight, LayoutGrid, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 
-import { RESOURCE_GROUPS, type ResourceGroup, type ResourcePage } from "@/lib/resources/library";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import type { ResourceGroup, ResourcePage } from "@/lib/resources/library";
+import { RESOURCE_GROUPS } from "@/lib/resources/libraryPublic";
 
 import { PILLARS, PageKindIcon, SECTIONS, SearchTextProvider, Snippet, groupsIn, useLibrarySearch } from "./librarySearch";
 import "../practice/document/blueprint.css";
@@ -40,7 +43,7 @@ function useNavOpen() {
  * The Resources frame, built the way the Practice Blueprint is: a quiet contents rail on the left,
  * flush under the Classroom header, and the page on the app canvas beside it.
  */
-export function ResourcesShell({ searchText, children }: { searchText: Record<string, string>; children: ReactNode }) {
+export function ResourcesShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "";
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
   const base = `${prefix}/academy/resources`;
@@ -49,6 +52,22 @@ export function ResourcesShell({ searchText, children }: { searchText: Record<st
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState("");
+  const { impersonatingCoachId } = useImpersonation();
+  // Page text for the search loads after sign-in, never with the page itself.
+  const [searchText, setSearchText] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers || cancelled) return;
+      const res = await fetch("/api/academy/resources?search=1", { headers }).catch(() => null);
+      const body = (await res?.json().catch(() => null)) as { searchText?: Record<string, string> } | null;
+      if (!cancelled && body?.searchText) setSearchText(body.searchText);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [impersonatingCoachId]);
 
   // The old link list keeps its own full-width table.
   if (here === "list") return <>{children}</>;

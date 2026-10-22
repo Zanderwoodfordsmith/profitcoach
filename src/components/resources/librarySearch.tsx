@@ -15,7 +15,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { RESOURCE_GROUPS, flattenResourcePages, type ResourceBlock, type ResourcePage } from "@/lib/resources/library";
+import { flattenResourcePages, type ResourceBlock, type ResourcePage } from "@/lib/resources/library";
+import { RESOURCE_GROUPS } from "@/lib/resources/libraryPublic";
 
 export type Kind = "doc" | "sheet" | "slides" | "file" | "video" | "links";
 

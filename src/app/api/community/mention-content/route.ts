@@ -12,7 +12,8 @@ import type { HubCourse } from "@/lib/academy/hubCatalog";
 import { withClassroomMetadata } from "@/lib/academy/lessonContent";
 import { applyLegacyCourseVisibility } from "@/lib/academy/lessonVisibility";
 import { parseLessonVideoChapters } from "@/lib/academy/lessonVideoChapters";
-import { RESOURCE_GROUPS, flattenResourcePages } from "@/lib/resources/library";
+import { flattenResourcePages } from "@/lib/resources/library";
+import { RESOURCE_GROUPS } from "@/lib/resources/libraryData";
 import { BLUEPRINT_GROUPS, sectionKey } from "@/lib/practiceKnowledge/blueprint";
 import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 

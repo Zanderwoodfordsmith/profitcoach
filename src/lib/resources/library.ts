@@ -1,6 +1,7 @@
-import library from "../../../content/resources/library.json";
-
 /**
+ * Types and helpers only, safe in the browser. The library itself is in
+ * libraryData.ts (server, full) and libraryPublic.ts (browser, titles only).
+ *
  * Resources library (test): every page lives in content/resources/library.json,
  * with document text as markdown files beside it. A page is a list of blocks
  * (document text, a spreadsheet's tabs, a deck, a file, a video, a reading list),
@@ -63,15 +64,17 @@ export type ResourceGroup = {
   pages: ResourcePage[];
 };
 
-export const RESOURCE_GROUPS = library.groups as ResourceGroup[];
-
 /** Every page in sidebar order, children straight after their parent. */
 export function flattenResourcePages(pages: ResourcePage[]): ResourcePage[] {
   return pages.flatMap((page) => [page, ...flattenResourcePages(page.children ?? [])]);
 }
 
-export function findResourcePage(slug: string): { page: ResourcePage; group: ResourceGroup } | null {
-  for (const group of RESOURCE_GROUPS) {
+/** A page and its group, in whichever copy of the library is passed (full on the server, slim in the browser). */
+export function findResourcePageIn(
+  groups: ResourceGroup[],
+  slug: string
+): { page: ResourcePage; group: ResourceGroup } | null {
+  for (const group of groups) {
     const page = flattenResourcePages(group.pages).find((p) => p.slug === slug);
     if (page) return { page, group };
   }

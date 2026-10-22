@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { CompassLessonPlayer } from "@/components/academy/CompassLessonPlayer";
 import { LessonProgressProvider } from "@/components/academy/LessonProgressControls";
 import { findCourse } from "@/lib/academy/compassCatalog";
+import { slimCompassCategory, slimCompassCourse, slimCompassLesson } from "@/lib/academy/compassLessonContent";
 import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
 
 const BASE = "/coach/academy/compass";
@@ -21,10 +22,12 @@ export default async function CoachAcademyClassroomLessonPage({ params }: Props)
   return (
     <div className="pt-6">
       <LessonProgressProvider courseId={courseId} activeLessonId={lessonId}>
+        {/* Titles only: video, text and transcript load through the lesson API, which needs a member login. */}
         <CompassLessonPlayer
-          category={found.category}
-          course={found.course}
-          lesson={lesson}
+          category={slimCompassCategory(found.category)}
+          course={slimCompassCourse(found.course)}
+          lesson={slimCompassLesson(lesson)}
+          contentUrl={`/api/academy/lesson?${new URLSearchParams({ hub: "compass", courseId, lessonId })}`}
           basePath={BASE}
         />
       </LessonProgressProvider>

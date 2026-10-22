@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
+import { findCourse } from "@/lib/academy/compassCatalog";
+import { compassLessonContent } from "@/lib/academy/compassLessonContent";
+import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
 import { loadClassroomLessonPayload } from "@/lib/academy/classroomLessonPayload";
 import { findHubCourse, findLessonInCourse } from "@/lib/academy/hubCatalog";
 import { loadVaultHub } from "@/lib/academy/vaultHubLoad";
@@ -26,7 +29,7 @@ export async function GET(request: Request) {
   const hub = url.searchParams.get("hub");
   const courseId = url.searchParams.get("courseId") ?? "";
   const lessonId = url.searchParams.get("lessonId") ?? "";
-  if ((hub !== "classroom" && hub !== "vault") || !courseId || !lessonId) {
+  if ((hub !== "classroom" && hub !== "vault" && hub !== "compass") || !courseId || !lessonId) {
     return NextResponse.json({ error: "Missing lesson." }, { status: 400 });
   }
 
@@ -37,6 +40,15 @@ export async function GET(request: Request) {
     if (academyCourseLocked(courseId, (f) => coachHasFeature(access, f))) {
       return NextResponse.json({ error: "Not in your plan." }, { status: 403 });
     }
+  }
+
+  if (hub === "compass") {
+    const found = findCourse(await loadAcademyCatalogWithDb(), courseId);
+    const lesson = found?.course.lessons?.find((l) => l.id === lessonId);
+    if (!lesson) return NextResponse.json({ error: "Lesson not found." }, { status: 404 });
+    return NextResponse.json(compassLessonContent(lesson), {
+      headers: { "Cache-Control": "private, no-store" },
+    });
   }
 
   const course = findHubCourse(
