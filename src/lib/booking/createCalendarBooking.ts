@@ -1,5 +1,6 @@
 import { formatInTimeZone, isValidIanaTimeZone, ymdInTimeZone } from "@/lib/booking/bookingTime";
 import { calendarToBookingSettings } from "@/lib/booking/coachCalendars";
+import { linkBookingToLead } from "@/lib/booking/leadLink";
 import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import {
   clampBookingDurationMinutes,
@@ -64,6 +65,8 @@ export type CreateCalendarBookingInput = {
   allowUnlistedStart?: boolean;
   /** Used with allowUnlistedStart. Otherwise the calendar's duration applies. */
   durationMinutes?: number;
+  /** From a campaign's personal booking link (?lead=), for an exact link back. */
+  leadId?: string | null;
 };
 
 export type CreateCalendarBookingSuccess = {
@@ -385,6 +388,15 @@ export async function createCalendarBooking(
     }
     console.error("createCalendarBooking:", error);
     return { ok: false, status: 500, error: "Could not create booking." };
+  }
+
+  if (booking?.id) {
+    await linkBookingToLead("bookings", String(booking.id), {
+      coachId: coach.id,
+      leadId: input.leadId,
+      contactId: input.contactId,
+      prospectName: guestName,
+    });
   }
 
   let whereLabel = "Details by email";

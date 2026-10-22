@@ -662,7 +662,10 @@ export async function processOutreachJobsTick(): Promise<{
         coachId: job.coach_id,
         contactId: (lead.contact_id as string | null) ?? null,
       });
+      const { bookingLinkForCoachLead } = await import("@/lib/booking/leadLink");
+      const bookingLink = await bookingLinkForCoachLead(job.coach_id, lead.id as string);
       const templateExtras = {
+        booking_link: bookingLink,
         assessment_url: assessmentUrl,
         scorecard_url: assessmentUrl,
         scorecard_link: assessmentUrl,

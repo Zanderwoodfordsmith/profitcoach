@@ -2,6 +2,7 @@ import { getAvaSettings, isAutopilotGloballyOn } from "@/lib/ava/settings";
 import { firstNameOf } from "@/lib/ava/autopilot";
 import { scheduleMessagingReply } from "@/lib/messaging/scheduledMessages";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { bookingUrlForLead, leadIdForConversation } from "@/lib/booking/leadLink";
 
 /**
  * Keep autopilot honest after the first reply:
@@ -11,7 +12,6 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
  */
 
 const NUDGE_AFTER_MS = 48 * 60 * 60 * 1000;
-const APP_BASE = (process.env.APP_BASE_URL || "https://app.theprofitcoach.com").replace(/\/$/, "");
 
 export function nudgeText(firstName: string, link: string | null): string {
   const hi = firstName ? `Hi ${firstName},` : "Hi,";
@@ -72,7 +72,7 @@ export async function processAvaFollowups(limit = 50): Promise<{ settled: number
       supabaseAdmin.from("coaches").select("slug").eq("id", row.coach_id).maybeSingle(),
     ]);
     if (!conv || conv.hidden_at) continue;
-    const link = coach?.slug ? `${APP_BASE}/book/${coach.slug}` : null;
+    const link = coach?.slug ? bookingUrlForLead(coach.slug as string, await leadIdForConversation(row.conversation_id as string)) : null;
     await scheduleMessagingReply({
       conversationId: row.conversation_id as string,
       coachId: row.coach_id as string,

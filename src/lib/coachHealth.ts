@@ -33,6 +33,11 @@ export type CoachHealthRow = {
   replies_30d: number;
   interested_30d: number;
   calls_30d: number;
+  /** Of those calls, how many link back to a campaign lead. */
+  campaign_calls_30d: number;
+  /** Day 1 = Stripe subscription start (or first payment) to the first prospect call / first client. */
+  days_to_first_call: number | null;
+  days_to_first_client: number | null;
   median_reply_hours: number | null;
   /** From their imported LinkedIn history; null until it has been imported. */
   posts_30d: number | null;
@@ -93,12 +98,83 @@ export function diagnose(r: Omit<CoachHealthRow, "level" | "stuck_at" | "next_st
   return { level: "green", stuck_at: "On track", next_step: "Keep going; share what's working with the group." };
 }
 
+function isProspectCall(calendarName: unknown, prospectName: unknown): boolean {
+  const cal = String(calendarName ?? "");
+  return !CLIENT_CAL.test(cal) && PROSPECT_CAL.test(cal) && !/demo|test/i.test(String(prospectName ?? ""));
+}
+
+function daysFrom(day1: number, times: number[]): number | null {
+  const after = times.filter((t) => t >= day1);
+  return after.length ? Math.floor((Math.min(...after) - day1) / DAY) : null;
+}
+
+/**
+ * Days from day 1 to the first prospect call and the first client, all time.
+ * Day 1 is the Stripe subscription start, or the first payment for coaches
+ * who pay another way. First client: the date a contact was marked client,
+ * or the first coaching session on the calendar.
+ */
+async function loadFirsts(
+  coaches: { id: string; membership_started_at: string | null }[]
+): Promise<Map<string, { call: number | null; client: number | null }>> {
+  const ids = coaches.map((c) => c.id);
+  const [payments, ghlAll, bookingsAll, clients] = await Promise.all([
+    all<{ coach_id: string; paid_at: string }>((f, t) =>
+      supabaseAdmin.from("coach_payments").select("coach_id, paid_at").in("coach_id", ids).eq("status", "succeeded").range(f, t)
+    ),
+    all<{ coach_id: string; calendar_name: string | null; prospect_name: string | null; start_time: string | null }>((f, t) =>
+      supabaseAdmin.from("ghl_appointments").select("coach_id, calendar_name, prospect_name, start_time").in("coach_id", ids).range(f, t)
+    ),
+    all<{ coach_id: string; kind: string | null; starts_at: string }>((f, t) =>
+      supabaseAdmin.from("bookings").select("coach_id, kind, starts_at").in("coach_id", ids).neq("status", "cancelled").range(f, t)
+    ),
+    all<{ coach_id: string; client_joined_on: string | null }>((f, t) =>
+      supabaseAdmin.from("contacts").select("coach_id, client_joined_on").in("coach_id", ids).eq("type", "client").not("client_joined_on", "is", null).range(f, t)
+    ),
+  ]);
+
+  const firstPaid = new Map<string, number>();
+  for (const p of payments) {
+    const t = Date.parse(p.paid_at);
+    if (Number.isFinite(t) && t < (firstPaid.get(p.coach_id) ?? Infinity)) firstPaid.set(p.coach_id, t);
+  }
+  const callTimes = new Map<string, number[]>();
+  const sessionTimes = new Map<string, number[]>();
+  const push = (m: Map<string, number[]>, id: string, iso: string | null) => {
+    const t = iso ? Date.parse(iso) : NaN;
+    if (Number.isFinite(t)) m.set(id, [...(m.get(id) ?? []), t]);
+  };
+  for (const a of ghlAll) {
+    if (isProspectCall(a.calendar_name, a.prospect_name)) push(callTimes, a.coach_id, a.start_time);
+    else if (CLIENT_CAL.test(String(a.calendar_name ?? ""))) push(sessionTimes, a.coach_id, a.start_time);
+  }
+  for (const b of bookingsAll) {
+    if (b.kind === "discovery") push(callTimes, b.coach_id, b.starts_at);
+    else if (CLIENT_CAL.test(String(b.kind ?? "").replace(/-/g, " "))) push(sessionTimes, b.coach_id, b.starts_at);
+  }
+  const clientTimes = new Map<string, number[]>();
+  for (const c of clients) push(clientTimes, c.coach_id, c.client_joined_on);
+
+  const out = new Map<string, { call: number | null; client: number | null }>();
+  for (const c of coaches) {
+    const day1 = c.membership_started_at ? Date.parse(c.membership_started_at) : firstPaid.get(c.id);
+    if (day1 == null || !Number.isFinite(day1)) continue;
+    // Count from the start of day 1, so a call that day is day 0.
+    const start = day1 - (day1 % DAY);
+    out.set(c.id, {
+      call: daysFrom(start, callTimes.get(c.id) ?? []),
+      client: daysFrom(start, clientTimes.get(c.id) ?? []) ?? daysFrom(start, sessionTimes.get(c.id) ?? []),
+    });
+  }
+  return out;
+}
+
 export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
   const since30 = new Date(Date.now() - 30 * DAY).toISOString();
   const since7 = Date.now() - 7 * DAY;
 
-  const coaches = await all<{ id: string; slug: string; membership_status: string | null; recurring_payment_status: string | null; has_sales_robot_account: boolean | null; record_kind: string | null }>(
-    (f, t) => supabaseAdmin.from("coaches").select("id, slug, membership_status, recurring_payment_status, has_sales_robot_account, record_kind").range(f, t)
+  const coaches = await all<{ id: string; slug: string; membership_status: string | null; recurring_payment_status: string | null; has_sales_robot_account: boolean | null; record_kind: string | null; membership_started_at: string | null }>(
+    (f, t) => supabaseAdmin.from("coaches").select("id, slug, membership_status, recurring_payment_status, has_sales_robot_account, record_kind, membership_started_at").range(f, t)
   );
   const active = coaches.filter(
     (c) => (c.membership_status === "active" || c.membership_status === "past_due" || c.membership_status === "trialing") && c.record_kind !== "historical"
@@ -123,8 +199,8 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
         .gte("updated_at", since30)
         .range(f, t)
     ),
-    supabaseAdmin.from("ghl_appointments").select("coach_id, calendar_name, prospect_name, start_time, created_at").gte("created_at", since30),
-    supabaseAdmin.from("bookings").select("coach_id, kind, created_at").gte("created_at", since30),
+    supabaseAdmin.from("ghl_appointments").select("coach_id, calendar_name, prospect_name, start_time, created_at, campaign_lead_id").gte("created_at", since30),
+    supabaseAdmin.from("bookings").select("coach_id, kind, created_at, campaign_lead_id").gte("created_at", since30),
     all<{ user_id: string; last_activity_at: string | null }>((f, t) =>
       supabaseAdmin.from("app_usage_sessions").select("user_id, last_activity_at").in("user_id", ids).gte("started_at", new Date(Date.now() - 90 * DAY).toISOString()).range(f, t)
     ),
@@ -185,14 +261,19 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
   }
 
   const calls = new Map<string, number>();
+  const campaignCalls = new Map<string, number>();
+  const countCall = (coachId: string, leadId: unknown) => {
+    calls.set(coachId, (calls.get(coachId) ?? 0) + 1);
+    if (leadId) campaignCalls.set(coachId, (campaignCalls.get(coachId) ?? 0) + 1);
+  };
   for (const a of ghl.data ?? []) {
-    const cal = String(a.calendar_name ?? "");
-    if (!a.coach_id || CLIENT_CAL.test(cal) || !PROSPECT_CAL.test(cal) || /demo|test/i.test(String(a.prospect_name ?? ""))) continue;
-    calls.set(a.coach_id as string, (calls.get(a.coach_id as string) ?? 0) + 1);
+    if (a.coach_id && isProspectCall(a.calendar_name, a.prospect_name)) countCall(a.coach_id as string, a.campaign_lead_id);
   }
   for (const b of bookings.data ?? []) {
-    if (b.kind === "discovery" && b.coach_id) calls.set(b.coach_id as string, (calls.get(b.coach_id as string) ?? 0) + 1);
+    if (b.kind === "discovery" && b.coach_id) countCall(b.coach_id as string, b.campaign_lead_id);
   }
+
+  const firsts = await loadFirsts(active);
 
   const lastActive = new Map<string, number>();
   for (const s of sessions) {
@@ -255,6 +336,9 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
         replies_30d: replies.get(c.id) ?? 0,
         interested_30d: interested.get(c.id) ?? 0,
         calls_30d: calls.get(c.id) ?? 0,
+        campaign_calls_30d: campaignCalls.get(c.id) ?? 0,
+        days_to_first_call: firsts.get(c.id)?.call ?? null,
+        days_to_first_client: firsts.get(c.id)?.client ?? null,
         median_reply_hours: median(waits.get(c.id) ?? []),
         posts_30d: imported.has(c.id) ? posts30.get(c.id) ?? 0 : null,
         last_post_days: imported.get(c.id) ? Math.floor((Date.now() - Date.parse(imported.get(c.id)!)) / DAY) : null,

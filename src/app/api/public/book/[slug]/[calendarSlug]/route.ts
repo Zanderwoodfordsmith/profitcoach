@@ -47,6 +47,8 @@ type BookBody = {
   phone?: string;
   prospect_timezone?: string;
   notes?: string;
+  /** Campaign lead id from a personal booking link. */
+  lead?: string;
 };
 
 export async function POST(
@@ -116,6 +118,7 @@ export async function POST(
     startsAt,
     prospectTimezone: prospectTz,
     notes: body.notes,
+    leadId: body.lead ?? null,
   });
 
   if (!result.ok) {

@@ -195,6 +195,15 @@ export async function syncCoachMembershipFromSubscription(
     .update(updates)
     .eq("id", coach.id);
 
+  // Day 1 for "days to first call": the first subscription's start, set once.
+  if (!error && subscription.start_date) {
+    await supabase
+      .from("coaches")
+      .update({ membership_started_at: new Date(subscription.start_date * 1000).toISOString() })
+      .eq("id", coach.id)
+      .is("membership_started_at", null);
+  }
+
   if (error) {
     console.error("syncCoachMembershipFromSubscription failed:", error);
     return { coachId: coach.id, updated: false };

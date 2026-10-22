@@ -247,6 +247,8 @@ export function NativeBookingEmbed({
         phone: contact.phone?.trim() || undefined,
         prospect_timezone: tz,
         notes: notes?.trim() || undefined,
+        // A campaign's personal booking link carries ?lead= so the booking links back to it.
+        lead: new URLSearchParams(window.location.search).get("lead") || undefined,
       }),
     });
     const body = (await res.json().catch(() => ({}))) as {

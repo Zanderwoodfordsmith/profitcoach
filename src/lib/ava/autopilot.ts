@@ -1,4 +1,5 @@
 import { loadCoachFreeSlots } from "@/lib/ava/freeSlots";
+import { leadIdForConversation } from "@/lib/booking/leadLink";
 import { pickOfferSlots, zoneShortName, type OfferedSlot } from "@/lib/ava/slotPicker";
 import { getAvaSettings, isAutopilotGloballyOn, type AvaSettings } from "@/lib/ava/settings";
 import type { TriageResult } from "@/lib/ava/replyTriage";
@@ -115,7 +116,7 @@ export async function runAutopilot(input: {
   });
   if (!decision.run) return { scheduled: false, reason: decision.reason };
 
-  const slots = await loadCoachFreeSlots(input.coachId);
+  const slots = await loadCoachFreeSlots(input.coachId, await leadIdForConversation(input.conversationId));
   if (!slots) return { scheduled: false, reason: "calendar could not be read" };
   const offered = pickOfferSlots({ slots: slots.slots, timeZone: slots.timeZone });
   const zone = zoneShortName(slots.timeZone);

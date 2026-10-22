@@ -44,6 +44,7 @@ export const OUTREACH_TEMPLATE_VARIABLES = [
   "focus_area_2",
   "focus_area_3",
   "boss_score_report_link",
+  "booking_link",
 ] as const;
 
 function pickString(...vals: unknown[]): string | null {
@@ -169,6 +170,7 @@ export function outreachTemplateVars(
     focus_area_2: "",
     focus_area_3: "",
     boss_score_report_link: "",
+    booking_link: "",
     their_reply: "",
   };
   if (extras) {

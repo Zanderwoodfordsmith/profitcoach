@@ -2,6 +2,7 @@ import { loadCalendarSlotDays } from "@/lib/booking/loadCalendarSlotDays";
 import { loadCoachCalendarBySlug, loadCoachTimezone } from "@/lib/booking/bookingService";
 import { ASSESSMENT_BOOKING_CALENDAR_SLUG, getCoachBookingProvider } from "@/lib/booking/coachBookingProvider";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { bookingUrlForLead } from "@/lib/booking/leadLink";
 import type { FreeSlot } from "@/lib/ava/slotPicker";
 
 /**
@@ -23,10 +24,6 @@ export type CoachSlots = {
   slots: FreeSlot[];
   bookingUrl: string | null;
 };
-
-function appBase(): string {
-  return (process.env.APP_BASE_URL || "https://app.theprofitcoach.com").replace(/\/$/, "");
-}
 
 export function ghlTokenFor(locationId: string | null | undefined): string | null {
   const map = process.env.GHL_LOCATION_TOKENS?.trim();
@@ -80,7 +77,8 @@ async function ghlFreeSlots(input: { calendarId: string; locationId: string | nu
   }
 }
 
-export async function loadCoachFreeSlots(coachId: string): Promise<CoachSlots | null> {
+/** leadId: the campaign lead in this conversation, so the booking link carries it. */
+export async function loadCoachFreeSlots(coachId: string, leadId?: string | null): Promise<CoachSlots | null> {
   const { data: coach } = await supabaseAdmin
     .from("coaches")
     .select("slug, booking_calendar_provider, ghl_calendar_id, crm_location_id")
@@ -89,7 +87,7 @@ export async function loadCoachFreeSlots(coachId: string): Promise<CoachSlots | 
   if (!coach) return null;
   const provider = getCoachBookingProvider({ booking_calendar_provider: coach.booking_calendar_provider as string | null });
   const timeZone = await loadCoachTimezone(coachId);
-  const bookingUrl = coach.slug ? `${appBase()}/book/${coach.slug}` : null;
+  const bookingUrl = coach.slug ? bookingUrlForLead(coach.slug as string, leadId) : null;
 
   if (provider === "native") {
     const calendar = await loadCoachCalendarBySlug(coachId, ASSESSMENT_BOOKING_CALENDAR_SLUG);

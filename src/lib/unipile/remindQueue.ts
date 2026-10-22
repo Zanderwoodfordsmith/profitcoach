@@ -3,6 +3,7 @@
  */
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { bookingLinkForCoachLead } from "@/lib/booking/leadLink";
 import { buildMessageBody } from "@/lib/unipile/campaigns";
 import { sendCampaignLinkedInMessage } from "@/lib/unipile/campaignLinkedInSend";
 import { advanceLeadAfterStep } from "@/lib/unipile/worker";
@@ -109,6 +110,7 @@ export async function renderPreviewForJob(input: {
     contactId: (input.lead.contact_id as string | null) ?? null,
   });
   const extras = {
+    booking_link: await bookingLinkForCoachLead(input.coachId, (input.lead.id as string | null) ?? null),
     assessment_url: assessmentUrl,
     scorecard_url: assessmentUrl,
     scorecard_link: assessmentUrl,

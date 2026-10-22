@@ -153,7 +153,9 @@ export default function AdminGetClientsHealthPage() {
                     <th className="px-3 py-2 font-medium">Accepted</th>
                     <th className="px-3 py-2 font-medium">Replies</th>
                     <th className="px-3 py-2 font-medium">Interested</th>
-                    <th className="px-3 py-2 font-medium">Calls</th>
+                    <th className="px-3 py-2 font-medium" title="Prospect calls booked in the last 30 days, and how many came from a campaign">Calls</th>
+                    <th className="px-3 py-2 font-medium" title="Days from joining (Stripe start, or first payment) to the first prospect call">First call</th>
+                    <th className="px-3 py-2 font-medium" title="Days from joining to the first client (marked client, or first coaching session)">First client</th>
                     <th className="px-3 py-2 font-medium">Reply time</th>
                     <th className="px-3 py-2 font-medium" title="LinkedIn posts in the last 30 days, from their imported history">Posts 30d</th>
                     <th className="px-3 py-2 font-medium">Last post</th>
@@ -187,7 +189,12 @@ export default function AdminGetClientsHealthPage() {
                       <td className="px-3 py-2">{pct(r.accept_rate)}</td>
                       <td className="px-3 py-2">{r.replies_30d}</td>
                       <td className="px-3 py-2">{r.interested_30d}</td>
-                      <td className="px-3 py-2">{r.calls_30d}</td>
+                      <td className="px-3 py-2">
+                        {r.calls_30d}
+                        {r.campaign_calls_30d ? <div className="text-xs text-slate-500">{r.campaign_calls_30d} from campaigns</div> : null}
+                      </td>
+                      <td className="px-3 py-2">{r.days_to_first_call == null ? "–" : `${r.days_to_first_call}d`}</td>
+                      <td className="px-3 py-2">{r.days_to_first_client == null ? "–" : `${r.days_to_first_client}d`}</td>
                       <td className="px-3 py-2">{r.median_reply_hours == null ? "–" : r.median_reply_hours < 1 ? "< 1h" : `${Math.round(r.median_reply_hours)}h`}</td>
                       <td className="px-3 py-2">{r.posts_30d ?? "–"}</td>
                       <td className="px-3 py-2">{r.last_post_days == null ? "–" : r.last_post_days === 0 ? "today" : `${r.last_post_days}d ago`}</td>

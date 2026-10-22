@@ -121,6 +121,13 @@ export const MERGE_FIELD_CATALOG: MergeField[] = [
     example: "Zander",
   },
   {
+    key: "booking_link",
+    label: "Booking link",
+    group: "You",
+    hint: "Your booking page, with this person built in so the call links back to this campaign",
+    example: "app.theprofitcoach.com/book/zander?lead=…",
+  },
+  {
     key: "type_of_owner",
     label: "Type of owner",
     group: "You",
@@ -230,6 +237,7 @@ export function isInsertableMergeField(
   if (isResultField(field.key)) {
     return picker.kind === "magnet_completed" || picker.kind === "custom";
   }
+  if (field.key === "booking_link") return !picker.connectionNote;
   return false;
 }
 

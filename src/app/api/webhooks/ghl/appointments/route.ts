@@ -4,6 +4,7 @@ import {
   verifyGhlWebhookAuthorization,
   type GhlAppointmentWebhookPayload,
 } from "@/lib/ghlAppointmentWebhook";
+import { linkBookingToLead } from "@/lib/booking/leadLink";
 import { resolveGhlAppointmentLinks } from "@/lib/resolveGhlAppointmentLinks";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -97,6 +98,14 @@ export async function POST(request: Request) {
       { ok: false, error: "Failed to persist appointment." },
       { status: 200 }
     );
+  }
+
+  if (links.coachId) {
+    await linkBookingToLead("ghl_appointments", data.id as string, {
+      coachId: links.coachId,
+      contactId: links.contactId,
+      prospectName: parsed.prospectName,
+    });
   }
 
   return NextResponse.json({
