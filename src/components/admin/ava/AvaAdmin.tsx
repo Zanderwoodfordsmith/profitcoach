@@ -75,6 +75,7 @@ function structureNav(): NavSection[] {
         { id: "flow", label: "Blueprint flow", href: "/admin/ava?tab=flow" },
         { id: "boxes", label: "Blueprint boxes", href: "/admin/ava?tab=boxes" },
         { id: "replies", label: "Reply review", href: "/admin/ava/replies" },
+        { id: "nudges", label: "Nudges", href: "/admin/ava/nudges" },
       ],
     },
     {
