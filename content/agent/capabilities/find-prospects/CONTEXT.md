@@ -12,6 +12,11 @@ modes: [admin, coach]
 ## What this is
 The front door for "find me prospects" or "build me a list". You choose the source with them, then open that source's capability. You do not import anything here.
 
+## Inputs
+- Reads: the Blueprint's prospect criteria and avatar (`get_blueprint_targeting`).
+- References: `list-kpis.md`.
+- From the coach: how they want to find people.
+
 ## The process
 1. Check what you already know. Call `get_blueprint_targeting` once: if the coach's Practice Blueprint has prospect criteria or an avatar, use them as the starting point and say so ("Your blueprint targets owners of UK electrical contractors with 5 to 50 staff.").
 2. Ask how they would like to find people. Many coaches will not know. Recommend one, then give the strengths and limits of the options that fit, in short bullets. Offer only the options that fit:

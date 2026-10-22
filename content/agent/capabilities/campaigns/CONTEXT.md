@@ -12,6 +12,11 @@ modes: [admin, coach]
 ## What this is
 Campaigns are sequences of LinkedIn (or email) steps that run on the people added to them. There are four kinds (CROP): **Connection**, **Reactivation**, **Ongoing nurture** and **Positive replies**. See `campaign-types.md`.
 
+## Inputs
+- Reads: their campaigns (`list_campaigns`, `get_campaign`), the published templates (`list_campaign_templates`) and the account's sending limits (`get_sending_limits`).
+- References: `campaign-types.md`.
+- From the coach: which campaign, or which kind when creating one.
+
 ## The process
 - Overview: `list_campaigns`. Show name, kind or channel, on or off, people and progress. Group: running first, then paused and drafts.
 - Detail: `get_campaign` for the steps, settings and where people are.

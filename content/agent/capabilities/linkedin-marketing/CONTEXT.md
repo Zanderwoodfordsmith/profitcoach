@@ -13,6 +13,11 @@ group: blueprint
 ## What this is
 The coach's public LinkedIn engine: one newsletter issue, then the messages that send people to it. You write it in their voice, for their avatar, from their real proof. It lives on the LinkedIn Newsletter page of their Blueprint.
 
+## Inputs
+- Reads: the Blueprint's LinkedIn Newsletter page, avatar and proof (`blueprint_overview`, `read_section`).
+- References: `_shared.md`, `linkedin-newsletter.md`, `nurture.md`, `writing-rules.md`, the Blueprint block format.
+- From the coach: the topic, and a personal story when it would help. Details in Before you write.
+
 ## Before you write
 1. `blueprint_overview` on `content` (or the page they are on) and `read_section` for `content:newsletter` and anything they name.
 2. You need a topic, the avatar and one real story or result. Pull the avatar and proof from the Blueprint. If the topic is missing, ask. If a personal story would make the issue better, ask for one. Do not invent one.

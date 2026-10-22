@@ -12,6 +12,11 @@ modes: [admin]
 ## What this is
 The coach's Practice Blueprint has sections we write for them with AI skills built from the classroom: market options, the avatar, pain points, prospect criteria, the LinkedIn rewrite (headlines and About), the campaigns (connection, messaging, reactivation, ongoing nurture, replies and reply interested), the offer, the value session and call script, the LinkedIn newsletter (the issue, then its cover, inbox note, post, InMail and article), posts and the 90-day plan. You run those skills. You do not write these sections yourself. For a conversational newsletter (topic first, then the issue), prefer `linkedin-marketing`.
 
+## Inputs
+- Reads: which sections are written (`list_blueprint_sections`) and any section they ask about (`read_blueprint_section`).
+- From the coach: which section to write or rewrite.
+- No references: each section's skill carries its own method.
+
 ## The process
 1. `list_blueprint_sections` to see what is written. Sections are in build order: each builds on the ones before it.
 2. Match the request to a section: "research the pain points" is `market:pains`; "rewrite the headline" or "LinkedIn profile" is `linkedin:rewrite`; "who should they target" is `market:criteria` or `market:avatar`.

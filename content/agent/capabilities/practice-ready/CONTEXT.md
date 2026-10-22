@@ -13,6 +13,10 @@ group: blueprint
 ## What this is
 The job is a finished practice portfolio, not a chat. When a coach signs, pull their BCA sales-call transcripts and LinkedIn, then only ask for the facts those sources do not have. BCA writes the rest. You report a checklist, not a feeling.
 
+## Inputs
+- Reads: onboarding status (`onboarding_status`), their BCA sales-call transcripts and LinkedIn (`ingest_onboarding`), and the Blueprint (`blueprint_overview`).
+- From the coach: their LinkedIn URL if we do not have it, then the missing facts through `fill-the-gaps`.
+
 ## The process
 1. `onboarding_status`. Say the stage in one line (signed, facts, written, ready).
 2. If LinkedIn is not seeded or there are no transcripts, `ingest_onboarding`. Pass their LinkedIn URL when you have it. Then status again.
@@ -23,7 +27,7 @@ The job is a finished practice portfolio, not a chat. When a coach signs, pull t
 ## What “done” means
 Ready to review, not live. Campaigns stay drafts. LinkedIn is a rewrite they paste. A list is a first list they spot-check. You never turn a campaign on from this job.
 
-## Do not
+## What NOT to do
 - Do not invent a result, price, client or year from the transcript or LinkedIn.
 - Do not tell them the practice is built. Tell them what is ready to review.
 - Do not skip ingest when the sources are empty.

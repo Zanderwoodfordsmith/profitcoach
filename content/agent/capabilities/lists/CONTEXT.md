@@ -12,6 +12,10 @@ modes: [admin, coach]
 ## What this is
 Every coach has a **Pool** (everyone they have ever imported), a **Blacklist** (never contact), and named lists. Each import makes a new named list. Campaigns are filled from lists.
 
+## Inputs
+- Reads: their lists and the people on them (`list_lists`, `get_list_people`).
+- From the coach: the list name, or the LinkedIn profile URLs they paste.
+
 ## The process
 - "What lists do I have": `list_lists`. Show name, size and source, newest first. Leave out the Pool and Blacklist unless asked.
 - "Who is on X", "is Sarah on it", "how many have LinkedIn": `get_list_people` with a search when they name someone.

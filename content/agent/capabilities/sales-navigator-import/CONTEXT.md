@@ -12,7 +12,7 @@ modes: [admin, coach]
 ## What this is
 Build a Sales Navigator people search from plain-English criteria (or use a search URL they paste), then import the results into a new list in the coach's pool. Imports run through the coach's own LinkedIn account.
 
-## What you need
+## Inputs
 | Need | Default | Ask when |
 |---|---|---|
 | Location | The coach's country (usually United Kingdom) | Always confirm. US: ask for the state or states. |

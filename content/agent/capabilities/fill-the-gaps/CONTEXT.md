@@ -15,6 +15,11 @@ The coach's Practice Blueprint needs facts only they have: their results, what t
 
 This is the collecting half: one flowing conversation, five to ten minutes. Do not take them to the page or stop to show each section; that breaks the flow. Checking it on the page comes after, in Check it together.
 
+## Inputs
+- Reads: the open About You questions (`blueprint_questions`), the Blueprint and its sections (`blueprint_overview`, `read_section`), and the page they are on (working state).
+- References: `blueprint-quality.md`.
+- From the coach: their answers, one question at a time.
+
 ## The process
 1. `blueprint_questions` with the Blueprint page they are on (from the working state) so that page comes first. If they are not on an About You page, start with proof.
 2. Ask the first question in your own words, short. Offer the example when it helps ("Something like: cut debtor days from 74 to 31 in 9 months"). On Your Voice, the questions can seem a bit personal (favourite book, pet peeves, hugs vs boot camp). Say so once, then ask anyway. They are how marketing sounds like the coach, not like BCA.
@@ -30,7 +35,7 @@ This is the collecting half: one flowing conversation, five to ten minutes. Do n
 - Adding to a list or results that already has entries: use `read_section` to get the current entries, add theirs, and save the whole list with `replace: true`.
 - Questions marked as set on the page (phone, hours, time zone, tone) are not yours: tell them where on the page to set it.
 
-## Do not
+## What NOT to do
 - Do not invent or improve a fact. If they do not know yet, skip it and move on.
 - Do not ask more than one question in a message.
 - Do not re-ask what is already answered unless they want to change it.

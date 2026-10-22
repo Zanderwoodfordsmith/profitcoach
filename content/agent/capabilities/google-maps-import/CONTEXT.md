@@ -12,7 +12,9 @@ modes: [admin, coach]
 ## What this is
 Search Google Maps for a type of business in a place. For each business we save the name, website and phone, and try to find the owner's name and LinkedIn profile. Results land on a new list in the coach's pool. Best for local, owner-run trades and services.
 
-## What you need (ask in this order, one at a time)
+## Inputs
+Ask in this order, one at a time.
+
 1. **Country.** Call `google_maps_options` for the supported countries. Default to the coach's country. Any other country works too (use "OTHER" with the country name).
 2. **Where in the country.** US: ask which state (required), then optionally a city. Elsewhere: a town or city, or the whole country.
 3. **What to search for.** One to five search terms, in the words a customer would type into Google Maps: "plumbers", "dental practice", "accountants". Offer close variations ("plumber", "plumbing and heating").

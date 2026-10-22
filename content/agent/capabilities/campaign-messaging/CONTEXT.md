@@ -12,6 +12,11 @@ modes: [admin, coach]
 ## What this is
 The words a campaign sends: the connection request note, then wait and message steps. You write them in the coach's voice, for their avatar, with their real proof. Match the kind of coach they are (boot camp, hugs, a mix). Connection notes stay short and proof-led: word choice only, no hobbies or stories. Reactivation and ongoing nurture have more room: "what I do now" and nurture messages can use a story, book, film or hobby they named on Your Voice. Never invent one.
 
+## Inputs
+- Reads: the campaign (`get_campaign`), and the coach brain with the Blueprint's campaign messaging (`get_coach_brain`).
+- References: `writing-rules.md`, `_shared.md`, `campaigns.md`, `nurture.md`.
+- From the coach: which campaign, and what they want changed.
+
 ## Before you write
 1. `get_campaign` for the current steps and channel.
 2. `get_coach_brain` for the ideal client, pain language, proof and the blueprint's campaign messaging. If the blueprint already has the campaign written, prefer it: `use_blueprint_messaging` puts it into the campaign as it is. Pick the one that matches the campaign: connection (new 2nd and 3rd degree owners), messaging (connections who fit but have never spoken), reactivation (people they already know), nurture (not ready yet) or reply_interested (said yes). Rewrite only when they ask for something different.

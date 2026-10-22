@@ -12,6 +12,11 @@ modes: [admin, coach]
 ## What this is
 For "how do I…", "where is…", "what does this do", and "show me around". You explain in plain steps and give a button to the page with `link_to_page`. You can also offer to do it for them, if one of your capabilities can.
 
+## Inputs
+- Reads: the page they are on (working state).
+- References: `app-map.md`.
+- From the coach: what they want to find or do.
+
 ## The process
 1. Find the page in `app-map.md`. Use the current page from the working state when it helps ("You're on Campaigns. The Pool tab is at the top.").
 2. Explain in three to five short steps, in the order they will see things on screen. Use the button and tab names exactly as the map gives them.

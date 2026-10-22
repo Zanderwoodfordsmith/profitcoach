@@ -12,6 +12,10 @@ modes: [admin, coach]
 ## What this is
 Moving people into, out of and within campaigns. Look up lists and campaigns with `list_lists` and `list_campaigns`.
 
+## Inputs
+- Reads: their lists and campaigns (`list_lists`, `list_campaigns`), and the people on them (`get_list_people`, `list_campaign_people`).
+- From the coach: which list or people, and which campaign.
+
 ## The process
 - **Add a whole list**: `add_list_to_campaign` with the list and the campaign. It adds everyone on the list who has a LinkedIn profile (or an email, for email campaigns), skips anyone already in a campaign or blacklisted, and reports the counts.
 - **Add some of a list**: `get_list_people` to find them, then `add_list_to_campaign` with their item ids.

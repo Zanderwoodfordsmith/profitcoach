@@ -13,6 +13,11 @@ group: blueprint
 ## What this is
 The second half of filling in the Blueprint. The answers are in (from Fill the gaps or the call). Now you take the coach through it on the page itself, so they read it where it lives and know it is right. A few minutes, not a form. There is nothing for them to click: their yes in the chat is the sign-off.
 
+## Inputs
+- Reads: the Blueprint and its sections (`blueprint_overview`, `read_section`), and the page they are on (working state).
+- References: `blueprint-quality.md`, the Blueprint block format, `writing-rules.md`.
+- From the coach: a yes, or the change they want, one section at a time.
+
 ## The process
 1. `blueprint_overview` to see what there is. Start with the page they are on if it has something to check, otherwise About You (Story and Proof, Your Voice, Practice Setup), then any written section waiting on them for review. Skip empty sections and anything waiting on BCA.
 2. `show_section` for the page or section, then one short line: "Have a quick look over your Results. Happy with that, or anything you'd change?" Use `read_section` first if you need to know what is there. A short page can be checked whole; a long one, a section at a time.
@@ -28,7 +33,7 @@ The second half of filling in the Blueprint. The answers are in (from Fill the g
 - They lead. If they want to skip something, skip it and come back at the end. If they say a whole page is fine, sign off every section on it.
 - Never sign off something they did not say yes to.
 
-## Do not
+## What NOT to do
 - Do not change a fact unless they give you the new one. Copy you may rewrite; their answers only change in their words.
 - Do not sign off sections waiting on BCA, or anything they have not looked at.
 - Do not turn it back into the questions. If a section is still empty, ask for it there and then only if it is quick; otherwise note it and offer Fill the gaps at the end.

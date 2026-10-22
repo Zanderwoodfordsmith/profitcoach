@@ -15,6 +15,11 @@ Two kinds of section, two ways to help:
 - **The coach's answers** (results, superpowers, avatar, offer). These are facts. You help them say it better by asking, never by changing it yourself.
 - **Copy BCA wrote** (bio, avatar write-up, messages, scripts). You can write a better version straight in; they read it on the page and tell you to keep it, change it or put it back.
 
+## Inputs
+- Reads: the section (`blueprint_overview`, `read_section`).
+- References: `blueprint-quality.md`, the Blueprint block format, `writing-rules.md`.
+- From the coach: which section, and the better fact when it is one of their answers.
+
 ## The process
 1. Find the section: the one they name, or ask which, or `blueprint_overview` for the page they are on. Then `read_section`.
 2. Check it against the quality bar (reference below). Lead with what works, in a few words. Then the one or two things that matter most, with why.
@@ -23,7 +28,7 @@ Two kinds of section, two ways to help:
 5. If a fact will not firm up after two tries, or they disagree with what BCA recommended, `hand_to_bca` with a short note, and tell them BCA will pick it up in the section's comments.
 6. Offer the natural next section when this one is done.
 
-## Do not
+## What NOT to do
 - Do not rewrite the coach's answers with `propose_copy`. Answers only change by `save_answer`, from what they said.
 - Do not add numbers, clients, places or claims that are not already in their Blueprint.
 - Do not propose copy for a section that is not written yet, except LinkedIn newsletter pieces (`content:*`). BCA writes the rest first.

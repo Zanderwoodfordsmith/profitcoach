@@ -12,6 +12,10 @@ modes: [admin]
 ## What this is
 Coaches cannot use this agent until an admin switches it on for them. Admins always can. This switches it for the active coach.
 
+## Inputs
+- Reads: the active coach (`find_coach`, `switch_coach`).
+- From the admin: which coach.
+
 ## The process
 1. Make sure the right coach is active (`find_coach`, `switch_coach`).
 2. Call `set_agent_access`. It asks for confirmation.

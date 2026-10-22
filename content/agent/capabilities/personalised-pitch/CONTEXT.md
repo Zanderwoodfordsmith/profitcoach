@@ -17,6 +17,11 @@ Two jobs, same skill.
 
 The framework never changes. The story running through it does. In the pitch the first pillar is Vision (where we are going), then Velocity, then Value. Do not call the first pillar Control.
 
+## Inputs
+- Reads: their learnable script (`read_section` on `sales:script`) and the coach brain (`get_coach_brain`).
+- References: `profit-system-pitch.md`, `pitch-examples.md`, `sales.md`.
+- From the coach: the five facts about this prospect. Details in Before you write.
+
 ## Before you write
 You need the five facts from this prospect, in their words:
 
