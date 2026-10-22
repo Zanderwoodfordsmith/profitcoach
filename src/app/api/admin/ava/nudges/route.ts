@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { postApprovedNudges, runNudgeScan } from "@/lib/ava/nudges";
+import { setNudgeSnooze, snoozeUntil } from "@/lib/ava/settings";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -45,12 +46,24 @@ export async function GET(request: Request) {
   });
 }
 
-/** Approve (with any edits) or reject one nudge. */
+/** Approve (with any edits) or reject one nudge, or snooze the coach's nudges. */
 export async function PATCH(request: Request) {
   const auth = await requireAdmin(request);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: 401 });
 
-  const body = (await request.json().catch(() => null)) as { id?: string; action?: string; body?: string; note?: string } | null;
+  const body = (await request.json().catch(() => null)) as { id?: string; action?: string; body?: string; note?: string; days?: number } | null;
+  if (body?.action === "snooze") {
+    const { data: nudge } = await supabaseAdmin.from("ava_nudges").select("coach_id").eq("id", body.id ?? "").maybeSingle();
+    const until = snoozeUntil(Number(body.days));
+    if (!nudge || !until) return NextResponse.json({ error: "Pick 1 week, 2 weeks or 1 month." }, { status: 400 });
+    await setNudgeSnooze(nudge.coach_id as string, until);
+    await supabaseAdmin
+      .from("ava_nudges")
+      .update({ status: "skipped", note: "Nudges snoozed", decided_at: new Date().toISOString(), decided_by: auth.userId, updated_at: new Date().toISOString() })
+      .eq("coach_id", nudge.coach_id)
+      .in("status", ["queued", "approved"]);
+    return NextResponse.json({ ok: true, snoozed_until: until });
+  }
   if (!body?.id || (body.action !== "approve" && body.action !== "reject" && body.action !== "save")) {
     return NextResponse.json({ error: "id and action (approve, reject or save) are required." }, { status: 400 });
   }

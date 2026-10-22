@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 type View = "queued" | "approved" | "rejected";
+type Action = "approve" | "reject" | "save" | "snooze";
 
 type Nudge = {
   id: string;
@@ -86,10 +87,10 @@ export function AvaNudgeQueue() {
     };
   }, [view, reload]);
 
-  const decide = async (row: Nudge, action: "approve" | "reject" | "save", text: string) => {
+  const decide = async (row: Nudge, action: Action, text: string, days?: number) => {
     const headers = await adminHeaders();
     if (!headers) return false;
-    const res = await fetch("/api/admin/ava/nudges", { method: "PATCH", headers, body: JSON.stringify({ id: row.id, action, body: text }) });
+    const res = await fetch("/api/admin/ava/nudges", { method: "PATCH", headers, body: JSON.stringify({ id: row.id, action, body: text, days }) });
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
       setError(body?.error ?? "Could not save.");
@@ -101,6 +102,7 @@ export function AvaNudgeQueue() {
     } else {
       setRows((prev) => prev.filter((r) => r.id !== row.id));
       const to: View = action === "approve" ? "approved" : "rejected";
+      if (action === "snooze") setScanNote(`${row.coach_name || "Coach"}: nudges paused for ${days} days.`);
       setCounts((c) => ({ ...c, queued: Math.max(0, (c.queued ?? 1) - 1), [to]: (c[to] ?? 0) + 1 }));
     }
     return true;
@@ -184,16 +186,16 @@ function NudgeCard({
   onDecide,
 }: {
   row: Nudge;
-  onDecide: (row: Nudge, action: "approve" | "reject" | "save", text: string) => Promise<boolean>;
+  onDecide: (row: Nudge, action: Action, text: string, days?: number) => Promise<boolean>;
 }) {
   const [text, setText] = useState(row.body);
-  const [saving, setSaving] = useState<null | "approve" | "reject" | "save">(null);
+  const [saving, setSaving] = useState<null | Action>(null);
   const editable = row.status === "queued" || row.status === "approved";
   const changed = text.trim() !== row.body.trim();
 
-  const run = async (action: "approve" | "reject" | "save") => {
+  const run = async (action: Action, days?: number) => {
     setSaving(action);
-    await onDecide(row, action, text);
+    await onDecide(row, action, text, days);
     setSaving(null);
   };
 
@@ -227,7 +229,25 @@ function NudgeCard({
       )}
 
       {row.status === "queued" ? (
-        <div className="mt-3 flex flex-wrap justify-end gap-2">
+        <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+          <label className="mr-auto flex items-center gap-1.5 text-xs text-slate-500">
+            Pause this coach&apos;s nudges
+            <select
+              id={`snooze-${row.id}`}
+              value=""
+              disabled={saving != null}
+              onChange={(e) => {
+                const days = Number(e.target.value);
+                if (days) void run("snooze", days);
+              }}
+              className="rounded border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700"
+            >
+              <option value="">Choose…</option>
+              <option value="7">1 week</option>
+              <option value="14">2 weeks</option>
+              <option value="30">1 month</option>
+            </select>
+          </label>
           <button
             type="button"
             disabled={saving != null}

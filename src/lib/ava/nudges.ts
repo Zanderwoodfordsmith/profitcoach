@@ -1,3 +1,5 @@
+import { getAvaSettings, inQuietHours } from "@/lib/ava/settings";
+import { loadCoachTimezone } from "@/lib/booking/bookingService";
 import { loadCoachHealth, type CoachHealthRow } from "@/lib/coachHealth";
 import { addSectionComment } from "@/lib/practiceKnowledge/sectionComments";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -50,7 +52,12 @@ export function isStuck(row: Pick<CoachHealthRow, "level">): boolean {
 /** Runs once a day. Safe to rerun: one row per coach per day. */
 export async function runNudgeScan(today = new Date().toISOString().slice(0, 10)) {
   const rows = await loadCoachHealth();
-  const stuck = rows.filter(isStuck);
+  const { data: snoozedRows } = await supabaseAdmin
+    .from("coach_ava_settings")
+    .select("coach_id")
+    .gt("nudges_snoozed_until", new Date().toISOString());
+  const snoozed = new Set((snoozedRows ?? []).map((r) => r.coach_id as string));
+  const stuck = rows.filter((r) => isStuck(r) && !snoozed.has(r.coach_id));
   const { data: open } = await supabaseAdmin.from("ava_nudges").select("id, coach_id, stuck_at, scan_date").eq("status", "queued");
   const openByCoach = new Map((open ?? []).map((n) => [n.coach_id as string, n]));
 
@@ -79,15 +86,23 @@ export async function runNudgeScan(today = new Date().toISOString().slice(0, 10)
   }
   // Moved on, or now stuck somewhere else: the old draft no longer fits.
   const stuckIds = new Set(stuck.map((r) => r.coach_id));
-  for (const n of open ?? []) if (!stuckIds.has(n.coach_id as string)) skipIds.push(n.id as string);
-  if (skipIds.length) {
-    await supabaseAdmin
-      .from("ava_nudges")
-      .update({ status: "skipped", note: "No longer stuck there", updated_at: new Date().toISOString() })
-      .in("id", skipIds)
-      .eq("status", "queued");
+  const snoozeIds: string[] = [];
+  for (const n of open ?? []) {
+    if (snoozed.has(n.coach_id as string)) snoozeIds.push(n.id as string);
+    else if (!stuckIds.has(n.coach_id as string)) skipIds.push(n.id as string);
   }
-  return { coaches: rows.length, stuck: stuck.length, queued, kept, skipped: skipIds.length };
+  await dropQueued(skipIds, "No longer stuck there");
+  await dropQueued(snoozeIds, "Nudges snoozed");
+  return { coaches: rows.length, stuck: stuck.length, queued, kept, skipped: skipIds.length + snoozeIds.length, snoozed: snoozed.size };
+}
+
+async function dropQueued(ids: string[], note: string) {
+  if (!ids.length) return;
+  await supabaseAdmin
+    .from("ava_nudges")
+    .update({ status: "skipped", note, updated_at: new Date().toISOString() })
+    .in("id", ids)
+    .eq("status", "queued");
 }
 
 /** Which Blueprint section thread each nudge belongs in. */
@@ -127,14 +142,62 @@ async function postNudge(n: ApprovedNudge): Promise<boolean> {
   return true;
 }
 
-/** Posts every approved nudge that hasn't gone out yet. */
+export type NudgeHold = "snoozed" | "quiet_hours" | "posted_today" | null;
+
+/**
+ * Guardrails before a nudge goes out: never while the coach has snoozed
+ * nudges, never in their quiet hours, and at most one in any 24 hours.
+ */
+export function nudgeHold(input: { snoozedUntil: string | null; quiet: boolean; lastPostedAt: string | null; now?: Date }): NudgeHold {
+  const now = (input.now ?? new Date()).getTime();
+  if (input.snoozedUntil && Date.parse(input.snoozedUntil) > now) return "snoozed";
+  if (input.quiet) return "quiet_hours";
+  if (input.lastPostedAt && now - Date.parse(input.lastPostedAt) < 86_400_000) return "posted_today";
+  return null;
+}
+
+/** Posts approved nudges that pass the guardrails; the rest wait for the next run. */
 export async function postApprovedNudges(onlyId?: string) {
   let query = supabaseAdmin.from("ava_nudges").select("id, coach_id, stuck_at, body").eq("status", "approved").order("decided_at");
   if (onlyId) query = query.eq("id", onlyId);
   const { data } = await query;
-  let posted = 0;
+  const result = { approved: (data ?? []).length, posted: 0, held: 0, snoozed: 0 };
+  const seen = new Set<string>();
   for (const n of (data ?? []) as ApprovedNudge[]) {
-    if (await postNudge(n)) posted += 1;
+    // One per coach per run; the next one waits a day.
+    if (seen.has(n.coach_id)) {
+      result.held += 1;
+      continue;
+    }
+    seen.add(n.coach_id);
+    const [settings, timeZone, { data: last }] = await Promise.all([
+      getAvaSettings(n.coach_id),
+      loadCoachTimezone(n.coach_id),
+      supabaseAdmin
+        .from("ava_nudges")
+        .select("posted_at")
+        .eq("coach_id", n.coach_id)
+        .not("posted_at", "is", null)
+        .order("posted_at", { ascending: false })
+        .limit(1),
+    ]);
+    const hold = nudgeHold({
+      snoozedUntil: settings.nudges_snoozed_until,
+      quiet: inQuietHours(settings, timeZone),
+      lastPostedAt: (last?.[0]?.posted_at as string | null) ?? null,
+    });
+    if (hold === "snoozed") {
+      await supabaseAdmin
+        .from("ava_nudges")
+        .update({ status: "skipped", note: "Nudges snoozed", updated_at: new Date().toISOString() })
+        .eq("id", n.id)
+        .eq("status", "approved");
+      result.snoozed += 1;
+    } else if (hold) {
+      result.held += 1;
+    } else if (await postNudge(n)) {
+      result.posted += 1;
+    }
   }
-  return { approved: (data ?? []).length, posted };
+  return result;
 }

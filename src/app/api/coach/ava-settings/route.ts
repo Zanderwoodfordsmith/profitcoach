@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAlertsWhatsAppAccount, whatsappIdForPhone } from "@/lib/ava/alertsWhatsApp";
-import { getAvaSettings, isAutopilotGloballyOn, saveCoachAvaSettings } from "@/lib/ava/settings";
+import { getAvaSettings, isAutopilotGloballyOn, saveCoachAvaSettings, snoozeUntil } from "@/lib/ava/settings";
 import { isWebPushConfigured } from "@/lib/push/webPush";
 import { requireShareCoach } from "@/lib/shareLinks/requireShareCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -35,6 +35,13 @@ export async function PATCH(request: Request) {
   if (body.reply_mode === "off" || body.reply_mode === "copilot" || body.reply_mode === "autopilot") patch.reply_mode = body.reply_mode;
   for (const key of ["notify_push", "notify_whatsapp", "notify_email"] as const) {
     if (typeof body[key] === "boolean") patch[key] = body[key] as boolean;
+  }
+  if (typeof body.nudges_snooze_days === "number") {
+    const until = body.nudges_snooze_days === 0 ? null : snoozeUntil(body.nudges_snooze_days);
+    if (body.nudges_snooze_days !== 0 && !until) {
+      return NextResponse.json({ error: "Pause for 1 week, 2 weeks or 1 month." }, { status: 400 });
+    }
+    patch.nudges_snoozed_until = until;
   }
   for (const key of ["quiet_start", "quiet_end"] as const) {
     const v = Number(body[key]);

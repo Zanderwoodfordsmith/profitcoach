@@ -13,6 +13,7 @@ type Settings = {
   notify_push: boolean;
   notify_whatsapp: boolean;
   notify_email: boolean;
+  nudges_snoozed_until: string | null;
 };
 type State = {
   settings: Settings;
@@ -46,6 +47,15 @@ const AUTOPILOT_INFO =
 
 const CHANNELS_INFO =
   "Each alert opens the conversation with Ava's draft ready. WhatsApp alerts come from BCA's number and pause between 9pm and 7am.";
+
+const NUDGES_INFO =
+  "When you seem stuck, Ava leaves a short note in your Blueprint comments. BCA reads each one before it reaches you. Busy for a while? Pause them.";
+
+const SNOOZE_OPTIONS: { days: number; label: string }[] = [
+  { days: 7, label: "1 week" },
+  { days: 14, label: "2 weeks" },
+  { days: 30, label: "1 month" },
+];
 
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -104,7 +114,7 @@ export function AvaReplyAlertsCard() {
       .catch(() => undefined);
   }, []);
 
-  const save = async (patch: Partial<Settings>) => {
+  const save = async (patch: Partial<Settings> | { nudges_snooze_days: number }) => {
     const headers = await getCoachAuthHeaders(impersonatingCoachId);
     if (!headers || !state) return;
     const res = await fetch("/api/coach/ava-settings", { method: "PATCH", headers, body: JSON.stringify(patch) });
@@ -180,6 +190,9 @@ export function AvaReplyAlertsCard() {
   };
 
   const s = state?.settings;
+  const snoozedUntil = s?.nudges_snoozed_until && Date.parse(s.nudges_snoozed_until) > Date.now() ? s.nudges_snoozed_until : null;
+  const smallButton =
+    "inline-flex h-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800";
   const rowClass = "flex items-center justify-between gap-3 border-b border-slate-50 py-2";
   const checkLabelClass = "flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-900";
 
@@ -317,6 +330,34 @@ export function AvaReplyAlertsCard() {
               </div>
             </div>
           ) : null}
+
+          <div>
+            <div className="mb-0.5 flex items-center gap-1 border-b border-slate-200 pb-1.5">
+              <p className="text-xs font-semibold text-slate-600">Ava&apos;s nudges</p>
+              <SectionInfoTip label="Ava's nudges" text={NUDGES_INFO} />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2">
+              <p className="text-sm font-semibold text-slate-900">
+                {snoozedUntil
+                  ? `Paused until ${new Date(snoozedUntil).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+                  : "On"}
+              </p>
+              {snoozedUntil ? (
+                <button type="button" onClick={() => void save({ nudges_snooze_days: 0 })} className={smallButton}>
+                  Turn back on
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-slate-500">Pause for</span>
+                  {SNOOZE_OPTIONS.map((o) => (
+                    <button key={o.days} type="button" onClick={() => void save({ nudges_snooze_days: o.days })} className={smallButton}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           {error ? <p className="text-xs text-rose-600">{error}</p> : null}
         </div>

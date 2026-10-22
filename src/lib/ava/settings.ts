@@ -12,6 +12,8 @@ export type AvaSettings = {
   notify_email: boolean;
   quiet_start: number;
   quiet_end: number;
+  /** No Ava nudges until then (ISO), or null. */
+  nudges_snoozed_until: string | null;
 };
 
 export const DEFAULT_AVA_SETTINGS: Omit<AvaSettings, "coach_id"> = {
@@ -23,6 +25,7 @@ export const DEFAULT_AVA_SETTINGS: Omit<AvaSettings, "coach_id"> = {
   notify_email: false,
   quiet_start: 21,
   quiet_end: 7,
+  nudges_snoozed_until: null,
 };
 
 export async function getAvaSettings(coachId: string): Promise<AvaSettings> {
@@ -38,13 +41,14 @@ export async function getAvaSettings(coachId: string): Promise<AvaSettings> {
     notify_email: Boolean(data.notify_email),
     quiet_start: Number(data.quiet_start ?? 21),
     quiet_end: Number(data.quiet_end ?? 7),
+    nudges_snoozed_until: (data.nudges_snoozed_until as string | null) ?? null,
   };
 }
 
 /** Coach-editable fields only. Autopilot can only be chosen once BCA has allowed it. */
 export async function saveCoachAvaSettings(
   coachId: string,
-  patch: Partial<Pick<AvaSettings, "reply_mode" | "notify_push" | "notify_whatsapp" | "notify_email" | "quiet_start" | "quiet_end">>
+  patch: Partial<Pick<AvaSettings, "reply_mode" | "notify_push" | "notify_whatsapp" | "notify_email" | "quiet_start" | "quiet_end" | "nudges_snoozed_until">>
 ): Promise<AvaSettings> {
   const current = await getAvaSettings(coachId);
   const next = { ...current, ...patch };
@@ -73,6 +77,24 @@ export async function setAutopilotAllowed(coachId: string, allowed: boolean, min
     .upsert({ ...next, updated_at: new Date().toISOString() }, { onConflict: "coach_id" });
   if (error) throw new Error(error.message);
   return next;
+}
+
+/** Pause Ava's nudges for a coach until a time, or resume them (null). Coach or admin. */
+export async function setNudgeSnooze(coachId: string, until: string | null): Promise<AvaSettings> {
+  const current = await getAvaSettings(coachId);
+  const next = { ...current, nudges_snoozed_until: until };
+  const { error } = await supabaseAdmin
+    .from("coach_ava_settings")
+    .upsert({ ...next, updated_at: new Date().toISOString() }, { onConflict: "coach_id" });
+  if (error) throw new Error(error.message);
+  return next;
+}
+
+/** Snooze lengths offered to coaches and admins, in days. */
+export const NUDGE_SNOOZE_DAYS = [7, 14, 30] as const;
+
+export function snoozeUntil(days: number, now = new Date()): string | null {
+  return (NUDGE_SNOOZE_DAYS as readonly number[]).includes(days) ? new Date(now.getTime() + days * 86_400_000).toISOString() : null;
 }
 
 export async function isAutopilotGloballyOn(): Promise<boolean> {
