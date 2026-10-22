@@ -2,7 +2,7 @@
 
 Branch `overnight-2026-10-22`, one commit per job. 3002 is running this branch. Your other session's uncommitted files (Blueprint backfill script, usage route change, support migration) are untouched and not in any commit.
 
-## In Review (5 cards, each has "Where to look" and "What to check")
+## In Review (7 cards, each has "Where to look" and "What to check")
 
 | Job | What changed | Your check |
 |---|---|---|
@@ -11,8 +11,10 @@ Branch `overnight-2026-10-22`, one commit per job. 3002 is running this branch. 
 | #7 Booking alerts | Coaches get a "New call booked" email (and a push if alerts are on) when a prospect books. | Two test emails in the Zander Demo inbox. Read the wording. |
 | #12 Profile Optimizer for BCA | Admin "Write all three" button: headline, About and banner from the Blueprint in one go. | Press it on /admin/linkedin-profile as Zander Demo. Untested in a browser (no test admin login). |
 | #72 Link a lesson, chapter or time | Nothing built: it already shipped yesterday. Tested only. | Try the Lesson button in a post and a comment. |
+| #65 Hidden lessons behave | Old links to hidden lessons land on the course; the rail and Classroom cards skip hidden lessons from the first paint. | Open the hidden lesson link on the card. |
+| #70 Ava capability files, same shape | All 18 have an Inputs section and one "What NOT to do" heading. | Ask Ava 3 things; I didn't run live Ava (real tools, real data). |
 
-The two Classroom cards (#64 and #72) share a place to look, so check them together.
+The three Classroom cards (#64, #65 and #72) share a place to look, so check them together.
 
 ## Not ready (questions written at the top of each card)
 
@@ -20,6 +22,7 @@ The two Classroom cards (#64 and #72) share a place to look, so check them toget
 - **#10 Ava nudges:** about a week of work; a split into four jobs is on the card.
 - **#74 Polls upgrades:** suggested a testable Done when and a v1.
 - **#23 Directory, #39 BOSS Score Review offer, #56 Explainer brochure:** yours (design answers, tomorrow's talk with Pam, and a review).
+- **Every other To do card** now has a "Not ready tonight" line saying what it needs: your decision, tomorrow's BOSS Score Review talk, a split (#9 Onboarding, #49 Ava skills), or a real coach, client, lawyer or phone. That's the list for tonight's prep hour.
 
 ## New cards in Evaluate
 
@@ -37,6 +40,7 @@ The two Classroom cards (#64 and #72) share a place to look, so check them toget
 7. **#7 I left BCA's own pages on GoHighLevel** (/zander Fit Call, support call, advisory Blueprint). They feed your own pipeline, so switching them is your call. New coaches were already on native booking.
 8. **#12 admins skip the 5-second rewrite cooldown** so the three sections write at once.
 9. **#45 I didn't build it.** With no exact links and no join dates, the numbers would mislead.
+10. **#65 the admin Classroom cards still count hidden lessons**; only the coach cards skip them.
 
 ## Things to know
 
