@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, Copy, Loader2, Newspaper, RefreshCw, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronRight, Copy, LayoutGrid, List, Loader2, Newspaper, RefreshCw, X } from "lucide-react";
 import { Blocks } from "@/components/practice/document/Blocks";
 import "@/components/practice/document/blueprint.css";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
@@ -82,6 +82,59 @@ function IssueCard({
     </button>
   );
 }
+
+/** One issue as a list row: small cover, title, date, where it stands. */
+function IssueRow({
+  cover,
+  title,
+  date,
+  meta,
+  badge,
+  onOpen,
+}: {
+  cover: string | null;
+  title: string;
+  date: string;
+  meta: string;
+  badge?: string;
+  onOpen: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="group flex w-full items-center gap-4 px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0A66C2] sm:px-5"
+      >
+        <span className="relative hidden aspect-video w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:block">
+          {cover ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={cover} alt="" loading="lazy" className="h-full w-full object-cover" />
+          ) : (
+            <span className="absolute inset-0 bg-gradient-to-br from-[#0b4d88] to-[#1a8fd4]" />
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[0.9375rem] font-semibold text-slate-900">{title}</span>
+          <span className="mt-0.5 block text-xs tabular-nums text-slate-500">
+            {date}
+            {meta ? ` · ${meta}` : ""}
+          </span>
+        </span>
+        <span
+          className={`hidden shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline-flex ${
+            badge ? "bg-amber-50 text-amber-900 ring-1 ring-inset ring-amber-200" : "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200"
+          }`}
+        >
+          {badge ?? "Published"}
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-slate-500" aria-hidden />
+      </button>
+    </li>
+  );
+}
+
+const VIEW_KEY = "newsletter-issues-view";
 
 type Opened = { kind: "issue"; issue: NewsletterIssueItem } | { kind: "draft"; draft: NewsletterDraftItem };
 
@@ -261,6 +314,22 @@ export function NewsletterIssuesTab({
   blueprintHref: string | null;
 }) {
   const issues = useMemo(() => history?.issues ?? [], [history]);
+  // List rows by default; the cards stay one click away.
+  const [view, setView] = useState<"list" | "cards">(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(VIEW_KEY) === "cards" ? "cards" : "list";
+    } catch {
+      return "list";
+    }
+  });
+  const pickView = (next: "list" | "cards") => {
+    setView(next);
+    try {
+      window.localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // Remembering the choice is only a convenience.
+    }
+  };
   const drafts = useMemo(() => history?.drafts ?? [], [history]);
 
   const opened: Opened | null = useMemo(() => {
@@ -364,7 +433,70 @@ export function NewsletterIssuesTab({
         </div>
       ) : null}
 
-      {drafts.length ? (
+      {drafts.length || issues.length ? (
+        <div className="-mb-2 flex justify-end">
+          <div className="inline-flex rounded-full border border-slate-200 bg-white p-0.5" role="group" aria-label="Show issues as">
+            {(
+              [
+                ["list", "List", List],
+                ["cards", "Cards", LayoutGrid],
+              ] as const
+            ).map(([key, label, Icon]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={view === key}
+                onClick={() => pickView(key)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                  view === key ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {drafts.length && view === "list" ? (
+        <section>
+          <h3 className="mb-3 text-sm font-semibold text-slate-900">Next up</h3>
+          <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+            {drafts.map((draft) => (
+              <IssueRow
+                key={draft.key}
+                cover={null}
+                title={draft.title}
+                date={`Written ${formatDate(draft.written_at)}`}
+                meta={draft.post ? "Issue and feed post ready" : "Issue ready to review"}
+                badge="Draft from BCA"
+                onOpen={() => onOpenIssue(`draft:${draft.key}`)}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {issues.length && view === "list" ? (
+        <section>
+          <h3 className="mb-3 text-sm font-semibold text-slate-900">Published</h3>
+          <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+            {issues.map((issue) => (
+              <IssueRow
+                key={issue.id}
+                cover={issue.cover_url}
+                title={issue.topic || issue.title}
+                date={formatDate(issue.published_at)}
+                meta={reach(issue)}
+                onOpen={() => onOpenIssue(issue.id)}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {drafts.length && view === "cards" ? (
         <section>
           <h3 className="mb-3 text-sm font-semibold text-slate-900">Next up</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -383,7 +515,7 @@ export function NewsletterIssuesTab({
         </section>
       ) : null}
 
-      {issues.length ? (
+      {issues.length && view === "cards" ? (
         <section>
           <h3 className="mb-3 text-sm font-semibold text-slate-900">Published</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -399,7 +531,7 @@ export function NewsletterIssuesTab({
             ))}
           </div>
         </section>
-      ) : !neverImported && !drafts.length ? (
+      ) : !issues.length && !neverImported && !drafts.length ? (
         <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-14 text-center">
           <Newspaper className="mx-auto h-8 w-8 text-slate-300" />
           <p className="mt-3 text-sm font-medium text-slate-800">No newsletter issues yet</p>
