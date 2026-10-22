@@ -1,25 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowRight, ChevronDown, FileDown } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 
 export type DigitalNavItem = { id: string; title: string; sub?: boolean };
 
 /**
  * The explainer's side menu: sticky beside the reading column on a laptop, a
  * contents panel under a slim top bar on a phone. It follows the reader down
- * the page, and carries the two actions: save the PDF, take the BOSS Score.
+ * the page, and carries the page's actions (the explainer: take the BOSS
+ * Score, save the PDF; a proposal: sign, save the PDF).
  */
 export function ExplainerDigitalNav({
   items,
   coachName,
-  pdfHref,
-  scoreHref,
+  actions,
 }: {
   items: DigitalNavItem[];
   coachName: string;
-  pdfHref: string;
-  scoreHref: string;
+  actions: ReactNode;
 }) {
   const [active, setActive] = useState(items[0]?.id ?? "");
   const [open, setOpen] = useState(false);
@@ -64,25 +63,12 @@ export function ExplainerDigitalNav({
     </ol>
   );
 
-  const actions = (
-    <div className="cxd-nav__actions">
-      <a className="cxd-btn cxd-btn--solid" href={scoreHref}>
-        Take your BOSS Score
-        <ArrowRight size={16} strokeWidth={2.25} aria-hidden="true" />
-      </a>
-      <a className="cxd-btn cxd-btn--quiet" href={pdfHref} target="_blank" rel="noopener">
-        <FileDown size={16} strokeWidth={2} aria-hidden="true" />
-        Save as PDF
-      </a>
-    </div>
-  );
-
   return (
     <>
       <nav className="cxd-nav" aria-label="Contents">
         <p className="cxd-nav__who">{coachName}</p>
         {list}
-        {actions}
+        <div className="cxd-nav__actions">{actions}</div>
       </nav>
 
       <div className={`cxd-bar${open ? " is-open" : ""}`}>
@@ -93,7 +79,7 @@ export function ExplainerDigitalNav({
         </button>
         <div id="cxd-bar-panel" className="cxd-bar__panel" hidden={!open}>
           {list}
-          {actions}
+          <div className="cxd-nav__actions">{actions}</div>
         </div>
       </div>
     </>

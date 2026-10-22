@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowRight, Check, ChevronDown } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, FileDown } from "lucide-react";
 import {
   back,
   coach as coachCopy,
@@ -68,7 +68,22 @@ export function CoachExplainerDigital({ coach, call, length, origin, pdfHref }: 
     <div className="cxd">
       <Hero coach={coach} call={call} />
       <div className="cxd-layout">
-        <ExplainerDigitalNav items={nav} coachName={site.name} pdfHref={pdfHref} scoreHref={site.links.score} />
+        <ExplainerDigitalNav
+          items={nav}
+          coachName={site.name}
+          actions={
+            <>
+              <a className="cxd-btn cxd-btn--solid" href={site.links.score}>
+                Take your BOSS Score
+                <ArrowRight size={16} strokeWidth={2.25} aria-hidden="true" />
+              </a>
+              <a className="cxd-btn cxd-btn--quiet" href={pdfHref} target="_blank" rel="noopener">
+                <FileDown size={16} strokeWidth={2} aria-hidden="true" />
+                Save as PDF
+              </a>
+            </>
+          }
+        />
         <main className="cxd-main">
           <Section id="plan" light={w.light} bold={w.bold}>
             <p className="cxd-lead">{w.lead}</p>

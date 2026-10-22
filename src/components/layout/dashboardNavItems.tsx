@@ -371,6 +371,12 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       label: "Scripts",
       description: "Every script for your calls with owners",
     },
+    {
+      href: `${prefix}/proposals`,
+      label: "Proposals",
+      description: "Proposals you send to owners, and who has signed",
+      adminPreview: true,
+    },
   ];
   items.push({
     href: prefix === "/admin" ? "/admin/linkedin" : "/coach/linkedin",
@@ -400,6 +406,7 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
     `${prefix}/linkedin`,
     `${prefix}/share`,
     `${prefix}/toolkit`,
+    `${prefix}/proposals`,
   ];
   if (prefix === "/coach") {
     paths.push("/coach/links");
