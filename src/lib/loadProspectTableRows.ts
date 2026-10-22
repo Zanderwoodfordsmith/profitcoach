@@ -34,6 +34,8 @@ type ContactRecord = {
   created_at?: string | null;
   prospect_funnel?: string | null;
   prospect_source?: string | null;
+  /** The tag on the link they first came in on (Toolkit link maker). */
+  traffic_source?: string | null;
   prospect_tags?: string[] | null;
   whatsapp_on?: boolean | null;
 };
@@ -86,6 +88,7 @@ export function toLiteProspectRows(contacts: ContactRecord[]): ProspectRow[] {
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
       prospect_source: contact.prospect_source ?? null,
+        traffic_source: contact.traffic_source ?? null,
       in_outreach: false,
       tags: Array.isArray(contact.prospect_tags) ? contact.prospect_tags : [],
       has_whatsapp: contact.whatsapp_on === true,
@@ -198,6 +201,7 @@ export async function enrichProspectRows(
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
       prospect_source: contact.prospect_source ?? null,
+        traffic_source: contact.traffic_source ?? null,
       in_outreach: outreachContactIds.has(contact.id),
       tags: Array.isArray(contact.prospect_tags) ? contact.prospect_tags : [],
       has_whatsapp:

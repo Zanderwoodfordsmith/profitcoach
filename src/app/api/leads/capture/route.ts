@@ -1,3 +1,5 @@
+import { cleanTraffic } from "@/lib/trafficSource";
+import { recordContactTraffic } from "@/lib/trafficSourceServer";
 import { NextResponse } from "next/server";
 import {
   fireLeadWebhook,
@@ -15,6 +17,8 @@ import { findContactByAssessmentInviteToken } from "@/lib/assessmentInviteToken"
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
+  /** The tag on the link they came in on (Toolkit link maker). */
+  traffic?: unknown;
   coachSlug?: string | null;
   assessment_type?: AssessmentType;
   contact: {
@@ -155,6 +159,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("leads/capture resolveOrCreateContact:", err);
   }
+  await recordContactTraffic(contactId, cleanTraffic(body.traffic));
 
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);
   if (webhookUrl) {

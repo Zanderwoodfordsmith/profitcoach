@@ -1,3 +1,5 @@
+import { cleanTraffic } from "@/lib/trafficSource";
+import { recordContactTraffic } from "@/lib/trafficSourceServer";
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { getPublicAppBaseUrl } from "@/lib/appBaseUrl";
@@ -36,6 +38,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
   coachSlug?: string;
+  /** The tag on the link they came in on (Toolkit link maker). */
+  traffic?: unknown;
   from_landing?: "a" | "b" | "c" | "d";
   /** Analytics only: explicit coach from landing URL; omit when brand /score. */
   landing_coach_slug?: string | null;
@@ -467,6 +471,8 @@ export async function POST(request: Request) {
   );
   if (contactResult.error) return contactResult.error;
   const contactId = contactResult.contactId;
+  const traffic = cleanTraffic(body.traffic);
+  await recordContactTraffic(contactId, traffic);
 
   const assessmentInsert: Record<string, unknown> = {
     coach_id: coachId,
@@ -479,6 +485,9 @@ export async function POST(request: Request) {
       assessmentType === "diagnostic_50"
         ? (body.methodology_version ?? 2)
         : 2,
+    traffic_source: traffic?.source ?? null,
+    traffic_medium: traffic?.medium ?? null,
+    traffic_campaign: traffic?.campaign ?? null,
   };
 
   if (assessmentType === "boss_scorecard") {

@@ -54,6 +54,7 @@ export async function GET(request: Request) {
         created_at: string;
         prospect_funnel?: string | null;
         prospect_source?: string | null;
+        traffic_source?: string | null;
         prospect_tags?: string[] | null;
       }>(
         async (columns) => {
@@ -78,7 +79,7 @@ export async function GET(request: Request) {
           );
         },
         "id, full_name, email, business_name, job_title, prospect_status, type, created_at",
-        ["crm_contact_id", "linkedin_url", "company_website", "prospect_funnel", "prospect_source", "prospect_tags", "whatsapp_on"]
+        ["crm_contact_id", "linkedin_url", "company_website", "prospect_funnel", "prospect_source", "traffic_source", "prospect_tags", "whatsapp_on"]
       ),
       supabaseAdmin
         .from("coaches")
@@ -119,6 +120,7 @@ export async function GET(request: Request) {
     created_at: c.created_at ?? null,
     prospect_funnel: (c as { prospect_funnel?: string | null }).prospect_funnel ?? null,
     prospect_source: (c as { prospect_source?: string | null }).prospect_source ?? null,
+    traffic_source: (c as { traffic_source?: string | null }).traffic_source ?? null,
     prospect_tags: (c as { prospect_tags?: string[] | null }).prospect_tags ?? [],
     whatsapp_on: (c as { whatsapp_on?: boolean | null }).whatsapp_on ?? null,
   })),

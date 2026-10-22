@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PublicSlugEditor } from "@/components/leadMagnets/PublicSlugEditor";
+import { TaggedLinkMaker } from "@/components/shareLinks/TaggedLinkMaker";
 import {
   ShareToProspectModal,
   type ShareTarget,
@@ -868,6 +869,21 @@ export function ShareLinksHub() {
           ) : null}
         </LinkSection>
       </div>
+
+      {slugReady ? (
+        <TaggedLinkMaker
+          links={[
+            ...assessmentItems.map(({ magnet, copyUrl }) => ({
+              label: magnet.id === "boss-score-pro" ? "Boss Score Pro" : "Boss Score",
+              url: copyUrl,
+            })),
+            ...liveCalendars.map((calendar) => ({
+              label: `Booking: ${calendar.name}`,
+              url: magnetShareCopyUrl(coachBookPath(slug, calendar.slug), appOrigin),
+            })),
+          ]}
+        />
+      ) : null}
 
       <ShareToProspectModal
         open={shareTarget != null}

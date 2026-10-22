@@ -1,5 +1,7 @@
 "use client";
 
+import { recallTraffic, rememberTraffic } from "@/lib/trafficSource";
+
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
@@ -123,6 +125,11 @@ export default function LandingVariantPage() {
   const validVariant = isVariantA || isVariantB || isVariantC || isVariantD;
   const trackVariant = isVariantA ? "a" : isVariantB ? "b" : isVariantC ? "c" : "d";
 
+  // Keep the tag from the link they came in on (Toolkit link maker).
+  useEffect(() => {
+    rememberTraffic();
+  }, []);
+
   useEffect(() => {
     if (!validVariant) return;
     const sessionId = getOrSetSessionId();
@@ -218,6 +225,7 @@ export default function LandingVariantPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        traffic: recallTraffic(),
         coachSlug: coachSlug || null,
         contact: {
           first_name: first || undefined,
@@ -249,6 +257,7 @@ export default function LandingVariantPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          traffic: recallTraffic(),
           coachSlug: coachSlug || null,
           contact: {
             first_name: first || undefined,

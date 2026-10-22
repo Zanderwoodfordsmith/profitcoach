@@ -57,7 +57,8 @@ export default async function CoachExplainerPage({ params, searchParams }: PageP
   const host = head.get("x-forwarded-host") ?? head.get("host") ?? "theprofitcoach.com";
   const origin = host.startsWith("localhost") ? "theprofitcoach.com" : host;
   const coach = explainerFromBlueprint(loaded.site, loaded.row);
-  const qrSvg = await QRCode.toString(`https://${origin}${loaded.site.links.score}`, {
+  // Tagged, so a scan from the brochure shows as "via QR code" on the prospect.
+  const qrSvg = await QRCode.toString(`https://${origin}${loaded.site.links.score}?utm_source=qr&utm_medium=print&utm_campaign=explainer`, {
     type: "svg",
     margin: 0,
     errorCorrectionLevel: "M",

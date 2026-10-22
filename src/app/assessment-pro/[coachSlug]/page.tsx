@@ -1,5 +1,7 @@
 "use client";
 
+import { recallTraffic, rememberTraffic } from "@/lib/trafficSource";
+
 import { outfit } from "@/fonts";
 import Image from "next/image";
 import { use, useEffect, useMemo, useRef, useState } from "react";
@@ -135,6 +137,11 @@ export default function BossProAssessmentPage({
   const [clientDashboardChecked, setClientDashboardChecked] = useState(false);
   const [isClientFromDashboard, setIsClientFromDashboard] = useState(false);
 
+  // Keep the tag from the link they came in on (Toolkit link maker).
+  useEffect(() => {
+    rememberTraffic();
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     async function loadCoach() {
@@ -227,6 +234,7 @@ export default function BossProAssessmentPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          traffic: recallTraffic(),
           coachSlug: coachSlug?.trim() || null,
           assessment_type: "diagnostic_50",
           invite_token: urlContact.inviteToken,
@@ -431,6 +439,7 @@ export default function BossProAssessmentPage({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        traffic: recallTraffic(),
         coachSlug: coachSlug?.trim() || null,
         assessment_type: "diagnostic_50",
         invite_token: urlContact.inviteToken,
@@ -518,6 +527,7 @@ export default function BossProAssessmentPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          traffic: recallTraffic(),
           coachSlug: coachSlug?.trim() || "BCA",
           from_landing: landingVariant ?? undefined,
           assessment_type: "diagnostic_50",

@@ -1,3 +1,4 @@
+import { trafficLabel } from "@/lib/trafficSource";
 export type ProspectSourceKind =
   | "boss_score"
   | "boss_pro"
@@ -156,15 +157,19 @@ export function resolveProspectSourceKind(prospect: {
   return "manual";
 }
 
-/** Coach-facing label: explicit source when set, otherwise inferred kind. */
+/**
+ * Coach-facing label: explicit source when set, otherwise inferred kind, plus
+ * the tagged link they came in on ("BOSS Score · via LinkedIn").
+ */
 export function resolveProspectSourceLabel(prospect: {
   prospect_source?: string | null;
   prospect_funnel?: string | null;
   linkedin_url?: string | null;
+  traffic_source?: string | null;
 }): string {
-  const explicit = prospectSourceLabel(prospect.prospect_source);
-  if (explicit) return explicit;
-  return prospectSourceKindLabel(resolveProspectSourceKind(prospect));
+  const label = prospectSourceLabel(prospect.prospect_source) ?? prospectSourceKindLabel(resolveProspectSourceKind(prospect));
+  const via = trafficLabel(prospect.traffic_source);
+  return via ? `${label} · via ${via}` : label;
 }
 
 export function emptyProspectSourceTotals(): Record<

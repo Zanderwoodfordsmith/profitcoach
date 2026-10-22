@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminTrafficSources } from "@/components/admin/AdminTrafficSources";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -232,6 +233,8 @@ export function AdminLandingAnalytics() {
       {loading && !checkingRole ? (
         <p className="text-sm text-slate-600">Loading landing analytics…</p>
       ) : null}
+
+      {!checkingRole ? <AdminTrafficSources from={dateRange.from} to={dateRange.to} /> : null}
 
       {!loading && stats ? (
         <>

@@ -1,5 +1,7 @@
 "use client";
 
+import { recallTraffic } from "@/lib/trafficSource";
+
 import { ArrowRight, Download, Printer } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { downloadPng, printPdf } from "@/lib/printPack/browserExport";
@@ -48,6 +50,7 @@ export function OptIn({ slug, firstName, scorecard, playbooks, preview }: Props)
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          traffic: recallTraffic(),
           coachSlug: slug,
           contact: {
             first_name: name.trim().slice(0, 80),

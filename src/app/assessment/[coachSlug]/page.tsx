@@ -1,5 +1,7 @@
 "use client";
 
+import { recallTraffic, rememberTraffic } from "@/lib/trafficSource";
+
 import { outfit } from "@/fonts";
 import Image from "next/image";
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -217,6 +219,11 @@ export default function ScorecardAssessmentPage({
     );
   }, [answers, qualifying, progress.completedSteps]);
 
+  // Keep the tag from the link they came in on (Toolkit link maker).
+  useEffect(() => {
+    rememberTraffic();
+  }, []);
+
   useEffect(() => {
     setGateChecked(true);
   }, []);
@@ -346,6 +353,7 @@ export default function ScorecardAssessmentPage({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        traffic: recallTraffic(),
         coachSlug: coachSlug?.trim() || null,
         assessment_type: "boss_scorecard",
         invite_token: contact.inviteToken,
@@ -443,6 +451,7 @@ export default function ScorecardAssessmentPage({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        traffic: recallTraffic(),
         coachSlug: coachSlug?.trim() || null,
         assessment_type: "boss_scorecard",
         invite_token: urlContact.inviteToken,
@@ -572,6 +581,7 @@ export default function ScorecardAssessmentPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          traffic: recallTraffic(),
           coachSlug: assessmentCoachSlugForApi(coachSlug ?? ""),
           from_landing: landingVariant ?? undefined,
           landing_brand: searchParams.get("landing_brand") === "1" ? true : undefined,

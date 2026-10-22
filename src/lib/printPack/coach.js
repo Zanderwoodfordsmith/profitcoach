@@ -17,7 +17,8 @@ export const SITE_ORIGIN = "https://www.theprofitcoach.com";
  */
 export async function makeCoach(input, { link = "assessment" } = {}) {
   const url = `${SITE_ORIGIN}/${link === "score" ? "score" : "assessment"}/${encodeURIComponent(input.slug)}`;
-  const raw = await QRCode.toString(url, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: C.ink, light: "#0000" } });
+  // The code carries a tag so a scan shows as "via QR code"; the printed address stays clean.
+  const raw = await QRCode.toString(`${url}?utm_source=qr&utm_medium=print&utm_campaign=print-pack`, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: C.ink, light: "#0000" } });
   const viewBox = raw.match(/viewBox="([^"]+)"/)[1];
   const body = raw.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
   return { ...input, link, url, displayUrl: url.replace(/^https:\/\/www\./, ""), qr: { viewBox, body } };

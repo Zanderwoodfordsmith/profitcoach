@@ -53,6 +53,8 @@ export type ProspectRow = {
   prospect_funnel?: string | null;
   /** How this prospect entered the pipeline (Sales Navigator, manual, etc.). */
   prospect_source?: string | null;
+  /** The tag on the link they first came in on (Toolkit link maker). */
+  traffic_source?: string | null;
   /** True when this contact is in an open campaign sequence. */
   in_outreach?: boolean;
   /** Coach-defined labels (right sidebar). */
