@@ -64,6 +64,10 @@
     {
       "path": "/api/cron/ava-followups",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/ava-nudges",
+      "schedule": "0 6 * * *"
     }
   ]
 }
