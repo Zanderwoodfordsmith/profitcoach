@@ -47,7 +47,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Lesson not found." }, { status: 404 });
   }
 
-  const payload = await loadClassroomLessonPayload(course, lessonId);
+  // Throws when the lesson is hidden or removed.
+  const payload = await loadClassroomLessonPayload(course, lessonId).catch(() => null);
+  if (!payload) {
+    return NextResponse.json({ error: "Lesson not found." }, { status: 404 });
+  }
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "private, no-store" },
   });

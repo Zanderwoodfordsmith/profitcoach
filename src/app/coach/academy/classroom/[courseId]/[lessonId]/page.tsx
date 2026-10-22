@@ -14,7 +14,11 @@ import {
   classroomCourseIdForLesson,
   loadClassroomHub,
 } from "@/lib/academy/classroomHubLoad";
-import { slimLessonShell, stripInactiveLessonBodies } from "@/lib/academy/lessonContent";
+import {
+  slimLessonShell,
+  stripInactiveLessonBodies,
+  withClassroomMetadata,
+} from "@/lib/academy/lessonContent";
 import { applyLegacyCourseVisibility } from "@/lib/academy/lessonVisibility";
 import {
   legacyConsolidatedChapterRedirect,
@@ -81,12 +85,17 @@ export default async function CoachAcademyClassroomLessonPage({
   const baseLesson = findLessonInCourse(baseCourse, lessonId);
   if (!baseLesson) notFound();
 
+  // Hidden or removed lessons: old links land on the course page.
+  const visibleCourse = applyLegacyCourseVisibility(
+    await withClassroomMetadata(baseCourse),
+  );
+  if (!findLessonInCourse(visibleCourse, lessonId)) {
+    redirect(`${BASE}/${encodeURIComponent(baseCourse.id)}`);
+  }
+
   // Titles only: video, text and transcript load through the lesson API,
   // which needs a member login (the server can't see the login here).
-  const shellCourse = stripInactiveLessonBodies(
-    applyLegacyCourseVisibility(baseCourse),
-    null,
-  );
+  const shellCourse = stripInactiveLessonBodies(visibleCourse, null);
   const contentUrl = `/api/academy/lesson?${new URLSearchParams({
     hub: "classroom",
     courseId,

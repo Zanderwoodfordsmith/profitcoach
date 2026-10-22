@@ -445,6 +445,26 @@ function mergeLegacySectionTree(
   };
 }
 
+/**
+ * Hub course with DB titles and hide/delete flags from the cached metadata
+ * (no lesson bodies), so the first paint matches what the lesson API returns.
+ */
+export async function withClassroomMetadata(course: HubCourse): Promise<HubCourse> {
+  const sourceIds = classroomSourceCourseIds(course);
+  if (sourceIds.length === 0) return course;
+  const byLesson = new Map<string, AcademyLessonContentRow>();
+  indexLessonContentRows(
+    byLesson,
+    await fetchClassroomMetadataRows(classroomMetadataCacheKey(sourceIds))
+  );
+  return {
+    ...course,
+    sections: course.sections.map((section) =>
+      mergeLegacySectionTree(section, byLesson)
+    ),
+  };
+}
+
 /** Legacy programme course with per-lesson DB overrides (titles, video, body, transcript). */
 export async function loadLegacyCourseWithContent(
   course: HubCourse,

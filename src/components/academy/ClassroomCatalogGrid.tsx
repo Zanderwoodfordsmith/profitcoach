@@ -11,6 +11,8 @@ import {
   classroomCoursesByIds,
 } from "@/lib/academy/classroomHubLoad";
 import type { HubCourse } from "@/lib/academy/hubCatalog";
+import { withClassroomMetadata } from "@/lib/academy/lessonContent";
+import { applyLegacyCourseVisibility } from "@/lib/academy/lessonVisibility";
 
 type Props = {
   basePath: string;
@@ -60,8 +62,21 @@ const COURSE_COVERS: Record<
 
 export async function ClassroomCatalogGrid({ basePath }: Props) {
   const catalog = loadClassroomHub();
-  const startCourses = classroomCoursesByIds(catalog, CLASSROOM_START_COURSE_IDS);
-  const pathCourses = classroomCoursesByIds(catalog, CLASSROOM_PATH_COURSE_IDS);
+  // Coaches: count and link only the lessons they can see (hub and DB hide
+  // flags). Admins keep hidden lessons.
+  const includeDrafts = basePath.startsWith("/admin");
+  const visible = (courses: HubCourse[]) =>
+    Promise.all(
+      courses.map(async (course) =>
+        applyLegacyCourseVisibility(await withClassroomMetadata(course), {
+          includeDrafts,
+        })
+      )
+    );
+  const [startCourses, pathCourses] = await Promise.all([
+    visible(classroomCoursesByIds(catalog, CLASSROOM_START_COURSE_IDS)),
+    visible(classroomCoursesByIds(catalog, CLASSROOM_PATH_COURSE_IDS)),
+  ]);
 
   return (
     <div className="mx-auto w-[80%] max-w-6xl pt-5">
