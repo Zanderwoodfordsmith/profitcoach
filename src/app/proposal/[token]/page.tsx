@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { ProposalDocument } from "@/components/proposals/ProposalDocument";
 import { ProposalOpenBeacon } from "@/components/proposals/ProposalOpenBeacon";
+import { ProposalSign } from "@/components/proposals/ProposalSign";
 import { figtree } from "@/fonts";
 import { loadProposalByToken, loadProposalCoach } from "@/lib/proposals/store";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -40,7 +41,14 @@ export default async function ProposalPage({ params }: PageProps) {
         proposal={proposal}
         coach={coach}
         coachName={coachName}
-        sign={<p className="cxp-sign__intro">Happy to go ahead? Type your name below to accept this proposal.</p>}
+        sign={
+          <ProposalSign
+            token={proposal.share_token}
+            prospectName={proposal.prospect_name}
+            coachFirstName={coachName.split(" ")[0]}
+            signed={proposal.signed_at ? { name: proposal.signed_name ?? proposal.prospect_name, at: proposal.signed_at } : null}
+          />
+        }
       />
     </div>
   );

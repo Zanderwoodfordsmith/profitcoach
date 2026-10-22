@@ -110,8 +110,9 @@
   box-shadow: 0 0 0 4px rgba(31, 123, 199, 0.15);
 }
 
-.cxp-sign__agree {
+.cxp-sign__form .cxp-sign__agree {
   display: flex;
+  align-items: flex-start;
   gap: 0.625rem;
   font-size: 0.9375rem;
   font-weight: 500;

@@ -34,6 +34,10 @@ export function ExplainerDigitalNav({
         const el = document.getElementById(item.id);
         if (el && el.getBoundingClientRect().top <= line) next = item.id;
       }
+      // At the very bottom the last section can't reach the line: it's the one being read.
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      const last = items[items.length - 1];
+      if (atEnd && last && document.getElementById(last.id)) next = last.id;
       setActive(next);
     };
     const onScroll = () => {

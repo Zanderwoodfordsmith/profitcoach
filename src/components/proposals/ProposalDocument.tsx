@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { PenLine } from "lucide-react";
+import { CircleCheck, PenLine } from "lucide-react";
 import { ExplainerDigitalNav } from "@/components/coachExplainer/ExplainerDigitalNav";
 import type { ExplainerCoach } from "@/lib/coachExplainer/fromBlueprint";
 import { parseProposalBody, type Proposal, type ProposalSection } from "@/lib/proposals/types";
@@ -19,7 +19,7 @@ export function ProposalDocument({
   coachName,
   sign,
 }: {
-  proposal: Pick<Proposal, "prospect_name" | "prospect_business" | "sections" | "sent_at" | "created_at">;
+  proposal: Pick<Proposal, "prospect_name" | "prospect_business" | "sections" | "sent_at" | "created_at" | "signed_at">;
   coach: ExplainerCoach | null;
   coachName: string;
   /** The signing block, or what was signed. */
@@ -75,10 +75,17 @@ export function ProposalDocument({
           coachName={coachName}
           actions={
             <>
-              <a className="cxd-btn cxd-btn--solid" href="#sign">
-                <PenLine size={16} strokeWidth={2} aria-hidden="true" />
-                Accept and sign
-              </a>
+              {proposal.signed_at ? (
+                <a className="cxd-btn cxd-btn--quiet" href="#sign">
+                  <CircleCheck size={16} strokeWidth={2} aria-hidden="true" />
+                  Signed
+                </a>
+              ) : (
+                <a className="cxd-btn cxd-btn--solid" href="#sign">
+                  <PenLine size={16} strokeWidth={2} aria-hidden="true" />
+                  Accept and sign
+                </a>
+              )}
               <PrintButton className="cxd-btn cxd-btn--quiet" />
             </>
           }
