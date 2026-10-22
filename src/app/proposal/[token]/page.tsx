@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { ProposalDocument } from "@/components/proposals/ProposalDocument";
+import { ProposalOpenBeacon } from "@/components/proposals/ProposalOpenBeacon";
 import { figtree } from "@/fonts";
 import { loadProposalByToken, loadProposalCoach } from "@/lib/proposals/store";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -34,6 +35,7 @@ export default async function ProposalPage({ params }: PageProps) {
   const { proposal, coach, coachName } = loaded;
   return (
     <div className={figtree.variable}>
+      <ProposalOpenBeacon token={proposal.share_token} />
       <ProposalDocument
         proposal={proposal}
         coach={coach}

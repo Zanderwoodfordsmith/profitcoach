@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { proposalUrl } from "@/lib/proposals/send";
 import { loadCoachProposal, toProposal } from "@/lib/proposals/store";
 import { cleanSections, PROPOSAL_COLUMNS } from "@/lib/proposals/types";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
@@ -13,7 +14,8 @@ export async function GET(request: Request, { params }: Ctx) {
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: 401 });
   const proposal = await loadCoachProposal(auth.userId, (await params).id);
   if (!proposal) return NextResponse.json({ error: "Proposal not found." }, { status: 404 });
-  return NextResponse.json({ proposal });
+  const { data: profile } = await supabaseAdmin.from("profiles").select("full_name").eq("id", auth.userId).maybeSingle();
+  return NextResponse.json({ proposal, url: proposalUrl(proposal.share_token), coach_name: (profile?.full_name as string | null) ?? "" });
 }
 
 /** Save edits: prospect details, sections, or archive. A signed proposal is locked. */
