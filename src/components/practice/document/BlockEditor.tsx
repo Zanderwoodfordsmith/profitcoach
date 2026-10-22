@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
@@ -8,6 +8,30 @@ import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 /** Same grey click-in box as the answer fields, so written sections edit the same way. */
 const FIELD =
   "bp-input w-full rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-2.5 text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] outline-none transition-[background-color,border-color,box-shadow] hover:border-[#d3dce6] hover:bg-[#f0f4f8] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)]";
+
+/**
+ * A textarea as tall as its text, refitted when its width changes (a phone,
+ * a folded step opening), so nothing is hidden below the fold of the box.
+ */
+function FitTextarea({ value, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { value: string }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let width = 0;
+    const fit = () => {
+      if (!el.clientWidth || el.clientWidth === width) return;
+      width = el.clientWidth;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight + 2}px`;
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [value]);
+  return <textarea ref={ref} value={value} {...props} />;
+}
 
 function Area({
   value,
@@ -22,7 +46,7 @@ function Area({
 }) {
   return (
     <div>
-      <textarea
+      <FitTextarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={Math.min(16, Math.max(2, value.split("\n").length + Math.floor(value.length / 60)))}
@@ -133,7 +157,7 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
                 <tr key={r} className="align-top">
                   {row.map((cell, c) => (
                     <td key={c}>
-                      <textarea
+                      <FitTextarea
                         value={cell}
                         rows={Math.max(1, Math.ceil(cell.length / 32))}
                         onChange={(e) =>

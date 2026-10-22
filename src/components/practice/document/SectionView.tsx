@@ -455,13 +455,16 @@ function ResultCards({ field }: { field: FieldSpec }) {
                 onClick={() => setOpen((prev) => (isOpen ? prev.filter((id) => id !== card.id) : [...prev, card.id]))}
                 className="flex min-w-0 flex-1 items-center gap-2.5 py-0.5 text-left"
               >
-                {kindLabel && !stories ? (
-                  <span className="shrink-0 rounded-full bg-[var(--bp-tint-strong)] px-2 py-0.5 text-[0.6875rem] font-semibold text-[var(--bp-blue)]">
-                    {kindLabel}
+                {/* On a phone the tag sits above the title, so the title keeps the width. */}
+                <span className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2.5">
+                  {kindLabel && !stories ? (
+                    <span className="shrink-0 rounded-full bg-[var(--bp-tint-strong)] px-2 py-0.5 text-[0.6875rem] font-semibold text-[var(--bp-blue)]">
+                      {kindLabel}
+                    </span>
+                  ) : null}
+                  <span className={`min-w-0 max-w-full truncate text-[0.9375rem] ${line ? "font-semibold text-[var(--bp-ink)]" : "font-medium text-[var(--bp-faint)]"}`}>
+                    {line || `${stories ? "Story" : "Result"} ${index + 1}`}
                   </span>
-                ) : null}
-                <span className={`min-w-0 truncate text-[0.9375rem] ${line ? "font-semibold text-[var(--bp-ink)]" : "font-medium text-[var(--bp-faint)]"}`}>
-                  {line || `${stories ? "Story" : "Result"} ${index + 1}`}
                 </span>
                 <ChevronDown className={`ml-auto h-4 w-4 shrink-0 text-[var(--bp-faint)] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden />
               </button>
@@ -1314,7 +1317,7 @@ function Fields({ section, changedFields, bcaFills }: { section: BlueprintSectio
                 "min-w-0",
                 cell.wide ? "@xl:col-span-2" : "",
                 inline ? "bp-inline" : "",
-                cell.nodes.length > 1 ? "grid grid-cols-1 gap-x-4 gap-y-5 min-[22rem]:grid-cols-2" : "",
+                cell.nodes.length > 1 ? "grid grid-cols-1 gap-x-4 gap-y-5 @md:grid-cols-2" : "",
               ]
                 .filter(Boolean)
                 .join(" ")

@@ -104,7 +104,7 @@ function ClampedCopy({
       <button
         type="button"
         onClick={onEdit}
-        className="w-full text-left whitespace-pre-wrap text-[14px] leading-[1.4] text-[#191919]"
+        className="w-full text-left whitespace-pre-wrap [overflow-wrap:anywhere] text-[14px] leading-[1.4] text-[#191919]"
       >
         {shown}
       </button>
@@ -500,7 +500,7 @@ export function ProfileOptimizerCanvas({
               onChange={onAbout}
               maxLength={FIELD_LIMITS.about}
               placeholder="Write to the owner — pain, mechanism, proof, next step"
-              className="mt-3 whitespace-pre-wrap text-[14px] leading-[1.4] text-[#191919]"
+              className="mt-3 whitespace-pre-wrap [overflow-wrap:anywhere] text-[14px] leading-[1.4] text-[#191919]"
             />
           ) : about.trim() ? (
             <ClampedCopy
@@ -565,13 +565,13 @@ export function ProfileOptimizerCanvas({
               onChange={onFeaturedNotes}
               maxLength={FIELD_LIMITS.featuredNotes}
               placeholder="What to pin, in order — newsletter, proof, lead magnet — and why"
-              className="mt-3 whitespace-pre-wrap text-[14px] leading-[1.4] text-[#191919]"
+              className="mt-3 whitespace-pre-wrap [overflow-wrap:anywhere] text-[14px] leading-[1.4] text-[#191919]"
             />
           ) : featuredNotes.trim() ? (
             <button
               type="button"
               onClick={() => onSelect("featured")}
-              className="mt-3 w-full text-left whitespace-pre-wrap text-[14px] leading-[1.4] text-[#191919]"
+              className="mt-3 w-full text-left whitespace-pre-wrap [overflow-wrap:anywhere] text-[14px] leading-[1.4] text-[#191919]"
             >
               {featuredNotes}
             </button>
