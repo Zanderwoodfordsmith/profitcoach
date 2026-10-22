@@ -24,3 +24,20 @@ export function defaultProposalEmail(input: { prospectName: string; prospectBusi
     ].join("\n\n"),
   };
 }
+
+/** The covering email for a new client's welcome pack. */
+export function defaultWelcomeEmail(input: { prospectName: string; prospectBusiness: string | null; coachName: string; url: string }) {
+  const first = input.prospectName.trim().split(/\s+/)[0] || "there";
+  const coachFirst = input.coachName.trim().split(/\s+/)[0] || input.coachName;
+  return {
+    subject: "Welcome, and your first month",
+    message: [
+      `Hi ${first},`,
+      `Welcome. Here's your welcome pack:`,
+      input.url,
+      `It covers your first month, how we'll work together, and what I need from you before our first session.`,
+      `See you soon.`,
+      coachFirst,
+    ].join("\n\n"),
+  };
+}

@@ -2,11 +2,11 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ArrowLeft, Check, Copy, ExternalLink, Eye, EyeOff, Loader2, Pencil, Send } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ArrowLeft, Check, Copy, ExternalLink, Eye, EyeOff, Gift, Loader2, Pencil, Send, Sparkles } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
-import { defaultProposalEmail } from "@/lib/proposals/send";
+import { defaultProposalEmail, defaultWelcomeEmail } from "@/lib/proposals/send";
 import { proposalPath, type Proposal, type ProposalSection } from "@/lib/proposals/types";
 import { ProposalBody } from "./ProposalBody";
 import { ProposalStatusPill, proposalActivity } from "./ProposalStatus";
@@ -25,7 +25,12 @@ const EMPTY_HINT: Partial<Record<ProposalSection["key"], string>> = {
  */
 export function ProposalEditor({ id }: { id: string }) {
   const { impersonatingCoachId } = useImpersonation();
-  const base = usePathname().startsWith("/admin") ? "/admin/proposals" : "/coach/proposals";
+  const router = useRouter();
+  const pathname = usePathname();
+  const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
+  const welcomeRoute = pathname.includes("/welcome-packs");
+  const base = `${prefix}/${welcomeRoute ? "welcome-packs" : "proposals"}`;
+  const [making, setMaking] = useState(false);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -74,13 +79,28 @@ export function ProposalEditor({ id }: { id: string }) {
   }
 
   const locked = proposal.status === "signed";
+  const welcome = proposal.kind === "welcome";
+
+  const makeWelcomePack = async () => {
+    setMaking(true);
+    const headers = await getCoachAuthHeaders(impersonatingCoachId);
+    if (!headers) return;
+    const res = await fetch("/api/coach/proposals", { method: "POST", headers, body: JSON.stringify({ from_proposal: proposal.id }) });
+    const body = (await res.json().catch(() => null)) as { proposal?: Proposal; error?: string } | null;
+    setMaking(false);
+    if (!res.ok || !body?.proposal) {
+      setError(body?.error ?? "Could not start the welcome pack.");
+      return;
+    }
+    router.push(`${prefix}/welcome-packs/${body.proposal.id}`);
+  };
   const setSection = (key: string, next: Partial<ProposalSection>) =>
     save({ sections: proposal.sections.map((s) => (s.key === key ? { ...s, ...next } : s)) });
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
       <Link href={base} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800">
-        <ArrowLeft className="h-4 w-4" aria-hidden /> All proposals
+        <ArrowLeft className="h-4 w-4" aria-hidden /> {welcome ? "All welcome packs" : "All proposals"}
       </Link>
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
@@ -92,6 +112,17 @@ export function ProposalEditor({ id }: { id: string }) {
           <p className="mt-0.5 text-sm text-slate-500">{proposalActivity(proposal)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {locked && !welcome ? (
+            <button
+              type="button"
+              disabled={making}
+              onClick={() => void makeWelcomePack()}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#0c5290] px-4 text-sm font-semibold text-white hover:bg-[#08396a] disabled:opacity-50"
+            >
+              {making ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Gift className="h-4 w-4" aria-hidden />}
+              Make their welcome pack
+            </button>
+          ) : null}
           {locked || sending ? null : (
             <button
               type="button"
@@ -164,10 +195,26 @@ export function ProposalEditor({ id }: { id: string }) {
                 return ok;
               }}
               onToggle={() => void setSection(s.key, { hidden: !s.hidden })}
+              draftWithAva={
+                welcome && s.key === "note"
+                  ? async () => {
+                      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+                      if (!headers) return null;
+                      const res = await fetch(`/api/coach/proposals/${proposal.id}/welcome-note`, { method: "POST", headers, body: "{}" });
+                      const body = (await res.json().catch(() => null)) as { note?: string; error?: string } | null;
+                      if (!res.ok || !body?.note) {
+                        setError(body?.error ?? "Ava couldn't write it this time.");
+                        return null;
+                      }
+                      setError(null);
+                      return body.note;
+                    }
+                  : undefined
+              }
             />
           ))}
           <p className="text-xs text-slate-500">
-            They sign at the end, under &ldquo;Accept and sign&rdquo;. Sections you hide, or leave empty, don&apos;t show.
+            {welcome ? "" : "They sign at the end, under “Accept and sign”. "}Sections you hide, or leave empty, don&apos;t show.
           </p>
         </div>
       </div>
@@ -190,7 +237,12 @@ function SendPanel({
   onSent: (proposal: Proposal) => void;
 }) {
   const { impersonatingCoachId } = useImpersonation();
-  const draft = defaultProposalEmail({ prospectName: proposal.prospect_name, prospectBusiness: proposal.prospect_business, coachName, url });
+  const draft = (proposal.kind === "welcome" ? defaultWelcomeEmail : defaultProposalEmail)({
+    prospectName: proposal.prospect_name,
+    prospectBusiness: proposal.prospect_business,
+    coachName,
+    url,
+  });
   const [to, setTo] = useState(proposal.prospect_email ?? "");
   const [subject, setSubject] = useState(draft.subject);
   const [message, setMessage] = useState(draft.message);
@@ -330,6 +382,7 @@ function SectionCard({
   onCancel,
   onSave,
   onToggle,
+  draftWithAva,
 }: {
   section: ProposalSection;
   locked: boolean;
@@ -338,7 +391,10 @@ function SectionCard({
   onCancel: () => void;
   onSave: (next: Partial<ProposalSection>) => Promise<boolean>;
   onToggle: () => void;
+  /** Welcome note only: Ava writes it in the coach's voice. */
+  draftWithAva?: () => Promise<string | null>;
 }) {
+  const [drafting, setDrafting] = useState(false);
   const [title, setTitle] = useState(section.title);
   const [body, setBody] = useState(section.body);
   const [saving, setSaving] = useState(false);
@@ -370,6 +426,22 @@ function SectionCard({
           />
         </label>
         <p className="text-xs text-slate-500">A blank line starts a new paragraph. Start a line with ## for a small heading, or - for a ticked point.</p>
+        {draftWithAva ? (
+          <button
+            type="button"
+            disabled={drafting}
+            onClick={async () => {
+              setDrafting(true);
+              const note = await draftWithAva();
+              setDrafting(false);
+              if (note) setBody(note);
+            }}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 hover:border-sky-300 disabled:opacity-50"
+          >
+            {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
+            {drafting ? "Ava is writing…" : "Draft it with Ava, in your voice"}
+          </button>
+        ) : null}
         <div className="flex gap-2">
           <button
             type="button"

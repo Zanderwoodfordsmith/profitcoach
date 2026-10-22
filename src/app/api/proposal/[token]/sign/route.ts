@@ -18,6 +18,7 @@ const APP_BASE = (process.env.APP_BASE_URL || "https://app.theprofitcoach.com").
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const proposal = await loadProposalByToken((await params).token);
   if (!proposal) return NextResponse.json({ error: "This proposal isn't available." }, { status: 404 });
+  if (proposal.kind === "welcome") return NextResponse.json({ error: "A welcome pack has nothing to sign." }, { status: 400 });
   if (proposal.status === "signed") return NextResponse.json({ error: "This proposal is already signed." }, { status: 409 });
 
   const body = (await request.json().catch(() => null)) as { name?: string; agree?: boolean } | null;

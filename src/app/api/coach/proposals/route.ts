@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { defaultProposalSections } from "@/lib/proposals/defaults";
+import { defaultProposalSections, defaultWelcomeSections } from "@/lib/proposals/defaults";
 import { loadProposalCoach, toProposal } from "@/lib/proposals/store";
 import { PROPOSAL_COLUMNS } from "@/lib/proposals/types";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
@@ -7,14 +7,16 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
-/** The coach's proposals, newest first. */
+/** The coach's proposals (or ?kind=welcome, welcome packs), newest first. */
 export async function GET(request: Request) {
   const auth = await requireCoachRequest(request, { allowAdminSelf: true });
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: 401 });
+  const kind = new URL(request.url).searchParams.get("kind") === "welcome" ? "welcome" : "proposal";
   const { data, error } = await supabaseAdmin
     .from("coach_proposals")
     .select(PROPOSAL_COLUMNS)
     .eq("coach_id", auth.userId)
+    .eq("kind", kind)
     .neq("status", "archived")
     .order("updated_at", { ascending: false })
     .limit(200);
@@ -22,7 +24,11 @@ export async function GET(request: Request) {
   return NextResponse.json({ proposals: (data ?? []).map(toProposal) });
 }
 
-/** Start a proposal for one prospect, filled from the coach's Blueprint. */
+/**
+ * Start a proposal for one prospect, or a welcome pack for one client
+ * (kind: "welcome", or from_proposal: a signed proposal's id), filled from the
+ * coach's Blueprint.
+ */
 export async function POST(request: Request) {
   const auth = await requireCoachRequest(request, { allowAdminSelf: true });
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: 401 });
@@ -31,7 +37,27 @@ export async function POST(request: Request) {
     prospect_business?: string;
     prospect_email?: string;
     contact_id?: string;
+    kind?: string;
+    from_proposal?: string;
   } | null;
+  // A welcome pack for the client who just signed: their details carry over.
+  if (body?.from_proposal) {
+    const { data: from } = await supabaseAdmin
+      .from("coach_proposals")
+      .select("prospect_name, prospect_business, prospect_email, sent_to, contact_id")
+      .eq("id", body.from_proposal)
+      .eq("coach_id", auth.userId)
+      .maybeSingle();
+    if (!from) return NextResponse.json({ error: "Proposal not found." }, { status: 404 });
+    Object.assign(body, {
+      kind: "welcome",
+      prospect_name: from.prospect_name,
+      prospect_business: from.prospect_business ?? undefined,
+      prospect_email: from.prospect_email ?? from.sent_to ?? undefined,
+      contact_id: from.contact_id ?? undefined,
+    });
+  }
+  const kind = body?.kind === "welcome" ? "welcome" : "proposal";
   const name = body?.prospect_name?.trim().slice(0, 120);
   if (!name) return NextResponse.json({ error: "Add the prospect's name." }, { status: 400 });
   const business = body?.prospect_business?.trim().slice(0, 160) || null;
@@ -46,15 +72,21 @@ export async function POST(request: Request) {
   }
 
   const coach = await loadProposalCoach(auth.userId);
+  const { data: profile } = await supabaseAdmin.from("profiles").select("full_name").eq("id", auth.userId).maybeSingle();
+  const coachName = (profile?.full_name as string | null)?.trim() || coach?.site.name || "";
   const { data, error } = await supabaseAdmin
     .from("coach_proposals")
     .insert({
+      kind,
       coach_id: auth.userId,
       contact_id: contactId,
       prospect_name: name,
       prospect_business: business,
       prospect_email: email,
-      sections: defaultProposalSections({ coach, prospectName: name, prospectBusiness: business }),
+      sections:
+        kind === "welcome"
+          ? defaultWelcomeSections({ coach, coachName, clientName: name })
+          : defaultProposalSections({ coach, prospectName: name, prospectBusiness: business }),
     })
     .select(PROPOSAL_COLUMNS)
     .single();

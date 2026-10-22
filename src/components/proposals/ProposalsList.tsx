@@ -6,14 +6,43 @@ import { usePathname, useRouter } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
-import type { Proposal } from "@/lib/proposals/types";
+import type { Proposal, ProposalKind } from "@/lib/proposals/types";
 import { ProposalStatusPill, proposalActivity } from "./ProposalStatus";
 
-/** Get Clients → Proposals: every proposal the coach has started, and where each one stands. */
-export function ProposalsList() {
+type ClientOption = { id: string; full_name: string | null; business_name: string | null; email: string | null };
+
+const TEXT: Record<ProposalKind, { heading: string; lead: string; add: string; who: string; start: string; emptyTitle: string; empty: string }> = {
+  proposal: {
+    heading: "Proposals",
+    lead: "A proposal for each owner, written from your Blueprint. Change any part, send the link, and see when they open and sign it.",
+    add: "New proposal",
+    who: "Who is it for?",
+    start: "Start the proposal",
+    emptyTitle: "No proposals yet",
+    empty: "After a good Profit Roadmap call, start one here. It fills in from your Blueprint, so it takes minutes.",
+  },
+  welcome: {
+    heading: "Welcome packs",
+    lead: "A welcome pack for each new client: your first month together, how you work, and what you need from them. Send the link or save a PDF.",
+    add: "New welcome pack",
+    who: "Which client?",
+    start: "Make the welcome pack",
+    emptyTitle: "No welcome packs yet",
+    empty: "When a client signs, make theirs here, or from the signed proposal.",
+  },
+};
+
+/**
+ * Get Clients → Proposals, or Keep Clients → Welcome packs: every one the
+ * coach has started, and where each one stands.
+ */
+export function ProposalsList({ kind = "proposal" }: { kind?: ProposalKind }) {
   const { impersonatingCoachId } = useImpersonation();
   const router = useRouter();
-  const base = usePathname().startsWith("/admin") ? "/admin/proposals" : "/coach/proposals";
+  const t = TEXT[kind];
+  const base = `${usePathname().startsWith("/admin") ? "/admin" : "/coach"}/${kind === "welcome" ? "welcome-packs" : "proposals"}`;
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [contactId, setContactId] = useState("");
   const [rows, setRows] = useState<Proposal[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -25,7 +54,7 @@ export function ProposalsList() {
     void (async () => {
       const headers = await getCoachAuthHeaders(impersonatingCoachId);
       if (!headers || cancelled) return;
-      const res = await fetch("/api/coach/proposals", { headers });
+      const res = await fetch(`/api/coach/proposals?kind=${kind}`, { headers });
       const body = (await res.json().catch(() => null)) as { proposals?: Proposal[]; error?: string } | null;
       if (cancelled) return;
       if (!res.ok || !body?.proposals) setError(body?.error ?? "Could not load your proposals.");
@@ -34,7 +63,23 @@ export function ProposalsList() {
     return () => {
       cancelled = true;
     };
-  }, [impersonatingCoachId]);
+  }, [impersonatingCoachId, kind]);
+
+  // Welcome packs start from one of the coach's clients.
+  useEffect(() => {
+    if (kind !== "welcome") return;
+    let cancelled = false;
+    void (async () => {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers || cancelled) return;
+      const res = await fetch("/api/coach/clients", { headers }).catch(() => null);
+      const body = (await res?.json().catch(() => null)) as { clients?: ClientOption[] } | null;
+      if (!cancelled && body?.clients) setClients(body.clients);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [impersonatingCoachId, kind]);
 
   const create = async () => {
     if (!form.prospect_name.trim()) {
@@ -44,7 +89,11 @@ export function ProposalsList() {
     setSaving(true);
     const headers = await getCoachAuthHeaders(impersonatingCoachId);
     if (!headers) return;
-    const res = await fetch("/api/coach/proposals", { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch("/api/coach/proposals", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ...form, kind, contact_id: contactId || undefined }),
+    });
     const body = (await res.json().catch(() => null)) as { proposal?: Proposal; error?: string } | null;
     setSaving(false);
     if (!res.ok || !body?.proposal) {
@@ -61,10 +110,8 @@ export function ProposalsList() {
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Proposals</h2>
-          <p className="mt-0.5 max-w-xl text-sm text-slate-600">
-            A proposal for each owner, written from your Blueprint. Change any part, send the link, and see when they open and sign it.
-          </p>
+          <h2 className="text-lg font-semibold text-slate-900">{t.heading}</h2>
+          <p className="mt-0.5 max-w-xl text-sm text-slate-600">{t.lead}</p>
         </div>
         {adding ? null : (
           <button
@@ -76,7 +123,7 @@ export function ProposalsList() {
             className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#0c5290] px-4 text-sm font-semibold text-white hover:bg-[#08396a]"
           >
             <Plus className="h-4 w-4" aria-hidden />
-            New proposal
+            {t.add}
           </button>
         )}
       </div>
@@ -89,7 +136,29 @@ export function ProposalsList() {
             void create();
           }}
         >
-          <p className="text-sm font-semibold text-slate-900">Who is it for?</p>
+          <p className="text-sm font-semibold text-slate-900">{t.who}</p>
+          {kind === "welcome" && clients.length ? (
+            <label className="mt-3 block max-w-sm text-xs font-medium text-slate-600">
+              Pick from your clients
+              <select
+                id="proposal-client"
+                className={`${input} mt-1`}
+                value={contactId}
+                onChange={(e) => {
+                  const c = clients.find((x) => x.id === e.target.value);
+                  setContactId(e.target.value);
+                  if (c) setForm({ prospect_name: c.full_name ?? "", prospect_business: c.business_name ?? "", prospect_email: c.email ?? "" });
+                }}
+              >
+                <option value="">Choose a client, or type below</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {[c.full_name, c.business_name].filter(Boolean).join(", ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="text-xs font-medium text-slate-600">
               Their name
@@ -107,7 +176,7 @@ export function ProposalsList() {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button type="submit" disabled={saving} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#0c5290] px-4 text-sm font-semibold text-white hover:bg-[#08396a] disabled:opacity-50">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              {saving ? "Writing it from your Blueprint…" : "Start the proposal"}
+              {saving ? "Writing it from your Blueprint…" : t.start}
             </button>
             <button type="button" onClick={() => setAdding(false)} className="h-9 rounded-full px-3 text-sm font-medium text-slate-600 hover:text-slate-900">
               Cancel
@@ -125,10 +194,8 @@ export function ProposalsList() {
           </p>
         ) : rows && rows.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 px-6 py-12 text-center">
-            <p className="text-sm font-semibold text-slate-900">No proposals yet</p>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">
-              After a good Profit Roadmap call, start one here. It fills in from your Blueprint, so it takes minutes.
-            </p>
+            <p className="text-sm font-semibold text-slate-900">{t.emptyTitle}</p>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">{t.empty}</p>
           </div>
         ) : rows ? (
           <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">

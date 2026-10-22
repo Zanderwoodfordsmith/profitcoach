@@ -19,14 +19,16 @@ export function ProposalDocument({
   coachName,
   sign,
 }: {
-  proposal: Pick<Proposal, "prospect_name" | "prospect_business" | "sections" | "sent_at" | "created_at" | "signed_at">;
+  proposal: Pick<Proposal, "kind" | "prospect_name" | "prospect_business" | "sections" | "sent_at" | "created_at" | "signed_at">;
   coach: ExplainerCoach | null;
   coachName: string;
-  /** The signing block, or what was signed. */
-  sign: ReactNode;
+  /** The signing block, or what was signed. A welcome pack has none. */
+  sign: ReactNode | null;
 }) {
+  const welcome = proposal.kind === "welcome";
   const sections = proposal.sections.filter((s) => !s.hidden && s.body.trim());
-  const nav = [...sections.map((s) => ({ id: s.key, title: s.title })), { id: "sign", title: "Accept and sign" }];
+  const nav = [...sections.map((s) => ({ id: s.key, title: s.title })), ...(sign ? [{ id: "sign", title: "Accept and sign" }] : [])];
+  const clientFirst = proposal.prospect_name.trim().split(/\s+/)[0];
   const date = new Date(proposal.sent_at ?? proposal.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const photo = coach?.site.photo;
 
@@ -37,17 +39,34 @@ export function ProposalDocument({
           <div className="cxd-hero__top">
             {/* eslint-disable-next-line @next/next/no-img-element -- small SVG logo. */}
             <img className="cxd-logo" src="/brand/profit-coach-logo-white.svg" alt="The Profit Coach" />
-            <p>Proposal · {date}</p>
+            <p>
+              {welcome ? "Welcome pack" : "Proposal"} · {date}
+            </p>
           </div>
           <div className="cxd-hero__grid">
             <div>
-              <h1 className="cxd-hero__title">
-                <span>A proposal for</span>
-                <strong>{proposal.prospect_business || proposal.prospect_name}</strong>
-              </h1>
-              <p className="cxd-hero__standfirst">
-                Prepared for {proposal.prospect_name} by {coachName}.
-              </p>
+              {welcome ? (
+                <>
+                  <h1 className="cxd-hero__title">
+                    <span>Welcome to coaching,</span>
+                    <strong>{clientFirst}.</strong>
+                  </h1>
+                  <p className="cxd-hero__standfirst">
+                    {proposal.prospect_business ? `${proposal.prospect_business} and ${coachName}.` : `With ${coachName}.`} Your first
+                    month, how we work together, and what I need from you.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="cxd-hero__title">
+                    <span>A proposal for</span>
+                    <strong>{proposal.prospect_business || proposal.prospect_name}</strong>
+                  </h1>
+                  <p className="cxd-hero__standfirst">
+                    Prepared for {proposal.prospect_name} by {coachName}.
+                  </p>
+                </>
+              )}
             </div>
             <div className="cxd-hero__coach">
               {photo ? (
@@ -75,7 +94,7 @@ export function ProposalDocument({
           coachName={coachName}
           actions={
             <>
-              {proposal.signed_at ? (
+              {!sign ? null : proposal.signed_at ? (
                 <a className="cxd-btn cxd-btn--quiet" href="#sign">
                   <CircleCheck size={16} strokeWidth={2} aria-hidden="true" />
                   Signed
@@ -94,12 +113,14 @@ export function ProposalDocument({
           {sections.map((section) =>
             section.key === "investment" ? <Investment key={section.key} section={section} /> : <Part key={section.key} section={section} />
           )}
-          <section id="sign" className="cxd-section cxp-sign" aria-labelledby="sign-h">
-            <h2 id="sign-h" className="cxd-h2">
-              <strong>Accept and sign</strong>
-            </h2>
-            {sign}
-          </section>
+          {sign ? (
+            <section id="sign" className="cxd-section cxp-sign" aria-labelledby="sign-h">
+              <h2 id="sign-h" className="cxd-h2">
+                <strong>Accept and sign</strong>
+              </h2>
+              {sign}
+            </section>
+          ) : null}
         </main>
       </div>
     </div>

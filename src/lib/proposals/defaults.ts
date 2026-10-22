@@ -1,4 +1,14 @@
-import { investment, PHASES, questions, timing, yourCall, type ExplainerLength } from "@/lib/coachExplainer/copy";
+import {
+  investment,
+  LEVELS,
+  PHASES,
+  phaseOne,
+  questions,
+  score,
+  timing,
+  yourCall,
+  type ExplainerLength,
+} from "@/lib/coachExplainer/copy";
 import type { ExplainerCoach } from "@/lib/coachExplainer/fromBlueprint";
 import type { ProposalSection } from "./types";
 
@@ -71,5 +81,74 @@ export function defaultProposalSections(input: {
     { key: "next", title: "Next steps", body: next },
     { key: "faq", title: "Your questions", body: faq },
     { key: "terms", title: "Terms", body: "" },
+  ];
+}
+
+/**
+ * A new client's welcome pack: what the first month holds, how the coaching
+ * runs, what the coach needs from them, and the system behind it. The
+ * welcome note can be rewritten by AI in the coach's voice.
+ */
+export function defaultWelcomeSections(input: {
+  coach: ExplainerCoach | null;
+  coachName: string;
+  clientName: string;
+}): ProposalSection[] {
+  const first = input.clientName.trim().split(/\s+/)[0] || "there";
+  const coachFirst = input.coachName.trim().split(/\s+/)[0] || input.coachName;
+  const coach = input.coach;
+
+  const note = [
+    `${first}, welcome. I'm glad we're doing this together.`,
+    "This pack sets out how our first month works, how we'll work together after that, and what I need from you to get started. Keep it to hand.",
+    coachFirst,
+  ].join("\n\n");
+
+  const firstMonth = [
+    phaseOne.lead,
+    ...phaseOne.sessions.map((session, i) => `## Session ${i + 1}: ${session.title}\n${session.text}`),
+    `## ${phaseOne.systemHeading}\n${phaseOne.system.map((item) => `- ${item}`).join("\n")}`,
+  ].join("\n\n");
+
+  const together = [
+    coach?.rhythm ?? "Weekly sessions in the first month, then two 90-minute sessions a month.",
+    "Between sessions you make the changes we agreed. Your scoreboard shows whether they're working before we next speak.",
+    "Every 90 days we re-score the business, look at what moved, and set the next 90-day plan.",
+  ].join("\n\n");
+
+  const need = [
+    "A few things make the first month count:",
+    [
+      "- Your numbers: last year's turnover and profit, and this year's so far",
+      "- The full BOSS Diagnostic: 50 questions, about 10 minutes, before our first session",
+      "- An hour or two a week between sessions to make the changes",
+      "- Honest answers. The score only helps if it's true",
+      "- Your team, once we reach the areas they run",
+    ].join("\n"),
+  ].join("\n\n");
+
+  const reach = [
+    "Message or email me any time between sessions. I reply within one working day.",
+    coach?.website ? `My website: ${coach.website}` : "",
+    "If something urgent comes up before a session, tell me straight away. We can change the plan.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const system = [
+    `${score.lead} ${score.close}`,
+    `## ${score.foundation.name}\n${score.foundation.text}`,
+    ...score.pillars.map((pillar) => `## ${pillar.name}: ${pillar.text}\n${pillar.areas.map((area) => `- ${area}`).join("\n")}`),
+    `## The five levels\n${LEVELS.map((level, i) => `- ${i + 1}. ${level.name}: ${level.text}`).join("\n")}`,
+    "Your score places you on one level. The work is moving up, one level at a time.",
+  ].join("\n\n");
+
+  return [
+    { key: "note", title: `Welcome, ${first}`, body: note },
+    { key: "first", title: "Your first month", body: firstMonth },
+    { key: "together", title: "How we work together", body: together },
+    { key: "need", title: "What I need from you", body: need },
+    { key: "reach", title: "How to reach me", body: reach },
+    { key: "system", title: "The system behind it", body: system },
   ];
 }

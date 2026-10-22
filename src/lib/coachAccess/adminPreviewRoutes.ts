@@ -23,6 +23,7 @@ export const ADMIN_PREVIEW_COACH_ROUTES: AdminPreviewCoachRoute[] = [
   { prefix: "/coach/clients/coaching", fallback: "/coach/clients" },
   { prefix: "/coach/profit-levers", fallback: "/coach/clients" },
   { prefix: "/coach/proposals", fallback: "/coach/script" },
+  { prefix: "/coach/welcome-packs", fallback: "/coach/clients" },
   {
     match: (pathname) => CLIENT_WORKSPACE_PATH.test(pathname),
     fallback: "/coach/clients",

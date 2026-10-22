@@ -1,6 +1,21 @@
 /** A coach's proposal for one prospect (table coach_proposals). */
 
-export const PROPOSAL_SECTION_KEYS = ["intro", "how", "investment", "next", "faq", "terms"] as const;
+export const PROPOSAL_SECTION_KEYS = [
+  // A proposal
+  "intro",
+  "how",
+  "investment",
+  "next",
+  "faq",
+  "terms",
+  // A welcome pack
+  "note",
+  "first",
+  "together",
+  "need",
+  "reach",
+  "system",
+] as const;
 export type ProposalSectionKey = (typeof PROPOSAL_SECTION_KEYS)[number];
 
 /**
@@ -17,8 +32,12 @@ export type ProposalSection = {
 
 export type ProposalStatus = "draft" | "sent" | "opened" | "signed" | "archived";
 
+/** A proposal (signed online) or a client's welcome pack (no signing). Same engine. */
+export type ProposalKind = "proposal" | "welcome";
+
 export type Proposal = {
   id: string;
+  kind: ProposalKind;
   coach_id: string;
   contact_id: string | null;
   prospect_name: string;
@@ -40,7 +59,7 @@ export type Proposal = {
 };
 
 export const PROPOSAL_COLUMNS =
-  "id, coach_id, contact_id, prospect_name, prospect_business, prospect_email, title, sections, status, share_token, sent_at, sent_to, first_opened_at, last_opened_at, open_count, signed_at, signed_name, created_at, updated_at";
+  "id, kind, coach_id, contact_id, prospect_name, prospect_business, prospect_email, title, sections, status, share_token, sent_at, sent_to, first_opened_at, last_opened_at, open_count, signed_at, signed_name, created_at, updated_at";
 
 /** Keep only well-formed sections, in a known order of keys, each once. */
 export function cleanSections(raw: unknown): ProposalSection[] {
@@ -102,4 +121,9 @@ export function parseProposalBody(body: string): ProposalBlock[] {
 
 export function proposalPath(token: string): string {
   return `/proposal/${token}`;
+}
+
+/** Where the coach edits it: Get Clients → Proposals, or Keep Clients → Welcome packs. */
+export function proposalEditorBase(kind: ProposalKind, prefix: "/coach" | "/admin"): string {
+  return kind === "welcome" ? `${prefix}/welcome-packs` : `${prefix}/proposals`;
 }
