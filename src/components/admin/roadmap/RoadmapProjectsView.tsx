@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { ArrowRight, CalendarRange, Loader2 } from "lucide-react";
 import {
   PROJECT_EASE_LEVELS,
   PROJECT_STAGE_META,
@@ -10,65 +10,112 @@ import {
   type RoadmapProject,
 } from "@/lib/roadmap/projectTypes";
 import { ROADMAP_IMPACT_LEVELS, type RoadmapJob } from "@/lib/roadmap/types";
+import { Caret, MetaDropdown, ScoreDropdown, useDismiss } from "./roadmapUi";
+import { RoadmapProjectsViewV1 } from "./RoadmapProjectsViewV1";
 
 /**
- * Projects view: one row per project, so Zander steers projects, not jobs.
- * A loose 12-week timeline on top, then each stage (Now, Next, Later, Parked)
- * with the project's goal, its own impact and ease, loose dates and where its
- * jobs stand, and an impact by ease grid of projects at the foot.
+ * Projects view: one row per project, in the List view's look (sticky column
+ * headings, big group headings, coloured score pills). A loose 12-week
+ * timeline on top; Now, Next, Later and Parked below; where each project sits
+ * on impact and ease at the foot. The goal opens under a row, not in it.
  */
 
 type Props = {
   jobs: RoadmapJob[];
   authHeaders: () => Promise<Record<string, string> | null>;
-  /** Open the List view filtered to this project. */
   onOpenProject: (name: string) => void;
+  /** Height of the sticky page header, so the column headings stick under it. */
+  stickyTop: number;
 };
 
 type Row = RoadmapProject & { saved: boolean };
 
-const WEEKS = 12;
 const DAY = 86_400_000;
-const SCORES = [1, 2, 3, 4, 5] as const;
+const WEEKS = 12;
+const LAYOUT_KEY = "roadmap-projects-layout";
 
-const STAGE_STYLE: Record<ProjectStage, { bar: string; dot: string; chip: string }> = {
-  now: { bar: "bg-[#0c5290]", dot: "bg-[#0c5290]", chip: "bg-[#0c5290] text-white" },
-  next: { bar: "bg-sky-400", dot: "bg-sky-400", chip: "bg-sky-100 text-sky-900" },
-  later: { bar: "bg-slate-300", dot: "bg-slate-300", chip: "bg-slate-100 text-slate-700" },
-  parked: { bar: "bg-amber-300", dot: "bg-amber-300", chip: "bg-amber-50 text-amber-900" },
+/** Now is the brand navy, Next the sky, Later quiet, Parked amber. */
+const STAGE_TONE: Record<ProjectStage, { dot: string; bar: string; pill: string; chip: string }> = {
+  now: { dot: "bg-[#0c5290]", bar: "bg-[#0c5290]", pill: "bg-[#0c5290] text-white", chip: "bg-[#0c5290] text-white" },
+  next: { dot: "bg-sky-500", bar: "bg-sky-500", pill: "bg-sky-100 text-sky-800", chip: "bg-sky-100 text-sky-900" },
+  later: { dot: "bg-slate-400", bar: "bg-slate-300", pill: "bg-slate-200/80 text-slate-700", chip: "bg-slate-100 text-slate-700" },
+  parked: { dot: "bg-amber-400", bar: "bg-amber-300", pill: "bg-amber-100 text-amber-800", chip: "bg-amber-50 text-amber-900" },
 };
 
-const SHIPPED = new Set(["done", "staged", "live"]);
-
-function mondayOf(d: Date): Date {
-  const out = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dow = (out.getUTCDay() + 6) % 7;
-  return new Date(out.getTime() - dow * DAY);
-}
+const COLUMNS = [
+  { key: "project", label: "Project", width: 300 },
+  { key: "jobs", label: "Where it stands", width: 290 },
+  { key: "impact", label: "Impact", width: 150 },
+  { key: "ease", label: "Ease", width: 180 },
+  { key: "dates", label: "When", width: 200 },
+  { key: "stage", label: "Stage", width: 110 },
+] as const;
+const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0);
 
 function parseDay(s: string | null): number | null {
   return s ? Date.parse(`${s}T00:00:00Z`) : null;
 }
 
-function shortDate(t: number): string {
+function short(t: number): string {
   return new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 }
 
-function summarise(jobs: RoadmapJob[]) {
-  const count = (statuses: string[]) => jobs.filter((j) => statuses.includes(j.status)).length;
-  return {
-    building: count(["in_progress"]),
-    review: count(["review"]),
-    queued: count(["up_next", "todo"]),
-    ideas: count(["evaluate"]),
-    shipped: jobs.filter((j) => SHIPPED.has(j.status)).length,
-    total: jobs.filter((j) => j.status !== "vetoed").length,
-  };
+function mondayOf(t: number): number {
+  const d = new Date(t);
+  const utc = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return utc - ((new Date(utc).getUTCDay() + 6) % 7) * DAY;
 }
 
-export function RoadmapProjectsView({ jobs, authHeaders, onOpenProject }: Props) {
+function counts(jobs: RoadmapJob[]) {
+  const n = (statuses: string[]) => jobs.filter((j) => statuses.includes(j.status)).length;
+  return { review: n(["review"]), building: n(["in_progress"]), todo: n(["up_next", "todo"]), shipped: n(["done", "staged", "live"]) };
+}
+
+export function RoadmapProjectsView(props: Props) {
+  const [layout, setLayout] = useState<"new" | "v1">(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(LAYOUT_KEY) === "v1" ? "v1" : "new";
+    } catch {
+      return "new";
+    }
+  });
+  const pick = (next: "new" | "v1") => {
+    setLayout(next);
+    try {
+      window.localStorage.setItem(LAYOUT_KEY, next);
+    } catch {
+      // Remembering the layout is only a convenience.
+    }
+  };
+  const toggle = (
+    <p className="mt-6 text-xs text-slate-400">
+      {layout === "new" ? "Comparing? " : "This is the first version. "}
+      <button type="button" onClick={() => pick(layout === "new" ? "v1" : "new")} className="font-medium text-slate-500 underline underline-offset-2 hover:text-slate-800">
+        {layout === "new" ? "See the first version" : "Back to the new layout"}
+      </button>
+    </p>
+  );
+  if (layout === "v1") {
+    return (
+      <>
+        <RoadmapProjectsViewV1 jobs={props.jobs} authHeaders={props.authHeaders} onOpenProject={props.onOpenProject} />
+        {toggle}
+      </>
+    );
+  }
+  return (
+    <>
+      <ProjectsTable {...props} />
+      {toggle}
+    </>
+  );
+}
+
+function ProjectsTable({ jobs, authHeaders, onOpenProject, stickyTop }: Props) {
   const [saved, setSaved] = useState<RoadmapProject[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<ProjectStage>>(() => new Set());
+  const [openRow, setOpenRow] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,7 +133,6 @@ export function RoadmapProjectsView({ jobs, authHeaders, onOpenProject }: Props)
     };
   }, [authHeaders]);
 
-  // Every project named on a job shows, saved or not; unsaved ones wait in Next until given a stage.
   const rows: Row[] = useMemo(() => {
     if (!saved) return [];
     const byName = new Map(saved.map((p) => [p.name, p]));
@@ -95,7 +141,7 @@ export function RoadmapProjectsView({ jobs, authHeaders, onOpenProject }: Props)
       const p = byName.get(name);
       return p
         ? { ...p, saved: true }
-        : { name, stage: "next", goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", saved: false };
+        : { name, stage: "next" as const, goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", saved: false };
     });
   }, [saved, jobs]);
 
@@ -106,7 +152,6 @@ export function RoadmapProjectsView({ jobs, authHeaders, onOpenProject }: Props)
   }, [jobs]);
 
   const save = async (name: string, patch: Partial<RoadmapProject>) => {
-    // Show the change at once; the save follows.
     setSaved((prev) => {
       const list = prev ?? [];
       return list.some((p) => p.name === name)
@@ -128,264 +173,400 @@ export function RoadmapProjectsView({ jobs, authHeaders, onOpenProject }: Props)
     );
   }
 
-  const ordered = (stage: ProjectStage) =>
+  const inStage = (stage: ProjectStage) =>
     rows.filter((r) => r.stage === stage).sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
 
   return (
-    <div className="mt-3 space-y-5 pb-10">
-      {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
-      <Timeline rows={[...ordered("now"), ...ordered("next"), ...ordered("later")]} />
+    <div className="mt-4 pb-6">
+      {error ? <p className="mb-3 text-sm font-medium text-rose-600">{error}</p> : null}
 
-      {PROJECT_STAGES.map((stage) => {
-        const list = ordered(stage);
-        return (
-          <section key={stage} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <header className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-slate-100 px-4 py-2.5">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <span className={`h-2.5 w-2.5 rounded-full ${STAGE_STYLE[stage].dot}`} aria-hidden />
-                {PROJECT_STAGE_META[stage].label}
-                <span className="font-normal tabular-nums text-slate-400">{list.length}</span>
-              </h2>
-              <p className="text-xs text-slate-500">{PROJECT_STAGE_META[stage].hint}</p>
-            </header>
-            {list.length ? (
-              <ul className="divide-y divide-slate-100">
-                {list.map((row) => (
-                  <ProjectRow key={row.name} row={row} jobs={jobsBy.get(row.name) ?? []} onSave={save} onOpen={() => onOpenProject(row.name)} />
-                ))}
-              </ul>
-            ) : (
-              <p className="px-4 py-3 text-sm text-slate-400">Nothing here.</p>
-            )}
-          </section>
-        );
-      })}
+      <Timeline rows={[...inStage("now"), ...inStage("next"), ...inStage("later")]} />
+
+      {/* Sideways scroll only below lg: an overflow box would stop the headings sticking. */}
+      <div className="mt-6 overflow-x-auto lg:overflow-visible">
+        <table className="table-fixed text-left text-sm" style={{ width: TABLE_WIDTH }}>
+          <colgroup>
+            {COLUMNS.map((c) => (
+              <col key={c.key} style={{ width: c.width }} />
+            ))}
+          </colgroup>
+          <thead className="text-xs font-medium text-slate-500">
+            <tr>
+              {COLUMNS.map((c, i) => (
+                <th
+                  key={c.key}
+                  style={{ top: stickyTop }}
+                  className={`sticky z-10 bg-[var(--app-canvas-base)] py-2.5 shadow-[inset_0_-1px_0_rgb(226_232_240)] ${i === 0 ? "pl-[1.625rem] pr-4" : "px-3"}`}
+                >
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {PROJECT_STAGES.map((stage, si) => {
+            const list = inStage(stage);
+            const open = !collapsed.has(stage);
+            return (
+              <tbody key={stage}>
+                <tr>
+                  <td colSpan={COLUMNS.length} className={`pb-0.5 ${si === 0 ? "pt-2" : "pt-5"}`}>
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      onClick={() =>
+                        setCollapsed((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(stage)) next.delete(stage);
+                          else next.add(stage);
+                          return next;
+                        })
+                      }
+                      title={PROJECT_STAGE_META[stage].hint}
+                      className="inline-flex items-center gap-2.5 py-1 text-left"
+                    >
+                      <Caret open={open} />
+                      <span className={`h-2 w-2 rounded-full ${STAGE_TONE[stage].dot}`} />
+                      <span className="text-lg font-medium tracking-[-0.01em] text-slate-950">{PROJECT_STAGE_META[stage].label}</span>
+                      <span className="text-sm tabular-nums text-slate-400">{list.length}</span>
+                      <span className="hidden text-xs text-slate-400 sm:inline">{PROJECT_STAGE_META[stage].hint}</span>
+                    </button>
+                  </td>
+                </tr>
+                {open
+                  ? list.map((row) => (
+                      <ProjectRows
+                        key={row.name}
+                        row={row}
+                        jobs={jobsBy.get(row.name) ?? []}
+                        expanded={openRow === row.name}
+                        onToggle={() => setOpenRow((cur) => (cur === row.name ? null : row.name))}
+                        onSave={save}
+                        onOpenJobs={() => onOpenProject(row.name)}
+                      />
+                    ))
+                  : null}
+                {open && !list.length ? (
+                  <tr className="border-t border-slate-200">
+                    <td colSpan={COLUMNS.length} className="py-3 pl-[1.625rem] text-sm text-slate-400">
+                      Nothing here.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            );
+          })}
+        </table>
+      </div>
 
       <ProjectGrid rows={rows.filter((r) => r.stage !== "parked")} />
     </div>
   );
 }
 
-function ProjectRow({
+function ProjectRows({
   row,
   jobs,
+  expanded,
+  onToggle,
   onSave,
-  onOpen,
+  onOpenJobs,
 }: {
   row: Row;
   jobs: RoadmapJob[];
+  expanded: boolean;
+  onToggle: () => void;
   onSave: (name: string, patch: Partial<RoadmapProject>) => void;
-  onOpen: () => void;
+  onOpenJobs: () => void;
 }) {
+  const c = counts(jobs);
   const [goal, setGoal] = useState(row.goal ?? "");
-  const s = summarise(jobs);
-  const select = "h-8 rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-700 focus:border-sky-500 focus:outline-none";
-  const dateInput = "h-8 w-[8.5rem] rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-700 focus:border-sky-500 focus:outline-none";
-  const parts = [
-    s.building ? `${s.building} building` : null,
-    s.queued ? `${s.queued} to do` : null,
-    s.ideas ? `${s.ideas} ${s.ideas === 1 ? "idea" : "ideas"}` : null,
-    s.shipped ? `${s.shipped} shipped` : null,
-  ].filter(Boolean);
-
   return (
-    <li className="grid gap-3 px-4 py-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onOpen}
-            title="Open this project's jobs in the List view"
-            className="group inline-flex items-center gap-1 text-[0.9375rem] font-semibold text-slate-900 hover:text-[#0c5290]"
-          >
-            {row.name}
-            <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-[#0c5290]" aria-hidden />
-          </button>
-          {s.review ? (
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-900 ring-1 ring-inset ring-amber-200">
-              {s.review} waiting on you
-            </span>
-          ) : null}
-          {!row.saved ? <span className="text-[11px] text-slate-400">not sorted yet</span> : null}
-        </div>
-        <input
-          id={`goal-${row.name}`}
-          aria-label={`Goal for ${row.name}`}
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-          onBlur={() => {
-            if (goal.trim() !== (row.goal ?? "")) onSave(row.name, { goal: goal.trim() || null });
-          }}
-          placeholder="One line: what done looks like for this project"
-          className="mt-1 block w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 -ml-1 text-sm text-slate-600 placeholder:text-slate-300 hover:border-slate-200 focus:border-sky-500 focus:bg-white focus:outline-none"
-        />
-        <p className="mt-1 text-xs tabular-nums text-slate-500">
-          {parts.length ? parts.join(" · ") : "No jobs yet"}
-          {s.total ? <span className="text-slate-400"> · {s.total} in all</span> : null}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
-          Stage
-          <select
-            id={`stage-${row.name}`}
-            className={select}
-            value={row.stage}
-            onChange={(e) => onSave(row.name, { stage: e.target.value as ProjectStage })}
-          >
-            {PROJECT_STAGES.map((st) => (
-              <option key={st} value={st}>
-                {PROJECT_STAGE_META[st].label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500" title="Impact: coach results, cash, member happiness or less work for Zander">
-          Impact
-          <select
-            id={`impact-${row.name}`}
-            className={select}
-            value={row.impact ?? ""}
-            onChange={(e) => onSave(row.name, { impact: e.target.value ? Number(e.target.value) : null })}
-          >
-            <option value="">–</option>
-            {SCORES.map((n) => (
-              <option key={n} value={n}>
-                {n} {ROADMAP_IMPACT_LEVELS[n]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500" title="Ease: how soon the whole project could be live">
-          Ease
-          <select
-            id={`ease-${row.name}`}
-            className={select}
-            value={row.ease ?? ""}
-            onChange={(e) => onSave(row.name, { ease: e.target.value ? Number(e.target.value) : null })}
-          >
-            <option value="">–</option>
-            {SCORES.map((n) => (
-              <option key={n} value={n}>
-                {n} {PROJECT_EASE_LEVELS[n]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
-          From
-          <input
-            id={`start-${row.name}`}
-            type="date"
-            className={dateInput}
-            value={row.start_on ?? ""}
-            onChange={(e) => onSave(row.name, { start_on: e.target.value || null })}
+    <>
+      <tr className="border-t border-slate-200 align-middle transition hover:bg-white/70">
+        <td className="py-2.5 pl-1 pr-4">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <button
+              type="button"
+              aria-expanded={expanded}
+              aria-label={expanded ? `Hide ${row.name}'s goal` : `Show ${row.name}'s goal`}
+              onClick={onToggle}
+              className="rounded p-1 hover:bg-slate-200/60"
+            >
+              <Caret open={expanded} />
+            </button>
+            <button
+              type="button"
+              onClick={onOpenJobs}
+              title={row.goal ? `${row.goal}\n\nOpen this project's jobs` : "Open this project's jobs"}
+              className="truncate text-[0.9375rem] font-medium text-slate-900 transition hover:text-[#0c5290]"
+            >
+              {row.name}
+            </button>
+            {!row.saved ? <span className="shrink-0 text-[11px] text-slate-400">new</span> : null}
+          </div>
+        </td>
+        <td className="px-3 py-2.5">
+          <JobCounts c={c} />
+        </td>
+        <td className="px-2 py-2">
+          <ScoreDropdown value={row.impact} names={ROADMAP_IMPACT_LEVELS} onChange={(v) => onSave(row.name, { impact: v })} />
+        </td>
+        <td className="px-2 py-2">
+          <ScoreDropdown value={row.ease} names={PROJECT_EASE_LEVELS} onChange={(v) => onSave(row.name, { ease: v })} />
+        </td>
+        <td className="px-2 py-2">
+          <DatesPicker row={row} onSave={onSave} />
+        </td>
+        <td className="px-2 py-2">
+          <MetaDropdown
+            bare
+            display={<StagePill stage={row.stage} />}
+            options={PROJECT_STAGES.map((st) => ({
+              key: st,
+              selected: row.stage === st,
+              onSelect: () => onSave(row.name, { stage: st }),
+              node: <StagePill stage={st} />,
+            }))}
           />
-        </label>
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
-          To
-          <input
-            id={`target-${row.name}`}
-            type="date"
-            className={dateInput}
-            value={row.target_on ?? ""}
-            onChange={(e) => onSave(row.name, { target_on: e.target.value || null })}
-          />
-        </label>
-      </div>
-    </li>
+        </td>
+      </tr>
+      {expanded ? (
+        <tr className="bg-white/60">
+          <td colSpan={COLUMNS.length} className="pb-4 pl-[1.625rem] pr-4 pt-1">
+            <label htmlFor={`goal-${row.name}`} className="text-xs font-medium text-slate-500">
+              Goal: what done looks like
+            </label>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <input
+                id={`goal-${row.name}`}
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                onBlur={() => {
+                  if (goal.trim() !== (row.goal ?? "")) onSave(row.name, { goal: goal.trim() || null });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                }}
+                placeholder="One line, e.g. BCA writes the whole practice from About You"
+                className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+              />
+              <button type="button" onClick={onOpenJobs} className="inline-flex items-center gap-1 text-sm font-medium text-[#0c5290] hover:underline">
+                Open its {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </div>
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 }
 
-/** The next 12 weeks, one bar per project with loose dates, and a line for today. */
+/** Where a project's jobs stand, most urgent first: yours to review, building, to do, shipped. */
+function JobCounts({ c }: { c: ReturnType<typeof counts> }) {
+  const parts = [
+    c.review ? { n: c.review, label: "to review", cls: "bg-amber-100 text-amber-900" } : null,
+    c.building ? { n: c.building, label: "building", cls: "bg-sky-100 text-sky-900" } : null,
+    c.todo ? { n: c.todo, label: "to do", cls: "bg-slate-200/70 text-slate-700" } : null,
+    c.shipped ? { n: c.shipped, label: "live", cls: "bg-emerald-50 text-emerald-800" } : null,
+  ].filter((p): p is { n: number; label: string; cls: string } => Boolean(p));
+  if (!parts.length) return <span className="text-xs text-slate-400">No jobs yet</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {parts.map((p) => (
+        <span key={p.label} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${p.cls}`}>
+          <span className="font-semibold tabular-nums">{p.n}</span>
+          {p.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function StagePill({ stage }: { stage: ProjectStage }) {
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-semibold ${STAGE_TONE[stage].pill}`}>
+      {PROJECT_STAGE_META[stage].label}
+    </span>
+  );
+}
+
+/** "19 Oct → 6 Nov · 3 wks", or Add dates; opens two date boxes. */
+function DatesPicker({ row, onSave }: { row: Row; onSave: (name: string, patch: Partial<RoadmapProject>) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(open, () => setOpen(false));
+  const from = parseDay(row.start_on);
+  const to = parseDay(row.target_on);
+  const weeks = from && to ? Math.max(1, Math.round((to - from) / (7 * DAY))) : null;
+  const box = "h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none";
+  return (
+    <div ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm transition ${
+          from || to ? "text-slate-800 hover:bg-slate-200/60" : "border border-dashed border-slate-300 text-slate-500 hover:border-slate-400"
+        }`}
+      >
+        {from || to ? (
+          <>
+            <span className="font-medium tabular-nums">
+              {from ? short(from) : "?"} → {to ? short(to) : "?"}
+            </span>
+            {weeks ? <span className="text-xs tabular-nums text-slate-400">{weeks} wk{weeks === 1 ? "" : "s"}</span> : null}
+          </>
+        ) : (
+          <>
+            <CalendarRange className="h-3.5 w-3.5" aria-hidden />
+            Add dates
+          </>
+        )}
+      </button>
+      {open ? (
+        <div className="absolute left-0 top-full z-30 mt-1 w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+          <p className="text-xs text-slate-500">Rough is fine. Move them as things change.</p>
+          <label className="mt-2 block text-xs font-medium text-slate-600">
+            Start
+            <input id={`from-${row.name}`} type="date" className={`${box} mt-1`} value={row.start_on ?? ""} onChange={(e) => onSave(row.name, { start_on: e.target.value || null })} />
+          </label>
+          <label className="mt-2 block text-xs font-medium text-slate-600">
+            Aim to finish
+            <input id={`to-${row.name}`} type="date" className={`${box} mt-1`} value={row.target_on ?? ""} onChange={(e) => onSave(row.name, { target_on: e.target.value || null })} />
+          </label>
+          {from || to ? (
+            <button
+              type="button"
+              onClick={() => {
+                onSave(row.name, { start_on: null, target_on: null });
+                setOpen(false);
+              }}
+              className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-800"
+            >
+              Clear dates
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** The next 12 weeks: a bar per dated project, months across the top, a line for today. */
 function Timeline({ rows }: { rows: Row[] }) {
-  // Read the clock once, not on every render.
-  const [today] = useState(() => Date.now());
-  const start = mondayOf(new Date(today)).getTime();
+  const [now] = useState(() => Date.now());
+  const start = mondayOf(now);
   const end = start + WEEKS * 7 * DAY;
-  const dated = rows.filter((r) => r.start_on || r.target_on);
+  const at = (t: number) => Math.min(100, Math.max(0, ((t - start) / (end - start)) * 100));
+  const dated = rows
+    .filter((r) => r.start_on || r.target_on)
+    .sort((a, b) => (parseDay(a.start_on) ?? parseDay(a.target_on)!) - (parseDay(b.start_on) ?? parseDay(b.target_on)!));
   const undated = rows.filter((r) => !r.start_on && !r.target_on);
-  const pct = (t: number) => `${Math.min(100, Math.max(0, ((t - start) / (end - start)) * 100))}%`;
+  const weeks = Array.from({ length: WEEKS }, (_, i) => start + i * 7 * DAY);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
+    <section className="rounded-xl border border-slate-200 bg-white px-4 pb-4 pt-3.5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-900">The next 12 weeks</h2>
-        <p className="text-xs text-slate-500">Loose dates. Change them on each project below.</p>
+        <h2 className="text-base font-medium tracking-[-0.01em] text-slate-950">The next 12 weeks</h2>
+        <p className="text-xs text-slate-400">Rough dates. Set them in the When column.</p>
       </div>
       <div className="mt-3 overflow-x-auto">
-        <div className="min-w-[44rem]">
-          <div className="grid grid-cols-[10rem_minmax(0,1fr)] gap-3">
+        <div className="relative min-w-[46rem]">
+          <div className="grid grid-cols-[11rem_minmax(0,1fr)]">
             <span />
-            <div className="grid text-[11px] text-slate-400" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }}>
-              {Array.from({ length: WEEKS }, (_, i) => (
-                <span key={i} className="border-l border-slate-100 pl-1 tabular-nums">
-                  {shortDate(start + i * 7 * DAY)}
+            <div className="relative grid pt-6" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }}>
+              {weeks.map((w) => (
+                <span key={w} className="border-l border-slate-100 pb-1.5 pl-1.5 text-[11px] tabular-nums text-slate-400">
+                  {short(w)}
                 </span>
               ))}
             </div>
           </div>
-          <div className="mt-1 space-y-1.5">
+          <div className="space-y-1">
             {dated.map((r) => {
               const from = parseDay(r.start_on) ?? parseDay(r.target_on)!;
               const to = (parseDay(r.target_on) ?? from) + DAY;
-              const off = to < start || from > end;
+              const left = at(from);
+              const width = Math.max(at(to) - left, 1.5);
               return (
-                <div key={r.name} className="grid grid-cols-[10rem_minmax(0,1fr)] items-center gap-3">
-                  <span className="truncate text-xs font-medium text-slate-700" title={r.name}>
+                <div key={r.name} className="grid grid-cols-[11rem_minmax(0,1fr)] items-center">
+                  <span className="truncate pr-3 text-sm text-slate-700" title={r.goal ?? r.name}>
                     {r.name}
                   </span>
-                  <div className="relative h-6 rounded bg-slate-50">
-                    <span className="absolute inset-y-0 w-px bg-rose-400" style={{ left: pct(today) }} aria-hidden />
-                    {off ? (
-                      <span className="absolute inset-y-0 left-1 flex items-center text-[11px] text-slate-400">Outside these 12 weeks</span>
+                  <div className="relative h-7">
+                    <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }} aria-hidden>
+                      {weeks.map((w) => (
+                        <span key={w} className="border-l border-slate-100" />
+                      ))}
+                    </div>
+                    {to < start || from > end ? (
+                      <span className="absolute inset-y-0 left-2 flex items-center text-xs text-slate-400">Outside these 12 weeks</span>
                     ) : (
                       <span
-                        className={`absolute inset-y-1 rounded ${STAGE_STYLE[r.stage].bar}`}
-                        style={{ left: pct(from), width: `calc(${pct(to)} - ${pct(from)})` }}
-                        title={`${r.name}: ${r.start_on ?? "?"} to ${r.target_on ?? "?"}`}
-                      />
+                        className={`absolute inset-y-1 z-10 flex items-center overflow-hidden rounded-full px-2.5 text-xs font-medium text-white shadow-[0_1px_2px_rgba(15,23,42,0.12)] ${STAGE_TONE[r.stage].bar}`}
+                        style={{ left: `${left}%`, width: `${width}%` }}
+                        title={`${r.name}: ${short(from)} to ${short(to - DAY)}`}
+                      >
+                        <span className="truncate">
+                          {short(from)} → {short(to - DAY)}
+                        </span>
+                      </span>
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
+          {/* Today, across every row. */}
+          <div className="pointer-events-none absolute bottom-0 top-0 grid w-full grid-cols-[11rem_minmax(0,1fr)]" aria-hidden>
+            <span />
+            <div className="relative">
+              <span className="absolute bottom-0 top-4 w-px bg-rose-400" style={{ left: `${at(now)}%` }} />
+              <span className="absolute top-0 -translate-x-1/2 rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold leading-4 text-white" style={{ left: `${at(now)}%` }}>
+                Today
+              </span>
+            </div>
+          </div>
         </div>
       </div>
       {undated.length ? (
-        <p className="mt-3 text-xs text-slate-500">
-          No dates yet: <span className="text-slate-600">{undated.map((r) => r.name).join(", ")}</span>
-        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
+          <span className="text-xs text-slate-400">No dates yet</span>
+          {undated.map((r) => (
+            <span key={r.name} className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_TONE[r.stage].chip}`}>
+              {r.name}
+            </span>
+          ))}
+        </div>
       ) : null}
     </section>
   );
 }
 
-/** Where each project sits on impact and ease: top right is worth most for least. */
+/** Where each project sits: top right is worth most for the least effort. */
 function ProjectGrid({ rows }: { rows: Row[] }) {
   const scored = rows.filter((r) => r.impact && r.ease);
   const unscored = rows.filter((r) => !(r.impact && r.ease));
+  const scores = [1, 2, 3, 4, 5];
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
+    <section className="mt-8 rounded-xl border border-slate-200 bg-white px-4 pb-4 pt-3.5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-900">Projects by impact and ease</h2>
-        <p className="text-xs text-slate-500">Top right: worth most for the least effort. Parked projects left out.</p>
+        <h2 className="text-base font-medium tracking-[-0.01em] text-slate-950">Where each project sits</h2>
+        <p className="text-xs text-slate-400">Top right: worth most for the least effort. Parked left out.</p>
       </div>
       <div className="mt-3 overflow-x-auto">
-        <div className="grid min-w-[36rem] grid-cols-[1.25rem_repeat(5,minmax(0,1fr))] gap-1">
+        <div className="grid min-w-[40rem] grid-cols-[1.5rem_repeat(5,minmax(0,1fr))] gap-1">
           {[5, 4, 3, 2, 1].map((impact) => (
             <div key={impact} className="contents">
-              <span className="flex items-center justify-center text-xs font-bold tabular-nums text-slate-500" title={`Impact ${impact}`}>
+              <span className="flex items-center justify-center text-xs font-semibold tabular-nums text-slate-500" title={`Impact ${impact}: ${ROADMAP_IMPACT_LEVELS[impact]}`}>
                 {impact}
               </span>
-              {SCORES.map((ease) => (
-                <div key={ease} className={`flex min-h-12 flex-wrap content-start gap-1 rounded-md p-1.5 ${impact >= 4 && ease >= 3 ? "bg-emerald-50" : "bg-slate-50"}`}>
+              {scores.map((ease) => (
+                <div key={ease} className={`flex min-h-14 flex-wrap content-start gap-1 rounded-lg p-1.5 ${impact >= 4 && ease >= 3 ? "bg-emerald-50/80" : "bg-slate-50"}`}>
                   {scored
                     .filter((r) => r.impact === impact && r.ease === ease)
                     .map((r) => (
-                      <span key={r.name} className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STAGE_STYLE[r.stage].chip}`}>
+                      <span key={r.name} title={r.goal ?? undefined} className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_TONE[r.stage].chip}`}>
                         {r.name}
                       </span>
                     ))}
@@ -394,14 +575,22 @@ function ProjectGrid({ rows }: { rows: Row[] }) {
             </div>
           ))}
           <span />
-          {SCORES.map((ease) => (
-            <span key={ease} className="text-center text-[11px] text-slate-500">
-              Ease {ease}
+          {scores.map((ease) => (
+            <span key={ease} className="pt-1 text-center text-[11px] text-slate-400">
+              {PROJECT_EASE_LEVELS[ease]}
             </span>
           ))}
         </div>
       </div>
-      {unscored.length ? <p className="mt-3 text-xs text-slate-500">Not scored: {unscored.map((r) => r.name).join(", ")}</p> : null}
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+        {(["now", "next", "later"] as const).map((st) => (
+          <span key={st} className="inline-flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${STAGE_TONE[st].dot}`} />
+            {PROJECT_STAGE_META[st].label}
+          </span>
+        ))}
+        {unscored.length ? <span className="text-slate-400">· Not scored: {unscored.map((r) => r.name).join(", ")}</span> : null}
+      </div>
     </section>
   );
 }
