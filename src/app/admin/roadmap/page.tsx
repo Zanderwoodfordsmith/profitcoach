@@ -41,6 +41,7 @@ import {
   Zap,
 } from "lucide-react";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
+import { RoadmapProjectsView } from "@/components/admin/roadmap/RoadmapProjectsView";
 import { WorkshopActivityPanel } from "@/components/BossGrid/WorkshopActivityPanel";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
@@ -229,7 +230,7 @@ function JobNumber({ n }: { n: number }) {
   );
 }
 
-type ViewMode = "board" | "list" | "graph";
+type ViewMode = "board" | "list" | "graph" | "projects";
 
 /** Every word in the search box must appear in the job's number, title, notes, Done when or project. */
 function matchesSearch(job: RoadmapJob, query: string): boolean {
@@ -300,7 +301,7 @@ export default function AdminRoadmapPage() {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(VIEW_STORAGE_KEY);
-      if (stored === "list" || stored === "board" || stored === "graph") {
+      if (stored === "list" || stored === "board" || stored === "graph" || stored === "projects") {
         setView(stored);
       }
       if (window.localStorage.getItem(BOARD_GROUP_KEY) === "project") {
@@ -674,6 +675,18 @@ export default function AdminRoadmapPage() {
         }`}
       >
         <ScatterChart className="h-3.5 w-3.5" /> Graph
+      </button>
+      <button
+        type="button"
+        onClick={() => switchView("projects")}
+        title="One row per project: stage, goal, impact and ease, loose dates"
+        className={`inline-flex items-center gap-1.5 border-l border-slate-200 px-2.5 py-1.5 text-xs font-medium transition ${
+          view === "projects"
+            ? "bg-slate-900 text-white"
+            : "bg-white text-slate-600 hover:bg-slate-50"
+        }`}
+      >
+        <Folder className="h-3.5 w-3.5" /> Projects
       </button>
     </div>
   );
@@ -1328,6 +1341,15 @@ export default function AdminRoadmapPage() {
 
       {loading ? (
         <p className="py-10 text-sm text-slate-500">Loading roadmap…</p>
+      ) : view === "projects" ? (
+        <RoadmapProjectsView
+          jobs={jobs}
+          authHeaders={authHeaders}
+          onOpenProject={(name) => {
+            setProjectFilter(new Set([name]));
+            switchView("list");
+          }}
+        />
       ) : view === "graph" ? (
         <ImpactEaseGraph
           jobs={visible}
