@@ -10,6 +10,25 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 
+/** Built but on hold: kept out of the coach tabs until the project comes back (Proposals, 23 Oct). */
+const parkedProjectLinks = [
+  {
+    href: "/admin/proposals",
+    label: "Proposals",
+    hint: "A digital proposal per prospect: send, track opens, sign online",
+  },
+  {
+    href: "/admin/welcome-packs",
+    label: "Welcome packs",
+    hint: "A welcome pack per new client, on the proposal engine",
+  },
+  {
+    href: "/site/pam/explainer/digital",
+    label: "Digital explainer",
+    hint: "Before the BOSS Score Review or the Profit Roadmap call (?call=roadmap)",
+  },
+] as const;
+
 const siteToolsLinks = [
   {
     href: "/admin/settings/boss-grid",
@@ -258,6 +277,12 @@ export default function AdminLinksPage() {
             title="Pages outside the sidebar"
             items={adminExtraNavLinks}
             origin={origin}
+          />
+          <LinkGroup
+            title="Parked projects"
+            items={parkedProjectLinks}
+            origin={origin}
+            openInSameTab
           />
         </div>
       )}

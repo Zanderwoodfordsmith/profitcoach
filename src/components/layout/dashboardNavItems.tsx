@@ -371,12 +371,6 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       label: "Scripts",
       description: "Every script for your calls with owners",
     },
-    {
-      href: `${prefix}/proposals`,
-      label: "Proposals",
-      description: "Proposals you send to owners, and who has signed",
-      adminPreview: true,
-    },
   ];
   items.push({
     href: prefix === "/admin" ? "/admin/linkedin" : "/coach/linkedin",
@@ -406,7 +400,6 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
     `${prefix}/linkedin`,
     `${prefix}/share`,
     `${prefix}/toolkit`,
-    `${prefix}/proposals`,
   ];
   if (prefix === "/coach") {
     paths.push("/coach/links");
@@ -496,13 +489,7 @@ export function coachClientsTabItems(
       description: "What small moves on six numbers are worth",
       adminPreview: true,
     },
-    {
-      key: "welcome-packs",
-      href: `${prefix}/welcome-packs`,
-      label: "Welcome packs",
-      description: "A welcome pack for each new client",
-      adminPreview: true,
-    },
+
   ];
 }
 
@@ -532,12 +519,6 @@ export function coachClientsTabActive(
       Boolean(pathname.startsWith("/coach/playbooks/")) ||
       Boolean(pathname.startsWith("/admin/playbooks/"))
     );
-  }
-  if (tabKey === "welcome-packs") {
-    return /^\/(coach|admin)\/welcome-packs(\/|$)/.test(pathname);
-  }
-  if (tabKey === "welcome-packs") {
-    return Boolean(pathname.startsWith("/coach/welcome-packs") || pathname.startsWith("/admin/welcome-packs"));
   }
   if (tabKey === "profit-levers") {
     return pathname === "/coach/profit-levers" || pathname === "/admin/profit-levers";
