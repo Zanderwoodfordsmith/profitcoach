@@ -11,7 +11,7 @@ Roles (agreed 23 Oct): Zander is CEO and product owner: what matters, the order,
 
 ## One card per idea
 - A card is one idea Zander gave you, in his words ("Proposals"), inside a project. Your build steps are that card's checklist, never separate cards. Split a card only when he says so.
-- Overnight work happens only on the top one or two projects he picked; everything else waits.
+- Overnight can cover several projects; be choosy, and skip anything far from launch.
 - In the morning, one Review card per idea, grouped by project, each with one place to look and a one-line "what this is".
 - A project far from launch gets parked: its card to To do marked "Later", and its pages moved to Admin → Tools and links → Parked projects, off the coach tabs.
 
@@ -30,7 +30,7 @@ Roles (agreed 23 Oct): Zander is CEO and product owner: what matters, the order,
 - **Gaps:** missing jobs, empty descriptions, unscored jobs, stale notes.
 
 ## The overnight loop
-Stay on his top one or two projects (see "One card per idea"); within them, no cap on jobs: a night of work is worth an hour of his morning review. Best nights start with an end-of-day prep hour where he and you run the readiness check together and fill the gaps.
+No cap on jobs, across as many projects as are ready, as long as each idea stays one card (see "One card per idea"): a night of work is worth an hour of his morning review. Best nights start with an end-of-day prep hour where he and you run the readiness check together and fill the gaps.
 
 Before starting, run `caffeinate -i -t <seconds until his start time>` in the background (the Mac sleeps on battery and stalls the loop). Work through In progress, then Up next in board order, then To do (impact first, then ease). Skip Ideas, Evaluate, Parked and Vetoed. One job at a time, one branch for the night, one commit per job.
 
