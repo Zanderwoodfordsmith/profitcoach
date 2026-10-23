@@ -20,7 +20,19 @@ Each card in Review has "Where to look", "I checked" and "You check" at the top 
 | #111 Sign online | Full name and a tick; the words they saw are kept; it locks; both sides get a copy. | Look for the "Signed:" email in the Zander Demo inbox. |
 | #57 Welcome packs | Same engine. Keep Clients → Welcome packs, or from a signed proposal. AI welcome note in the coach's voice. | The starting words and the look. |
 
+| #101 Tagged links | Toolkit → Links: tag a link (LinkedIn, YouTube, QR…). BOSS Scores and opt-ins remember it; prospects show "via LinkedIn"; admin sees BOSS Scores by source; QR codes are tagged. | The admin "Where BOSS Scores came from" panel. |
+| #100 Content Settings | It crashed for coaches on Unipile, and Save stored nothing for them. Fixed both. | The same as admin on /admin/linkedin?tab=settings. |
+| #102 Newsletter list | Newsletters as list rows, with a List / Cards switch. | The look. |
+| #99 Instagram "too many attempts" | Instagram's own block after repeated tries. A failed connect now says what to do (and the message no longer vanishes); a tip before connecting. | The wording; whether to ask Unipile about Paul. |
+| #77 Login for Weekly focus, Resources, Compass | Pages send titles only; content loads after sign-in. The Resource Library no longer ships every sheet and file id to browsers. Checked on a production build. | Click through Resources as yourself. |
+
 The proposal jobs (#109, #110, #111, #57) share one place to look: check them together.
+
+## Not built
+
+- **#78 Lesson videos: private storage.** Reached 06:15 while scoping. The bucket is 26 GB (a copy would double the cost) and is shared with live, so flipping it private early would stop every lesson video. The plan and one question are on the card.
+- **#2 Blueprint done-for-you sections** (In progress): the list you asked for is on the card. Only 4 of 21 BCA sections fill from About You alone; the rest also need the Ideal Client and Offer pages. Question on the card: who fills those?
+- **Still in Up next, not reached:** #84 cold email campaign, #86 owner nurture emails, #87 client page, #93 Profit levers phone table, #74 polls, #25 notifications, #26 chat with BCA, #49 Ava answers from the lesson, #69 brand canon, #37 lesson rename. They're ready for tonight.
 
 ## Decisions I made (overturn any of these)
 
@@ -34,10 +46,20 @@ The proposal jobs (#109, #110, #111, #57) share one place to look: check them to
 8. **#110 proposals email only from the coach's own mailbox**, never from BCA support.
 9. **#111 signing stays admin-only** with the rest of Proposals until the agreement is lawyer-checked.
 10. **#57 welcome packs share the proposal engine** (one table with a kind, one editor).
+11. **#101 tags:** standard utm tags plus a short `?src=`. The browser keeps the latest tagged visit for 30 days; the contact keeps the first source ever seen. Tags in emails not done.
+12. **#99 no retry block** in our app; the fix is telling coaches to stop, approve in the Instagram app, and wait.
+13. **#77 login only** for Resources and Weekly focus (no plan check, as before); Compass uses the Classroom's plan check. After editing `content/resources/library.json`, run `npx tsx scripts/build-resources-public.ts` (a test fails if you forget).
+14. **#102 List is the default** newsletter view; Cards stays one click away.
 
 ## Things to know
 
 - **The session restarted at about 21:55.** I restarted caffeinate and the 3002 dev server; nothing was lost.
 - **Test data on Zander Demo:** a cancelled Discovery booking (#45); Ava nudges and one posted nudge in the Campaigns thread (#107); two proposals ("Hartley HVAC Ltd" unsigned, "Signing Test Ltd (job 111)" signed) and one welcome pack; Your tone and How you want to be known signed off (#104); Ava's nudges paused then turned back on (#106).
-- **Migrations applied** (all additive): booking lead links, ava_nudges, nudge snooze, coach_proposals, coach_proposals kind.
+- **Migrations applied** (all additive): booking lead links, ava_nudges, nudge snooze, coach_proposals, coach_proposals kind, traffic source, linkedin_composer_settings.
+- **More test data on Zander Demo:** a BOSS Score and prospect "Traffic Test" (Tag Test Ltd) for #101.
+- **Old lint errors** sit in files I touched (BOSS Score pages, Settings integrations, Compass player, Blueprint section view). I checked each: same count before and after, none mine.
+
+## To ship
+
+When you're happy with the cards: `git checkout main && git merge overnight-2026-10-23` (it fast-forwards), then `;stage`. To drop one job, `git revert <commit>` for that job before staging (each job is its own commit).
 - **AI spend:** a handful of Claude calls for Ava's test conversations and one welcome note (pennies).
