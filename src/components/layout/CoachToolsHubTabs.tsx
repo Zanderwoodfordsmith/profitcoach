@@ -33,7 +33,7 @@ type Props = {
  * Coaches — and admins “View as coach” on /coach — never see them.
  * Impersonation must not hide preview tabs while browsing /admin.
  */
-function useShowAdminPreviewTabs(onAdminPath: boolean): boolean {
+export function useShowAdminPreviewTabs(onAdminPath: boolean): boolean {
   const { impersonatingCoachId } = useImpersonation();
   const [isAdminUser, setIsAdminUser] = useState(onAdminPath);
 

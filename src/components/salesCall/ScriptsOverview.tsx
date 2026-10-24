@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowRight, CalendarClock, Gauge, Map, MessageCircleQuestion, PhoneIncoming, Send, type LucideIcon } from "lucide-react";
 
+import { CallSimBanner } from "@/components/callSimulator/CallSimBanner";
 import { SCRIPTS, type ScriptCard } from "@/lib/salesCall/library";
 
 const ICONS: Record<ScriptCard["icon"], LucideIcon> = {
@@ -55,6 +56,7 @@ export function ScriptsOverview() {
           </li>
         ))}
       </ul>
+      <CallSimBanner />
     </div>
   );
 }
