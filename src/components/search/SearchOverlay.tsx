@@ -35,7 +35,14 @@ import { useSearchRecents } from "@/components/search/useSearchRecents";
 import { formatCommunityRelativeActivityAgo } from "@/lib/communityRelativeTime";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { queueAiPrompt } from "@/lib/profitCoachAi/queuedPrompt";
-import { OPEN_SEARCH_EVENT } from "@/lib/search/overlay";
+import { OPEN_SEARCH_EVENT, takeLostSearchPath } from "@/lib/search/overlay";
+import { EmptyBossWheel } from "@/components/notFound/EmptyBossWheel";
+import { destinationIcon } from "@/components/notFound/destinationIcons";
+import {
+  bestGuessDestination,
+  destinationsForRole,
+  type NotFoundDestination,
+} from "@/lib/notFoundDestinations";
 import {
   searchLessonHref,
   searchMemberHref,
@@ -98,7 +105,8 @@ function rememberSearchOrigin(prefix: SearchPrefix): void {
  * Search over whatever page you're on: greeting, box, recently opened, then
  * the top hits from every tab as you type. Enter with nothing chosen opens the
  * full results page. Mounted once per dashboard layout; the top bar opens it
- * with openSearchOverlay(), and Cmd/Ctrl+K toggles it.
+ * with openSearchOverlay(), and Cmd/Ctrl+K toggles it. A missing page opens it
+ * with openLostSearch(): same box, with the 404 wheel and a best guess on top.
  */
 export function SearchOverlay() {
   const pathname = usePathname();
@@ -107,16 +115,22 @@ export function SearchOverlay() {
   const prefix = searchPrefix(pathname);
   const onSearchPage = pathname === `${prefix}/search`;
   const [open, setOpen] = useState(false);
+  /** The missing page this was opened for, if any. */
+  const [lostPath, setLostPath] = useState<string | null>(null);
 
   // Close if the route changes underneath (Back, a link elsewhere).
   const [seenPath, setSeenPath] = useState(pathname);
   if (seenPath !== pathname) {
     setSeenPath(pathname);
     if (open) setOpen(false);
+    setLostPath(null);
   }
 
   useEffect(() => {
-    const onOpen = () => setOpen(true);
+    const onOpen = () => {
+      setLostPath(takeLostSearchPath());
+      setOpen(true);
+    };
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
       if (e.key.toLowerCase() !== "k") return;
@@ -141,18 +155,37 @@ export function SearchOverlay() {
     profile?.first_name?.trim() ||
     profile?.full_name?.trim().split(/\s+/)[0] ||
     null;
+  const close = () => {
+    setOpen(false);
+    setLostPath(null);
+  };
 
   return (
     <SearchDialog
       prefix={prefix}
       greeting={profileLoading ? null : firstName ? `Hi, ${firstName}` : "Hi"}
+      lost={
+        lostPath == null
+          ? null
+          : {
+              title: profileLoading
+                ? null
+                : firstName
+                  ? `Hey ${firstName}, where are you trying to get to?`
+                  : "Where are you trying to get to?",
+              guess: bestGuessDestination(
+                lostPath,
+                destinationsForRole(prefix === "/admin" ? "admin" : "coach")
+              ),
+            }
+      }
       canAskAi={Boolean(chrome?.showAi) && !chrome?.profileLoading}
       onAskAi={(text) => {
         if (text) queueAiPrompt(text);
-        setOpen(false);
+        close();
         if (!chrome?.aiPanelOpen) chrome?.onToggleAi();
       }}
-      onClose={() => setOpen(false)}
+      onClose={close}
     />
   );
 }
@@ -160,12 +193,15 @@ export function SearchOverlay() {
 function SearchDialog({
   prefix,
   greeting,
+  lost,
   canAskAi,
   onAskAi,
   onClose,
 }: {
   prefix: SearchPrefix;
   greeting: string | null;
+  /** Set when a missing page opened search. */
+  lost: { title: string | null; guess: NotFoundDestination | null } | null;
   canAskAi: boolean;
   onAskAi: (text: string) => void;
   onClose: () => void;
@@ -179,7 +215,9 @@ function SearchDialog({
   const [value, setValue] = useState("");
   const [preview, setPreview] = useState<SearchPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const lostGuess = lost?.guess ?? null;
+  // Enter on an empty box takes the best guess.
+  const [activeIndex, setActiveIndex] = useState(lostGuess ? 0 : -1);
   const recent = useSearchRecents(prefix);
 
   const q = normalizeSearchQuery(value);
@@ -221,7 +259,14 @@ function SearchDialog({
     };
     place();
     window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
+    // The sidebar can still be settling when search opens on page load (404).
+    const main = document.querySelector("main");
+    const observer = main ? new ResizeObserver(place) : null;
+    if (main) observer?.observe(main);
+    return () => {
+      window.removeEventListener("resize", place);
+      observer?.disconnect();
+    };
   }, []);
 
   // The box slides up when the greeting gives way to results (FLIP).
@@ -274,12 +319,30 @@ function SearchDialog({
 
   const groups = useMemo<Group[]>(() => {
     if (!searching) {
-      if (!recent?.length) return [];
+      const out: Group[] = [];
+      if (lostGuess) {
+        out.push({
+          id: "guess",
+          label: "Best guess",
+          options: [
+            {
+              key: `guess-${lostGuess.href}`,
+              href: lostGuess.href,
+              leading: <SearchIconTile icon={destinationIcon(lostGuess.href)} />,
+              title: lostGuess.label,
+              meta: lostGuess.description,
+            },
+          ],
+        });
+      }
+      const visits = (recent ?? []).filter((v) => v.href !== lostGuess?.href);
+      if (!visits.length) return out;
       return [
+        ...out,
         {
           id: "recent",
           label: "Recently opened",
-          options: recent.map((visit) => ({
+          options: visits.map((visit) => ({
             key: `recent-${visit.href}`,
             href: visit.href,
             leading: <SearchIconTile icon={RECENT_KIND[visit.kind].icon} />,
@@ -397,7 +460,7 @@ function SearchDialog({
       });
     }
     return out;
-  }, [prefix, preview, recent, searching]);
+  }, [lostGuess, prefix, preview, recent, searching]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.options), [groups]);
   const indexByKey = useMemo(
@@ -454,7 +517,7 @@ function SearchDialog({
   return (
     <dialog
       ref={dialogRef}
-      aria-label="Search"
+      aria-label={lost ? "Page not found" : "Search"}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -483,7 +546,17 @@ function SearchDialog({
           <X className="h-5 w-5" />
         </button>
 
-        {showGreeting ? (
+        {showGreeting && lost ? (
+          <div className="search-fade-in flex flex-col items-center px-6 pt-14 text-center sm:px-14 sm:pt-12">
+            <EmptyBossWheel compact className="w-24 sm:w-28" />
+            <h2 className="mt-6 max-w-[24ch] text-3xl font-semibold tracking-tight text-slate-950 text-balance sm:text-4xl">
+              {lost.title ?? "\u00a0"}
+            </h2>
+            <p className="mt-2 text-lg text-slate-700 text-balance">
+              That page isn’t here. {canAskAi ? "Search for it, or ask AI." : "Search for it below."}
+            </p>
+          </div>
+        ) : showGreeting ? (
           <div className="search-fade-in px-6 pt-16 text-center sm:px-14 sm:pt-14">
             <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
               {greeting ?? "\u00a0"}
@@ -612,7 +685,9 @@ function SearchDialog({
             <div
               id={LISTBOX_ID}
               role="listbox"
-              aria-label={searching ? "Search suggestions" : "Recently opened"}
+              aria-label={
+                searching ? "Search suggestions" : lostGuess ? "Suggestions" : "Recently opened"
+              }
               className={`transition-opacity duration-200 ${loading ? "opacity-60" : ""}`}
             >
               {groups.map((group) => (
