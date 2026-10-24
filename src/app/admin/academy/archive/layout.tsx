@@ -9,7 +9,7 @@ export default function AdminAcademyArchiveLayout({
   return (
     <div className="flex flex-col gap-6">
       <StickyPageHeader
-        title="Academy"
+        title="Product"
         description={
           <span className="text-lg leading-relaxed text-slate-600">
             Lessons not surfaced in Classroom — edit content here without changing the live hub.

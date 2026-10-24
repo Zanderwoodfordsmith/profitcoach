@@ -39,7 +39,9 @@
   position: absolute;
   inset: 0;
   color: #e4f3ff;
-  text-shadow: 0 0 18px rgba(124, 195, 242, 0.95), 0 0 42px rgba(26, 143, 212, 0.8);
+  text-shadow:
+    0 0 18px rgba(124, 195, 242, 0.95),
+    0 0 42px rgba(26, 143, 212, 0.8);
   -webkit-mask-image: linear-gradient(100deg, transparent 42%, #000 50%, transparent 58%);
   mask-image: linear-gradient(100deg, transparent 42%, #000 50%, transparent 58%);
   -webkit-mask-size: 300% 100%;
@@ -107,8 +109,13 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
   border: 1px solid rgba(207, 230, 248, 0.2);
   backdrop-filter: blur(20px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 14px 30px -18px rgba(0, 0, 0, 0.8);
-  transition: background 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 14px 30px -18px rgba(0, 0, 0, 0.8);
+  transition:
+    background 0.2s ease,
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 0.2s ease;
 }
 
 .ms-call-btn:hover {
@@ -127,7 +134,9 @@
   background: #ffffff;
   color: #051e36;
   border-color: #ffffff;
-  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.08), 0 18px 40px -16px rgba(124, 195, 242, 0.7);
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.08),
+    0 18px 40px -16px rgba(124, 195, 242, 0.7);
 }
 
 .ms-call-btn.end:hover {
@@ -154,7 +163,10 @@
 /* ------------------------------------------------------------ Lists */
 
 .ms-row {
-  transition: background 0.2s ease, box-shadow 0.35s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.35s ease,
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .ms-row:hover {
@@ -167,7 +179,9 @@
 
 .ms-chat-item[aria-current="true"] {
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 10px 24px -18px rgba(12, 82, 144, 0.5);
+  box-shadow:
+    0 1px 2px rgba(5, 30, 54, 0.06),
+    0 10px 24px -18px rgba(12, 82, 144, 0.5);
 }
 
 .ms-chat-item:not([aria-current="true"]):hover {

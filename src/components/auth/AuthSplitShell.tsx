@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 export const authInputClassName =
-  "block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[var(--landing-navy)] focus:ring-2 focus:ring-[var(--boss-velocity)]/20";
+  "block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 sm:text-sm focus:border-[var(--landing-navy)] focus:ring-2 focus:ring-[var(--boss-velocity)]/20";
 
 export const authLabelClassName =
   "block text-sm font-medium text-slate-700";

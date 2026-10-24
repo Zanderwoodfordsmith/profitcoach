@@ -63,7 +63,17 @@ export function Screen({
   return (
     <div ref={box} className="relative flex w-full flex-col items-end" style={{ maxWidth: phone ? 340 : undefined }}>
       <div className={`ad-frame ${phone ? "phone" : ""}`} style={{ width: w * scale, height: h * scale }}>
-        <div style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "0 0", position: "relative" }}>{children}</div>
+        <div
+          style={{
+            width: w,
+            height: h,
+            transform: `scale(${scale})`,
+            transformOrigin: "0 0",
+            position: "relative",
+          }}
+        >
+          {children}
+        </div>
       </div>
       <button
         type="button"
@@ -100,9 +110,24 @@ function FullSize({ w, h, phone, onClose, children }: { w: number; h: number; ph
   return createPortal(
     <div className={`ad ad-full ${figtree.className}`} onClick={onClose} role="dialog" aria-modal="true" aria-label="Full size preview">
       <div onClick={(e) => e.stopPropagation()} className={`ad-frame ${phone ? "phone" : ""}`} style={{ width: w * s, height: h * s }}>
-        <div style={{ width: w, height: h, transform: `scale(${s})`, transformOrigin: "0 0", position: "relative" }}>{children}</div>
+        <div
+          style={{
+            width: w,
+            height: h,
+            transform: `scale(${s})`,
+            transformOrigin: "0 0",
+            position: "relative",
+          }}
+        >
+          {children}
+        </div>
       </div>
-      <button type="button" onClick={onClose} className="fixed right-5 top-5 grid h-10 w-10 place-items-center rounded-full bg-white text-[var(--ink)]" aria-label="Close">
+      <button
+        type="button"
+        onClick={onClose}
+        className="fixed right-5 top-5 grid h-10 w-10 place-items-center rounded-full bg-white text-[var(--ink)]"
+        aria-label="Close"
+      >
         <X className="h-5 w-5" aria-hidden />
       </button>
     </div>,
@@ -128,7 +153,17 @@ export function LogoIcon({ white, size = 26 }: { white?: boolean; size?: number 
   return (
     <span className="mb-5 block overflow-hidden" style={{ width: 26 * k, height: 24 * k }} aria-label="The Profit Coach" role="img">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={white ? "/brand/profit-coach-logo-white.svg" : "/profit-coach-logo.svg"} alt="" style={{ height: 54 * k, width: "auto", maxWidth: "none", marginLeft: -15 * k, marginTop: -15 * k }} />
+      <img
+        src={white ? "/brand/profit-coach-logo-white.svg" : "/profit-coach-logo.svg"}
+        alt=""
+        style={{
+          height: 54 * k,
+          width: "auto",
+          maxWidth: "none",
+          marginLeft: -15 * k,
+          marginTop: -15 * k,
+        }}
+      />
     </span>
   );
 }
@@ -162,7 +197,10 @@ export function AppRail({ tone, mark, dark }: { tone: "glass" | "brand" | "clear
       ))}
       <span
         className="mt-3 grid h-11 w-11 place-items-center rounded-xl"
-        style={{ background: brand || dark ? "rgba(255,255,255,0.14)" : "#ffffff", boxShadow: brand || dark ? "inset 0 1px 0 rgba(255,255,255,0.2)" : "0 4px 14px -6px rgba(12,82,144,0.4)" }}
+        style={{
+          background: brand || dark ? "rgba(255,255,255,0.14)" : "#ffffff",
+          boxShadow: brand || dark ? "inset 0 1px 0 rgba(255,255,255,0.2)" : "0 4px 14px -6px rgba(12,82,144,0.4)",
+        }}
         title="Ava"
       >
         <AvaMark id={mark} size={22} dark={brand || dark} />
@@ -170,7 +208,9 @@ export function AppRail({ tone, mark, dark }: { tone: "glass" | "brand" | "clear
       <span className="mt-auto grid h-11 w-11 place-items-center" style={{ color: fg }}>
         <Settings className="h-[19px] w-[19px]" strokeWidth={1.7} aria-hidden />
       </span>
-      <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-[#cfe6f8] text-[13px] font-bold text-[#051e36]">ZW</span>
+      <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-[#cfe6f8] text-[13px] font-bold text-[#051e36]">
+        ZW
+      </span>
     </aside>
   );
 }
@@ -203,16 +243,22 @@ export function Composer({
   tall?: boolean;
 }) {
   const dark = variant === "dark";
-  const cls =
-    variant === "glass" ? "ad-glass ad-edge" : variant === "dark" ? "ad-glass-dark ad-edge" : "";
+  const cls = variant === "glass" ? "ad-glass ad-edge" : variant === "dark" ? "ad-glass-dark ad-edge" : "";
   const style =
     variant === "cream"
-      ? { background: "#fbfaf6", boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 18px 40px -24px rgba(5,30,54,0.45)", border: "1px solid rgba(5,30,54,0.06)" }
+      ? {
+          background: "#fbfaf6",
+          boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 18px 40px -24px rgba(5,30,54,0.45)",
+          border: "1px solid rgba(5,30,54,0.06)",
+        }
       : undefined;
   return (
     <div className={`${dark ? "dark" : ""}`} style={{ width }}>
       <div className={`${cls} rounded-[26px] px-5 pb-3 pt-4`} style={style}>
-        <div className={`${tall ? "min-h-[64px]" : "min-h-[28px]"} text-[16px]`} style={{ color: dark ? "rgba(234,244,252,0.55)" : "#7d8ca0" }}>
+        <div
+          className={`${tall ? "min-h-[64px]" : "min-h-[28px]"} text-[16px]`}
+          style={{ color: dark ? "rgba(234,244,252,0.55)" : "#7d8ca0" }}
+        >
           {placeholder}
         </div>
         <div className="mt-2 flex items-center gap-1">
@@ -249,7 +295,19 @@ export function Starters({ kind, dark, items = STARTERS }: { kind: "pill" | "til
 }
 
 /** BCA two-weight headline: a light slate line, then a bold ink line. */
-export function TwoWeight({ light, bold, dark, size = 44, align = "center" }: { light: string; bold: string; dark?: boolean; size?: number; align?: "center" | "left" }) {
+export function TwoWeight({
+  light,
+  bold,
+  dark,
+  size = 44,
+  align = "center",
+}: {
+  light: string;
+  bold: string;
+  dark?: boolean;
+  size?: number;
+  align?: "center" | "left";
+}) {
   return (
     <h2 className="leading-[1.08] tracking-[-0.025em]" style={{ fontSize: size, textAlign: align, textWrap: "balance" }}>
       <span className="block font-light" style={{ color: dark ? "rgba(207,230,248,0.8)" : "#5a6b80" }}>

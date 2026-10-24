@@ -5,7 +5,7 @@ Roadmap jobs 115 and 129 are in Review.
 
 ## Do these first
 
-1. **Cloudflare ran out yesterday, and it's still out.** Making the cast's
+1. **Cloudflare (fixed 24 Oct: you switched on Workers Paid).** Making the cast's
    portraits used up the free daily Workers AI allowance (10,000 "neurons")
    at about 19:40. The same account powers speech-to-text (Scripts → Listen,
    Ava dictation). It hadn't come back at 01:10, so it may be a rolling 24
@@ -61,13 +61,11 @@ script panel too (and, at your request to that session, a "script in the middle"
 ## You check
 
 - How the voices sound, especially Jess, plus your own call at Normal and Quick.
-- **Helen and Jess "a touch more attractive"** (your note via the Call
-  simulator session): warmer light, brighter smile, healthier skin and hair, a
-  smarter top. Waiting on Cloudflare too. The current ones stay as
-  helen-v1.webp and jess-v1.webp when I swap them.
-- Jess's portrait: still a stand-in (an unused Helen variant), because
-  Cloudflare was still out at 01:10. I retry once around 03:40. If that fails,
-  ask me for Jess's face once Workers Paid is on (it takes a minute).
+- **Helen and Jess's new portraits** (24 Oct, after Workers Paid went on):
+  warmer light, open smiles, glossier hair, smarter tops. The first ones are
+  kept as helen-v1.webp and jess-v1.webp. Darren (the test client made with
+  Create your own) now has a generated face too, so "Make a face" works. Delete
+  him from the stage if you don't want him there.
 - Create your own with a real situation of yours: does the client feel right?
 - **Not tested on purpose:** actually posting to the community. The database
   is shared with live, so a test post would have appeared to real coaches. The
@@ -81,8 +79,10 @@ script panel too (and, at your request to that session, a "script in the middle"
 2. **Two examiners for certification only.** Practice stays one examiner, so
    it's quick and costs half as much. Halves round to the nearest even number,
    because rounding up made the total higher than both examiners.
-3. **240 minutes a month per coach**, admins unlimited. You said you're happy
-   to raise it: `MONTHLY_MINUTES` in `src/lib/simulator/server.ts`.
+3. **240 minutes a month per coach**, admins unlimited, **shared across both
+   simulators** (your call, 24 Oct). A call that never ended (closed tab)
+   counts to its last line, not the full 45 minutes. You said you're happy to
+   raise it: `MONTHLY_MINUTES` in `src/lib/simulator/server.ts`.
 4. **Custom clients are always anonymised**: the AI changes every name and
    identifying detail, even for real situations. "Is this real?" shows as a
    tag ("Based on a real situation").

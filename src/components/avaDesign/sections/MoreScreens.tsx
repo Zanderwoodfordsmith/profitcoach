@@ -36,16 +36,8 @@ import { fakeVoice, prefersReducedMotion } from "../useLoop";
 import { FACES } from "./FaceOptions";
 import "./moreScreens.css";
 
-type Mark = Exclude<MarkId, "current">;
+type Mark = MarkId;
 type CallState = "speaking" | "listening" | "thinking";
-
-const MARK_CHOICES: { id: Mark; label: string }[] = [
-  { id: "pearl", label: "Pearl" },
-  { id: "orbit", label: "Orbit" },
-  { id: "halo", label: "Halo" },
-  { id: "haloCore", label: "Halo + centre" },
-  { id: "dawn", label: "Sunrise" },
-];
 
 const CALL_STATES: { id: CallState; label: string }[] = [
   { id: "speaking", label: "Talking" },
@@ -325,7 +317,17 @@ function CallTop() {
   );
 }
 
-function CallControls({ muted, onMute, transcript, onTranscript }: { muted: boolean; onMute: () => void; transcript: boolean; onTranscript: () => void }) {
+function CallControls({
+  muted,
+  onMute,
+  transcript,
+  onTranscript,
+}: {
+  muted: boolean;
+  onMute: () => void;
+  transcript: boolean;
+  onTranscript: () => void;
+}) {
   const label = "text-[13px] font-medium text-[rgba(234,244,252,0.78)]";
   return (
     <div className="absolute inset-x-0 bottom-8 z-[3] flex items-end justify-center gap-12">
@@ -342,7 +344,13 @@ function CallControls({ muted, onMute, transcript, onTranscript }: { muted: bool
         <span className={label}>End</span>
       </div>
       <div className="flex w-[110px] flex-col items-center gap-2.5">
-        <button type="button" className="ms-call-btn" aria-pressed={transcript} onClick={onTranscript} aria-label={transcript ? "Hide transcript" : "Show transcript"}>
+        <button
+          type="button"
+          className="ms-call-btn"
+          aria-pressed={transcript}
+          onClick={onTranscript}
+          aria-label={transcript ? "Hide transcript" : "Show transcript"}
+        >
           <Captions className="h-6 w-6" aria-hidden />
         </button>
         <span className={label}>{transcript ? "Hide transcript" : "Show transcript"}</span>
@@ -353,14 +361,20 @@ function CallControls({ muted, onMute, transcript, onTranscript }: { muted: bool
 
 const TRANSCRIPT = [
   { who: "You", text: "What came in overnight?" },
-  { who: "Ava", text: "Three things. Sarah Mills replied, 38 owners were invited, and you have a call with David at 2pm." },
+  {
+    who: "Ava",
+    text: "Three things. Sarah Mills replied, 38 owners were invited, and you have a call with David at 2pm.",
+  },
   { who: "You", text: "Start with Sarah." },
   { who: "Ava", text: SAY, now: true },
 ];
 
 function Transcript({ mark }: { mark: Mark }) {
   return (
-    <aside className="ad-glass-dark ad-scroll ms-panel-in absolute right-6 top-[78px] bottom-[150px] z-[3] w-[360px] overflow-auto rounded-[24px] p-6" aria-label="Transcript">
+    <aside
+      className="ad-glass-dark ad-scroll ms-panel-in absolute right-6 top-[78px] bottom-[150px] z-[3] w-[360px] overflow-auto rounded-[24px] p-6"
+      aria-label="Transcript"
+    >
       <h3 className="text-[17px] font-bold text-white">Transcript</h3>
       <p className="mt-1 text-[13px] text-[rgba(207,230,248,0.7)]">Saved to your past chats when you hang up.</p>
       <ol className="mt-5 flex flex-col gap-4">
@@ -369,9 +383,16 @@ function Transcript({ mark }: { mark: Mark }) {
             {line.who === "Ava" ? (
               <AvaMark id={mark} size={22} dark state={line.now ? "speaking" : "idle"} />
             ) : (
-              <span className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full bg-[var(--ice)] text-[9px] font-bold text-[var(--navy)]">{COACH.initials}</span>
+              <span className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full bg-[var(--ice)] text-[9px] font-bold text-[var(--navy)]">
+                {COACH.initials}
+              </span>
             )}
-            <p className="text-[15px] leading-relaxed" style={{ color: line.who === "Ava" ? "rgba(234,244,252,0.92)" : "rgba(207,230,248,0.7)" }}>
+            <p
+              className="text-[15px] leading-relaxed"
+              style={{
+                color: line.who === "Ava" ? "rgba(234,244,252,0.92)" : "rgba(207,230,248,0.7)",
+              }}
+            >
               {line.text}
             </p>
           </li>
@@ -391,7 +412,12 @@ const slide = (open: boolean): CSSProperties => ({
 function useCallChrome() {
   const [muted, setMuted] = useState(false);
   const [transcript, setTranscript] = useState(false);
-  return { muted, transcript, onMute: () => setMuted((m) => !m), onTranscript: () => setTranscript((x) => !x) };
+  return {
+    muted,
+    transcript,
+    onMute: () => setMuted((m) => !m),
+    onTranscript: () => setTranscript((x) => !x),
+  };
 }
 
 /* A · Her face, large, fading into the navy mist. */
@@ -399,21 +425,26 @@ function FaceCall({ mark, state }: { mark: Mark; state: CallState }) {
   const c = useCallChrome();
   const face = FACES.navy;
   return (
-    <div className="dark absolute inset-0 overflow-hidden" style={{ background: `radial-gradient(60% 70% at 50% 32%, #22405f 0%, ${face.room} 48%, #071a2e 100%)` }}>
+    <div
+      className="dark absolute inset-0 overflow-hidden"
+      style={{
+        background: `radial-gradient(60% 70% at 50% 32%, #22405f 0%, ${face.room} 48%, #071a2e 100%)`,
+      }}
+    >
       <div className="absolute inset-0" style={slide(c.transcript)}>
-      <div
-        className="ad-breathe absolute bg-cover"
-        style={{
-          left: 720 - 300,
-          top: -40,
-          width: 600,
-          height: 745,
-          backgroundImage: `url(${face.src})`,
-          backgroundPosition: "50% 20%",
-          WebkitMaskImage: "radial-gradient(ellipse 50% 54% at 50% 40%, #000 52%, transparent 100%)",
-          maskImage: "radial-gradient(ellipse 50% 54% at 50% 40%, #000 52%, transparent 100%)",
-        }}
-      />
+        <div
+          className="ad-breathe absolute bg-cover"
+          style={{
+            left: 720 - 300,
+            top: -40,
+            width: 600,
+            height: 745,
+            backgroundImage: `url(${face.src})`,
+            backgroundPosition: "50% 20%",
+            WebkitMaskImage: "radial-gradient(ellipse 50% 54% at 50% 40%, #000 52%, transparent 100%)",
+            maskImage: "radial-gradient(ellipse 50% 54% at 50% 40%, #000 52%, transparent 100%)",
+          }}
+        />
       </div>
       <VoiceStage state={state} focus={{ x: c.transcript ? 720 - SHIFT : 720, y: 300 }} />
       <CallTop />
@@ -421,7 +452,9 @@ function FaceCall({ mark, state }: { mark: Mark; state: CallState }) {
         <span className="flex items-center gap-2 text-[14px] font-semibold text-[rgba(207,230,248,0.85)]">
           {state === "listening" ? (
             <>
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--ice)] text-[10px] font-bold text-[var(--navy)]">{COACH.initials}</span>
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--ice)] text-[10px] font-bold text-[var(--navy)]">
+                {COACH.initials}
+              </span>
               You
             </>
           ) : (
@@ -514,14 +547,86 @@ const GROUPS: { id: Group; title: string }[] = [
   { id: "coming", title: "Coming up" },
 ];
 
-const DIGEST: { id: string; group: Group; icon: LucideIcon; title: string; line: string; when: string; action: string; fresh: boolean }[] = [
-  { id: "sarah", group: "needs", icon: Reply, title: AWAY[0].title, line: AWAY[0].line, when: "07:12", action: AWAY[0].action, fresh: AWAY[0].fresh },
-  { id: "post", group: "needs", icon: PenLine, title: "Your LinkedIn post is ready", line: "The quoting trap. It goes out at 8am if you say yes.", when: "06:30", action: "Check the post", fresh: true },
-  { id: "invites", group: "done", icon: UserCheck, title: AWAY[1].title, line: AWAY[1].line, when: "Overnight", action: AWAY[1].action, fresh: AWAY[1].fresh },
-  { id: "helen", group: "done", icon: TrendingUp, title: "Moved Helen Price to warm", line: "She looked at your profile twice this week.", when: "Yesterday", action: "Open her card", fresh: false },
-  { id: "week", group: "done", icon: LayoutGrid, title: "Wrote up your week", line: "12 new connections, 3 replies, 1 call booked.", when: "Yesterday", action: "See the week", fresh: false },
-  { id: "david", group: "coming", icon: CalendarClock, title: AWAY[2].title, line: AWAY[2].line, when: "2:00pm", action: AWAY[2].action, fresh: AWAY[2].fresh },
-  { id: "thanks", group: "coming", icon: Clock3, title: "Thank-you notes go out Thursday", line: "Day 3 of the Leeds campaign, to the 6 who accepted.", when: "Thu 9am", action: "Check them", fresh: false },
+const DIGEST: {
+  id: string;
+  group: Group;
+  icon: LucideIcon;
+  title: string;
+  line: string;
+  when: string;
+  action: string;
+  fresh: boolean;
+}[] = [
+  {
+    id: "sarah",
+    group: "needs",
+    icon: Reply,
+    title: AWAY[0].title,
+    line: AWAY[0].line,
+    when: "07:12",
+    action: AWAY[0].action,
+    fresh: AWAY[0].fresh,
+  },
+  {
+    id: "post",
+    group: "needs",
+    icon: PenLine,
+    title: "Your LinkedIn post is ready",
+    line: "The quoting trap. It goes out at 8am if you say yes.",
+    when: "06:30",
+    action: "Check the post",
+    fresh: true,
+  },
+  {
+    id: "invites",
+    group: "done",
+    icon: UserCheck,
+    title: AWAY[1].title,
+    line: AWAY[1].line,
+    when: "Overnight",
+    action: AWAY[1].action,
+    fresh: AWAY[1].fresh,
+  },
+  {
+    id: "helen",
+    group: "done",
+    icon: TrendingUp,
+    title: "Moved Helen Price to warm",
+    line: "She looked at your profile twice this week.",
+    when: "Yesterday",
+    action: "Open her card",
+    fresh: false,
+  },
+  {
+    id: "week",
+    group: "done",
+    icon: LayoutGrid,
+    title: "Wrote up your week",
+    line: "12 new connections, 3 replies, 1 call booked.",
+    when: "Yesterday",
+    action: "See the week",
+    fresh: false,
+  },
+  {
+    id: "david",
+    group: "coming",
+    icon: CalendarClock,
+    title: AWAY[2].title,
+    line: AWAY[2].line,
+    when: "2:00pm",
+    action: AWAY[2].action,
+    fresh: AWAY[2].fresh,
+  },
+  {
+    id: "thanks",
+    group: "coming",
+    icon: Clock3,
+    title: "Thank-you notes go out Thursday",
+    line: "Day 3 of the Leeds campaign, to the 6 who accepted.",
+    when: "Thu 9am",
+    action: "Check them",
+    fresh: false,
+  },
 ];
 
 /* D · What she did, and what needs your yes. */
@@ -541,7 +646,8 @@ function AwayDigest({ mark }: { mark: Mark }) {
             <TwoWeight light="While you were away," bold={`${needs} things need your yes.`} size={40} align="left" />
           </div>
           <p className="mt-4 text-[16px] leading-relaxed text-[var(--slate)]">
-            Since 6:40pm yesterday I did <span className="ad-num">{DIGEST.filter((d) => d.group === "done").length}</span> things and lined up 2 more. Nothing went out without you.
+            Since 6:40pm yesterday I did <span className="ad-num">{DIGEST.filter((d) => d.group === "done").length}</span> things and lined
+            up 2 more. Nothing went out without you.
           </p>
           <div className="mt-6 flex items-center gap-3">
             <button
@@ -588,9 +694,16 @@ function AwayDigest({ mark }: { mark: Mark }) {
                     >
                       <span
                         className="grid h-10 w-10 shrink-0 place-items-center rounded-full"
-                        style={{ background: done ? "rgba(15,122,92,0.1)" : "rgba(26,143,212,0.1)", color: done ? "#0f7a5c" : "#0c5290" }}
+                        style={{
+                          background: done ? "rgba(15,122,92,0.1)" : "rgba(26,143,212,0.1)",
+                          color: done ? "#0f7a5c" : "#0c5290",
+                        }}
                       >
-                        {done ? <Check className="h-[18px] w-[18px]" strokeWidth={2.2} aria-hidden /> : <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden />}
+                        {done ? (
+                          <Check className="h-[18px] w-[18px]" strokeWidth={2.2} aria-hidden />
+                        ) : (
+                          <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden />
+                        )}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-2 text-[16px] font-bold text-[var(--ink)]">
@@ -601,7 +714,9 @@ function AwayDigest({ mark }: { mark: Mark }) {
                       </span>
                       <span className="ad-num shrink-0 text-[13px] text-[var(--faint)]">{d.when}</span>
                       {g.id === "needs" ? (
-                        <span className="shrink-0 rounded-full bg-[var(--navy)] px-4 py-2 text-[13.5px] font-semibold text-white">{d.action}</span>
+                        <span className="shrink-0 rounded-full bg-[var(--navy)] px-4 py-2 text-[13.5px] font-semibold text-white">
+                          {d.action}
+                        </span>
                       ) : (
                         <span className="inline-flex w-[124px] shrink-0 items-center justify-end gap-1 text-[13.5px] font-semibold text-[var(--blue)]">
                           {d.action} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -632,27 +747,45 @@ const MADE: Record<string, Made> = {
   prep: { icon: NotebookPen, label: "Prep notes" },
 };
 
-const CHATS: Record<string, { time: string; made?: keyof typeof MADE; ask: string; reply: string; thing?: { title: string; line: string } }> = {
+const CHATS: Record<
+  string,
+  {
+    time: string;
+    made?: keyof typeof MADE;
+    ask: string;
+    reply: string;
+    thing?: { title: string; line: string };
+  }
+> = {
   "Leeds manufacturers campaign": {
     time: "09:12",
     made: "campaign",
     ask: ASK,
     reply: "Done. 41 owners fit your ideal client, the note uses your Leeds story, and nothing sends until you say yes.",
-    thing: { title: CAMPAIGN.name, line: `${CAMPAIGN.people} people · ${CAMPAIGN.perDay} a day · ${CAMPAIGN.steps.length} steps` },
+    thing: {
+      title: CAMPAIGN.name,
+      line: `${CAMPAIGN.people} people · ${CAMPAIGN.perDay} a day · ${CAMPAIGN.steps.length} steps`,
+    },
   },
   "Reply to Sarah Mills": {
     time: "07:40",
     made: "reply",
     ask: "Sarah asked what it costs. Help me answer.",
     reply: "Here is a draft in your words. It gives her the range, then offers a free BOSS Score first.",
-    thing: { title: "Reply to Sarah Mills", line: "86 words · waiting for your yes" },
+    thing: {
+      title: "Reply to Sarah Mills",
+      line: "86 words · waiting for your yes",
+    },
   },
   "LinkedIn post: the quoting trap": {
     time: "4:15pm",
     made: "post",
     ask: "Write a post about owners stuck doing all the quotes.",
     reply: "Here is a post in your voice. One story, 180 words, and a question at the end to get replies.",
-    thing: { title: "The quoting trap", line: "180 words · goes out tomorrow at 8am" },
+    thing: {
+      title: "The quoting trap",
+      line: "180 words · goes out tomorrow at 8am",
+    },
   },
   "Practise the pitch with a sceptical owner": {
     time: "11:02",
@@ -850,9 +983,16 @@ function ThinkingState({ mark }: { mark: Mark }) {
                 <li key={s.label} className="flex items-center gap-3 transition-opacity duration-500" style={{ opacity: shown ? 1 : 0.28 }}>
                   <span
                     className="grid h-5 w-5 shrink-0 place-items-center rounded-full"
-                    style={{ background: done ? "#0f7a5c" : "transparent", boxShadow: done ? "none" : "inset 0 0 0 1.5px rgba(12,82,144,0.35)" }}
+                    style={{
+                      background: done ? "#0f7a5c" : "transparent",
+                      boxShadow: done ? "none" : "inset 0 0 0 1.5px rgba(12,82,144,0.35)",
+                    }}
                   >
-                    {done ? <Check className="h-3 w-3 text-white" strokeWidth={3} aria-hidden /> : now ? <LoaderCircle className="ms-spin h-3.5 w-3.5 text-[var(--sky)]" aria-hidden /> : null}
+                    {done ? (
+                      <Check className="h-3 w-3 text-white" strokeWidth={3} aria-hidden />
+                    ) : now ? (
+                      <LoaderCircle className="ms-spin h-3.5 w-3.5 text-[var(--sky)]" aria-hidden />
+                    ) : null}
                   </span>
                   <span className={`text-[15px] ${now ? "font-semibold text-[var(--ink)]" : "text-[var(--body)]"}`}>{s.label}</span>
                   {done ? <span className="ml-auto text-[13px] text-[var(--faint)]">{s.detail}</span> : null}
@@ -884,7 +1024,8 @@ function LinkedInDownState({ mark }: { mark: Mark }) {
             <p className="text-[18px] font-bold text-[var(--ink)]">I can&apos;t reach LinkedIn right now.</p>
           </div>
           <p className="ad-ava-text mt-3">
-            Your Leeds campaign is paused, so nothing is lost and nobody gets a message twice. I&apos;ll try again at 10:30 and tell you when it&apos;s back.
+            Your Leeds campaign is paused, so nothing is lost and nobody gets a message twice. I&apos;ll try again at 10:30 and tell you
+            when it&apos;s back.
           </p>
           <div className="mt-5 flex items-center gap-2.5">
             <button
@@ -893,12 +1034,18 @@ function LinkedInDownState({ mark }: { mark: Mark }) {
               disabled={phase === "trying"}
               className="inline-flex items-center gap-2 rounded-full bg-[var(--navy)] px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--blue)] disabled:opacity-80"
             >
-              {phase === "trying" ? <LoaderCircle className="ms-spin h-4 w-4" aria-hidden /> : <RotateCcw className="h-4 w-4" aria-hidden />}
+              {phase === "trying" ? (
+                <LoaderCircle className="ms-spin h-4 w-4" aria-hidden />
+              ) : (
+                <RotateCcw className="h-4 w-4" aria-hidden />
+              )}
               {phase === "trying" ? "Trying" : "Try now"}
             </button>
             <span className="ad-pill !py-2.5">Reconnect LinkedIn</span>
           </div>
-          {phase === "failed" ? <p className="ad-arrive mt-3 text-[14px] text-[var(--slate)]">Still no luck. I&apos;ll keep trying and let you know.</p> : null}
+          {phase === "failed" ? (
+            <p className="ad-arrive mt-3 text-[14px] text-[var(--slate)]">Still no luck. I&apos;ll keep trying and let you know.</p>
+          ) : null}
         </div>
       </div>
     </StateRoom>
@@ -957,10 +1104,26 @@ function LimitState({ mark }: { mark: Mark }) {
 /* F · The four not-normal moments, side by side. */
 function StatesBoard({ mark }: { mark: Mark }) {
   const tiles = [
-    { title: "Thinking", line: "Her symbol speeds up and the plan forms step by step.", node: <ThinkingState mark={mark} /> },
-    { title: "Can't reach LinkedIn", line: "Says what's paused, when she'll retry, and gives a Try now.", node: <LinkedInDownState mark={mark} /> },
-    { title: "Offline", line: "Your message waits and sends itself when you're back.", node: <OfflineState /> },
-    { title: "Limit reached for today", line: "Why she stopped, and when she starts again.", node: <LimitState mark={mark} /> },
+    {
+      title: "Thinking",
+      line: "Her symbol speeds up and the plan forms step by step.",
+      node: <ThinkingState mark={mark} />,
+    },
+    {
+      title: "Can't reach LinkedIn",
+      line: "Says what's paused, when she'll retry, and gives a Try now.",
+      node: <LinkedInDownState mark={mark} />,
+    },
+    {
+      title: "Offline",
+      line: "Your message waits and sends itself when you're back.",
+      node: <OfflineState />,
+    },
+    {
+      title: "Limit reached for today",
+      line: "Why she stopped, and when she starts again.",
+      node: <LimitState mark={mark} />,
+    },
   ];
   return (
     <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
@@ -1078,7 +1241,7 @@ function Replay({ onClick }: { onClick: () => void }) {
 }
 
 export function MoreScreens() {
-  const [mark, setMark] = useState<Mark>("pearl");
+  const mark: Mark = "haloCore";
   const [faceState, setFaceState] = useState<CallState>("speaking");
   const [symbolState, setSymbolState] = useState<CallState>("speaking");
   const [meetRun, setMeetRun] = useState(0);
@@ -1088,10 +1251,9 @@ export function MoreScreens() {
     <div className="flex flex-col gap-14">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <SectionIntro title="More screens">
-          The other places Ava turns up: on a call, the first time you meet her, when you come back, your past chats, when something goes wrong,
-          and the second she wakes up. Try any symbol on these screens.
+          The other places Ava turns up: on a call, the first time you meet her, when you come back, your past chats, when something goes
+          wrong, and the second she wakes up.
         </SectionIntro>
-        <Seg label="Symbol on these screens" value={mark} options={MARK_CHOICES} onChange={setMark} />
       </div>
 
       <Option

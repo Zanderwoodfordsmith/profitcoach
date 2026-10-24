@@ -53,7 +53,6 @@ import {
   type CommunityFeedLocalState,
 } from "@/lib/communityPostFeedLocalState";
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
-import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 import {
   CONTENT_WITH_RAIL_ROW_CLASS,
@@ -925,8 +924,6 @@ export function CommunityFeed() {
    */
   const searchParamsRef = useRef(searchParams);
   searchParamsRef.current = searchParams;
-  const communityTab =
-    searchParams.get("tab") === "map" ? "map" : "feed";
 
   const [categories, setCategories] = useState<CommunityCategory[]>([]);
   const visibleCategories = useMemo(() => {
@@ -2064,11 +2061,6 @@ export function CommunityFeed() {
   return (
     <>
       <div className={CONTENT_WITH_RAIL_ROW_CLASS}>
-        {communityTab === "map" ? (
-          <div className="min-w-0 w-full flex-1 pt-5 lg:pt-6">
-            <CommunityMembersMap />
-          </div>
-        ) : (
             <ContentWithRailMain className="flex min-h-0 flex-col gap-6 pt-3 lg:pt-3.5">
               {loadError ? (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
@@ -2468,7 +2460,7 @@ export function CommunityFeed() {
                 </nav>
               ) : null}
 
-              {communityTab === "feed" && selectedPost ? (
+              {selectedPost ? (
                 <PostDetailModal
                   post={selectedPost}
                   categories={visibleCategories}
@@ -2486,14 +2478,7 @@ export function CommunityFeed() {
                 />
               ) : null}
             </ContentWithRailMain>
-        )}
-        {communityTab !== "map" ? (
-          <CommunitySidebar
-            className={
-              communityTab === "feed" ? "pt-3 lg:pt-3.5" : undefined
-            }
-          />
-        ) : null}
+        <CommunitySidebar className="pt-3 lg:pt-3.5" />
       </div>
     </>
   );

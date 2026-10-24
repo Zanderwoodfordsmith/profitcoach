@@ -7,7 +7,7 @@ import { MAX_OBJECTIONS, objectionList } from "@/lib/callSimulator/objections";
 import { prospectById } from "@/lib/callSimulator/prospects";
 import { prospectFirstMessage, prospectPrompt } from "@/lib/callSimulator/prompt";
 import { difficultyById } from "@/lib/simulator/difficulty";
-import { coachFirstName, signedCallUrl, simulatorConfigured } from "@/lib/simulator/server";
+import { MONTHLY_MINUTES, coachFirstName, minutesThisMonth, signedCallUrl, simulatorConfigured } from "@/lib/simulator/server";
 import type { CallStart, Difficulty } from "@/lib/simulator/types";
 
 export const maxDuration = 30;
@@ -20,6 +20,10 @@ export async function POST(request: Request) {
   }
   if (!simulatorConfigured()) {
     return NextResponse.json({ error: "Voice isn't set up yet." }, { status: 503 });
+  }
+  // The same monthly allowance as the Client simulator, counted across both.
+  if (!check.callerIsAdmin && (await minutesThisMonth(check.userId)) >= MONTHLY_MINUTES) {
+    return NextResponse.json({ error: `You've used your ${MONTHLY_MINUTES} practice minutes this month. They reset on the 1st.` }, { status: 429 });
   }
 
   const body = (await request.json().catch(() => null)) as {

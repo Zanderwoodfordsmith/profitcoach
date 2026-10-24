@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowRight,
-  Banknote,
   Check,
   CircleCheck,
   Gauge,
-  Hand,
   Linkedin,
   MapPin,
   MessageCircle,
@@ -20,12 +18,10 @@ import {
   Send,
   ShieldCheck,
   UserPlus,
-  Users,
 } from "lucide-react";
 
-import { AvaMark } from "../marks";
+import { AvaMark, type MarkId } from "../marks";
 import { CAMPAIGN, CONNECT_NOTE, PLAN_STEPS, PROSPECTS, type Prospect } from "../mock";
-import { Option, SectionIntro, Seg } from "../Option";
 import type { AvaState } from "../useLoop";
 import "./moments.css";
 
@@ -35,12 +31,12 @@ import "./moments.css";
  * room) inside a chat column, and replays its entrance on "Play again".
  */
 
-type RoomChoice = "light" | "dark" | "both";
-
 const glass = (dark: boolean) => (dark ? "ad-glass-dark" : "ad-glass");
 
 /** Staggered entrance delays, so the parts of a card arrive in order. */
-const at = (i: number, base = 0.2, step = 0.08): CSSProperties => ({ animationDelay: `${base + i * step}s` });
+const at = (i: number, base = 0.2, step = 0.08): CSSProperties => ({
+  animationDelay: `${base + i * step}s`,
+});
 
 const first = (p: Prospect) => p.name.split(" ")[0];
 const staffCount = (p: Prospect) => p.staff.split(" ")[0];
@@ -54,24 +50,16 @@ const STEP_PREVIEWS = [
 
 /* ------------------------------------------------------------ Rooms */
 
-function Rooms({ choice, label, minH, children }: { choice: RoomChoice; label: string; minH?: number; children: (dark: boolean) => ReactNode }) {
-  const rooms = choice === "both" ? [false, true] : [choice === "dark"];
-  return (
-    <div className={`grid gap-5 ${rooms.length > 1 ? "xl:grid-cols-2" : ""}`}>
-      {rooms.map((dark) => (
-        <RoomPanel key={String(dark)} dark={dark} label={label} minH={minH}>
-          {children(dark)}
-        </RoomPanel>
-      ))}
-    </div>
-  );
-}
-
 /** One room with a chat column in it. "Play again" remounts what is inside. */
-function RoomPanel({ dark, label, minH, children }: { dark: boolean; label: string; minH?: number; children: ReactNode }) {
+export function RoomPanel({ dark, label, minH, children }: { dark: boolean; label: string; minH?: number; children: ReactNode }) {
   const [run, setRun] = useState(0);
   return (
-    <div className={`adm-room ${dark ? "dark" : ""}`} style={{ minHeight: minH }} role="group" aria-label={`${label}, ${dark ? "navy room" : "sunrise room"}`}>
+    <div
+      className={`adm-room ${dark ? "dark" : ""}`}
+      style={{ minHeight: minH }}
+      role="group"
+      aria-label={`${label}, ${dark ? "navy room" : "sunrise room"}`}
+    >
       {dark ? (
         <div className="ad-sky-beam">
           <span className="ad-dust" />
@@ -92,18 +80,32 @@ function RoomPanel({ dark, label, minH, children }: { dark: boolean; label: stri
 
 /* ------------------------------------------------------------ Chat parts */
 
-function Ava({ dark, children, delay = 0.05, state = "idle" }: { dark: boolean; children: ReactNode; delay?: number; state?: AvaState }) {
+/** Lets another tab choose the symbol beside her words; this tab keeps Pearl and Orbit. */
+export const MomentMark = createContext<MarkId | null>(null);
+
+export function Ava({
+  dark,
+  children,
+  delay = 0.05,
+  state = "idle",
+}: {
+  dark: boolean;
+  children: ReactNode;
+  delay?: number;
+  state?: AvaState;
+}) {
+  const chosen = useContext(MomentMark);
   return (
     <div className="ad-arrive flex items-start gap-3" style={{ animationDelay: `${delay}s` }}>
       <span className="mt-0.5 shrink-0">
-        <AvaMark id={dark ? "orbit" : "pearl"} size={24} dark={dark} state={state} />
+        <AvaMark id={chosen ?? "haloCore"} size={24} dark={dark} state={state} />
       </span>
       <p className="ad-ava-text min-w-0 flex-1">{children}</p>
     </div>
   );
 }
 
-function You({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
+export function You({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   return (
     <div className="flex justify-end">
       <div className="ad-user-bubble ad-arrive" style={{ animationDelay: `${delay}s` }}>
@@ -114,7 +116,7 @@ function You({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
 }
 
 /** Things she hands over line up under her words, not under her symbol. */
-function Handed({ children }: { children: ReactNode }) {
+export function Handed({ children }: { children: ReactNode }) {
   return <div className="@md:ml-9">{children}</div>;
 }
 
@@ -171,106 +173,8 @@ function ProspectActions({ p, small }: { p: Prospect; small?: boolean }) {
 
 /* ------------------------------------------------------------ 1. Prospect card */
 
-/* A: a calm contact card. */
-function ProspectContact({ dark, p = PROSPECTS[0] }: { dark: boolean; p?: Prospect }) {
-  return (
-    <>
-      <Ava dark={dark}>I found someone you should meet.</Ava>
-      <Handed>
-        <article className={`${glass(dark)} ad-arrive rounded-[24px] p-5 @md:p-6`} style={at(0, 0.25)}>
-          <header className="flex items-start gap-4">
-            <Face p={p} size={48} />
-            <div className="min-w-0 flex-1">
-              <h4 className="adm-t1 text-[18px] font-bold tracking-[-0.01em]">{p.name}</h4>
-              <p className="adm-t2 text-[14.5px] leading-snug">
-                {p.role}, {p.firm}
-              </p>
-            </div>
-            <div className="shrink-0 text-right">
-              <div className="ad-num adm-t1 text-[30px] font-bold leading-none tracking-[-0.02em]">{p.fit}</div>
-              <div className="adm-label mt-1.5">fit score</div>
-            </div>
-          </header>
-          <ul className="adm-t2 ad-arrive mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[14px]" style={at(1, 0.25)}>
-            <li className="inline-flex items-center gap-1.5">
-              <MapPin className="adm-accent h-4 w-4" aria-hidden /> {p.town}
-            </li>
-            <li className="inline-flex items-center gap-1.5">
-              <Users className="adm-accent h-4 w-4" aria-hidden /> <span className="ad-num">{p.staff}</span>
-            </li>
-            <li className="inline-flex items-center gap-1.5">
-              <Banknote className="adm-accent h-4 w-4" aria-hidden /> <span className="ad-num">{p.revenue} a year</span>
-            </li>
-          </ul>
-          <p className="ad-arrive mt-4 max-w-[60ch] text-[15px] leading-relaxed" style={at(2, 0.25)}>
-            <span className="adm-t1 font-semibold">Why now: </span>
-            <span className="adm-t2">{p.why}</span>
-          </p>
-          <div className="adm-rule ad-arrive mt-5 border-t pt-4" style={at(3, 0.25)}>
-            <ProspectActions p={p} />
-          </div>
-        </article>
-      </Handed>
-    </>
-  );
-}
-
-/* B: the boarding pass discipline. Labelled segments, every figure lined up. */
-function ProspectPass({ dark, p = PROSPECTS[0] }: { dark: boolean; p?: Prospect }) {
-  const fields = [
-    { label: "Town", value: p.town },
-    { label: "Staff", value: staffCount(p) },
-    { label: "Revenue", value: p.revenue },
-  ];
-  return (
-    <>
-      <Ava dark={dark}>I found someone you should meet.</Ava>
-      <Handed>
-        <article className={`${glass(dark)} ad-arrive overflow-hidden rounded-[22px]`} style={at(0, 0.25)}>
-          <div className="grid @lg:grid-cols-[1fr_168px]">
-            <div className="p-5 @md:p-6">
-              <div className="adm-label">Owner</div>
-              <div className="mt-2 flex items-center gap-3">
-                <Face p={p} size={40} />
-                <div className="min-w-0">
-                  <h4 className="adm-t1 text-[19px] font-bold leading-tight tracking-[-0.01em]">{p.name}</h4>
-                  <p className="adm-t2 truncate text-[14px]">
-                    {p.role}, {p.firm}
-                  </p>
-                </div>
-              </div>
-              <dl className="adm-rule mt-5 grid grid-cols-3 border-t pt-4">
-                {fields.map((f, i) => (
-                  <div key={f.label} className={`ad-arrive min-w-0 ${i ? "adm-rule border-l pl-4" : ""}`} style={at(i, 0.4)}>
-                    <dt className="adm-label">{f.label}</dt>
-                    <dd className="ad-num adm-t1 mt-1 truncate text-[17px] font-semibold">{f.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-            <div className="adm-rule flex items-end justify-between border-t p-5 @md:px-6 @lg:flex-col @lg:items-start @lg:border-l @lg:border-t-0 @lg:py-6">
-              <div className="adm-label">Fit score</div>
-              <div className="ad-arrive text-right @lg:text-left" style={at(3, 0.4)}>
-                <span className="ad-num adm-t1 text-[46px] font-bold leading-none tracking-[-0.03em]">{p.fit}</span>
-                <span className="ad-num adm-t3 ml-1 text-[15px] font-semibold">/ 100</span>
-              </div>
-            </div>
-          </div>
-          <div className="adm-rule ad-arrive border-t px-5 py-4 @md:px-6" style={at(4, 0.4)}>
-            <div className="adm-label">Why now</div>
-            <p className="adm-t1 mt-1 text-[15px] leading-relaxed">{p.why}</p>
-          </div>
-          <div className="adm-rule ad-arrive border-t px-5 py-3.5 @md:px-6" style={at(5, 0.4)}>
-            <ProspectActions p={p} />
-          </div>
-        </article>
-      </Handed>
-    </>
-  );
-}
-
 /* C: no card at all. She just tells you, with the actions underneath. */
-function ProspectInline({ dark, p = PROSPECTS[0] }: { dark: boolean; p?: Prospect }) {
+export function ProspectInline({ dark, p = PROSPECTS[0] }: { dark: boolean; p?: Prospect }) {
   return (
     <>
       <Ava dark={dark}>I found someone you should meet.</Ava>
@@ -287,8 +191,8 @@ function ProspectInline({ dark, p = PROSPECTS[0] }: { dark: boolean; p?: Prospec
           </div>
         </div>
         <p className="ad-ava-text ad-arrive mt-3 max-w-[62ch]" style={at(1, 0.3)}>
-          She has <span className="ad-num">{staffCount(p)}</span> staff and turns over about <span className="ad-num">{p.revenue}</span>. Last week she posted about
-          losing two weekends a month to quotes, so now is a good time to say hello.
+          She has <span className="ad-num">{staffCount(p)}</span> staff and turns over about <span className="ad-num">{p.revenue}</span>.
+          Last week she posted about losing two weekends a month to quotes, so now is a good time to say hello.
         </p>
         <div className="ad-arrive mt-4" style={at(2, 0.3)}>
           <ProspectActions p={p} small />
@@ -300,7 +204,7 @@ function ProspectInline({ dark, p = PROSPECTS[0] }: { dark: boolean; p?: Prospec
 
 /* ------------------------------------------------------------ 2. Prospect list */
 
-function ProspectList({ dark }: { dark: boolean }) {
+export function ProspectList({ dark }: { dark: boolean }) {
   const stats = [
     { n: 48, label: "found" },
     { n: 41, label: "fit" },
@@ -386,7 +290,10 @@ function OnLine({ onPause }: { onPause: () => void }) {
 
 function OnOff({ on }: { on: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12.5px] font-semibold ${on ? "adm-on" : "adm-t2"}`} style={{ background: on ? "var(--on-soft)" : "var(--soft-2)" }}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12.5px] font-semibold ${on ? "adm-on" : "adm-t2"}`}
+      style={{ background: on ? "var(--on-soft)" : "var(--soft-2)" }}
+    >
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: on ? "var(--on)" : "var(--t3)" }} />
       {on ? "On" : "Off"}
     </span>
@@ -396,7 +303,7 @@ function OnOff({ on }: { on: boolean }) {
 const daysToInvite = Math.ceil(CAMPAIGN.people / CAMPAIGN.perDay);
 
 /* A: one summary card, the steps down the side, a plain button. */
-function CampaignSummary({ dark }: { dark: boolean }) {
+export function CampaignSummary({ dark }: { dark: boolean }) {
   const [on, setOn] = useState(false);
   const facts = [
     { label: "People", value: String(CAMPAIGN.people) },
@@ -429,7 +336,9 @@ function CampaignSummary({ dark }: { dark: boolean }) {
                 <span className="ad-num adm-t1 pt-px text-[14px] font-bold">{s.day}</span>
                 <span className="relative flex justify-center">
                   <span className="mt-[6px] h-2.5 w-2.5 rounded-full" style={{ background: "var(--accent)" }} />
-                  {i < CAMPAIGN.steps.length - 1 ? <span className="absolute bottom-0 top-[22px] w-px" style={{ background: "var(--line)" }} /> : null}
+                  {i < CAMPAIGN.steps.length - 1 ? (
+                    <span className="absolute bottom-0 top-[22px] w-px" style={{ background: "var(--line)" }} />
+                  ) : null}
                 </span>
                 <div className={i < CAMPAIGN.steps.length - 1 ? "pb-4" : ""}>
                   <div className="adm-t1 text-[15px] font-semibold">{s.what}</div>
@@ -500,7 +409,7 @@ function HoldButton({ onDone, children }: { onDone: () => void; children: ReactN
 }
 
 /* B: the ten days laid out like a calendar, and you hold to turn it on. */
-function CampaignDays({ dark }: { dark: boolean }) {
+export function CampaignDays({ dark }: { dark: boolean }) {
   const [on, setOn] = useState(false);
   const marked = new Map(CAMPAIGN.steps.map((s, i) => [Number(s.day.replace("Day ", "")), i]));
   const icons = [UserPlus, MessageCircle, Gauge];
@@ -513,7 +422,8 @@ function CampaignDays({ dark }: { dark: boolean }) {
             <div>
               <h4 className="adm-t1 text-[20px] font-bold tracking-[-0.015em]">{CAMPAIGN.name}</h4>
               <p className="adm-t2 text-[14px]">
-                <span className="ad-num">{CAMPAIGN.people}</span> people, <span className="ad-num">{CAMPAIGN.perDay}</span> new invites a day
+                <span className="ad-num">{CAMPAIGN.people}</span> people, <span className="ad-num">{CAMPAIGN.perDay}</span> new invites a
+                day
               </p>
             </div>
             <OnOff on={on} />
@@ -536,7 +446,11 @@ function CampaignDays({ dark }: { dark: boolean }) {
                   }}
                 >
                   <span className="ad-num text-[12px] font-semibold">{day}</span>
-                  {Icon ? <Icon className="h-4 w-4" aria-label={CAMPAIGN.steps[step!].what} /> : <span className="h-1 w-1 rounded-full" style={{ background: "var(--line)" }} />}
+                  {Icon ? (
+                    <Icon className="h-4 w-4" aria-label={CAMPAIGN.steps[step!].what} />
+                  ) : (
+                    <span className="h-1 w-1 rounded-full" style={{ background: "var(--line)" }} />
+                  )}
                 </div>
               );
             })}
@@ -561,60 +475,11 @@ function CampaignDays({ dark }: { dark: boolean }) {
               <OnLine onPause={() => setOn(false)} />
             ) : (
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="adm-t2 max-w-[34ch] text-[14px] leading-snug">Nothing sends until you say yes. Hold the button for a second, so it can&apos;t happen by mistake.</p>
+                <p className="adm-t2 max-w-[34ch] text-[14px] leading-snug">
+                  Nothing sends until you say yes. Hold the button for a second, so it can&apos;t happen by mistake.
+                </p>
                 <HoldButton onDone={() => setOn(true)}>Hold to turn on</HoldButton>
               </div>
-            )}
-          </footer>
-        </article>
-      </Handed>
-    </>
-  );
-}
-
-/* C: she reads back exactly what will happen, then you say yes. */
-function CampaignReadBack({ dark }: { dark: boolean }) {
-  const [on, setOn] = useState(false);
-  const lines = [
-    { icon: UserPlus, text: <>I invite <b className="ad-num">{CAMPAIGN.perDay}</b> Leeds owners a day, starting tomorrow at 9am. All <b className="ad-num">{CAMPAIGN.people}</b> are invited in <span className="ad-num">{daysToInvite}</span> days.</> },
-    { icon: MessageCircle, text: <>On day 3, I thank them for connecting.</> },
-    { icon: Gauge, text: <>On day 10, I offer a free BOSS Score.</> },
-    { icon: Hand, text: <>If anyone replies, I stop and bring it to you.</> },
-  ];
-  return (
-    <>
-      <Ava dark={dark}>Here is what happens if you say yes.</Ava>
-      <Handed>
-        <article className={`${glass(dark)} ad-arrive rounded-[24px] p-5 @md:p-6`} style={at(0, 0.25)}>
-          <header className="flex items-start justify-between gap-3">
-            <h4 className="adm-t1 text-[20px] font-bold tracking-[-0.015em]">{CAMPAIGN.name}</h4>
-            <OnOff on={on} />
-          </header>
-          <ul className="mt-4 flex flex-col gap-3.5">
-            {lines.map(({ icon: Icon, text }, i) => (
-              <li key={i} className="ad-arrive flex items-start gap-3" style={at(i, 0.4, 0.12)}>
-                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full" style={{ background: "var(--soft-2)" }}>
-                  <Icon className="adm-accent h-3.5 w-3.5" aria-hidden />
-                </span>
-                <p className="adm-t1 text-[16px] leading-relaxed [&_b]:font-bold">{text}</p>
-              </li>
-            ))}
-          </ul>
-          <footer className="adm-rule ad-arrive mt-6 border-t pt-5" style={at(5, 0.4, 0.12)}>
-            {on ? (
-              <OnLine onPause={() => setOn(false)} />
-            ) : (
-              <>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button type="button" className="adm-btn big" onClick={() => setOn(true)}>
-                    Yes, turn on for {CAMPAIGN.people} people
-                  </button>
-                  <button type="button" className="adm-link">
-                    Change something
-                  </button>
-                </div>
-                <p className="adm-t3 mt-3 text-[13.5px]">Nothing sends until you say yes. You can pause it any time.</p>
-              </>
             )}
           </footer>
         </article>
@@ -627,7 +492,7 @@ function CampaignReadBack({ dark }: { dark: boolean }) {
 
 const LIMIT = 300;
 
-function DraftApprove({ dark }: { dark: boolean }) {
+export function DraftApprove({ dark }: { dark: boolean }) {
   const p = PROSPECTS[0];
   const [text, setText] = useState(CONNECT_NOTE);
   const [editing, setEditing] = useState(false);
@@ -655,7 +520,10 @@ function DraftApprove({ dark }: { dark: boolean }) {
                 autoFocus
                 aria-label="Your note to Sarah"
                 className="adm-t1 block w-full resize-none rounded-[14px] p-3 text-[16px] leading-relaxed outline-none"
-                style={{ background: "var(--soft)", boxShadow: "inset 0 0 0 1px var(--line)" }}
+                style={{
+                  background: "var(--soft)",
+                  boxShadow: "inset 0 0 0 1px var(--line)",
+                }}
               />
             ) : (
               <p className="adm-t1 whitespace-pre-wrap text-[16px] leading-relaxed">{text}</p>
@@ -670,7 +538,8 @@ function DraftApprove({ dark }: { dark: boolean }) {
           <footer className="adm-rule border-t px-5 py-4 @md:px-6">
             {sent ? (
               <p className="ad-arrive adm-on inline-flex min-h-[40px] items-center gap-2 text-[14.5px] font-semibold">
-                <CircleCheck className="h-5 w-5" aria-hidden /> Sent to Sarah at <span className="ad-num">09:14</span>. I&apos;ll tell you when she replies.
+                <CircleCheck className="h-5 w-5" aria-hidden /> Sent to Sarah at <span className="ad-num">09:14</span>. I&apos;ll tell you
+                when she replies.
               </p>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
@@ -685,7 +554,12 @@ function DraftApprove({ dark }: { dark: boolean }) {
                     </>
                   )}
                 </button>
-                <button type="button" className="adm-btn ml-auto disabled:cursor-not-allowed disabled:opacity-50" disabled={over > 0} onClick={() => setSent(true)}>
+                <button
+                  type="button"
+                  className="adm-btn ml-auto disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={over > 0}
+                  onClick={() => setSent(true)}
+                >
                   <Send className="h-4 w-4" aria-hidden /> Approve and send
                 </button>
               </div>
@@ -701,7 +575,7 @@ function DraftApprove({ dark }: { dark: boolean }) {
 
 const FOUND = 48;
 
-function WorkingProgress({ dark }: { dark: boolean }) {
+export function WorkingProgress({ dark }: { dark: boolean }) {
   const [cur, setCur] = useState(0);
   const [found, setFound] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -730,7 +604,12 @@ function WorkingProgress({ dark }: { dark: boolean }) {
         {done ? "All done. Have a look before anything goes out." : "On it. Here is my plan. I'll tick each step off as I go."}
       </Ava>
       <Handed>
-        <section className={`${glass(dark)} ad-arrive rounded-[24px] p-3 @md:p-4`} style={at(0, 0.5)} aria-label="Ava's plan" aria-live="polite">
+        <section
+          className={`${glass(dark)} ad-arrive rounded-[24px] p-3 @md:p-4`}
+          style={at(0, 0.5)}
+          aria-label="Ava's plan"
+          aria-live="polite"
+        >
           <header className="flex items-center justify-between gap-3 px-2 pb-2 pt-1 @md:px-3">
             <h4 className="adm-t1 text-[16px] font-bold">{done ? "Campaign ready" : "Building your campaign"}</h4>
             <div className="flex items-center gap-2">
@@ -750,7 +629,15 @@ function WorkingProgress({ dark }: { dark: boolean }) {
               const isDone = i < cur;
               const isNow = i === cur && !done;
               const lit = isDone && i === cur - 1 && !seen.includes(i); // only the step that just changed
-              const detail = isDone ? s.detail : isNow && i === 0 ? `Sales Navigator, ${found} found` : isNow ? (paused ? "Paused" : "Working on it") : "";
+              const detail = isDone
+                ? s.detail
+                : isNow && i === 0
+                  ? `Sales Navigator, ${found} found`
+                  : isNow
+                    ? paused
+                      ? "Paused"
+                      : "Working on it"
+                    : "";
               return (
                 <li
                   key={s.label}
@@ -758,11 +645,29 @@ function WorkingProgress({ dark }: { dark: boolean }) {
                   onMouseEnter={() => isDone && look(i)}
                   onFocus={() => isDone && look(i)}
                   className={`adm-unseen-fade grid h-[60px] grid-cols-[24px_1fr] items-center gap-3 rounded-[14px] px-2 outline-none @md:px-3 ${lit ? "ad-unseen" : ""}`}
-                  style={{ background: lit ? (dark ? "rgba(124,195,242,0.08)" : "rgba(255,255,255,0.55)") : undefined, opacity: !isDone && !isNow ? 0.45 : 1 }}
+                  style={{
+                    background: lit ? (dark ? "rgba(124,195,242,0.08)" : "rgba(255,255,255,0.55)") : undefined,
+                    opacity: !isDone && !isNow ? 0.45 : 1,
+                  }}
                 >
-                  <span className="grid h-6 w-6 place-items-center rounded-full" style={{ background: isDone ? "var(--accent)" : "transparent", boxShadow: isDone ? undefined : "inset 0 0 0 1.5px var(--line)" }}>
-                    {isDone ? <Check className="adm-flap h-3.5 w-3.5" strokeWidth={3} style={{ color: dark ? "var(--navy)" : "#fff" }} aria-label="Done" /> : null}
-                    {isNow ? <span className={`h-2 w-2 rounded-full ${paused ? "" : "adm-live"}`} style={{ background: "var(--sky)" }} /> : null}
+                  <span
+                    className="grid h-6 w-6 place-items-center rounded-full"
+                    style={{
+                      background: isDone ? "var(--accent)" : "transparent",
+                      boxShadow: isDone ? undefined : "inset 0 0 0 1.5px var(--line)",
+                    }}
+                  >
+                    {isDone ? (
+                      <Check
+                        className="adm-flap h-3.5 w-3.5"
+                        strokeWidth={3}
+                        style={{ color: dark ? "var(--navy)" : "#fff" }}
+                        aria-label="Done"
+                      />
+                    ) : null}
+                    {isNow ? (
+                      <span className={`h-2 w-2 rounded-full ${paused ? "" : "adm-live"}`} style={{ background: "var(--sky)" }} />
+                    ) : null}
                   </span>
                   <span className="min-w-0">
                     <span className={`block truncate text-[15px] font-semibold ${isNow ? "adm-accent" : "adm-t1"}`}>
@@ -797,12 +702,31 @@ function WorkingProgress({ dark }: { dark: boolean }) {
 /* ------------------------------------------------------------ 6. A choice */
 
 const WAYS = [
-  { id: "nav", icon: Linkedin, name: "Sales Navigator", line: "Owners by name, with their role and firm size.", reply: "Good choice. I'll look for owners of £1M+ manufacturers in Leeds.", pick: true },
-  { id: "maps", icon: MapPin, name: "Google Maps", line: "Firms near Leeds, with a phone number and reviews.", reply: "Okay. I'll find manufacturers on the map around Leeds, then look up who owns them." },
-  { id: "search", icon: Search, name: "Google Search", line: "Any firm that matches the words you choose.", reply: "Okay. I'll search for Leeds manufacturers, then look up who owns them." },
+  {
+    id: "nav",
+    icon: Linkedin,
+    name: "Sales Navigator",
+    line: "Owners by name, with their role and firm size.",
+    reply: "Good choice. I'll look for owners of £1M+ manufacturers in Leeds.",
+    pick: true,
+  },
+  {
+    id: "maps",
+    icon: MapPin,
+    name: "Google Maps",
+    line: "Firms near Leeds, with a phone number and reviews.",
+    reply: "Okay. I'll find manufacturers on the map around Leeds, then look up who owns them.",
+  },
+  {
+    id: "search",
+    icon: Search,
+    name: "Google Search",
+    line: "Any firm that matches the words you choose.",
+    reply: "Okay. I'll search for Leeds manufacturers, then look up who owns them.",
+  },
 ] as const;
 
-function ChoiceQuestion({ dark }: { dark: boolean }) {
+export function ChoiceQuestion({ dark }: { dark: boolean }) {
   const [chosen, setChosen] = useState<string | null>(null);
   const way = WAYS.find((w) => w.id === chosen);
   return (
@@ -859,7 +783,7 @@ function ChoiceQuestion({ dark }: { dark: boolean }) {
 
 /* ------------------------------------------------------------ 7. Success */
 
-function CampaignOn({ dark }: { dark: boolean }) {
+export function CampaignOn({ dark }: { dark: boolean }) {
   const facts = [
     { n: String(CAMPAIGN.people), label: "people" },
     { n: String(CAMPAIGN.perDay), label: "a day" },
@@ -872,7 +796,7 @@ function CampaignOn({ dark }: { dark: boolean }) {
         <div className="adm-ring-wrap h-[72px] w-[72px]">
           <span className="adm-ring" style={{ animationDelay: "0.35s" }} />
           <span className="adm-ring" style={{ animationDelay: "0.9s" }} />
-          <AvaMark id={dark ? "orbit" : "pearl"} size={72} dark={dark} state="speaking" />
+          <AvaMark id="haloCore" size={72} dark={dark} state="speaking" />
         </div>
         <h4 className="adm-t1 ad-arrive mt-9 text-[28px] font-bold tracking-[-0.02em]" style={at(0, 0.55)}>
           The campaign is on.
@@ -903,7 +827,7 @@ function CampaignOn({ dark }: { dark: boolean }) {
 
 /* ------------------------------------------------------------ 8. Nudge toast */
 
-function Nudge({ dark }: { dark: boolean }) {
+export function Nudge({ dark }: { dark: boolean }) {
   const [answer, setAnswer] = useState<null | "read" | "later">(null);
   return (
     <>
@@ -916,7 +840,9 @@ function Nudge({ dark }: { dark: boolean }) {
       </div>
       {answer ? (
         <Ava dark={dark} delay={0.35} state="speaking">
-          {answer === "read" ? "Here is Sarah's message and my answer. Nothing goes until you approve it." : "Okay. I'll bring it back at 4pm."}
+          {answer === "read"
+            ? "Here is Sarah's message and my answer. Nothing goes until you approve it."
+            : "Okay. I'll bring it back at 4pm."}
         </Ava>
       ) : null}
       <div
@@ -925,7 +851,7 @@ function Nudge({ dark }: { dark: boolean }) {
       >
         <div className="flex items-start gap-3">
           <span className="mt-0.5 shrink-0">
-            <AvaMark id={dark ? "orbit" : "pearl"} size={28} dark={dark} state="speaking" />
+            <AvaMark id="haloCore" size={28} dark={dark} state="speaking" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-2">
@@ -949,95 +875,3 @@ function Nudge({ dark }: { dark: boolean }) {
 }
 
 /* ------------------------------------------------------------ The tab */
-
-function Moment({ title, intro, children }: { title: string; intro: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-8 border-t border-[var(--rule)] pt-12">
-      <div className="max-w-[70ch]">
-        <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[var(--ink)]">{title}</h3>
-        <p className="mt-1.5 text-[16px] leading-relaxed text-[var(--slate)]">{intro}</p>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-export function Moments() {
-  const [room, setRoom] = useState<RoomChoice>("both");
-  const R = (label: string, View: (p: { dark: boolean }) => ReactNode, minH?: number) => (
-    <Rooms choice={room} label={label} minH={minH}>
-      {(dark) => <View dark={dark} />}
-    </Rooms>
-  );
-  return (
-    <div className="flex flex-col gap-14">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionIntro title="What she shares">
-          When Ava finds someone, builds a campaign or needs your yes, she hands it to you in the chat. Each moment is shown in her sunrise room and the navy room.
-          Press Play again to watch one arrive.
-        </SectionIntro>
-        <Seg
-          label="Which room"
-          value={room}
-          options={[
-            { id: "both", label: "Both rooms" },
-            { id: "light", label: "Sunrise" },
-            { id: "dark", label: "Navy" },
-          ]}
-          onChange={setRoom}
-        />
-      </div>
-
-      <Moment title="Someone she found" intro="One person, with why they fit and why now. Add them, skip them or look them up.">
-        <Option letter="A" name="Contact card" why="A calm card: who they are, the fit score in the corner, the facts in one line. Easy to read at a glance.">
-          {R("Contact card", ProspectContact)}
-        </Option>
-        <Option letter="B" name="Boarding pass" why="Every fact has its own labelled box and the numbers line up, like a boarding pass. Best if coaches compare lots of people.">
-          {R("Boarding pass card", ProspectPass)}
-        </Option>
-        <Option letter="C" name="She just tells you" why="No card. She says it the way a colleague would, and the buttons sit under her words. Lightest, most human.">
-          {R("Prospect in her words", ProspectInline)}
-        </Option>
-      </Moment>
-
-      <Moment title="A list of people" intro="She tells you how many she found and how many fit, shows the best three, and keeps the rest one tap away.">
-        {R("Prospect list", ProspectList)}
-      </Moment>
-
-      <Moment title="A campaign, ready for your yes" intro="Who it goes to, how many a day and the three steps. Turning it on is always the coach's call.">
-        <Option letter="A" name="Summary card" why="The numbers on top, the three steps down the side, one clear button. The safe, familiar choice.">
-          {R("Campaign summary card", CampaignSummary)}
-        </Option>
-        <Option letter="B" name="Ten days" why="The ten days as a row of boxes, so you can see the gaps between messages. You hold the button for a second to turn it on.">
-          {R("Campaign ten days", CampaignDays)}
-        </Option>
-        <Option letter="C" name="She reads it back" why="Plain sentences saying exactly what will happen, including that she stops when someone replies. The button says the number.">
-          {R("Campaign read back", CampaignReadBack)}
-        </Option>
-      </Moment>
-
-      <Moment title="A message to approve" intro="She writes it, you can change it, and it only goes when you press Approve and send. Try Edit.">
-        {R("Draft to approve", DraftApprove)}
-      </Moment>
-
-      <Moment
-        title="While she works"
-        intro="Her plan, one step at a time. Done steps get a tick, the step she is on has a band of light, later steps wait faintly. Like a departure board, a step that changes stays lit until you look at it, and nothing moves around."
-      >
-        {R("Working progress", WorkingProgress, 560)}
-      </Moment>
-
-      <Moment title="A question for you" intro="When she needs you to choose, she asks one thing and gives you big answers to tap. Tap one.">
-        {R("Choice question", ChoiceQuestion)}
-      </Moment>
-
-      <Moment title="It's on" intro="A quiet moment of success: two soft rings of light leave her symbol, then it settles. No confetti.">
-        {R("Campaign is on", CampaignOn)}
-      </Moment>
-
-      <Moment title="A nudge" intro="When something happens while you are elsewhere, a short note slides in from the side. Read it now or later.">
-        {R("Nudge", Nudge, 340)}
-      </Moment>
-    </div>
-  );
-}

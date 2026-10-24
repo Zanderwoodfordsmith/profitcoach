@@ -20,7 +20,9 @@
   overflow: hidden;
   border-radius: 24px;
   isolation: isolate;
-  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.08), 0 24px 60px -34px rgba(5, 30, 54, 0.45);
+  box-shadow:
+    0 1px 2px rgba(5, 30, 54, 0.08),
+    0 24px 60px -34px rgba(5, 30, 54, 0.45);
 }
 
 .adm-room.dark {
@@ -92,7 +94,10 @@
   background: var(--navy);
   color: #fff;
   box-shadow: 0 8px 18px -10px rgba(5, 30, 54, 0.7);
-  transition: background 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease;
 }
 
 .adm-btn:hover {
@@ -133,7 +138,9 @@
   white-space: nowrap;
   color: var(--t1);
   border: 1px solid var(--line);
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .adm-ghost:hover {
@@ -186,7 +193,9 @@
   background: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .adm-replay:hover {
@@ -232,7 +241,11 @@
   padding: 18px;
   border-radius: 20px;
   text-align: left;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, opacity 0.4s ease, filter 0.4s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s ease,
+    opacity 0.4s ease,
+    filter 0.4s ease;
 }
 
 .adm-choice:hover:not(:disabled) {
@@ -240,7 +253,9 @@
 }
 
 .adm-choice[aria-pressed="true"] {
-  box-shadow: 0 0 0 2px var(--sky), 0 18px 40px -24px rgba(12, 82, 144, 0.7);
+  box-shadow:
+    0 0 0 2px var(--sky),
+    0 18px 40px -24px rgba(12, 82, 144, 0.7);
 }
 
 /* The entrance animation holds opacity, so it is dropped once a choice is made. */
@@ -408,7 +423,9 @@
 }
 
 .adm-unseen-fade {
-  transition: box-shadow 0.8s ease, background 0.6s ease;
+  transition:
+    box-shadow 0.8s ease,
+    background 0.6s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

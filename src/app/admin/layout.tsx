@@ -48,6 +48,8 @@ export default function AdminLayout({
   const coachesBlueprintPage =
     pathname === "/admin/client-success/blueprint" || pathname.startsWith("/admin/client-success/blueprint/");
   const avaPage = pathname.startsWith("/admin/ava");
+  /** Ava's own page (her chat), not the Ava settings tabs. */
+  const avaChatPage = pathname === "/admin/ava/chat";
   const fullBleedPage = blueprintPage || avaPage || coachesBlueprintPage;
   const conversationsPage = pathname === "/admin/conversations";
   const supportInboxPage = pathname === "/admin/support";
@@ -164,6 +166,15 @@ export default function AdminLayout({
         aiPanelOpen={avaPageHost ? avaPageHost.open : aiPanelOpen}
         profileLoading={profileLoading}
         onToggleAi={avaPageHost ? avaPageHost.toggle : () => setAiOpen(!aiPanelOpen)}
+        onOpenAiFull={
+          avaPageHost
+            ? avaPageHost.toggle
+            : () => {
+                setAiOpen(true);
+                setAiPanelFullscreen(true);
+              }
+        }
+        avaInMobileNav={showAiSparkles}
         chromeEnabled={chromeEnabled}
       >
         <SearchOverlay />
@@ -229,7 +240,7 @@ export default function AdminLayout({
         </BossWorkshopChromeContext.Provider>
       </DashboardChromeProvider>
       <SalesNavImportToast />
-      {aiPanelAvailable && aiPanelOpen && !avaPageHost ? (
+      {aiPanelAvailable && aiPanelOpen && !avaPageHost && !avaChatPage ? (
         <AvaDock
           onClose={() => setAiOpen(false)}
           fullscreen={aiPanelFullscreen}

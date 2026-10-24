@@ -16,7 +16,7 @@ export function LessonImportTabs() {
 
   return (
     <PageHeaderUnderlineTabs
-      ariaLabel="Academy"
+      ariaLabel="Product"
       items={[
         {
           kind: "link" as const,

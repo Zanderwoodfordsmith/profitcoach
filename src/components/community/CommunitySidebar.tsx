@@ -146,9 +146,19 @@ export function CommunitySidebar({
           ) : null}
 
           <div className="mt-4">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-              Recently active
-            </p>
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                Recently active
+              </p>
+              {pathname.startsWith(`${base}/members`) ? null : (
+                <Link
+                  href={`${base}/members`}
+                  className="text-[10px] font-semibold uppercase tracking-wide text-sky-700 hover:text-sky-900"
+                >
+                  View all
+                </Link>
+              )}
+            </div>
             {presenceUnavailable ? (
               <p className="text-xs text-slate-500">
                 Presence will show here after the latest database migration is

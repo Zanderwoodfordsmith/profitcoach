@@ -14,13 +14,15 @@ export type FaceId =
   | "navyFront"
   | "navyGlass"
   | "rimTurn"
-  | "rimFront";
+  | "rimFront"
+  | "v3a"
+  | "v3b"
+  | "v3c"
+  | "v3aNet"
+  | "v3bNet";
 
 /** Each portrait, the room colour its mist fades into, and why it might be her. */
-export const FACES: Record<
-  FaceId,
-  { src: string; room: string; dark: boolean; name: string; line: string }
-> = {
+export const FACES: Record<FaceId, { src: string; room: string; dark: boolean; name: string; line: string }> = {
   mist: {
     src: "/ava-design/faces/mist-1.webp",
     room: "#e3eef8",
@@ -105,6 +107,41 @@ export const FACES: Record<
     name: "Rim light, front on",
     line: "The same woman facing you straight on.",
   },
+  v3a: {
+    src: "/ava-design/faces/v3-a.webp",
+    room: "#e6edf4",
+    dark: false,
+    name: "Soft light",
+    line: "Natural and striking, after your screenshots: light eyes, soft long hair, blue turtleneck.",
+  },
+  v3b: {
+    src: "/ava-design/faces/v3-b.webp",
+    room: "#e8eef5",
+    dark: false,
+    name: "Window light",
+    line: "Head slightly turned, green-hazel eyes, a confident half-smile.",
+  },
+  v3c: {
+    src: "/ava-design/faces/v3-c.webp",
+    room: "#e9edf2",
+    dark: false,
+    name: "Warm and dark-haired",
+    line: "Brown eyes, hair loosely back. The warmest of the three.",
+  },
+  v3aNet: {
+    src: "/ava-design/faces/v3-a-net.webp",
+    room: "#1f5f9c",
+    dark: true,
+    name: "Soft light, with her network",
+    line: "A few points of light along her cheek, the same dots as her Halo. An honest sign she is AI, kinder than a glass neck.",
+  },
+  v3bNet: {
+    src: "/ava-design/faces/v3-b-net.webp",
+    room: "#2a6aa6",
+    dark: true,
+    name: "Window light, with her network",
+    line: "Her network traced along the jaw and cheekbone, fading before her eyes.",
+  },
 };
 
 export const WIDE = {
@@ -113,40 +150,32 @@ export const WIDE = {
   dawn: "/ava-design/faces/wide-dawn.webp",
   navyV2: "/ava-design/faces/v2-wide-navy.webp",
   rimV2: "/ava-design/faces/v2-wide-rim.webp",
+  v3: "/ava-design/faces/v3-wide-a.webp",
 };
 
 export function FaceOptions() {
-  const order: FaceId[] = [
-    "mist",
-    "dawn",
-    "mesh",
-    "glass",
-    "navy",
-    "rim",
-    "glassNavy",
-  ];
-  const round2: FaceId[] = [
-    "navyTurn",
-    "navyFront",
-    "navyGlass",
-    "rimTurn",
-    "rimFront",
-  ];
+  const order: FaceId[] = ["mist", "dawn", "mesh", "glass", "navy", "rim", "glassNavy"];
+  const round2: FaceId[] = ["navyTurn", "navyFront", "navyGlass", "rimTurn", "rimFront"];
+  const round3: FaceId[] = ["v3a", "v3b", "v3c", "v3aNet", "v3bNet"];
   return (
     <div className="flex flex-col gap-12">
+      <SectionIntro title="Round three: after your screenshots">
+        New on 24 Oct, from the faces you saved this morning: natural and striking, light eyes, soft hair, a blue turtleneck. The first
+        three are different women; the last two add her network of light points, the same dots as her Halo, as the honest sign that she is
+        AI. Made new, not copied from anyone in your screenshots.
+      </SectionIntro>
+      <FaceGrid ids={round3} start={12} />
+      <div className="h-px bg-[var(--rule)]" />
       <SectionIntro title="Round two: your two favourites">
-        New on 24 Oct. You liked the women in Navy mist and Rim light, a little
-        more striking, slightly turned or front on. Each pair is the same woman.
-        The glass neck is on the Navy mist woman so you can judge the film idea
-        on her.
+        New on 24 Oct. You liked the women in Navy mist and Rim light, a little more striking, slightly turned or front on. Each pair is the
+        same woman. The glass neck is on the Navy mist woman so you can judge the film idea on her.
       </SectionIntro>
       <FaceGrid ids={round2} start={7} />
       <div className="h-px bg-[var(--rule)]" />
       <SectionIntro title="Round one">
-        The first round: seven women, so you can choose who Ava is. Each is
-        shown the way she would appear: fading into her room, then small beside
-        a message. These are different people. Once you pick one, I make the
-        rest of her from that face (other angles, a talking version for calls).
+        The first round: seven women, so you can choose who Ava is. Each is shown the way she would appear: fading into her room, then small
+        beside a message. These are different people. Once you pick one, I make the rest of her from that face (other angles, a talking
+        version for calls).
       </SectionIntro>
       <FaceGrid ids={order} start={0} />
     </div>
@@ -159,48 +188,29 @@ function FaceGrid({ ids, start }: { ids: FaceId[]; start: number }) {
       {ids.map((id, i) => {
         const f = FACES[id];
         return (
-          <Option
-            key={id}
-            letter={String.fromCharCode(65 + start + i)}
-            name={f.name}
-            why={f.line}
-          >
-            <div
-              className="relative aspect-[4/5] overflow-hidden rounded-2xl"
-              style={{ background: f.room }}
-            >
+          <Option key={id} letter={String.fromCharCode(65 + start + i)} name={f.name} why={f.line}>
+            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl" style={{ background: f.room }}>
               {/* The photo's own mist does the fading; only its hard bottom edge is feathered into the room. */}
               <div
                 className="ad-breathe absolute inset-0 bg-cover bg-top"
                 style={{
                   backgroundImage: `url(${f.src})`,
-                  WebkitMaskImage:
-                    "linear-gradient(180deg,#000 62%,transparent 100%)",
-                  maskImage:
-                    "linear-gradient(180deg,#000 62%,transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(180deg,#000 62%,transparent 100%)",
+                  maskImage: "linear-gradient(180deg,#000 62%,transparent 100%)",
                 }}
               />
               <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 p-5">
                 <span
                   className="h-10 w-10 shrink-0 overflow-hidden rounded-full"
                   style={{
-                    boxShadow: f.dark
-                      ? "0 0 0 2px rgba(255,255,255,.25)"
-                      : "0 0 0 2px #fff",
+                    boxShadow: f.dark ? "0 0 0 2px rgba(255,255,255,.25)" : "0 0 0 2px #fff",
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={f.src}
-                    alt=""
-                    className="h-full w-full scale-[1.5] object-cover object-[50%_28%]"
-                  />
+                  <img src={f.src} alt="" className="h-full w-full scale-[1.5] object-cover object-[50%_28%]" />
                 </span>
                 <span className="leading-tight">
-                  <span
-                    className="block text-[15px] font-bold"
-                    style={{ color: f.dark ? "#fff" : "#0b1b2e" }}
-                  >
+                  <span className="block text-[15px] font-bold" style={{ color: f.dark ? "#fff" : "#0b1b2e" }}>
                     Ava
                   </span>
                   <span

@@ -1,13 +1,11 @@
 import type React from "react";
 import {
-  CalendarDays,
   FileDown,
   GraduationCap,
   Handshake,
   LayoutGrid,
   Library,
   Map as MapIcon,
-  MessagesSquare,
   Newspaper,
   Palette,
   PhoneCall,
@@ -65,16 +63,8 @@ function IconAcademy({ className }: { className?: string }) {
   return <GraduationCap className={className} />;
 }
 
-function IconCalendar({ className }: { className?: string }) {
-  return <CalendarDays className={className} />;
-}
-
 function IconSparkles({ className }: { className?: string }) {
   return <Sparkles className={className} />;
-}
-
-function IconMessagesSquare({ className }: { className?: string }) {
-  return <MessagesSquare className={className} />;
 }
 
 function IconLessonImport({ className }: { className?: string }) {
@@ -101,33 +91,28 @@ function IconWorkshop({ className }: { className?: string }) {
   return <LayoutGrid className={className} />;
 }
 
-export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
-  const base: DashboardNavItem[] = [
-    {
-      href: `${prefix}/community`,
-      label: "Community",
-      description: "Posts, wins and questions from other coaches",
-      icon: IconMessagesSquare,
-      requiredFeature: "community.feed",
-    },
-  ];
-  base.push(
-    {
-      href: `${prefix}/academy`,
-      label: "Classroom",
-      description: "Lessons and training, in order",
-      icon: IconAcademy,
-      requiredFeature: "nav.classroom",
-    },
-    {
-      href: `${prefix}/community/calendar`,
-      label: "Calendar",
-      description: "Live calls, trainings and recordings",
-      icon: IconCalendar,
-      requiredFeature: "calendar.momentum_only",
-    }
+/** Community, Classroom and Calendar share one sidebar item with tabs. */
+function academyNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
+  return {
+    href: `${prefix}/academy/classroom`,
+    label: "Academy",
+    description: "Community, Classroom, Calendar and Resources",
+    icon: IconAcademy,
+    requiredFeature: "nav.classroom",
+  };
+}
+
+/** Every page under the Academy item: the community, calendar and classroom. */
+export function isAcademyPath(pathname: string | null, prefix: "/coach" | "/admin"): boolean {
+  if (!pathname) return false;
+  if (prefix === "/admin" && isAcademyHubPath(pathname)) return false;
+  return [`${prefix}/community`, `${prefix}/academy`].some(
+    (root) => pathname === root || pathname.startsWith(`${root}/`)
   );
-  return base;
+}
+
+export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
+  return [academyNavItem(prefix)];
 }
 
 export function filterNavItemsByFeatures(
@@ -139,33 +124,21 @@ export function filterNavItemsByFeatures(
   );
 }
 
-/** Primary tabs on mobile (Boss Pro and admin tools live under More). */
-export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
-  const items: DashboardNavItem[] = [
-    {
-      href: `${prefix}/community`,
-      label: "Community",
-      icon: IconMessagesSquare,
-      requiredFeature: "community.feed",
-    },
-    {
-      href: `${prefix}/academy`,
-      label: "Classroom",
-      icon: IconAcademy,
-      requiredFeature: "nav.classroom",
-    },
-    {
-      href: `${prefix}/community/calendar`,
-      label: "Calendar",
-      icon: IconCalendar,
-      requiredFeature: "calendar.momentum_only",
-    },
-  ];
-  return items;
-}
-
-export function mobileMoreNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
-  return [bossScoreNavItem(prefix)];
+/**
+ * Phone bottom bar: two tabs each side of Ava. Settings and Log out sit on
+ * the photo in the top bar; admin pages are in that sheet too.
+ */
+export function mobileTabNavItems(prefix: "/coach" | "/admin"): {
+  left: DashboardNavItem[];
+  right: DashboardNavItem[];
+} {
+  const tools = coachToolsNavItems(prefix);
+  const hub = (key: DashboardNavItem["toolsHub"]) =>
+    tools.filter((item) => item.toolsHub === key);
+  return {
+    left: [academyNavItem(prefix), ...hub("blueprint")],
+    right: [...hub("get-clients"), ...hub("coach-clients")],
+  };
 }
 
 function bossScoreNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
@@ -335,8 +308,9 @@ export type CoachClientsTabItem = {
 
 /**
  * Get Clients peer tabs — Classroom Get Calls order:
- * Campaigns generate conversations, conversations book calls.
- * Campaigns → Conversations → Calls → Prospects → Scripts → Content → Toolkit
+ * Campaigns generate conversations, conversations book calls. Scripts sit
+ * beside Calls, where they're used; Prospects is a list to look things up in.
+ * Campaigns → Conversations → Calls → Scripts → Prospects → Content → Toolkit
  * Create tools live in Profit Coach AI (fullscreen Create tab).
  *
  * Toolkit holds Links (`/share`, its first sub-tab, so it does not collide
@@ -362,14 +336,14 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       description: "Sales calls booked in your calendar",
     },
     {
-      href: `${prefix}/prospects`,
-      label: "Prospects",
-      description: "People you've added or who took your BOSS Score",
-    },
-    {
       href: `${prefix}/script`,
       label: "Scripts",
       description: "Every script for your calls with owners",
+    },
+    {
+      href: `${prefix}/prospects`,
+      label: "Prospects",
+      description: "People you've added or who took your BOSS Score",
     },
   ];
   items.push({
@@ -554,7 +528,7 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
   },
   {
     href: "/admin/roadmap",
-    label: "Academy",
+    label: "Product",
     icon: IconLessonImport,
     academyHub: true,
   },

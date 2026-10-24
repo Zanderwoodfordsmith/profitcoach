@@ -167,9 +167,11 @@ export default function CoachLayout({
   const prospectsListPage = pathname === "/coach/prospects";
   const campaignsListPage = pathname === "/coach/campaigns";
   const prospectWorkspacePage = pathname.startsWith("/coach/prospects/");
+  /** Ava's own page: her room runs to the shell edges like an inbox. */
+  const avaChatPage = pathname === "/coach/ava";
   /** Inbox-style workspaces: panes run to the header and the shell edges. */
   const edgeToEdgeInbox =
-    conversationsPage || supportPage || prospectWorkspacePage;
+    conversationsPage || supportPage || prospectWorkspacePage || avaChatPage;
   /** Blueprint scrolls inside the page. The window must not scroll, or the
    * contents column unsticks at the bottom and leaves a white gap. */
   const blueprintPage = pathname.startsWith("/coach/blueprint");
@@ -270,6 +272,15 @@ export default function CoachLayout({
         aiPanelOpen={avaPageHost ? avaPageHost.open : aiPanelOpen}
         profileLoading={profileLoading}
         onToggleAi={avaPageHost ? avaPageHost.toggle : () => setAiOpen(!aiPanelOpen)}
+        onOpenAiFull={
+          avaPageHost
+            ? avaPageHost.toggle
+            : () => {
+                setAiOpen(true);
+                setAiPanelFullscreen(true);
+              }
+        }
+        avaInMobileNav={showAiSparkles}
         chromeEnabled={chromeEnabled}
       >
       <SearchOverlay />
@@ -347,7 +358,7 @@ export default function CoachLayout({
       </BossWorkshopChromeContext.Provider>
       </DashboardChromeProvider>
       <SalesNavImportToast />
-      {aiPanelAvailable && aiPanelOpen && !avaPageHost ? (
+      {aiPanelAvailable && aiPanelOpen && !avaPageHost && !avaChatPage ? (
         <AvaDock
           onClose={() => setAiOpen(false)}
           fullscreen={aiPanelFullscreen}

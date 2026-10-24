@@ -1,7 +1,6 @@
-import { VaultCatalogGrid } from "@/components/academy/VaultCatalogGrid";
+import { redirect } from "next/navigation";
 
-const BASE = "/coach/academy/vault";
-
+/** Vault courses now sit inside Classroom, under "The Vault". */
 export default function CoachAcademyVaultCatalogPage() {
-  return <VaultCatalogGrid basePath={BASE} />;
+  redirect("/coach/academy/classroom#vault");
 }

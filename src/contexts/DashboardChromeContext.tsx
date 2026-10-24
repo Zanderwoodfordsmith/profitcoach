@@ -23,6 +23,16 @@ export type DashboardChromeContextValue = {
   aiPanelOpen: boolean;
   profileLoading: boolean;
   onToggleAi: () => void;
+  /** Opens Ava full screen (the sidebar's Ava). Falls back to onToggleAi. */
+  onOpenAiFull?: () => void;
+  /**
+   * Ava sits in the middle of the phone bottom bar (admins and agent-enabled
+   * coaches). Other coaches only reach her from the top bar on Blueprint pages.
+   */
+  avaInMobileNav: boolean;
+  /** Phone account sheet (Settings, Support, Log out), opened from the top-bar photo. */
+  accountSheetOpen: boolean;
+  setAccountSheetOpen: (open: boolean) => void;
   /** False for playbooks reader / minimal workshop — no search/notif/AI. */
   chromeEnabled: boolean;
   /** True while a StickyPageHeader (or chrome-only bar) is hosting the actions. */
@@ -42,6 +52,8 @@ export function DashboardChromeProvider({
   aiPanelOpen,
   profileLoading,
   onToggleAi,
+  onOpenAiFull,
+  avaInMobileNav = false,
   chromeEnabled,
   children,
 }: {
@@ -53,10 +65,13 @@ export function DashboardChromeProvider({
   aiPanelOpen: boolean;
   profileLoading: boolean;
   onToggleAi: () => void;
+  onOpenAiFull?: () => void;
+  avaInMobileNav?: boolean;
   chromeEnabled: boolean;
   children: ReactNode;
 }) {
   const [hostCount, setHostCount] = useState(0);
+  const [accountSheetOpen, setAccountSheetOpen] = useState(false);
 
   const claimChromeHost = useCallback(() => {
     setHostCount((n) => n + 1);
@@ -73,6 +88,10 @@ export function DashboardChromeProvider({
       aiPanelOpen,
       profileLoading,
       onToggleAi,
+      onOpenAiFull,
+      avaInMobileNav,
+      accountSheetOpen,
+      setAccountSheetOpen,
       chromeEnabled,
       chromeHosted: hostCount > 0,
       claimChromeHost,
@@ -86,6 +105,9 @@ export function DashboardChromeProvider({
       aiPanelOpen,
       profileLoading,
       onToggleAi,
+      onOpenAiFull,
+      avaInMobileNav,
+      accountSheetOpen,
       chromeEnabled,
       hostCount,
       claimChromeHost,

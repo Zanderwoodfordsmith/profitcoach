@@ -552,3 +552,23 @@
 .bp-scale:disabled {
   cursor: default;
 }
+
+/* Phones: the blueprint contents slide in from the left. */
+@keyframes bp-nav-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.bp-nav-drawer {
+  animation: bp-nav-drawer-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-nav-drawer {
+    animation: none;
+  }
+}

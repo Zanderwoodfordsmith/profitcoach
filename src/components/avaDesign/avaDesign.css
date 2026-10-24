@@ -63,7 +63,9 @@
   padding: 4px;
   border-radius: 999px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 8px 24px -16px rgba(5, 30, 54, 0.3);
+  box-shadow:
+    0 1px 2px rgba(5, 30, 54, 0.06),
+    0 8px 24px -16px rgba(5, 30, 54, 0.3);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -75,7 +77,9 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--slate);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .ad-tab:hover {
@@ -128,12 +132,17 @@
   overflow: hidden;
   border-radius: 14px;
   background: var(--ground);
-  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.08), 0 24px 60px -30px rgba(5, 30, 54, 0.45);
+  box-shadow:
+    0 1px 2px rgba(5, 30, 54, 0.08),
+    0 24px 60px -30px rgba(5, 30, 54, 0.45);
 }
 
 .ad-frame.phone {
   border-radius: 44px;
-  box-shadow: 0 0 0 10px #0b1622, 0 0 0 11px #2a3a4c, 0 40px 80px -30px rgba(5, 30, 54, 0.6);
+  box-shadow:
+    0 0 0 10px #0b1622,
+    0 0 0 11px #2a3a4c,
+    0 40px 80px -30px rgba(5, 30, 54, 0.6);
 }
 
 .ad-full {
@@ -282,12 +291,12 @@
   }
 }
 
-/* D: the sky follows the clock. */
+/* A morning sky: dawn light low on the horizon. */
 .ad-sky-day {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  transition: background 1.2s ease;
+  background: linear-gradient(180deg, #e9f2fb 0%, #f3f6fa 55%, #fbf3ea 100%);
 }
 
 .ad-sky-day::before {
@@ -298,37 +307,8 @@
   bottom: -50%;
   height: 100%;
   border-radius: 50%;
-  background: radial-gradient(closest-side, var(--sun-core), var(--sun-mid) 40%, rgba(255, 255, 255, 0) 100%);
-  transition: background 1.2s ease, transform 1.2s ease;
-  transform: translateY(var(--sun-y, 0));
-}
-
-.ad-sky-day[data-time="morning"] {
-  --sun-core: rgba(255, 247, 236, 1);
-  --sun-mid: rgba(244, 217, 176, 0.55);
-  --sun-y: 8%;
-  background: linear-gradient(180deg, #e9f2fb 0%, #f3f6fa 55%, #fbf3ea 100%);
-}
-
-.ad-sky-day[data-time="afternoon"] {
-  --sun-core: rgba(255, 255, 255, 1);
-  --sun-mid: rgba(186, 222, 248, 0.8);
-  --sun-y: -6%;
-  background: linear-gradient(180deg, #d7eaf9 0%, #eaf4fc 50%, #f7fbfe 100%);
-}
-
-.ad-sky-day[data-time="evening"] {
-  --sun-core: rgba(214, 200, 240, 0.9);
-  --sun-mid: rgba(90, 120, 190, 0.5);
-  --sun-y: 22%;
-  background: linear-gradient(180deg, #0a2c4d 0%, #23477a 55%, #6c79b3 100%);
-}
-
-.ad-sky-day[data-time="night"] {
-  --sun-core: rgba(26, 143, 212, 0.55);
-  --sun-mid: rgba(12, 82, 144, 0.35);
-  --sun-y: 36%;
-  background: linear-gradient(180deg, #020d1a 0%, #051e36 60%, #0a2c4d 100%);
+  background: radial-gradient(closest-side, rgba(255, 247, 236, 1), rgba(244, 217, 176, 0.55) 40%, rgba(255, 255, 255, 0) 100%);
+  transform: translateY(8%);
 }
 
 /* C: the misty room where Ava's face sits. */
@@ -375,15 +355,31 @@
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(124, 195, 242, 0.7) 40%, rgba(255, 255, 255, 0.4) 70%, rgba(26, 143, 212, 0.6));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 1),
+    rgba(124, 195, 242, 0.7) 40%,
+    rgba(255, 255, 255, 0.4) 70%,
+    rgba(26, 143, 212, 0.6)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
   pointer-events: none;
 }
 
 .dark .ad-edge::before {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(124, 195, 242, 0.25) 40%, rgba(255, 255, 255, 0.08) 70%, rgba(124, 195, 242, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55),
+    rgba(124, 195, 242, 0.25) 40%,
+    rgba(255, 255, 255, 0.08) 70%,
+    rgba(124, 195, 242, 0.4)
+  );
 }
 
 /* ------------------------------------------------------------ Parts */
@@ -400,8 +396,13 @@
   background: rgba(255, 255, 255, 0.66);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 10px 24px -18px rgba(12, 82, 144, 0.5);
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease, box-shadow 0.25s ease;
+  box-shadow:
+    0 1px 2px rgba(5, 30, 54, 0.06),
+    0 10px 24px -18px rgba(12, 82, 144, 0.5);
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 0.2s ease,
+    box-shadow 0.25s ease;
 }
 
 .ad-pill svg {
@@ -411,7 +412,9 @@
 .ad-pill:hover {
   transform: translateY(-2px);
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 16px 30px -18px rgba(12, 82, 144, 0.6);
+  box-shadow:
+    0 1px 2px rgba(5, 30, 54, 0.06),
+    0 16px 30px -18px rgba(12, 82, 144, 0.6);
 }
 
 .dark .ad-pill {
@@ -441,8 +444,13 @@
   color: #eaf4fc;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
   border: 1px solid rgba(207, 230, 248, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 12px 30px -20px rgba(0, 0, 0, 0.7);
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 30px -20px rgba(0, 0, 0, 0.7);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .ad-tile svg {
@@ -462,7 +470,9 @@
   height: 38px;
   border-radius: 999px;
   color: var(--slate);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .ad-icon-btn:hover {
@@ -488,7 +498,9 @@
   background: var(--navy);
   color: #fff;
   box-shadow: 0 6px 16px -6px rgba(5, 30, 54, 0.6);
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .ad-send:hover {
@@ -548,65 +560,20 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The pearl at small sizes: the same drop, drawn in CSS. */
-.ad-mini-pearl {
-  position: relative;
-  display: inline-block;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, #ffffff 0 14%, rgba(255, 255, 255, 0) 46%),
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 42%),
-    conic-gradient(from 20deg, #93cbf4, #c3b8f0, #9fe6f2, #e9e0c8, #7fbdee, #93cbf4);
-  box-shadow:
-    inset 0 0 0 1px rgba(26, 143, 212, 0.35),
-    inset 0 -2px 5px rgba(12, 82, 144, 0.35),
-    0 2px 8px -2px rgba(26, 143, 212, 0.6);
-}
-
-.ad-mini-pearl::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.85) 0deg 2deg, rgba(255, 255, 255, 0) 2deg 30deg);
-  -webkit-mask: radial-gradient(circle, #000 0%, transparent 70%);
-  mask: radial-gradient(circle, #000 0%, transparent 70%);
-  animation: adPearlSpin 9s linear infinite;
-}
-
-.ad-mini-pearl::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0 55%, rgba(255, 255, 255, 0.75) 68%, transparent 82%);
-  mix-blend-mode: soft-light;
-  animation: adPearlSpin 5s linear infinite reverse;
-}
-
-.ad-mini-pearl.is-busy::before {
-  animation-duration: 2.4s;
-}
-
-.ad-mini-pearl.is-dark {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
-    0 0 12px -1px rgba(124, 195, 242, 0.75);
-}
-
-@keyframes adPearlSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* A light runs once across her name as she wakes up, inside the letters,
    then they settle to solid. */
 .ad-sweep {
   --sweep: #1a8fd4;
-  background: linear-gradient(100deg, currentColor 0%, currentColor 42%, var(--sweep) 48%, #ffffff 50%, var(--sweep) 52%, currentColor 58%, currentColor 100%);
+  background: linear-gradient(
+    100deg,
+    currentColor 0%,
+    currentColor 42%,
+    var(--sweep) 48%,
+    #ffffff 50%,
+    var(--sweep) 52%,
+    currentColor 58%,
+    currentColor 100%
+  );
   background-size: 300% 100%;
   background-position: 100% 0;
   -webkit-background-clip: text;
@@ -675,7 +642,9 @@
 
 /* Something that changed stays lit until you have seen it. */
 .ad-unseen {
-  box-shadow: 0 0 0 1px rgba(26, 143, 212, 0.45), 0 0 0 5px rgba(26, 143, 212, 0.1);
+  box-shadow:
+    0 0 0 1px rgba(26, 143, 212, 0.45),
+    0 0 0 5px rgba(26, 143, 212, 0.1);
 }
 
 .ad-typing span {

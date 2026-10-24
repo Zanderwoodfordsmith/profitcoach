@@ -10,9 +10,18 @@ export const COACH = { first: "Zander", initials: "ZW" };
 export const ASK = "Launch a connection campaign to manufacturing owners in Leeds";
 
 export const PLAN_STEPS = [
-  { label: "Find owners of £1M+ manufacturers in Leeds", detail: "Sales Navigator, 48 found" },
-  { label: "Check each one fits your ideal client", detail: "41 fit, 7 too small" },
-  { label: "Write the connection note from your Blueprint", detail: "Uses your Leeds story" },
+  {
+    label: "Find owners of £1M+ manufacturers in Leeds",
+    detail: "Sales Navigator, 48 found",
+  },
+  {
+    label: "Check each one fits your ideal client",
+    detail: "41 fit, 7 too small",
+  },
+  {
+    label: "Write the connection note from your Blueprint",
+    detail: "Uses your Leeds story",
+  },
   { label: "Build the campaign", detail: "Connect, then two follow-ups" },
   { label: "Ready for your yes", detail: "Nothing sends until you say so" },
 ];
@@ -81,13 +90,37 @@ export const CAMPAIGN = {
 };
 
 export const AWAY = [
-  { title: "Sarah Mills replied", line: "She asked what it costs. I drafted an answer for you.", action: "Read and approve", fresh: true },
-  { title: "38 owners invited overnight", line: "Leeds manufacturers: 6 accepted so far.", action: "See who", fresh: true },
-  { title: "Call with David at 2pm", line: "His BOSS Score is 54. Your prep notes are ready.", action: "Open prep", fresh: false },
+  {
+    title: "Sarah Mills replied",
+    line: "She asked what it costs. I drafted an answer for you.",
+    action: "Read and approve",
+    fresh: true,
+  },
+  {
+    title: "38 owners invited overnight",
+    line: "Leeds manufacturers: 6 accepted so far.",
+    action: "See who",
+    fresh: true,
+  },
+  {
+    title: "Call with David at 2pm",
+    line: "His BOSS Score is 54. Your prep notes are ready.",
+    action: "Open prep",
+    fresh: false,
+  },
 ];
 
 export const HISTORY = [
-  { when: "Today", items: ["Leeds manufacturers campaign", "Reply to Sarah Mills"] },
-  { when: "Yesterday", items: ["LinkedIn post: the quoting trap", "Practise the pitch with a sceptical owner"] },
-  { when: "This week", items: ["Fill in my Blueprint offer", "Who should I target first?", "Prep for David Okafor"] },
+  {
+    when: "Today",
+    items: ["Leeds manufacturers campaign", "Reply to Sarah Mills"],
+  },
+  {
+    when: "Yesterday",
+    items: ["LinkedIn post: the quoting trap", "Practise the pitch with a sceptical owner"],
+  },
+  {
+    when: "This week",
+    items: ["Fill in my Blueprint offer", "Who should I target first?", "Prep for David Okafor"],
+  },
 ];

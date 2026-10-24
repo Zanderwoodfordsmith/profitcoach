@@ -1,4 +1,6 @@
 import { ClassroomCourseOverviewCard } from "@/components/academy/ClassroomCourseOverviewCard";
+import { VAULT_COVER_IMAGES, VaultCourses } from "@/components/academy/VaultCatalogGrid";
+import { VaultFold } from "@/components/academy/VaultFold";
 import { ClassroomSystemBanner } from "@/components/academy/ClassroomSystemBanner";
 import {
   firstLessonInCourse,
@@ -10,12 +12,15 @@ import {
   loadClassroomHub,
   classroomCoursesByIds,
 } from "@/lib/academy/classroomHubLoad";
+import { loadVaultHub } from "@/lib/academy/vaultHubLoad";
 import type { HubCourse } from "@/lib/academy/hubCatalog";
 import { withClassroomMetadata } from "@/lib/academy/lessonContent";
 import { applyLegacyCourseVisibility } from "@/lib/academy/lessonVisibility";
 
 type Props = {
   basePath: string;
+  /** ?cards=1, 2 or 3 shows the earlier System and Vault cards. */
+  cardsVersion?: string;
 };
 
 const COURSE_COVERS: Record<
@@ -60,7 +65,7 @@ const COURSE_COVERS: Record<
   },
 };
 
-export async function ClassroomCatalogGrid({ basePath }: Props) {
+export async function ClassroomCatalogGrid({ basePath, cardsVersion }: Props) {
   const catalog = loadClassroomHub();
   // Coaches: count and link only the lessons they can see (hub and DB hide
   // flags). Admins keep hidden lessons.
@@ -78,6 +83,10 @@ export async function ClassroomCatalogGrid({ basePath }: Props) {
     visible(classroomCoursesByIds(catalog, CLASSROOM_PATH_COURSE_IDS)),
   ]);
 
+  const vaultLessonIds = loadVaultHub().courses.flatMap((course) =>
+    flattenSections(course.sections).flatMap((section) => section.lessons.map((lesson) => lesson.id))
+  );
+
   return (
     <div className="mx-auto w-[80%] max-w-6xl pt-5">
       {/* One grid so cards flow 2-up (three rows of two) below xl instead of
@@ -88,7 +97,25 @@ export async function ClassroomCatalogGrid({ basePath }: Props) {
           <CourseCard key={course.id} course={course} basePath={basePath} />
         ))}
       </div>
-      <ClassroomSystemBanner href={`${basePath}/system`} />
+      <ClassroomSystemBanner
+        href={`${basePath}/system`}
+        variant={cardsVersion === "1" || cardsVersion === "2" ? "mist" : "rail"}
+      />
+      <VaultFold
+        lessonIds={vaultLessonIds}
+        covers={VAULT_COVER_IMAGES}
+        variant={
+          cardsVersion === "1"
+            ? "plain"
+            : cardsVersion === "2"
+              ? "card"
+              : cardsVersion === "3"
+                ? "rail"
+                : "fade"
+        }
+      >
+        <VaultCourses basePath={basePath.replace(/\/classroom$/, "/vault")} />
+      </VaultFold>
     </div>
   );
 }

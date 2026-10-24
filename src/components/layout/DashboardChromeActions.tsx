@@ -1,9 +1,11 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
 import { DashboardTopActions } from "./DashboardTopActions";
 import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
+import { useDashboardProfile } from "./useDashboardProfile";
+import { profileInitialsFromName } from "@/lib/communityProfile";
 
 type DashboardChromeActionsProps = {
   className?: string;
@@ -12,11 +14,15 @@ type DashboardChromeActionsProps = {
 /**
  * Search + notifications (+ AI when available). Owned by the sticky page header
  * so dashboard chrome is one bar; titles/tabs are the only per-page change.
+ * On phones the photo at the end opens the account sheet (Settings, Log out).
  */
 export function DashboardChromeActions({
   className = "",
 }: DashboardChromeActionsProps) {
   const chrome = useDashboardChrome();
+  const { profileLoading, avatarLabel, avatarImageUrl } = useDashboardProfile(
+    chrome?.avatarOverride
+  );
   if (!chrome?.chromeEnabled) return null;
 
   return (
@@ -40,15 +46,37 @@ export function DashboardChromeActions({
           title="Ava"
           disabled={chrome.profileLoading}
           onClick={chrome.onToggleAi}
-          className={`rounded-full p-2 transition disabled:cursor-wait disabled:opacity-60 ${
+          className={`grid place-items-center rounded-full p-2 transition disabled:cursor-wait disabled:opacity-60 ${
+            chrome.avaInMobileNav ? "max-md:hidden" : ""
+          } ${
             chrome.aiPanelOpen
               ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
               : "bg-transparent text-slate-700 hover:bg-slate-50"
           }`}
         >
-          <Sparkles className="h-6 w-6" />
+          <AvaHalo size={24} state={chrome.aiPanelOpen ? "listening" : "idle"} />
         </button>
       ) : null}
+      <button
+        type="button"
+        aria-label="Account and settings"
+        aria-expanded={chrome.accountSheetOpen}
+        onClick={() => chrome.setAccountSheetOpen(true)}
+        className="ml-0.5 shrink-0 rounded-full md:hidden"
+      >
+        {avatarImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatarImageUrl}
+            alt=""
+            className="h-8 w-8 rounded-full object-cover ring-1 ring-slate-200"
+          />
+        ) : (
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0c5290] text-[11px] font-semibold text-white">
+            {profileLoading ? "" : profileInitialsFromName(avatarLabel)}
+          </span>
+        )}
+      </button>
     </div>
   );
 }

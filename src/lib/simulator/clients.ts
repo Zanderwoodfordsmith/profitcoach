@@ -12,6 +12,8 @@ import type { SimClient } from "./types";
  * most complicated: time management first, the certification client last.
  * Jess is rebuilt from the old ElevenLabs "Easy practice - Time Management" agent.
  *
+ * Helen and Jess got warmer portraits on 24 Oct (v2); the first ones are kept as v1.
+ *
  * Speeds even out the voices on ElevenLabs Turbo v2, measured 23 Oct at 1.0:
  * David 211, Helen 245, Marcus 221, Priya 198, Sarah 188, Kit 205, Jess 217 words a minute.
  */
@@ -24,7 +26,7 @@ export const CLIENTS: SimClient[] = [
     role: "Founder",
     business: "Brightside Digital",
     place: "Leeds",
-    face: "/simulator/faces/jess.webp",
+    face: "/simulator/faces/jess-v2.webp",
     voiceId: "exsUS4vynmxd379XN4yO",
     speed: 0.96,
     personality: "The Bottleneck",
@@ -376,7 +378,7 @@ export const CLIENTS: SimClient[] = [
     role: "Owner",
     business: "Whitfield Trophies",
     place: "Nottingham",
-    face: "/simulator/faces/helen.webp",
+    face: "/simulator/faces/helen-v2.webp",
     voiceId: "vBRU4ztAu1MfP8arDoB3",
     speed: 0.9,
     personality: "The Guardian",

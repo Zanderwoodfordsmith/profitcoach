@@ -212,26 +212,46 @@ export async function weakSpot(coachId: string): Promise<WeakSpot | null> {
  */
 export const MONTHLY_MINUTES = 240;
 
-function sessionMinutes(s: { started_at: string; ended_at: string | null }): number {
-  const end = s.ended_at ? new Date(s.ended_at).getTime() : Math.min(Date.now(), new Date(s.started_at).getTime() + 45 * 60_000);
-  return Math.max(0, (end - new Date(s.started_at).getTime()) / 60_000);
+type Timed = { started_at: string; ended_at: string | null; last_at?: string | null };
+
+/**
+ * A call's length. One that never ended (the tab closed, or it dropped) runs
+ * to its last line plus half a minute, or one minute if nothing was said, so
+ * a closed tab doesn't cost a coach the full 45.
+ */
+function sessionMinutes(s: Timed): number {
+  if (!s.ended_at) {
+    const last = Number(s.last_at);
+    return Number.isFinite(last) && last > 0 ? (last + 30) / 60 : 1;
+  }
+  return Math.max(0, (new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 60_000);
 }
+
+const TIMED = "started_at, ended_at, last_at:transcript->-1->>at";
 
 function monthStart(): string {
   const d = new Date();
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString();
 }
 
+/** Both simulators share the minutes, since they use the same ElevenLabs account (Zander, 24 Oct). Dropped calls count: they used voice. */
+const VOICE_TABLES = ["sim_sessions", "call_sim_sessions"] as const;
+
 export async function minutesThisMonth(coachId: string): Promise<number> {
-  const { data } = await supabaseAdmin.from("sim_sessions").select("started_at, ended_at").eq("coach_id", coachId).gte("started_at", monthStart());
-  return Math.round((data ?? []).reduce((sum, s) => sum + sessionMinutes(s as { started_at: string; ended_at: string | null }), 0));
+  const results = await Promise.all(
+    VOICE_TABLES.map((t) => supabaseAdmin.from(t).select(TIMED).eq("coach_id", coachId).gte("started_at", monthStart()))
+  );
+  const rows = results.flatMap((r) => (r.data ?? []) as unknown as Timed[]);
+  return Math.round(rows.reduce((sum, s) => sum + sessionMinutes(s), 0));
 }
 
 /** Minutes this month by coach, for the admin usage list. */
 export async function minutesByCoach(): Promise<{ coach_id: string; minutes: number; sessions: number }[]> {
-  const { data } = await supabaseAdmin.from("sim_sessions").select("coach_id, started_at, ended_at").gte("started_at", monthStart()).limit(5000);
+  const results = await Promise.all(
+    VOICE_TABLES.map((t) => supabaseAdmin.from(t).select(`coach_id, ${TIMED}`).gte("started_at", monthStart()).limit(5000))
+  );
   const by = new Map<string, { minutes: number; sessions: number }>();
-  for (const s of (data ?? []) as { coach_id: string; started_at: string; ended_at: string | null }[]) {
+  for (const s of results.flatMap((r) => (r.data ?? []) as unknown as (Timed & { coach_id: string })[])) {
     const t = by.get(s.coach_id) ?? { minutes: 0, sessions: 0 };
     t.minutes += sessionMinutes(s);
     t.sessions += 1;

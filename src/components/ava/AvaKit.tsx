@@ -9,6 +9,7 @@ import { commentWhen } from "@/components/practice/comments/SectionCommentsUI";
 import { ProfitCoachAiMarkdown } from "@/components/profitCoachAi/ProfitCoachAiMarkdown";
 import type { AgentActionView, AgentDisplayItem } from "@/lib/agent/types";
 
+import { AvaHalo } from "./AvaHalo";
 import "./ava.css";
 
 /**
@@ -77,6 +78,7 @@ export function AvaAction({
   onClick,
   active = false,
   iconOnly = false,
+  showLabel = false,
 }: {
   icon: ReactNode;
   label: string;
@@ -84,12 +86,21 @@ export function AvaAction({
   active?: boolean;
   /** Panel only: drop the label (expand, close). */
   iconOnly?: boolean;
+  /** Stage only: a glass pill with the word, not just the icon (Ava's page). */
+  showLabel?: boolean;
 }) {
   const room = useAvaRoom();
   if (room === "stage") {
     return (
-      <button type="button" onClick={onClick} aria-label={label} title={label} className={`ava-glass-btn ${active ? "is-active" : ""}`}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={showLabel ? undefined : label}
+        title={showLabel ? undefined : label}
+        className={`ava-glass-btn ${showLabel ? "is-labelled" : ""} ${active ? "is-active" : ""}`}
+      >
         {icon}
+        {showLabel ? label : null}
       </button>
     );
   }
@@ -241,6 +252,7 @@ export function AvaFeed({
   /** Called when a link inside the app is followed (the stage docks itself). */
   onNavigate?: () => void;
 }) {
+  const room = useAvaRoom();
   const running = [...items].reverse().find((item) => item.type === "tool" && item.ok === null);
   const last = items[items.length - 1];
   const waiting = streaming && (!last || last.type !== "assistant" || Boolean(running));
@@ -294,9 +306,9 @@ export function AvaFeed({
         }
       })}
       {waiting ? (
-        <p className="flex items-center gap-2 pl-1 text-sm text-[var(--ava-muted)]">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          {running && running.type === "tool" ? `${running.label}…` : "Ava is thinking…"}
+        <p className="flex items-center gap-2.5 pl-0.5 text-sm text-[var(--ava-muted)]">
+          <AvaHalo size={20} state="thinking" dark={room === "stage"} />
+          <span className="ava-shimmer">{running && running.type === "tool" ? `${running.label}…` : "Ava is thinking…"}</span>
         </p>
       ) : null}
     </div>
@@ -326,7 +338,7 @@ export function AvaStarter({ primary = false, onClick, children }: { primary?: b
       className={`w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ava-ring)] ${
         primary
           ? "ava-primary"
-          : "border border-[var(--ava-field-rule)] bg-[var(--ava-surface)] text-[var(--ava-ink)] hover:border-[#9cc9ec] hover:bg-[var(--ava-tint)]"
+          : "border border-[rgba(12,82,144,0.12)] bg-white/60 text-[var(--ava-ink)] hover:border-[rgba(26,143,212,0.35)] hover:bg-white/90"
       }`}
     >
       {children}
@@ -436,6 +448,25 @@ export function AvaComposer({
 }
 
 /** Every conversation with Ava, newest first, each with the title she gave it. */
+/** Past chats in plain groups: Today, Yesterday, This week, Earlier. */
+export function groupByDay(chats: AgentChatSummary[]) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const day = 86_400_000;
+  const groups: { label: string; chats: AgentChatSummary[] }[] = [
+    { label: "Today", chats: [] },
+    { label: "Yesterday", chats: [] },
+    { label: "This week", chats: [] },
+    { label: "Earlier", chats: [] },
+  ];
+  for (const chat of chats) {
+    const t = new Date(chat.updated_at).getTime();
+    const g = t >= start.getTime() ? 0 : t >= start.getTime() - day ? 1 : t >= start.getTime() - 6 * day ? 2 : 3;
+    groups[g].chats.push(chat);
+  }
+  return groups.filter((g) => g.chats.length);
+}
+
 export function AvaHistoryList({
   chats,
   coachFirst,
@@ -458,30 +489,25 @@ export function AvaHistoryList({
   if (!chats.length && !extra) {
     return <p className="text-sm leading-6 text-[var(--ava-muted)]">No conversations yet. They will all be here, each with its own title.</p>;
   }
+  // Plain glass rows grouped by day, in the panel and on the stage.
   return (
-    <div className="space-y-6">
-      {chats.length ? (
-        <ul className="space-y-1">
-          {chats.map((chat) => (
-            <li key={chat.id}>
-              <button
-                type="button"
-                onClick={() => onOpen(chat.id)}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left outline-none hover:bg-[var(--ava-tint)] focus-visible:ring-2 focus-visible:ring-[var(--ava-ring)]"
-              >
-                <AvaOrb size={22} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-[var(--ava-ink)]">{chat.title || "Conversation"}</span>
-                  <span className="block text-xs text-[var(--ava-faint)]">
-                    {commentWhen(chat.updated_at)}
-                    {chat.by === "coach" ? ` · ${coachFirst || "Coach"}` : chat.by === "bca" ? " · BCA" : ""}
-                  </span>
+    <div className="mx-auto max-w-[40rem] space-y-6 pt-2">
+      {groupByDay(chats).map((group) => (
+        <section key={group.label}>
+          <h3 className="mb-2 text-sm font-semibold text-[var(--ava-ink)]">{group.label}</h3>
+          <div className="flex flex-col gap-1.5">
+            {group.chats.map((chat) => (
+              <button key={chat.id} type="button" onClick={() => onOpen(chat.id)} className="ava-recent-row">
+                <span className="min-w-0 truncate">{chat.title || "Conversation"}</span>
+                <span className="shrink-0 text-xs text-[var(--ava-muted)]">
+                  {commentWhen(chat.updated_at)}
+                  {chat.by === "coach" ? ` · ${coachFirst || "Coach"}` : chat.by === "bca" ? " · BCA" : ""}
                 </span>
               </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+            ))}
+          </div>
+        </section>
+      ))}
       {extra}
     </div>
   );
@@ -492,7 +518,7 @@ export function AvaRecent({ chats, onOpen }: { chats: AgentChatSummary[]; onOpen
   if (!chats.length) return null;
   return (
     <div>
-      <p className="mb-1.5 pl-1 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-[var(--ava-faint)]">Recent</p>
+      <p className="mb-1.5 pl-1 text-xs font-semibold text-[var(--ava-muted)]">Recent chats</p>
       {chats.slice(0, 3).map((chat) => (
         <button
           key={chat.id}

@@ -68,7 +68,7 @@ export default async function CoachAcademyVaultLessonPage({ params, searchParams
           initialChapterId={initialChapterId ?? null}
           contentsPosition="left"
           chrome="minimal"
-          contentsBackLabel="Vault"
+          contentsBackLabel="Classroom"
           chapterStepsGuide={false}
         />
       </LessonProgressProvider>

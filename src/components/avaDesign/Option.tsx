@@ -3,7 +3,19 @@
 import type { ReactNode } from "react";
 
 /** One option on the board: a letter, a name, why it might be right, then the design. */
-export function Option({ letter, name, why, children, aside }: { letter: string; name: string; why: string; children: ReactNode; aside?: ReactNode }) {
+export function Option({
+  letter,
+  name,
+  why,
+  children,
+  aside,
+}: {
+  letter: string;
+  name: string;
+  why: string;
+  children: ReactNode;
+  aside?: ReactNode;
+}) {
   return (
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-start gap-3">
@@ -28,7 +40,17 @@ export function SectionIntro({ title, children }: { title: string; children: Rea
   );
 }
 
-export function Seg<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+export function Seg<T extends string>({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: T;
+  options: { id: T; label: string }[];
+  onChange: (v: T) => void;
+  label: string;
+}) {
   return (
     <div className="ad-seg" role="group" aria-label={label}>
       {options.map((o) => (

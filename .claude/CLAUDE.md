@@ -23,8 +23,8 @@ storage, migrations in `supabase/migrations`), Stripe billing, Vercel hosting.
   branch, commit only your own files, additive migrations, no spend, no
   LinkedIn sends. Write `docs/<feature>-morning-review.md` with "Decisions I
   made (overturn any of these)".
-- **Design changes:** add the new version beside the old one. Never replace
-  or delete a version he has seen.
+- **Design changes:** add the new version beside the old one until he has
+  chosen; once he picks, remove the versions he passed on.
 - **Keep navigation flat:** group by the thing itself, few layers, one
   sensible default instead of parallel variants.
 - **Copy:** follow `content/ai-knowledge/writing-rules.md` (binding for all

@@ -213,14 +213,82 @@
   animation: avaDockIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Slide only: fading a backdrop-filter layer makes Chrome drop the blur. */
 @keyframes avaDockIn {
   from {
-    opacity: 0;
-    transform: translateX(14px);
+    transform: translateX(16px);
   }
   to {
-    opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* The side panel: see-through white glass, a bright edge, sky light at the
+   foot. Readable first: more white than the search overlay. */
+.ava-glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(246, 250, 253, 0.8) 100%);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  backdrop-filter: blur(40px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 0 0 1px rgba(207, 230, 248, 0.75),
+    0 30px 70px -30px rgba(5, 30, 54, 0.5),
+    0 18px 60px -40px rgba(26, 143, 212, 0.55);
+}
+
+.ava-glass-glow {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 45%;
+  pointer-events: none;
+  background: radial-gradient(90% 100% at 50% 125%, rgba(124, 195, 242, 0.32), rgba(124, 195, 242, 0) 70%);
+}
+
+.ava-glass-panel .ava-composer {
+  border-radius: 20px;
+  border-color: rgba(12, 82, 144, 0.14);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    0 10px 30px -18px rgba(12, 82, 144, 0.45);
+}
+
+.ava-glass-panel .ava-composer:focus-within {
+  border-color: rgba(26, 143, 212, 0.45);
+}
+
+/* Glass rows in the panel (past chats, recent chats). */
+.ava-ui:not(.ava-stage) .ava-recent-row {
+  border-color: rgba(12, 82, 144, 0.12);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--ava-ink);
+}
+
+.ava-ui:not(.ava-stage) .ava-recent-row:hover {
+  border-color: rgba(26, 143, 212, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* The step she is on: a band of light runs across the words. */
+.ava-shimmer {
+  background: linear-gradient(90deg, currentColor 0%, currentColor 38%, #1a8fd4 50%, currentColor 62%, currentColor 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: avaShimmer 2.2s linear infinite;
+}
+
+.ava-stage .ava-shimmer {
+  background-image: linear-gradient(90deg, currentColor 0%, currentColor 38%, #7cc3f2 50%, currentColor 62%, currentColor 100%);
+}
+
+@keyframes avaShimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
   }
 }
 
@@ -242,7 +310,7 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* The stage: Ava full screen. Brand navy room, slow light, glass.     */
+/* The stage: Ava full screen. A brand-blue room, her face, glass.     */
 /* ------------------------------------------------------------------ */
 
 .ava-stage {
@@ -275,7 +343,7 @@
   flex-direction: column;
   overflow: hidden;
   color: var(--ava-body);
-  background: linear-gradient(180deg, #020b17 0%, #04182e 52%, #062947 100%);
+  background: radial-gradient(85% 95% at 75% 40%, #3f7fbd 0%, #1f5f9c 42%, #0f4478 100%);
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   animation: avaStageIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -308,88 +376,91 @@
   pointer-events: none;
 }
 
-.ava-aurora {
+/* Her face fades in from the right while the conversation is empty, and
+   out once it starts. The photo's own mist does most of the fading. */
+.ava-room-face {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
+  inset: 0 0 0 auto;
+  width: 86%;
+  background-size: cover;
+  background-position: 62% 30%;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 42%), linear-gradient(0deg, transparent 0%, #000 22%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 42%), linear-gradient(0deg, transparent 0%, #000 22%);
+  mask-composite: intersect;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  animation: avaFaceBreathe 9s ease-in-out infinite;
+}
+
+.ava-stage:has(.ava-hero-e) .ava-room-face {
+  opacity: 1;
+}
+
+/* A soft shade behind the words so they read over the brighter mist. */
+.ava-room-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(6, 30, 60, 0.5) 0%, rgba(6, 30, 60, 0.28) 38%, rgba(6, 30, 60, 0) 62%);
+  transition: opacity 0.9s ease;
+}
+
+.ava-stage:not(:has(.ava-hero-e)) .ava-room-scrim {
   opacity: 0.55;
-  will-change: transform;
 }
 
-.ava-aurora.one {
-  width: 70vmax;
-  height: 70vmax;
-  left: 50%;
-  top: -44vmax;
-  background: radial-gradient(
-    circle,
-    rgba(12, 82, 144, 0.75) 0%,
-    rgba(26, 143, 212, 0.25) 40%,
-    transparent 70%
-  );
-  animation: avaDriftTop 14s ease-in-out infinite alternate;
-}
-
-.ava-aurora.two {
-  width: 46vmax;
-  height: 46vmax;
-  left: -16vmax;
-  bottom: -22vmax;
-  background: radial-gradient(
-    circle,
-    rgba(26, 143, 212, 0.4) 0%,
-    rgba(12, 82, 144, 0.18) 50%,
-    transparent 72%
-  );
-  animation: avaDrift 18s ease-in-out infinite alternate-reverse;
-}
-
-.ava-aurora.three {
-  width: 40vmax;
-  height: 40vmax;
-  right: -14vmax;
-  bottom: -16vmax;
-  opacity: 0.4;
-  background: radial-gradient(
-    circle,
-    rgba(88, 180, 236, 0.42) 0%,
-    rgba(26, 143, 212, 0.14) 50%,
-    transparent 72%
-  );
-  animation: avaDrift 11s ease-in-out infinite alternate;
-}
-
-/* A faint glowing arc near the top, like a horizon. */
-.ava-horizon {
+/* Light rising from the bottom edge. */
+.ava-room-glow {
   position: absolute;
-  left: 50%;
-  top: -34vmax;
-  width: 88vmax;
-  height: 44vmax;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  border: 1px solid rgba(150, 205, 245, 0.16);
-  box-shadow:
-    0 0 60px rgba(26, 143, 212, 0.22),
-    inset 0 0 80px rgba(26, 143, 212, 0.1);
+  inset: auto 0 0 0;
+  height: 38%;
+  background: radial-gradient(70% 100% at 40% 120%, rgba(26, 143, 212, 0.35), rgba(26, 143, 212, 0) 70%);
 }
 
-@keyframes avaDrift {
-  from {
-    transform: translate3d(-2%, 0, 0) scale(1);
+.ava-room-dust {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 30% 80%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 20% 52%, rgba(207, 230, 248, 0.45), transparent),
+    radial-gradient(1px 1px at 46% 12%, rgba(255, 255, 255, 0.35), transparent);
+  animation: avaDust 40s linear infinite alternate;
+}
+
+@keyframes avaFaceBreathe {
+  0%,
+  100% {
+    transform: scale(1);
   }
-  to {
-    transform: translate3d(2%, 4%, 0) scale(1.08);
+  50% {
+    transform: scale(1.012);
   }
 }
 
-@keyframes avaDriftTop {
-  from {
-    transform: translateX(-52%) scale(1);
-  }
+@keyframes avaDust {
   to {
-    transform: translateX(-48%) scale(1.06);
+    transform: translate3d(-2%, -3%, 0);
   }
+}
+
+/* On a narrow screen the face sits behind the words, so it stays faint. */
+@media (max-width: 899px) {
+  .ava-room-face {
+    width: 100%;
+    background-position: 70% 20%;
+  }
+
+  .ava-stage:has(.ava-hero-e) .ava-room-face {
+    opacity: 0.3;
+  }
+}
+
+/* The start screen: greeting, glass box and buttons on the left. */
+.ava-hero-e .ava-pill {
+  border-radius: 14px;
+  padding: 0.75rem 1.125rem;
+  font-size: 0.875rem;
 }
 
 /* Round glass buttons in the stage header. */
@@ -414,6 +485,167 @@
 }
 
 .ava-glass-btn:focus-visible {
+  outline: 2px solid rgba(150, 210, 250, 0.7);
+  outline-offset: 2px;
+}
+
+.ava-glass-btn.is-labelled {
+  display: inline-flex;
+  width: auto;
+  gap: 0.5rem;
+  padding: 0 1rem 0 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ava-ink);
+}
+
+/* Ava's own page: the room fills the page instead of covering the app. */
+.ava-stage.is-page {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  height: 100%;
+  animation: none;
+}
+
+/* The chat area on her page: her face sizes to it, not to the window. */
+.ava-room-column {
+  position: relative;
+  container-type: inline-size;
+}
+
+@container (max-width: 1100px) {
+  .ava-room-face {
+    width: 54%;
+    background-position: 68% 28%;
+  }
+
+  .ava-hero-e .ava-hero-title {
+    font-size: 2.75rem;
+  }
+}
+
+/* Narrower still (a small laptop with the panel open): she steps back so the box stays clear. */
+@container (max-width: 860px) {
+  .ava-room-face {
+    width: 42%;
+    background-position: 72% 26%;
+  }
+
+  .ava-hero-e .ava-hero-actions {
+    max-width: 28rem;
+  }
+}
+
+/* Her chats, in a panel on the left of her page, like every other AI app. */
+.ava-chats-panel {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: 16.5rem;
+  flex-shrink: 0;
+  min-height: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(4, 22, 44, 0.42) 0%, rgba(4, 22, 44, 0.3) 100%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  overflow: hidden;
+  white-space: nowrap;
+  animation: avaPanelIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ava-chats-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(4, 18, 36, 0.45);
+}
+
+@media (max-width: 767px) {
+  .ava-chats-panel {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: min(85%, 20rem);
+  }
+}
+
+.ava-chat-row {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0.5rem 0.625rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--ava-body);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ava-chat-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ava-ink);
+}
+
+.ava-chat-row[aria-current="true"] {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--ava-ink);
+  font-weight: 600;
+}
+
+.ava-chat-row:focus-visible {
+  outline: 2px solid rgba(150, 210, 250, 0.7);
+  outline-offset: -2px;
+}
+
+/* The panel grows in from the left, so the page beside it slides across.
+   No fade: fading a backdrop-filter layer makes Chrome drop the blur. */
+@keyframes avaPanelIn {
+  from {
+    width: 0;
+  }
+  to {
+    width: 16.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  @keyframes avaPanelIn {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+}
+
+/* "Pick up where you left off" on her start screen. */
+.ava-recent-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  color: var(--ava-ink);
+  font-size: 0.9375rem;
+  text-align: left;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.ava-recent-row:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(140, 205, 245, 0.4);
+}
+
+.ava-recent-row:focus-visible {
   outline: 2px solid rgba(150, 210, 250, 0.7);
   outline-offset: 2px;
 }
@@ -555,7 +787,8 @@
     animation: none;
   }
 
-  .ava-aurora,
+  .ava-room-face,
+  .ava-room-dust,
   .ava-orb-glow,
   .ava-orb-ribbon {
     animation: none;

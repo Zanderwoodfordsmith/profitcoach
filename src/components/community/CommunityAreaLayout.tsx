@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { PageHeaderUnderlineTabs, StickyPageHeader } from "@/components/layout";
+import { useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { StickyPageHeader } from "@/components/layout";
+import { ACADEMY_INFO, AcademyTabs } from "@/components/academy/AcademyTabs";
 import { CommunityMemberDirectoryProvider } from "@/components/community/useCommunityMemberDirectory";
 import { communityPostSlugFromPathname } from "@/lib/communityPostSlug";
 
@@ -12,81 +13,39 @@ export function CommunityAreaLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const base = pathname.startsWith("/admin")
     ? "/admin/community"
     : "/coach/community";
-  const isMembers = pathname === `${base}/members`;
   const onCommunityHome =
     pathname === base ||
     pathname === `${base}/` ||
     communityPostSlugFromPathname(pathname) !== null;
-  const isCalendarPage =
-    pathname === `${base}/calendar` || pathname === `${base}/calendar/`;
   const isFeedbackPage =
     pathname === `${base}/feedback` || pathname === `${base}/feedback/`;
 
-  const isMap =
-    !isMembers &&
-    onCommunityHome &&
-    searchParams.get("tab") === "map";
-  const isFeed = !isMembers && onCommunityHome && !isMap;
+  // The map used to be a feed tab; it now lives on the Members page.
+  const oldMapLink = onCommunityHome && searchParams.get("tab") === "map";
+  useEffect(() => {
+    if (oldMapLink) router.replace(`${base}/members?view=map`);
+  }, [oldMapLink, base, router]);
 
   const description = isFeedbackPage
     ? "Review and prioritise bugs, features, and feedback from staff."
-    : isMembers
-      ? "Browse all members, see who's online, and find staff admins."
-      : isCalendarPage
-        ? "See upcoming community events in calendar or list view."
-        : "Browse posts and see where coaches are based.";
-
-  const pageTitle = isFeedbackPage
-    ? "Feedback inbox"
-    : isCalendarPage
-      ? "Calendar"
-      : "Community";
-
-  const tabs = useMemo(() => {
-    if (isCalendarPage || isFeedbackPage) return undefined;
-    return (
-      <PageHeaderUnderlineTabs
-        ariaLabel="Community views"
-        items={[
-          {
-            kind: "link",
-            href: base,
-            label: "Feed",
-            description: "Posts, wins and questions from coaches",
-            active: isFeed,
-          },
-          {
-            kind: "link",
-            href: `${base}/members`,
-            label: "Members",
-            description: "Every coach in the community",
-            active: isMembers,
-          },
-          {
-            kind: "link",
-            href: `${base}?tab=map`,
-            label: "Map",
-            description: "Where coaches are around the world",
-            active: isMap,
-          },
-        ]}
-      />
-    );
-  }, [base, isCalendarPage, isFeedbackPage, isFeed, isMap, isMembers]);
+    : ACADEMY_INFO;
 
   return (
     <>
       <StickyPageHeader
-        title={pageTitle}
+        title={isFeedbackPage ? "Feedback inbox" : "Academy"}
         description={description}
-        tabs={tabs}
+        tabs={isFeedbackPage ? undefined : <AcademyTabs />}
       />
-      <CommunityMemberDirectoryProvider>{children}</CommunityMemberDirectoryProvider>
+      <CommunityMemberDirectoryProvider>
+        {oldMapLink ? null : children}
+      </CommunityMemberDirectoryProvider>
     </>
   );
 }

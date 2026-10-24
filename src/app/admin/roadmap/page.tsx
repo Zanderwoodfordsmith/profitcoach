@@ -979,7 +979,7 @@ export default function AdminRoadmapPage() {
     <div className="w-full">
       <StickyPageHeader
         rootRef={headerRef}
-        title="Academy"
+        title="Product"
         description="Review = built, check it on 3002. Ready = checked, goes out with the next ;stage. On staging = on staging.theprofitcoach.com, waiting for ;live. Live = coaches have it. Projects group related jobs. Ask the AI panel to add or update jobs from any screen."
         tabs={<LessonImportTabs />}
       />

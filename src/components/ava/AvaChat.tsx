@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, History, Plus } from "lucide-react";
+import { ChevronLeft, History, Info, Plus } from "lucide-react";
 
 import type { AgentChatSummary, useAgentConversation } from "@/components/agent/useAgentConversation";
 import { useAutoGrow, useHalfHeight, useVoiceInput } from "@/components/practice/composer";
 import { useQueuedAiPrompt } from "@/lib/profitCoachAi/queuedPrompt";
 
-import { AvaAction, AvaComposer, AvaFeed, AvaHistoryList, AvaOrb, AvaRecent, AvaStarter, useAvaRoom } from "./AvaKit";
+import { AvaAction, AvaComposer, AvaFeed, AvaHistoryList, AvaRecent, AvaStarter, useAvaRoom } from "./AvaKit";
+import { AvaHalo } from "./AvaHalo";
 
 /**
  * One conversation with Ava, as every surface shows it: the conversation
@@ -42,6 +43,7 @@ export function AvaChat({
   onHistory,
   onNew,
   onNavigate,
+  labelled = false,
 }: {
   convo: AvaConversation;
   transcribe: (blob: Blob) => Promise<string | null>;
@@ -68,10 +70,13 @@ export function AvaChat({
   onHistory?: () => void;
   onNew?: () => void;
   onNavigate?: () => void;
+  /** Ava's page: "New chat" in words, a calmer start screen, and her Chats panel instead of History. */
+  labelled?: boolean;
 }) {
   const room = useAvaRoom();
   const stage = room === "stage";
   const [view, setView] = useState<"chat" | "history">("chat");
+  const [showIntro, setShowIntro] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
   const { ref: panelRef, half } = useHalfHeight<HTMLDivElement>();
   const boxRef = useAutoGrow(draft, stage ? Math.min(half, 240) : half);
@@ -115,8 +120,10 @@ export function AvaChat({
   const title = detail
     ? detail.title
     : view === "history"
-      ? "History"
-      : (convo.title ?? (empty ? "New conversation" : "Conversation"));
+      ? labelled
+        ? "Past chats"
+        : "History"
+      : (convo.title ?? (empty ? (labelled ? "" : "New conversation") : "Conversation"));
   const back = detail ? detail.onBack : view === "history" ? () => setView("chat") : null;
   const onChat = view === "chat" && !detail;
 
@@ -150,7 +157,7 @@ export function AvaChat({
         {title}
       </p>
       {onChat ? actions : null}
-      {onChat ? (
+      {onChat && !labelled ? (
         <AvaAction
           icon={<History className={stage ? "h-4 w-4" : "h-3.5 w-3.5"} aria-hidden />}
           label="History"
@@ -160,9 +167,42 @@ export function AvaChat({
           }}
         />
       ) : null}
-      <AvaAction icon={<Plus className={stage ? "h-4 w-4" : "h-3.5 w-3.5"} aria-hidden />} label="New" onClick={fresh} />
+      {/* On Ava's page an empty chat already is a new chat, so the button waits until there is one. */}
+      {labelled && empty && onChat ? null : (
+        <AvaAction
+          icon={<Plus className={stage ? "h-4 w-4" : "h-3.5 w-3.5"} aria-hidden />}
+          label={labelled ? "New chat" : "New"}
+          showLabel={labelled}
+          onClick={fresh}
+        />
+      )}
     </div>
   );
+
+  const composer = convo.readOnly ? (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--ava-tint)] px-3.5 py-2.5">
+      <p className="text-sm text-[var(--ava-muted)]">{readOnlyNote}</p>
+      <button type="button" onClick={fresh} className="shrink-0 text-sm font-semibold text-[var(--ava-sky)] hover:underline">
+        Start one
+      </button>
+    </div>
+  ) : (
+    <>
+      {convo.error || voice.failed ? <p className="mb-2 text-sm text-[var(--ava-danger)]">{convo.error || voice.failed}</p> : null}
+      <AvaComposer
+        boxRef={boxRef}
+        value={draft}
+        onChange={setDraft}
+        onSend={() => send(draft)}
+        placeholder={empty ? placeholder : "Reply to Ava"}
+        busy={convo.streaming}
+        voice={voice}
+      />
+    </>
+  );
+
+  // On the stage, an empty conversation is the start screen: the box sits in it, not in the footer.
+  const heroE = stage && onChat && empty && !convo.readOnly;
 
   const body = detail ? (
     detail.body
@@ -178,32 +218,56 @@ export function AvaChat({
       onNavigate={onNavigate}
     />
   ) : stage ? (
-    <div className="flex min-h-full flex-col items-center justify-center pb-8 text-center">
-      <AvaOrb motion className="ava-hero-orb mb-9" style={{ width: "clamp(132px, 22vh, 196px)", height: "clamp(132px, 22vh, 196px)" }} />
-      <p className="ava-hero-hello mb-2 text-[0.9375rem] font-medium text-[var(--ava-muted)]">{greeting}</p>
-      <h2 className="ava-hero-title max-w-[26rem] text-balance text-[2.25rem] font-bold leading-[1.15] tracking-[-0.025em] sm:text-[2.5rem]">
-        How can <em>I help</em> you <em>today?</em>
+    // Start screen E: her face is in the room behind (AvaStage); the words,
+    // the box and the jobs she can start sit on the left.
+    <div className="ava-hero-e flex min-h-full flex-col pb-10 pt-2 [justify-content:safe_center]">
+      <div className="ava-hero-hello flex items-center gap-3">
+        <AvaHalo size={34} dark />
+        <span className="text-[0.9375rem] font-semibold text-[var(--ava-ink)]">Ava</span>
+        <span className="text-sm text-[var(--ava-muted)]">ready when you are</span>
+      </div>
+      <h2 className="ava-hero-title mt-6 text-balance text-[2.5rem] leading-[1.06] tracking-[-0.03em] sm:text-[3.5rem]">
+        <span className="block font-light text-[var(--ava-muted)]">{greeting}.</span>
+        <span className="block font-bold text-[var(--ava-ink)]">What shall we get done?</span>
       </h2>
-      <div className="ava-hero-actions mt-4 flex max-w-[34rem] flex-col items-center gap-6">
-        <p className="text-pretty text-[0.9375rem] leading-6 text-[var(--ava-muted)]">{intro}</p>
+      <div className="ava-hero-actions mt-9 flex flex-col gap-5">
+        {composer}
         {starters.length ? (
-          <div className="flex flex-wrap justify-center gap-2.5">
-            {starters.map((starter) => (
+          <div className="flex flex-wrap gap-2.5">
+            {(labelled ? starters.slice(0, 3) : starters).map((starter) => (
               <AvaStarter key={starter.key} primary={starter.primary} onClick={starter.onPick}>
                 {starter.label}
               </AvaStarter>
             ))}
           </div>
         ) : null}
+        {labelled ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowIntro((v) => !v)}
+              aria-expanded={showIntro}
+              className="inline-flex items-center gap-1.5 rounded-full text-sm font-medium text-[var(--ava-muted)] outline-none hover:text-[var(--ava-ink)] focus-visible:ring-2 focus-visible:ring-[var(--ava-ring)]"
+            >
+              <Info className="h-4 w-4" aria-hidden /> What can I ask?
+            </button>
+            {showIntro ? <p className="mt-2 max-w-[34rem] text-pretty text-sm leading-6 text-[var(--ava-muted)]">{intro}</p> : null}
+          </div>
+        ) : (
+          <p className="max-w-[34rem] text-pretty text-sm leading-6 text-[var(--ava-muted)]">{intro}</p>
+        )}
       </div>
     </div>
   ) : (
     <div className="flex min-h-full flex-col">
-      <div className="flex flex-col items-start gap-3.5">
-        <AvaOrb size={44} motion />
+      <div className="flex flex-col items-start gap-4">
+        <AvaHalo size={40} />
         <div>
-          <p className="text-[1.0625rem] font-semibold text-[var(--ava-ink)]">{greeting}</p>
-          <p className="mt-1 text-sm leading-6 text-[var(--ava-muted)]">{intro}</p>
+          <h2 className="text-[1.375rem] leading-[1.18] tracking-[-0.02em]">
+            <span className="block font-light text-[var(--ava-muted)]">{greeting}.</span>
+            <span className="block font-bold text-[var(--ava-ink)]">What shall we get done?</span>
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--ava-muted)]">{intro}</p>
         </div>
       </div>
       <div className="mt-5 flex flex-col gap-2">
@@ -232,10 +296,10 @@ export function AvaChat({
           stage ? "relative z-[1] px-4 pb-4 pt-2 [mask-image:linear-gradient(to_bottom,transparent,#000_20px)] sm:px-8" : "px-4 py-5"
         }`}
       >
-        <div className={stage ? "mx-auto h-full w-full max-w-[46rem]" : "h-full"}>{body}</div>
+        <div className={heroE ? "h-full w-full max-w-[40rem]" : stage ? "mx-auto h-full w-full max-w-[46rem]" : "h-full"}>{body}</div>
       </div>
 
-      {onChat ? (
+      {onChat && !heroE ? (
         <footer
           className={
             stage
@@ -243,31 +307,7 @@ export function AvaChat({
               : "shrink-0 border-t border-[var(--ava-rule)] px-4 py-3.5"
           }
         >
-          <div className={stage ? "mx-auto w-full max-w-[42.5rem]" : ""}>
-            {convo.readOnly ? (
-              <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--ava-tint)] px-3.5 py-2.5">
-                <p className="text-sm text-[var(--ava-muted)]">{readOnlyNote}</p>
-                <button type="button" onClick={fresh} className="shrink-0 text-sm font-semibold text-[var(--ava-sky)] hover:underline">
-                  Start one
-                </button>
-              </div>
-            ) : (
-              <>
-                {convo.error || voice.failed ? (
-                  <p className="mb-2 text-sm text-[var(--ava-danger)]">{convo.error || voice.failed}</p>
-                ) : null}
-                <AvaComposer
-                  boxRef={boxRef}
-                  value={draft}
-                  onChange={setDraft}
-                  onSend={() => send(draft)}
-                  placeholder={empty ? placeholder : "Reply to Ava"}
-                  busy={convo.streaming}
-                  voice={voice}
-                />
-              </>
-            )}
-          </div>
+          <div className={stage ? "mx-auto w-full max-w-[42.5rem]" : ""}>{composer}</div>
         </footer>
       ) : null}
     </div>

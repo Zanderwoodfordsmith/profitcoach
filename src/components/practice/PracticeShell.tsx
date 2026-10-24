@@ -1,16 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Sparkles, X } from "lucide-react";
 
 import type { AgentShow } from "@/lib/agent/types";
 import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES, sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { setAvaPageHost } from "@/components/ava/avaPageHost";
+import { NavHoverHints } from "@/components/layout/NavHoverHints";
 
 import { useSectionComments } from "./comments/SectionCommentsContext";
 import { CommentsButton, PageCommentBadge } from "./comments/SectionCommentsUI";
@@ -154,8 +156,11 @@ export function PracticeShell({
   const router = useRouter();
   const { loading, error, knowledge, payload, href, assistantOpen, setAssistantOpen, stayOnPage, viewer, sample } = usePractice();
   const rootRef = useRef<HTMLDivElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
   const here = path ?? pathname;
   const [navOpen, setNavOpen] = useState(true);
+  // Phones: the contents slide in from the left instead of sitting above every page.
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const wide = useWideScreen();
   // Mount the assistant once: docked at lg+, as a sheet below (not both, hidden by CSS).
   const sidePanelDesktop = useMatchesBreakpoint("lg");
@@ -218,6 +223,15 @@ export function PracticeShell({
     const stored = Number(window.localStorage.getItem(NAV_WIDTH_KEY));
     if (Number.isFinite(stored) && stored > 0) setNavWidth(clampNavWidth(stored));
   }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setDrawerOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawerOpen]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -313,37 +327,63 @@ export function PracticeShell({
     });
   }
 
-  const nav = (
+  // Collapsed (compact): icons only, like the app sidebar, with the name on hover.
+  const renderNav = (compact: boolean) => (
     <nav aria-label="Practice blueprint" className="space-y-1">
       {BLUEPRINT_GROUPS.map((section) => (
-        <div key={section.label} className="pt-3.5 first:pt-0">
-          <p className="px-2.5 pb-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#94a3b8]">
-            {section.label}
-          </p>
-          <ul>
+        <div
+          key={section.label}
+          className={compact ? "border-t border-slate-200/70 pt-2 first:border-t-0 first:pt-0" : "pt-3.5 first:pt-0"}
+        >
+          {compact ? null : (
+            <p className="px-2.5 pb-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#94a3b8]">
+              {section.label}
+            </p>
+          )}
+          <ul className={compact ? "flex flex-col items-center gap-0.5 pb-2" : undefined}>
             {section.pages.map((item) => {
               const current = path ? item.href === here : pathname === href(item.href);
+              const waiting = openPages.has(item.slug);
               return (
                 <li key={item.slug}>
                   <Link
                     href={href(item.href)}
                     scroll={stayOnPage ? false : undefined}
                     aria-current={current ? "page" : undefined}
-                    className={`flex items-start gap-2 rounded-[7px] px-2.5 py-1.5 text-sm leading-snug ${
+                    data-hint-label={item.title}
+                    data-hint-description={item.heading || undefined}
+                    onClick={() => setDrawerOpen(false)}
+                    className={`${
+                      compact
+                        ? "relative flex h-9 w-9 items-center justify-center rounded-[7px]"
+                        : "flex items-start gap-2 rounded-[7px] px-2.5 py-1.5 text-sm leading-snug"
+                    } ${
                       current
                         ? "bg-[#e0f2fe] font-semibold text-[#075985] [&_svg]:text-[#0369a1]"
                         : "text-[#334155] hover:bg-[#eef2f7] hover:text-[#0f172a] [&_svg]:text-[#94a3b8]"
                     }`}
                   >
-                    <PageIcon slug={item.slug} className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span className="min-w-0 flex-1">{item.title}</span>
-                    {openPages.has(item.slug) ? (
-                      <span
-                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#d4534a]"
-                        title={viewer === "bca" ? "Waiting on BCA" : "Waiting on you"}
-                      />
-                    ) : null}
-                    <PageCommentBadge pageSlug={item.slug} />
+                    {compact ? (
+                      <>
+                        <PageIcon slug={item.slug} className="h-[18px] w-[18px] shrink-0" />
+                        <span className="sr-only">{item.title}</span>
+                        {waiting ? (
+                          <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#d4534a]" />
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <PageIcon slug={item.slug} className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span className="min-w-0 flex-1">{item.title}</span>
+                        {waiting ? (
+                          <span
+                            className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#d4534a]"
+                            title={viewer === "bca" ? "Waiting on BCA" : "Waiting on you"}
+                          />
+                        ) : null}
+                        <PageCommentBadge pageSlug={item.slug} />
+                      </>
+                    )}
                   </Link>
                 </li>
               );
@@ -367,13 +407,67 @@ export function PracticeShell({
       }`}
       style={{ "--practice-nav-w": `${navWidth}px` } as CSSProperties}
     >
+      <div className="bp-no-print sticky top-0 z-30 border-b border-slate-200/70 bg-[#f8fafc]/95 px-3 py-2 backdrop-blur lg:hidden">
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          aria-expanded={drawerOpen}
+          aria-controls="practice-nav-drawer"
+          className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-slate-100"
+        >
+          <PanelLeftOpen className="h-4 w-4 shrink-0 text-slate-600" aria-hidden />
+          <span className="shrink-0 text-slate-500">{switcher ? "Blueprint" : "My Blueprint"}</span>
+          {page ? (
+            <>
+              <span className="shrink-0 text-slate-300" aria-hidden>/</span>
+              <span className="min-w-0 truncate font-semibold text-[#0f172a]">{page.title}</span>
+            </>
+          ) : null}
+        </button>
+      </div>
+
+      {/* In a portal: the shell's contain:paint would clip a fixed layer to the document column. */}
+      {drawerOpen ? createPortal(
+        <div className="bp-no-print fixed inset-0 z-[110] lg:hidden" role="dialog" aria-modal="true" aria-label="Blueprint contents">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Close contents"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <div
+            id="practice-nav-drawer"
+            className="bp-nav-drawer absolute inset-y-0 left-0 flex w-[min(20rem,85vw)] flex-col bg-[#f8fafc] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-xl"
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 px-3 py-3">
+              {switcher ? (
+                <div className="min-w-0 flex-1">{switcher}</div>
+              ) : (
+                <p className="text-[0.8125rem] font-semibold text-[#0f172a]">My Blueprint</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                aria-label="Close contents"
+                className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">{renderNav(false)}</div>
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
       <aside
-        className={`relative shrink-0 border-slate-200/70 bg-[#f8fafc] lg:border-r ${
+        ref={asideRef}
+        className={`relative hidden shrink-0 border-slate-200/70 bg-[#f8fafc] lg:block lg:border-r ${
           embedded
             ? "lg:h-full lg:min-h-0 lg:overflow-hidden"
             : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)] lg:self-start"
         } ${
-          showNav ? "w-full border-b lg:w-[var(--practice-nav-w)] lg:border-b-0" : "w-14 border-b lg:border-b-0"
+          showNav ? "lg:w-[var(--practice-nav-w)]" : "w-14"
         }`}
       >
         <div className="lg:h-full lg:overflow-y-auto lg:overscroll-y-none">
@@ -395,10 +489,11 @@ export function PracticeShell({
             {showNav ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
           </button>
         </div>
-        {showNav ? <div className="px-3 py-4">{nav}</div> : null}
+        {showNav ? <div className="px-3 py-4">{renderNav(false)}</div> : <div className="py-3">{renderNav(true)}</div>}
         </div>
         {showNav ? <NavResizer width={navWidth} onChange={setNavWidth} /> : null}
       </aside>
+      <NavHoverHints container={asideRef} mode={showNav ? "rest" : "instant"} placement="right" enabled={sidePanelDesktop === true} />
 
       <section className={`bp-print-root app-canvas-bg @container flex min-w-0 flex-1 flex-col print:block print:bg-white ${embedded ? "lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-none lg:[contain:paint]" : ""}`}>
         {isHome ? (

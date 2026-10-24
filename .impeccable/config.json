@@ -181,6 +181,15 @@
         ],
         "createdAt": "2026-10-23T20:00:02.321Z",
         "reason": "Claude: .ad-shimmer is a moving light band marking the step Ava is working on (a live state), not decorative gradient text"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/ava/ava.css"
+        ],
+        "createdAt": "2026-10-24T08:16:52.211Z",
+        "reason": "Claude: .ava-shimmer is the moving light band on Ava's 'thinking' line (a live state), same as the design board's .ad-shimmer, not decorative gradient text"
       }
     ]
   }

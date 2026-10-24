@@ -22,16 +22,19 @@ import {
   coachToolsNavItems,
   getClientsHubPaths,
   isToolsHubPath,
+  isAcademyPath,
   mainNavItems,
-  mobileMoreNavItems,
   mobileNavShortLabel,
-  mobilePrimaryNavItems,
+  mobileTabNavItems,
   navLinkActive,
   type DashboardNavItem,
 } from "@/components/layout/dashboardNavItems";
 import type { CoachAccessTier, CoachFeature } from "@/lib/coachAccess/tiers";
 import { membershipSidebarPromoEnabled } from "@/lib/membership/preview";
 import { MembershipSidebarPromo } from "@/components/membership/MembershipSidebarPromo";
+import { SidebarAvaItem } from "@/components/layout/SidebarAvaItem";
+import { AvaHalo } from "@/components/ava/AvaHalo";
+import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -82,10 +85,6 @@ type DashboardSidebarProps = {
   /** Shows the collapse button on the line above Support. */
   onToggleCollapsed?: () => void;
 };
-
-function isCommunityCalendarActive(pathname: string | null, communityHref: string) {
-  return Boolean(pathname?.startsWith(`${communityHref}/calendar`));
-}
 
 const ADMIN_NAV_EXPANDED_KEY = "pc-admin-nav-expanded";
 
@@ -165,7 +164,10 @@ export function DashboardSidebar({
   const prefix = variant === "coach" ? "/coach" : "/admin";
   const supportHref = `${prefix}/support`;
   const supportActive = Boolean(pathname?.startsWith(supportHref));
-  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  // The phone account sheet opens from the photo in the top bar.
+  const chrome = useDashboardChrome();
+  const mobileMoreOpen = chrome?.accountSheetOpen ?? false;
+  const setMobileMoreOpen = (open: boolean) => chrome?.setAccountSheetOpen(open);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const railRef = useRef<HTMLElement>(null);
   const [adminNavExpanded, setAdminNavExpanded] = useState(true);
@@ -295,8 +297,7 @@ export function DashboardSidebar({
     }`;
 
   const mainItems = mainNavItems(prefix);
-  const mobilePrimary = mobilePrimaryNavItems(prefix);
-  const mobileMore = mobileMoreNavItems(prefix);
+  const mobileTabs = mobileTabNavItems(prefix);
   const toolsNavItems = coachToolsNavItems(prefix);
   const getClientsHrefs = getClientsHubPaths(prefix);
   const coachClientsHrefs = coachClientsTabHrefs(prefix);
@@ -317,6 +318,8 @@ export function DashboardSidebar({
     }
     return navLinkActive(pathname, item.href);
   };
+  /** Ava's own page; the admin one sits beside her settings at /admin/ava. */
+  const avaHref = variant === "coach" ? "/coach/ava" : "/admin/ava/chat";
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
   const settingsActive =
     pathname === settingsHref || Boolean(pathname?.startsWith(`${settingsHref}/`));
@@ -365,30 +368,33 @@ export function DashboardSidebar({
     );
   };
 
-  const renderMobileNavLink = (item: (typeof mobilePrimary)[number]) => {
-    let active = navLinkActive(pathname, item.href);
-    if (
-      item.href === `${prefix}/community` &&
-      isCommunityCalendarActive(pathname, `${prefix}/community`)
-    ) {
-      active = false;
-    }
+  const renderMobileNavLink = (item: DashboardNavItem) => {
+    const active = item.toolsHub
+      ? isToolsNavActive(item)
+      : isAcademyPath(pathname, prefix);
+    const href = resolveToolsHref(item);
     const Icon = item.icon;
     const short = mobileNavShortLabel(item.label);
     const locked = navItemLocked(item.requiredFeature);
     return (
       <Link
-        key={item.href}
-        href={item.href}
+        key={item.toolsHub ?? item.href}
+        href={href}
+        aria-current={active ? "page" : undefined}
         onClick={() => {
-          markPending(item.href);
+          markPending(href);
           closeMobileSheets();
         }}
-        className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-center ${
-          active ? SIDEBAR_NAV_ACTIVE : "text-slate-100/90 active:bg-white/10"
+        className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-center ${
+          active ? "text-white" : "text-sky-100/70"
         }`}
       >
-        <span className="relative shrink-0">
+        {/* A soft pill behind the icon marks where you are. */}
+        <span
+          className={`relative shrink-0 rounded-full px-4 py-1 ${
+            active ? "bg-white/20" : ""
+          }`}
+        >
           <Icon className="h-5 w-5 shrink-0" aria-hidden />
           {locked ? (
             <Lock
@@ -397,41 +403,18 @@ export function DashboardSidebar({
             />
           ) : null}
         </span>
-        <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-tight">
+        <span
+          className={`max-w-full truncate px-0.5 text-[10px] leading-tight ${
+            active ? "font-semibold" : "font-medium"
+          }`}
+        >
           {short}
         </span>
       </Link>
     );
   };
 
-  const renderMoreNavLinks = (
-    items: typeof mobileMore,
-    onNavigate?: () => void
-  ) =>
-    items.map((item) => {
-      const active = navLinkActive(pathname, item.href);
-      const Icon = item.icon;
-      return (
-        <li key={item.href}>
-          <Link
-            href={item.href}
-            onClick={() => {
-              markPending(item.href);
-              onNavigate?.();
-              closeMobileSheets();
-            }}
-            className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
-              active
-                ? SIDEBAR_NAV_ACTIVE
-                : "text-slate-100/90 hover:bg-white/10"
-            }`}
-          >
-            <Icon className="h-5 w-5 shrink-0 opacity-95" />
-            {item.label}
-          </Link>
-        </li>
-      );
-    });
+  const showMobileAva = Boolean(chrome?.showAi && chrome.avaInMobileNav);
 
   return (
     <>
@@ -479,14 +462,15 @@ export function DashboardSidebar({
           }`}
         >
           <ul className="space-y-0.5">
+            <SidebarAvaItem
+              collapsed={collapsed}
+              isAdmin={profile?.role === "admin"}
+              href={avaHref}
+              active={pathname === avaHref}
+              linkClass={navLinkClass}
+            />
             {mainItems.map((item) => {
-              let active = navLinkActive(pathname, item.href);
-              if (
-                item.href === `${prefix}/community` &&
-                isCommunityCalendarActive(pathname, `${prefix}/community`)
-              ) {
-                active = false;
-              }
+              const active = isAcademyPath(pathname, prefix);
               const Icon = item.icon;
               const locked = navItemLocked(item.requiredFeature);
               return (
@@ -513,14 +497,8 @@ export function DashboardSidebar({
               );
             })}
           </ul>
-          <div className={`mt-5 ${collapsed ? "px-0" : "px-1"}`}>
-            {collapsed ? (
-              <div className="mb-2 border-t border-white/15" aria-hidden />
-            ) : (
-              <p className="mb-2 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-                Tools
-              </p>
-            )}
+          {/* One flat list: no "Tools" heading under the main items. */}
+          <div className="mt-0.5">
             <ul className="space-y-0.5">
               {toolsNavItems.map((item) => {
                 const href = resolveToolsHref(item);
@@ -794,38 +772,32 @@ export function DashboardSidebar({
         placement="right"
       />
 
-      {/* Mobile: 4 primary tabs + settings (opens more sheet), always shown */}
+      {/* Phone: Academy and Blueprint, Ava raised in the middle, Get and Keep Clients. */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/15 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-4px_24px_rgba(0,0,0,0.18)] md:hidden"
         aria-label="Main navigation"
       >
         <div className="flex min-h-[3.5rem] items-stretch">
-          {mobilePrimary.map((item) => renderMobileNavLink(item))}
-          <button
-            type="button"
-            onClick={() => setMobileMoreOpen(true)}
-            className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-center ${
-              mobileMoreOpen ? SIDEBAR_NAV_ACTIVE : "text-slate-100/90 active:bg-white/10"
-            }`}
-            aria-expanded={mobileMoreOpen}
-            aria-label="Account and more"
-          >
-            {avatarImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarImageUrl}
-                alt=""
-                className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-white/40"
-              />
-            ) : (
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-[9px] font-semibold text-white ring-1 ring-white/30">
-                {profileInitialsFromName(avatarLabel)}
+          {mobileTabs.left.map((item) => renderMobileNavLink(item))}
+          {showMobileAva && chrome ? (
+            <button
+              type="button"
+              onClick={chrome.onOpenAiFull ?? chrome.onToggleAi}
+              disabled={chrome.profileLoading}
+              aria-pressed={chrome.aiPanelOpen}
+              aria-label="Ava"
+              className="flex min-w-0 flex-1 items-center justify-center px-0.5 disabled:cursor-wait"
+            >
+              <span
+                className={`-mt-6 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-[radial-gradient(circle_at_50%_35%,#0c5290_0%,#051e36_70%)] shadow-[0_6px_18px_rgba(5,30,54,0.45),0_0_0_3px_#0b4d86] transition-transform active:scale-95 ${
+                  chrome.aiPanelOpen ? "border-sky-300/60" : ""
+                }`}
+              >
+                <AvaHalo size={34} dark state={chrome.aiPanelOpen ? "listening" : "idle"} />
               </span>
-            )}
-            <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-tight">
-              {profileLoading ? "…" : avatarLabel.split(" ")[0] || "You"}
-            </span>
-          </button>
+            </button>
+          ) : null}
+          {mobileTabs.right.map((item) => renderMobileNavLink(item))}
         </div>
       </nav>
 
@@ -834,7 +806,7 @@ export function DashboardSidebar({
           className="fixed inset-0 z-[110] md:hidden"
           role="dialog"
           aria-modal="true"
-          aria-label="More navigation"
+          aria-label="Account and settings"
         >
           <button
             type="button"
@@ -863,47 +835,8 @@ export function DashboardSidebar({
                 </p>
               </div>
             </div>
-            {variant === "admin" ? (
-              <div className="px-4 pb-3 pt-3">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-                  More
-                </p>
-                <ul className="space-y-0.5">{renderMoreNavLinks(mobileMore)}</ul>
-              </div>
-            ) : null}
-            <div className="px-4 pb-3 pt-3">
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-                Tools
-              </p>
-              <ul className="space-y-0.5">
-                {toolsNavItems.map((item) => {
-                  const href = resolveToolsHref(item);
-                  const active = isToolsNavActive(item);
-                  const Icon = item.icon;
-                  const locked =
-                    variant === "coach" && navItemLocked(item.requiredFeature);
-                  return (
-                    <li key={item.toolsHub ?? item.href}>
-                      <Link
-                        href={href}
-                        onClick={closeMobileSheets}
-                        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
-                          active
-                            ? SIDEBAR_NAV_ACTIVE
-                            : "text-slate-100/90 hover:bg-white/10"
-                        }`}
-                      >
-                        <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                        {item.label}
-                        {locked ? lockBadge : null}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
             {showAdminSection ? (
-              <div className="px-4 pb-3">
+              <div className="px-4 pb-3 pt-3">
                 {adminNavExpanded ? (
                   <div>
                     <AdminNavHeader

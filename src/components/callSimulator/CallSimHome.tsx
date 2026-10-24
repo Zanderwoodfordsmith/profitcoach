@@ -22,7 +22,7 @@ import { Cast, QUICK_PACE, Trend, readPace, setPace, subscribePace } from "@/com
 import { formatSimDate, useSimApi, useSimPrefix } from "@/components/simulator/simApi";
 import "@/components/simulator/sim.css";
 
-type HomeData = { configured: boolean; sessions: CallSessionSummary[] };
+type HomeData = { configured: boolean; sessions: CallSessionSummary[]; minutes: { used: number; limit: number | null } };
 
 const OUTCOME_LABEL = { won: "Won", step: "Next step", lost: "No" } as const;
 
@@ -84,7 +84,13 @@ export function CallSimHome() {
   const picked = call.drill ? objections.filter((id) => objectionList(call.drill!).some((o) => o.id === id)) : [];
   const brief = callBrief(call, prospect, difficulty, from);
   const scored = useMemo(() => (data?.sessions ?? []).filter((s) => s.status === "scored"), [data]);
-  const blocked = call.drill && !picked.length ? "Pick the objections to face, or Surprise me." : null;
+  const minutesLeft = data?.minutes.limit ? Math.max(0, data.minutes.limit - data.minutes.used) : null;
+  const blocked =
+    minutesLeft === 0
+      ? "You've used this month's practice minutes. They reset on the 1st."
+      : call.drill && !picked.length
+        ? "Pick the objections to face, or Surprise me."
+        : null;
 
   function chooseCall(id: CallId) {
     setCallId(id);
@@ -201,6 +207,9 @@ export function CallSimHome() {
               <p className="text-center text-xs text-[var(--sim-cream-faint)]">
                 {DIFFICULTIES.find((d) => d.id === difficulty)?.label} · about {call.minutes} minutes · uses your microphone
               </p>
+              {minutesLeft !== null && minutesLeft < 60 ? (
+                <p className="text-xs text-[var(--sim-cream-faint)]">{minutesLeft} practice minutes left this month, shared with the Client simulator</p>
+              ) : null}
             </div>
 
             <div className="flex min-w-0 flex-col gap-4 lg:items-end">

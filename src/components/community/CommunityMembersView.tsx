@@ -8,11 +8,14 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  List,
+  Map as MapIcon,
   MapPin,
 } from "lucide-react";
 
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { ladderOrdinal } from "@/lib/ladder";
+import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 import { ContentWithRail, ContentWithRailMain } from "@/components/layout";
 import {
@@ -99,6 +102,39 @@ function membersQuery(
   if (dir !== defaultDirForSort(sort)) p.set("dir", dir);
   const s = p.toString();
   return s ? `?${s}` : "";
+}
+
+/** List | Map switch at the top of the Members page. */
+function MembersViewToggle({
+  view,
+  listHref,
+  mapHref,
+}: {
+  view: "list" | "map";
+  listHref: string;
+  mapHref: string;
+}) {
+  const optionClass = (active: boolean) =>
+    `inline-flex items-center gap-1.5 px-3 text-sm font-medium transition ${
+      active ? "bg-sky-100 text-slate-900" : "bg-white text-slate-600 hover:bg-slate-50"
+    }`;
+  return (
+    <div
+      className="inline-flex h-9 shrink-0 overflow-hidden rounded-full border border-slate-300 bg-white shadow-sm"
+      role="group"
+      aria-label="List or map"
+    >
+      <Link href={listHref} aria-current={view === "list" ? "page" : undefined} className={optionClass(view === "list")}>
+        <List className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+        List
+      </Link>
+      <span className="w-px shrink-0 self-stretch bg-slate-300" aria-hidden />
+      <Link href={mapHref} aria-current={view === "map" ? "page" : undefined} className={optionClass(view === "map")}>
+        <MapIcon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+        Map
+      </Link>
+    </div>
+  );
 }
 
 const SORT_MENU_OPTIONS: ReadonlyArray<{
@@ -289,6 +325,23 @@ export function CommunityMembersView() {
   const countClass = (id: CommunityMembersFilter) =>
     filter === id ? "text-sky-200" : "text-slate-500";
 
+  const view = searchParams.get("view") === "map" ? "map" : "list";
+  const viewToggle = (
+    <MembersViewToggle
+      view={view}
+      listHref={`${base}/members${membersQuery(filter, sort, dir)}`}
+      mapHref={`${base}/members?view=map`}
+    />
+  );
+
+  if (view === "map") {
+    return (
+      <div className="min-w-0 w-full pt-5 lg:pt-6">
+        <div className="mb-4 flex justify-end">{viewToggle}</div>
+        <CommunityMembersMap />
+      </div>
+    );
+  }
 
   return (
     <ContentWithRail>
@@ -318,7 +371,8 @@ export function CommunityMembersView() {
             <span className={countClass("admins")}>{counts.admins}</span>
           </Link>
         </div>
-        <div className="relative ml-auto shrink-0 pt-0.5" ref={sortMenuRef}>
+        <div className="ml-auto">{viewToggle}</div>
+        <div className="relative shrink-0" ref={sortMenuRef}>
           <button
             type="button"
             aria-expanded={sortMenuOpen}

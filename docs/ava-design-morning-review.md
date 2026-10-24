@@ -20,7 +20,7 @@ All the data is one made-up story (a Leeds manufacturers campaign) so the screen
 
 ## I checked
 
-- Typecheck: no errors in any new file.
+- Typecheck: correction (24 Oct): the overnight typecheck never ran (macOS has no `timeout` command, so the check failed silently). A real full typecheck on 24 Oct found 6 errors in the Face tab, now fixed; it passes with exit code 0.
 - Design checker (impeccable detect): no findings.
 - No em or en dashes in the copy.
 - Looked at every tab in a browser at 1440 wide (and 900 for "What she shares"), light and navy, and fixed what I saw: a seam across the pearl, the orbit flattening into an X, glow cut into squares, a light sweep showing a box, faces cropped at the neck.

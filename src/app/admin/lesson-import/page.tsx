@@ -21,7 +21,7 @@ export default async function AdminLessonImportPage() {
   return (
     <div className="flex flex-col gap-6">
       <StickyPageHeader
-        title="Academy"
+        title="Product"
         description={
           <span className="text-lg leading-relaxed text-slate-600">
             Track video, content, and transcript coverage for each Classroom lesson.
