@@ -154,6 +154,33 @@
         ],
         "createdAt": "2026-10-21T17:36:20.382Z",
         "reason": "Claude triage: L208 is the left rule on .academy-prose blockquote, the standard quote style in lesson text, not a card accent; unchanged since c513227"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "src/components/simulator/sim.css"
+        ],
+        "createdAt": "2026-10-23T19:09:31.482Z",
+        "reason": "Claude triage: .sim-room::after is a 3px dot grain that stops the navy gradient banding, not hairline grid lines; it's the Client simulator's approved Doer look (job 115)"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/callSimulator/CallScript.tsx"
+        ],
+        "createdAt": "2026-10-23T19:19:25.517Z",
+        "reason": "Claude triage: classes on L177 are exclusive ternary branches; the emerald-50 'Say next' line uses text-emerald-950, plain lines are slate-900 on white, said lines are slate-900/45 so they blend with any tint"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/avaDesign/avaDesign.css"
+        ],
+        "createdAt": "2026-10-23T20:00:02.321Z",
+        "reason": "Claude: .ad-shimmer is a moving light band marking the step Ava is working on (a live state), not decorative gradient text"
       }
     ]
   }

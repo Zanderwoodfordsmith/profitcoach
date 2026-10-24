@@ -489,7 +489,13 @@ export function coachClientsTabItems(
       description: "What small moves on six numbers are worth",
       adminPreview: true,
     },
-
+    {
+      key: "simulator",
+      href: `${prefix}/simulator`,
+      label: "Client simulator",
+      description: "Practise out loud with AI clients and get a score",
+      adminPreview: true,
+    },
   ];
 }
 
@@ -522,6 +528,9 @@ export function coachClientsTabActive(
   }
   if (tabKey === "profit-levers") {
     return pathname === "/coach/profit-levers" || pathname === "/admin/profit-levers";
+  }
+  if (tabKey === "simulator") {
+    return /^\/(coach|admin)\/simulator(\/|$)/.test(pathname);
   }
   if (tabKey === "boss-pro") {
     return (
