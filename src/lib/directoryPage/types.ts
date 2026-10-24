@@ -93,7 +93,7 @@ export type DirectoryEditorExtras = {
 
 export const LIMITS = {
   career: 6,
-  results: 6,
+  results: 15,
   industries: 8,
   title: 120,
   company: 80,

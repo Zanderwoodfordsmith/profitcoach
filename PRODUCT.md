@@ -43,7 +43,8 @@ Candidate one-liner (Zander, Aug 2026, undecided): "The Scalable for founders do
 ## Capabilities and Constraints
 
 - Reusable live components: `BossWheel` (app), the `profitSystem` graphics (NineStepRoadmap, OwnerLevelsDiagram, hexagons, pyramid), and the custom marketing wheel in `src/app/home-v3/`.
-- Diagnostic facts cleared for copy: 50 questions, 10 areas, 5 levels, scored out of 100, free, about 10 minutes. Funnel multiplier maths: five inputs improved 10% each is 1.1^5 = 1.61, a 61% revenue increase.
+- BOSS Score (free opt-in): 10 quick 1-to-5 questions plus 3 about the business. The 50-question, 10-minute assessment is BOSS Pro.
+- Diagnostic facts cleared for copy: 10 areas, 5 levels, scored out of 100, free. Funnel multiplier maths: five inputs improved 10% each is 1.1^5 = 1.61, a 61% revenue increase.
 - Undecided, do not publish: coaching and programme prices on marketing pages; benchmark medians (dataset not built yet).
 - Retired claims: "Unlock 30-130% more profit". Never use countdown timers, fake scarcity, invented testimonials, or invented case studies.
 
