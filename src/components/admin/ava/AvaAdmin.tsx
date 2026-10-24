@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import { AdminBlueprintBoxes } from "@/components/admin/AdminBlueprintBoxes";
 import { AdminBlueprintFlow } from "@/components/admin/AdminBlueprintFlow";
+import { AvaDesignBoard } from "@/components/avaDesign/AvaDesignBoard";
 import { PageHeaderUnderlineTabs, StickyPageHeader } from "@/components/layout";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { AvaCatalog, AvaFileRecord } from "@/lib/agent/avaCatalog";
@@ -18,10 +19,11 @@ const TABS = [
   { key: "knowledge", label: "Knowledge" },
   { key: "flow", label: "Flow" },
   { key: "boxes", label: "Boxes" },
+  { key: "design", label: "Design" },
 ] as const;
 
 /** Tabs that fill the page themselves, without the file sidebar. */
-const FULL_TABS: TabKey[] = ["flow", "boxes"];
+const FULL_TABS: TabKey[] = ["flow", "boxes", "design"];
 
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -247,6 +249,12 @@ export function AvaAdmin() {
       {catalog && tab === "boxes" ? (
         <div className="min-h-0 flex-1 overflow-y-auto">
           <AdminBlueprintBoxes />
+        </div>
+      ) : null}
+
+      {tab === "design" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <AvaDesignBoard />
         </div>
       ) : null}
 

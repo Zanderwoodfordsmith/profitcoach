@@ -1,0 +1,746 @@
+/*
+ * Ava design options board (admin only). Every option shares these
+ * tokens and parts so the choices compare like for like. Brand blues
+ * only: navy #051e36, blue #0c5290, sky #1a8fd4, and their light tints.
+ */
+
+.ad {
+  --navy: #051e36;
+  --navy-2: #0a2c4d;
+  --blue: #0c5290;
+  --sky: #1a8fd4;
+  --sky-2: #7cc3f2;
+  --ice: #cfe6f8;
+  --mist: #eaf3fb;
+  --ground: #f6f9fc;
+  --ink: #0b1b2e;
+  --body: #24364a;
+  --slate: #5a6b80;
+  --faint: #8494a7;
+  --rule: rgba(12, 82, 144, 0.12);
+  --ok: #0f7a5c;
+  --warm: #f4d9b0;
+  color: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.ad ::selection {
+  background: var(--ice);
+  color: var(--ink);
+}
+
+.ad .dark ::selection,
+.ad .dark::selection {
+  background: rgba(124, 195, 242, 0.35);
+  color: #fff;
+}
+
+.ad textarea,
+.ad input {
+  caret-color: var(--sky);
+}
+
+.ad :focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+
+.ad-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(90, 107, 128, 0.3) transparent;
+}
+
+.dark .ad-scroll,
+.ad-scroll.dark {
+  scrollbar-color: rgba(207, 230, 248, 0.25) transparent;
+}
+
+/* ------------------------------------------------------------ Board */
+
+.ad-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 8px 24px -16px rgba(5, 30, 54, 0.3);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ad-tab {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--slate);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ad-tab:hover {
+  color: var(--ink);
+  background: var(--mist);
+}
+
+.ad-tab[aria-selected="true"] {
+  background: var(--navy);
+  color: #fff;
+}
+
+.ad-option-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ad-seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--mist);
+}
+
+.ad-seg button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate);
+}
+
+.ad-seg button[aria-pressed="true"] {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(5, 30, 54, 0.12);
+}
+
+.ad-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--ground);
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.08), 0 24px 60px -30px rgba(5, 30, 54, 0.45);
+}
+
+.ad-frame.phone {
+  border-radius: 44px;
+  box-shadow: 0 0 0 10px #0b1622, 0 0 0 11px #2a3a4c, 0 40px 80px -30px rgba(5, 30, 54, 0.6);
+}
+
+.ad-full {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 30, 54, 0.82);
+}
+
+/* ------------------------------------------------------------ Skies */
+
+/* A: the sun coming up. Pale sky, light rising from the bottom edge. */
+.ad-sky-sunrise {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f7fafd 0%, #eef5fb 46%, #e2eef9 100%);
+}
+
+.ad-sky-sunrise::before {
+  content: "";
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -62%;
+  height: 120%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.92) 18%,
+    rgba(186, 222, 248, 0.95) 38%,
+    rgba(104, 176, 230, 0.75) 58%,
+    rgba(26, 143, 212, 0.28) 78%,
+    rgba(26, 143, 212, 0) 100%
+  );
+  filter: blur(8px);
+  transform-origin: 50% 100%;
+  animation: adRise 14s ease-in-out infinite;
+}
+
+.ad-sky-sunrise::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 38% at 50% 100%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 70%);
+  mix-blend-mode: soft-light;
+}
+
+.ad-sky-sunrise.is-chat::before {
+  bottom: -88%;
+  opacity: 0.7;
+}
+
+@keyframes adRise {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2.5%) scale(1.04);
+  }
+}
+
+/* B: the brand navy room with a beam of light from above. */
+.ad-sky-beam {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 70% at 50% 108%, rgba(26, 143, 212, 0.55) 0%, rgba(12, 82, 144, 0.35) 34%, rgba(5, 30, 54, 0) 70%),
+    linear-gradient(180deg, #031427 0%, #051e36 45%, #0a2f55 100%);
+}
+
+.ad-beam {
+  position: absolute;
+  left: 50%;
+  top: -10%;
+  width: 180px;
+  height: 62%;
+  transform: translateX(-50%);
+  background: radial-gradient(50% 100% at 50% 0%, rgba(214, 238, 255, 0.55), rgba(124, 195, 242, 0.12) 55%, rgba(124, 195, 242, 0) 100%);
+  filter: blur(18px);
+  animation: adBeam 9s ease-in-out infinite;
+}
+
+.ad-beam.core {
+  width: 26px;
+  filter: blur(6px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0) 100%);
+  animation-delay: -3s;
+}
+
+@keyframes adBeam {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: translateX(-50%) scaleX(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1.25);
+  }
+}
+
+/* Light streaks fanning out behind the chat box, like the black reference. */
+.ad-streaks {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 140%;
+  height: 70%;
+  transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(207, 230, 248, 0.07) 0deg 0.6deg, transparent 0.6deg 5deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 22%, #000 40%, transparent 92%);
+  mask: radial-gradient(closest-side, transparent 22%, #000 40%, transparent 92%);
+  animation: adSpin 120s linear infinite;
+}
+
+@keyframes adSpin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.ad-dust {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 78% 18%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 64% 72%, rgba(207, 230, 248, 0.6), transparent),
+    radial-gradient(1px 1px at 30% 80%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 88% 56%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 46% 12%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 20% 52%, rgba(207, 230, 248, 0.5), transparent),
+    radial-gradient(1px 1px at 56% 40%, rgba(255, 255, 255, 0.35), transparent);
+  animation: adDrift 40s linear infinite alternate;
+}
+
+@keyframes adDrift {
+  to {
+    transform: translate3d(-2%, -3%, 0);
+  }
+}
+
+/* D: the sky follows the clock. */
+.ad-sky-day {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transition: background 1.2s ease;
+}
+
+.ad-sky-day::before {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -50%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--sun-core), var(--sun-mid) 40%, rgba(255, 255, 255, 0) 100%);
+  transition: background 1.2s ease, transform 1.2s ease;
+  transform: translateY(var(--sun-y, 0));
+}
+
+.ad-sky-day[data-time="morning"] {
+  --sun-core: rgba(255, 247, 236, 1);
+  --sun-mid: rgba(244, 217, 176, 0.55);
+  --sun-y: 8%;
+  background: linear-gradient(180deg, #e9f2fb 0%, #f3f6fa 55%, #fbf3ea 100%);
+}
+
+.ad-sky-day[data-time="afternoon"] {
+  --sun-core: rgba(255, 255, 255, 1);
+  --sun-mid: rgba(186, 222, 248, 0.8);
+  --sun-y: -6%;
+  background: linear-gradient(180deg, #d7eaf9 0%, #eaf4fc 50%, #f7fbfe 100%);
+}
+
+.ad-sky-day[data-time="evening"] {
+  --sun-core: rgba(214, 200, 240, 0.9);
+  --sun-mid: rgba(90, 120, 190, 0.5);
+  --sun-y: 22%;
+  background: linear-gradient(180deg, #0a2c4d 0%, #23477a 55%, #6c79b3 100%);
+}
+
+.ad-sky-day[data-time="night"] {
+  --sun-core: rgba(26, 143, 212, 0.55);
+  --sun-mid: rgba(12, 82, 144, 0.35);
+  --sun-y: 36%;
+  background: linear-gradient(180deg, #020d1a 0%, #051e36 60%, #0a2c4d 100%);
+}
+
+/* C: the misty room where Ava's face sits. */
+.ad-sky-mist {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, #f4f8fc 0%, #e9f1f9 45%, #dfeaf6 100%);
+}
+
+/* ------------------------------------------------------------ Glass */
+
+.ad-glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.5) 100%);
+  backdrop-filter: blur(28px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(207, 230, 248, 0.6),
+    0 2px 6px -2px rgba(5, 30, 54, 0.08),
+    0 24px 48px -28px rgba(12, 82, 144, 0.45);
+}
+
+.ad-glass-dark {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 100%);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(207, 230, 248, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 2px 8px -2px rgba(0, 0, 0, 0.3),
+    0 30px 60px -30px rgba(0, 0, 0, 0.6);
+}
+
+/* The thin bright edge on the main chat box, white to pale sky. */
+/* In the components layer so a Tailwind "absolute" on the same element wins. */
+@layer components {
+  .ad-edge {
+    position: relative;
+  }
+}
+
+.ad-edge::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(124, 195, 242, 0.7) 40%, rgba(255, 255, 255, 0.4) 70%, rgba(26, 143, 212, 0.6));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+.dark .ad-edge::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(124, 195, 242, 0.25) 40%, rgba(255, 255, 255, 0.08) 70%, rgba(124, 195, 242, 0.4));
+}
+
+/* ------------------------------------------------------------ Parts */
+
+.ad-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.66);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 10px 24px -18px rgba(12, 82, 144, 0.5);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease, box-shadow 0.25s ease;
+}
+
+.ad-pill svg {
+  color: var(--blue);
+}
+
+.ad-pill:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 16px 30px -18px rgba(12, 82, 144, 0.6);
+}
+
+.dark .ad-pill {
+  color: #eaf4fc;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(207, 230, 248, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.dark .ad-pill svg {
+  color: var(--sky-2);
+}
+
+.dark .ad-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Square action tiles, the black reference's buttons under the box. */
+.ad-tile {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #eaf4fc;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(207, 230, 248, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 12px 30px -20px rgba(0, 0, 0, 0.7);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ad-tile svg {
+  color: var(--sky-2);
+}
+
+.ad-tile:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+  border-color: rgba(207, 230, 248, 0.32);
+  transform: translateY(-2px);
+}
+
+.ad-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  color: var(--slate);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ad-icon-btn:hover {
+  background: rgba(12, 82, 144, 0.08);
+  color: var(--ink);
+}
+
+.dark .ad-icon-btn {
+  color: rgba(234, 244, 252, 0.7);
+}
+
+.dark .ad-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.ad-send {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 6px 16px -6px rgba(5, 30, 54, 0.6);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.ad-send:hover {
+  background: var(--blue);
+  transform: scale(1.05);
+}
+
+.dark .ad-send {
+  background: #fff;
+  color: var(--navy);
+  box-shadow: 0 0 24px -4px rgba(124, 195, 242, 0.7);
+}
+
+.ad-user-bubble {
+  max-width: 72%;
+  padding: 12px 16px;
+  border-radius: 20px 20px 6px 20px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.dark .ad-user-bubble {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--navy);
+}
+
+.ad-ava-text {
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--body);
+}
+
+.dark .ad-ava-text {
+  color: rgba(234, 244, 252, 0.92);
+}
+
+.ad-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  background: rgba(26, 143, 212, 0.1);
+}
+
+.dark .ad-chip {
+  color: var(--sky-2);
+  background: rgba(124, 195, 242, 0.12);
+}
+
+.ad-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The pearl at small sizes: the same drop, drawn in CSS. */
+.ad-mini-pearl {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #ffffff 0 14%, rgba(255, 255, 255, 0) 46%),
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 42%),
+    conic-gradient(from 20deg, #93cbf4, #c3b8f0, #9fe6f2, #e9e0c8, #7fbdee, #93cbf4);
+  box-shadow:
+    inset 0 0 0 1px rgba(26, 143, 212, 0.35),
+    inset 0 -2px 5px rgba(12, 82, 144, 0.35),
+    0 2px 8px -2px rgba(26, 143, 212, 0.6);
+}
+
+.ad-mini-pearl::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.85) 0deg 2deg, rgba(255, 255, 255, 0) 2deg 30deg);
+  -webkit-mask: radial-gradient(circle, #000 0%, transparent 70%);
+  mask: radial-gradient(circle, #000 0%, transparent 70%);
+  animation: adPearlSpin 9s linear infinite;
+}
+
+.ad-mini-pearl::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 55%, rgba(255, 255, 255, 0.75) 68%, transparent 82%);
+  mix-blend-mode: soft-light;
+  animation: adPearlSpin 5s linear infinite reverse;
+}
+
+.ad-mini-pearl.is-busy::before {
+  animation-duration: 2.4s;
+}
+
+.ad-mini-pearl.is-dark {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 0 12px -1px rgba(124, 195, 242, 0.75);
+}
+
+@keyframes adPearlSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A light runs once across her name as she wakes up, inside the letters,
+   then they settle to solid. */
+.ad-sweep {
+  --sweep: #1a8fd4;
+  background: linear-gradient(100deg, currentColor 0%, currentColor 42%, var(--sweep) 48%, #ffffff 50%, var(--sweep) 52%, currentColor 58%, currentColor 100%);
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: adSweep 5s cubic-bezier(0.45, 0, 0.2, 1) 0.4s infinite both;
+}
+
+.ad-sweep.dark {
+  --sweep: #7cc3f2;
+}
+
+@keyframes adSweep {
+  0% {
+    background-position: 100% 0;
+  }
+  36%,
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+/* ------------------------------------------------------------ Motion */
+
+/* Things Ava hands you arrive out of a soft blur, rising a little. */
+.ad-arrive {
+  animation: adArrive 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes adArrive {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* The step she is on: a band of light runs across it. */
+.ad-shimmer {
+  background: linear-gradient(90deg, currentColor 0%, currentColor 38%, var(--shimmer, #1a8fd4) 50%, currentColor 62%, currentColor 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: adShimmer 2.2s linear infinite;
+}
+
+.dark .ad-shimmer,
+.ad-shimmer.dark {
+  --shimmer: #7cc3f2;
+}
+
+@keyframes adShimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+/* Something that changed stays lit until you have seen it. */
+.ad-unseen {
+  box-shadow: 0 0 0 1px rgba(26, 143, 212, 0.45), 0 0 0 5px rgba(26, 143, 212, 0.1);
+}
+
+.ad-typing span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 999px;
+  background: var(--sky);
+  animation: adDot 1.2s ease-in-out infinite;
+}
+
+.ad-typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.ad-typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes adDot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* The face: a portrait that melts into the room. The photos already fade
+   to mist; only their straight edges are feathered here. */
+.ad-face {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 100%), linear-gradient(0deg, transparent 0%, #000 16%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 100%), linear-gradient(0deg, transparent 0%, #000 16%);
+  mask-composite: intersect;
+}
+
+.ad-breathe {
+  animation: adBreathe 7s ease-in-out infinite;
+}
+
+@keyframes adBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.012);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad *,
+  .ad *::before,
+  .ad *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

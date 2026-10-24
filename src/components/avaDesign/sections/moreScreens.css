@@ -1,0 +1,200 @@
+/*
+ * More screens tab (Ava design board). Only what the shared kit does not
+ * already have: the first-meeting sequence, the wake-up wordmark, live
+ * captions and the call controls.
+ */
+
+/* ------------------------------------------------------------ Sequences */
+
+/* Each line of a sequence waits for its turn (--d), then arrives out of a
+   soft blur. Used once per screen, so it reads as one authored moment. */
+.ms-seq {
+  animation: msSeq 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes msSeq {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* The wake-up wordmark: solid white. A glowing copy sits on top, seen only
+   through a narrow moving window, so a band of light crosses it once. */
+.ms-wordmark {
+  position: relative;
+  color: #ffffff;
+  animation: msWordIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0s);
+}
+
+.ms-glint {
+  position: absolute;
+  inset: 0;
+  color: #e4f3ff;
+  text-shadow: 0 0 18px rgba(124, 195, 242, 0.95), 0 0 42px rgba(26, 143, 212, 0.8);
+  -webkit-mask-image: linear-gradient(100deg, transparent 42%, #000 50%, transparent 58%);
+  mask-image: linear-gradient(100deg, transparent 42%, #000 50%, transparent 58%);
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: msSweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: calc(var(--d, 0s) + 0.4s);
+  pointer-events: none;
+}
+
+@keyframes msWordIn {
+  from {
+    opacity: 0;
+    letter-spacing: 0.12em;
+    filter: blur(12px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: -0.03em;
+    filter: blur(0);
+  }
+}
+
+@keyframes msSweep {
+  from {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
+  }
+}
+
+/* ------------------------------------------------------------ Voice call */
+
+.ms-caption-word {
+  transition: color 0.18s ease;
+}
+
+.ms-caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.9em;
+  margin-left: 4px;
+  vertical-align: -0.08em;
+  background: #7cc3f2;
+  animation: msCaret 1s steps(1) infinite;
+}
+
+@keyframes msCaret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.ms-call-btn {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  color: #eaf4fc;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(207, 230, 248, 0.2);
+  backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 14px 30px -18px rgba(0, 0, 0, 0.8);
+  transition: background 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.2s ease;
+}
+
+.ms-call-btn:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.07));
+  transform: translateY(-2px);
+}
+
+.ms-call-btn[aria-pressed="true"] {
+  background: rgba(234, 244, 252, 0.94);
+  color: #051e36;
+}
+
+.ms-call-btn.end {
+  width: 76px;
+  height: 76px;
+  background: #ffffff;
+  color: #051e36;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.08), 0 18px 40px -16px rgba(124, 195, 242, 0.7);
+}
+
+.ms-call-btn.end:hover {
+  background: #eaf4fc;
+}
+
+.ms-panel-in {
+  animation: msPanel 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes msPanel {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+/* ------------------------------------------------------------ Lists */
+
+.ms-row {
+  transition: background 0.2s ease, box-shadow 0.35s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ms-row:hover {
+  transform: translateY(-1px);
+}
+
+.ms-search::placeholder {
+  color: #7d8ca0;
+}
+
+.ms-chat-item[aria-current="true"] {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 10px 24px -18px rgba(12, 82, 144, 0.5);
+}
+
+.ms-chat-item:not([aria-current="true"]):hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.ms-spin {
+  animation: msSpin 0.9s linear infinite;
+}
+
+@keyframes msSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-seq,
+  .ms-wordmark,
+  .ms-panel-in {
+    animation: none !important;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  .ms-glint {
+    display: none;
+  }
+}

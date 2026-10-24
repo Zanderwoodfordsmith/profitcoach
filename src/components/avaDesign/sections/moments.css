@@ -1,0 +1,420 @@
+/*
+ * "What she shares": the cards and moments Ava hands the coach in a chat.
+ * Every part reads its colours from the room it sits in, so one component
+ * works on the sunrise sky and in the navy room (a parent with `dark`).
+ */
+
+.adm-room {
+  --t1: var(--ink);
+  --t2: #4f6075;
+  --t3: #66778b;
+  --line: rgba(12, 82, 144, 0.13);
+  --accent: var(--blue);
+  --soft: rgba(12, 82, 144, 0.05);
+  --soft-2: rgba(12, 82, 144, 0.09);
+  --face-bg: var(--ice);
+  --face-fg: var(--navy);
+  --on: #0f7a5c;
+  --on-soft: rgba(15, 122, 92, 0.1);
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  isolation: isolate;
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.08), 0 24px 60px -34px rgba(5, 30, 54, 0.45);
+}
+
+.adm-room.dark {
+  --t1: #ffffff;
+  --t2: rgba(207, 230, 248, 0.82);
+  --t3: rgba(207, 230, 248, 0.64);
+  --line: rgba(207, 230, 248, 0.15);
+  --accent: var(--sky-2);
+  --soft: rgba(255, 255, 255, 0.05);
+  --soft-2: rgba(255, 255, 255, 0.1);
+  --face-bg: rgba(124, 195, 242, 0.18);
+  --face-fg: #eaf4fc;
+  --on: #6fd6ae;
+  --on-soft: rgba(111, 214, 174, 0.12);
+}
+
+.adm-t1 {
+  color: var(--t1);
+}
+.adm-t2 {
+  color: var(--t2);
+}
+.adm-t3 {
+  color: var(--t3);
+}
+.adm-accent {
+  color: var(--accent);
+}
+.adm-on {
+  color: var(--on);
+}
+
+.adm-rule {
+  border-color: var(--line);
+}
+
+/* A little round face with their initials. */
+.adm-face {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--face-bg);
+  color: var(--face-fg);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Field labels in a data grid (not headings). */
+.adm-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t3);
+}
+
+/* ------------------------------------------------------------ Buttons */
+
+.adm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 8px 18px -10px rgba(5, 30, 54, 0.7);
+  transition: background 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+}
+
+.adm-btn:hover {
+  background: var(--blue);
+  transform: translateY(-1px);
+}
+
+.adm-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.dark .adm-btn {
+  background: #fff;
+  color: var(--navy);
+  box-shadow: 0 0 22px -6px rgba(124, 195, 242, 0.65);
+}
+
+.dark .adm-btn:hover {
+  background: #e4f2fd;
+}
+
+.adm-btn.big {
+  height: 48px;
+  padding: 0 24px;
+  font-size: 15px;
+}
+
+.adm-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--t1);
+  border: 1px solid var(--line);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.adm-ghost:hover {
+  background: var(--soft-2);
+  border-color: transparent;
+}
+
+.adm-ghost.small,
+.adm-btn.small {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.adm-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.2s ease;
+}
+
+.adm-link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* The board's own "Play again" control, sitting in the room's corner. */
+.adm-replay {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--t2);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.adm-replay:hover {
+  background: #fff;
+  color: var(--t1);
+}
+
+.dark .adm-replay {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(207, 230, 248, 0.16);
+}
+
+.dark .adm-replay:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.adm-replay svg {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.adm-replay:hover svg {
+  transform: rotate(-180deg);
+}
+
+/* ------------------------------------------------------------ Rows and options */
+
+.adm-row {
+  border-radius: 14px;
+  transition: background 0.2s ease;
+}
+
+.adm-row:hover {
+  background: var(--soft-2);
+}
+
+/* A tappable answer to her question. */
+.adm-choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 18px;
+  border-radius: 20px;
+  text-align: left;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, opacity 0.4s ease, filter 0.4s ease;
+}
+
+.adm-choice:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+
+.adm-choice[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--sky), 0 18px 40px -24px rgba(12, 82, 144, 0.7);
+}
+
+/* The entrance animation holds opacity, so it is dropped once a choice is made. */
+.adm-choice.is-other {
+  animation: none;
+  opacity: 0.45;
+  filter: saturate(0.6);
+}
+
+/* The hold-to-turn-on button: light fills it while you keep pressing. */
+.adm-hold {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+
+.adm-hold .fill {
+  position: absolute;
+  inset: 0;
+  background: var(--blue);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .adm-hold .fill {
+  background: var(--sky-2);
+}
+
+.adm-hold.is-holding .fill {
+  transform: scaleX(1);
+  transition: transform 1.2s linear;
+}
+
+.adm-hold > span:not(.fill) {
+  position: relative;
+}
+
+/* ------------------------------------------------------------ Motion */
+
+/* Split-flap: a value that changes turns over into place, once. */
+.adm-flap {
+  display: inline-block;
+  transform-origin: 50% 0%;
+  animation: admFlap 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes admFlap {
+  from {
+    opacity: 0;
+    transform: perspective(300px) rotateX(-80deg);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* The nudge comes in from the right edge, out of a blur. */
+.adm-toast {
+  animation: admToastIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+}
+
+.adm-toast.is-out {
+  animation: admToastOut 0.4s cubic-bezier(0.7, 0, 0.84, 0) both;
+  pointer-events: none;
+}
+
+@keyframes admToastOut {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateX(40px);
+  }
+}
+
+@keyframes admToastIn {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateX(56px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+/* Success: two soft rings of light leave her symbol, then it settles. */
+.adm-ring-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.adm-ring-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(124, 195, 242, 0.45), rgba(124, 195, 242, 0));
+  animation: admGlow 2.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.adm-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1.5px solid rgba(26, 143, 212, 0.55);
+  opacity: 0;
+  animation: admRing 2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dark .adm-ring {
+  border-color: rgba(167, 214, 246, 0.7);
+}
+
+@keyframes admRing {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  12% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.7);
+  }
+}
+
+@keyframes admGlow {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+}
+
+/* The step she is on: a small light that breathes. */
+.adm-live {
+  animation: admLive 1.4s ease-in-out infinite;
+}
+
+@keyframes admLive {
+  0%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.adm-unseen-fade {
+  transition: box-shadow 0.8s ease, background 0.6s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-choice,
+  .adm-unseen-fade,
+  .adm-replay svg {
+    transition: none !important;
+  }
+}
