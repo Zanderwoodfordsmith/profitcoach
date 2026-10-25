@@ -5,6 +5,8 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { ConnectGate, LINKEDIN_CONNECT_DETAILS } from "@/components/ui/ConnectGate";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type HabitDay = { day: string; posts: number; comments: number; conversations: number; postsLogged: number };
 type Signal = {
@@ -185,10 +187,10 @@ export function TodayHub() {
                 ["Conversations", today.conversations, t.conversations, null],
               ] as const
             ).map(([label, value, target, field]) => (
-              <div key={label} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div key={label} className={cardClass("plain", "p-4")}>
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm font-medium text-slate-700">{label}</span>
-                  <span className={`text-xl font-semibold tabular-nums ${value >= target ? "text-emerald-700" : "text-slate-900"}`}>
+                  <span className={`text-subhead font-semibold tabular-nums ${value >= target ? "text-emerald-700" : "text-slate-900"}`}>
                     {value}/{target}
                   </span>
                 </div>
@@ -197,15 +199,15 @@ export function TodayHub() {
                 </div>
                 {field ? (
                   <div className="mt-3 flex gap-2">
-                    <button type="button" onClick={() => logHabit(field, 1)} className="rounded border border-slate-300 px-2 py-1 text-sm">
+                    <button type="button" onClick={() => logHabit(field, 1)} className={buttonClass("second", "small")}>
                       +1
                     </button>
                     {field === "comments" ? (
-                      <button type="button" onClick={() => logHabit(field, 5)} className="rounded border border-slate-300 px-2 py-1 text-sm">
+                      <button type="button" onClick={() => logHabit(field, 5)} className={buttonClass("second", "small")}>
                         +5
                       </button>
                     ) : null}
-                    <button type="button" onClick={() => logHabit(field, -1)} className="rounded border border-slate-300 px-2 py-1 text-sm text-slate-500">
+                    <button type="button" onClick={() => logHabit(field, -1)} className={buttonClass("quiet", "small")}>
                       Undo
                     </button>
                   </div>
@@ -255,7 +257,7 @@ export function TodayHub() {
               void load(true);
             }}
             disabled={refreshing}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm disabled:opacity-50"
+            className={buttonClass("second", "small")}
           >
             {refreshing ? "Checking LinkedIn…" : "Check again"}
           </button>
@@ -291,7 +293,7 @@ export function TodayHub() {
         >
         <ul className={`space-y-3 ${linkedInLocked ? "" : "mt-4"}`}>
           {(linkedInLocked ? SAMPLE_SIGNALS : data?.signals ?? []).map((s) => (
-            <li key={s.id} className="rounded-lg border border-slate-200 bg-white p-4">
+            <li key={s.id} className={cardClass("plain", "p-4")}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-medium text-slate-900">{s.name || "Someone"}</p>
@@ -303,20 +305,20 @@ export function TodayHub() {
                 </span>
               </div>
               {s.context ? <p className="mt-2 text-sm text-slate-600">{s.kind === "invite_received" ? `Their note: ${s.context}` : `Post: ${s.context}`}</p> : null}
-              {s.opener ? <p className="mt-2 rounded bg-slate-50 p-2 text-sm text-slate-800">{s.opener}</p> : null}
+              {s.opener ? <p className={cardClass("soft", "mt-2 p-3 text-sm text-slate-800")}>{s.opener}</p> : null}
               <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" onClick={() => copy(s)} className="rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white">
+                <button type="button" onClick={() => copy(s)} className={buttonClass("main", "small")}>
                   {copied === s.id ? "Copied" : "Copy opener"}
                 </button>
                 {s.profile_url ? (
-                  <a href={s.profile_url} target="_blank" rel="noreferrer" className="rounded-md border border-slate-300 px-3 py-1.5 text-sm">
+                  <a href={s.profile_url} target="_blank" rel="noreferrer" className={buttonClass("second", "small")}>
                     Open on LinkedIn
                   </a>
                 ) : null}
-                <button type="button" onClick={() => markSignal(s, "messaged")} className="rounded-md border border-slate-300 px-3 py-1.5 text-sm">
+                <button type="button" onClick={() => markSignal(s, "messaged")} className={buttonClass("second", "small")}>
                   I messaged them
                 </button>
-                <button type="button" onClick={() => markSignal(s, "dismissed")} className="rounded-md px-3 py-1.5 text-sm text-slate-500">
+                <button type="button" onClick={() => markSignal(s, "dismissed")} className={buttonClass("quiet", "small")}>
                   Not a fit
                 </button>
               </div>

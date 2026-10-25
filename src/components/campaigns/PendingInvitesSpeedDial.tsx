@@ -101,14 +101,14 @@ export function PendingInvitesSpeedDial({
       <div className="pointer-events-none absolute inset-x-0 bottom-1 flex flex-col items-center">
         <p
           className={`font-semibold leading-none tabular-nums tracking-tight ${
-            compact ? "text-[1.7rem]" : "text-[2.35rem]"
+            compact ? "text-title" : "text-display"
           }`}
           style={{ color: zone ? zoneColor : "#0f172a" }}
         >
           {label}
         </p>
         <p
-          className={`mt-1 text-[11px] font-medium ${
+          className={`mt-1 text-caption font-medium ${
             brake === "none" ? "text-slate-500" : "text-slate-700"
           }`}
         >

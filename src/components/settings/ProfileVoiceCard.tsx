@@ -11,6 +11,8 @@ import {
   VOICE_LANGUAGE_OPTIONS,
   type VoiceLanguageCode,
 } from "@/lib/vocallab/cloneScript";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type CoachVoice = {
   id: string;
@@ -237,7 +239,7 @@ export function ProfileVoiceCard({
       title="Voice"
       description="Record a short sample so AI can speak in your voice for content and coaching tools."
     >
-      <p className="mb-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+      <p className={cardClass("soft", "mb-3 px-3 py-2 text-xs text-slate-600")}>
         Admin only — coaches cannot see or use this yet.
       </p>
       {loading ? (
@@ -324,7 +326,7 @@ export function ProfileVoiceCard({
                   !scriptReady ||
                   !payload?.configured
                 }
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={buttonClass("second", "small", "disabled:cursor-not-allowed")}
               >
                 {busy
                   ? "Cloning…"
@@ -352,7 +354,7 @@ export function ProfileVoiceCard({
                     type="button"
                     onClick={() => void handlePreview()}
                     disabled={previewBusy || busy || !payload?.configured}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                    className={buttonClass("second", "small")}
                   >
                     {previewBusy ? "Generating…" : "Play AI preview"}
                   </button>
@@ -360,7 +362,7 @@ export function ProfileVoiceCard({
                     type="button"
                     onClick={() => void handleDelete()}
                     disabled={busy}
-                    className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                    className={buttonClass("delete", "small")}
                   >
                     Remove voice
                   </button>

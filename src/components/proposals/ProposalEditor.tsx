@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, Check, Copy, ExternalLink, Eye, EyeOff, Gift, Loader2, Pencil, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Copy, ExternalLink, Eye, EyeOff, Gift, Loader2, Pencil, Send } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { defaultProposalEmail, defaultWelcomeEmail } from "@/lib/proposals/send";
@@ -12,6 +12,7 @@ import { ProposalBody } from "./ProposalBody";
 import { ProposalStatusPill, proposalActivity } from "./ProposalStatus";
 import "@/components/coachExplainer/explainerDigital.css";
 import "./proposal.css";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 /** What an empty section should hold, so the coach knows before sending. */
 const EMPTY_HINT: Partial<Record<ProposalSection["key"], string>> = {
@@ -438,7 +439,7 @@ function SectionCard({
             }}
             className="inline-flex h-8 items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 hover:border-sky-300 disabled:opacity-50"
           >
-            {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
+            <AvaHalo size={16} state={drafting ? "thinking" : "idle"} />
             {drafting ? "Ava is writing…" : "Draft it with Ava, in your voice"}
           </button>
         ) : null}

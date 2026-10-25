@@ -1,6 +1,8 @@
 "use client";
 
 import { Check, Trash2 } from "lucide-react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   useCallback,
   useEffect,
@@ -465,7 +467,7 @@ export function SwipeToCompleteTodoList() {
 
   return (
     <div className="mx-auto w-full max-w-sm">
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className={cardClass("plain", "overflow-hidden")}>
         {items.length === 0 ? (
           <p className="px-4 py-6 text-center text-sm text-slate-500">
             All items removed.
@@ -491,7 +493,7 @@ export function SwipeToCompleteTodoList() {
           <button
             type="button"
             onClick={handleReset}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second")}
           >
             Reset list
           </button>

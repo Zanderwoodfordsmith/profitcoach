@@ -26,8 +26,8 @@ export function ProspectTagChip({
   const compact = size === "card";
   const className = `group/chip inline-flex max-w-full items-center gap-0.5 truncate rounded-full ring-1 ring-inset ${tone.chip} ${
     compact
-      ? "px-1.5 py-0.5 text-[10px] font-medium"
-      : "px-2 py-0.5 text-[12px] font-medium"
+      ? "px-1.5 py-0.5 text-caption font-medium"
+      : "px-2 py-0.5 text-caption font-medium"
   } ${onClick ? `${tone.hover} ${disabled ? "opacity-50" : ""}` : ""}`;
 
   const label = (

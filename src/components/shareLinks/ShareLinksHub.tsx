@@ -46,6 +46,7 @@ import type {
   ShareHubCalendar,
   ShareHubPayload,
 } from "@/lib/shareLinks/types";
+import { cardClass } from "@/components/ui/Card";
 
 type SocialDraft = Record<SocialNetwork, string>;
 
@@ -126,7 +127,7 @@ function LinkRow({
     <li className="group flex items-center gap-3 px-4 py-2.5 sm:px-5">
       <Icon className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
       <div className="min-w-0 flex-1 sm:grid sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-center sm:gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_minmax(0,17rem)]">
-        <p className="truncate text-[15px] font-medium text-slate-900">{title}</p>
+        <p className="truncate text-ui font-medium text-slate-900">{title}</p>
         <p className="truncate text-sm text-slate-500">{detail}</p>
         <p className="hidden truncate text-sm text-slate-400 lg:block">
           {displayUrl ? prettyUrl(displayUrl) : null}
@@ -454,7 +455,7 @@ export function ShareLinksHub() {
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.04)]">
+      <div className={cardClass("plain", "overflow-hidden")}>
         <LinkSection title="Scorecards">
           {assessmentItems.map(({ magnet, copyUrl, displayUrl }) => {
             const isPro = magnet.id === "boss-score-pro";

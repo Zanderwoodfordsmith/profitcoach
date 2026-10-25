@@ -5,6 +5,8 @@ import { FileText, Plus } from "lucide-react";
 import type { ClientSessionRow } from "@/lib/clientCoaching/loadClientSessions";
 import { formatShortTime } from "@/lib/formatShortDate";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   contactId: string;
@@ -163,7 +165,7 @@ export function ClientSessionsList({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+    <section className={cardClass("plain")}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
         <h3 className="text-sm font-semibold text-slate-900">
           {compact ? "Past coaching sessions" : "Coaching sessions"}
@@ -172,7 +174,7 @@ export function ClientSessionsList({
           <button
             type="button"
             onClick={() => setShowLog((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
+            className={buttonClass("quiet", "small")}
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             {showLog ? "Cancel" : "Log session"}
@@ -208,7 +210,7 @@ export function ClientSessionsList({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500 disabled:opacity-70"
+            className={buttonClass("main", "small")}
           >
             {saving ? "Saving…" : "Save session"}
           </button>
@@ -246,7 +248,7 @@ export function ClientSessionsList({
                   <span className="text-lg font-semibold leading-none text-slate-900">
                     {day}
                   </span>
-                  <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                  <span className="mt-0.5 text-kicker font-medium uppercase text-slate-500">
                     {weekday}
                   </span>
                 </div>

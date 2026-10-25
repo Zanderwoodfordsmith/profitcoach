@@ -50,7 +50,7 @@ export function BlueprintHome() {
   const renderGroup = (group: (typeof groups)[number], index: number) => (
     <section key={group.label} className={`bp-home-group${index % 2 ? " bp-home-group-alt" : ""}`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="px-4 text-[1.375rem] font-bold tracking-[-0.02em] text-[var(--bp-ink)]">{group.label}</h2>
+        <h2 className="px-4 text-title font-semibold text-[var(--bp-ink)]">{group.label}</h2>
         {index === 0 ? (
           <div className="bp-no-print shrink-0">
             <StatusGuide />
@@ -73,13 +73,13 @@ export function BlueprintHome() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-start justify-between gap-3">
-                    <span className="min-w-0 pt-px text-[1rem] font-semibold leading-6 text-[var(--bp-ink)] group-hover:text-[var(--bp-blue)]">
+                    <span className="min-w-0 pt-px text-base font-semibold leading-6 text-[var(--bp-ink)] group-hover:text-[var(--bp-blue)]">
                       {page.title}
                     </span>
                     <span className="flex shrink-0 items-center gap-2.5 pt-1">
                       {unread > 0 ? (
                         <span
-                          className="inline-flex items-center gap-1 text-[0.6875rem] font-semibold tabular-nums text-[#9b2c2c]"
+                          className="inline-flex items-center gap-1 text-caption font-semibold tabular-nums text-[#9b2c2c]"
                           title={`${unread} comment${unread === 1 ? "" : "s"} to read`}
                         >
                           <MessageSquare className="h-3.5 w-3.5" aria-hidden />
@@ -118,8 +118,8 @@ export function BlueprintHome() {
                     <span aria-hidden className="bp-build-mark mx-auto flex h-10 w-10 items-center justify-center rounded-full text-[10px] font-semibold tracking-[0.06em]">
                       BCA
                     </span>
-                    <p className="bp-display mt-3 text-[1.375rem] font-semibold leading-tight tracking-[-0.02em]">Everything below, we build for you.</p>
-                    <p className="mx-auto mt-1.5 max-w-[46ch] text-[0.9375rem] leading-6 text-white/80">{handover}</p>
+                    <p className="bp-display mt-3 text-title font-semibold">Everything below, we build for you.</p>
+                    <p className="mx-auto mt-1.5 max-w-[46ch] text-ui leading-6 text-white/80">{handover}</p>
                   </div>
                 ) : null}
                 <div className={`space-y-12${quiet ? " bp-home-quiet" : ""}`}>

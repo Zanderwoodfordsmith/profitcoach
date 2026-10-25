@@ -1,6 +1,7 @@
 "use client";
 
 import { StickyPageHeader } from "@/components/layout";
+import { cardClass } from "@/components/ui/Card";
 
 export default function ClientGoalsPage() {
   return (
@@ -10,7 +11,7 @@ export default function ClientGoalsPage() {
         title="Goals"
         description="Goals content coming soon."
       />
-      <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className={cardClass("plain", "p-8")}>
         <p className="text-sm text-slate-500">Placeholder for Goals</p>
       </div>
     </div>

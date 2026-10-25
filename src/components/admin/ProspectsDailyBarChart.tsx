@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { cardClass } from "@/components/ui/Card";
 import {
   formatProspectLabel,
   formatProspectPersonName,
@@ -392,7 +393,7 @@ function DayBarPopover({
           <p className="text-sm font-semibold leading-tight text-slate-900">
             {dayLabel}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          <p className="mt-0.5 text-caption text-slate-500">
             {sourceLabel ? `${sourceLabel} · ` : ""}
             {prospectCount} prospect{prospectCount === 1 ? "" : "s"} ·{" "}
             {groups.length} coach{groups.length === 1 ? "" : "es"}
@@ -403,7 +404,7 @@ function DayBarPopover({
           >
             {groups.map((group) => (
               <div key={group.key}>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <p className="text-kicker font-semibold uppercase text-slate-500">
                   {group.coachLabel}
                 </p>
                 <ul className="mt-1 space-y-0.5">
@@ -595,7 +596,7 @@ export function ProspectsDailyBarChart({ prospects, loading }: Props) {
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className={cardClass("plain", "p-4")}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">

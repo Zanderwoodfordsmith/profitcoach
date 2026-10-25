@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PlaybookOverviewContent } from "./PlaybookOverviewContent";
 import type { PlaybookContent } from "@/lib/playbookContentTypes";
+import { cardClass } from "@/components/ui/Card";
 
 type TabId = "overview" | "client" | "coaches";
 
@@ -61,14 +62,14 @@ export function PlaybookTabs({
         <PlaybookOverviewContent content={content} basePath={basePath} linkQuery={linkQuery} />
       )}
       {activeTab === "client" && (
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-8 shadow-sm">
+        <div className={cardClass("plain", "p-8")}>
           <p className="text-sm leading-relaxed text-slate-600">
             Checklists and actions for this playbook — coming soon.
           </p>
         </div>
       )}
       {activeTab === "coaches" && (
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-8 shadow-sm">
+        <div className={cardClass("plain", "p-8")}>
           <p className="text-sm leading-relaxed text-slate-600">
             Coach-facing notes and scripts for this playbook — coming soon.
           </p>

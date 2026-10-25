@@ -30,10 +30,10 @@ export function WelcomeSetupLoading({
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden bg-[radial-gradient(120%_80%_at_50%_-10%,#dbebff_0%,#f8fafc_42%,#f1f5f9_100%)] px-4 py-16">
       <div className="w-full max-w-md text-center">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0c5290]">
+        <p className="text-kicker font-semibold uppercase text-[#0c5290]">
           Profit Coach
         </p>
-        <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-balance text-heading font-semibold text-slate-900 sm:text-display">
           Almost there
         </h1>
         <p className="mt-2 text-pretty text-base text-slate-600">{detail}</p>

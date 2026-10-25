@@ -6,14 +6,15 @@ import { PLAYBOOKS } from "@/lib/bossData";
 import type { ActionItem, PlaybookContent } from "@/lib/playbookContentTypes";
 
 import { areaHeroGradient } from "./PlaybookCard";
+import { cardClass } from "@/components/ui/Card";
 
 /** Match blog index / article rhythm (BlogContent + blog post pages). */
 const PROSE =
-  "font-sans text-[1.08rem] leading-[2rem] text-slate-800 md:text-[1.14rem] md:leading-[2.15rem]";
+  "font-sans text-read leading-8 text-slate-800 md:text-lg md:leading-[2.15rem]";
 const SECTION_HEADING =
-  "text-2xl font-bold leading-tight tracking-[-0.02em] text-slate-900 md:text-3xl";
+  "text-2xl font-semibold leading-tight tracking-[-0.02em] text-slate-900 md:text-heading";
 const MD_PROSE =
-  `${PROSE} [&_p]:my-0 [&_p+p]:mt-3 [&_strong]:font-semibold [&_strong]:text-slate-900 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:my-1 [&_a]:font-semibold [&_a]:text-[#0c5290] [&_a]:underline`;
+  `${PROSE} [&_p]:my-0 [&_p+p]:mt-3 [&_strong]:font-medium [&_strong]:text-slate-900 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:my-1 [&_a]:font-medium [&_a]:text-[#0c5290] [&_a]:underline`;
 
 /** Split text into [first sentence, rest] for bold first sentence. */
 function splitFirstSentence(text: string): [string, string] {
@@ -94,12 +95,12 @@ function ActionCard({ action }: { action: ActionItem }) {
     </p>
   );
   const summaryText = (
-    <p className="mt-2 text-[1.05rem] leading-relaxed text-slate-700">{action.description}</p>
+    <p className="mt-2 text-read leading-relaxed text-slate-700">{action.description}</p>
   );
 
   if (!hasDetail) {
     return (
-      <li className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition hover:border-slate-300/90 hover:shadow-md">
+      <li className={cardClass("plain", "p-6 transition hover:border-slate-300/90 hover:shadow-md")}>
         {heading}
         {summaryText}
       </li>
@@ -107,15 +108,15 @@ function ActionCard({ action }: { action: ActionItem }) {
   }
 
   return (
-    <li className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition hover:border-slate-300/90 hover:shadow-md">
+    <li className={cardClass("plain", "overflow-hidden transition hover:border-slate-300/90 hover:shadow-md")}>
       <details className="group open:pb-0">
         <summary className="cursor-pointer list-none p-6 [&::-webkit-details-marker]:hidden">
           {heading}
           {summaryText}
-          <p className="mt-4 text-sm font-semibold text-[#0c5290] group-open:hidden">
+          <p className="mt-4 text-sm font-medium text-[#0c5290] group-open:hidden">
             Show full action →
           </p>
-          <p className="mt-4 hidden text-sm font-semibold text-[#0c5290] group-open:block">
+          <p className="mt-4 hidden text-sm font-medium text-[#0c5290] group-open:block">
             Hide full action
           </p>
         </summary>
@@ -193,14 +194,14 @@ export function PlaybookOverviewContent({
         />
 
         <div className="relative space-y-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#0c5290] md:text-[13px]">
+          <p className="text-kicker font-semibold uppercase text-[#0c5290]">
             {content.subtitle}
           </p>
           <p className="text-sm font-medium tracking-wide text-slate-500">Playbook {content.ref}</p>
           <h1 className="max-w-4xl text-4xl font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-5xl md:leading-[1.05]">
             {content.name}
           </h1>
-          <p className="max-w-2xl border-l-2 border-[#0c5290]/35 pl-5 text-lg font-medium leading-relaxed text-slate-700 md:text-xl md:leading-snug">
+          <p className="max-w-2xl border-l-2 border-[#0c5290]/35 pl-5 text-lg font-medium leading-relaxed text-slate-700 md:text-subhead md:leading-snug">
             {dek}
           </p>
         </div>
@@ -227,13 +228,13 @@ export function PlaybookOverviewContent({
                 <div className="px-6 py-6 md:px-8 md:py-7">
                   <div className="flex flex-wrap items-center gap-3">
                     <span
-                      className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-[0.14em] ${card.badgeClass}`}
+                      className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${card.badgeClass}`}
                     >
                       {card.badge}
                     </span>
                     <p className="text-sm font-medium text-slate-600">{card.hint}</p>
                   </div>
-                  <p className="mt-3 text-base font-semibold text-slate-900">{item.label}</p>
+                  <p className="mt-3 text-base font-medium text-slate-900">{item.label}</p>
                   <p className={`mt-3 ${PROSE}`}>{item.content}</p>
                 </div>
               </div>
@@ -260,7 +261,7 @@ export function PlaybookOverviewContent({
                 <li key={i} className={`flex gap-4 leading-relaxed ${PROSE}`}>
                   <span className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-[#0c5290]/50" />
                   <span>
-                    <strong className="font-semibold text-slate-900">{first}</strong>
+                    <strong className="font-medium text-slate-900">{first}</strong>
                     {rest ? ` ${rest}` : ""}
                   </span>
                 </li>
@@ -284,7 +285,7 @@ export function PlaybookOverviewContent({
             <div className="mt-10 space-y-10">
               {content.actionSections!.map((sec, si) => (
                 <div key={si}>
-                  <h3 className="text-xl font-semibold tracking-[-0.015em] text-slate-900">
+                  <h3 className="text-subhead font-semibold tracking-[-0.015em] text-slate-900">
                     {sec.title}
                   </h3>
                   {sec.description ? (
@@ -323,7 +324,7 @@ export function PlaybookOverviewContent({
               const [first, rest] = splitFirstSentence(win);
               return (
                 <li key={i} className={`leading-relaxed ${PROSE}`}>
-                  <strong className="font-semibold text-slate-900">{first}</strong>
+                  <strong className="font-medium text-slate-900">{first}</strong>
                   {rest ? ` ${rest}` : ""}
                 </li>
               );
@@ -344,7 +345,7 @@ export function PlaybookOverviewContent({
                 <li key={item.ref}>
                   <Link
                     href={`${basePath}/${item.ref}${linkQuery}`}
-                    className="font-semibold text-[#0c5290] underline decoration-[#0c5290]/35 underline-offset-2 transition hover:text-[#094271] hover:decoration-[#094271]"
+                    className="font-medium text-[#0c5290] underline decoration-[#0c5290]/35 underline-offset-2 transition hover:text-[#094271] hover:decoration-[#094271]"
                   >
                     {label}
                   </Link>

@@ -12,6 +12,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { NativeBookingEmbed } from "@/components/booking/NativeBookingEmbed";
 import { WelcomeIntakeSurvey } from "@/components/welcome/WelcomeIntakeSurvey";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import type {
   ProgrammeIntakeGoal,
   ProgrammeIntakeSituation,
@@ -157,7 +159,7 @@ function StepCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}
+      className={cardClass("plain", className)}
     >
       {children}
     </div>
@@ -342,7 +344,7 @@ export function WelcomeCelebration({
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
         <header className="text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0c5290]">
+          <p className="text-kicker font-semibold uppercase text-[#0c5290]">
             {guest ? "Welcome" : "Payment confirmed"}
           </p>
           <h1 className="mt-3 text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
@@ -575,7 +577,7 @@ export function WelcomeCelebration({
                 <div className="mt-5 space-y-3">
                   {guest ? (
                     <>
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
+                      <div className={cardClass("soft", "px-3.5 py-3")}>
                         <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                           Your login email
                         </p>
@@ -605,7 +607,7 @@ export function WelcomeCelebration({
                           onContinue({ email: guestEmail.trim() })
                         }
                         disabled={continueBusy || !guestEmail.trim()}
-                        className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-not-allowed disabled:opacity-60"
+                        className={buttonClass("main", "normal", "w-full")}
                       >
                         {continueBusy ? "Opening…" : "Sign in to Start Here"}
                       </button>
@@ -669,7 +671,7 @@ export function WelcomeCelebration({
                         type="button"
                         onClick={() => onContinue()}
                         disabled={continueBusy}
-                        className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-wait disabled:opacity-60"
+                        className={buttonClass("main", "normal", "w-full")}
                       >
                         {continueBusy ? "Opening portal…" : "Open Start Here"}
                       </button>

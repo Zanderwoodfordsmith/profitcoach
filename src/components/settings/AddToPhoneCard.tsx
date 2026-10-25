@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronRight, Smartphone } from "lucide-react";
 import { GetAppModal } from "@/components/install/GetAppModal";
 import { useInstallDevice } from "@/lib/installDevice";
+import { cardClass } from "@/components/ui/Card";
 
 /** Settings → Profile, top of the right column: one button that opens the get-the-app modal. */
 export function AddToPhoneCard() {
@@ -17,7 +18,7 @@ export function AddToPhoneCard() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group flex w-full items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 text-left hover:border-[#0c5290]/40 hover:bg-sky-50/40"
+        className={cardClass("raised", "group flex w-full items-center gap-3 px-4 py-3.5 text-left hover:border-[#0c5290]/40 hover:bg-sky-50/40")}
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0c5290] text-white">
           <Smartphone className="h-5 w-5" aria-hidden />

@@ -7,6 +7,8 @@ import {
   WorkingLessonChat,
   type WorkingChatMessage,
 } from "@/components/academy/working/WorkingLessonChat";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Criterion = {
   id: string;
@@ -192,7 +194,7 @@ export function CoreClientWorkingStage({ onLock, locked }: Props) {
       : ["Looks right", "Too narrow", "The industry is off"];
 
   return (
-    <div className="overflow-hidden rounded-xl bg-[#f4f8fb] ring-1 ring-slate-200/80">
+    <div className={cardClass("soft", "overflow-hidden")}>
       <div
         aria-hidden
         className="h-1"
@@ -206,12 +208,12 @@ export function CoreClientWorkingStage({ onLock, locked }: Props) {
             <p className="text-sm font-medium text-[#0c5290]">
               From your LinkedIn · James Hale · MD, Hale Precision
             </p>
-            <p className="mt-1 text-xl font-semibold tracking-tight text-slate-900 md:text-[1.35rem]">
+            <p className="mt-1 text-subhead font-semibold tracking-tight text-slate-900 md:text-title">
               {summary}
             </p>
           </div>
           {locked ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white">
               <Check className="h-3.5 w-3.5" strokeWidth={2.6} aria-hidden />
               Locked
             </span>
@@ -228,8 +230,8 @@ export function CoreClientWorkingStage({ onLock, locked }: Props) {
               key={row.id}
               className="grid gap-1 py-3 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-4"
             >
-              <dt className="text-sm font-semibold text-slate-900">{row.label}</dt>
-              <dd className="text-[15px] leading-relaxed text-slate-700">{row.value}</dd>
+              <dt className="text-sm font-medium text-slate-900">{row.label}</dt>
+              <dd className="text-read leading-relaxed text-slate-700">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -245,11 +247,7 @@ export function CoreClientWorkingStage({ onLock, locked }: Props) {
                 <button
                   type="button"
                   onClick={onLock}
-                  className={`w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition sm:w-auto ${
-                    readyToLock
-                      ? "bg-sky-600 text-white hover:bg-sky-700"
-                      : "border border-slate-300 bg-white text-slate-800 hover:border-sky-400 hover:text-sky-800"
-                  }`}
+                  className={buttonClass(readyToLock ? "main" : "second", "normal", "w-full sm:w-auto")}
                 >
                   Lock this core client
                 </button>

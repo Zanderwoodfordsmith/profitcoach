@@ -25,7 +25,7 @@ export function VaultCoachTalks({ course, basePath }: Props) {
 
   return (
     <section className="mt-14 pb-12" aria-labelledby="vault-coach-talks">
-      <h2 id="vault-coach-talks" className="text-xl font-semibold tracking-tight text-slate-900">
+      <h2 id="vault-coach-talks" className="text-subhead font-semibold tracking-tight text-slate-900">
         {course.title}
       </h2>
       {course.description ? (
@@ -60,12 +60,12 @@ export function VaultCoachTalks({ course, basePath }: Props) {
                   </span>
                 </span>
                 {talk.duration ? (
-                  <span className="absolute bottom-2 right-2 rounded bg-slate-900/80 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-white">
+                  <span className="absolute bottom-2 right-2 rounded bg-slate-900/80 px-1.5 py-0.5 text-caption font-semibold tabular-nums text-white">
                     {talk.duration}
                   </span>
                 ) : null}
               </div>
-              <h3 className="mt-3 text-[15px] font-semibold leading-snug text-slate-900 group-hover:text-[#0c5290]">
+              <h3 className="mt-3 text-ui font-semibold leading-snug text-slate-900 group-hover:text-[#0c5290]">
                 {talk.title}
               </h3>
               {speaker ? (

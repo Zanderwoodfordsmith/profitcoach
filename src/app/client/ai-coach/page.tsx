@@ -24,6 +24,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type ChatListItem = {
   id: string;
@@ -732,7 +734,7 @@ export default function ClientAICoachPage() {
               <svg className="h-5 w-5 shrink-0 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span className="text-[15px] font-medium text-slate-700">Folders & Chats</span>
+              <span className="text-ui font-medium text-slate-700">Folders & Chats</span>
               <svg
                 className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${sidebarOpen ? "rotate-180" : ""}`}
                 fill="none"
@@ -748,12 +750,12 @@ export default function ClientAICoachPage() {
           {/* Main content: text outside box + single large input */}
           <div className="flex w-full max-w-4xl flex-col items-center gap-8">
             <div className="text-center">
-              <p className="text-[17px] text-slate-600">{timeGreeting}, {firstName}</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+              <p className="text-read text-slate-600">{timeGreeting}, {firstName}</p>
+              <h1 className="mt-2 text-heading font-semibold tracking-tight text-slate-900 sm:text-display">
                 How can I help you with?
               </h1>
               {pendingSectionContext && (
-                <p className="mt-3 text-[15px] text-slate-500">
+                <p className="mt-3 text-ui text-slate-500">
                   Coaching about: <strong className="text-slate-700">{pendingSectionContext.insightTitle}</strong>
                 </p>
               )}
@@ -778,13 +780,13 @@ export default function ClientAICoachPage() {
                   }}
                   placeholder="Ask me anything…"
                   rows={5}
-                  className="min-h-[140px] min-w-0 flex-1 resize-none rounded-xl border-0 bg-transparent px-5 py-4 text-[16px] text-slate-900 placeholder-slate-400 outline-none focus:ring-0"
+                  className="min-h-[140px] min-w-0 flex-1 resize-none rounded-xl border-0 bg-transparent px-5 py-4 text-read text-slate-900 placeholder-slate-400 outline-none focus:ring-0"
                   disabled={sending}
                 />
                 <button
                   type="submit"
                   disabled={sending || !input.trim()}
-                  className="shrink-0 self-end rounded-xl bg-sky-600 px-5 py-3 text-[15px] font-semibold text-white shadow-md shadow-sky-500/25 transition hover:bg-sky-700 disabled:opacity-50 disabled:hover:bg-sky-600"
+                  className={buttonClass("main", "normal", "shrink-0 self-end")}
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -813,7 +815,7 @@ export default function ClientAICoachPage() {
                 setMessages([]);
                 setSidebarOpen(false);
               }}
-              className="mb-2 w-full rounded-xl bg-slate-800 px-3 py-2.5 text-[15px] font-medium text-white hover:bg-slate-700 transition-colors"
+              className={buttonClass("main", "normal", "mb-2 w-full")}
             >
               New chat
             </button>
@@ -821,7 +823,7 @@ export default function ClientAICoachPage() {
               type="button"
               onClick={() => createFolder(null)}
               disabled={creatingFolder}
-              className="mb-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-[15px] text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              className={buttonClass("second", "normal", "mb-2 w-full")}
             >
               New folder
             </button>
@@ -829,7 +831,7 @@ export default function ClientAICoachPage() {
               <button
                 type="button"
                 onClick={() => setSidebarTab("all")}
-                className={`flex-1 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors ${
+                className={`flex-1 rounded-md px-2.5 py-1.5 text-ui font-medium transition-colors ${
                   sidebarTab === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -838,7 +840,7 @@ export default function ClientAICoachPage() {
               <button
                 type="button"
                 onClick={() => setSidebarTab("favourites")}
-                className={`flex-1 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors ${
+                className={`flex-1 rounded-md px-2.5 py-1.5 text-ui font-medium transition-colors ${
                   sidebarTab === "favourites" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -847,13 +849,13 @@ export default function ClientAICoachPage() {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto space-y-0.5 pr-1">
               {loadingChats || loadingFolders ? (
-                <p className="text-[15px] text-slate-500">Loading…</p>
+                <p className="text-ui text-slate-500">Loading…</p>
               ) : sidebarTab === "all" ? (
                 <>
                   <button
                     type="button"
                     onClick={() => toggleSection("uncategorized")}
-                    className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[14px] font-medium text-slate-700 hover:bg-slate-50"
+                    className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-ui font-medium text-slate-700 hover:bg-slate-50"
                   >
                     <svg className={`h-4 w-4 shrink-0 transition-transform ${expandedSections.has("uncategorized") ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -863,7 +865,7 @@ export default function ClientAICoachPage() {
                   {expandedSections.has("uncategorized") && (
                     <ul className="ml-4 space-y-0.5 border-l border-slate-100 pl-2">
                       {chats.filter((c) => !c.folder_id).length === 0 ? (
-                        <li className="text-[13px] text-slate-400 py-1">No chats</li>
+                        <li className="text-ui text-slate-400 py-1">No chats</li>
                       ) : (
                         chats.filter((c) => !c.folder_id)
                           .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -872,7 +874,7 @@ export default function ClientAICoachPage() {
                               <button
                                 type="button"
                                 onClick={() => { setSelectedChatId(c.id); setSidebarOpen(false); }}
-                                className="w-full rounded-lg px-2 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-100"
+                                className="w-full rounded-lg px-2 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-100"
                               >
                                 {formatChatTitle(c)}
                               </button>
@@ -890,7 +892,7 @@ export default function ClientAICoachPage() {
                         <button
                           type="button"
                           onClick={() => toggleSection(folder.id)}
-                          className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[14px] font-medium text-slate-700 hover:bg-slate-50"
+                          className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-ui font-medium text-slate-700 hover:bg-slate-50"
                         >
                           <svg className={`h-4 w-4 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -906,7 +908,7 @@ export default function ClientAICoachPage() {
                                   <button
                                     type="button"
                                     onClick={() => { setSelectedChatId(c.id); setSidebarOpen(false); }}
-                                    className="w-full rounded-lg px-2 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-100"
+                                    className="w-full rounded-lg px-2 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-100"
                                   >
                                     {formatChatTitle(c)}
                                   </button>
@@ -917,7 +919,7 @@ export default function ClientAICoachPage() {
                               const subExpanded = expandedSections.has(sub.id);
                               return (
                                 <div key={sub.id} className="mt-0.5">
-                                  <button type="button" onClick={() => toggleSection(sub.id)} className="flex w-full items-center gap-1 rounded-lg px-1.5 py-1 text-left text-[13px] font-medium text-slate-600 hover:bg-slate-50">
+                                  <button type="button" onClick={() => toggleSection(sub.id)} className="flex w-full items-center gap-1 rounded-lg px-1.5 py-1 text-left text-ui font-medium text-slate-600 hover:bg-slate-50">
                                     <svg className={`h-3.5 w-3.5 shrink-0 transition-transform ${subExpanded ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                     </svg>
@@ -927,7 +929,7 @@ export default function ClientAICoachPage() {
                                     <ul className="ml-3 space-y-0.5 pl-1.5">
                                       {subChats.map((c) => (
                                         <li key={c.id}>
-                                          <button type="button" onClick={() => { setSelectedChatId(c.id); setSidebarOpen(false); }} className="w-full rounded px-1.5 py-1 text-left text-[13px] text-slate-600 hover:bg-slate-50">
+                                          <button type="button" onClick={() => { setSelectedChatId(c.id); setSidebarOpen(false); }} className="w-full rounded px-1.5 py-1 text-left text-ui text-slate-600 hover:bg-slate-50">
                                             {formatChatTitle(c)}
                                           </button>
                                         </li>
@@ -947,13 +949,13 @@ export default function ClientAICoachPage() {
                 (() => {
                   const favouritedChats = chats.filter((c) => c.is_favourite).sort((a, b) => (a.favourite_sort_order ?? 0) - (b.favourite_sort_order ?? 0));
                   if (favouritedChats.length === 0) {
-                    return <p className="py-3 text-center text-[14px] text-slate-500">No favourites. Star chats from the All tab.</p>;
+                    return <p className="py-3 text-center text-ui text-slate-500">No favourites. Star chats from the All tab.</p>;
                   }
                   return (
                     <ul className="space-y-0.5">
                       {favouritedChats.map((c) => (
                         <li key={c.id}>
-                          <button type="button" onClick={() => { setSelectedChatId(c.id); setSidebarOpen(false); }} className="w-full rounded-lg px-2 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-100">
+                          <button type="button" onClick={() => { setSelectedChatId(c.id); setSidebarOpen(false); }} className="w-full rounded-lg px-2 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-100">
                             {formatChatTitle(c)}
                           </button>
                         </li>
@@ -976,7 +978,7 @@ export default function ClientAICoachPage() {
               setSelectedChatId(null);
               setMessages([]);
             }}
-            className="mb-2 w-full rounded-xl bg-slate-800 px-3 py-2.5 text-[15px] font-medium text-white hover:bg-slate-700 transition-colors"
+            className={buttonClass("main", "normal", "mb-2 w-full")}
           >
             New chat
           </button>
@@ -984,14 +986,14 @@ export default function ClientAICoachPage() {
             type="button"
             onClick={() => createFolder(null)}
             disabled={creatingFolder}
-            className="mb-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-[15px] text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            className={buttonClass("second", "normal", "mb-2 w-full")}
           >
             New folder
           </button>
           {loadingChats || loadingFolders ? (
-            <p className="text-[15px] text-slate-500">Loading…</p>
+            <p className="text-ui text-slate-500">Loading…</p>
           ) : chats.length === 0 && folders.length === 0 ? (
-            <p className="text-[15px] text-slate-500">No conversations yet.</p>
+            <p className="text-ui text-slate-500">No conversations yet.</p>
           ) : (
             <>
               <DndContext
@@ -1004,7 +1006,7 @@ export default function ClientAICoachPage() {
                 <button
                   type="button"
                   onClick={() => setSidebarTab("all")}
-                  className={`flex-1 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors ${
+                  className={`flex-1 rounded-md px-2.5 py-1.5 text-ui font-medium transition-colors ${
                     sidebarTab === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -1013,7 +1015,7 @@ export default function ClientAICoachPage() {
                 <button
                   type="button"
                   onClick={() => setSidebarTab("favourites")}
-                  className={`flex-1 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors ${
+                  className={`flex-1 rounded-md px-2.5 py-1.5 text-ui font-medium transition-colors ${
                     sidebarTab === "favourites" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -1029,7 +1031,7 @@ export default function ClientAICoachPage() {
                 <button
                   type="button"
                   onClick={() => toggleSection("uncategorized")}
-                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[14px] font-medium text-slate-700 hover:bg-slate-50"
+                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-ui font-medium text-slate-700 hover:bg-slate-50"
                 >
                   <svg
                     className={`h-4 w-4 shrink-0 transition-transform ${expandedSections.has("uncategorized") ? "rotate-90" : ""}`}
@@ -1045,7 +1047,7 @@ export default function ClientAICoachPage() {
                 {expandedSections.has("uncategorized") && (
                   <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-100 pl-2">
                     {chats.filter((c) => !c.folder_id).length === 0 ? (
-                      <li className="text-[13px] text-slate-400 py-1">No chats</li>
+                      <li className="text-ui text-slate-400 py-1">No chats</li>
                     ) : (
                       chats
                         .filter((c) => !c.folder_id)
@@ -1085,7 +1087,7 @@ export default function ClientAICoachPage() {
                                 <button
                                   type="button"
                                   onClick={() => setSelectedChatId(c.id)}
-                                  className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left text-[14px] ${
+                                  className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left text-ui ${
                                     selectedChatId === c.id ? "bg-slate-100 font-medium text-slate-900" : "text-slate-600 hover:bg-slate-50"
                                   }`}
                                 >
@@ -1151,7 +1153,7 @@ export default function ClientAICoachPage() {
                                     <button
                                       type="button"
                                       onClick={() => moveChatToFolder(c.id, null)}
-                                      className="block w-full px-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50"
+                                      className="block w-full px-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50"
                                     >
                                       Uncategorized
                                     </button>
@@ -1160,7 +1162,7 @@ export default function ClientAICoachPage() {
                                         <button
                                           type="button"
                                           onClick={() => moveChatToFolder(c.id, f.id)}
-                                          className="block w-full px-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50"
+                                          className="block w-full px-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50"
                                         >
                                           {f.name}
                                         </button>
@@ -1169,7 +1171,7 @@ export default function ClientAICoachPage() {
                                             key={sub.id}
                                             type="button"
                                             onClick={() => moveChatToFolder(c.id, sub.id)}
-                                            className="block w-full pl-6 pr-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50"
+                                            className="block w-full pl-6 pr-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50"
                                           >
                                             {sub.name}
                                           </button>
@@ -1243,7 +1245,7 @@ export default function ClientAICoachPage() {
                           <button
                             type="button"
                             onClick={() => toggleSection(folder.id)}
-                            className="min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-left text-[14px] font-medium text-slate-700 hover:bg-slate-50"
+                            className="min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-left text-ui font-medium text-slate-700 hover:bg-slate-50"
                           >
                             {folder.name}
                           </button>
@@ -1284,7 +1286,7 @@ export default function ClientAICoachPage() {
                           type="button"
                           onClick={() => createFolder(folder.id)}
                           disabled={creatingFolder}
-                          className="text-[13px] text-slate-500 hover:text-slate-700"
+                          className="text-ui text-slate-500 hover:text-slate-700"
                         >
                           + Subfolder
                         </button>
@@ -1317,7 +1319,7 @@ export default function ClientAICoachPage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedChatId(c.id)}
-                                className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left text-[14px] ${
+                                className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left text-ui ${
                                   selectedChatId === c.id ? "bg-slate-100 font-medium text-slate-900" : "text-slate-600 hover:bg-slate-50"
                                 }`}
                               >
@@ -1345,12 +1347,12 @@ export default function ClientAICoachPage() {
                               </div>
                               {moveChatMenuChatId === c.id && (
                                 <div className="absolute left-0 top-full z-20 mt-0.5 min-w-[140px] rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                                  <button type="button" onClick={() => moveChatToFolder(c.id, null)} className="block w-full px-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50">Uncategorized</button>
+                                  <button type="button" onClick={() => moveChatToFolder(c.id, null)} className="block w-full px-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50">Uncategorized</button>
                                   {topFolders.map((f) => (
                                     <div key={f.id}>
-                                      <button type="button" onClick={() => moveChatToFolder(c.id, f.id)} className="block w-full px-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50">{f.name}</button>
+                                      <button type="button" onClick={() => moveChatToFolder(c.id, f.id)} className="block w-full px-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50">{f.name}</button>
                                       {getSubfolders(f.id).map((sub) => (
-                                        <button key={sub.id} type="button" onClick={() => moveChatToFolder(c.id, sub.id)} className="block w-full pl-6 pr-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50">{sub.name}</button>
+                                        <button key={sub.id} type="button" onClick={() => moveChatToFolder(c.id, sub.id)} className="block w-full pl-6 pr-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50">{sub.name}</button>
                                       ))}
                                     </div>
                                   ))}
@@ -1381,7 +1383,7 @@ export default function ClientAICoachPage() {
                                       onChange={(e) => setEditingFolderName(e.target.value)}
                                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveFolderName(sub.id, editingFolderName); } if (e.key === "Escape") { setEditingFolderId(null); setEditingFolderName(""); } }}
                                       onBlur={() => saveFolderName(sub.id, editingFolderName)}
-                                      className="min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+                                      className="min-w-0 flex-1 bg-transparent text-ui outline-none"
                                       autoFocus
                                     />
                                     <button type="button" onClick={() => saveFolderName(sub.id, editingFolderName)} className="shrink-0 rounded p-0.5 text-sky-600 hover:bg-sky-100" aria-label="Save">
@@ -1390,7 +1392,7 @@ export default function ClientAICoachPage() {
                                   </div>
                                 ) : (
                                   <>
-                                    <button type="button" onClick={() => toggleSection(sub.id)} className="min-w-0 flex-1 rounded px-1.5 py-1 text-left text-[13px] text-slate-600 hover:bg-slate-50">
+                                    <button type="button" onClick={() => toggleSection(sub.id)} className="min-w-0 flex-1 rounded px-1.5 py-1 text-left text-ui text-slate-600 hover:bg-slate-50">
                                       {sub.name}
                                     </button>
                                     <button type="button" onClick={(e) => { e.stopPropagation(); setEditingFolderId(sub.id); setEditingFolderName(sub.name); }} className="shrink-0 rounded p-0.5 text-slate-400 opacity-0 hover:bg-slate-100 group-hover/sub:opacity-100" aria-label="Rename">
@@ -1406,7 +1408,7 @@ export default function ClientAICoachPage() {
                               {subExpanded && (
                                 <ul className="ml-4 mt-0.5 border-l border-slate-100 pl-1.5 space-y-0.5">
                                   {subChats.length === 0 ? (
-                                    <li className="text-[12px] text-slate-400 py-0.5">No chats</li>
+                                    <li className="text-caption text-slate-400 py-0.5">No chats</li>
                                   ) : (
                                     subChats
                                       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -1421,7 +1423,7 @@ export default function ClientAICoachPage() {
                                                 onChange={(e) => setEditingTitle(e.target.value)}
                                                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveChatTitle(c.id, editingTitle); } if (e.key === "Escape") { setEditingChatId(null); setEditingTitle(""); } }}
                                                 onBlur={() => saveChatTitle(c.id, editingTitle)}
-                                                className="min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+                                                className="min-w-0 flex-1 bg-transparent text-ui outline-none"
                                                 autoFocus
                                               />
                                               <button type="button" onClick={() => saveChatTitle(c.id, editingTitle)} className="shrink-0 rounded p-0.5 text-sky-600 hover:bg-sky-100" aria-label="Save">
@@ -1430,7 +1432,7 @@ export default function ClientAICoachPage() {
                                             </div>
                                           ) : (
                                             <>
-                                          <button type="button" onClick={() => setSelectedChatId(c.id)} className={`min-w-0 flex-1 rounded px-1.5 py-1 text-left text-[13px] ${selectedChatId === c.id ? "bg-slate-100 font-medium text-slate-900" : "text-slate-600 hover:bg-slate-50"}`}>
+                                          <button type="button" onClick={() => setSelectedChatId(c.id)} className={`min-w-0 flex-1 rounded px-1.5 py-1 text-left text-ui ${selectedChatId === c.id ? "bg-slate-100 font-medium text-slate-900" : "text-slate-600 hover:bg-slate-50"}`}>
                                             {formatChatTitle(c)}
                                           </button>
                                           <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavourite(c.id); }} className={`rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-slate-100 ${c.is_favourite ? "text-amber-500" : "text-slate-400 hover:text-amber-500"}`} aria-label={c.is_favourite ? "Unfavourite" : "Favourite"}>
@@ -1447,12 +1449,12 @@ export default function ClientAICoachPage() {
                                           </button>
                                           {moveChatMenuChatId === c.id && (
                                             <div className="absolute left-0 top-full z-20 mt-0.5 min-w-[120px] rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                                              <button type="button" onClick={() => moveChatToFolder(c.id, null)} className="block w-full px-3 py-1 text-left text-[13px] text-slate-700 hover:bg-slate-50">Uncategorized</button>
+                                              <button type="button" onClick={() => moveChatToFolder(c.id, null)} className="block w-full px-3 py-1 text-left text-ui text-slate-700 hover:bg-slate-50">Uncategorized</button>
                                               {topFolders.map((f) => (
                                                 <div key={f.id}>
-                                                  <button type="button" onClick={() => moveChatToFolder(c.id, f.id)} className="block w-full px-3 py-1 text-left text-[13px] text-slate-700 hover:bg-slate-50">{f.name}</button>
+                                                  <button type="button" onClick={() => moveChatToFolder(c.id, f.id)} className="block w-full px-3 py-1 text-left text-ui text-slate-700 hover:bg-slate-50">{f.name}</button>
                                                   {getSubfolders(f.id).map((s) => (
-                                                    <button key={s.id} type="button" onClick={() => moveChatToFolder(c.id, s.id)} className="block w-full pl-5 pr-3 py-1 text-left text-[13px] text-slate-700 hover:bg-slate-50">{s.name}</button>
+                                                    <button key={s.id} type="button" onClick={() => moveChatToFolder(c.id, s.id)} className="block w-full pl-5 pr-3 py-1 text-left text-ui text-slate-700 hover:bg-slate-50">{s.name}</button>
                                                   ))}
                                                 </div>
                                               ))}
@@ -1484,9 +1486,9 @@ export default function ClientAICoachPage() {
                         .sort((a, b) => (a.favourite_sort_order ?? 0) - (b.favourite_sort_order ?? 0));
                       if (favouritedChats.length === 0) {
                         return (
-                          <p className="py-3 text-center text-[14px] text-slate-500">
+                          <p className="py-3 text-center text-ui text-slate-500">
                             No favourites.
-                            <span className="mt-1 block text-[13px]">Star chats from the All tab.</span>
+                            <span className="mt-1 block text-ui">Star chats from the All tab.</span>
                           </p>
                         );
                       }
@@ -1534,7 +1536,7 @@ export default function ClientAICoachPage() {
                                   <button
                                     type="button"
                                     onClick={() => setSelectedChatId(c.id)}
-                                    className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left text-[14px] ${
+                                    className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left text-ui ${
                                       selectedChatId === c.id ? "bg-slate-100 font-medium text-slate-900" : "text-slate-600 hover:bg-slate-50"
                                     }`}
                                   >
@@ -1553,12 +1555,12 @@ export default function ClientAICoachPage() {
                                   </div>
                                   {moveChatMenuChatId === c.id && (
                                     <div className="absolute left-0 top-full z-20 mt-0.5 min-w-[140px] rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                                      <button type="button" onClick={() => moveChatToFolder(c.id, null)} className="block w-full px-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50">Uncategorized</button>
+                                      <button type="button" onClick={() => moveChatToFolder(c.id, null)} className="block w-full px-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50">Uncategorized</button>
                                       {topFolders.map((f) => (
                                         <div key={f.id}>
-                                          <button type="button" onClick={() => moveChatToFolder(c.id, f.id)} className="block w-full px-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50">{f.name}</button>
+                                          <button type="button" onClick={() => moveChatToFolder(c.id, f.id)} className="block w-full px-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50">{f.name}</button>
                                           {getSubfolders(f.id).map((sub) => (
-                                            <button key={sub.id} type="button" onClick={() => moveChatToFolder(c.id, sub.id)} className="block w-full pl-6 pr-3 py-1.5 text-left text-[14px] text-slate-700 hover:bg-slate-50">{sub.name}</button>
+                                            <button key={sub.id} type="button" onClick={() => moveChatToFolder(c.id, sub.id)} className="block w-full pl-6 pr-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50">{sub.name}</button>
                                           ))}
                                         </div>
                                       ))}
@@ -1583,7 +1585,7 @@ export default function ClientAICoachPage() {
                   return (
                     <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 shadow-lg">
                       <GripVerticalIcon />
-                      <span className="text-[14px] text-slate-700">{formatChatTitle(chat)}</span>
+                      <span className="text-ui text-slate-700">{formatChatTitle(chat)}</span>
                     </div>
                   );
                 })() : null}
@@ -1602,27 +1604,27 @@ export default function ClientAICoachPage() {
             aria-labelledby="delete-chat-title"
           >
             <div
-              className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+              className={cardClass("raised", "w-full max-w-sm p-5")}
               onClick={(e) => e.stopPropagation()}
             >
               <h2 id="delete-chat-title" className="text-lg font-semibold text-slate-900">
                 Delete conversation?
               </h2>
-              <p className="mt-2 text-[15px] text-slate-600">
+              <p className="mt-2 text-ui text-slate-600">
                 This can&apos;t be undone.
               </p>
               <div className="mt-5 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setChatIdToDelete(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-[15px] font-medium text-slate-700 hover:bg-slate-50"
+                  className={buttonClass("quiet")}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => chatIdToDelete && deleteChat(chatIdToDelete)}
-                  className="rounded-xl bg-rose-600 px-4 py-2 text-[15px] font-medium text-white hover:bg-rose-700"
+                  className={buttonClass("delete")}
                 >
                   Delete
                 </button>
@@ -1643,27 +1645,27 @@ export default function ClientAICoachPage() {
               aria-labelledby="delete-folder-title"
             >
               <div
-                className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+                className={cardClass("raised", "w-full max-w-sm p-5")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <h2 id="delete-folder-title" className="text-lg font-semibold text-slate-900">
                   Remove folder{folder ? ` "${folder.name}"` : ""}?
                 </h2>
-                <p className="mt-2 text-[15px] text-slate-600">
+                <p className="mt-2 text-ui text-slate-600">
                   Chats inside will move to {parentName ? `"${parentName}"` : "Uncategorized"}.
                 </p>
                 <div className="mt-5 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setFolderIdToDelete(null)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-[15px] font-medium text-slate-700 hover:bg-slate-50"
+                    className={buttonClass("quiet")}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={() => folderIdToDelete && deleteFolder(folderIdToDelete)}
-                    className="rounded-xl bg-rose-600 px-4 py-2 text-[15px] font-medium text-white hover:bg-rose-700"
+                    className={buttonClass("delete")}
                   >
                     Remove
                   </button>
@@ -1680,7 +1682,7 @@ export default function ClientAICoachPage() {
           {(selectedChatId !== null || messages.length > 0) && (
             <>
               <header className="shrink-0 border-b border-slate-200/60 px-6 py-4">
-                <p className="text-[15px] font-medium text-slate-700">
+                <p className="text-ui font-medium text-slate-700">
                   <span className="bg-gradient-to-r from-sky-600 to-sky-500 bg-clip-text font-semibold text-transparent">
                     {timeGreeting}, {firstName}.
                   </span>{" "}
@@ -1698,24 +1700,24 @@ export default function ClientAICoachPage() {
                     >
                       {m.role === "user" ? (
                         <div className="max-w-[80%] text-right">
-                          <p className="text-[15px] leading-relaxed text-slate-700 whitespace-pre-wrap">
+                          <p className="text-read leading-relaxed text-slate-700 whitespace-pre-wrap">
                             {m.content}
                           </p>
                           <div className="mt-1.5 h-px w-full max-w-[120px] ml-auto bg-slate-200/80" />
                         </div>
                       ) : (
                         <div className="max-w-[85%] border-l-2 border-sky-300/70 pl-4 pr-1">
-                          <div className="markdown-reply text-[15px] leading-[1.65] text-slate-800">
+                          <div className="markdown-reply text-read leading-[1.65] text-slate-800">
                             <ReactMarkdown
                               components={{
                                 h1: ({ children }) => (
-                                  <h1 className="mb-2 mt-4 text-lg font-bold text-slate-900 first:mt-0">{children}</h1>
+                                  <h1 className="mb-2 mt-4 text-lg font-semibold text-slate-900 first:mt-0">{children}</h1>
                                 ),
                                 h2: ({ children }) => (
-                                  <h2 className="mb-1.5 mt-4 text-base font-bold text-slate-900 first:mt-0">{children}</h2>
+                                  <h2 className="mb-1.5 mt-4 text-base font-semibold text-slate-900 first:mt-0">{children}</h2>
                                 ),
                                 h3: ({ children }) => (
-                                  <h3 className="mb-1 mt-3 text-[15px] font-semibold text-slate-900 first:mt-0">{children}</h3>
+                                  <h3 className="mb-1 mt-3 text-ui font-semibold text-slate-900 first:mt-0">{children}</h3>
                                 ),
                                 p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
                                 ul: ({ children }) => (
@@ -1726,7 +1728,7 @@ export default function ClientAICoachPage() {
                                 ),
                                 li: ({ children }) => <li className="leading-relaxed">{children}</li>,
                                 strong: ({ children }) => (
-                                  <strong className="font-semibold text-slate-900">{children}</strong>
+                                  <strong className="font-medium text-slate-900">{children}</strong>
                                 ),
                                 em: ({ children }) => <em className="italic">{children}</em>,
                               }}
@@ -1747,7 +1749,7 @@ export default function ClientAICoachPage() {
                           className="h-5 w-5 shrink-0 rounded-full border-2 border-sky-300/80 border-t-sky-500 animate-spin"
                           aria-hidden
                         />
-                        <p className="text-[15px] font-medium text-slate-700">
+                        <p className="text-ui font-medium text-slate-700">
                           {THINKING_PHRASES[thinkingPhraseIndex].main}
                         </p>
                       </div>
@@ -1788,13 +1790,13 @@ export default function ClientAICoachPage() {
                     }}
                     placeholder="Type your message…"
                     rows={2}
-                    className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-[15px] text-slate-900 placeholder-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+                    className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-ui text-slate-900 placeholder-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400/20"
                     disabled={sending}
                   />
                   <button
                     type="submit"
                     disabled={sending || !input.trim()}
-                    className="shrink-0 self-end rounded-xl bg-slate-800 px-5 py-3 text-[15px] font-medium text-white hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                    className={buttonClass("main", "normal", "shrink-0 self-end")}
                   >
                     Send
                   </button>

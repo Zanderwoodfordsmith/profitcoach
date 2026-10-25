@@ -84,7 +84,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
     <div className="flex flex-col gap-4">
       {skill.promptEditor === "coach-ai" ? (
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             System prompt
           </p>
           <div className="mt-2">
@@ -95,7 +95,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
 
       {skill.promptEditor === "linkedin-optimizer" ? (
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             Rewrite voice (LinkedIn Profile Optimizer tool)
           </p>
           <div className="mt-2">
@@ -106,7 +106,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
 
       {skill.promptEditor === "reply-copilot" ? (
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             Conversations reply copilot
           </p>
           <div className="mt-2">
@@ -117,7 +117,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
 
       {skill.systemInstructions.trim() ? (
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             {skill.promptEditor
               ? "Profit Coach AI skill instructions"
               : "System instructions"}
@@ -130,7 +130,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
 
       {skill.brandFiles.length > 0 ? (
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             Brand files loaded
           </p>
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
@@ -140,7 +140,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
                   href={`/admin/brand?tab=brain&brainTab=knowledge&open=${encodeURIComponent(file)}`}
                   className="hover:text-sky-700"
                 >
-                  <span className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200">
+                  <span className="rounded-full bg-white px-2 py-0.5 font-mono text-caption text-slate-500 ring-1 ring-slate-200">
                     {file}
                   </span>
                 </a>
@@ -152,7 +152,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
 
       {skill.knowledgeRefs.length > 0 ? (
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             Knowledge loaded
           </p>
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
@@ -163,7 +163,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
                   ? null
                   : `/admin/brand?tab=brain&brainTab=knowledge&open=${encodeURIComponent(file)}`;
               const chip = (
-                <span className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200">
+                <span className="rounded-full bg-white px-2 py-0.5 font-mono text-caption text-slate-500 ring-1 ring-slate-200">
                   {file}
                 </span>
               );
@@ -185,7 +185,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
 
       {skill.contextHints?.keys?.length ? (
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             Coach brain keys used
           </p>
           <p className="mt-1 font-mono text-xs text-slate-500">
@@ -196,7 +196,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
 
       {roles.length ? (
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             In roles
           </p>
           <p className="mt-1 text-xs text-slate-500">{roles.join(", ")}</p>
@@ -210,20 +210,20 @@ function CardMeta({ card }: { card: StudioHubCard }) {
   return (
     <dl className="grid gap-3 text-sm sm:grid-cols-2">
       <div>
-        <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+        <dt className="text-kicker font-semibold uppercase text-slate-400">
           Create hub card
         </dt>
         <dd className="mt-0.5 font-mono text-xs text-slate-700">{card.id}</dd>
       </div>
       <div>
-        <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+        <dt className="text-kicker font-semibold uppercase text-slate-400">
           Eyebrow
         </dt>
         <dd className="mt-0.5 text-xs text-slate-700">{card.eyebrow}</dd>
       </div>
       {card.dedicatedPath ? (
         <div>
-          <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <dt className="text-kicker font-semibold uppercase text-slate-400">
             Opens
           </dt>
           <dd className="mt-0.5 font-mono text-xs text-slate-700">
@@ -233,7 +233,7 @@ function CardMeta({ card }: { card: StudioHubCard }) {
       ) : null}
       {card.outputId ? (
         <div>
-          <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <dt className="text-kicker font-semibold uppercase text-slate-400">
             AI workspace skill
           </dt>
           <dd className="mt-0.5 font-mono text-xs text-slate-700">
@@ -318,40 +318,40 @@ function ProgrammeSectionRow({
       badges={
         <>
           {card ? (
-            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-800">
+            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-caption font-semibold text-indigo-800">
               Create card
             </span>
           ) : (
-            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-caption font-semibold text-slate-700">
               Skill only
             </span>
           )}
           {card?.dedicatedPath ? (
-            <span className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-600 ring-1 ring-slate-200">
+            <span className="rounded-full bg-white px-2 py-0.5 font-mono text-caption text-slate-600 ring-1 ring-slate-200">
               {card.dedicatedPath}
             </span>
           ) : null}
           {card?.outputId ? (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-800">
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-caption font-semibold text-emerald-800">
               → {card.outputId}
             </span>
           ) : null}
           {section.skillIds.length > 1 ? (
-            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-800">
+            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-caption font-semibold text-sky-800">
               {section.skillIds.length} skills
             </span>
           ) : primarySkill ? (
-            <span className="font-mono text-[10px] text-slate-400">
+            <span className="font-mono text-caption text-slate-400">
               {primarySkill.id}
             </span>
           ) : null}
           {card?.adminOnly ? (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-caption font-semibold text-amber-800">
               Admin only
             </span>
           ) : null}
           {primarySkill?.promptEditor ? (
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-caption font-semibold text-violet-700">
               DB prompt
             </span>
           ) : null}
@@ -406,7 +406,7 @@ export function CoreBrainSkillsTab({
     return (
       <div className="flex flex-col gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-kicker font-semibold uppercase text-slate-400">
             {title}
           </p>
           <p className="mt-1 text-xs text-slate-500">{hint}</p>

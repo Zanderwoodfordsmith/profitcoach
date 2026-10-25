@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
+import { cardClass } from "@/components/ui/Card";
 
 export type ProgressStageStatus = "pending" | "active" | "done" | "error";
 
@@ -78,7 +79,7 @@ export function CampaignSetupProgress({
   const doneCount = allStages.filter((s) => s.status === "done").length;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <div className={cardClass("plain", "p-6 sm:p-8")}>
       <div className="mb-6 text-center">
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
         {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
@@ -91,7 +92,7 @@ export function CampaignSetupProgress({
         {resolvedSections.map((section) => (
           <div key={section.id}>
             {section.title ? (
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              <p className="mb-3 text-kicker font-semibold uppercase text-slate-400">
                 {section.title}
               </p>
             ) : null}
@@ -163,7 +164,7 @@ function StageIcon({ status }: { status: ProgressStageStatus }) {
   }
   if (status === "error") {
     return (
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 text-caption font-bold text-white">
         !
       </span>
     );

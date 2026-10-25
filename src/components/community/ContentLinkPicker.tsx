@@ -26,6 +26,8 @@ import type {
   MentionTreeCourse,
   MentionTreeDocument,
 } from "@/app/api/community/mention-content/route";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type CourseArea = MentionTreeCourse["area"];
 
@@ -653,7 +655,7 @@ export function ContentLinkPicker({ onClose, onPick }: Props) {
       onMouseDown={onClose}
     >
       <div
-        className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+        className={cardClass("raised", "flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden")}
         role="dialog"
         aria-modal="true"
         aria-label="Link to content"
@@ -737,7 +739,7 @@ export function ContentLinkPicker({ onClose, onPick }: Props) {
             </span>
             <button
               type="button"
-              className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className={buttonClass("second", "small", "shrink-0")}
               onClick={drill.onAdd}
             >
               {drill.addLabel}
@@ -759,7 +761,7 @@ export function ContentLinkPicker({ onClose, onPick }: Props) {
                 <li key={row.key} role="option" aria-selected={active}>
                   {row.heading ? (
                     <div
-                      className={`px-2.5 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 ${
+                      className={`px-2.5 pb-1 pt-3 text-kicker font-semibold uppercase text-slate-400 ${
                         row.divider ? "mt-2 border-t border-slate-200" : ""
                       }`}
                     >
@@ -799,7 +801,7 @@ export function ContentLinkPicker({ onClose, onPick }: Props) {
                       <>
                         <button
                           type="button"
-                          className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                          className={buttonClass("second", "small", "shrink-0")}
                           onClick={row.onAdd}
                           title={row.icon === "course" ? "Link the whole course" : "Link the whole page"}
                         >
@@ -848,7 +850,7 @@ export function ContentLinkPicker({ onClose, onPick }: Props) {
               <span className="text-xs text-slate-400">optional</span>
               <button
                 type="button"
-                className="ml-auto rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className={buttonClass("main", "small", "ml-auto")}
                 disabled={startInvalid}
                 onClick={addSelected}
               >

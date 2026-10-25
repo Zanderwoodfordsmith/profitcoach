@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonClass } from "@/components/ui/Button";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Loader2, Plus, Search, UserPlus, X } from "lucide-react";
 
@@ -333,7 +334,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                       <span className="block text-sm font-medium text-slate-900">
                         Add a new person
                       </span>
-                      <span className="block text-[12px] text-slate-500">
+                      <span className="block text-caption text-slate-500">
                         Create a contact, then open a message
                       </span>
                     </span>
@@ -352,7 +353,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                       <span className="block truncate text-sm font-medium text-slate-900">
                         Create “{trimmedQuery}”
                       </span>
-                      <span className="block text-[12px] text-slate-500">
+                      <span className="block text-caption text-slate-500">
                         Add as a contact and start messaging
                       </span>
                     </span>
@@ -376,7 +377,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                       onClick={() => void startWith(person)}
                       className="flex w-full items-start gap-2.5 px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60"
                     >
-                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600">
+                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-caption font-semibold text-slate-600">
                         {person.photo_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -393,7 +394,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                           {name}
                         </span>
                         {detail ? (
-                          <span className="block truncate text-[12px] text-slate-500">
+                          <span className="block truncate text-caption text-slate-500">
                             {detail}
                           </span>
                         ) : null}
@@ -404,11 +405,11 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                           aria-hidden
                         />
                       ) : person.conversation_id ? (
-                        <span className="mt-1.5 shrink-0 text-[11px] font-medium text-slate-400">
+                        <span className="mt-1.5 shrink-0 text-caption font-medium text-slate-400">
                           Open
                         </span>
                       ) : (
-                        <span className="mt-1.5 shrink-0 text-[11px] font-medium text-sky-700">
+                        <span className="mt-1.5 shrink-0 text-caption font-medium text-sky-700">
                           New
                         </span>
                       )}
@@ -424,7 +425,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                   <p className="text-sm font-medium text-slate-900">
                     Add person & message
                   </p>
-                  <p className="mt-0.5 text-[12px] text-slate-500">
+                  <p className="mt-0.5 text-caption text-slate-500">
                     Creates a prospect, then opens the composer
                   </p>
                 </div>
@@ -442,7 +443,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
               </div>
               <div className="space-y-2.5">
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium text-slate-600">
+                  <span className="mb-1 block text-caption font-medium text-slate-600">
                     Name
                   </span>
                   <input
@@ -457,7 +458,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium text-slate-600">
+                  <span className="mb-1 block text-caption font-medium text-slate-600">
                     Email
                   </span>
                   <input
@@ -471,7 +472,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium text-slate-600">
+                  <span className="mb-1 block text-caption font-medium text-slate-600">
                     Phone
                   </span>
                   <input
@@ -485,7 +486,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium text-slate-600">
+                  <span className="mb-1 block text-caption font-medium text-slate-600">
                     LinkedIn URL
                   </span>
                   <input
@@ -509,14 +510,14 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                     setMode("search");
                     setError(null);
                   }}
-                  className="rounded-md px-2.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  className={buttonClass("quiet", "small")}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !draft.fullName.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500 disabled:cursor-wait disabled:opacity-60"
+                  className={buttonClass("main", "small")}
                 >
                   {creating ? (
                     <>

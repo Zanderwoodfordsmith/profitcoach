@@ -58,7 +58,7 @@ export function LessonVideoHandoff({
       <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[var(--brand-chathams)]/85 p-5 text-center shadow-xl sm:p-6">
         <p
           id="lesson-handoff-title"
-          className="text-xl font-semibold tracking-tight text-white sm:text-2xl"
+          className="text-subhead font-semibold tracking-tight text-white sm:text-2xl"
         >
           Lesson complete
         </p>

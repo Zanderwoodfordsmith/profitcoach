@@ -1,6 +1,8 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   open: boolean;
@@ -21,7 +23,7 @@ export function UnsavedChangesDialog({ open, onStay, onLeave }: Props) {
       onClick={onStay}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+        className={cardClass("raised", "w-full max-w-sm p-5")}
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -33,7 +35,7 @@ export function UnsavedChangesDialog({ open, onStay, onLeave }: Props) {
         >
           Leave without saving?
         </h2>
-        <p className="mt-2 text-[15px] leading-snug text-slate-600">
+        <p className="mt-2 text-ui text-slate-600">
           You&apos;ve made changes that haven&apos;t been saved yet. Stay to keep
           editing (and hit Save), or leave and discard them.
         </p>
@@ -41,14 +43,14 @@ export function UnsavedChangesDialog({ open, onStay, onLeave }: Props) {
           <button
             type="button"
             onClick={onStay}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second")}
           >
             Stay
           </button>
           <button
             type="button"
             onClick={onLeave}
-            className="rounded-xl bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800"
+            className={buttonClass("delete")}
           >
             Leave without saving
           </button>

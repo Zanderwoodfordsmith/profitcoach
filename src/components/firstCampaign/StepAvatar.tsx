@@ -8,6 +8,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from "@/components/firstCampaign/firstCampaignUi";
+import { buttonClass } from "@/components/ui/Button";
 import {
   CampaignSetupProgress,
   useCampaignProgressRunner,
@@ -116,17 +117,17 @@ function linesToPoints(lines: string[]): LabelledPoint[] {
 }
 
 function Bullets({ points }: { points: LabelledPoint[] | undefined }) {
-  if (!points?.length) return <p className="text-[15px] text-slate-400">—</p>;
+  if (!points?.length) return <p className="text-ui text-slate-400">—</p>;
   return (
     <ul className="space-y-2.5">
       {points.map((p, idx) => (
         <li
           key={idx}
-          className="flex gap-3 rounded-xl border border-white/80 bg-white/60 px-3.5 py-3 text-[15px] leading-relaxed text-slate-700"
+          className="flex gap-3 rounded-xl border border-white/80 bg-white/60 px-3.5 py-3 text-read leading-relaxed text-slate-700"
         >
           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500/70" aria-hidden />
           <span>
-            {p.label ? <span className="font-semibold text-slate-900">{p.label}: </span> : null}
+            {p.label ? <span className="font-medium text-slate-900">{p.label}: </span> : null}
             {p.text}
           </span>
         </li>
@@ -734,7 +735,6 @@ export function StepAvatar({
                 <PrimaryButton
                   onClick={() => void lockProfileAndGenerateAvatar()}
                   disabled={!profileAllConfirmed}
-                  className="rounded-xl px-5 py-2.5"
                 >
                   Lock profile &amp; create Avatar
                 </PrimaryButton>
@@ -791,7 +791,7 @@ export function StepAvatar({
                   <input
                     value={marketIndustry}
                     onChange={(e) => setMarketIndustry(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-[15px]"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
                   />
                 </label>
                 <label className="block text-sm">
@@ -799,7 +799,7 @@ export function StepAvatar({
                   <input
                     value={marketGeo}
                     onChange={(e) => setMarketGeo(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-[15px]"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
                   />
                 </label>
                 <label className="block text-sm">
@@ -807,7 +807,7 @@ export function StepAvatar({
                   <input
                     value={marketTeam}
                     onChange={(e) => setMarketTeam(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-[15px]"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
                   />
                 </label>
                 <label className="block text-sm">
@@ -815,7 +815,7 @@ export function StepAvatar({
                   <input
                     value={marketRevenue}
                     onChange={(e) => setMarketRevenue(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-[15px]"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
                   />
                 </label>
                 <label className="block text-sm sm:col-span-2">
@@ -823,7 +823,7 @@ export function StepAvatar({
                   <input
                     value={roleTitlesText}
                     onChange={(e) => setRoleTitlesText(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-[15px]"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
                   />
                 </label>
               </div>
@@ -834,7 +834,7 @@ export function StepAvatar({
               <span className="font-normal text-slate-400"> · </span>
               {marketGeo || profile.targetMarket.geography}
             </p>
-            <p className="mt-1 text-[15px] text-slate-500">
+            <p className="mt-1 text-ui text-slate-500">
               {(marketTeam || profile.targetMarket.teamSize)} team ·{" "}
               {marketRevenue || profile.targetMarket.revenueRange}
             </p>
@@ -873,7 +873,7 @@ export function StepAvatar({
               <button
                 type="button"
                 onClick={() => void researchPainsForMarket({ force: true })}
-                className="inline-flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+                className={buttonClass("quiet")}
               >
                 Research again
               </button>
@@ -1156,7 +1156,7 @@ export function StepAvatar({
           <Card title="Deeper detail (optional)">
             {persona.reality?.prose ? (
               <div className="mb-4">
-                <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+                <p className="mb-1 text-kicker font-medium uppercase text-slate-400">
                   Reality
                 </p>
                 <p className="text-sm italic leading-relaxed text-slate-600">
@@ -1166,7 +1166,7 @@ export function StepAvatar({
             ) : null}
             {persona.internalMonologue ? (
               <div className="mb-4">
-                <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+                <p className="mb-1 text-kicker font-medium uppercase text-slate-400">
                   Internal monologue
                 </p>
                 <p className="text-sm text-slate-600">{persona.internalMonologue}</p>
@@ -1175,13 +1175,13 @@ export function StepAvatar({
             {generatedAvatar.triggers ? (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+                  <p className="mb-1 text-kicker font-medium uppercase text-slate-400">
                     Fears
                   </p>
                   <Bullets points={generatedAvatar.triggers.fears} />
                 </div>
                 <div>
-                  <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+                  <p className="mb-1 text-kicker font-medium uppercase text-slate-400">
                     Dreams
                   </p>
                   <Bullets points={generatedAvatar.triggers.dreams} />

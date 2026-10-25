@@ -18,6 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, LayoutList, Lock, Plus, Users } from "lucide-react";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
+import { buttonClass } from "@/components/ui/Button";
 import {
   DEFAULT_COACH_TABLE_VIEW_NAME,
   isDefaultCoachTableViewName,
@@ -164,7 +165,7 @@ function SortableViewTab({
             {!isAllView &&
             !view.isPrivate &&
             view.createdBy !== currentUserId ? (
-              <span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+              <span className="rounded bg-slate-100 px-1 py-0.5 text-kicker font-medium uppercase text-slate-500">
                 Shared
               </span>
             ) : null}
@@ -356,7 +357,7 @@ export function CoachesTableViewBar({
           </label>
           <button
             type="submit"
-            className="rounded px-2 py-0.5 text-xs font-medium text-sky-700 hover:bg-sky-50"
+            className={buttonClass("quiet", "small")}
           >
             Add
           </button>

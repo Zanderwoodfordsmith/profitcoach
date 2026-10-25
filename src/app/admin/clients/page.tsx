@@ -10,6 +10,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type ClientRow = {
   id: string;
@@ -258,7 +260,7 @@ export default function AdminClientsPage() {
           <button
             type="button"
             onClick={() => setShowAddClient(true)}
-            className="mt-5 inline-flex items-center justify-center rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-600"
+            className={buttonClass("main", "normal", "mt-5")}
           >
             Add client
           </button>
@@ -267,7 +269,7 @@ export default function AdminClientsPage() {
 
       {!loading && !error && clients.length > 0 ? (
         <div
-          className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm"
+          className={cardClass("plain", "flex min-h-0 flex-col")}
           style={{ maxHeight: "calc(100vh - 14rem)" }}
         >
           <div className="shrink-0 border-b border-slate-100 px-4 py-3">
@@ -331,14 +333,14 @@ export default function AdminClientsPage() {
                               <button
                                 type="button"
                                 onClick={() => handleViewReport(c)}
-                                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800 hover:bg-slate-50"
+                                className={buttonClass("second", "small")}
                               >
                                 Report
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleViewAsClient(c.id)}
-                                className="rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-800 hover:bg-sky-200"
+                                className={buttonClass("second", "small")}
                               >
                                 View as client
                               </button>

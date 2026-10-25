@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Download, FileText, GraduationCap, Loader2, MessageCircle, Play, Printer, Sparkles, Square } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Download, FileText, GraduationCap, Loader2, MessageCircle, Play, Printer, Square } from "lucide-react";
 
 import {
   BLUEPRINT_GROUPS,
@@ -20,6 +20,7 @@ import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 import { DecisionRecordView } from "../DecisionRecord";
 import { usePractice } from "../PracticeProvider";
 import { SectionView } from "./SectionView";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 /** Pages that belong in the document (not the Command Center or the whole-document page). */
 export function documentPages(group: BlueprintGroup): BlueprintLink[] {
@@ -218,7 +219,7 @@ export function BuildBar({ compact = false }: { compact?: boolean }) {
         onClick={() => buildAll({ onlyMissing: !allWritten })}
         className="inline-flex items-center gap-2 rounded-full bg-[var(--bp-navy)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_-10px_rgba(5,30,54,0.8)] transition-colors hover:bg-[var(--bp-blue)]"
       >
-        <Sparkles className="h-4 w-4" aria-hidden />
+        <AvaHalo size={18} dark />
         {allWritten ? "Rewrite everything" : progress.written ? "Write the rest" : "Write my blueprint"}
       </button>
     </div>

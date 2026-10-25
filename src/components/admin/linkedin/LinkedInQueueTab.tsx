@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import { Copy, Loader2, Pencil, Send, Trash2, XCircle } from "lucide-react";
 import { formatShortDateTime } from "@/lib/linkedinScheduleTime";
 import {
-  LI_BLUE,
   postTypeLabel,
   statusChipClass,
   statusLabel,
   type LinkedInPostItem,
   type LinkedInPostStatus,
 } from "./types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   items: LinkedInPostItem[];
@@ -181,9 +182,9 @@ export function LinkedInQueueTab({
           <p className="font-semibold">
             {overdueCount} post{overdueCount === 1 ? "" : "s"} past due
           </p>
-          <p className="mt-0.5 text-[12px] text-amber-900/80">
+          <p className="mt-0.5 text-caption text-amber-900/80">
             They publish automatically about every minute while this page is open. Use{" "}
-            <span className="font-semibold">Post now</span> to force one immediately.
+            <span className="font-medium">Post now</span> to force one immediately.
           </p>
         </div>
       ) : null}
@@ -227,7 +228,7 @@ export function LinkedInQueueTab({
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
           {filtered.map((item) => {
             const mediaItem = item.media.find((m) => m.signedUrl);
             const thumb = mediaItem?.signedUrl;
@@ -243,7 +244,7 @@ export function LinkedInQueueTab({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={thumb} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-[10px] font-semibold uppercase text-slate-400">
+                    <div className="flex h-full items-center justify-center text-caption font-semibold uppercase text-slate-400">
                       {postTypeLabel(item.post_type)}
                     </div>
                   )}
@@ -251,35 +252,35 @@ export function LinkedInQueueTab({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${statusChipClass(
+                      className={`inline-flex rounded-full px-2 py-0.5 text-caption font-semibold ring-1 ring-inset ${statusChipClass(
                         item.status
                       )}`}
                     >
                       {statusLabel(item.status)}
                     </span>
                     {overdue ? (
-                      <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-inset ring-amber-200">
+                      <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-caption font-semibold text-amber-900 ring-1 ring-inset ring-amber-200">
                         Overdue
                       </span>
                     ) : null}
                     {item.category ? (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-semibold text-slate-600">
                         {item.category}
                       </span>
                     ) : null}
-                    <span className="text-[10px] font-medium text-slate-400">
+                    <span className="text-caption font-medium text-slate-400">
                       {postTypeLabel(item.post_type)}
                     </span>
                   </div>
                   <p className="mt-1 line-clamp-2 text-sm text-slate-800">{item.content}</p>
-                  <p className="mt-1 text-[11px] text-slate-500">
+                  <p className="mt-1 text-caption text-slate-500">
                     {item.scheduled_for
                       ? formatShortDateTime(item.scheduled_for)
                       : "No schedule"}
                     {item.attempts > 0 ? ` · attempts ${item.attempts}` : ""}
                   </p>
                   {item.last_error ? (
-                    <p className="mt-1 line-clamp-2 text-[11px] text-rose-600">
+                    <p className="mt-1 line-clamp-2 text-caption text-rose-600">
                       {item.last_error}
                     </p>
                   ) : null}
@@ -289,7 +290,7 @@ export function LinkedInQueueTab({
                     type="button"
                     disabled={busyId === item.id}
                     onClick={() => onEdit(item)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                    className={buttonClass("second", "small")}
                   >
                     <Pencil className="h-3 w-3" />
                     Edit
@@ -299,8 +300,7 @@ export function LinkedInQueueTab({
                       type="button"
                       disabled={busyId === item.id}
                       onClick={() => void publishNow(item)}
-                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
-                      style={{ backgroundColor: LI_BLUE }}
+                      className={buttonClass("main", "small")}
                     >
                       {busyId === item.id ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -315,7 +315,7 @@ export function LinkedInQueueTab({
                       type="button"
                       disabled={busyId === item.id}
                       onClick={() => void patch(item.id, "cancel")}
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                      className={buttonClass("second", "small")}
                     >
                       <XCircle className="h-3 w-3" />
                       Cancel
@@ -325,7 +325,7 @@ export function LinkedInQueueTab({
                     type="button"
                     disabled={busyId === item.id}
                     onClick={() => void patch(item.id, "clone")}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                    className={buttonClass("second", "small")}
                   >
                     <Copy className="h-3 w-3" />
                     Reuse
@@ -334,7 +334,7 @@ export function LinkedInQueueTab({
                     type="button"
                     disabled={busyId === item.id}
                     onClick={() => void deleteItem(item)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-50"
+                    className={buttonClass("delete", "small")}
                   >
                     {busyId === item.id ? (
                       <Loader2 className="h-3 w-3 animate-spin" />

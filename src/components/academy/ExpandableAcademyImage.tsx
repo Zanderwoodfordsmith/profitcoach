@@ -54,7 +54,7 @@ export function ExpandableAcademyImage({
           }}
         />
         <span
-          className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-slate-900/70 px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow-sm transition group-hover:opacity-100 group-focus-within:opacity-100"
+          className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-slate-900/70 px-2 py-1 text-caption font-medium text-white opacity-0 shadow-sm transition group-hover:opacity-100 group-focus-within:opacity-100"
           aria-hidden
         >
           <ZoomIn className="h-3 w-3" strokeWidth={2} />

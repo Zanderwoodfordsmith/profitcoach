@@ -9,6 +9,7 @@ import {
   type AcademyRecommendedAction,
   type AcademyVerifyRuleKey,
 } from "@/lib/academy/lessonActions";
+import { buttonClass } from "@/components/ui/Button";
 
 type Props = {
   actions: AcademyRecommendedAction[];
@@ -166,7 +167,7 @@ export function LessonRecommendedActionsEditor({ actions, onChange }: Props) {
       <button
         type="button"
         onClick={addAction}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50"
+        className={buttonClass("second")}
       >
         <Plus className="h-4 w-4" aria-hidden />
         Add action

@@ -90,7 +90,7 @@ function Group({
 
   return (
     <fieldset className="min-w-0">
-      <legend className="mb-1.5 text-xs font-semibold text-slate-700">
+      <legend className="mb-1.5 text-xs font-medium text-slate-700">
         {label}
       </legend>
       <div className={`gap-0.5 rounded-lg bg-slate-100 p-0.5 ${layout}`}>
@@ -152,7 +152,7 @@ function TextField({
 }) {
   return (
     <label className={`block min-w-0 ${className}`}>
-      <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+      <span className="mb-1.5 block text-xs font-medium text-slate-700">
         {label}
       </span>
       <input

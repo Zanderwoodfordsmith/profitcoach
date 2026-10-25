@@ -76,6 +76,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
 type AdminTicketRow = {
   id: string;
   created_at: string;
@@ -295,7 +296,7 @@ function ListAvatar({
     );
   }
   return (
-    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-semibold text-slate-700">
+    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-caption font-semibold text-slate-700">
       {initialsFromLabel(label)}
     </span>
   );
@@ -518,10 +519,10 @@ function WaitingSectionHeader({
         aria-expanded={open}
         className="flex w-full items-center gap-1.5 text-left text-slate-500"
       >
-        <span className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-wide">
+        <span className="min-w-0 truncate text-kicker font-semibold uppercase ">
           {WAITING_ON_REPLY_BAND}
         </span>
-        <span className="text-[11px] font-semibold tabular-nums tracking-wide">
+        <span className="text-caption font-semibold tabular-nums tracking-wide">
           {count}
         </span>
         {open ? (
@@ -1150,7 +1151,7 @@ export function AdminSupportPage() {
                 <button
                   type="button"
                   onClick={() => setCreateOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-800"
+                  className={buttonClass("main")}
                 >
                   <Plus className="h-4 w-4" aria-hidden />
                   New ticket
@@ -1378,7 +1379,7 @@ export function AdminSupportPage() {
                               />
                             ) : (
                               <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                <p className="text-kicker font-semibold uppercase text-slate-500">
                                   {ageBand}
                                 </p>
                               </li>
@@ -1404,11 +1405,11 @@ export function AdminSupportPage() {
                               />
                               <span className="min-w-0 flex-1">
                                 <span className="flex items-center gap-1.5">
-                                  <span className="truncate text-sm font-semibold text-slate-900">
+                                  <span className="truncate text-sm font-medium text-slate-900">
                                     {group.label}
                                   </span>
                                   {group.openCount > 0 ? (
-                                    <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold text-white">
+                                    <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-caption font-semibold text-white">
                                       {group.openCount}
                                     </span>
                                   ) : null}
@@ -1441,7 +1442,7 @@ export function AdminSupportPage() {
                           setSelectedPersonKey(null);
                           setSelectedId(null);
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-white hover:text-slate-900"
+                        className={buttonClass("quiet", "small")}
                       >
                         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
                         {selectedPerson.label}
@@ -1493,7 +1494,7 @@ export function AdminSupportPage() {
                               />
                             ) : (
                               <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                <p className="text-kicker font-semibold uppercase text-slate-500">
                                   {ageBand}
                                 </p>
                               </li>
@@ -1534,14 +1535,14 @@ export function AdminSupportPage() {
                                   </span>
                                   {attention?.mention ? (
                                     <span
-                                      className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-semibold text-amber-900"
+                                      className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-caption font-semibold text-amber-900"
                                       title="You were mentioned"
                                     >
                                       @
                                     </span>
                                   ) : null}
                                   {badgeCount > 0 ? (
-                                    <span className="inline-flex min-w-[1.15rem] shrink-0 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold text-white">
+                                    <span className="inline-flex min-w-[1.15rem] shrink-0 items-center justify-center rounded-full bg-sky-600 px-1 text-caption font-semibold text-white">
                                       {badgeCount}
                                     </span>
                                   ) : null}
@@ -1557,11 +1558,11 @@ export function AdminSupportPage() {
                                 </span>
                               </span>
                               <span className="flex shrink-0 flex-col items-end gap-1">
-                                <span className="text-[11px] tabular-nums text-slate-400">
+                                <span className="text-caption tabular-nums text-slate-400">
                                   {formatSupportRelativeCompact(listAt)}
                                 </span>
                                 <span
-                                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${TYPE_STYLES[row.type]}`}
+                                  className={`rounded-full px-1.5 py-0.5 text-caption font-semibold ring-1 ring-inset ${TYPE_STYLES[row.type]}`}
                                 >
                                   {SUPPORT_TYPE_LABELS[row.type]}
                                 </span>
@@ -1599,7 +1600,7 @@ export function AdminSupportPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Open coach profile"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:underline"
                         >
                           <UserRound className="h-3 w-3" aria-hidden />
                           Profile
@@ -1609,7 +1610,7 @@ export function AdminSupportPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Open their Support inbox"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:underline"
                         >
                           <ExternalLink className="h-3 w-3" aria-hidden />
                           Their inbox
@@ -1727,7 +1728,7 @@ export function AdminSupportPage() {
                 <div className="flex min-h-0 flex-1 flex-col">
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
                     <div>
-                      <span className="mb-1 block text-xs font-semibold text-slate-600">
+                      <span className="mb-1 block text-xs font-medium text-slate-600">
                         Linked coach
                       </span>
                       <CoachSearchCombobox
@@ -1745,7 +1746,7 @@ export function AdminSupportPage() {
                         </p>
                       ) : null}
                       {selected.contact_email && !selected.created_by ? (
-                        <p className="mt-1 text-[11px] text-slate-500">
+                        <p className="mt-1 text-caption text-slate-500">
                           Linking also remembers this email for future inbox
                           mail.
                         </p>
@@ -1788,7 +1789,7 @@ export function AdminSupportPage() {
 
                     <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
                       <label className="flex items-center gap-3">
-                        <span className="w-16 shrink-0 text-xs font-semibold text-slate-600">
+                        <span className="w-16 shrink-0 text-xs font-medium text-slate-600">
                           Assignee
                         </span>
                         <select
@@ -1814,7 +1815,7 @@ export function AdminSupportPage() {
                       </label>
 
                       <label className="flex items-center gap-3">
-                        <span className="w-16 shrink-0 text-xs font-semibold text-slate-600">
+                        <span className="w-16 shrink-0 text-xs font-medium text-slate-600">
                           Type
                         </span>
                         <select
@@ -1846,7 +1847,7 @@ export function AdminSupportPage() {
                       {selected.type === "idea" ? (
                         <div className="grid grid-cols-2 gap-2">
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-slate-600">
+                            <span className="mb-1 block text-xs font-medium text-slate-600">
                               Importance
                             </span>
                             <select
@@ -1870,7 +1871,7 @@ export function AdminSupportPage() {
                             </select>
                           </label>
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-slate-600">
+                            <span className="mb-1 block text-xs font-medium text-slate-600">
                               Ease
                             </span>
                             <select
@@ -1930,7 +1931,7 @@ export function AdminSupportPage() {
                     <SupportTicketCoachPayments coachId={selected.created_by} />
 
                     <div className="mt-6 border-t border-slate-200 pt-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      <p className="text-kicker font-semibold uppercase text-slate-400">
                         Source
                       </p>
                       <p className="mt-0.5 text-xs font-medium text-slate-700">
@@ -1940,14 +1941,14 @@ export function AdminSupportPage() {
                   </div>
 
                   <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-4 py-2">
-                    <p className="text-[10px] tabular-nums text-slate-400">
+                    <p className="text-caption tabular-nums text-slate-400">
                       {formatSupportTicketId(selected.ticket_number)}
                     </p>
                     <button
                       type="button"
                       disabled={saving}
                       onClick={() => void deleteRow(selected)}
-                      className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                      className={buttonClass("delete", "small")}
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
                       Delete

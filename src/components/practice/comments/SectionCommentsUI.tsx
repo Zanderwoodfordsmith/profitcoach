@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from
 import { createPortal } from "react-dom";
 import { ArrowUp, Check, ChevronLeft, ChevronRight, Loader2, MessageSquare, Mic, MoreHorizontal, Pencil, Square, Trash2, UserRound } from "lucide-react";
 
+import { buttonClass } from "@/components/ui/Button";
 import { sectionByKey, type BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
 import { commentCapabilities, COMMENT_MAX_LENGTH, type CommentPerson, type SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes";
 import type { SectionStatusEvent } from "@/lib/practiceKnowledge/types";
@@ -69,7 +70,7 @@ export function CommentAvatar({ comment, size = "md" }: { comment: SectionCommen
 function SideTag({ comment }: { comment: SectionComment }) {
   if (comment.author_side === "coach") return null;
   return (
-    <span className="rounded bg-[#e3eef8] px-1 text-[0.625rem] font-bold tracking-[0.04em] text-[#0c5290]">
+    <span className="rounded bg-[#e3eef8] px-1 text-caption font-semibold tracking-[0.04em] text-[#0c5290]">
       {comment.author_side === "ava" ? "AI" : "BCA"}
     </span>
   );
@@ -81,14 +82,14 @@ export function CommentItem({ comment, mine, compact = false }: { comment: Secti
     <li className="flex gap-2.5">
       <CommentAvatar comment={comment} size={compact ? "sm" : "md"} />
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-baseline gap-x-1.5 text-[0.8125rem] leading-5">
-          <span className="font-semibold text-[#0b1b2e]">{mine ? "You" : comment.author_name}</span>
+        <p className="flex flex-wrap items-baseline gap-x-1.5 text-ui leading-5">
+          <span className="font-medium text-[#0b1b2e]">{mine ? "You" : comment.author_name}</span>
           <SideTag comment={comment} />
           <time dateTime={comment.created_at} title={new Date(comment.created_at).toLocaleString("en-GB")} className="text-xs text-[#8595a8]">
             {commentWhen(comment.created_at)}
           </time>
         </p>
-        <p className={`whitespace-pre-wrap break-words text-[#1e2f44] ${compact ? "text-[0.8125rem] leading-5" : "mt-0.5 text-[0.9375rem] leading-[1.55]"}`}>
+        <p className={`whitespace-pre-wrap break-words text-[#1e2f44] ${compact ? "text-ui leading-5" : "mt-0.5 text-read"}`}>
           {comment.body}
         </p>
       </div>
@@ -156,7 +157,7 @@ export function CommentsButton() {
     <button
       type="button"
       onClick={comments.openList}
-      className="bp-no-print relative inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#cfdbe8] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--bp-ink)] hover:border-[#9cc9ec] hover:bg-[var(--bp-tint)]"
+      className={buttonClass("second", "small", "bp-no-print relative shrink-0")}
     >
       <MessageSquare className="h-4 w-4" aria-hidden />
       Comments
@@ -219,7 +220,7 @@ function StatusLine({ event, you }: { event: SectionStatusEvent; you: boolean })
         {" to "}
         <StatusWord status={event.to} />
       </p>
-      <time dateTime={event.at} className="shrink-0 pt-0.5 text-[11px] text-[#8595a8]">
+      <time dateTime={event.at} className="shrink-0 pt-0.5 text-caption text-[#8595a8]">
         {commentWhen(event.at)}
       </time>
     </div>
@@ -480,7 +481,7 @@ function CommentMenu({
                       >
                         <PersonMark person={person} />
                         <span className="min-w-0 flex-1 truncate">{label}</span>
-                        <span className="text-[0.6875rem] text-[#8595a8]">{person.side === "bca" ? "BCA" : "Coach"}</span>
+                        <span className="text-caption text-[#8595a8]">{person.side === "bca" ? "BCA" : "Coach"}</span>
                         {selected ? <Check className="h-3.5 w-3.5 shrink-0 text-[#0c5290]" aria-hidden /> : null}
                       </button>
                     );
@@ -495,7 +496,7 @@ function CommentMenu({
                       type="button"
                       disabled={busy}
                       onClick={() => void confirmDelete()}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#9b2c2c] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#7f2424] disabled:opacity-50"
+                      className={buttonClass("delete", "small")}
                     >
                       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
                       Delete
@@ -504,7 +505,7 @@ function CommentMenu({
                       type="button"
                       disabled={busy}
                       onClick={() => setView("actions")}
-                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#55657a] hover:bg-[#f2f7fc]"
+                      className={buttonClass("quiet", "small")}
                     >
                       Cancel
                     </button>
@@ -579,7 +580,7 @@ function CommentCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1">
               <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-                <span className="text-sm font-semibold text-[#0b1b2e]">{mine ? "You" : comment.author_name}</span>
+                <span className="text-sm font-medium text-[#0b1b2e]">{mine ? "You" : comment.author_name}</span>
                 <SideTag comment={comment} />
                 <time dateTime={comment.created_at} title={new Date(comment.created_at).toLocaleString("en-GB")} className="text-xs text-[#8595a8]">
                   {commentWhen(comment.created_at)}
@@ -606,7 +607,7 @@ function CommentCard({
                     type="button"
                     onClick={() => void save()}
                     disabled={saving || !draft.trim()}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-[#051e36] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0c5290] disabled:opacity-40"
+                    className={buttonClass("main", "small")}
                   >
                     {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
                     Save
@@ -618,7 +619,7 @@ function CommentCard({
                       setDraft(comment.body);
                       setError(null);
                     }}
-                    className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#55657a] hover:bg-[#f2f7fc]"
+                    className={buttonClass("quiet", "small")}
                   >
                     Cancel
                   </button>
@@ -740,8 +741,8 @@ export function CommentsPanel() {
           <ChevronLeft className="h-4 w-4" aria-hidden />
         </button>
         <div className="min-w-0">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-[var(--bp-faint)]">{ref.page.title}</p>
-          <h2 className="mt-0.5 text-[0.9375rem] font-semibold leading-snug text-[var(--bp-ink)]">{ref.section.title}</h2>
+          <p className="text-kicker font-semibold uppercase text-[var(--bp-faint)]">{ref.page.title}</p>
+          <h2 className="mt-0.5 text-ui font-semibold leading-snug text-[var(--bp-ink)]">{ref.section.title}</h2>
         </div>
       </header>
 
@@ -771,7 +772,7 @@ export function CommentsPanel() {
                 return (
                   <li key={entry.id}>
                     <article className="rounded-xl border border-[#f3dfb8] bg-[#fff8ec] p-3.5">
-                      <p className="text-xs font-semibold text-[#8a5300]">Asked for a change · {commentWhen(entry.at)}</p>
+                      <p className="text-xs font-medium text-[#8a5300]">Asked for a change · {commentWhen(entry.at)}</p>
                       <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#6b4300]">{entry.body}</p>
                     </article>
                   </li>
@@ -804,7 +805,7 @@ export function CommentsPanel() {
             rows={1}
             disabled={!side}
             placeholder={transcribing ? "Turning your voice into text…" : replying ? `Reply to ${other}` : `Write to ${other}`}
-            className="bp-input block w-full resize-none bg-transparent px-4 pb-1 pt-3 text-[0.9375rem] leading-6 text-[var(--bp-ink)] outline-none placeholder:text-[var(--bp-faint)]"
+            className="bp-input block w-full resize-none bg-transparent px-4 pb-1 pt-3 text-ui leading-6 text-[var(--bp-ink)] outline-none placeholder:text-[var(--bp-faint)]"
           />
           <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5 pt-1">
             <button
@@ -826,7 +827,7 @@ export function CommentsPanel() {
               {recording ? "Stop" : "Speak"}
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-[0.6875rem] text-[var(--bp-faint)]">⌘ Enter</span>
+              <span className="text-caption text-[var(--bp-faint)]">⌘ Enter</span>
               <button
                 type="button"
                 onClick={() => void send()}
@@ -903,14 +904,14 @@ export function CommentsList({ page }: { page: BlueprintLink | null }) {
                     }`}
                   >
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="min-w-0 truncate text-sm font-semibold text-[#0b1b2e]">{ref.section.title}</span>
+                      <span className="min-w-0 truncate text-sm font-medium text-[#0b1b2e]">{ref.section.title}</span>
                       <time dateTime={row.at} className="shrink-0 text-xs text-[#8595a8]">
                         {commentWhen(row.at)}
                       </time>
                     </div>
                     <div className="mt-1.5 flex items-start gap-2">
-                      <p className={`line-clamp-2 min-w-0 flex-1 text-[0.8125rem] leading-5 ${row.unread ? "text-[#0b1b2e]" : "text-[#55657a]"}`}>
-                        <span className="font-semibold">{row.who}: </span>
+                      <p className={`line-clamp-2 min-w-0 flex-1 text-ui leading-5 ${row.unread ? "text-[#0b1b2e]" : "text-[#55657a]"}`}>
+                        <span className="font-medium">{row.who}: </span>
                         {row.body}
                       </p>
                       {row.unread ? (

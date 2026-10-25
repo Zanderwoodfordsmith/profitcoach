@@ -30,7 +30,7 @@ export function WeeklyFocusContent({ weekId }: { weekId: string }) {
     <>
       {content.audioUrl ? (
         <div className="mt-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Listen</p>
+          <p className="text-kicker font-semibold uppercase text-slate-500">Listen</p>
           <audio className="mt-3 w-full" controls src={content.audioUrl}>
             Your browser does not support the audio element.
           </audio>

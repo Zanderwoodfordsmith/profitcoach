@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { BarChart3, Loader2, RefreshCw } from "lucide-react";
 import type { LinkedInPostItem } from "./types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Engagement = {
   comments?: number;
@@ -73,7 +75,7 @@ export function LinkedInInsightsTab({
   return (
     <section>
     <h3 className="mb-3 text-sm font-semibold text-slate-900">Published from here</h3>
-    <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+    <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
       {published.map((post) => {
         const eng = byId[post.id] || post.engagement || undefined;
         return (
@@ -83,7 +85,7 @@ export function LinkedInInsightsTab({
                 <p className="line-clamp-2 text-sm font-medium text-slate-900">
                   {post.content || "(media post)"}
                 </p>
-                <p className="mt-1 text-[11px] text-slate-400">
+                <p className="mt-1 text-caption text-slate-400">
                   {post.published_at
                     ? new Date(post.published_at).toLocaleString()
                     : "Published"}
@@ -129,7 +131,7 @@ export function LinkedInInsightsTab({
                 type="button"
                 disabled={busyId === post.id}
                 onClick={() => void sync(post.id)}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className={buttonClass("second", "small", "shrink-0")}
               >
                 {busyId === post.id ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

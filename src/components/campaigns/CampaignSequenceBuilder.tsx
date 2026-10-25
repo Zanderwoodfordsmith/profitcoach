@@ -100,6 +100,8 @@ import {
 } from "@/components/campaigns/CampaignStepExtras";
 import { startDragAutoScroll } from "@/lib/campaigns/dragAutoScroll";
 import type { InviteFunnelSlice } from "@/lib/unipile/campaignLeadActivity";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type SequenceAccount = {
   id: string;
@@ -274,7 +276,7 @@ function PaletteItemRow({
               {item.label}
             </span>
             {item.hint ? (
-              <span className="mt-0.5 block text-[11px] leading-snug text-slate-500">
+              <span className="mt-0.5 block text-caption leading-snug text-slate-500">
                 {item.hint}
               </span>
             ) : null}
@@ -306,7 +308,7 @@ function PaletteItemRow({
                 </button>
                 <span
                   role="tooltip"
-                  className="pointer-events-none absolute bottom-full right-0 z-20 mb-1 hidden w-max max-w-[14rem] rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/info:block group-focus-within/info:block"
+                  className="pointer-events-none absolute bottom-full right-0 z-20 mb-1 hidden w-max max-w-[14rem] rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-caption font-medium leading-snug text-white shadow-sm group-hover/info:block group-focus-within/info:block"
                 >
                   {item.info}
                 </span>
@@ -314,7 +316,7 @@ function PaletteItemRow({
             ) : null}
           </span>
           {item.soon ? (
-            <span className="mt-0.5 block text-[11px] text-slate-400">
+            <span className="mt-0.5 block text-caption text-slate-400">
               Coming soon
             </span>
           ) : null}
@@ -324,7 +326,7 @@ function PaletteItemRow({
             type="button"
             disabled={connectingProvider === item.connectProvider}
             onClick={() => onConnect(item.connectProvider!)}
-            className="shrink-0 pt-0.5 text-[11px] font-semibold text-[#0c5290] hover:underline disabled:opacity-50"
+            className="shrink-0 pt-0.5 text-caption font-medium text-[#0c5290] hover:underline disabled:opacity-50"
           >
             {connectingProvider === item.connectProvider
               ? "Connecting…"
@@ -495,7 +497,7 @@ function InviteFunnelBar({
   if (invite.total <= 0) return null;
   return (
     <div
-      className={`flex h-2 w-full ${roundBottom ? "rounded-b-xl" : ""}`}
+      className={`flex h-2 w-full ${roundBottom ? "rounded-b-2xl" : ""}`}
       role="img"
       aria-label={`${invite.connected} connected, ${invite.waiting} waiting, ${invite.remaining} not sent yet`}
     >
@@ -512,12 +514,12 @@ function InviteFunnelBar({
             aria-label={title}
             onClick={() => onOpenSlice(segment.slice, title)}
             className={`group/seg relative min-w-[8px] ${segment.className} ${
-              roundBottom ? "first:rounded-bl-xl last:rounded-br-xl" : ""
+              roundBottom ? "first:rounded-bl-2xl last:rounded-br-2xl" : ""
             } focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/50`}
           >
             <span
               role="tooltip"
-              className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/seg:block"
+              className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-caption font-medium leading-snug text-white shadow-sm group-hover/seg:block"
             >
               <span className="block">{title}</span>
               {names ? (
@@ -544,7 +546,7 @@ function AbTestToggle({
 }) {
   return (
     <div className="flex shrink-0 items-center gap-2">
-      <span className="text-xs font-semibold text-slate-500">A/B</span>
+      <span className="text-xs font-medium text-slate-500">A/B</span>
       <button
         type="button"
         role="switch"
@@ -559,7 +561,7 @@ function AbTestToggle({
         }`}
       >
         <span
-          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-wide text-white ${
+          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-caption font-bold tracking-wide text-white ${
             on ? "left-[6px]" : "right-[6px]"
           }`}
           aria-hidden
@@ -656,7 +658,7 @@ function CallWaitOption({
       >
         {title}
       </span>
-      <span className="mt-0.5 block text-[11px] leading-snug text-slate-500">
+      <span className="mt-0.5 block text-caption leading-snug text-slate-500">
         {hint}
       </span>
     </button>
@@ -746,7 +748,7 @@ function DropGap({
               aria-expanded={menuOpen}
               aria-controls={menuOpen ? menuId : undefined}
               onClick={onToggleMenu}
-              className="mx-2 inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-medium text-[#0c5290] transition duration-150 hover:bg-sky-200/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+              className="mx-2 inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-caption font-medium text-[#0c5290] transition duration-150 hover:bg-sky-200/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
             >
               <Plus
                 className={`h-3.5 w-3.5 transition ${menuOpen ? "rotate-45" : ""}`}
@@ -778,7 +780,7 @@ function DropGap({
           <div className="max-h-72 overflow-y-auto">
             {groups.map((group) => (
               <div key={group.id}>
-                <p className="px-3 py-1 text-[11px] font-semibold text-slate-500">
+                <p className="px-3 py-1 text-caption font-semibold text-slate-500">
                   {group.title}
                 </p>
                 <ul>
@@ -831,7 +833,7 @@ function WaitUnitToggle({
             onClick={() => {
               if (!selected) onChange(option);
             }}
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 ${
+            className={`rounded-full px-2.5 py-1 text-caption font-semibold capitalize transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 ${
               selected
                 ? "bg-[#0c5290] text-white"
                 : "text-slate-400 hover:text-slate-700"
@@ -889,7 +891,7 @@ function ManualSendAfter({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs font-semibold text-slate-500">Fallback</span>
+      <span className="text-xs font-medium text-slate-500">Fallback</span>
       <CampaignOnOffToggle
         size="sm"
         on={enabled}
@@ -939,7 +941,7 @@ function ManualSendAfter({
         </button>
         <span
           role="tooltip"
-          className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/info:block group-focus-within/info:block"
+          className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-caption font-medium leading-snug text-white shadow-sm group-hover/info:block group-focus-within/info:block"
         >
           {enabled
             ? "You send this yourself. If you haven't sent it by then, it goes out automatically."
@@ -977,13 +979,13 @@ function QueueRow({
               ? "Nobody is waiting to receive a connection request"
               : `${count} waiting to receive a connection request. Open the queue.`
           }
-          className="group/queue relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-semibold tabular-nums text-slate-600 hover:text-slate-800"
+          className="group/queue relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-caption font-semibold tabular-nums text-slate-600 hover:text-slate-800"
         >
           <User className="h-3.5 w-3.5" aria-hidden />
           {count}
           <span
             role="tooltip"
-            className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/queue:block"
+            className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-caption font-medium leading-snug text-white shadow-sm group-hover/queue:block"
           >
             <span className="block">
               {empty
@@ -1024,13 +1026,13 @@ function InviteWaitingChip({
           ? "No connection requests waiting for a response"
           : `${count} connection request${count === 1 ? "" : "s"} waiting for a response`
       }
-      className="group/invwait relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-semibold tabular-nums text-amber-800 hover:text-amber-950"
+      className="group/invwait relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-caption font-semibold tabular-nums text-amber-800 hover:text-amber-950"
     >
       <UserPlus className="h-3.5 w-3.5" aria-hidden />
       {count}
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/invwait:block"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-caption font-medium leading-snug text-white shadow-sm group-hover/invwait:block"
       >
         <span className="block">
           {empty
@@ -1071,13 +1073,13 @@ function WaitPeopleChip({
               nextLabel ? `, next ${nextLabel}` : ""
             }`
       }
-      className="group/waitn relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-semibold tabular-nums text-slate-600 hover:text-slate-800"
+      className="group/waitn relative inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-caption font-semibold tabular-nums text-slate-600 hover:text-slate-800"
     >
       <User className="h-3.5 w-3.5" aria-hidden />
       {count}
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/waitn:block"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1.5 text-left text-caption font-medium leading-snug text-white shadow-sm group-hover/waitn:block"
       >
         <span className="block">
           {empty ? "Nobody waiting yet" : `${count} waiting for the next send`}
@@ -1255,7 +1257,7 @@ function WaitRow({
         className="group/dup inline-flex items-center gap-0 rounded-full p-1 text-slate-400 opacity-0 transition-all duration-150 hover:gap-1 hover:bg-slate-100 hover:px-2.5 hover:text-slate-700 focus-visible:gap-1 focus-visible:bg-slate-100 focus-visible:px-2.5 focus-visible:text-slate-700 focus-visible:opacity-100 focus-visible:outline-none group-hover/wait:opacity-100"
       >
         <Copy className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
-        <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-semibold opacity-0 transition-all duration-150 group-hover/dup:max-w-[7.5rem] group-hover/dup:opacity-100 group-focus-visible/dup:max-w-[7.5rem] group-focus-visible/dup:opacity-100">
+        <span className="max-w-0 overflow-hidden whitespace-nowrap text-caption font-semibold opacity-0 transition-all duration-150 group-hover/dup:max-w-[7.5rem] group-hover/dup:opacity-100 group-focus-visible/dup:max-w-[7.5rem] group-focus-visible/dup:opacity-100">
           Duplicate
         </span>
       </button>
@@ -1276,7 +1278,7 @@ function WaitRow({
         className="group/del inline-flex items-center gap-0 rounded-full p-1 text-rose-500 opacity-0 transition-all duration-150 hover:gap-1 hover:bg-rose-50 hover:px-2.5 hover:text-rose-700 focus-visible:gap-1 focus-visible:bg-rose-50 focus-visible:px-2.5 focus-visible:text-rose-700 focus-visible:opacity-100 focus-visible:outline-none group-hover/wait:opacity-100"
       >
         <X className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
-        <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-semibold opacity-0 transition-all duration-150 group-hover/del:max-w-[7.5rem] group-hover/del:opacity-100 group-focus-visible/del:max-w-[7.5rem] group-focus-visible/del:opacity-100">
+        <span className="max-w-0 overflow-hidden whitespace-nowrap text-caption font-semibold opacity-0 transition-all duration-150 group-hover/del:max-w-[7.5rem] group-hover/del:opacity-100 group-focus-visible/del:max-w-[7.5rem] group-focus-visible/del:opacity-100">
           Delete wait step
         </span>
       </button>
@@ -1300,7 +1302,7 @@ function ChannelToggle({
       type="button"
       aria-pressed={on}
       onClick={() => onChange(!on)}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-medium ${
         on
           ? "bg-sky-50 text-[#0c5290]"
           : "bg-slate-100 text-slate-500 hover:text-slate-700"
@@ -1407,7 +1409,7 @@ export function StepInlineEditor({
           compare fairly across coaches. Leave the test above to edit it.
         </p>
         {all.map((v) => (
-          <div key={v.key} className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">
+          <div key={v.key} className={cardClass("soft", "p-3 text-sm")}>
             <p className="text-xs font-medium text-slate-500">
               Version {v.key}
               {v.label && v.label !== v.key ? `: ${v.label}` : ""}
@@ -1707,7 +1709,7 @@ export function StepInlineEditor({
                     role="tab"
                     aria-selected={selected}
                     onClick={() => setActiveVariantKey(variant.key)}
-                    className={`inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-[13px] font-semibold leading-tight transition duration-150 ${
+                    className={`inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-ui font-semibold leading-tight transition duration-150 ${
                       levelBranch
                         ? selected
                           ? "bg-[#1a8fd4] text-white"
@@ -1723,7 +1725,7 @@ export function StepInlineEditor({
                     {levelBranch ? levelName : variant.key}
                     {isBest || rate != null ? (
                       <span
-                        className={`text-[11px] font-medium tabular-nums ${
+                        className={`text-caption font-medium tabular-nums ${
                           selected ? "text-white/80" : "text-slate-400"
                         }`}
                       >
@@ -2247,7 +2249,7 @@ export function CampaignSequenceBuilder({
                       </button>
                       <span
                         role="tooltip"
-                        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm group-hover/fbdef:block group-focus-within/fbdef:block"
+                        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-caption font-medium leading-snug text-white shadow-sm group-hover/fbdef:block group-focus-within/fbdef:block"
                       >
                         {campaignFallbackEnabled(manualFallbackHours)
                           ? "New manual messages auto-send after 1 day if you don't. Each message can still change that."
@@ -2306,7 +2308,7 @@ export function CampaignSequenceBuilder({
                   aria-expanded
                   aria-controls={pickerId}
                   onClick={() => setPickerOpen(false)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                  className={buttonClass("second")}
                 >
                   <Plus className="h-4 w-4" aria-hidden />
                   Add steps
@@ -2328,13 +2330,13 @@ export function CampaignSequenceBuilder({
                   <button
                     type="button"
                     onClick={() => setPickerOpen(true)}
-                    className="flex min-h-[7.25rem] flex-col items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                    className={cardClass("raised", "flex min-h-[7.25rem] flex-col items-start gap-3 px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2")}
                   >
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-[#0c5290]">
                       <Plus className="h-5 w-5" strokeWidth={2.1} aria-hidden />
                     </span>
                     <span>
-                      <span className="block text-[15px] font-semibold text-slate-900">
+                      <span className="block text-ui font-semibold text-slate-900">
                         Add steps
                       </span>
                       <span className="mt-0.5 block text-sm leading-snug text-slate-600">
@@ -2345,7 +2347,7 @@ export function CampaignSequenceBuilder({
                   <button
                     type="button"
                     onClick={onChooseTemplate}
-                    className="flex min-h-[7.25rem] flex-col items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                    className={cardClass("raised", "flex min-h-[7.25rem] flex-col items-start gap-3 px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2")}
                   >
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-[#0c5290]">
                       <LayoutTemplate
@@ -2355,7 +2357,7 @@ export function CampaignSequenceBuilder({
                       />
                     </span>
                     <span>
-                      <span className="block text-[15px] font-semibold text-slate-900">
+                      <span className="block text-ui font-semibold text-slate-900">
                         Choose from template
                       </span>
                       <span className="mt-0.5 block text-sm leading-snug text-slate-600">
@@ -2374,7 +2376,7 @@ export function CampaignSequenceBuilder({
                   type="button"
                   aria-expanded={false}
                   onClick={() => setPickerOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#0c5290] px-6 py-3 text-base font-semibold text-white hover:bg-[#0a4578] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                  className={buttonClass("main")}
                 >
                   <Plus className="h-5 w-5" aria-hidden />
                   Add steps
@@ -2490,7 +2492,7 @@ export function CampaignSequenceBuilder({
                     </div>
                   ) : (
                     <article
-                      className="rounded-xl border border-slate-200 bg-white"
+                      className={cardClass("plain")}
                       onDragOver={(event) => {
                         if (isMergeFieldDrag()) return;
                         event.preventDefault();
@@ -2544,7 +2546,7 @@ export function CampaignSequenceBuilder({
                                   />
                                   <span
                                     role="tooltip"
-                                    className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-center text-[11px] font-medium leading-snug text-white shadow-sm group-hover/warn:block"
+                                    className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-center text-caption font-medium leading-snug text-white shadow-sm group-hover/warn:block"
                                   >
                                     {incompleteHint}
                                   </span>
@@ -2574,13 +2576,13 @@ export function CampaignSequenceBuilder({
                               {step.step_type === "invite" &&
                               inviteNoConnectFrom(step.config)
                                 .on_no_connect === "other_campaign" ? (
-                                <span className="inline-flex shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-800">
+                                <span className="inline-flex shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-caption font-medium text-rose-800">
                                   If no connect
                                 </span>
                               ) : null}
                               {step.step_type === "call" ? (
                                 callWaitFrom(step.config) ? (
-                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-950">
+                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-caption font-medium text-amber-950">
                                     <PhoneCall
                                       className="h-3 w-3"
                                       aria-hidden
@@ -2588,7 +2590,7 @@ export function CampaignSequenceBuilder({
                                     Waits
                                   </span>
                                 ) : (
-                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium text-slate-600">
                                     <Bell className="h-3 w-3" aria-hidden />
                                     Reminder
                                   </span>
@@ -2601,7 +2603,7 @@ export function CampaignSequenceBuilder({
                                   !campaignFallbackEnabled(
                                     step.fallback_hours
                                   ) ? (
-                                    <span className="inline-flex shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-800">
+                                    <span className="inline-flex shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-caption font-medium text-rose-800">
                                       No fallback
                                     </span>
                                   ) : null}
@@ -2633,7 +2635,7 @@ export function CampaignSequenceBuilder({
                                   type="button"
                                   aria-expanded={open}
                                   onClick={() => toggle(idx)}
-                                  className="min-w-0 flex-1 text-left text-[13px] leading-relaxed text-slate-600 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                                  className="min-w-0 flex-1 text-left text-ui leading-relaxed text-slate-600 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
                                 >
                                   <span className="line-clamp-3 max-w-prose">
                                     {step.step_type === "react" ||
@@ -2730,11 +2732,11 @@ export function CampaignSequenceBuilder({
 
       <ContentWithRailAside className="lg:top-24">
         {sidebarExtra ? <div className="mb-4">{sidebarExtra}</div> : null}
-        <div className="rounded-xl bg-slate-50 px-3 py-3">
+        <div className={cardClass("soft", "px-3 py-3")}>
           <p className="px-1.5 text-sm font-semibold text-slate-900">
             Actions
           </p>
-          <p className="mt-0.5 px-1.5 text-[11px] leading-snug text-slate-500">
+          <p className="mt-0.5 px-1.5 text-caption leading-snug text-slate-500">
             Drag onto the sequence.
           </p>
           <div className="mt-3 space-y-2">

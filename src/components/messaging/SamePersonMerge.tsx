@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
+import { cardClass } from "@/components/ui/Card";
 
 type Match = {
   contactId: string | null;
@@ -115,7 +116,7 @@ export function SamePersonMerge({
   return (
     <div className="mt-3">
       {open ? (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <div className={cardClass("soft", "px-3 py-2.5")}>
           <label className="block text-xs font-medium text-slate-700">
             Same person as
             <input

@@ -37,6 +37,7 @@ import {
   type SupportTicketType,
 } from "@/lib/support/tickets";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
 
 type PendingMedia = { key: string; file: File; previewUrl: string };
 
@@ -127,7 +128,7 @@ export function CoachSearchCombobox({
           setOpen((prev) => !prev);
           setQuery("");
         }}
-        className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-[15px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+        className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-ui text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
@@ -511,7 +512,7 @@ export function SupportCreateTicketComposer({
             <select
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-ui text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
               {assigneeOptions!.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -529,7 +530,7 @@ export function SupportCreateTicketComposer({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="A short summary of what's going on…"
-            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-ui text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
           />
         </label>
 
@@ -591,7 +592,7 @@ export function SupportCreateTicketComposer({
                     onChange={(e) => setDetails(e.target.value)}
                     placeholder="What happened? Type here, or tap the mic to speak — we’ll fill the text and keep the recording so support can hear your tone."
                     rows={4}
-                    className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 pr-11 pb-10 text-[15px] text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 pr-11 pb-10 text-ui text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                   />
                   <div className="absolute bottom-2 right-2">{micButton}</div>
                 </div>
@@ -613,7 +614,7 @@ export function SupportCreateTicketComposer({
                   />
                 ) : p.kind === "audio" ? (
                   <div className="flex h-16 w-44 flex-col justify-center gap-0.5 rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
-                    <span className="truncate text-[10px] font-medium text-slate-500">
+                    <span className="truncate text-caption font-medium text-slate-500">
                       {p.name}
                     </span>
                     <audio controls src={p.previewUrl} className="h-8 w-full" />
@@ -729,7 +730,7 @@ export function SupportCreateTicketComposer({
                   type="button"
                   disabled={!canSubmit}
                   onClick={() => void submit()}
-                  className="rounded-lg bg-sky-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className={buttonClass("main")}
                 >
                   {saving
                     ? isAdminCreate

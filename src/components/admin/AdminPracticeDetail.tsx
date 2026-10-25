@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { PracticeBrief } from "@/components/practice/PracticeBrief";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { emptyDecision } from "@/lib/practiceKnowledge/decisionDefaults";
 import type {
@@ -151,7 +153,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
           ← Coach records
         </Link>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-slate-900">{name}</h2>
+          <h2 className="text-subhead font-semibold text-slate-900">{name}</h2>
           <button
             type="button"
             onClick={() => {
@@ -162,7 +164,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
               }
               window.location.assign("/admin/blueprint/coach/blueprint");
             }}
-            className="rounded-full bg-[#051e36] px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-[#0c5290]"
+            className={buttonClass("main", "small")}
           >
             Open their blueprint
           </button>
@@ -177,7 +179,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
         <p className="text-sm text-slate-500">Loading…</p>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className={cardClass("plain", "flex flex-wrap items-center gap-3 p-4")}>
             <label className="text-sm text-slate-600">
               Status{" "}
               <select
@@ -200,7 +202,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
               type="button"
               disabled={busy}
               onClick={() => void patch({ status: "admin_reviewed", admin_reviewed: true, sync_brain: true })}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium"
+              className={buttonClass("second", "small")}
             >
               Mark reviewed
             </button>
@@ -208,7 +210,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
               type="button"
               disabled={busy}
               onClick={() => void generateReport()}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium"
+              className={buttonClass("second", "small")}
             >
               {busy ? "Writing…" : "Write recommendation"}
             </button>
@@ -216,7 +218,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
               type="button"
               disabled={busy}
               onClick={() => void patch({ status: "ready_to_build", sync_brain: true })}
-              className="rounded-lg bg-[#0c5290] px-3 py-1.5 text-sm font-semibold text-white"
+              className={buttonClass("main", "small")}
             >
               Ready to build
             </button>
@@ -230,7 +232,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
             ) : null}
           </div>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 md:p-8">
+          <section className={cardClass("plain", "p-5 md:p-8")}>
             <PracticeBrief
               readOnly
               payload={knowledge.payload}
@@ -251,7 +253,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
             />
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+          <section className={cardClass("plain", "space-y-3 p-5")}>
             <h2 className="text-base font-semibold">Decision Record</h2>
             <p className="text-sm text-slate-600">
               Lock this after the call. It is the source of truth for LinkedIn,
@@ -303,7 +305,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
                 type="button"
                 disabled={busy}
                 onClick={() => void saveDecision(false)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium"
+                className={buttonClass("second")}
               >
                 Save draft
               </button>
@@ -311,7 +313,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
                 type="button"
                 disabled={busy}
                 onClick={() => void saveDecision(true)}
-                className="rounded-lg bg-[#0c5290] px-3 py-2 text-sm font-semibold text-white"
+                className={buttonClass("main")}
               >
                 Lock Decision Record
               </button>

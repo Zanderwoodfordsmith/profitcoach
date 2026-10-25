@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Ban, Check, Plus, Search, Trash2 } from "lucide-react";
 import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   audienceItemSourceLabel,
   displayListPersonName,
@@ -448,7 +450,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
           <button
             type="button"
             onClick={() => setShowCreate((value) => !value)}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-[#0c5290] hover:bg-sky-50"
+            className={buttonClass("quiet", "small")}
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             New
@@ -471,7 +473,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
               type="button"
               disabled={busy || !newName.trim()}
               onClick={() => void createList()}
-              className="rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+              className={buttonClass("main", "small")}
             >
               Add
             </button>
@@ -492,7 +494,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
               <span className="min-w-0 flex-1 truncate text-sm font-medium">
                 Blacklist
               </span>
-              <span className="text-[11px] text-rose-700">
+              <span className="text-caption text-rose-700">
                 {blacklist.item_count}
               </span>
             </button>
@@ -519,7 +521,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {list.name}
                   </span>
-                  <span className="text-[11px] text-sky-800">
+                  <span className="text-caption text-sky-800">
                     {list.item_count}
                   </span>
                 </button>
@@ -562,7 +564,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                         busy || (!selectedIds.length && items.length === 0)
                       }
                       onClick={() => setCampaignMenu((value) => !value)}
-                      className="rounded-xl bg-[#0c5290] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50"
+                      className={buttonClass("main", "small")}
                     >
                       {selectedIds.length
                         ? `Add ${selectedIds.length} to campaign`
@@ -595,7 +597,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                     type="button"
                     disabled={busy || !selectedIds.length}
                     onClick={() => void blacklistSelected()}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className={buttonClass("second", "small")}
                   >
                     Blacklist
                   </button>
@@ -604,7 +606,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                   type="button"
                   disabled={busy || !selectedIds.length}
                   onClick={() => void removeSelected()}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className={buttonClass("second", "small")}
                 >
                   Remove
                 </button>
@@ -670,7 +672,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                           busy || (!searchUrl.trim() && !searchKeywords.trim())
                         }
                         onClick={() => void runSearch(null)}
-                        className="rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                        className={buttonClass("main", "small")}
                       >
                         Search
                       </button>
@@ -679,7 +681,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                           type="button"
                           disabled={busy}
                           onClick={() => void runSearch(searchCursor)}
-                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium"
+                          className={buttonClass("second", "small")}
                         >
                           Next page
                         </button>
@@ -703,7 +705,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                                 })),
                             })
                           }
-                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium"
+                          className={buttonClass("second", "small")}
                         >
                           Save {searchHits.filter((hit) => hit.linkedin_url).length}{" "}
                           to list
@@ -748,7 +750,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                       type="button"
                       disabled={busy || !pasteText.trim()}
                       onClick={() => void addPeople({ text: pasteText })}
-                      className="rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                      className={buttonClass("main", "small")}
                     >
                       Add URLs
                     </button>
@@ -794,7 +796,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                           ],
                         })
                       }
-                      className="rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                      className={buttonClass("main", "small")}
                     >
                       Add person
                     </button>
@@ -826,7 +828,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
               </label>
             </div>
 
-            <div className="mx-5 mb-5 overflow-hidden rounded-lg border border-slate-200">
+            <div className={cardClass("plain", "mx-5 mb-5 overflow-hidden")}>
               <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2">
                 <input
                   type="checkbox"
@@ -879,11 +881,11 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                             </div>
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-0.5">
-                            <span className="text-[11px] font-medium text-slate-600">
+                            <span className="text-caption font-medium text-slate-600">
                               {audienceItemSourceLabel(row.source)}
                             </span>
                             {row.in_campaign ? (
-                              <span className="inline-flex items-center gap-0.5 text-[11px] text-emerald-800">
+                              <span className="inline-flex items-center gap-0.5 text-caption text-emerald-800">
                                 <Check className="h-3 w-3" aria-hidden />
                                 In a campaign
                               </span>

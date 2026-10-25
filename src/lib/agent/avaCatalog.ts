@@ -97,6 +97,12 @@ const SKILL_GROUPS: AvaSkillGroup[] = [
     capabilityIds: ["campaigns", "campaign-people", "campaign-messaging"],
   },
   {
+    id: "numbers",
+    title: "Numbers",
+    hint: "Find the one stage holding them back most, from their own numbers.",
+    capabilityIds: ["constraint"],
+  },
+  {
     id: "sales",
     title: "Sales",
     hint: "The Profit System pitch they learn, then tailor to this prospect.",

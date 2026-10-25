@@ -55,7 +55,7 @@ export function CampaignLaunchCheck({
         <ul className="mt-2 list-disc space-y-1 pl-5">
           {[...blockers, ...warnings].map((i) => (
             <li key={`${i.code}-${i.step ?? ""}`}>
-              {i.level === "blocker" ? <span className="font-semibold">Must fix: </span> : null}
+              {i.level === "blocker" ? <span className="font-medium">Must fix: </span> : null}
               {i.message}
             </li>
           ))}

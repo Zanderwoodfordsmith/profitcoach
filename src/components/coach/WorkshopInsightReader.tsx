@@ -15,6 +15,8 @@ import { computeFocusAreas } from "@/lib/bossScores";
 import { getTopPriorityPlaybooks } from "@/lib/playbookSessionNotes";
 import { WorkshopPriorityPlaybookCard } from "@/components/coach/WorkshopPriorityPlaybookCard";
 import { InsightsGeneratingProgress } from "@/components/coach/InsightsGeneratingProgress";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   BOSS_SCORE_SATURATED,
   type BossScoreHue,
@@ -335,7 +337,7 @@ function FullOverviewModal({
       onClick={onClose}
     >
       <div
-        className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-slate-900/10 sm:p-10"
+        className={cardClass("raised", "relative my-4 w-full max-w-5xl p-8 sm:p-10")}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -349,7 +351,7 @@ function FullOverviewModal({
 
         <div className="min-w-0 border-b border-slate-200 pb-6">
           <p
-            className="text-xs font-bold uppercase tracking-widest"
+            className="text-xs font-semibold uppercase tracking-widest"
             style={{ color: levelAccentColor }}
           >
             {levelLabel}
@@ -538,7 +540,7 @@ export function WorkshopInsightReader({
           <button
             type="button"
             onClick={() => setFullOverviewOpen(true)}
-            className="mt-4 text-sm font-semibold text-sky-600 hover:text-sky-700"
+            className={buttonClass("quiet", "normal", "-ml-5 mt-4")}
           >
             See full overview
           </button>
@@ -546,7 +548,7 @@ export function WorkshopInsightReader({
 
         {showFooterPlaybooks ? (
           <div className="mt-4">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
               Priority playbooks
             </p>
             <div className="flex flex-wrap gap-2">

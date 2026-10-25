@@ -1,5 +1,7 @@
 "use client";
 
+import { cardClass } from "@/components/ui/Card";
+
 type BrainExpandableItemProps = {
   id: string;
   open: boolean;
@@ -21,7 +23,7 @@ export function BrainExpandableItem({
   children,
 }: BrainExpandableItemProps) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/50">
+    <div className={cardClass("plain")}>
       <button
         type="button"
         onClick={onToggle}

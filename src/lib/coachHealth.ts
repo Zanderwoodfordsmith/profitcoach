@@ -7,8 +7,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
  */
 
 const DAY = 86_400_000;
-const ACCEPTED = new Set(["connected", "in_sequence", "replied", "interested", "assessment_sent", "assessment_done", "call_offered", "completed"]);
-const INTERESTED = new Set(["interested", "assessment_sent", "assessment_done", "call_offered"]);
+export const ACCEPTED = new Set(["connected", "in_sequence", "replied", "interested", "assessment_sent", "assessment_done", "call_offered", "completed"]);
+export const INTERESTED = new Set(["interested", "assessment_sent", "assessment_done", "call_offered"]);
 const PROSPECT_CAL = /discovery|boss|score|roadmap|30 minute call|strategy|value session|introductory|profit|book a call|speak with|scorecard|call with/i;
 const CLIENT_CAL = /90-minute coaching|coaching session|extra call|next steps/i;
 
@@ -98,7 +98,7 @@ export function diagnose(r: Omit<CoachHealthRow, "level" | "stuck_at" | "next_st
   return { level: "green", stuck_at: "On track", next_step: "Keep going; share what's working with the group." };
 }
 
-function isProspectCall(calendarName: unknown, prospectName: unknown): boolean {
+export function isProspectCall(calendarName: unknown, prospectName: unknown): boolean {
   const cal = String(calendarName ?? "");
   return !CLIENT_CAL.test(cal) && PROSPECT_CAL.test(cal) && !/demo|test/i.test(String(prospectName ?? ""));
 }

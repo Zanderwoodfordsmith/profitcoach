@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { trafficLabel } from "@/lib/trafficSource";
 
@@ -33,7 +34,7 @@ export function AdminTrafficSources({ from, to }: { from?: string; to?: string }
 
   if (!rows) return null;
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className={cardClass("plain", "p-5")}>
       <h2 className="text-sm font-semibold text-slate-900">Where BOSS Scores came from</h2>
       <p className="mt-0.5 text-xs text-slate-500">
         The tag on the link each person opened. Coaches make tagged links in Toolkit. {total} BOSS Scores in this period.

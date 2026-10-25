@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import type { DeckCard, Introducer, NetworkRating, NetworkSummary } from "@/lib/referrals/network";
 import { NetworkPhoto, NetworkSwipe } from "@/components/referrals/NetworkSwipe";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Payload = { summary: NetworkSummary; deck: DeckCard[]; introducers: Introducer[] };
 
@@ -226,7 +228,7 @@ export function ReferralsHub({ coachId, coachName }: { coachId: string; coachNam
         {!data ? (
           error ? null : <p className="mt-8 text-sm text-slate-500">Loading the network…</p>
         ) : s && s.total === 0 ? (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-700">
+          <div className={cardClass("plain", "mt-6 p-8 text-center text-sm text-slate-700")}>
             <p>{coachName}&apos;s network isn&apos;t loaded.</p>
             <p className="mt-2 text-slate-500">
               {s.linkedinConnected
@@ -262,7 +264,7 @@ export function ReferralsHub({ coachId, coachName }: { coachId: string; coachNam
                 onUndo={() => void undo()}
               />
             ) : (
-              <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-700">
+              <div className={cardClass("plain", "mx-auto max-w-md p-8 text-center text-sm text-slate-700")}>
                 {s && s.unrated > 0 ? (
                   "Loading the next people…"
                 ) : (
@@ -299,11 +301,11 @@ export function ReferralsHub({ coachId, coachName }: { coachId: string; coachNam
         ) : null}
         <div className="mt-4 space-y-3">
           {data?.introducers.map((intro) => (
-            <details key={intro.coachId} className="group rounded-xl border border-slate-200 bg-white">
+            <details key={intro.coachId} className={cardClass("plain", "group")}>
               <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3">
                 <NetworkPhoto name={intro.name} url={intro.avatarUrl} size="sm" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-slate-900">{intro.name}</span>
+                  <span className="block text-sm font-medium text-slate-900">{intro.name}</span>
                   <span className="block text-xs text-slate-500">
                     Knows {intro.people.length} {intro.people.length === 1 ? "person" : "people"} on these campaign lists
                   </span>
@@ -314,7 +316,7 @@ export function ReferralsHub({ coachId, coachName }: { coachId: string; coachNam
                     e.preventDefault();
                     void copyAsk(intro);
                   }}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className={buttonClass("second", "small")}
                 >
                   {copied === intro.coachId ? "Copied" : "Copy ask"}
                 </button>

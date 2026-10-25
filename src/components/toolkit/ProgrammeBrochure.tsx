@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import type { ProgrammeBrochure } from "@/lib/practiceKnowledge/brochure";
 import { GOOGLE_FONTS_HREF } from "@/lib/printPack/brand.js";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import "./brochure.css";
 
 function blueprintHref(pathname: string, href: string) {
@@ -206,11 +208,6 @@ export function ProgrammeBrochureCard({
     }
   }
 
-  const button =
-    "rounded-full border px-3.5 py-1.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:opacity-60";
-  const primary = `${button} border-[#0c5290] bg-[#0c5290] text-white hover:bg-[#0a467b]`;
-  const secondary = `${button} border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900`;
-
   return (
     <section className="space-y-6">
       <div className="max-w-3xl space-y-2">
@@ -220,7 +217,7 @@ export function ProgrammeBrochureCard({
         </p>
       </div>
 
-      <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.05),0_3px_8px_-3px_rgb(15_23_42/0.08)]">
+      <article className={cardClass("plain", "overflow-hidden")}>
         {!pack || !pack.ready ? (
           <div className="space-y-4 p-6 sm:p-8">
             <h3 className="text-lg font-semibold text-slate-900">90-day programme</h3>
@@ -231,7 +228,7 @@ export function ProgrammeBrochureCard({
               <ul className="flex flex-wrap gap-2">
                 {pack.gaps.map((gap) => (
                   <li key={gap.href + gap.label}>
-                    <Link href={blueprintHref(pathname, gap.href)} className={`${secondary} inline-block`}>
+                    <Link href={blueprintHref(pathname, gap.href)} className={buttonClass("second", "small")}>
                       {gap.label}
                     </Link>
                   </li>
@@ -261,7 +258,7 @@ export function ProgrammeBrochureCard({
                   />
                   Show the fee
                 </label>
-                <button type="button" className={primary} disabled={busy} onClick={handlePrint}>
+                <button type="button" className={buttonClass("main")} disabled={busy} onClick={handlePrint}>
                   {busy ? "Opening…" : "Print or save PDF"}
                 </button>
               </div>

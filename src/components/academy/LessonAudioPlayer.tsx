@@ -10,7 +10,7 @@ type Props = {
 export function LessonAudioPlayer({ src, title, className }: Props) {
   return (
     <div className={className}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+      <p className="text-kicker font-semibold uppercase text-slate-500">
         Listen
       </p>
       <audio

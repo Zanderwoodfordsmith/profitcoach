@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AdminAcademyImportStatus } from "@/components/academy/AdminAcademyImportStatus";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { cardClass } from "@/components/ui/Card";
 import { loadAcademyImportOverrides } from "@/lib/academy/academyImportOverrides";
 import { loadAcademyImportSnapshot } from "@/lib/academy/academyImportSnapshot";
 import { loadLessonImportStatusReport } from "@/lib/academy/lessonImportStatus";
@@ -29,7 +30,7 @@ export default async function AdminLessonImportPage() {
         }
         tabs={<LessonImportTabs />}
       />
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className={cardClass("plain", "p-5")}>
         <h2 className="text-base font-semibold text-slate-900">Growth system overview</h2>
         <p className="mt-1 text-sm text-slate-600">
           Internal preview of the recommended coaching business journey. The horizontal
@@ -37,7 +38,7 @@ export default async function AdminLessonImportPage() {
         </p>
         <Link
           href="/admin/growth-system"
-          className="mt-3 inline-flex text-sm font-semibold text-sky-700 hover:text-sky-900"
+          className="mt-3 inline-flex text-sm font-medium text-sky-700 hover:text-sky-900"
         >
           Open overview →
         </Link>

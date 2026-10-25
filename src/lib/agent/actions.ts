@@ -30,6 +30,8 @@ type ActionRow = {
     rows?: ActionDetail[];
     warning?: string | null;
     preview?: string | null;
+    before?: string | null;
+    draft?: boolean;
     coach_name?: string | null;
   } | null;
   status: AgentActionStatus;
@@ -55,6 +57,8 @@ export function actionView(row: ActionRow): AgentActionView {
     details: row.details?.rows ?? [],
     warning: row.details?.warning ?? null,
     preview: row.details?.preview ?? null,
+    before: row.details?.before ?? null,
+    draft: Boolean(row.details?.draft),
     coachName: row.details?.coach_name ?? null,
     status: row.status,
     result: row.result,
@@ -73,6 +77,8 @@ export async function createPendingAction(opts: {
   details: ActionDetail[];
   warning?: string;
   preview?: string;
+  before?: string;
+  draft?: boolean;
 }): Promise<AgentActionView> {
   const { data, error } = await supabaseAdmin
     .from("ai_agent_actions")
@@ -87,6 +93,8 @@ export async function createPendingAction(opts: {
         rows: opts.details,
         warning: opts.warning ?? null,
         preview: opts.preview ? opts.preview.slice(0, 12_000) : null,
+        before: opts.before ? opts.before.slice(0, 12_000) : null,
+        draft: Boolean(opts.draft),
         coach_name: opts.coachName,
       },
     })

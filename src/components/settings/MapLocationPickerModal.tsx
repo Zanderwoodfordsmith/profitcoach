@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const MapLocationPickerLeaflet = dynamic(
   () =>
@@ -91,7 +93,7 @@ export function MapLocationPickerModal({
       aria-modal="true"
       aria-labelledby="map-picker-title"
     >
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
+      <div className={cardClass("raised", "max-h-[90vh] w-full max-w-2xl overflow-y-auto p-5")}>
         <div className="flex items-start justify-between gap-3">
           <h2
             id="map-picker-title"
@@ -102,7 +104,7 @@ export function MapLocationPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            className={buttonClass("quiet", "small")}
           >
             Close
           </button>
@@ -127,7 +129,7 @@ export function MapLocationPickerModal({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className={buttonClass("quiet")}
           >
             Cancel
           </button>
@@ -135,7 +137,7 @@ export function MapLocationPickerModal({
             type="button"
             onClick={() => void handleSave()}
             disabled={busy}
-            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            className={buttonClass("main")}
           >
             {busy ? "Saving…" : "Save pin"}
           </button>

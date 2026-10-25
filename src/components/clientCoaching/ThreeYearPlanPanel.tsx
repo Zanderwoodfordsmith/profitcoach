@@ -8,6 +8,8 @@ import type {
   QuarterKey,
   YearTargets,
 } from "@/lib/clientCoaching/types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   plan: CoachingPlanDocument;
@@ -32,7 +34,7 @@ function YearCard({
   onChange: (next: YearTargets) => void;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className={cardClass("plain", "p-4")}>
       <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
       <label className="mt-3 block">
         <span className={LABEL}>Revenue</span>
@@ -105,7 +107,7 @@ export function ThreeYearPlanPanel({
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+          <h2 className="text-subhead font-semibold tracking-tight text-slate-900">
             3-Year Plan
           </h2>
           <p className="mt-1 max-w-xl text-sm text-slate-600">
@@ -124,7 +126,7 @@ export function ThreeYearPlanPanel({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:opacity-60"
+            className={buttonClass("main")}
           >
             {saving ? "Saving…" : "Save plan"}
           </button>
@@ -191,13 +193,13 @@ export function ThreeYearPlanPanel({
             return (
               <div
                 key={meta.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className={cardClass("plain", "p-4")}
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <h4 className="text-sm font-semibold text-slate-900">
                     {meta.label}
                   </h4>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <span className="text-kicker font-semibold uppercase text-slate-400">
                     {meta.group}
                   </span>
                 </div>
@@ -303,7 +305,7 @@ export function ThreeYearPlanPanel({
                     {meta.label}
                   </p>
                   {isCurrent ? (
-                    <span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    <span className="rounded-full bg-sky-600 px-2 py-0.5 text-kicker font-semibold uppercase text-white">
                       Now
                     </span>
                   ) : null}

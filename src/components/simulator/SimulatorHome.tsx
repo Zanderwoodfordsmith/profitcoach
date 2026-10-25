@@ -15,6 +15,8 @@ import type { CallStart, Difficulty, SimAssessmentRow, SimClient, SimSessionRow 
 import { CreateClient } from "./CreateClient";
 import { SimCall, type SimCallSetup } from "./SimCall";
 import { formatSimDate, useSimApi, useSimPrefix } from "./simApi";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import "./sim.css";
 
 /** Quick raises every voice about 12 per cent (ElevenLabs caps speed at 1.2). */
@@ -292,7 +294,7 @@ export function SimulatorHome() {
                 {client.name}, {client.age} · {client.business}, {client.place} · {client.personality}
               </p>
               <p className="mt-2 text-[clamp(1.6rem,2.6vw,2.4rem)] font-light leading-[1.12] tracking-[-0.02em]">{client.line}</p>
-              <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-[var(--sim-cream-soft)]">{client.brief}</p>
+              <p className="mt-3 max-w-xl text-read leading-relaxed text-[var(--sim-cream-soft)]">{client.brief}</p>
               {mineCustom ? (
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-[var(--sim-cream-soft)]">
                   {draft ? (
@@ -457,19 +459,19 @@ export function SimulatorHome() {
 function SharedClients({ clients, onPick }: { clients: SimClient[]; onPick: (c: SimClient) => void }) {
   return (
     <section className="mx-auto mt-10 w-full max-w-[1280px] px-1">
-      <h2 className="text-xl font-semibold tracking-tight text-slate-900">From other coaches</h2>
+      <h2 className="text-subhead font-semibold tracking-tight text-slate-900">From other coaches</h2>
       <p className="mt-1 text-sm text-slate-500">Situations coaches have met and shared. Names and details are changed.</p>
       <ul className="sim-scroll mt-4 flex snap-x gap-4 overflow-x-auto pb-2">
         {clients.map((c) => (
           <li key={c.id} className="w-64 shrink-0 snap-start">
-            <button type="button" onClick={() => onPick(c)} className="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:shadow-lg">
+            <button type="button" onClick={() => onPick(c)} className={cardClass("raised", "group flex h-full w-full flex-col overflow-hidden text-left transition hover:shadow-lg")}>
               <div className="sim-room flex items-center gap-3 px-4 py-4">
                 <span className="sim-face relative z-[2] h-14 w-14 shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={faceOf(c)} alt="" />
                 </span>
                 <span className="relative z-[2] min-w-0">
-                  <span className="block truncate text-[0.9375rem] font-medium text-[var(--sim-cream)]">{c.name}</span>
+                  <span className="block truncate text-ui font-medium text-[var(--sim-cream)]">{c.name}</span>
                   <span className="block truncate text-xs text-[var(--sim-cream-soft)]">{c.business}</span>
                 </span>
               </div>
@@ -491,7 +493,7 @@ function WeakSpotCard({ spot, client, onPractise }: { spot: WeakSpot; client: Si
   return (
     <section className="sim-room rounded-2xl p-6">
       <div className="relative z-[2]">
-        <p className="flex items-center gap-2 text-[0.6875rem] font-semibold uppercase tracking-[0.2em] text-[var(--sim-cream-faint)]">
+        <p className="flex items-center gap-2 text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">
           <Target className="h-4 w-4" aria-hidden /> Your weak spot
         </p>
         <p className="mt-2 text-2xl font-light tracking-[-0.02em] text-[var(--sim-cream)]">{spot.label}</p>
@@ -651,7 +653,7 @@ function SituationMenu({
         onClick={() => setOpen((o) => !o)}
       >
         <span className="min-w-0 flex-1 text-left">
-          <span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--sim-cream-faint)]">
+          <span className="block text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">
             {SITUATION_GROUPS.find((g) => g.id === current.group)?.title}
           </span>
           <span className="mt-1 block truncate">{current.title}</span>
@@ -666,7 +668,7 @@ function SituationMenu({
         >
           {SITUATION_GROUPS.map((g) => (
             <div key={g.id} className="py-1">
-              <p className="px-3 pb-1 pt-2 text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--sim-cream-faint)]">{g.title}</p>
+              <p className="px-3 pb-1 pt-2 text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">{g.title}</p>
               {SITUATIONS.filter((s) => s.group === g.id).map((s) => {
                 const locked = Boolean(s.needsPrevious && !met.has(clientId));
                 return (
@@ -682,8 +684,8 @@ function SituationMenu({
                     className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-[var(--sim-glass-strong)] ${s.id === value ? "bg-[var(--sim-glass-strong)]" : ""}`}
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[0.9375rem] font-medium text-[var(--sim-cream)]">{s.title}</span>
-                      <span className="mt-0.5 block text-[0.8125rem] leading-snug text-[var(--sim-cream-soft)]">
+                      <span className="block text-ui font-medium text-[var(--sim-cream)]">{s.title}</span>
+                      <span className="mt-0.5 block text-ui leading-snug text-[var(--sim-cream-soft)]">
                         {locked ? "Do a session with this client first." : s.line}
                       </span>
                     </span>
@@ -695,7 +697,7 @@ function SituationMenu({
           ))}
           {/* Sales calls live in the Call simulator under Get Clients → Scripts. */}
           <div className="border-t border-[var(--sim-cream-line)] py-1">
-            <p className="px-3 pb-1 pt-2 text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--sim-cream-faint)]">Sales calls</p>
+            <p className="px-3 pb-1 pt-2 text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">Sales calls</p>
             {[
               { call: "review", title: "BOSS Score Review" },
               { call: "roadmap", title: "Profit Roadmap call" },
@@ -706,8 +708,8 @@ function SituationMenu({
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-[var(--sim-glass-strong)]"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[0.9375rem] font-medium text-[var(--sim-cream)]">{c.title}</span>
-                  <span className="mt-0.5 block text-[0.8125rem] leading-snug text-[var(--sim-cream-soft)]">In the Call simulator, with the Scripts</span>
+                  <span className="block text-ui font-medium text-[var(--sim-cream)]">{c.title}</span>
+                  <span className="mt-0.5 block text-ui leading-snug text-[var(--sim-cream-soft)]">In the Call simulator, with the Scripts</span>
                 </span>
                 <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--sim-cream-faint)]" aria-hidden />
               </Link>
@@ -725,7 +727,7 @@ function History({ sessions, prefix, who }: { sessions: Summary[] | null; prefix
   return (
     <section>
       <div className="flex items-end justify-between gap-4">
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">Your sessions</h2>
+        <h2 className="text-subhead font-semibold tracking-tight text-slate-900">Your sessions</h2>
         {scores.length > 1 ? <Trend scores={scores} /> : null}
       </div>
       {sessions === null ? (
@@ -733,11 +735,11 @@ function History({ sessions, prefix, who }: { sessions: Summary[] | null; prefix
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading
         </p>
       ) : done.length === 0 ? (
-        <p className="mt-4 max-w-md text-[0.9375rem] leading-relaxed text-slate-600">
+        <p className="mt-4 max-w-md text-read leading-relaxed text-slate-600">
           Your practice sessions show up here, each with a score out of 50 and a report you can come back to.
         </p>
       ) : (
-        <ul className="mt-4 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <ul className={cardClass("plain", "mt-4 divide-y divide-slate-200 overflow-hidden")}>
           {done.map((s) => {
             const c = who(s.client_id);
             const sit = situationById(s.situation_id);
@@ -748,10 +750,10 @@ function History({ sessions, prefix, who }: { sessions: Summary[] | null; prefix
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={c ? faceOf(c) : faceOf({ face: "", name: "?" })} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[0.9375rem] font-medium text-slate-900">
+                    <span className="block truncate text-ui font-medium text-slate-900">
                       {c?.firstName ?? "A client"} · {sit?.title ?? "Session"}
                     </span>
-                    <span className="block text-[0.8125rem] text-slate-500">
+                    <span className="block text-ui text-slate-500">
                       {formatSimDate(s.started_at)} · {DIFFICULTIES.find((d) => d.id === s.difficulty)?.label}
                       {s.mode === "assessment" ? " · Certification" : ""}
                     </span>
@@ -815,12 +817,12 @@ function Certification({
   const pass = data?.passMark ?? 30;
   const done = (a?.sessions ?? []).filter((s) => s.status === "scored");
   return (
-    <section className="h-max rounded-2xl border border-slate-200 bg-white p-6">
-      <p className="flex items-center gap-2 text-[0.6875rem] font-semibold uppercase tracking-[0.2em] text-[#0c5290]">
+    <section className={cardClass("plain", "h-max p-6")}>
+      <p className="flex items-center gap-2 text-kicker font-semibold uppercase text-[#0c5290]">
         <Trophy className="h-4 w-4" aria-hidden /> Certification
       </p>
-      <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Show you can coach</h2>
-      <p className="mt-2 text-[0.9375rem] leading-relaxed text-slate-600">
+      <h2 className="mt-2 text-subhead font-semibold tracking-tight text-slate-900">Show you can coach</h2>
+      <p className="mt-2 text-read leading-relaxed text-slate-600">
         {total} coaching sessions with three different clients, at least one on Hard. No tips and no help mid-call. You can pause if you need to. Average {pass} out of 50 to pass. A BCA coach checks every one.
       </p>
       {a?.status === "in_progress" ? (
@@ -845,7 +847,7 @@ function Certification({
               );
             })}
           </ol>
-          <button type="button" onClick={onContinue} className="mt-5 w-full rounded-full bg-[#051e36] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0c5290]">
+          <button type="button" onClick={onContinue} className={buttonClass("main", "normal", "mt-5 w-full")}>
             {done.length ? "Next session" : "Start the first session"}
           </button>
         </>
@@ -865,7 +867,7 @@ function Certification({
             type="button"
             onClick={onBegin}
             disabled={!data?.configured}
-            className="mt-5 w-full rounded-full bg-[#051e36] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0c5290] disabled:opacity-50"
+            className={buttonClass("main", "normal", "mt-5 w-full")}
           >
             {a?.status === "reviewed" ? "Try again" : "Start certification"}
           </button>

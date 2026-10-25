@@ -3,6 +3,7 @@
 import type { ReactNode, RefObject } from "react";
 import { Columns3, GripVertical } from "lucide-react";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { buttonClass } from "@/components/ui/Button";
 import type { DataTableColumnOption } from "@/hooks/usePersistedColumnSettings";
 
 type DataTableColumnsMenuProps<TKey extends string> = {
@@ -99,9 +100,7 @@ export function DataTableColumnsMenu<TKey extends string>({
           aria-expanded={open}
           aria-controls={menuId}
           onClick={onToggle}
-          className={`inline-flex h-9 items-center gap-2 rounded-full border bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-sky-500 ${
-            open ? "border-slate-400" : "border-slate-200"
-          }`}
+          className={buttonClass("second", "small", open ? "border-slate-400" : "")}
         >
           {triggerIcon}
           {label}

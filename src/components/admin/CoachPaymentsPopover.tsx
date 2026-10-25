@@ -138,13 +138,13 @@ export function CoachPaymentsPopover({
           <p className="truncate text-sm font-semibold text-slate-900">
             {coachName}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          <p className="mt-0.5 text-caption text-slate-500">
             {summary.succeeded_count} successful payment
             {summary.succeeded_count === 1 ? "" : "s"}
             {summary.totals_by_currency.length > 1 ? " · multi-currency" : ""}
           </p>
           {summary.totals_by_currency.length > 1 ? (
-            <p className="mt-1 text-[11px] text-slate-600">
+            <p className="mt-1 text-caption text-slate-600">
               {summary.totals_by_currency
                 .map(({ currency, cents }) =>
                   formatPaymentMoney(cents, currency)
@@ -163,7 +163,7 @@ export function CoachPaymentsPopover({
                     {formatPaymentDate(payment.paid_at)}
                   </span>
                   <span
-                    className={`inline-flex max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium ${paymentBillingKindBadgeClass(payment.billing_kind)}`}
+                    className={`inline-flex max-w-full truncate rounded-full px-1.5 py-0.5 text-caption font-medium ${paymentBillingKindBadgeClass(payment.billing_kind)}`}
                   >
                     {paymentBillingKindLabel(payment.billing_kind)}
                   </span>

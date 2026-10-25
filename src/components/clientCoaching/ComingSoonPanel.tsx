@@ -11,7 +11,7 @@ export function ComingSoonPanel({ title, description }: Props) {
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
         Coming next
       </p>
-      <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">
+      <h2 className="mt-2 text-subhead font-semibold tracking-tight text-slate-900">
         {title}
       </h2>
       <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">

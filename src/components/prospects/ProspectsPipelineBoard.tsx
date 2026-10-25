@@ -56,6 +56,7 @@ import { prospectStatusBadgeClass } from "@/lib/prospectStatus";
 import { prospectWorkspacePath } from "@/lib/prospects/workspacePath";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import type { ProspectRow } from "@/lib/prospectRow";
+import { buttonClass } from "@/components/ui/Button";
 
 type DropTarget = {
   columnId: string;
@@ -514,7 +515,7 @@ function CollapsedRail({
       >
         {col.label}
       </span>
-      <span className="text-[11px] font-medium tabular-nums text-slate-600">
+      <span className="text-caption font-medium tabular-nums text-slate-600">
         {col.prospects.length}
       </span>
     </button>
@@ -689,14 +690,14 @@ function PipelineColumn({
                     col.prospects.filter((row) => selectedIds.includes(row.id))
                   )
                 }
-                className="w-full rounded-md bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                className={buttonClass("main", "small", "w-full")}
               >
                 {movingToPool
                   ? "Moving…"
                   : `Move ${selectedInColumn.length} to pool`}
               </button>
             ) : col.prospects.length > 0 ? (
-              <p className="text-[11px] leading-snug text-slate-500">
+              <p className="text-caption leading-snug text-slate-500">
                 Tick people, then Move to pool. Or drag a card into a column.
               </p>
             ) : null}
@@ -903,13 +904,13 @@ function PipelineCard({
             className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
           />
         ) : null}
-        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+        <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
           {name}
         </p>
         <div className="flex shrink-0 items-center gap-0.5">
           {showPill ? (
             <span
-              className={`mt-0.5 inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium leading-none ${prospectStatusBadgeClass(row.status.value)}`}
+              className={`mt-0.5 inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-caption font-medium leading-none ${prospectStatusBadgeClass(row.status.value)}`}
             >
               {pill}
             </span>
@@ -961,7 +962,7 @@ function PipelineCard({
       </div>
       {identity.detail ? (
         <p
-          className={`mt-0.5 truncate text-[11px] text-slate-600 ${
+          className={`mt-0.5 truncate text-caption text-slate-600 ${
             selectable ? "pl-5" : ""
           }`}
         >
@@ -970,7 +971,7 @@ function PipelineCard({
       ) : null}
       {appointment ? (
         <p
-          className={`mt-0.5 truncate text-[11px] font-medium text-sky-700 ${
+          className={`mt-0.5 truncate text-caption font-medium text-sky-700 ${
             selectable ? "pl-5" : ""
           }`}
         >

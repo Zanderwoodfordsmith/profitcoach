@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpRight, Briefcase, Building2, Camera, Check, ChevronDown, ChevronUp, GripVertical, Handshake, History, Lightbulb, Loader2, MoreHorizontal, Plus, Sparkles, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpRight, Briefcase, Building2, Camera, Check, ChevronDown, ChevronUp, GripVertical, Handshake, History, Lightbulb, Loader2, MoreHorizontal, Plus, X } from "lucide-react";
 
 import {
   fieldFilled,
@@ -31,6 +31,8 @@ import { LinkedInProfileSection } from "./LinkedInProfileSection";
 import { StatusSwitch } from "./StatusMenu";
 import { InfoTip } from "./InfoTip";
 import { SetupBusinessName, SetupSocials, SetupWidget } from "./SetupPanels";
+import { randomUuid } from "@/lib/randomUuid";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 /** Sent with a section's anchor (`s-page-id`) to open it when a link points at it. */
 export const OPEN_SECTION_EVENT = "bp-open-section";
@@ -391,14 +393,14 @@ function ResultCards({ field }: { field: FieldSpec }) {
         .map((item) => {
           const rec = item as Record<string, unknown>;
           return {
-            id: String(rec.id || crypto.randomUUID()),
+            id: String(rec.id || randomUuid()),
             rest: rec,
             cells: Object.fromEntries(keys.map((key) => [key, String(rec[key] ?? "")])),
           };
         })
     : [];
   const storedKey = JSON.stringify(stored.map((card) => [card.id, ...keys.map((key) => card.cells[key])]));
-  const blank = (): CardDraft => ({ id: crypto.randomUUID(), rest: {}, cells: Object.fromEntries(keys.map((key) => [key, ""])) });
+  const blank = (): CardDraft => ({ id: randomUuid(), rest: {}, cells: Object.fromEntries(keys.map((key) => [key, ""])) });
   const [cards, setCards] = useState<CardDraft[]>(() => (stored.length ? stored : [blank()]));
   const [seen, setSeen] = useState(storedKey);
   const [focus, setFocus] = useState(false);
@@ -571,7 +573,7 @@ function ResultCards({ field }: { field: FieldSpec }) {
             onClick={() => setAssistantOpen(true)}
             className="inline-flex items-center gap-1 text-sm text-[var(--bp-muted)] hover:text-[var(--bp-blue)] hover:underline"
           >
-            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            <AvaHalo size={16} />
             Or talk it through with Ava
           </button>
         )}
@@ -590,7 +592,7 @@ const NUDGE =
 type TableDraft = { id: string; cells: Record<string, string> };
 
 function blankRow(columns: { key: string }[]): TableDraft {
-  return { id: crypto.randomUUID(), cells: Object.fromEntries(columns.map((column) => [column.key, ""])) };
+  return { id: randomUuid(), cells: Object.fromEntries(columns.map((column) => [column.key, ""])) };
 }
 
 function rowFilled(row: TableDraft, columns: { key: string }[]) {
@@ -608,7 +610,7 @@ function RowsEditor({ field }: { field: FieldSpec }) {
         .map((item) => {
           const rec = item as Record<string, unknown>;
           return {
-            id: String(rec.id || crypto.randomUUID()),
+            id: String(rec.id || randomUuid()),
             cells: Object.fromEntries(columns.map((column) => [column.key, String(rec[column.key] ?? "")])),
           };
         })
@@ -739,7 +741,7 @@ function RowsEditor({ field }: { field: FieldSpec }) {
 type LineDraft = { id: string; text: string };
 
 function newLine(): LineDraft {
-  return { id: crypto.randomUUID(), text: "" };
+  return { id: randomUuid(), text: "" };
 }
 
 function asLineList(value: unknown): string[] {
@@ -754,7 +756,7 @@ function LineListEditor({ field }: { field: FieldSpec }) {
   const stored = asLineList(payload ? fieldValue(payload, field.path)?.value : null);
   const storedKey = JSON.stringify(stored);
   const [items, setItems] = useState<LineDraft[]>(() =>
-    stored.length ? stored.map((text) => ({ id: crypto.randomUUID(), text })) : [newLine()]
+    stored.length ? stored.map((text) => ({ id: randomUuid(), text })) : [newLine()]
   );
   const [seen, setSeen] = useState(storedKey);
   const [focus, setFocus] = useState(false);
@@ -765,7 +767,7 @@ function LineListEditor({ field }: { field: FieldSpec }) {
 
   if (storedKey !== seen && !focus) {
     setSeen(storedKey);
-    setItems(stored.length ? stored.map((text) => ({ id: crypto.randomUUID(), text })) : [newLine()]);
+    setItems(stored.length ? stored.map((text) => ({ id: randomUuid(), text })) : [newLine()]);
   }
 
   function persist(next: LineDraft[]) {
@@ -1031,7 +1033,7 @@ const ROLES_FIELD: FieldSpec = { path: "market.roles_held", label: "Roles", kind
 const INDUSTRIES_FIELD: FieldSpec = { path: "market.industries_worked", label: "Industries and companies", kind: "list" };
 
 function blankRole(kind: CareerRole["kind"]): CareerRole {
-  return { id: crypto.randomUUID(), kind, title: "", company: "", industry: "", from: "", to: "", note: "", show: true };
+  return { id: randomUuid(), kind, title: "", company: "", industry: "", from: "", to: "", note: "", show: true };
 }
 
 /**
@@ -1362,7 +1364,7 @@ function WriteButton({ refKey, label }: { refKey: string; label: string }) {
       onClick={() => build(refKey)}
       className="bp-no-print inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--bp-blue)] disabled:cursor-not-allowed disabled:opacity-45"
     >
-      <Sparkles className="h-3.5 w-3.5" aria-hidden />
+      <AvaHalo size={16} dark state={busy ? "thinking" : "idle"} />
       {label}
     </button>
   );

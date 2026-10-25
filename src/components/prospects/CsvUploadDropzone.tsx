@@ -138,7 +138,7 @@ export function CsvUploadDropzone({
         </span>
         <span className="text-xs text-slate-600">
           or{" "}
-          <span className="font-semibold text-[#0c5290] underline underline-offset-2">
+          <span className="font-medium text-[#0c5290] underline underline-offset-2">
             browse files
           </span>
         </span>
@@ -148,12 +148,12 @@ export function CsvUploadDropzone({
 
       <div className="rounded-lg bg-slate-50 px-3.5 py-3 text-xs leading-relaxed text-slate-600">
         <p>
-          <span className="font-semibold text-slate-900">Name</span> is the only
+          <span className="font-medium text-slate-900">Name</span> is the only
           required column (or First name / Last name). Each row also needs at
           least one of{" "}
-          <span className="font-semibold text-slate-900">email</span>,{" "}
-          <span className="font-semibold text-slate-900">phone</span>, or{" "}
-          <span className="font-semibold text-slate-900">LinkedIn URL</span> so
+          <span className="font-medium text-slate-900">email</span>,{" "}
+          <span className="font-medium text-slate-900">phone</span>, or{" "}
+          <span className="font-medium text-slate-900">LinkedIn URL</span> so
           each person stays one row. Title and Business are optional.
         </p>
         {requirementNote ? (
@@ -162,7 +162,7 @@ export function CsvUploadDropzone({
         <button
           type="button"
           onClick={downloadProspectsCsvTemplate}
-          className="mt-2 inline-flex items-center gap-1.5 font-semibold text-[#0c5290] hover:underline"
+          className="mt-2 inline-flex items-center gap-1.5 font-medium text-[#0c5290] hover:underline"
         >
           <Download className="h-3.5 w-3.5" aria-hidden />
           Download CSV template

@@ -25,6 +25,7 @@ import {
   isLiveCommunityCalendarOccurrence,
 } from "@/lib/communityCalendarDisplay";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
+import { cardClass } from "@/components/ui/Card";
 
 function formatDayAbbrev(dt: DateTime): string {
   return dt.toFormat("ccc");
@@ -154,7 +155,7 @@ export function ThisWeeksCallsCard() {
   const tzCity = useMemo(() => formatTimezoneCity(tz), [tz]);
 
   return (
-    <div className="mt-4 rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div className={cardClass("plain", "mt-4")}>
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 pt-4 pb-3">
         <CalendarDays
           className="h-4 w-4 shrink-0 text-sky-600"
@@ -164,7 +165,7 @@ export function ThisWeeksCallsCard() {
           This Week&rsquo;s Calls
         </p>
         <span
-          className="shrink-0 text-[10px] font-medium tabular-nums text-slate-400"
+          className="shrink-0 text-caption font-medium tabular-nums text-slate-400"
           title={`Times shown in ${tzCity} (${tz})`}
         >
           {tzShort}
@@ -213,7 +214,7 @@ export function ThisWeeksCallsCard() {
                     }
                   >
                     <div
-                      className={`shrink-0 py-0.5 text-[9px] font-semibold tracking-wide ${dayBar}`}
+                      className={`shrink-0 py-0.5 text-caption font-semibold tracking-wide ${dayBar}`}
                     >
                       {formatDayAbbrev(c.start)}
                     </div>
@@ -226,7 +227,7 @@ export function ThisWeeksCallsCard() {
                         />
                       ) : (
                         <span
-                          className={`text-[10px] font-medium tabular-nums leading-none ${timeText}`}
+                          className={`text-caption font-medium tabular-nums leading-none ${timeText}`}
                         >
                           {formatStartTime(c.start)}
                         </span>
@@ -236,7 +237,7 @@ export function ThisWeeksCallsCard() {
 
                   <div className="min-w-0 flex-1 self-center">
                     <p
-                      className={`truncate text-[0.8125rem] font-semibold leading-snug ${
+                      className={`truncate text-ui font-medium leading-snug ${
                         c.isPast && !c.isLive && !c.isCancelled
                           ? "text-slate-400"
                           : "text-slate-900"
@@ -245,14 +246,14 @@ export function ThisWeeksCallsCard() {
                       {c.occurrence.title}
                     </p>
                     {c.isCancelled ? (
-                      <p className="mt-0.5 truncate text-[11px] font-medium leading-snug text-[#CC0000]">
+                      <p className="mt-0.5 truncate text-caption font-medium leading-snug text-[#CC0000]">
                         Cancelled
                         {c.cancellationReason
                           ? `: ${c.cancellationReason}`
                           : null}
                       </p>
                     ) : c.isLive ? (
-                      <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                      <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-red-500 px-1.5 py-0.5 text-caption font-bold uppercase tracking-wide text-white">
                         <span
                           className="h-1.5 w-1.5 rounded-full bg-white"
                           aria-hidden
@@ -260,7 +261,7 @@ export function ThisWeeksCallsCard() {
                         Live now
                       </span>
                     ) : c.isPast && c.hasRecording ? (
-                      <span className="mt-0.5 inline-flex items-center gap-1 rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-semibold leading-tight text-emerald-800">
+                      <span className="mt-0.5 inline-flex items-center gap-1 rounded bg-emerald-100 px-1 py-0.5 text-caption font-semibold leading-tight text-emerald-800">
                         <Video
                           className="h-2.5 w-2.5 shrink-0"
                           aria-hidden

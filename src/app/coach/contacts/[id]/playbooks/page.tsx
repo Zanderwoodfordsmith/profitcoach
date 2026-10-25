@@ -1,5 +1,6 @@
 "use client";
 
+import { cardClass } from "@/components/ui/Card";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -186,7 +187,7 @@ export default function CoachContactPlaybooksPage({
       )}
 
       {!loading && !error && (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className={cardClass("plain")}>
           <ul className="divide-y divide-slate-100">
             {PLAYBOOKS.map((p) => {
               const status = statusByRef[p.ref] ?? "locked";

@@ -71,6 +71,7 @@ import type { LeadReveal, LeadTeaser } from "@/lib/leadFinder/types";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
 
 type SearchResult = {
   leads: LeadTeaser[];
@@ -258,7 +259,7 @@ function KeywordFilterMenu({
         className="flex w-full items-center gap-2 border-0 border-b border-slate-200 py-2 text-left transition hover:border-slate-400"
       >
         <span className="min-w-0 flex-1 truncate">
-          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          <span className="text-kicker font-medium uppercase text-slate-400">
             {label}
           </span>
           <span className="mt-0.5 block truncate text-sm text-slate-600">
@@ -423,7 +424,7 @@ function KeywordFilterMenu({
                         {term}
                       </span>
                       {isCustom && on ? (
-                        <span className="shrink-0 text-[10px] uppercase tracking-wide text-slate-300">
+                        <span className="shrink-0 text-kicker uppercase text-slate-300">
                           custom
                         </span>
                       ) : null}
@@ -501,7 +502,7 @@ function PlusChipFilter({
   return (
     <div ref={rootRef} className="relative">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+        <p className="text-kicker font-medium uppercase text-slate-400">
           {label}
         </p>
         <button
@@ -759,7 +760,7 @@ function ContactAvailability({
       <div className="flex flex-wrap items-center gap-1.5">
         <span
           title={lead.hasEmail ? lead.emailHint ?? "Email available" : "No email"}
-          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] ${
+          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-caption ${
             lead.hasEmail
               ? "bg-emerald-50 text-emerald-800"
               : "bg-slate-50 text-slate-300"
@@ -770,7 +771,7 @@ function ContactAvailability({
         </span>
         <span
           title={lead.hasPhone ? lead.phoneHint ?? "Phone available" : "No phone"}
-          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] ${
+          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-caption ${
             lead.hasPhone
               ? "bg-emerald-50 text-emerald-800"
               : "bg-slate-50 text-slate-300"
@@ -781,7 +782,7 @@ function ContactAvailability({
         </span>
         <span
           title={lead.hasLinkedIn ? "LinkedIn available" : "No LinkedIn"}
-          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] ${
+          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-caption ${
             lead.hasLinkedIn
               ? "bg-emerald-50 text-emerald-800"
               : "bg-slate-50 text-slate-300"
@@ -1368,7 +1369,7 @@ export function LeadFinderClient() {
                 />
 
                 <label className="block">
-                  <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-2 block text-kicker font-medium uppercase text-slate-400">
                     {country === "GB" ? "City / county" : "City"}
                   </span>
                   <input
@@ -1397,7 +1398,7 @@ export function LeadFinderClient() {
             ) : (
               <>
                 <label className="block">
-                  <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-2 block text-kicker font-medium uppercase text-slate-400">
                     Location
                   </span>
                   <input
@@ -1411,7 +1412,7 @@ export function LeadFinderClient() {
                 </label>
 
                 <div>
-                  <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-2 block text-kicker font-medium uppercase text-slate-400">
                     Selection
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1457,7 +1458,7 @@ export function LeadFinderClient() {
                 </div>
 
                 <div>
-                  <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-2 block text-kicker font-medium uppercase text-slate-400">
                     Activity
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1525,7 +1526,7 @@ export function LeadFinderClient() {
             />
 
             <div>
-              <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+              <span className="mb-2 block text-kicker font-medium uppercase text-slate-400">
                 Years at company
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -1571,7 +1572,7 @@ export function LeadFinderClient() {
                 })}
               </div>
               {sourceTab === "database" ? (
-                <p className="mt-1.5 text-[11px] text-slate-400">
+                <p className="mt-1.5 text-caption text-slate-400">
                   Only applies to leads you’ve imported via Sales Navigator.
                 </p>
               ) : null}
@@ -1606,7 +1607,7 @@ export function LeadFinderClient() {
             ) : null}
 
             <label className="block">
-              <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+              <span className="mb-2 block text-kicker font-medium uppercase text-slate-400">
                 Industry
               </span>
               <input
@@ -1621,7 +1622,7 @@ export function LeadFinderClient() {
 
             {sourceTab === "sales_nav" ? (
               <label className="block">
-                <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                <span className="mb-2 block text-kicker font-medium uppercase text-slate-400">
                   Keywords (boolean)
                 </span>
                 <textarea
@@ -1632,7 +1633,7 @@ export function LeadFinderClient() {
                   }}
                   placeholder='spirits AND (whiskey OR gin) — clear company includes first'
                 />
-                <span className="mt-1 block text-[11px] leading-snug text-slate-400">
+                <span className="mt-1 block text-caption leading-snug text-slate-400">
                   Scans the whole profile. Don’t combine with company-name
                   includes.
                 </span>
@@ -1643,7 +1644,7 @@ export function LeadFinderClient() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+                className={buttonClass("main", "normal", "w-full")}
               >
                 {loading ? (
                   <>
@@ -1662,7 +1663,7 @@ export function LeadFinderClient() {
                 <button
                   type="button"
                   onClick={() => setSalesNavImportNonce((n) => n + 1)}
-                  className="flex w-full items-center justify-center gap-2 bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+                  className={buttonClass("main", "normal", "w-full")}
                 >
                   <Upload className="h-4 w-4" />
                   Import
@@ -1671,7 +1672,7 @@ export function LeadFinderClient() {
                   href={salesNavUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className={buttonClass("second", "normal", "w-full")}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open in Sales Navigator
@@ -1708,7 +1709,7 @@ export function LeadFinderClient() {
           ) : (
             <>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
-            <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">
+            <h2 className="text-ui font-semibold tracking-tight text-slate-900">
               Leads
               {hasSearched && result ? (
                 <span className="ml-2 font-normal text-slate-400">
@@ -1815,7 +1816,7 @@ export function LeadFinderClient() {
                 <div className="hidden md:block">
                   <table className="w-full text-left text-sm">
                     <thead>
-                      <tr className="border-b border-slate-100 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+                      <tr className="border-b border-slate-100 text-kicker font-medium uppercase text-slate-400">
                         <th className="px-5 py-3 font-medium sm:px-6">Name</th>
                         {columns.company ? (
                           <th className="px-3 py-3 font-medium">Company</th>

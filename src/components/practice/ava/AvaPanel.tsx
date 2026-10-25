@@ -6,7 +6,8 @@ import { Phone } from "lucide-react";
 
 import { useAgentConversation, type AgentChatSummary } from "@/components/agent/useAgentConversation";
 import { AvaChat, type AvaStarterSpec } from "@/components/ava/AvaChat";
-import { AvaAction, AvaBubble, AvaOrb } from "@/components/ava/AvaKit";
+import { AvaAction, AvaBubble } from "@/components/ava/AvaKit";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 import { AvaStage } from "@/components/ava/AvaStage";
 import type { AgentShow } from "@/lib/agent/types";
 import {
@@ -150,7 +151,7 @@ export function AvaPanel({
   if (sample) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-        <AvaOrb size={44} motion />
+        <AvaHalo size={44} dark />
         <p className="mt-4 text-sm leading-6 text-[var(--ava-muted)]">Choose a coach to work with Ava. Nothing saves in the empty preview.</p>
       </div>
     );
@@ -158,7 +159,8 @@ export function AvaPanel({
 
   if (calling && !stage) {
     return (
-      <div className="flex h-full min-h-0 flex-col">
+      // The call view is drawn for a light background, so it keeps one inside her blue panel.
+      <div className="flex h-full min-h-0 flex-col bg-white">
         <AvaVoiceCall protocol={protocol} coachId={coachId} onClose={() => setCalling(false)} />
       </div>
     );

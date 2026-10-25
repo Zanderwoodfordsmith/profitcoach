@@ -174,7 +174,7 @@ export function CashFlowInOutChart({
           })}
         </svg>
       )}
-      <div className="pointer-events-none absolute right-2 top-1 flex items-center gap-3 text-[10px] text-slate-500">
+      <div className="pointer-events-none absolute right-2 top-1 flex items-center gap-3 text-caption text-slate-500">
         <span className="inline-flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-sm bg-emerald-500" />
           Cash in
@@ -356,7 +356,7 @@ export function CashFlowBalanceChart({
           ))}
         </svg>
       )}
-      <div className="pointer-events-none absolute right-2 top-1 flex items-center gap-3 text-[10px] text-slate-500">
+      <div className="pointer-events-none absolute right-2 top-1 flex items-center gap-3 text-caption text-slate-500">
         <span className="inline-flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full bg-sky-600" />
           Above zero

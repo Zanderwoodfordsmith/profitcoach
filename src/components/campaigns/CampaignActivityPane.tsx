@@ -214,7 +214,7 @@ export function CampaignActivityPane({ preview = false }: { preview?: boolean })
               {item.label}
               {count > 0 ? (
                 <span
-                  className={`text-[11px] font-medium tabular-nums ${
+                  className={`text-caption font-medium tabular-nums ${
                     selected ? "text-slate-500" : "text-slate-400"
                   }`}
                 >

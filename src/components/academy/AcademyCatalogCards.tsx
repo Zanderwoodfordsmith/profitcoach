@@ -40,7 +40,7 @@ export function AcademyCatalogCards({ basePath, courses }: Props) {
                 />
               </div>
               {locked ? (
-                <span className="pointer-events-none absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[#0c5290] shadow-sm ring-1 ring-slate-200">
+                <span className="pointer-events-none absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-caption font-medium text-[#0c5290] shadow-sm ring-1 ring-slate-200">
                   <Lock className="h-3 w-3" aria-hidden />
                   Unlock with membership
                 </span>

@@ -105,14 +105,14 @@ export function ProspectStatusCell({
               onClick={() => void chooseStatus(option.value)}
             >
               <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${prospectStatusBadgeClass(option.value)}`}
+                className={`inline-flex rounded-full px-2 py-0.5 text-caption font-medium ${prospectStatusBadgeClass(option.value)}`}
               >
                 {option.label}
               </span>
             </button>
           ))}
           {saving ? (
-            <p className="px-3 py-1 text-[10px] text-slate-400">Saving…</p>
+            <p className="px-3 py-1 text-caption text-slate-400">Saving…</p>
           ) : null}
         </div>
       ) : null}

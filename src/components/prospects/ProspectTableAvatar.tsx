@@ -17,7 +17,7 @@ export function ProspectTableAvatar({ name }: Props) {
 
   return (
     <span
-      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tracking-wide ${PERSON_CLASS}`}
+      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-caption font-semibold tracking-wide ${PERSON_CLASS}`}
       aria-hidden
     >
       {label}

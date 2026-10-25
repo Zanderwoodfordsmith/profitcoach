@@ -3,14 +3,15 @@
 import { ArrowUpRight, Loader2 } from "lucide-react";
 import type { LinkedInHistoryPayload } from "@/lib/linkedinHistory/loadHistory";
 import { daysAgoLabel } from "./useLinkedInHistory";
-import { LI_BLUE } from "./types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5">
+    <div className={cardClass("plain", "px-4 py-3.5")}>
       <p className="text-xs font-medium text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums tracking-[-0.02em] text-slate-900">{value}</p>
-      {note ? <p className="mt-0.5 text-[11px] text-slate-400">{note}</p> : null}
+      {note ? <p className="mt-0.5 text-caption text-slate-400">{note}</p> : null}
     </div>
   );
 }
@@ -58,8 +59,7 @@ export function LinkedInHistoryStats({
             type="button"
             onClick={onImport}
             disabled={importing}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            style={{ backgroundColor: LI_BLUE }}
+            className={buttonClass("main")}
           >
             {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {importing ? "Importing…" : "Import from LinkedIn"}
@@ -84,7 +84,7 @@ export function LinkedInHistoryStats({
       </div>
 
       {best.length ? (
-        <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white">
+        <section className={cardClass("plain", "overflow-hidden")}>
           <h3 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900">Best posts, last 90 days</h3>
           <ol className="divide-y divide-slate-100">
             {best.map((post) => (

@@ -4,6 +4,7 @@ import { useEffect, useId } from "react";
 import { X } from "lucide-react";
 import { LeadMagnetShareSettings } from "@/components/leadMagnets/LeadMagnetShareSettings";
 import { PublicSlugEditor } from "@/components/leadMagnets/PublicSlugEditor";
+import { cardClass } from "@/components/ui/Card";
 import type { LeadMagnetId } from "@/lib/leadMagnets/catalog";
 
 type Props = {
@@ -54,7 +55,7 @@ export function LeadMagnetShareModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative w-full max-w-2xl rounded-2xl bg-white shadow-xl"
+        className={cardClass("raised", "relative w-full max-w-2xl")}
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <h2

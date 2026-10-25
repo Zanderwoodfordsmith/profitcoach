@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { cardClass } from "@/components/ui/Card";
 import {
   activeLandingVariants,
   coachDisplayName,
@@ -53,7 +54,7 @@ function VariantCard({
   const optInRate = landingConversionRate(stats.opt_in, stats.uniqueViews);
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article className={cardClass("plain", "p-5")}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
@@ -239,30 +240,30 @@ export function AdminLandingAnalytics() {
       {!loading && stats ? (
         <>
           <section className="grid gap-3 md:grid-cols-4">
-            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article className={cardClass("plain", "p-5")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Unique views</p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900">
+              <p className="mt-1 text-heading font-semibold text-slate-900">
                 {formatNumber(stats.totals.uniqueViews)}
               </p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article className={cardClass("plain", "p-5")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Opt-ins</p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900">
+              <p className="mt-1 text-heading font-semibold text-slate-900">
                 {formatNumber(stats.totals.optIns)}
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 {formatLandingRate(overallOptInRate)} of views
               </p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article className={cardClass("plain", "p-5")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Started scorecard</p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900">
+              <p className="mt-1 text-heading font-semibold text-slate-900">
                 {formatNumber(stats.totals.started)}
               </p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article className={cardClass("plain", "p-5")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Completed</p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900">
+              <p className="mt-1 text-heading font-semibold text-slate-900">
                 {formatNumber(stats.totals.finished)}
               </p>
             </article>
@@ -290,7 +291,7 @@ export function AdminLandingAnalytics() {
             </section>
           ) : null}
 
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <section className={cardClass("plain")}>
             <div className="border-b border-slate-100 px-4 py-3">
               <h2 className="text-sm font-semibold text-slate-900">By coach</h2>
               <p className="mt-1 text-xs text-slate-500">
@@ -361,7 +362,7 @@ export function AdminLandingAnalytics() {
       ) : null}
 
       {!loading && !checkingRole && stats && stats.totals.uniqueViews === 0 ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className={cardClass("plain", "p-6")}>
           <h2 className="text-sm font-semibold text-slate-900">No data yet</h2>
           <p className="mt-2 text-sm text-slate-600">
             Views and opt-ins are recorded automatically when prospects visit a Boss Score landing

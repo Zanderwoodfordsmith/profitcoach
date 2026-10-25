@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BarChart2, ChevronDown, Check, Loader2, Share2, UserRound } from "lucide-react";
+import { buttonClass } from "@/components/ui/Button";
 
 const NEW_PERSON_VALUE = "__new__";
 
@@ -48,7 +49,7 @@ export function WorkshopSessionHeaderLabel({
           className={
             business
               ? compact
-                ? "mt-0.5 block truncate text-[11px] text-slate-600"
+                ? "mt-0.5 block truncate text-caption text-slate-600"
                 : "mt-0.5 block truncate text-sm text-slate-600"
               : compact
                 ? "block truncate text-sm font-semibold text-slate-900"
@@ -155,7 +156,7 @@ function WorkshopContactScoreIndicator({
       <span
         className={
           compact
-            ? "shrink-0 whitespace-nowrap text-right text-[11px] font-medium text-sky-700 group-hover:underline"
+            ? "shrink-0 whitespace-nowrap text-right text-caption font-medium text-sky-700 group-hover:underline"
             : "shrink-0 whitespace-nowrap text-right text-xs font-medium text-sky-700 group-hover:underline"
         }
       >
@@ -237,8 +238,8 @@ function ContactSectionHeader({
       <p
         className={
           compact
-            ? "px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400"
-            : "px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400"
+            ? "px-2 pb-0.5 text-kicker font-semibold uppercase text-slate-400"
+            : "px-2.5 pb-1 text-kicker font-semibold uppercase text-slate-400"
         }
       >
         {label}
@@ -282,7 +283,7 @@ function ContactOptionButton({
             <span
               className={
                 compact
-                  ? "mt-0.5 block line-clamp-1 text-[10px] text-slate-500"
+                  ? "mt-0.5 block line-clamp-1 text-caption text-slate-500"
                   : "mt-0.5 block line-clamp-1 text-xs text-slate-500"
               }
             >
@@ -293,7 +294,7 @@ function ContactOptionButton({
             <span
               className={
                 compact
-                  ? "mt-0.5 block line-clamp-1 text-[10px] text-slate-400"
+                  ? "mt-0.5 block line-clamp-1 text-caption text-slate-400"
                   : "mt-0.5 block line-clamp-1 text-xs text-slate-400"
               }
             >
@@ -772,7 +773,7 @@ export function WorkshopSessionActionsMenu({
           <p
             className={
               compact
-                ? "mt-1 max-w-[16rem] text-right text-[11px] leading-snug text-rose-600"
+                ? "mt-1 max-w-[16rem] text-right text-caption leading-snug text-rose-600"
                 : "mt-1 max-w-xs text-right text-xs leading-snug text-rose-600"
             }
             role="alert"
@@ -813,7 +814,7 @@ export function WorkshopSessionActionsMenu({
             <span
               className={
                 compact
-                  ? "mt-0.5 block truncate text-[11px] text-slate-600"
+                  ? "mt-0.5 block truncate text-caption text-slate-600"
                   : "mt-0.5 block truncate text-sm text-slate-600"
               }
               title={subtitle}
@@ -836,7 +837,7 @@ export function WorkshopSessionActionsMenu({
         <p
           className={
             compact
-              ? "mt-1 text-[11px] leading-snug text-rose-600"
+              ? "mt-1 text-caption leading-snug text-rose-600"
               : "mt-2 text-xs leading-snug text-rose-600"
           }
           role="alert"
@@ -906,7 +907,7 @@ export function WorkshopSessionPicker({
     : "mb-1 block text-base font-semibold text-slate-900";
 
   const subheadingClassName = compact
-    ? "mt-0.5 text-[11px] leading-snug text-slate-600"
+    ? "mt-0.5 text-caption leading-snug text-slate-600"
     : "mb-3 text-sm text-slate-600";
 
   const inputClassName = compact
@@ -914,7 +915,7 @@ export function WorkshopSessionPicker({
     : "w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500";
 
   const fieldLabelClassName = compact
-    ? "block text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+    ? "block text-kicker font-semibold uppercase text-slate-500"
     : "mb-1.5 block text-sm font-medium text-slate-700";
 
   if (sessionSummary) {
@@ -1082,11 +1083,7 @@ export function WorkshopSessionPicker({
             <button
               type="submit"
               disabled={confirming || !canSubmitNewPerson}
-              className={
-                compact
-                  ? "rounded-md bg-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  : "rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-              }
+              className={buttonClass("main", compact ? "small" : "normal")}
             >
               {confirming ? "Starting…" : "Start session"}
             </button>
@@ -1094,11 +1091,7 @@ export function WorkshopSessionPicker({
               type="button"
               disabled={confirming}
               onClick={onCancelNewPerson}
-              className={
-                compact
-                  ? "rounded-md px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white/80 hover:text-slate-800"
-                  : "rounded-lg px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-white/80 hover:text-slate-800"
-              }
+              className={buttonClass("quiet", compact ? "small" : "normal")}
             >
               Cancel
             </button>
@@ -1110,7 +1103,7 @@ export function WorkshopSessionPicker({
         <p
           className={
             compact
-              ? "mt-2 max-w-[22rem] text-[11px] leading-snug text-slate-600"
+              ? "mt-2 max-w-[22rem] text-caption leading-snug text-slate-600"
               : "mt-3 text-sm text-slate-600"
           }
         >
@@ -1122,7 +1115,7 @@ export function WorkshopSessionPicker({
         <p
           className={
             compact
-              ? "mt-2 max-w-[22rem] text-[11px] leading-snug text-slate-600"
+              ? "mt-2 max-w-[22rem] text-caption leading-snug text-slate-600"
               : "mt-3 text-sm text-slate-600"
           }
         >

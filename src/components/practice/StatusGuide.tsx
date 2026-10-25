@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
+import { buttonClass } from "@/components/ui/Button";
 import { PAGE_STATUS_COPY, PAGE_STATUS_ORDER, type PageStatusId } from "@/lib/practiceKnowledge/pageStatus";
 
 export const PAGE_STATUS_LOOK: Record<PageStatusId, string> = {
@@ -25,7 +26,7 @@ export function PageStatusPill({ status }: { status: PageStatusId }) {
   return (
     <span
       title={copy.title}
-      className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-px text-[0.6875rem] font-semibold leading-4 ${PAGE_STATUS_LOOK[status]}`}
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-px text-caption font-semibold leading-4 ${PAGE_STATUS_LOOK[status]}`}
     >
       {copy.label}
     </span>
@@ -40,7 +41,7 @@ export function StatusGuide() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2.5 rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-sm font-semibold text-[var(--bp-ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_20px_-16px_rgba(5,30,54,0.55)] backdrop-blur-md transition-[background-color,box-shadow] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a8fd4]"
+        className={buttonClass("second", "small")}
       >
         <span className="flex items-center gap-1" aria-hidden>
           {PAGE_STATUS_ORDER.map((id) => (
@@ -120,7 +121,7 @@ function StatusGuideModal({ onClose }: { onClose: () => void }) {
         <div className="h-1 w-full bg-[var(--bp-gradient)]" aria-hidden />
         <div className="flex items-start justify-between gap-4 px-6 pb-1 pt-5">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-[1.375rem] font-semibold tracking-[-0.025em] text-[var(--bp-ink)]">
+            <h2 id={titleId} className="text-title font-semibold text-[var(--bp-ink)]">
               How status works
             </h2>
             <p id={leadId} className="mt-1.5 max-w-[36ch] text-sm leading-6 text-[var(--bp-muted)]">

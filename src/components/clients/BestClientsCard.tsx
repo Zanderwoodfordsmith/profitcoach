@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ClientInsights, Share } from "@/lib/clientRoster/insights";
+import { cardClass } from "@/components/ui/Card";
 
 function Bars({ title, items }: { title: string; items: Share[] }) {
   if (!items.length) return null;
@@ -45,7 +46,7 @@ export function BestClientsCard({ authHeaders, refreshKey }: { authHeaders: () =
 
   if (!data || data.clients === 0) return null;
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4">
+    <section className={cardClass("plain", "p-4")}>
       <h3 className="text-sm font-semibold text-slate-900">Your best clients</h3>
       <p className="mt-1 text-sm text-slate-700">
         {data.summary ?? "Add sector, turnover, team size and how they found you to see who your best clients are."}

@@ -24,7 +24,7 @@ type Props = {
 };
 
 const BASE_TEXT =
-  "min-w-0 text-[15px] leading-relaxed break-words [overflow-wrap:anywhere] text-slate-700";
+  "min-w-0 text-read leading-relaxed break-words [overflow-wrap:anywhere] text-slate-700";
 
 /**
  * Opening message on a support ticket. Twice the old 12rem cap.

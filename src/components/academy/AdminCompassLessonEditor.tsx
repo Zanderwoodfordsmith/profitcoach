@@ -10,6 +10,8 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { isLessonEditDirty } from "@/lib/academy/lessonEditDirty";
 import type { AcademyCategory, AcademyCourse, AcademyLesson } from "@/lib/academy/types";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const BASE = "/admin/academy/compass";
 const FORM_ID = "classroom-lesson-edit-form";
@@ -187,7 +189,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
     <div className="flex flex-col gap-4">
       <UnsavedChangesDialog open={dialogOpen} onStay={stay} onLeave={leave} />
 
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <div className={cardClass("soft", "flex flex-wrap items-start justify-between gap-3 px-4 py-3")}>
         <div className="min-w-0">
           <Link href={BASE} className="text-xs text-slate-500 hover:text-slate-700">
             ← All courses
@@ -200,7 +202,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
+              className={buttonClass("main")}
             >
               Edit lesson
             </button>
@@ -209,7 +211,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
               <button
                 type="button"
                 onClick={() => requestLeave(discardEdits)}
-                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                className={buttonClass("quiet")}
               >
                 Cancel
               </button>
@@ -217,7 +219,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
                 type="submit"
                 form={FORM_ID}
                 disabled={saving || uploading}
-                className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:opacity-70"
+                className={buttonClass("main")}
               >
                 {saving ? "Saving…" : "Save"}
               </button>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Check, Copy, Tag } from "lucide-react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { cleanTag, taggedLink, TRAFFIC_CHANNELS } from "@/lib/trafficSource";
 
 /**
@@ -25,7 +27,7 @@ export function TaggedLinkMaker({ links }: { links: { label: string; url: string
     }`;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/0.04)] sm:p-5">
+    <section className={cardClass("plain", "p-4 sm:p-5")}>
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#0c5290]">
           <Tag className="h-4 w-4" aria-hidden />
@@ -105,7 +107,7 @@ export function TaggedLinkMaker({ links }: { links: { label: string; url: string
           />
         </label>
 
-        <div className="flex flex-col gap-2 rounded-xl bg-slate-50 p-3 sm:flex-row sm:items-center">
+        <div className={cardClass("soft", "flex flex-col gap-2 p-3 sm:flex-row sm:items-center")}>
           <code className="min-w-0 flex-1 break-all text-xs text-slate-700">{url}</code>
           <button
             type="button"
@@ -117,7 +119,7 @@ export function TaggedLinkMaker({ links }: { links: { label: string; url: string
                 setCopied(false);
               }
             }}
-            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-[#0c5290] px-4 text-sm font-semibold text-white hover:bg-[#08396a]"
+            className={buttonClass("main", "normal", "shrink-0")}
           >
             {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
             {copied ? "Copied" : "Copy link"}

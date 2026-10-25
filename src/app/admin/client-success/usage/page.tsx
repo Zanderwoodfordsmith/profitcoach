@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { cardClass } from "@/components/ui/Card";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
@@ -125,17 +126,17 @@ export default function AdminUsagePage() {
       {!checkingRole && !error && data ? (
         <>
           <section className="grid gap-3 md:grid-cols-3">
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">DAU</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{data.dau}</p>
               <p className="text-xs text-slate-500">Unique active users (24h)</p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">WAU</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{data.wau}</p>
               <p className="text-xs text-slate-500">Unique active users (7d)</p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">MAU</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{data.mau}</p>
               <p className="text-xs text-slate-500">Unique active users (30d)</p>
@@ -143,32 +144,32 @@ export default function AdminUsagePage() {
           </section>
 
           <section className="grid gap-3 md:grid-cols-4">
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Sessions (24h)</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">{data.sessions.last24h}</p>
+              <p className="mt-1 text-subhead font-semibold text-slate-900">{data.sessions.last24h}</p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Sessions (7d)</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">{data.sessions.last7d}</p>
+              <p className="mt-1 text-subhead font-semibold text-slate-900">{data.sessions.last7d}</p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Sessions (30d)</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">{data.sessions.last30d}</p>
+              <p className="mt-1 text-subhead font-semibold text-slate-900">{data.sessions.last30d}</p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Avg session</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">
+              <p className="mt-1 text-subhead font-semibold text-slate-900">
                 {formatDuration(data.avgSessionDurationSeconds)}
               </p>
             </article>
           </section>
 
           <section className="grid gap-3 md:grid-cols-2">
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Page views (30d)</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{data.totalPageViews30d}</p>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article className={cardClass("plain", "p-4")}>
               <p className="text-xs uppercase tracking-wide text-slate-500">
                 Active users by role (30d)
               </p>
@@ -183,7 +184,7 @@ export default function AdminUsagePage() {
             </article>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className={cardClass("plain", "p-4")}>
             <h2 className="text-sm font-semibold text-slate-900">Daily trend (last 30 days)</h2>
             <div className="mt-3 overflow-x-auto">
               <table className="min-w-full text-left text-xs">

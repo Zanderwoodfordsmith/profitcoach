@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonClass } from "@/components/ui/Button";
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -407,7 +408,7 @@ function MessageReactionChips({
       }`}
     >
       <span
-        className="inline-flex items-center gap-0.5 rounded-full bg-white px-2 py-0.5 text-[13px] leading-none shadow-sm ring-1 ring-slate-200/90"
+        className="inline-flex items-center gap-0.5 rounded-full bg-white px-2 py-0.5 text-ui leading-none shadow-sm ring-1 ring-slate-200/90"
         title={reactions
           .map((r) => r.value)
           .filter(Boolean)
@@ -477,7 +478,7 @@ function Avatar({
     setBroken(false);
   }, [url]);
   const sizeClass =
-    size === "lg" ? "h-11 w-11 text-sm" : size === "md" ? "h-9 w-9 text-[11px]" : "h-8 w-8 text-[10px]";
+    size === "lg" ? "h-11 w-11 text-sm" : size === "md" ? "h-9 w-9 text-caption" : "h-8 w-8 text-caption";
   const toneClass =
     tone === "sky"
       ? "bg-sky-100 text-sky-800 ring-sky-200/80"
@@ -686,8 +687,8 @@ function DetailRow({
 }) {
   return (
     <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-x-3">
-      <dt className="text-[15px] leading-snug text-slate-700">{label}</dt>
-      <dd className="min-w-0 break-words text-[15px] leading-snug text-slate-900">
+      <dt className="text-ui leading-snug text-slate-700">{label}</dt>
+      <dd className="min-w-0 break-words text-ui leading-snug text-slate-900">
         {children}
       </dd>
     </div>
@@ -804,7 +805,7 @@ function ChannelPickerRow({
         <span className="min-w-0 flex-1">{item.label}</span>
         {hasDraft ? <DraftChip /> : null}
         {item.blockedLabel ? (
-          <span className="max-w-[7.5rem] shrink-0 truncate text-right text-[11px] leading-tight text-slate-400">
+          <span className="max-w-[7.5rem] shrink-0 truncate text-right text-caption leading-tight text-slate-400">
             {item.blockedLabel}
           </span>
         ) : null}
@@ -826,7 +827,7 @@ function ChannelPickerRow({
       <span className="min-w-0 flex-1">{item.label}</span>
       {hasDraft ? <DraftChip /> : null}
       {!item.sendable && item.blockedLabel ? (
-        <span className="max-w-[7.5rem] shrink-0 truncate text-right text-[11px] leading-tight text-slate-500">
+        <span className="max-w-[7.5rem] shrink-0 truncate text-right text-caption leading-tight text-slate-500">
           {item.blockedLabel}
         </span>
       ) : null}
@@ -839,7 +840,7 @@ function ChannelPickerRow({
 
 function DraftChip() {
   return (
-    <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200">
+    <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-caption font-medium text-amber-900 ring-1 ring-amber-200">
       Draft
     </span>
   );
@@ -966,7 +967,7 @@ function MessageErrorBadge({
       {open ? (
         <span
           role="tooltip"
-          className={`absolute z-20 mt-1 w-56 rounded-md bg-slate-900 px-2.5 py-2 text-[11px] leading-snug text-white shadow-lg ${
+          className={`absolute z-20 mt-1 w-56 rounded-md bg-slate-900 px-2.5 py-2 text-caption leading-snug text-white shadow-lg ${
             align === "right" ? "right-0" : "left-0"
           } top-full`}
         >
@@ -4404,7 +4405,7 @@ export function MessagingInbox({
                 </button>
               </div>
             ) : (
-              <h2 className="min-w-0 text-[15px] font-semibold tracking-tight text-slate-900">
+              <h2 className="min-w-0 text-ui font-semibold tracking-tight text-slate-900">
                 Inbox
               </h2>
             )}
@@ -4466,14 +4467,14 @@ export function MessagingInbox({
                     className="absolute right-0 z-20 mt-1 max-h-[min(80vh,40rem)] w-64 overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg shadow-slate-900/10"
                   >
                     <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-                      <p className="text-[13px] font-semibold text-slate-900">
+                      <p className="text-ui font-semibold text-slate-900">
                         Filters
                       </p>
                       {inboxFiltersActive(inboxFilters) ? (
                         <button
                           type="button"
                           onClick={() => clearInboxFilters()}
-                          className="text-[12px] font-medium text-sky-700 hover:text-sky-800"
+                          className="text-caption font-medium text-sky-700 hover:text-sky-800"
                         >
                           Clear
                         </button>
@@ -4547,16 +4548,16 @@ export function MessagingInbox({
                               aria-hidden
                             >
                               {active ? (
-                                <span className="text-[10px] font-bold leading-none">
+                                <span className="text-caption font-bold leading-none">
                                   ✓
                                 </span>
                               ) : null}
                             </span>
                             <span className="min-w-0">
-                              <span className="block text-[13px] font-medium">
+                              <span className="block text-ui font-medium">
                                 {item.label}
                               </span>
-                              <span className="block text-[11px] text-slate-500">
+                              <span className="block text-caption text-slate-500">
                                 {item.hint}
                               </span>
                             </span>
@@ -4565,7 +4566,7 @@ export function MessagingInbox({
                       })}
                     </div>
                     <div className="border-b border-slate-100 px-3 py-2">
-                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      <p className="mb-1.5 text-kicker font-semibold uppercase text-slate-400">
                         Last channel
                       </p>
                       <div className="flex flex-wrap gap-1">
@@ -4582,7 +4583,7 @@ export function MessagingInbox({
                                   channel: item.id,
                                 }))
                               }
-                              className={`rounded-md px-2 py-1 text-[12px] ${
+                              className={`rounded-md px-2 py-1 text-caption ${
                                 active
                                   ? "bg-sky-50 font-medium text-sky-800 ring-1 ring-sky-200"
                                   : "text-slate-600 hover:bg-slate-50"
@@ -4595,11 +4596,11 @@ export function MessagingInbox({
                       </div>
                     </div>
                     <div className="px-3 py-2">
-                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      <p className="mb-1.5 text-kicker font-semibold uppercase text-slate-400">
                         Tag
                       </p>
                       {availableTags.length === 0 ? (
-                        <p className="text-[12px] text-slate-500">
+                        <p className="text-caption text-slate-500">
                           No prospect tags yet.
                         </p>
                       ) : (
@@ -4613,7 +4614,7 @@ export function MessagingInbox({
                                 tag: null,
                               }))
                             }
-                            className={`rounded-md px-2 py-1 text-[12px] ${
+                            className={`rounded-md px-2 py-1 text-caption ${
                               !inboxFilters.tag
                                 ? "bg-sky-50 font-medium text-sky-800 ring-1 ring-sky-200"
                                 : "text-slate-600 hover:bg-slate-50"
@@ -4643,7 +4644,7 @@ export function MessagingInbox({
                                         ),
                                   }))
                                 }
-                                className={`rounded-md px-2 py-1 text-[12px] ${
+                                className={`rounded-md px-2 py-1 text-caption ${
                                   active
                                     ? "bg-sky-50 font-medium text-sky-800 ring-1 ring-sky-200"
                                     : "text-slate-600 hover:bg-slate-50"
@@ -4658,7 +4659,7 @@ export function MessagingInbox({
                     </div>
                     {availableTags.length > 0 ? (
                       <div className="border-t border-slate-100 px-3 py-2">
-                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="mb-1.5 text-kicker font-semibold uppercase text-slate-400">
                           Exclude tags
                         </p>
                         <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto">
@@ -4677,7 +4678,7 @@ export function MessagingInbox({
                                     toggleExcludedTag(prev, tag)
                                   )
                                 }
-                                className={`rounded-md px-2 py-1 text-[12px] ${
+                                className={`rounded-md px-2 py-1 text-caption ${
                                   excluded
                                     ? "bg-rose-50 font-medium text-rose-800 line-through decoration-rose-400 ring-1 ring-rose-200"
                                     : "text-slate-600 hover:bg-slate-50"
@@ -4727,7 +4728,7 @@ export function MessagingInbox({
                             setInboxSort(item.id);
                             setSortOpen(false);
                           }}
-                          className={`flex w-full px-3 py-1.5 text-left text-[13px] ${
+                          className={`flex w-full px-3 py-1.5 text-left text-ui ${
                             active
                               ? "bg-sky-50 font-medium text-sky-800"
                               : "text-slate-700 hover:bg-slate-50"
@@ -4746,7 +4747,7 @@ export function MessagingInbox({
                         void loadList();
                       }}
                       disabled={loading}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-ui text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                     >
                       <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
                       {loading ? "Refreshing…" : "Refresh list"}
@@ -4759,7 +4760,7 @@ export function MessagingInbox({
 
           <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5">
             <p
-              className={`min-w-0 truncate text-[12px] ${
+              className={`min-w-0 truncate text-caption ${
                 liSyncNote && /failed|Connect/i.test(liSyncNote)
                   ? "text-rose-600"
                   : "text-slate-500"
@@ -4783,7 +4784,7 @@ export function MessagingInbox({
             {accountsLoaded && inboxAccounts.length === 0 ? (
               <Link
                 href={settingsIntegrationsHref}
-                className="shrink-0 text-[12px] font-semibold text-sky-700 hover:text-sky-800"
+                className="shrink-0 text-caption font-medium text-sky-700 hover:text-sky-800"
               >
                 Connect
               </Link>
@@ -4792,7 +4793,7 @@ export function MessagingInbox({
                 type="button"
                 onClick={() => void syncLinkedInInbox(true)}
                 disabled={liSyncing}
-                className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-sky-700 hover:text-sky-800 disabled:opacity-50"
+                className="inline-flex shrink-0 items-center gap-1 text-caption font-medium text-sky-700 hover:text-sky-800 disabled:opacity-50"
               >
                 <RefreshCw
                   className={`h-3 w-3 ${liSyncing ? "animate-spin" : ""}`}
@@ -4814,7 +4815,7 @@ export function MessagingInbox({
                   key={item.id}
                   type="button"
                   onClick={() => setTab(item.id)}
-                  className={`relative flex flex-col items-center gap-1 px-1 pb-2 pt-2.5 text-[11px] font-medium ${
+                  className={`relative flex flex-col items-center gap-1 px-1 pb-2 pt-2.5 text-caption font-medium ${
                     active
                       ? "text-sky-700"
                       : "text-slate-400 hover:text-slate-700"
@@ -4840,7 +4841,7 @@ export function MessagingInbox({
           {inboxFilters.campaignId || inboxFilters.otherEmail ? (
             <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-3 py-2">
               {inboxFilters.campaignId ? (
-                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-caption font-medium text-sky-800 ring-1 ring-sky-200/80">
                   <span className="truncate">
                     {campaignFilterLabel
                       ? `Campaign: ${campaignFilterLabel}`
@@ -4860,7 +4861,7 @@ export function MessagingInbox({
                 </span>
               ) : null}
               {inboxFilters.otherEmail ? (
-                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-caption font-medium text-sky-800 ring-1 ring-sky-200/80">
                   <span className="truncate">Other email</span>
                   <button
                     type="button"
@@ -4905,7 +4906,7 @@ export function MessagingInbox({
                     setFilterOpen(false);
                     setSortOpen(false);
                   }}
-                  className="inline-flex items-center gap-1 rounded-md bg-sky-600 px-2.5 py-1.5 text-[13px] font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                  className={buttonClass("main", "small")}
                 >
                   Actions
                   <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
@@ -4991,14 +4992,14 @@ export function MessagingInbox({
                         channels={[row.channel]}
                       />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-slate-900">
+                        <span className="block truncate text-sm font-medium text-slate-900">
                           {row.name}
                         </span>
                         <span className="mt-0.5 block truncate text-xs text-slate-500">
                           {row.preview}
                         </span>
                       </span>
-                      <span className="shrink-0 text-[11px] text-slate-400">
+                      <span className="shrink-0 text-caption text-slate-400">
                         {row.when}
                       </span>
                     </div>
@@ -5045,7 +5046,7 @@ export function MessagingInbox({
                 <Fragment key={c.id}>
                   {showBandHeader ? (
                     <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      <p className="text-kicker font-semibold uppercase text-slate-500">
                         {ageBand}
                       </p>
                     </li>
@@ -5098,7 +5099,7 @@ export function MessagingInbox({
                                 {personName}
                               </span>
                               {draftsByConversation[c.id] ? (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200">
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-caption font-medium text-amber-900 ring-1 ring-amber-200">
                                   {draftsByConversation[c.id]?.channel ? (
                                     <ChannelMark
                                       channel={
@@ -5123,12 +5124,12 @@ export function MessagingInbox({
                             </span>
                           </span>
                           <span className="flex shrink-0 flex-col items-end gap-1">
-                            <span className="text-[11px] text-slate-400">
+                            <span className="text-caption text-slate-400">
                               {formatShortDate(c.last_message_at)}
                             </span>
                             <span className="flex items-center gap-1">
                               {unread ? (
-                                <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold text-white">
+                                <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-caption font-semibold text-white">
                                   {c.unread_count}
                                 </span>
                               ) : null}
@@ -5202,7 +5203,7 @@ export function MessagingInbox({
                         />
                       </div>
                       {subtitle ? (
-                        <div className="truncate text-[13px] text-slate-700">
+                        <div className="truncate text-ui text-slate-700">
                           {subtitle}
                         </div>
                       ) : null}
@@ -5256,7 +5257,7 @@ export function MessagingInbox({
                         </div>
                       )}
                       {subtitle ? (
-                        <div className="truncate text-[13px] text-slate-700">
+                        <div className="truncate text-ui text-slate-700">
                           {subtitle}
                         </div>
                       ) : null}
@@ -5281,7 +5282,7 @@ export function MessagingInbox({
                       disabled={whatsAppBlockBusy}
                       title="Remove this WhatsApp chat and don't import it again"
                       onClick={() => void blockWhatsAppImport([selected.id])}
-                      className="rounded-full px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+                      className={buttonClass("quiet", "small")}
                     >
                       Don't import
                     </button>
@@ -5330,7 +5331,7 @@ export function MessagingInbox({
                     {displayName || "Opening…"}
                   </div>
                   {subtitle ? (
-                    <div className="truncate text-[13px] text-slate-700">
+                    <div className="truncate text-ui text-slate-700">
                       {subtitle}
                     </div>
                   ) : null}
@@ -5372,7 +5373,7 @@ export function MessagingInbox({
                       void loadOlderMessages(selected.id, oldest);
                     }}
                     disabled={loadingOlder}
-                    className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80 hover:text-slate-700 disabled:opacity-60"
+                    className={buttonClass("second", "small")}
                   >
                     {loadingOlder ? "Loading earlier…" : "Load earlier messages"}
                   </button>
@@ -5381,7 +5382,7 @@ export function MessagingInbox({
               {feedByDay.map((group) => (
                 <div key={group.label} className="space-y-3">
                   <div className="flex justify-center py-1">
-                    <span className="rounded-full bg-white/90 px-3 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
+                    <span className="rounded-full bg-white/90 px-3 py-0.5 text-caption font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
                       {group.label}
                     </span>
                   </div>
@@ -5401,7 +5402,7 @@ export function MessagingInbox({
                       const body = (
                         <>
                           <span
-                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-caption font-semibold ${
                               linked
                                 ? "bg-sky-100 text-sky-700"
                                 : "bg-slate-200/80 text-slate-600"
@@ -5428,7 +5429,7 @@ export function MessagingInbox({
                               </span>
                             ) : null}
                           </span>
-                          <span className="shrink-0 text-[10px] tabular-nums text-slate-400">
+                          <span className="shrink-0 text-caption tabular-nums text-slate-400">
                             {formatShortTime(a.at)}
                           </span>
                         </>
@@ -5521,7 +5522,7 @@ export function MessagingInbox({
                       const label = outbound ? "You reacted" : "Reacted";
                       return (
                         <div key={m.id} className="flex justify-center px-2">
-                          <div className="inline-flex max-w-[min(84%,36rem)] items-center gap-2 rounded-full bg-slate-100/90 px-3 py-1 text-[11px] text-slate-500">
+                          <div className="inline-flex max-w-[min(84%,36rem)] items-center gap-2 rounded-full bg-slate-100/90 px-3 py-1 text-caption text-slate-500">
                             <span className="text-sm leading-none">{emoji}</span>
                             <span className="font-medium text-slate-600">
                               {label}
@@ -5544,14 +5545,14 @@ export function MessagingInbox({
                               aria-expanded={open}
                               className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left hover:bg-amber-50"
                             >
-                              <span className="text-[10px] text-amber-600/80">
+                              <span className="text-caption text-amber-600/80">
                                 {open ? "▾" : "▸"}
                               </span>
                               <ChannelIcon
                                 channel="system"
                                 className="text-amber-600"
                               />
-                              <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-amber-800">
+                              <span className="min-w-0 flex-1 truncate text-caption font-medium text-amber-800">
                                 Internal note
                                 {!open ? (
                                   <span className="font-normal text-amber-700/70">
@@ -5560,7 +5561,7 @@ export function MessagingInbox({
                                   </span>
                                 ) : null}
                               </span>
-                              <span className="shrink-0 text-[10px] tabular-nums text-amber-600/70">
+                              <span className="shrink-0 text-caption tabular-nums text-amber-600/70">
                                 {formatShortTime(m.created_at)}
                               </span>
                             </button>
@@ -5615,7 +5616,7 @@ export function MessagingInbox({
                                 type="button"
                                 onClick={() => toggleExpanded(m.id)}
                                 aria-expanded={open}
-                                className="mt-0.5 shrink-0 text-[10px] text-slate-400"
+                                className="mt-0.5 shrink-0 text-caption text-slate-400"
                               >
                                 {open ? "▾" : "▸"}
                               </button>
@@ -5644,7 +5645,7 @@ export function MessagingInbox({
                                     {subject || "Email"}
                                   </span>
                                   <span
-                                    className={`ml-auto shrink-0 text-[10px] tabular-nums ${
+                                    className={`ml-auto shrink-0 text-caption tabular-nums ${
                                       outbound
                                         ? "text-sky-800/55"
                                         : "text-slate-400"
@@ -5687,7 +5688,7 @@ export function MessagingInbox({
                                     <button
                                       type="button"
                                       onClick={() => dismissOptimistic(m.id)}
-                                      className="text-[11px] font-medium text-slate-500 underline-offset-2 hover:underline"
+                                      className="text-caption font-medium text-slate-500 underline-offset-2 hover:underline"
                                     >
                                       Dismiss
                                     </button>
@@ -5704,7 +5705,7 @@ export function MessagingInbox({
                                 }`}
                               >
                                 {(m.from_address || m.to_address) && (
-                                  <div className="mb-2.5 space-y-0.5 text-[11px] text-slate-500">
+                                  <div className="mb-2.5 space-y-0.5 text-caption text-slate-500">
                                     {m.from_address ? (
                                       <div>
                                         <span className="text-slate-400">
@@ -5787,7 +5788,7 @@ export function MessagingInbox({
                                 outbound ? "justify-end" : "justify-start"
                               }`}
                             >
-                              <span className="text-[11px] font-medium text-rose-700">
+                              <span className="text-caption font-medium text-rose-700">
                                 Couldn’t send
                               </span>
                               <MessageErrorBadge
@@ -5800,7 +5801,7 @@ export function MessagingInbox({
                                 <button
                                   type="button"
                                   onClick={() => dismissOptimistic(m.id)}
-                                  className="text-[11px] font-medium text-slate-500 underline-offset-2 hover:underline"
+                                  className="text-caption font-medium text-slate-500 underline-offset-2 hover:underline"
                                 >
                                   Dismiss
                                 </button>
@@ -5830,7 +5831,7 @@ export function MessagingInbox({
                               />
                             ) : null}
                             {collapsible && !open ? (
-                              <div className="mt-1 text-[11px] font-medium text-sky-700">
+                              <div className="mt-1 text-caption font-medium text-sky-700">
                                 Show more
                               </div>
                             ) : null}
@@ -5847,7 +5848,7 @@ export function MessagingInbox({
                               />
                             ) : null}
                             {isSending ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-700/70">
+                              <span className="inline-flex items-center gap-1 text-caption font-medium text-sky-700/70">
                                 <Loader2
                                   className="h-3 w-3 animate-spin"
                                   strokeWidth={2}
@@ -5856,7 +5857,7 @@ export function MessagingInbox({
                               </span>
                             ) : (
                               <span
-                                className={`text-[10px] tabular-nums ${
+                                className={`text-caption tabular-nums ${
                                   outbound
                                     ? "text-sky-800/55"
                                     : "text-slate-400"
@@ -6073,7 +6074,7 @@ export function MessagingInbox({
                                 type="button"
                                 onClick={() => void connectMailbox("GOOGLE")}
                                 disabled={connectingMailbox !== null}
-                                className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                                className={buttonClass("second", "small")}
                               >
                                 {connectingMailbox === "GOOGLE"
                                   ? "Connecting…"
@@ -6083,7 +6084,7 @@ export function MessagingInbox({
                                 type="button"
                                 onClick={() => void connectMailbox("OUTLOOK")}
                                 disabled={connectingMailbox !== null}
-                                className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                                className={buttonClass("second", "small")}
                               >
                                 {connectingMailbox === "OUTLOOK"
                                   ? "Connecting…"
@@ -6339,7 +6340,7 @@ export function MessagingInbox({
                   setDeleteProspectError(null);
                   setDeleteProspectOpen(true);
                 }}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-700"
+                className={buttonClass("quiet", "small")}
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden />
                 Delete prospect
@@ -6609,7 +6610,7 @@ export function MessagingInbox({
                   onToggle={() => toggleDetailSection("campaigns")}
                   badge={
                     activeCampaignCount > 0 ? (
-                      <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
+                      <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-caption font-semibold text-slate-600">
                         {activeCampaignCount}
                       </span>
                     ) : null
@@ -6679,7 +6680,7 @@ export function MessagingInbox({
                               onClick={() =>
                                 void copyBossReportLink(threadProspect)
                               }
-                              className="inline-flex w-fit items-center gap-1 text-left text-[12px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                              className="inline-flex w-fit items-center gap-1 text-left text-caption font-medium text-slate-400 hover:text-slate-600 hover:underline"
                               title="Copy shareable Boss report link for the client"
                             >
                               {copiedBossReportLink ? (
@@ -6727,7 +6728,7 @@ export function MessagingInbox({
                             onClick={() =>
                               void copyBossProDashboardLink(threadProspect)
                             }
-                            className="inline-flex w-fit items-center gap-1 text-left text-[12px] font-medium text-slate-400 hover:text-slate-600 hover:underline disabled:opacity-60"
+                            className="inline-flex w-fit items-center gap-1 text-left text-caption font-medium text-slate-400 hover:text-slate-600 hover:underline disabled:opacity-60"
                             title="Copy public Boss Pro dashboard link for the client"
                           >
                             {sharingBossProDashboard ? (
@@ -6753,7 +6754,7 @@ export function MessagingInbox({
                       ) : bossProHref && threadProspect ? (
                         <Link
                           href={bossProHref}
-                          className="text-[12px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                          className="text-caption font-medium text-slate-400 hover:text-slate-600 hover:underline"
                           title="Open Boss Pro for this prospect"
                         >
                           Open Boss Pro
@@ -6810,7 +6811,7 @@ export function MessagingInbox({
                     open={detailSectionsOpen.notes}
                     onToggle={() => toggleDetailSection("notes")}
                     badge={
-                      <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
+                      <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-caption font-semibold text-slate-600">
                         {noteCount}
                       </span>
                     }
@@ -6828,7 +6829,7 @@ export function MessagingInbox({
                               <p className="whitespace-pre-wrap">
                                 {(n.body_text || "").trim() || "(empty)"}
                               </p>
-                              <p className="mt-1 text-[10px] tabular-nums text-amber-700/70">
+                              <p className="mt-1 text-caption tabular-nums text-amber-700/70">
                                 {formatShortDateTime(n.created_at)}
                               </p>
                             </li>

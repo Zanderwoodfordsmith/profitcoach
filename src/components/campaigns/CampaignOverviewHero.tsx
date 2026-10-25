@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { cardClass } from "@/components/ui/Card";
 import { buildDemoCampaignOverview } from "@/lib/campaigns/demoPreview";
 import {
   CampaignCompactDial,
@@ -305,13 +306,13 @@ function BarHoverCard({ bar }: { bar: ChartBar }) {
       role="tooltip"
       className="w-[13.25rem] rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-lg shadow-slate-300/80"
     >
-      <p className="text-[11px] font-medium text-slate-500">{bar.cardTitle}</p>
+      <p className="text-caption font-medium text-slate-500">{bar.cardTitle}</p>
       <p className="mt-0.5 text-lg font-semibold tabular-nums tracking-tight text-slate-900">
         {sent}
         <span className="ml-1 text-xs font-medium text-slate-400">sent</span>
       </p>
       {bar.planned > 0 ? (
-        <p className="text-[11px] font-medium tabular-nums text-slate-500">
+        <p className="text-caption font-medium tabular-nums text-slate-500">
           {bar.planned} planned
         </p>
       ) : null}
@@ -349,9 +350,9 @@ function KpiTile({
 }) {
   return (
     <div
-      className={`flex min-w-0 flex-col rounded-xl bg-slate-100 px-3 py-2.5 sm:px-3.5 sm:py-3 ${className ?? ""}`}
+      className={cardClass("soft", `flex min-w-0 flex-col px-3 py-2.5 sm:px-3.5 sm:py-3 ${className ?? ""}`)}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+      <p className="text-kicker font-semibold uppercase text-slate-500">
         {label}
       </p>
       <div className="mt-1 flex flex-1 items-center">{children}</div>
@@ -365,7 +366,7 @@ function KpiNumber({ value, hint }: { value: string; hint?: string }) {
       <p className="text-xl font-semibold tabular-nums tracking-tight text-slate-900 sm:text-2xl">
         {value}
       </p>
-      {hint ? <p className="text-[10px] leading-snug text-slate-500">{hint}</p> : null}
+      {hint ? <p className="text-caption leading-snug text-slate-500">{hint}</p> : null}
     </div>
   );
 }
@@ -433,7 +434,7 @@ function ChartSkeleton({
           {[...ticks].reverse().map((tick) => (
             <span
               key={tick}
-              className="text-[11px] font-medium tabular-nums text-slate-300"
+              className="text-caption font-medium tabular-nums text-slate-300"
             >
               {formatTick(tick)}
             </span>
@@ -631,7 +632,7 @@ export function CampaignOverviewHero({
         : null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+    <div className={cardClass("plain", "overflow-hidden")}>
         <div className="grid grid-cols-1 items-center gap-3 px-4 pt-3.5 sm:grid-cols-[1fr_auto_1fr] sm:px-5">
           <h2 className="min-w-0 text-xl font-semibold tracking-tight text-slate-900">
             Activity this {OVERVIEW_RANGE_LABELS[range]}
@@ -700,7 +701,7 @@ export function CampaignOverviewHero({
                   {[...ticks].reverse().map((tick) => (
                     <span
                       key={tick}
-                      className="text-[11px] font-medium tabular-nums text-slate-500"
+                      className="text-caption font-medium tabular-nums text-slate-500"
                     >
                       {formatTick(tick)}
                     </span>
@@ -813,12 +814,12 @@ export function CampaignOverviewHero({
                         } ${
                           range === "week"
                             ? "text-xs sm:text-sm"
-                            : "whitespace-nowrap text-[11px] tabular-nums sm:text-xs"
+                            : "whitespace-nowrap text-caption tabular-nums sm:text-xs"
                         } ${hidePhone ? "max-sm:invisible" : ""} ${hideDesktop ? "sm:invisible" : ""}`}
                       >
                         {bar.label}
                         {bar.sublabel ? (
-                          <span className="mt-0.5 block text-[11px] font-medium tabular-nums text-slate-400">
+                          <span className="mt-0.5 block text-caption font-medium tabular-nums text-slate-400">
                             {bar.sublabel}
                           </span>
                         ) : null}

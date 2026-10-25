@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 const PUBLIC_SHARE_HOST = "theprofitcoach.com";
@@ -77,7 +78,7 @@ export function PublicSlugEditor({
           Public URL
         </label>
         <div className="flex items-center overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
-          <span className="flex shrink-0 items-center border-r border-slate-200 bg-slate-50 px-2 text-[11px] text-slate-500">
+          <span className="flex shrink-0 items-center border-r border-slate-200 bg-slate-50 px-2 text-caption text-slate-500">
             {PUBLIC_SHARE_HOST}/
           </span>
           <input
@@ -110,7 +111,7 @@ export function PublicSlugEditor({
           {saving ? "Saving" : message === "success" ? "Saved" : "Save"}
         </button>
         {message === "error" && error ? (
-          <p className="basis-full text-right text-[13px] text-rose-600">{error}</p>
+          <p className="basis-full text-right text-ui text-rose-600">{error}</p>
         ) : null}
       </div>
     );
@@ -120,7 +121,7 @@ export function PublicSlugEditor({
     <div
       className={
         framed
-          ? "rounded-2xl border border-slate-200/90 bg-white px-5 py-4 shadow-sm shadow-slate-200/40"
+          ? cardClass("plain", "px-5 py-4")
           : ""
       }
     >
@@ -128,7 +129,7 @@ export function PublicSlugEditor({
         className={
           framed
             ? "text-sm font-semibold text-slate-900"
-            : "text-lg font-bold leading-snug text-slate-900"
+            : "text-lg font-semibold leading-snug text-slate-900"
         }
       >
         Your public URL
@@ -136,7 +137,7 @@ export function PublicSlugEditor({
       <p
         className={
           framed
-            ? "mt-0.5 text-[13px] leading-snug text-slate-500"
+            ? "mt-0.5 text-ui leading-snug text-slate-500"
             : "mt-2 text-sm leading-relaxed text-slate-600"
         }
       >
@@ -172,13 +173,13 @@ export function PublicSlugEditor({
           type="button"
           disabled={saving}
           onClick={() => void save()}
-          className="shrink-0 text-[15px] font-medium text-[#0c5290] hover:text-[#051e36] disabled:text-slate-300"
+          className="shrink-0 text-ui font-medium text-[#0c5290] hover:text-[#051e36] disabled:text-slate-300"
         >
           {saving ? "Saving" : message === "success" ? "Saved" : "Save"}
         </button>
       </div>
       {message === "error" && error ? (
-        <p className="mt-2 text-[13px] text-rose-600">{error}</p>
+        <p className="mt-2 text-ui text-rose-600">{error}</p>
       ) : null}
     </div>
   );

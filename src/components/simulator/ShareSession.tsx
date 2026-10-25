@@ -76,8 +76,8 @@ export function ShareSession({ sessionId, shared, onClose }: { sessionId: string
         <div className="relative z-[2]">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-[var(--sim-cream-faint)]">Share with the community</p>
-              <p className="mt-1 text-xl font-light text-[var(--sim-cream)]">Other coaches can read the report and listen back.</p>
+              <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">Share with the community</p>
+              <p className="mt-1 text-subhead font-light text-[var(--sim-cream)]">Other coaches can read the report and listen back.</p>
             </div>
             <button type="button" onClick={() => onClose(posted)} className="rounded-full p-1.5 text-[var(--sim-cream-soft)] hover:text-[var(--sim-cream)]" aria-label="Close">
               <X className="h-5 w-5" />
@@ -102,7 +102,7 @@ export function ShareSession({ sessionId, shared, onClose }: { sessionId: string
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.5)] px-3.5 py-2.5 text-[0.9375rem] text-[var(--sim-cream)] outline-none focus:border-[var(--sim-cream)]"
+                  className="mt-1.5 w-full rounded-xl border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.5)] px-3.5 py-2.5 text-ui text-[var(--sim-cream)] outline-none focus:border-[var(--sim-cream)]"
                 />
               </label>
               <label className="mt-4 block text-sm text-[var(--sim-cream-soft)]">
@@ -111,7 +111,7 @@ export function ShareSession({ sessionId, shared, onClose }: { sessionId: string
                   value={shownBody}
                   onChange={(e) => setBody(e.target.value)}
                   rows={8}
-                  className="sim-scroll mt-1.5 w-full resize-y rounded-xl border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.5)] px-3.5 py-2.5 text-[0.9375rem] leading-relaxed text-[var(--sim-cream)] outline-none focus:border-[var(--sim-cream)]"
+                  className="sim-scroll mt-1.5 w-full resize-y rounded-xl border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.5)] px-3.5 py-2.5 text-ui leading-relaxed text-[var(--sim-cream)] outline-none focus:border-[var(--sim-cream)]"
                 />
               </label>
               <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-[var(--sim-cream-soft)]">

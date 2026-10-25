@@ -8,6 +8,7 @@ import {
   CallsViewSwitcher,
   type CallsWorkspaceView,
 } from "@/components/calls/CallsViewSwitcher";
+import { buttonClass } from "@/components/ui/Button";
 
 export type CallsToolbarMenu = "filter" | "sort" | null;
 
@@ -105,7 +106,7 @@ export function CallsToolbar({
             onMenuChange(null);
             onSettings();
           }}
-          className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+          className={buttonClass("second")}
         >
           <SlidersHorizontal
             className="h-3.5 w-3.5 text-slate-500"
@@ -121,7 +122,7 @@ export function CallsToolbar({
             onMenuChange(null);
             onBook();
           }}
-          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 text-sm font-semibold text-white hover:bg-sky-700"
+          className={buttonClass("main", "normal", "shrink-0")}
         >
           <CalendarPlus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
           Add a call

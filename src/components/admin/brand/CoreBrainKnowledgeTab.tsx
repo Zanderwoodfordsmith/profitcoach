@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, RotateCcw } from "lucide-react";
 
 import { BrainExpandableItem } from "@/components/admin/brand/BrainExpandableItem";
+import { buttonClass } from "@/components/ui/Button";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export type CanonFile = {
@@ -102,14 +103,14 @@ function KnowledgeFileEditor({
         onChange={(e) => setDraft(e.target.value)}
         rows={18}
         spellCheck={false}
-        className="mt-3 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-[13px] leading-relaxed text-slate-800 focus:border-sky-400 focus:outline-none"
+        className="mt-3 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-ui leading-relaxed text-slate-800 focus:border-sky-400 focus:outline-none"
       />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => void save()}
           disabled={saving || !dirty || !draft.trim()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-40"
+          className={buttonClass("main")}
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           Save changes
@@ -119,7 +120,7 @@ function KnowledgeFileEditor({
             type="button"
             onClick={() => void resetToRepo()}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+            className={buttonClass("second")}
           >
             <RotateCcw className="h-3.5 w-3.5" /> Reset to repo
           </button>
@@ -157,7 +158,7 @@ function KnowledgeGroup({
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+        <p className="text-kicker font-semibold uppercase text-slate-400">
           {title}
         </p>
         {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
@@ -174,16 +175,16 @@ function KnowledgeGroup({
             subtitle={f.description}
             badges={
               <>
-                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200">
+                <span className="rounded-full bg-white px-2 py-0.5 text-caption font-medium text-slate-500 ring-1 ring-slate-200">
                   {wordCount(f.content).toLocaleString()}w
                 </span>
                 {f.overridden ? (
-                  <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                  <span className="rounded-full bg-sky-100 px-2 py-0.5 text-caption font-semibold text-sky-700">
                     Edited
                   </span>
                 ) : null}
                 {f.missing ? (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-caption font-semibold text-amber-800">
                     Missing in repo
                   </span>
                 ) : null}

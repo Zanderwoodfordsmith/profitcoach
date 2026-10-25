@@ -291,13 +291,13 @@ function InsertChip({
           className="pointer-events-none fixed z-50 w-max max-w-[16rem] -translate-x-1/2 -translate-y-full rounded-md bg-slate-900 px-2.5 py-1.5 text-left shadow-[0_8px_20px_rgba(15,23,42,0.18)]"
           style={{ left: tip.x, top: tip.y - 8 }}
         >
-          <span className="block text-[12px] font-medium leading-snug text-white">
+          <span className="block text-caption font-medium leading-snug text-white">
             {hint}
           </span>
-          <span className="mt-0.5 block text-[11px] font-normal leading-snug text-sky-200">
+          <span className="mt-0.5 block text-caption font-normal leading-snug text-sky-200">
             e.g. {field.example}
           </span>
-          <span className="mt-1 block text-[11px] font-normal leading-snug text-slate-300">
+          <span className="mt-1 block text-caption font-normal leading-snug text-slate-300">
             Click to insert, or drag into the message
           </span>
         </span>
@@ -492,7 +492,7 @@ export function MergeFieldComposer({
             if (el) insertLineBreakInEditor(el);
             emit();
           }}
-          className="min-h-[8.5rem] w-full whitespace-pre-wrap bg-white px-3 py-2.5 text-[15px] leading-relaxed text-slate-800 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)]"
+          className="min-h-[8.5rem] w-full whitespace-pre-wrap bg-white px-3 py-2.5 text-read leading-relaxed text-slate-800 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)]"
         />
         <div
           className="flex items-stretch border-t border-slate-200 bg-slate-100"
@@ -519,7 +519,7 @@ export function MergeFieldComposer({
               ))}
             </div>
             {resultWarning ? (
-              <p className="px-1.5 pb-1.5 text-[11px] leading-snug text-slate-500">
+              <p className="px-1.5 pb-1.5 text-caption leading-snug text-slate-500">
                 Scorecard results only fill in after they finish the Boss
                 Scorecard.
               </p>

@@ -151,12 +151,12 @@ const baseMarkdownClass =
   "[&_ul]:mb-0 [&_ul]:list-outside [&_ul]:list-disc [&_ul]:whitespace-normal [&_ul]:pl-5 " +
   "[&_ol]:mb-0 [&_ol]:list-outside [&_ol]:list-decimal [&_ol]:whitespace-normal [&_ol]:pl-5 " +
   "[&_li]:my-0 [&_li]:leading-relaxed [&_li]:whitespace-normal " +
-  "[&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:leading-snug " +
+  "[&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:text-subhead [&_h1]:font-semibold [&_h1]:leading-snug " +
   "[&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:leading-snug " +
   "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:leading-snug " +
   "[&_h4]:mt-2 [&_h4]:mb-1 [&_h4]:text-base [&_h4]:font-semibold [&_h4]:leading-snug " +
-  "[&_h5]:mt-1.5 [&_h5]:mb-0.5 [&_h5]:text-[15px] [&_h5]:font-semibold " +
-  "[&_h6]:mt-1.5 [&_h6]:mb-0.5 [&_h6]:text-[15px] [&_h6]:font-semibold " +
+  "[&_h5]:mt-1.5 [&_h5]:mb-0.5 [&_h5]:text-ui [&_h5]:font-semibold " +
+  "[&_h6]:mt-1.5 [&_h6]:mb-0.5 [&_h6]:text-ui [&_h6]:font-semibold " +
   "[&_blockquote]:my-1 [&_blockquote]:border-l-2 [&_blockquote]:border-slate-200 [&_blockquote]:pl-3 [&_blockquote]:leading-relaxed [&_blockquote]:text-slate-600 " +
   "[&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.92em] [&_code]:font-mono";
 

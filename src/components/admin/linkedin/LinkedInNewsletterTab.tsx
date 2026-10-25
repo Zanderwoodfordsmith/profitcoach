@@ -22,6 +22,8 @@ import type {
   Overview537,
 } from "@/lib/linkedinNewsletter/types";
 import { SHORT_WORD_RANGE, wordCount } from "@/lib/linkedinNewsletter/types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { LI_BLUE, type LinkedInProfilePreview, displayName } from "./types";
 
 type Props = {
@@ -597,7 +599,7 @@ export function LinkedInNewsletterTab({
   if (view === "list") {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+        <div className={cardClass("plain", "p-6")}>
           <div className="flex items-start gap-3">
             <div
               className="flex h-10 w-10 items-center justify-center rounded-2xl text-white"
@@ -626,8 +628,7 @@ export function LinkedInNewsletterTab({
               setTopicIdeas([]);
               setView("setup");
             }}
-            className="mt-5 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
-            style={{ backgroundColor: LI_BLUE }}
+            className={buttonClass("main", "normal", "mt-5")}
           >
             {seriesList.length ? "New newsletter" : "Set up your newsletter"}
           </button>
@@ -644,10 +645,10 @@ export function LinkedInNewsletterTab({
                 key={s.id}
                 type="button"
                 onClick={() => void openSeries(s.id)}
-                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left hover:bg-slate-50"
+                className={cardClass("raised", "flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-50")}
               >
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{s.name}</p>
+                  <p className="text-sm font-medium text-slate-900">{s.name}</p>
                   <p className="text-xs text-slate-500">
                     {s.cadence}
                     {s.lead_topic ? ` · ${s.lead_topic}` : ""}
@@ -664,10 +665,10 @@ export function LinkedInNewsletterTab({
 
   if (view === "setup") {
     return (
-      <div className="mx-auto max-w-2xl space-y-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+      <div className={cardClass("plain", "mx-auto max-w-2xl space-y-5 p-6")}>
         <button
           type="button"
-          className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+          className="text-xs font-medium text-slate-500 hover:text-slate-800"
           onClick={() => setView("list")}
         >
           ← Back
@@ -677,7 +678,7 @@ export function LinkedInNewsletterTab({
           Say what it is on the tin — niche + profit/outcome (Pam: “Law Firm Profit
           Newsletter”).
         </p>
-        <label className="block text-xs font-semibold text-slate-600">
+        <label className="block text-xs font-medium text-slate-600">
           Name
           <input
             value={name}
@@ -686,7 +687,7 @@ export function LinkedInNewsletterTab({
             placeholder="e.g. Manufacturing Profit Power-Up"
           />
         </label>
-        <label className="block text-xs font-semibold text-slate-600">
+        <label className="block text-xs font-medium text-slate-600">
           Tagline
           <input
             value={tagline}
@@ -695,7 +696,7 @@ export function LinkedInNewsletterTab({
             placeholder="Have more profit and fun…"
           />
         </label>
-        <label className="block text-xs font-semibold text-slate-600">
+        <label className="block text-xs font-medium text-slate-600">
           How often you publish
           <select
             value={cadence}
@@ -714,7 +715,7 @@ export function LinkedInNewsletterTab({
             type="button"
             disabled={busy}
             onClick={() => void suggestNames()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+            className={buttonClass("second")}
           >
             <Wand2 className="h-4 w-4" />
             Suggest names from AI brain
@@ -723,8 +724,7 @@ export function LinkedInNewsletterTab({
             type="button"
             disabled={busy || !name.trim()}
             onClick={() => void createSeries()}
-            className="rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            style={{ backgroundColor: LI_BLUE }}
+            className={buttonClass("main")}
           >
             {busy ? "Working…" : "Continue"}
           </button>
@@ -752,7 +752,7 @@ export function LinkedInNewsletterTab({
       <div className="mx-auto max-w-4xl space-y-5">
         <button
           type="button"
-          className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+          className="text-xs font-medium text-slate-500 hover:text-slate-800"
           onClick={() => {
             setView("list");
             void loadSeriesList();
@@ -762,13 +762,13 @@ export function LinkedInNewsletterTab({
         </button>
 
         {/* Primary: write this edition */}
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+        <div className={cardClass("plain", "p-6")}>
           <h2 className="text-lg font-semibold text-slate-900">{series.name}</h2>
           <p className="text-sm text-slate-500">
             {series.tagline || "Write one edition at a time"}
           </p>
 
-          <label className="mt-5 block text-xs font-semibold text-slate-600">
+          <label className="mt-5 block text-xs font-medium text-slate-600">
             Topic for this edition
             <input
               value={leadTopic}
@@ -777,7 +777,7 @@ export function LinkedInNewsletterTab({
               placeholder="e.g. Pricing courage when you're scared to raise fees"
             />
           </label>
-          <p className="mt-1.5 text-[11px] text-slate-500">
+          <p className="mt-1.5 text-caption text-slate-500">
             Each edition is one topic. Next week you can pick a different pain —
             you&apos;re not locked into one theme forever.
           </p>
@@ -787,7 +787,7 @@ export function LinkedInNewsletterTab({
               type="button"
               disabled={busy}
               onClick={() => void suggestTopics()}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+              className={buttonClass("second", "small")}
             >
               <Sparkles className="h-3.5 w-3.5" />
               Suggest topics
@@ -796,8 +796,7 @@ export function LinkedInNewsletterTab({
               type="button"
               disabled={busy || !leadTopic.trim()}
               onClick={() => void writeThisEdition()}
-              className="rounded-full px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
-              style={{ backgroundColor: LI_BLUE }}
+              className={buttonClass("main")}
             >
               {busy ? "Writing…" : "Write this edition"}
             </button>
@@ -812,7 +811,7 @@ export function LinkedInNewsletterTab({
                   onClick={() => setLeadTopic(t.title)}
                   className="block w-full rounded-xl border border-slate-100 px-3 py-2 text-left text-xs hover:bg-slate-50"
                 >
-                  <span className="font-semibold text-slate-800">{t.title}</span>
+                  <span className="font-medium text-slate-800">{t.title}</span>
                   {t.angle ? (
                     <span className="block text-slate-500">{t.angle}</span>
                   ) : null}
@@ -823,7 +822,7 @@ export function LinkedInNewsletterTab({
         </div>
 
         {/* Past / drafted editions */}
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm">
+        <div className={cardClass("plain", "p-4")}>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
             Your editions ({editions.length})
           </p>
@@ -847,7 +846,7 @@ export function LinkedInNewsletterTab({
                       <p className="truncate text-sm font-medium text-slate-900">
                         {ed.title}
                       </p>
-                      <p className="truncate text-[11px] text-slate-500">
+                      <p className="truncate text-caption text-slate-500">
                         {ed.status}
                         {ed.body_markdown?.trim() ? " · has draft" : ""}
                       </p>
@@ -876,7 +875,7 @@ export function LinkedInNewsletterTab({
                 want months of topics planned — not required to write this week.
               </p>
             </div>
-            <span className="ml-3 text-xs font-semibold text-slate-500">
+            <span className="ml-3 text-xs font-medium text-slate-500">
               {showSeriesPlanner ? "Hide" : "Show"}
             </span>
           </button>
@@ -890,7 +889,7 @@ export function LinkedInNewsletterTab({
                 year mapped). Different pains = different series plans later.
               </p>
               <div className="flex flex-wrap items-center gap-2">
-                <label className="text-xs font-semibold text-slate-600">
+                <label className="text-xs font-medium text-slate-600">
                   Plan size
                   <select
                     value={targetCount}
@@ -905,7 +904,7 @@ export function LinkedInNewsletterTab({
                   type="button"
                   disabled={busy || !leadTopic.trim()}
                   onClick={() => void generatePlan()}
-                  className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                  className={buttonClass("second", "small")}
                 >
                   {busy ? "Planning…" : "Build series plan"}
                 </button>
@@ -917,7 +916,7 @@ export function LinkedInNewsletterTab({
                   <OverviewCol title="🧾 7 checklist" items={overview.checklist} />
                 </div>
               ) : null}
-              <p className="text-[11px] text-amber-800">
+              <p className="text-caption text-amber-800">
                 Building a series plan replaces the edition list below with the planned
                 titles (existing drafts for this newsletter are cleared).
               </p>
@@ -934,7 +933,7 @@ export function LinkedInNewsletterTab({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+            className="text-xs font-medium text-slate-500 hover:text-slate-800"
             onClick={() => setView("series")}
           >
             ← {series.name}
@@ -947,11 +946,11 @@ export function LinkedInNewsletterTab({
 
         <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
           {/* AI side */}
-          <div className="space-y-3 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className={cardClass("plain", "space-y-3 p-4")}>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               AI (patches the artifact — doesn&apos;t thrash full rewrites)
             </p>
-            <label className="block text-xs font-semibold text-slate-600">
+            <label className="block text-xs font-medium text-slate-600">
               Format
               <select
                 value={format}
@@ -965,7 +964,7 @@ export function LinkedInNewsletterTab({
                 ))}
               </select>
             </label>
-            <label className="block text-xs font-semibold text-slate-600">
+            <label className="block text-xs font-medium text-slate-600">
               Length
               <select
                 value={lengthMode}
@@ -982,8 +981,7 @@ export function LinkedInNewsletterTab({
               type="button"
               disabled={busy}
               onClick={() => void draftWithAi(false)}
-              className="flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-              style={{ backgroundColor: LI_BLUE }}
+              className={buttonClass("main", "normal", "w-full")}
             >
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1003,20 +1001,20 @@ export function LinkedInNewsletterTab({
               type="button"
               disabled={busy || !body.trim()}
               onClick={() => void draftWithAi(true)}
-              className="w-full rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+              className={buttonClass("second", "normal", "w-full")}
             >
               Apply revision to artifact
             </button>
 
             <div className="border-t border-slate-100 pt-3">
-              <p className="text-xs font-semibold text-slate-600">Cover image</p>
+              <p className="text-xs font-medium text-slate-600">Cover image</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {COVER_TEMPLATES.map((t) => (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => setCoverTemplate(t.id)}
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                    className={`rounded-full px-2.5 py-1 text-caption font-semibold ${
                       coverTemplate === t.id
                         ? "bg-slate-900 text-white"
                         : "bg-slate-100 text-slate-700"
@@ -1049,7 +1047,7 @@ export function LinkedInNewsletterTab({
               <button
                 type="button"
                 onClick={() => void downloadCover()}
-                className="mt-2 w-full rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                className={buttonClass("second", "small", "mt-2 w-full")}
               >
                 Download cover PNG
               </button>
@@ -1057,7 +1055,7 @@ export function LinkedInNewsletterTab({
           </div>
 
           {/* Artifact */}
-          <div className="space-y-3 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className={cardClass("plain", "space-y-3 p-4")}>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Live artifact
@@ -1066,15 +1064,14 @@ export function LinkedInNewsletterTab({
                 type="button"
                 disabled={busy}
                 onClick={() => void saveEdition()}
-                className="ml-auto rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                className={buttonClass("second", "small", "ml-auto")}
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => void copyBody()}
-                className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
-                style={{ backgroundColor: LI_BLUE }}
+                className={buttonClass("main", "small")}
               >
                 <ClipboardCopy className="h-3.5 w-3.5" />
                 Copy for LinkedIn
@@ -1096,18 +1093,18 @@ export function LinkedInNewsletterTab({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={22}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 font-mono text-[13px] leading-relaxed text-slate-900"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 font-mono text-ui leading-relaxed text-slate-900"
               placeholder="Edition body appears here — edit live, then copy into LinkedIn."
             />
             <div className="rounded-2xl border border-dashed border-slate-200 p-3">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-xs font-semibold text-slate-600">
+                <p className="text-xs font-medium text-slate-600">
                   Feed promo post
                 </p>
                 <button
                   type="button"
                   onClick={() => void copyPromo()}
-                  className="ml-auto rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-800"
+                  className={buttonClass("second", "small", "ml-auto")}
                 >
                   Copy promo
                 </button>
@@ -1115,7 +1112,7 @@ export function LinkedInNewsletterTab({
                   type="button"
                   disabled={!promo.trim()}
                   onClick={() => onUsePromoInComposer(promo)}
-                  className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-800 disabled:opacity-40"
+                  className={buttonClass("second", "small")}
                 >
                   Open in Compose
                 </button>
@@ -1139,8 +1136,8 @@ export function LinkedInNewsletterTab({
 
 function OverviewCol({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-2xl bg-slate-50 p-3">
-      <p className="text-[11px] font-semibold text-slate-600">{title}</p>
+    <div className={cardClass("soft", "p-3")}>
+      <p className="text-caption font-semibold text-slate-600">{title}</p>
       <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-slate-700">
         {items.map((item) => (
           <li key={item}>{item}</li>

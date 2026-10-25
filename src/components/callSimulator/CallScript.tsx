@@ -11,9 +11,9 @@ import type { SimCallType, TranscriptLine } from "@/lib/callSimulator/types";
 import { fillText, type Slots } from "@/components/salesCall/slots";
 
 /** The Scripts' type scale (ScriptSheet's BODY, SECTION and part title), so the call reads like the script page. */
-const BODY = "text-[1.0625rem] leading-[1.45] tracking-[-0.006em]";
-const SECTION = "text-[1.3125rem] font-normal leading-tight tracking-[-0.012em]";
-const TITLE = "text-[1.625rem] font-normal leading-tight tracking-[-0.015em]";
+const BODY = "text-read leading-[1.45] tracking-[-0.006em]";
+const SECTION = "text-subhead font-normal leading-tight tracking-[-0.012em]";
+const TITLE = "text-title font-normal leading-tight";
 
 const DOT: Record<Tone, string> = {
   green: "bg-emerald-500",
@@ -61,11 +61,11 @@ const LOOK = {
     top: "text-slate-400",
     live: "text-emerald-700",
     liveDot: "bg-emerald-500",
-    title: "text-[1.0625rem] font-medium tracking-[-0.01em] text-slate-900",
-    titleQuiet: "text-[1.0625rem] font-medium tracking-[-0.01em] text-slate-600",
+    title: "text-read font-medium tracking-[-0.01em] text-slate-900",
+    titleQuiet: "text-read font-medium tracking-[-0.01em] text-slate-600",
     goal: "hidden",
     rule: "border-slate-100",
-    section: "text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-slate-400",
+    section: "text-kicker font-semibold uppercase text-slate-400",
     say: "text-slate-900",
     sayDone: "text-slate-900/45",
     sayNow: "bg-emerald-50 text-emerald-950 ring-1 ring-emerald-300",
@@ -224,7 +224,7 @@ export function CallScript({
                 now ? `-mx-3.5 rounded-2xl px-3.5 py-3 ${L.sayNow}` : done ? `pl-6 ${L.sayDone}` : L.say
               }`}
             >
-              {now ? <span className={`mb-1 block text-[0.6875rem] font-semibold uppercase tracking-[0.14em] ${L.sayNowLabel}`}>Say next</span> : null}
+              {now ? <span className={`mb-1 block text-kicker font-semibold uppercase ${L.sayNowLabel}`}>Say next</span> : null}
               {done && !now ? <Check className={`absolute left-0 top-1 h-4 w-4 ${L.check}`} aria-label="Said" /> : null}
               {fill(b.text)}
             </p>
@@ -258,7 +258,7 @@ export function CallScript({
         case "message":
           out.push(
             <div key={key} className={`rounded-xl px-4 py-3 ${space} ${L.message}`}>
-              <p className={`text-[0.6875rem] font-semibold uppercase tracking-[0.14em] ${L.top}`}>{b.label}</p>
+              <p className={`text-kicker font-semibold uppercase ${L.top}`}>{b.label}</p>
               <p className={`mt-1 whitespace-pre-line ${BODY} ${L.messageText}`}>{fill(b.text)}</p>
             </div>
           );
@@ -274,7 +274,7 @@ export function CallScript({
 
   return (
     <div ref={box} className={L.wrap}>
-      <p className={`flex items-center gap-2 text-[0.6875rem] font-semibold uppercase tracking-[0.16em] ${L.top}`}>
+      <p className={`flex items-center gap-2 text-kicker font-semibold uppercase ${L.top}`}>
         Script · {call.title}
         <span className={`ml-auto inline-flex items-center gap-1.5 normal-case tracking-normal ${L.live}`}>
           <span className={`h-1.5 w-1.5 animate-pulse rounded-full ${L.liveDot}`} aria-hidden /> Following you

@@ -25,6 +25,8 @@ import {
 } from "@/lib/salesNavigator/importSizing";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const COOKIE_STORAGE_KEY = "lead-finder-sales-nav-cookie";
 const URL_OVERRIDE_STORAGE_KEY = "lead-finder-sales-nav-url-override";
@@ -929,7 +931,7 @@ export function SalesNavResultsPanel({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
         <div>
-          <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">
+          <h2 className="text-ui font-semibold tracking-tight text-slate-900">
             Profiles
             {leads ? (
               <span className="ml-2 font-normal text-slate-400">
@@ -948,7 +950,7 @@ export function SalesNavResultsPanel({
           <button
             type="button"
             onClick={() => void openHistory()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+            className={buttonClass("second", "small")}
             title="Import history"
           >
             <History className="h-3.5 w-3.5" />
@@ -958,7 +960,7 @@ export function SalesNavResultsPanel({
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+              className={buttonClass("second", "small")}
               title="Sales Navigator session"
             >
               <Settings2 className="h-3.5 w-3.5" />
@@ -977,7 +979,7 @@ export function SalesNavResultsPanel({
                   ? void refreshUnipileAccount()
                   : void connectUnipileLinkedIn()
               }
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              className={buttonClass("second", "small")}
               title="Unipile LinkedIn account"
             >
               {unipileConnecting ? (
@@ -994,7 +996,7 @@ export function SalesNavResultsPanel({
             href={effectiveUrl || salesNavUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+            className={buttonClass("second", "small")}
           >
             <ExternalLink className="h-3.5 w-3.5" />
             Open
@@ -1006,7 +1008,7 @@ export function SalesNavResultsPanel({
               (importProvider === "unipile" && unipileConnected === false)
             }
             onClick={() => void runImport()}
-            className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+            className={buttonClass("main")}
           >
             {loading ? (
               <>
@@ -1029,7 +1031,7 @@ export function SalesNavResultsPanel({
 
       <div className="border-b border-slate-200 px-5 py-3 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          <span className="text-kicker font-medium uppercase text-slate-400">
             Import from
           </span>
           {(
@@ -1056,7 +1058,7 @@ export function SalesNavResultsPanel({
           })}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          <span className="text-kicker font-medium uppercase text-slate-400">
             Via
           </span>
           {(
@@ -1107,7 +1109,7 @@ export function SalesNavResultsPanel({
           </label>
         ) : null}
         <label className="mt-2 block">
-          <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          <span className="mb-1 block text-kicker font-medium uppercase text-slate-400">
             Import name{" "}
             <span className="font-normal normal-case tracking-normal text-slate-400">
               (optional)
@@ -1122,7 +1124,7 @@ export function SalesNavResultsPanel({
           />
         </label>
         <label className="mt-2 block max-w-xs">
-          <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          <span className="mb-1 block text-kicker font-medium uppercase text-slate-400">
             Import up to
           </span>
           <select
@@ -1252,7 +1254,7 @@ export function SalesNavResultsPanel({
               </button>
             </div>
 
-            <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
               {pageLeads.map((lead, i) => {
                 const absoluteIndex =
                   (resultsPage - 1) * resultsPageSize + i;
@@ -1307,7 +1309,7 @@ export function SalesNavResultsPanel({
                   type="button"
                   disabled={resultsPage <= 1}
                   onClick={() => setResultsPage((p) => Math.max(1, p - 1))}
-                  className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                  className={buttonClass("second", "small")}
                 >
                   Prev
                 </button>
@@ -1320,7 +1322,7 @@ export function SalesNavResultsPanel({
                   onClick={() =>
                     setResultsPage((p) => Math.min(resultsTotalPages, p + 1))
                   }
-                  className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                  className={buttonClass("second", "small")}
                 >
                   Next
                 </button>
@@ -1354,7 +1356,7 @@ export function SalesNavResultsPanel({
               back and view the leads.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+            <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
               {historyRuns.map((run) => {
                 const status = run.status ?? "succeeded";
                 const inProgress =
@@ -1512,7 +1514,7 @@ export function SalesNavResultsPanel({
                     : undefined
                 );
               }}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              className={buttonClass("main")}
             >
               Import
             </button>
@@ -1539,7 +1541,7 @@ export function SalesNavResultsPanel({
 
           {!hasAccountSession || showPasteFallback ? (
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+              <span className="mb-1.5 block text-kicker font-medium uppercase text-slate-400">
                 {hasAccountSession ? "Different session (paste)" : "Or paste cookies"}
               </span>
               <textarea
@@ -1617,20 +1619,20 @@ function SalesNavLeadRow({
               href={lead.linkedinUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-[15px] font-semibold text-sky-800 hover:underline"
+              className="text-ui font-medium text-sky-800 hover:underline"
             >
               {name}
             </a>
           ) : (
-            <p className="text-[15px] font-semibold text-slate-900">{name}</p>
+            <p className="text-ui font-medium text-slate-900">{name}</p>
           )}
           {lead.premium ? (
-            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-amber-700">
+            <span className="text-kicker font-medium uppercase text-amber-700">
               Premium
             </span>
           ) : null}
           {lead.openProfile ? (
-            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-sky-700">
+            <span className="text-kicker font-medium uppercase text-sky-700">
               Open profile
             </span>
           ) : null}

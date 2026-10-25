@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Loader2, Mic, Square, Volume2, X } from "lucide-react";
 
+import { buttonClass } from "@/components/ui/Button";
 import { openQuestions, stillNeeded } from "@/lib/practiceKnowledge/blueprint";
 
 import { BuildBar } from "./document/DocumentParts";
@@ -91,7 +92,7 @@ export function BlueprintAssistant({
       ) : (
       <header className="flex items-start justify-between gap-3 border-b border-[var(--bp-rule)] px-5 py-4">
         <div>
-          <h2 className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">Talk it through</h2>
+          <h2 className="text-ui font-semibold text-[var(--bp-ink)]">Talk it through</h2>
           <p className="mt-0.5 text-xs leading-5 text-[var(--bp-muted)]">
             {open.length
               ? `${open.length} ${open.length === 1 ? "question" : "questions"} left. Type or speak, whatever is quicker.`
@@ -112,12 +113,12 @@ export function BlueprintAssistant({
       <div ref={scrollRef} className="bp-scroll min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-5">
         {turns.length === 0 ? (
           <div className="space-y-4">
-            <p className="bp-display text-[1.25rem] leading-[1.45] text-[var(--bp-ink)]">
+            <p className="bp-display text-subhead leading-[1.45] text-[var(--bp-ink)]">
               We already know what LinkedIn shows. A few minutes of conversation fills the rest, and every answer lands in your blueprint.
             </p>
             {open.length ? (
               <div>
-                <p className="text-xs font-semibold text-[var(--bp-muted)]">First up</p>
+                <p className="text-xs font-medium text-[var(--bp-muted)]">First up</p>
                 <ul className="mt-2 space-y-1.5">
                   {open.slice(0, 4).map((q) => (
                     <li key={q.path} className="grid grid-cols-[0.875rem_1fr] gap-2 text-sm leading-6 text-[var(--bp-body)]">
@@ -132,11 +133,11 @@ export function BlueprintAssistant({
         ) : (
           turns.map((turn, i) =>
             turn.role === "assistant" ? (
-              <div key={`${turn.at}-${i}`} className="max-w-[92%] rounded-2xl rounded-tl-md bg-[var(--bp-tint)] px-4 py-3 text-[0.9375rem] leading-[1.6] text-[var(--bp-ink)]">
+              <div key={`${turn.at}-${i}`} className="max-w-[92%] rounded-2xl rounded-tl-md bg-[var(--bp-tint)] px-4 py-3 text-ui leading-[1.6] text-[var(--bp-ink)]">
                 {turn.content}
               </div>
             ) : (
-              <div key={`${turn.at}-${i}`} className="ml-auto max-w-[88%] rounded-2xl rounded-tr-md bg-[var(--bp-navy)] px-4 py-3 text-[0.9375rem] leading-[1.6] text-white">
+              <div key={`${turn.at}-${i}`} className="ml-auto max-w-[88%] rounded-2xl rounded-tr-md bg-[var(--bp-navy)] px-4 py-3 text-ui leading-[1.6] text-white">
                 {turn.content}
               </div>
             )
@@ -171,7 +172,7 @@ export function BlueprintAssistant({
                 }
               }}
               placeholder={transcribing ? "Turning your voice into text…" : "Your answer"}
-              className="block w-full resize-none rounded-2xl bg-transparent px-4 pt-3 text-[0.9375rem] leading-6 text-[var(--bp-ink)] outline-none placeholder:text-[var(--bp-faint)]"
+              className="block w-full resize-none rounded-2xl bg-transparent px-4 pt-3 text-ui leading-6 text-[var(--bp-ink)] outline-none placeholder:text-[var(--bp-faint)]"
             />
             <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5">
               <div className="flex items-center gap-1">
@@ -213,7 +214,7 @@ export function BlueprintAssistant({
             type="button"
             onClick={start}
             disabled={busy}
-            className="w-full rounded-full bg-[var(--bp-navy)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
+            className={buttonClass("main", "normal", "w-full")}
           >
             {busy ? "Starting…" : turns.length ? "Pick up where we left off" : "Start the conversation"}
           </button>

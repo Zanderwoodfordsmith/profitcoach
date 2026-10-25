@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 
+import { buttonClass } from "@/components/ui/Button";
 import type { PracticeNote } from "@/lib/practiceKnowledge/types";
 
 import { usePractice } from "./PracticeProvider";
@@ -71,7 +72,7 @@ export function PracticeComments({
               </span>
               <div className="min-w-0">
                 <p className="text-sm text-slate-900">
-                  <span className="font-semibold">You</span>{" "}
+                  <span className="font-medium">You</span>{" "}
                   <span className="text-xs font-normal text-slate-500">{commentTime(note.at)}</span>
                 </p>
                 <p className="mt-0.5 whitespace-pre-wrap text-sm leading-6 text-slate-800">{note.body}</p>
@@ -102,7 +103,7 @@ export function PracticeComments({
           <button
             type="submit"
             disabled={!body.trim()}
-            className="rounded-lg bg-[#0c5290] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+            className={buttonClass("main", "small")}
           >
             Comment
           </button>

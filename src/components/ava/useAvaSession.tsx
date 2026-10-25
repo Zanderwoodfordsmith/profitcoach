@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useAgentConversation, type AgentChatSummary } from "@/components/agent/useAgentConversation";
@@ -14,24 +14,48 @@ import type { AvaStarterSpec } from "./AvaChat";
 
 /**
  * One Ava conversation outside the Blueprint: who she is working for, the
- * chat itself, past chats, voice, and what she offers here. The side panel
- * and Ava's own page both use it.
+ * chat itself, past chats, voice, and what she offers here. The layout holds
+ * one for the whole app, so the side panel and Ava's own page share it: open
+ * her full page mid-chat and the chat carries on.
  */
 
-const STARTERS: Record<AgentMode, string[]> = {
-  admin: [
-    "Find prospects for a coach",
-    "Set up a Connection campaign from a coach's blueprint",
-    "Add a coach's newest list to their Connector campaign",
-    "Turn a coach's campaign up a notch",
-  ],
-  coach: [
-    "Find me new prospects",
-    "Add my newest list to my Connector campaign",
-    "Write the messages for my Connection campaign",
-    "Write this week's LinkedIn newsletter",
-  ],
-};
+/**
+ * What Ava offers on a new chat. Admins see exactly what coaches see (Zander,
+ * 24 Oct) and name the coach in what they type, so they get the coach's view.
+ */
+/** The longer list behind "More ideas", grouped by area. Only jobs her skills can do today. */
+const MORE_IDEAS: { group: string; prompts: string[] }[] = [
+  {
+    group: "Find people",
+    prompts: ["Find me new prospects", "Find businesses near me on Google Maps", "Bring in people from a Sales Navigator search"],
+  },
+  {
+    group: "Campaigns",
+    prompts: [
+      "Set up a new connection campaign",
+      "Add my newest list to my Connector campaign",
+      "Show me how my campaigns are doing",
+      "Pause a campaign, or send more each day",
+    ],
+  },
+  {
+    group: "Messages and LinkedIn",
+    prompts: [
+      "Write the messages for my Connection campaign",
+      "Write this week's LinkedIn newsletter",
+      "Write a LinkedIn post about a client win",
+    ],
+  },
+  { group: "Your Blueprint", prompts: ["Help me finish my Blueprint", "Go through my Blueprint with me"] },
+  { group: "Practise and learn", prompts: ["Practise my pitch with a sceptical owner", "How do I add a list to a campaign?"] },
+];
+
+const STARTERS = [
+  "Find me new prospects",
+  "Add my newest list to my Connector campaign",
+  "Write the messages for my Connection campaign",
+  "Write this week's LinkedIn newsletter",
+];
 
 /**
  * What to offer first on the page you are on. First match wins. Only pages
@@ -61,7 +85,7 @@ function bufferToBase64(buf: ArrayBuffer): string {
   return btoa(binary);
 }
 
-export function useAvaSession() {
+function useAvaSessionState(active: boolean) {
   const pathname = usePathname();
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
@@ -96,6 +120,7 @@ export function useAvaSession() {
   });
 
   useEffect(() => {
+    if (!active) return;
     let live = true;
     void (async () => {
       const headers = await authHeaders();
@@ -113,7 +138,7 @@ export function useAvaSession() {
     return () => {
       live = false;
     };
-  }, [authHeaders]);
+  }, [active, authHeaders]);
 
   const loadChats = useCallback(() => {
     let live = true;
@@ -134,7 +159,7 @@ export function useAvaSession() {
   }, [authHeaders]);
 
   // Fetched again whenever a conversation starts or gets its title.
-  useEffect(() => loadChats(), [loadChats, convo.chatId, convo.title]);
+  useEffect(() => (active ? loadChats() : undefined), [active, loadChats, convo.chatId, convo.title]);
 
   const transcribe = useCallback(
     async (blob: Blob): Promise<string | null> => {
@@ -162,18 +187,28 @@ export function useAvaSession() {
 
   const send = convo.send;
   const starters = useMemo<AvaStarterSpec[]>(() => {
-    const here = admin ? null : pageStarter(pathname);
-    const prompts = [...(here ? [here] : []), ...STARTERS[mode].filter((prompt) => prompt !== here)].slice(0, 4);
+    const here = pageStarter(pathname);
+    const prompts = [...(here ? [here] : []), ...STARTERS.filter((prompt) => prompt !== here)].slice(0, 4);
     return prompts.map((prompt, i) => ({
       key: prompt,
       label: prompt,
       primary: i === 0,
       onPick: () => void send(prompt),
     }));
-  }, [admin, send, mode, pathname]);
+  }, [send, pathname]);
+
+  const moreIdeas = useMemo(
+    () =>
+      MORE_IDEAS.map((g) => ({
+        group: g.group,
+        starters: g.prompts.map<AvaStarterSpec>((prompt) => ({ key: prompt, label: prompt, onPick: () => void send(prompt) })),
+      })),
+    [send],
+  );
 
   return {
     agent,
+    moreIdeas,
     convo,
     chats,
     loadChats,
@@ -181,12 +216,34 @@ export function useAvaSession() {
     starters,
     subtitle,
     admin,
+    first,
     greeting: first ? `Hi ${first}, I'm Ava` : "Hi, I'm Ava",
-    intro: admin
-      ? "Tell me what to do and for which coach. I work on lists, campaigns, messages and Blueprints. Anything that sends, spends money or removes people waits for your OK."
-      : "I find prospects, build lists, set up campaigns and write your messages from your Blueprint. Anything that sends, spends money or removes people waits for your OK.",
-    placeholder: admin ? "Tell me what to do, and for which coach" : "Ask Ava, or tell her what to do",
+    intro:
+      "I find prospects, build lists, set up campaigns and write your messages from your Blueprint. Anything that sends, spends money or removes people waits for your OK.",
+    placeholder: "Ask Ava, or tell her what to do",
     draft,
     setDraft,
   };
+}
+
+export type AvaSession = ReturnType<typeof useAvaSessionState>;
+
+const AvaSessionContext = createContext<{ session: AvaSession; activate: () => void } | null>(null);
+
+/** Holds Ava's one conversation for the app. Nothing loads until Ava is first opened. */
+export function AvaSessionProvider({ children }: { children: ReactNode }) {
+  const [active, setActive] = useState(false);
+  const session = useAvaSessionState(active);
+  const activate = useCallback(() => setActive(true), []);
+  const value = useMemo(() => ({ session, activate }), [session, activate]);
+  return <AvaSessionContext.Provider value={value}>{children}</AvaSessionContext.Provider>;
+}
+
+/** The shared Ava conversation. Mounting a component that uses it wakes Ava up. */
+export function useAvaSession(): AvaSession {
+  const ctx = useContext(AvaSessionContext);
+  if (!ctx) throw new Error("useAvaSession needs AvaSessionProvider (the coach and admin layouts have it)");
+  const { activate } = ctx;
+  useEffect(() => activate(), [activate]);
+  return ctx.session;
 }

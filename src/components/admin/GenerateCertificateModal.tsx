@@ -4,6 +4,8 @@ import type { CertificateType } from "@/lib/certificates/generateCertificatePdf"
 import { Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type CoachOption = {
   id: string;
@@ -128,7 +130,7 @@ export function GenerateCertificateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className={cardClass("raised", "max-h-[90vh] w-full max-w-lg overflow-y-auto")}>
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
@@ -264,7 +266,7 @@ export function GenerateCertificateModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("quiet")}
           >
             Cancel
           </button>
@@ -272,7 +274,7 @@ export function GenerateCertificateModal({
             type="button"
             disabled={generating || !selectedCoachId}
             onClick={() => void handleGenerate()}
-            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            className={buttonClass("main")}
           >
             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Download PDF

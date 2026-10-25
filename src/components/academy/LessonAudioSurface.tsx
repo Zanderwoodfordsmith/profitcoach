@@ -399,7 +399,7 @@ export function LessonAudioSurface({
             );
           })}
         </div>
-        <div className="mt-2 flex items-center justify-between text-[11px] font-medium tabular-nums text-white/60">
+        <div className="mt-2 flex items-center justify-between text-caption font-medium tabular-nums text-white/60">
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>

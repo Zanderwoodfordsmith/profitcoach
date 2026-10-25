@@ -17,9 +17,9 @@ import {
 } from "@/lib/bossScores";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
+import { cardClass } from "@/components/ui/Card";
 
-const WORKSHOP_CARD_SHELL =
-  "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]";
+const WORKSHOP_CARD_SHELL = cardClass("plain", "overflow-hidden");
 
 const WORKSHOP_CARD_HEADER =
   "border-b border-slate-600/40 bg-slate-700 px-4 py-2.5 text-sm font-semibold tracking-wide text-white";

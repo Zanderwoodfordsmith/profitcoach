@@ -2,6 +2,8 @@
 
 import { useEffect, useId } from "react";
 import { X } from "lucide-react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   CAMPAIGN_LIBRARY_KIND_LABEL,
   CAMPAIGN_LIBRARY_KINDS,
@@ -57,7 +59,7 @@ export function CampaignLibraryCreateDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl"
+        className={cardClass("raised", "relative w-full max-w-md overflow-hidden")}
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -111,14 +113,14 @@ export function CampaignLibraryCreateDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className={buttonClass("quiet", "small")}
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={busy}
-            className="rounded-lg bg-[#0c5290] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#0a4578] disabled:opacity-50"
+            className={buttonClass("main", "small")}
           >
             {busy ? "Creating…" : "Create"}
           </button>

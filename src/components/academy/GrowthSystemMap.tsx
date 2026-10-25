@@ -28,6 +28,8 @@ import type {
   GrowthMapRow,
   GrowthMapSection,
 } from "@/lib/academy/growthSystemMap";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const ICONS: Record<GrowthMapNode["icon"], LucideIcon> = {
   target: Target,
@@ -108,7 +110,7 @@ export function GrowthSystemMap({
           aria-hidden
         />
         <div className="relative max-w-3xl">
-          <h1 className="max-w-2xl text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl">
+          <h1 className="max-w-2xl text-heading font-semibold tracking-[-0.035em] text-slate-950 sm:text-display">
             Here is how your coaching business grows
           </h1>
           <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
@@ -130,7 +132,7 @@ export function GrowthSystemMap({
                   className={`inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/80 px-3.5 py-2 font-semibold shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow ${style.accent} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2`}
                 >
                   <span
-                    className={`grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold text-white ${style.line}`}
+                    className={`grid h-5 w-5 place-items-center rounded-full text-caption font-bold text-white ${style.line}`}
                   >
                     {index + 1}
                   </span>
@@ -192,7 +194,7 @@ function GrowthSystemSection({
             <div className="min-w-0">
               <h2
                 id={`${section.id}-title`}
-                className="text-2xl font-semibold tracking-[-0.025em] text-slate-950 sm:text-3xl"
+                className="text-2xl font-semibold tracking-[-0.025em] text-slate-950 sm:text-heading"
               >
                 {section.title}
               </h2>
@@ -206,14 +208,14 @@ function GrowthSystemSection({
             {section.id === "get-calls" ? (
               <Link
                 href="/admin/academy/classroom/system"
-                className={`hidden rounded-full px-3.5 py-2 text-sm font-semibold transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 sm:inline-flex ${style.accent}`}
+                className={buttonClass("quiet", "normal", "max-sm:hidden")}
               >
                 View system map
               </Link>
             ) : null}
             <Link
               href={section.href}
-              className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 ${style.accent}`}
+              className={buttonClass("quiet")}
             >
               Open course
               <ArrowRight className="h-4 w-4" aria-hidden />
@@ -241,7 +243,7 @@ function GrowthSystemSection({
           className="border-t border-slate-200/80 px-5 pb-6 sm:px-7 sm:pb-8"
         >
           {section.id === "get-calls" ? (
-            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200/90 bg-slate-50/50">
+            <div className={cardClass("soft", "mt-5 overflow-hidden")}>
               {section.rows.map((row, index) => (
                 <WorkflowRow
                   key={row.id}
@@ -318,11 +320,13 @@ function GrowthMapNodeView({
 }) {
   const NodeIcon = ICONS[node.icon];
   const className =
-    "group flex h-full min-h-[118px] w-full min-w-0 flex-1 items-start gap-3 rounded-2xl border px-4 py-3.5 text-left transition sm:min-w-[190px]";
-  const availableClassName =
-    "border-slate-200/90 bg-white shadow-[0_5px_16px_rgba(15,23,42,0.05)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_22px_rgba(15,23,42,0.09)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2";
+    "group flex h-full min-h-[118px] w-full min-w-0 flex-1 items-start gap-3 px-4 py-3.5 text-left transition sm:min-w-[190px]";
+  const availableClassName = cardClass(
+    "raised",
+    "hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_22px_rgba(15,23,42,0.09)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2",
+  );
   const unavailableClassName =
-    "border-dashed border-slate-300 bg-slate-100/60 text-slate-400";
+    "rounded-2xl border border-dashed border-slate-300 bg-slate-100/60 text-slate-400";
 
   const content = (
     <>
@@ -335,7 +339,7 @@ function GrowthMapNodeView({
       </span>
       <span className="min-w-0">
         <span
-          className={`block text-[15px] font-semibold leading-5 ${
+          className={`block text-ui font-semibold leading-5 ${
             node.status === "available" ? "text-slate-800" : "text-slate-500"
           }`}
         >
@@ -345,7 +349,7 @@ function GrowthMapNodeView({
           {node.description}
         </span>
         <span
-          className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${
+          className={`mt-2 inline-flex items-center gap-1 text-xs font-medium ${
             node.status === "available" ? tone.accent : "text-slate-400"
           }`}
         >

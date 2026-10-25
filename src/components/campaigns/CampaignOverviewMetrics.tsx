@@ -7,6 +7,8 @@ import {
   BOSS_PILLAR_DIAL_GRADIENTS,
 } from "@/lib/bossProDialGradients";
 import { leadStatusLabel } from "@/lib/unipile/campaignLeadActivity";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type CampaignDialMetric = {
   id: string;
@@ -114,8 +116,7 @@ function SweepGradientArc({
   return <g>{parts}</g>;
 }
 
-const DIAL_CARD_SHELL =
-  "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]";
+const DIAL_CARD_SHELL = cardClass("plain", "overflow-hidden");
 
 const CARD_HEADER =
   "border-b border-slate-600/40 bg-slate-700 px-4 py-2.5 text-sm font-semibold tracking-wide text-white";
@@ -191,8 +192,8 @@ function CampaignStrokeDial({
             <span
               className={`font-semibold tabular-nums tracking-tight ${
                 emphasize
-                  ? "text-[1.75rem] sm:text-[2rem]"
-                  : "text-[1.45rem] sm:text-[1.75rem]"
+                  ? "text-heading"
+                  : "text-title sm:text-heading"
               }`}
               style={{
                 background: BOSS_PRO_HERO_SCORE_TEXT_GRADIENT,
@@ -203,11 +204,11 @@ function CampaignStrokeDial({
             >
               {pct}
             </span>
-            <span className="ml-0.5 text-[0.7rem] font-medium text-slate-500 sm:text-sm">
+            <span className="ml-0.5 text-caption font-medium text-slate-500 sm:text-sm">
               %
             </span>
           </span>
-          <span className="mt-1 text-[11px] font-medium tabular-nums text-slate-500">
+          <span className="mt-1 text-caption font-medium tabular-nums text-slate-500">
             {fraction}
           </span>
         </div>
@@ -224,7 +225,7 @@ function CampaignStrokeDial({
           {label}
         </span>
         {hint ? (
-          <span className="text-[11px] leading-snug text-slate-500">{hint}</span>
+          <span className="text-caption leading-snug text-slate-500">{hint}</span>
         ) : null}
       </div>
     </div>
@@ -279,8 +280,8 @@ export function CampaignCompactDial({
   const dialClass = size === "sm" ? "h-9 w-9" : "h-12 w-12";
   const gapClass = size === "sm" ? "gap-2.5" : "gap-3.5";
   const listClass = size === "sm" ? "min-w-[5.25rem] space-y-0.5" : "min-w-[6rem] space-y-1";
-  const rowText = size === "sm" ? "text-[10px]" : "text-[11px]";
-  const pctText = size === "sm" ? "text-[11px]" : "text-[13px]";
+  const rowText = size === "sm" ? "text-caption" : "text-caption";
+  const pctText = size === "sm" ? "text-caption" : "text-ui";
 
   return (
     <div
@@ -407,8 +408,8 @@ export function CampaignReplyMix({
   const dialClass = size === "sm" ? "h-9 w-9" : "h-12 w-12";
   const gapClass = size === "sm" ? "gap-2.5" : "gap-3.5";
   const listClass = size === "sm" ? "min-w-[5.25rem] space-y-0.5" : "min-w-[5.75rem] space-y-1";
-  const rowText = size === "sm" ? "text-[10px]" : "text-[11px]";
-  const totalText = size === "sm" ? "text-[11px]" : "text-[13px]";
+  const rowText = size === "sm" ? "text-caption" : "text-caption";
+  const totalText = size === "sm" ? "text-caption" : "text-ui";
 
   return (
     <div
@@ -662,8 +663,7 @@ const STATUS_COLOR_FALLBACK = [
   "#0f766e",
 ] as const;
 
-const ADD_PROSPECTS_BTN =
-  "rounded-lg bg-[#0c5290] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#0a457a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2";
+const ADD_PROSPECTS_BTN = buttonClass("main", "small");
 
 export type CampaignStatusMixRow = {
   status: string;
@@ -746,7 +746,7 @@ function CampaignStatusDonut({
         </g>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[2rem] font-semibold tabular-nums leading-none tracking-tight text-slate-900 sm:text-[2.25rem]">
+        <span className="text-heading font-semibold tabular-nums leading-none text-slate-900 sm:text-display">
           {total}
         </span>
         <span className="mt-1.5 text-xs font-medium text-slate-500">
@@ -831,12 +831,12 @@ export function CampaignFuelPanel({
                         <button
                           type="button"
                           onClick={() => onOpenStatus(row.status)}
-                          className="flex w-full items-center gap-3 rounded-md px-1 py-1 text-left text-[15px] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                          className="flex w-full items-center gap-3 rounded-md px-1 py-1 text-left text-ui hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
                         >
                           {rowInner}
                         </button>
                       ) : (
-                        <div className="flex items-center gap-3 px-1 py-1 text-[15px]">
+                        <div className="flex items-center gap-3 px-1 py-1 text-ui">
                           {rowInner}
                         </div>
                       )}
@@ -936,7 +936,7 @@ export function CampaignQueueCell({
         label={runway ? `${label}. ${runway}` : label}
       />
       <span
-        className={`shrink-0 text-[11px] font-medium tabular-nums leading-none ${
+        className={`shrink-0 text-caption font-medium tabular-nums leading-none ${
           warn ? "text-amber-800" : "text-slate-600"
         }`}
       >
@@ -980,7 +980,7 @@ export function CampaignDailyStackChart({
     <div className={DIAL_CARD_SHELL}>
       <div className={CARD_HEADER}>Daily activity</div>
       <div className="px-4 py-4 sm:px-5 sm:py-5">
-        <ul className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-medium text-slate-500">
+        <ul className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-caption font-medium text-slate-500">
           <li className="flex items-center gap-1.5">
             <span
               className="h-2.5 w-2.5 rounded-sm"

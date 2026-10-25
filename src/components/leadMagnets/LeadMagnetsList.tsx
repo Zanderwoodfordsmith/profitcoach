@@ -65,12 +65,12 @@ export function LeadMagnetsList({ coachSlug, appOrigin }: Props) {
                     href={editorHref}
                     className="min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
                   >
-                    <h2 className="text-[15px] font-semibold tracking-tight text-slate-900 hover:text-[#0c5290]">
+                    <h2 className="text-ui font-semibold tracking-tight text-slate-900 hover:text-[#0c5290]">
                       {magnet.title}
                     </h2>
                   </Link>
                   <div className="flex shrink-0 items-center gap-2.5 text-sm">
-                    <span className="font-mono text-[11px] text-slate-500">
+                    <span className="font-mono text-caption text-slate-500">
                       {path}
                     </span>
                     {slugReady ? (

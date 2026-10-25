@@ -28,6 +28,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import type { CompassLessonContent } from "@/lib/academy/compassLessonContent";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { LessonSeekRequest } from "@/lib/academy/lessonSeekRequest";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   category: AcademyCategory;
@@ -122,7 +123,7 @@ export function CompassLessonPlayer({
             { label: course.title },
           ]}
         />
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-heading">
           {course.title}
         </h1>
         <p className="mt-1 text-sm text-slate-500">{pillarEyebrow}</p>
@@ -130,9 +131,9 @@ export function CompassLessonPlayer({
 
       <div className="flex min-h-[calc(100vh-10rem)] flex-col gap-8 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1">
-          <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60 md:p-8">
+          <article className={cardClass("plain", "p-6 md:p-8")}>
             <header className="mb-6 flex items-start justify-between gap-3 border-b border-slate-100 pb-5">
-              <h2 className="min-w-0 flex-1 text-base font-semibold text-slate-900 md:text-xl">
+              <h2 className="min-w-0 flex-1 text-base font-semibold text-slate-900 md:text-subhead">
                 {lesson.emoji ? `${lesson.emoji} ` : ""}
                 {lesson.title}
               </h2>
@@ -221,7 +222,7 @@ export function CompassLessonPlayer({
         </div>
 
         <aside className="w-full shrink-0 lg:sticky lg:top-28 lg:w-96 lg:self-start">
-          <div className="rounded-2xl bg-slate-100/80 p-5 ring-1 ring-slate-200/70">
+          <div className={cardClass("soft", "p-5")}>
             <p className="text-sm font-semibold text-slate-900">Course contents</p>
             <p className="mt-0.5 text-xs text-slate-500">
               {lessons.length} lesson{lessons.length === 1 ? "" : "s"}

@@ -11,6 +11,7 @@ import {
   isTodayKey,
 } from "@/lib/timeTracker/time";
 import { ratingTileClasses, ratingDotClasses } from "@/lib/timeTracker/rating";
+import { cardClass } from "@/components/ui/Card";
 
 const SLOT_PX = 20;
 const TIME_COL_PX = 64;
@@ -313,7 +314,7 @@ export function TimeTrackerGrid({
   );
 
   return (
-    <div className="max-h-[calc(100vh-12rem)] overflow-auto rounded-xl border border-slate-200 bg-white">
+    <div className={cardClass("plain", "max-h-[calc(100vh-12rem)] overflow-auto")}>
       <div className="min-w-[760px]">
         {/* Header row: weekday + date */}
         <div
@@ -359,7 +360,7 @@ export function TimeTrackerGrid({
               return (
                 <div
                   key={min}
-                  className={`absolute right-1 -translate-y-1/2 text-[10px] font-medium ${
+                  className={`absolute right-1 -translate-y-1/2 text-caption font-medium ${
                     onHour ? "text-slate-500" : "text-slate-300"
                   }`}
                   style={{ top: idx * SLOT_PX }}

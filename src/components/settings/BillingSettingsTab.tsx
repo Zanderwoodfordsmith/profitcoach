@@ -21,6 +21,8 @@ import {
   type PaymentBillingKind,
 } from "@/lib/paymentBillingKind";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type PlanInfo = {
   key: MembershipPlanKey;
@@ -312,7 +314,7 @@ export function BillingSettingsTab() {
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-800 transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+          className={buttonClass("second", "normal", "mt-4")}
         >
           <RefreshCw className="h-4 w-4" aria-hidden />
           Try again
@@ -371,12 +373,12 @@ export function BillingSettingsTab() {
 
   return (
     <div className="flex w-full max-w-4xl flex-col gap-5">
-      <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_35px_-28px_rgba(15,23,42,0.55)]">
+      <section className={cardClass("plain", "overflow-hidden")}>
         <div className="h-1 bg-gradient-to-r from-[#063056] via-[#0c5290] to-[#42a1ee]" />
         <div className="flex flex-col gap-6 p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <p className="text-kicker font-semibold uppercase text-slate-500">
                 Current plan
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2.5">
@@ -402,7 +404,7 @@ export function BillingSettingsTab() {
                 {planDescription}
               </p>
               {remainingLine ? (
-                <p className="mt-3 text-sm font-semibold text-slate-900">
+                <p className="mt-3 text-sm font-medium text-slate-900">
                   {remainingLine}
                 </p>
               ) : null}
@@ -413,7 +415,7 @@ export function BillingSettingsTab() {
                   type="button"
                   onClick={() => void openPortal()}
                   disabled={portalLoading}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#063056] focus:outline-none focus:ring-2 focus:ring-[#42a1ee]/50 disabled:cursor-wait disabled:opacity-60"
+                  className={buttonClass("main", "normal", "disabled:cursor-wait")}
                 >
                   {portalLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -426,7 +428,7 @@ export function BillingSettingsTab() {
               {!hasSubscription && !isComplimentary ? (
                 <Link
                   href="/coach/membership#plans"
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#063056] focus:outline-none focus:ring-2 focus:ring-[#42a1ee]/50"
+                  className={buttonClass("main")}
                 >
                   View plans
                   <ArrowUpRight className="h-4 w-4" aria-hidden />
@@ -448,7 +450,7 @@ export function BillingSettingsTab() {
       </section>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_12px_35px_-28px_rgba(15,23,42,0.55)] sm:p-6">
+        <section className={cardClass("plain", "p-5 sm:p-6")}>
           <div className="flex items-center gap-2 text-slate-900">
             <CreditCard className="h-4 w-4 text-[#0c5290]" aria-hidden />
             <h2 className="text-sm font-semibold">Payment method</h2>
@@ -481,7 +483,7 @@ export function BillingSettingsTab() {
           ) : null}
         </section>
 
-        <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_12px_35px_-28px_rgba(15,23,42,0.55)] sm:p-6">
+        <section className={cardClass("plain", "p-5 sm:p-6")}>
           <div className="flex items-center gap-2 text-slate-900">
             <ShieldCheck className="h-4 w-4 text-[#0c5290]" aria-hidden />
             <h2 className="text-sm font-semibold">Billing support</h2>
@@ -501,7 +503,7 @@ export function BillingSettingsTab() {
       </div>
 
       {visiblePlans.length > 0 ? (
-        <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_12px_35px_-28px_rgba(15,23,42,0.55)] sm:p-6">
+        <section className={cardClass("plain", "p-5 sm:p-6")}>
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Change plan</h2>
@@ -532,7 +534,7 @@ export function BillingSettingsTab() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold text-slate-900">{plan.label}</p>
                     {current ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0c5290]">
+                      <span className="inline-flex items-center gap-1 text-caption font-semibold text-[#0c5290]">
                         <Check className="h-3 w-3" aria-hidden />
                         Current
                       </span>
@@ -568,7 +570,7 @@ export function BillingSettingsTab() {
         </section>
       ) : null}
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_35px_-28px_rgba(15,23,42,0.55)]">
+      <section className={cardClass("plain", "overflow-hidden")}>
         <div className="flex flex-col gap-1 border-b border-slate-200/80 px-5 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-slate-900">
@@ -606,7 +608,7 @@ export function BillingSettingsTab() {
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
                   <span
-                    className={`rounded-full px-2 py-1 text-[11px] font-semibold capitalize ${paymentStatusClass(
+                    className={`rounded-full px-2 py-1 text-caption font-semibold capitalize ${paymentStatusClass(
                       payment.status
                     )}`}
                   >

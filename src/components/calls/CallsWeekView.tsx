@@ -20,6 +20,8 @@ import type {
   CalendarBusyBlock,
   CalendarViewType,
 } from "@/lib/calls/calendarView";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type CalendarRange = "day" | "week" | "month";
 
@@ -103,10 +105,10 @@ function EventCardCopy({
 }) {
   return (
     <>
-      <div className="truncate text-[14px] font-semibold leading-tight">
+      <div className="truncate text-ui font-semibold leading-tight">
         {title}
       </div>
-      <div className="truncate text-[14px] font-medium leading-tight opacity-90">
+      <div className="truncate text-ui font-medium leading-tight opacity-90">
         {timeRange}
       </div>
     </>
@@ -197,7 +199,7 @@ function TimedDayGrid({
             className="grid border-b border-slate-100"
             style={{ gridTemplateColumns: colTemplate }}
           >
-            <div className="px-1 py-1 text-[13px] font-medium text-slate-700">
+            <div className="px-1 py-1 text-ui font-medium text-slate-700">
               All day
             </div>
             {days.map((d) => {
@@ -213,7 +215,7 @@ function TimedDayGrid({
                   {allDay.map((block) => (
                     <div
                       key={block.id}
-                      className={`truncate rounded-sm border px-1 py-0.5 text-[10px] font-semibold ${blockedSlotCalendarClass}`}
+                      className={`truncate rounded-sm border px-1 py-0.5 text-caption font-semibold ${blockedSlotCalendarClass}`}
                       title={block.title}
                     >
                       {block.title}
@@ -233,7 +235,7 @@ function TimedDayGrid({
             {hours.map((h) => (
               <div
                 key={h}
-                className="border-b border-slate-50 pr-2 pt-0.5 text-right text-[13px] font-medium leading-none text-slate-700"
+                className="border-b border-slate-50 pr-2 pt-0.5 text-right text-ui font-medium leading-none text-slate-700"
                 style={{ height: HOUR_PX }}
               >
                 {DateTime.fromObject({ hour: h }).toFormat("h a")}
@@ -474,12 +476,12 @@ export function CallsWeekView({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain", "overflow-hidden")}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second", "small")}
             onClick={() => setAnchor(new Date())}
           >
             Today
@@ -568,7 +570,7 @@ export function CallsWeekView({
             <p className="mt-1">
               <Link
                 href={settingsHref}
-                className="font-semibold text-amber-950 underline decoration-amber-400 underline-offset-2 hover:text-amber-800"
+                className="font-medium text-amber-950 underline decoration-amber-400 underline-offset-2 hover:text-amber-800"
               >
                 Reconnect in Settings
               </Link>
@@ -586,7 +588,7 @@ export function CallsWeekView({
               ).map((d) => (
                 <div
                   key={d.toFormat("ccc")}
-                  className="px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                  className="px-2 py-2 text-center text-kicker font-semibold uppercase text-slate-500"
                 >
                   {d.toFormat("ccc")}
                 </div>
@@ -631,7 +633,7 @@ export function CallsWeekView({
                       {visibleBusy.map((block) => (
                         <li key={block.id}>
                           <div
-                            className={`truncate rounded px-1 py-0.5 text-left text-[10px] font-semibold ${blockedSlotCalendarClass}`}
+                            className={`truncate rounded px-1 py-0.5 text-left text-caption font-semibold ${blockedSlotCalendarClass}`}
                             title={block.title}
                           >
                             {block.title}
@@ -649,7 +651,7 @@ export function CallsWeekView({
                             <button
                               type="button"
                               onClick={() => onSelectCall?.(call)}
-                              className={`block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-semibold ${callStatusCalendarClass(
+                              className={`block w-full truncate rounded px-1 py-0.5 text-left text-caption font-semibold ${callStatusCalendarClass(
                                 call.status_normalized
                               )}`}
                               title={`${getCallDisplayName(call)} · ${call.prospect_name}`}
@@ -665,7 +667,7 @@ export function CallsWeekView({
                           <button
                             type="button"
                             onClick={() => goToDay(d)}
-                            className="w-full px-1 text-left text-[10px] font-semibold text-sky-700 hover:underline"
+                            className="w-full px-1 text-left text-caption font-medium text-sky-700 hover:underline"
                           >
                             +{extra} more
                           </button>

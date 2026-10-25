@@ -13,6 +13,7 @@ import { parseLessonVideoEmbed } from "@/lib/videoEmbed";
 
 import { AcademyMarkdown } from "./AcademyMarkdown";
 import { LessonBaseSearchCta } from "./LessonBaseSearchCta";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   chapters: LessonVideoChapter[];
@@ -101,7 +102,7 @@ export function LessonChapterGuidesPanel({ chapters, initialChapterId = null }: 
         return (
           <section
             key={chapter.id}
-            className="overflow-hidden rounded-xl border border-slate-200/80 bg-white"
+            className={cardClass("plain", "overflow-hidden")}
           >
             <button
               type="button"

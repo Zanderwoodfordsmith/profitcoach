@@ -17,7 +17,6 @@ import {
   FileText,
   Play,
   Search,
-  Sparkles,
   UserRound,
   X,
 } from "lucide-react";
@@ -63,6 +62,7 @@ import {
   type SearchTab,
 } from "@/lib/search/types";
 import "./searchMotion.css";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 const EMPTY_COUNTS: SearchCounts = {
   community: 0,
@@ -403,12 +403,12 @@ export function SearchPage() {
                 <button
                   type="button"
                   onClick={askAi}
-                  aria-label="Ask AI"
-                  title="Ask Profit Coach AI"
+                  aria-label="Ask Ava"
+                  title="Ask Ava"
                   className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-sky-800 transition hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
                 >
-                  <Sparkles className="h-[18px] w-[18px]" strokeWidth={1.75} />
-                  <span className="hidden sm:inline">Ask AI</span>
+                  <AvaHalo size={20} />
+                  <span className="hidden sm:inline">Ask Ava</span>
                 </button>
               </>
             ) : null}
@@ -505,8 +505,8 @@ export function SearchPage() {
                       onClick={askAi}
                       className="mt-5 inline-flex items-center gap-2 rounded-full bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
                     >
-                      <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-                      Ask AI instead
+                      <AvaHalo size={18} dark />
+                      Ask Ava instead
                     </button>
                   ) : null}
                 </div>

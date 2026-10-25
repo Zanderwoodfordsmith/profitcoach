@@ -6,6 +6,7 @@ import {
 import { AcademyMarkdown } from "./AcademyMarkdown";
 import { LessonBaseSearchCta } from "./LessonBaseSearchCta";
 import { LessonGuideToc } from "./LessonGuideToc";
+import { cardClass } from "@/components/ui/Card";
 
 /** Below this a guide reads fine top to bottom and a section list is clutter. */
 const MIN_SECTIONS_FOR_OUTLINE = 4;
@@ -40,7 +41,7 @@ export function LessonGuidePanel({ guideMarkdown, lessonId }: Props) {
         {showSections ? (
           <nav
             aria-label="Guide sections"
-            className="mb-8 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200/70 xl:hidden"
+            className={cardClass("soft", "mb-8 p-5 xl:hidden")}
           >
             <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               In this guide

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Clock, MessageSquareOff, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   dismissWinsQueueForSession,
   fetchPendingAdminWinsQueue,
@@ -241,7 +243,7 @@ export function AdminWinsReplyQueue() {
       aria-labelledby="admin-wins-queue-title"
     >
       <div
-        className="flex max-h-[94dvh] w-full max-w-[calc(42rem*1.2)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className={cardClass("raised", "flex max-h-[94dvh] w-full max-w-[calc(42rem*1.2)] flex-col overflow-hidden")}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="shrink-0 border-b border-slate-200 px-4 py-3 sm:px-5">
@@ -249,7 +251,7 @@ export function AdminWinsReplyQueue() {
             <div className="min-w-0 flex-1">
               <h2
                 id="admin-wins-queue-title"
-                className="text-lg font-semibold text-slate-900 sm:text-xl"
+                className="text-subhead font-semibold text-slate-900"
               >
                 Celebrate {queueLength} win{queueLength === 1 ? "" : "s"}
               </h2>
@@ -313,7 +315,7 @@ export function AdminWinsReplyQueue() {
               <button
                 type="button"
                 onClick={() => void handleSkipPermanently()}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className={buttonClass("second")}
                 title="Skip this win — no comment needed"
               >
                 <MessageSquareOff className="h-4 w-4 shrink-0" aria-hidden />
@@ -322,7 +324,7 @@ export function AdminWinsReplyQueue() {
               <button
                 type="button"
                 onClick={handleRemindLater}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className={buttonClass("second")}
                 title="Close for now; pending wins come back on your next visit"
               >
                 <Clock className="h-4 w-4 shrink-0" aria-hidden />

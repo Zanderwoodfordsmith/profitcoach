@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { Loader2, PhoneOff } from "lucide-react";
 
-import { AvaOrb } from "@/components/ava/AvaKit";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 import { figtree } from "@/fonts";
 import type { CallStart } from "@/lib/simulator/types";
 
@@ -78,7 +78,7 @@ function Talk({ sessionId, onClose }: { sessionId: string; onClose: () => void }
   return (
     <div className={`sim ava-ui ${figtree.className} fixed inset-0 z-[100]`} role="dialog" aria-modal="true" aria-label="Feedback with Ava">
       <div className="sim-room flex h-full flex-col items-center justify-center px-6">
-        <AvaOrb size={150} motion state={!connected ? "quiet" : isSpeaking ? "speaking" : "listening"} />
+        <AvaHalo size={150} dark state={!connected ? "idle" : isSpeaking ? "speaking" : "listening"} />
         <p className="mt-8 text-[clamp(1.6rem,3vw,2.4rem)] font-light tracking-[-0.02em]">Ava</p>
         <p className="mt-1 flex items-center gap-2 text-sm text-[var(--sim-cream-soft)]" aria-live="polite">
           {error ? null : !connected ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}

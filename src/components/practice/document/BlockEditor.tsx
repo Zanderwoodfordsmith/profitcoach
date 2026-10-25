@@ -3,11 +3,12 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
+import { cardClass } from "@/components/ui/Card";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 
 /** Same grey click-in box as the answer fields, so written sections edit the same way. */
 const FIELD =
-  "bp-input w-full rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-2.5 text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] outline-none transition-[background-color,border-color,box-shadow] hover:border-[#d3dce6] hover:bg-[#f0f4f8] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)]";
+  "bp-input w-full rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-2.5 text-read text-[var(--bp-ink)] outline-none transition-[background-color,border-color,box-shadow] hover:border-[#d3dce6] hover:bg-[#f0f4f8] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)]";
 
 /**
  * A textarea as tall as its text, refitted when its width changes (a phone,
@@ -79,18 +80,18 @@ function Line({
 }
 
 function Caption({ children }: { children: ReactNode }) {
-  return <p className="mb-1.5 text-[0.875rem] font-semibold text-[var(--bp-ink)]">{children}</p>;
+  return <p className="mb-1.5 text-ui font-medium text-[var(--bp-ink)]">{children}</p>;
 }
 
 function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, underHeading = false): ReactNode {
   switch (block.type) {
     case "lede":
-      return <Area value={block.text} onChange={(text) => set({ ...block, text })} className="bp-display text-[1.125rem]" />;
+      return <Area value={block.text} onChange={(text) => set({ ...block, text })} className="bp-display text-subhead" />;
     case "paragraph":
       return <Area value={block.text} onChange={(text) => set({ ...block, text })} />;
     case "heading":
       // A heading inside a written section is the label for the boxes under it.
-      return <h4 className="pt-3 text-[1rem] font-semibold tracking-[-0.01em] text-[var(--bp-ink)]">{block.text}</h4>;
+      return <h4 className="pt-3 text-base font-semibold tracking-[-0.01em] text-[var(--bp-ink)]">{block.text}</h4>;
     case "bullets":
     case "numbered":
       return (
@@ -130,7 +131,7 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
         <div className="space-y-2">
           {block.items.map((item, i) => (
             <div key={i} className="grid gap-1.5 @xl:grid-cols-[minmax(8rem,12rem)_1fr] @xl:gap-3">
-              <p className="pt-2 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">{item.label}</p>
+              <p className="pt-2 text-ui font-medium text-[var(--bp-muted)]">{item.label}</p>
               <Area
                 value={item.value}
                 onChange={(value) => set({ ...block, items: block.items.map((it, j) => (j === i ? { ...it, value } : it)) })}
@@ -142,11 +143,11 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
     case "table":
       return (
         <div className="bp-scroll -mx-1 overflow-x-auto px-1">
-          <table className="w-full min-w-[34rem] border-separate border-spacing-1 text-left text-[0.875rem]">
+          <table className="w-full min-w-[34rem] border-separate border-spacing-1 text-left text-ui">
             <thead>
               <tr>
                 {block.columns.map((col) => (
-                  <th key={col} className="px-1 text-[0.75rem] font-semibold uppercase tracking-[0.05em] text-[var(--bp-muted)]">
+                  <th key={col} className="px-1 text-kicker font-semibold uppercase text-[var(--bp-muted)]">
                     {col}
                   </th>
                 ))}
@@ -166,7 +167,7 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
                             rows: block.rows.map((rw, i) => (i === r ? rw.map((cl, j) => (j === c ? e.target.value : cl)) : rw)),
                           })
                         }
-                        className={`${FIELD} resize-y px-2 py-1.5 text-[0.875rem]`}
+                        className={`${FIELD} resize-y px-2 py-1.5 text-ui`}
                       />
                     </td>
                   ))}
@@ -250,7 +251,7 @@ function MessageLine({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="overflow-hidden rounded-xl border border-[#e3e9f0] bg-white">
+    <div className={cardClass("plain", "overflow-hidden")}>
       <button
         type="button"
         aria-expanded={open}
@@ -262,7 +263,7 @@ function MessageLine({
           aria-hidden
         />
         <span className="min-w-0">
-          <span className="block text-[0.9375rem] font-semibold text-[var(--bp-ink)]">{block.label || "Message"}</span>
+          <span className="block text-ui font-medium text-[var(--bp-ink)]">{block.label || "Message"}</span>
           {block.note ? <span className="mt-0.5 block truncate text-sm text-[var(--bp-muted)]">{block.note}</span> : null}
         </span>
       </button>

@@ -8,6 +8,7 @@ import {
   EMPTY_STEP_PEOPLE,
   type SequenceStep,
 } from "@/components/campaigns/CampaignSequenceBuilder";
+import { buttonClass } from "@/components/ui/Button";
 import { LibraryTemplateSettingsModal } from "@/components/admin/campaignLibrary/LibraryTemplateSettingsModal";
 import { campaignLibraryAuthHeaders } from "@/lib/campaignLibrary/authHeaders";
 import { defaultLibraryTemplateSettings } from "@/lib/campaignLibrary/sanitize";
@@ -268,7 +269,7 @@ export function LibrarySequenceEditor({
         <div className="min-w-0">
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800"
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             Library
@@ -294,7 +295,7 @@ export function LibrarySequenceEditor({
               />
             ) : (
               <>
-                <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+                <h1 className="min-w-0 truncate text-subhead font-semibold text-slate-900">
                   {item.name}
                 </h1>
                 <button
@@ -353,7 +354,7 @@ export function LibrarySequenceEditor({
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className={buttonClass("second", "small")}
             >
               <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" aria-hidden />
               Settings

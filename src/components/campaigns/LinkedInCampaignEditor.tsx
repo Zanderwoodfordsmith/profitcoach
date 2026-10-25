@@ -73,6 +73,8 @@ import {
 } from "@/components/campaigns/CampaignAudienceEmpty";
 import { CampaignTemplatePickerModal } from "@/components/campaigns/CampaignTemplatePicker";
 import type { PoolImportMode } from "@/components/campaigns/poolImportOptions";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const CampaignSequenceBuilder = dynamic(() =>
   import("@/components/campaigns/CampaignSequenceBuilder").then((m) => ({
@@ -1193,11 +1195,7 @@ export function LinkedInCampaignEditor() {
             onClick={() => setSettingsOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={settingsOpen}
-            className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 ${
-              settingsOpen
-                ? "border-slate-400 bg-slate-50"
-                : "border-slate-300 bg-transparent hover:border-slate-400 hover:bg-slate-50/60"
-            }`}
+            className={buttonClass("second", "small", "shrink-0")}
           >
             <SlidersHorizontal
               className="h-3.5 w-3.5 text-slate-500"
@@ -1244,7 +1242,7 @@ export function LinkedInCampaignEditor() {
       {tab === "overview" ? (
         <div className="mt-4 min-h-[60vh] space-y-6">
           {!coreReady ? (
-            <div className="rounded-2xl border border-slate-200 px-6 py-16 text-center text-sm text-slate-500">
+            <div className={cardClass("plain", "px-6 py-16 text-center text-sm text-slate-500")}>
               Loading overview…
             </div>
           ) : leads.length === 0 ? (
@@ -1446,7 +1444,7 @@ export function LinkedInCampaignEditor() {
                   {drawerLeads.length === 1 ? "person" : "people"}
                 </p>
                 {drawerSummary ? (
-                  <p className="mt-1 text-[11px] leading-snug text-slate-500">
+                  <p className="mt-1 text-caption leading-snug text-slate-500">
                     {drawerSummary}
                   </p>
                 ) : null}
@@ -1454,7 +1452,7 @@ export function LinkedInCampaignEditor() {
               <button
                 type="button"
                 onClick={() => setLeadDrawer(null)}
-                className="text-sm text-slate-500 hover:text-slate-800"
+                className={buttonClass("quiet", "small")}
               >
                 Close
               </button>

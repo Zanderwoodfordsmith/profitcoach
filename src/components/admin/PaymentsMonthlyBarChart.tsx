@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { cardClass } from "@/components/ui/Card";
 
 import {
   convertAmountCents,
@@ -432,7 +433,7 @@ function PaymentSegmentPopover({
           >
             {label}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          <p className="mt-0.5 text-caption text-slate-500">
             {monthLabel} · {payments.length} payment
             {payments.length === 1 ? "" : "s"}
           </p>
@@ -678,7 +679,7 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className={cardClass("plain", "p-4")}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Succeeded payments by month</h2>

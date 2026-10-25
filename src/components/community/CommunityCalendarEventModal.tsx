@@ -34,6 +34,8 @@ import {
   isRecurringCommunityCalendarEvent,
 } from "@/lib/communityCalendarTypes";
 import type { CommunityCalendarEventRow } from "@/lib/communityCalendarTypes";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   occurrence: CommunityCalendarOccurrence;
@@ -259,7 +261,7 @@ export function CommunityCalendarEventModal({
         onClick={onClose}
         className="absolute inset-0 cursor-default"
       />
-      <article className="relative z-[121] flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <article className={cardClass("raised", "relative z-[121] flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden")}>
         {canManage && !occurrence.isCancelled ? (
           <div className="absolute right-12 top-3 z-20">
             <button
@@ -324,7 +326,7 @@ export function CommunityCalendarEventModal({
           ) : null}
           <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
             <h2
-              className={`min-w-0 text-2xl font-bold leading-tight ${
+              className={`min-w-0 text-2xl font-semibold leading-tight ${
                 occurrence.isCancelled
                   ? "text-rose-600 line-through"
                   : "text-slate-900"
@@ -337,7 +339,7 @@ export function CommunityCalendarEventModal({
                 href={watchUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                className={buttonClass("main", "normal", "shrink-0")}
               >
                 <Video className="h-4 w-4" />
                 Watch recording
@@ -378,7 +380,7 @@ export function CommunityCalendarEventModal({
                 type="button"
                 disabled={cancellationReasonSaving}
                 onClick={() => void saveCancellationReason()}
-                className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50"
+                className={buttonClass("second", "small")}
               >
                 {cancellationReasonSaving ? "Saving…" : "Save reason"}
               </button>
@@ -457,7 +459,7 @@ export function CommunityCalendarEventModal({
                 type="button"
                 disabled={recordingSaving}
                 onClick={() => void saveRecordingLink()}
-                className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50"
+                className={buttonClass("second", "small")}
               >
                 {recordingSaving ? "Saving…" : "Save recording link"}
               </button>

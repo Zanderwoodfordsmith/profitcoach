@@ -56,7 +56,7 @@ export function StatusSwitch({
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         className={`inline-flex items-center rounded-full font-semibold ring-1 ring-inset ${
-          size === "sm" ? "gap-1 py-0.5 pl-2 pr-1.5 text-[11px]" : "gap-1.5 py-1 pl-2.5 pr-2 text-xs shadow-[0_1px_2px_rgba(5,30,54,0.25)]"
+          size === "sm" ? "gap-1 py-0.5 pl-2 pr-1.5 text-caption" : "gap-1.5 py-1 pl-2.5 pr-2 text-xs shadow-[0_1px_2px_rgba(5,30,54,0.25)]"
         } ${current.pill}`}
       >
         <current.Icon className="h-3.5 w-3.5" strokeWidth={current.stroke} aria-hidden />

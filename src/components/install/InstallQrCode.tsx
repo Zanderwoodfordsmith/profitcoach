@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { cardClass } from "@/components/ui/Card";
 
 /** QR code for this site's /install page, so a phone can scan it off the desktop screen. */
 export function InstallQrCode({ size }: { size: number }) {
@@ -25,7 +26,7 @@ export function InstallQrCode({ size }: { size: number }) {
   }, [size]);
 
   return (
-    <div className="shrink-0 rounded-xl border border-slate-200 bg-white p-3">
+    <div className={cardClass("plain", "shrink-0 p-3")}>
       {dataUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buttonClass } from "@/components/ui/Button";
 
 export default function CoachPageNotAvailable() {
   return (
@@ -17,19 +18,19 @@ export default function CoachPageNotAvailable() {
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href="/coach/community"
-          className="inline-flex items-center rounded-lg bg-[#0c5290] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0a4274]"
+          className={buttonClass("main")}
         >
           Community
         </Link>
         <Link
           href="/coach/academy/classroom"
-          className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          className={buttonClass("second")}
         >
           Classroom
         </Link>
         <Link
           href="/coach/support"
-          className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          className={buttonClass("second")}
         >
           Support
         </Link>

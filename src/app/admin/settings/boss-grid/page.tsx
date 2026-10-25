@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { cardClass } from "@/components/ui/Card";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
   BossGrid,
@@ -71,7 +72,7 @@ export default function AdminSettingsBossGridPage() {
 
   if (checking) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
+      <div className={cardClass("plain", "p-6")}>
         <p className="text-sm text-slate-600">Loading…</p>
       </div>
     );
@@ -79,7 +80,7 @@ export default function AdminSettingsBossGridPage() {
 
   if (!allowed) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
+      <div className={cardClass("plain", "p-6")}>
         <p className="text-sm text-rose-600">You do not have access to this page.</p>
       </div>
     );
@@ -165,7 +166,7 @@ export default function AdminSettingsBossGridPage() {
       </section>
 
       {/* 3. Default BossGrid */}
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className={cardClass("plain", "p-4")}>
         <h2 className="mb-3 text-sm font-medium text-slate-700">Default grid</h2>
         <div className="overflow-x-auto">
           <BossGrid
@@ -196,7 +197,7 @@ export default function AdminSettingsBossGridPage() {
       </section>
 
       {/* 5. Bordered variant */}
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className={cardClass("plain", "p-4")}>
         <h2 className="mb-3 text-sm font-medium text-slate-600">
           Bordered variant (3px all sides)
         </h2>

@@ -34,6 +34,17 @@ export type GateDecision =
       warning?: string;
       /** Markdown shown on the card, e.g. the new version of a section to accept. */
       preview?: string;
+      /** Markdown of what is there now, for a rewrite: the card shows before and after. */
+      before?: string;
+      /** A draft for the Blueprint: the card says "Save to Blueprint" and "Change it". */
+      draft?: boolean;
+      /**
+       * The input to freeze on the card instead of the model's, when the gate
+       * already did the work (a written draft) and confirming should only save it.
+       */
+      input?: AgentToolInput;
+      /** Told to the model with awaiting_confirmation, e.g. what the draft used and a short preview. */
+      forModel?: Record<string, unknown>;
     }
   /** The input is not valid: tell the model instead of making a card. */
   | { error: string };
@@ -77,6 +88,10 @@ export type AgentActionView = {
   details: ActionDetail[];
   warning?: string | null;
   preview?: string | null;
+  /** What it says now, for a rewrite. */
+  before?: string | null;
+  /** A Blueprint draft: Save to Blueprint, or Change it. */
+  draft?: boolean;
   coachName: string | null;
   status: AgentActionStatus;
   result: unknown;

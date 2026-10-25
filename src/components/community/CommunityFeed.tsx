@@ -113,6 +113,10 @@ const POSTS_PER_PAGE = 20;
  */
 const FEED_FIRST_SCREEN_COUNT = 3;
 
+/** On phones the post cards run to the screen edge (undoing the page's px-4) for more reading room. */
+const FEED_POST_LIST_CLASS =
+  "space-y-[1.125rem] max-md:-mx-4 max-md:[&>li>article]:rounded-none max-md:[&>li>article]:border-x-0";
+
 /** Show a community encouragement quote when the current page has fewer posts than a “full” page. */
 const SPARSE_PAGE_POST_THRESHOLD = 10;
 
@@ -2061,7 +2065,7 @@ export function CommunityFeed() {
   return (
     <>
       <div className={CONTENT_WITH_RAIL_ROW_CLASS}>
-            <ContentWithRailMain className="flex min-h-0 flex-col gap-6 pt-3 lg:pt-3.5">
+            <ContentWithRailMain className="flex min-h-0 flex-col gap-4 pt-1 md:gap-6 md:pt-3 lg:pt-3.5">
               {loadError ? (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                   <p className="font-semibold text-rose-900">Community data could not be loaded</p>
@@ -2139,7 +2143,7 @@ export function CommunityFeed() {
               {calendarLiveOccurrence ? (
                 <Link
                   href={communityCalendarHref}
-                  className="mt-[-8px] flex w-full items-center justify-center gap-1.5 px-1 py-0 text-center"
+                  className="mt-[-8px] flex w-full max-md:translate-y-0.5 items-center justify-center gap-1.5 px-1 py-0 text-center"
                 >
                   <span className="inline-flex items-center gap-1 rounded-md bg-red-500 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white">
                     <span className="h-1 w-1 rounded-full bg-white" />
@@ -2151,7 +2155,7 @@ export function CommunityFeed() {
                   <span className="text-[15px] font-medium text-slate-700">now</span>
                 </Link>
               ) : calendarNextOccurrence && nextEventWhen?.label ? (
-                <div className="mt-[-8px] flex w-full items-center justify-center gap-1.5 px-1 py-0 text-center text-[15px] text-slate-800">
+                <div className="mt-[-8px] flex w-full max-md:translate-y-0.5 items-center justify-center gap-1.5 px-1 py-0 text-center text-[15px] text-slate-800">
                   <Link
                     href={communityCalendarHref}
                     className="shrink-0 text-slate-600 hover:text-slate-800"
@@ -2159,14 +2163,18 @@ export function CommunityFeed() {
                   >
                     <CalendarDays className="h-3.5 w-3.5" aria-hidden />
                   </Link>
-                  <span className="min-w-0">
-                    <Link
-                      href={communityCalendarHref}
-                      className="truncate text-[15px] font-semibold text-slate-900 hover:underline"
-                    >
-                      {calendarNextOccurrence.title}
-                    </Link>{" "}
-                    is happening {nextEventWhen.label}
+                  {/* One line: the title shortens before the time or zone does. */}
+                  <Link
+                    href={communityCalendarHref}
+                    className="min-w-0 truncate text-[15px] font-semibold text-slate-900 hover:underline"
+                  >
+                    {calendarNextOccurrence.title}
+                  </Link>
+                  <span className="shrink-0 whitespace-nowrap">
+                    <span className="sm:hidden">· {nextEventWhen.shortLabel}</span>
+                    <span className="hidden sm:inline">
+                      is happening {nextEventWhen.label}
+                    </span>
                     {nextEventWhen.timezoneShort ? (
                       <span className="text-slate-400">
                         {" "}
@@ -2324,7 +2332,7 @@ export function CommunityFeed() {
                         <span className="h-px flex-1 bg-slate-200" />
                       </button>
                       {scheduledPostsOpen ? (
-                        <ul className="mt-2 space-y-[1.125rem]">
+                        <ul className={`mt-2 ${FEED_POST_LIST_CLASS}`}>
                           {displayedScheduledPosts.map((post) => (
                             <li key={post.id}>
                               <PostCard
@@ -2343,7 +2351,7 @@ export function CommunityFeed() {
                       ) : null}
                     </section>
                   ) : null}
-                  <ul className="space-y-[1.125rem]">
+                  <ul className={FEED_POST_LIST_CLASS}>
                     {displayedPublishedPosts.map((post) => (
                       <li key={post.id}>
                         <PostCard

@@ -13,6 +13,7 @@ import {
   getCallStatusLabel,
 } from "@/lib/prospectNextCall";
 import { formatProspectPersonName } from "@/lib/prospectDisplayFormat";
+import { cardClass } from "@/components/ui/Card";
 
 export type { CallRow };
 
@@ -29,7 +30,7 @@ type Props = {
 function CallStatusBadge({ row }: { row: CallRow }) {
   return (
     <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium leading-none ${callStatusClass(row.status_normalized)}`}
+      className={`inline-flex rounded-full px-2 py-0.5 text-caption font-medium leading-none ${callStatusClass(row.status_normalized)}`}
     >
       {getCallStatusLabel(row.status_normalized)}
     </span>
@@ -49,7 +50,7 @@ export function CallsTable({
 
   return (
     <div
-      className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm"
+      className={cardClass("plain", "flex min-h-0 flex-col")}
       style={{ maxHeight: "calc(100vh - 14rem)" }}
     >
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">

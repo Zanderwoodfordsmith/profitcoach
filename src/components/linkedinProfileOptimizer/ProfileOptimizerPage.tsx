@@ -40,6 +40,7 @@ import type {
   ProfileOptimizerVariant,
   ProfileSectionId,
 } from "@/lib/linkedinProfileOptimizer/types";
+import { cardClass } from "@/components/ui/Card";
 
 const SAVE_DEBOUNCE_MS = 700;
 
@@ -307,7 +308,7 @@ export function ProfileOptimizerPage() {
       {error ? <ErrorNote>{error}</ErrorNote> : null}
 
       {!profile ? (
-        <div className="mx-auto w-full max-w-xl rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className={cardClass("plain", "mx-auto w-full max-w-xl p-5")}>
           <p className="text-sm font-semibold text-slate-900">Import your LinkedIn</p>
           <p className="mt-1 text-sm leading-relaxed text-slate-600">
             We’ll pull the public profile so you can rewrite headline, About,
@@ -335,7 +336,7 @@ export function ProfileOptimizerPage() {
         <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-3 lg:flex-row lg:items-start">
           <div className="mx-auto flex min-w-0 w-full max-w-[760px] flex-col gap-3 lg:mx-0">
           {prefix === "/admin" ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div className={cardClass("plain", "flex flex-wrap items-center justify-between gap-3 px-4 py-3")}>
               <p className="text-sm text-slate-600">
                 Write the headline, About and banner from this coach&apos;s Blueprint in one go.
               </p>

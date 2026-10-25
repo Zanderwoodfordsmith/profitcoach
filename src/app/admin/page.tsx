@@ -43,6 +43,8 @@ import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote"
 import { StickyPageHeader } from "@/components/layout";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { formatDateDisplay } from "@/lib/formatDateDisplay";
 import {
   lastLoginFreshness,
@@ -1781,7 +1783,7 @@ export default function AdminPage() {
           </div>
           {coach.linkedin_url ? (
             <p
-              className={`mt-0.5 px-1 text-[10px] leading-tight ${
+              className={`mt-0.5 px-1 text-caption leading-tight ${
                 scrapedLabel ? "text-emerald-700" : "text-amber-700"
               }`}
               title={
@@ -1939,11 +1941,11 @@ export default function AdminPage() {
                 <span className="block text-xs text-slate-400">Not set</span>
               )}
               {coach.calendar_sync_ready ? (
-                <span className="mt-0.5 block text-[0.65rem] font-medium text-emerald-700">
+                <span className="mt-0.5 block text-caption font-medium text-emerald-700">
                   ✓ Calendar linked
                 </span>
               ) : coach.has_calendar_embed || coach.crm_location_id?.trim() ? (
-                <span className="mt-0.5 block text-[0.65rem] text-amber-700">
+                <span className="mt-0.5 block text-caption text-amber-700">
                   Setup incomplete
                 </span>
               ) : null}
@@ -2090,7 +2092,7 @@ export default function AdminPage() {
                 </option>
               ))}
             </select>
-            <label className="inline-flex items-center gap-1 text-[10px] text-slate-600">
+            <label className="inline-flex items-center gap-1 text-caption text-slate-600">
               <input
                 type="checkbox"
                 checked={coach.access_tier_locked}
@@ -2111,7 +2113,7 @@ export default function AdminPage() {
                 type="button"
                 disabled={directorySavingId === coach.id}
                 onClick={() => void applyBillingTierSuggestion(coach.id)}
-                className="text-left text-[10px] font-medium text-sky-700 hover:text-sky-900 disabled:opacity-50"
+                className="text-left text-caption font-medium text-sky-700 hover:text-sky-900 disabled:opacity-50"
               >
                 Apply billing suggestion
               </button>
@@ -2228,7 +2230,7 @@ export default function AdminPage() {
       {!checkingRole && !loading && coaches.length === 0 && !error ? (
         <p className="text-sm text-slate-600">
           No coaches found yet. Use the{" "}
-          <span className="font-semibold">Add</span> button in the toolbar
+          <span className="font-medium">Add</span> button in the toolbar
           to invite or create your first coach.
         </p>
       ) : null}
@@ -2239,7 +2241,7 @@ export default function AdminPage() {
       />
 
       {showAddCoach && (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className={cardClass("plain", "p-4")}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">
@@ -2258,7 +2260,7 @@ export default function AdminPage() {
                 setCreateError(null);
                 setCreateSuccess(null);
               }}
-              className="text-xs text-slate-500 hover:text-slate-700"
+              className={buttonClass("quiet", "small")}
             >
               Close
             </button>
@@ -2342,7 +2344,7 @@ export default function AdminPage() {
                 className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                 placeholder="Auto from name, e.g. alex-smith"
               />
-              <p className="text-[0.7rem] text-slate-500">
+              <p className="text-caption text-slate-500">
                 Defaults to firstname-lastname. Leave blank to auto-assign (adds
                 -2, -3… if taken). They can change it later in settings.
               </p>
@@ -2352,7 +2354,7 @@ export default function AdminPage() {
                 <button
                   type="submit"
                   disabled={creatingCoach}
-                  className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:cursor-wait disabled:opacity-70"
+                  className={buttonClass("main")}
                 >
                   {creatingCoach ? "Creating coach…" : "Create coach"}
                 </button>
@@ -2363,7 +2365,7 @@ export default function AdminPage() {
                     setCreateError(null);
                     setCreateSuccess(null);
                   }}
-                  className="text-xs font-medium text-slate-600 hover:text-slate-800"
+                  className={buttonClass("quiet")}
                 >
                   Cancel
                 </button>
@@ -2385,7 +2387,7 @@ export default function AdminPage() {
         </section>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <section className={cardClass("plain")}>
         <div className="border-b border-slate-100 px-4 pt-3">
           <CoachesTableViewBar
             views={coachTableViews.views}
@@ -2766,7 +2768,7 @@ export default function AdminPage() {
                     if (items.length === 0) return null;
                     return (
                       <Fragment key={group.id}>
-                        <p className="px-3 pt-2 pb-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="px-3 pt-2 pb-0.5 text-kicker font-semibold uppercase text-slate-400">
                           {group.label}
                         </p>
                         <ul className="space-y-0.5 px-2">
@@ -2916,7 +2918,7 @@ export default function AdminPage() {
                       />
                     ) : (
                       <div
-                        className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-400 ring-1 ring-slate-200"
+                        className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-caption font-medium text-slate-400 ring-1 ring-slate-200"
                         aria-hidden
                       >
                         —
@@ -3097,7 +3099,7 @@ export default function AdminPage() {
               disabled={webhookEditSaving}
               className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
             />
-            <p className="mt-2 text-[0.7rem] text-slate-500">
+            <p className="mt-2 text-caption text-slate-500">
               Coach CRM link is built as{" "}
               <code>{CRM_LOCATION_BASE_URL}/&lt;location-id&gt;</code>. Paste
               the ID or full location URL.
@@ -3121,7 +3123,7 @@ export default function AdminPage() {
               disabled={webhookEditSaving}
               className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
             />
-            <p className="mt-2 text-[0.7rem] text-slate-500">
+            <p className="mt-2 text-caption text-slate-500">
               Leave blank to disable. Must start with <code>http://</code> or{" "}
               <code>https://</code>.
             </p>
@@ -3137,7 +3139,7 @@ export default function AdminPage() {
                   if (!webhookEditSaving) setWebhookEditCoachId(null);
                 }}
                 disabled={webhookEditSaving}
-                className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+                className={buttonClass("quiet")}
               >
                 Cancel
               </button>
@@ -3190,7 +3192,7 @@ export default function AdminPage() {
                   }
                 }}
                 disabled={webhookEditSaving}
-                className="inline-flex items-center rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-sky-500 disabled:cursor-wait disabled:opacity-60"
+                className={buttonClass("main")}
               >
                 {webhookEditSaving ? "Saving…" : "Save"}
               </button>

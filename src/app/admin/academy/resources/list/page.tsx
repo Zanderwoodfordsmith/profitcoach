@@ -9,7 +9,7 @@ export default async function AdminResourcesListPage() {
 
   return (
     <div className="space-y-4 pt-6">
-      <Link href="/admin/academy/resources" className="text-sm font-semibold text-sky-700 hover:text-sky-900">
+      <Link href="/admin/academy/resources" className="text-sm font-medium text-sky-700 hover:text-sky-900">
         ← The Resource Library
       </Link>
       <AcademyResourcesLibrary catalog={catalog} canManage />

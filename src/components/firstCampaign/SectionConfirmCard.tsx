@@ -25,6 +25,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { buttonClass } from "@/components/ui/Button";
 import { Check, ChevronRight, GripVertical, Pencil, Plus, X } from "lucide-react";
 
 export type SectionConfirmStatus = "pending" | "confirmed" | "editing";
@@ -114,7 +115,7 @@ export function ProfileSectionStepper({
                 type="button"
                 disabled={!canOpen && !active}
                 onClick={() => canOpen && onSelect(index)}
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition sm:text-[13px] ${
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition sm:text-ui ${
                   active
                     ? "bg-slate-900 text-white shadow-sm"
                     : confirmed
@@ -125,7 +126,7 @@ export function ProfileSectionStepper({
                 }`}
               >
                 <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                  className={`flex h-5 w-5 items-center justify-center rounded-full text-caption font-bold ${
                     active
                       ? "bg-white/20 text-white"
                       : confirmed
@@ -169,7 +170,7 @@ export function CollapsedSectionRow({
   const inner = (
     <>
       <span
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-caption font-bold ${
           done
             ? "bg-emerald-600 text-white"
             : "bg-slate-200/80 text-slate-400"
@@ -277,20 +278,20 @@ export function SectionConfirmCard({
           <div className="min-w-0">
             {!hideStepLabel ? (
               <p
-                className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${accent.text}`}
+                className={`text-kicker font-semibold uppercase ${accent.text}`}
               >
                 {index + 1} of {total}
               </p>
             ) : null}
             <h3
-              className={`text-xl font-semibold tracking-tight text-slate-900 sm:text-[1.35rem] ${
+              className={`text-xl font-semibold tracking-tight text-slate-900 sm:text-title ${
                 hideStepLabel ? "" : "mt-1"
               }`}
             >
               {title}
             </h3>
             {hint ? (
-              <p className="mt-1 max-w-xl text-[15px] leading-relaxed text-slate-500">
+              <p className="mt-1 max-w-xl text-read leading-relaxed text-slate-500">
                 {hint}
               </p>
             ) : null}
@@ -303,7 +304,7 @@ export function SectionConfirmCard({
           ) : null}
         </div>
 
-        <div className="text-[15px] leading-relaxed text-slate-700 sm:text-base">
+        <div className="text-read leading-relaxed text-slate-700 sm:text-base">
           {editing && editChildren ? editChildren : children}
         </div>
 
@@ -313,14 +314,14 @@ export function SectionConfirmCard({
               <button
                 type="button"
                 onClick={onSaveEdit}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className={buttonClass("main")}
               >
                 Save changes
               </button>
               <button
                 type="button"
                 onClick={onCancelEdit}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100/80 hover:text-slate-700"
+                className={buttonClass("quiet")}
               >
                 Cancel
               </button>
@@ -329,7 +330,7 @@ export function SectionConfirmCard({
             <button
               type="button"
               onClick={onStartEdit}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/50 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-white hover:text-slate-900"
+              className={buttonClass("second")}
             >
               <Pencil className="h-3.5 w-3.5" />
               Edit again
@@ -339,7 +340,7 @@ export function SectionConfirmCard({
               <button
                 type="button"
                 onClick={onConfirm}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-500"
+                className={buttonClass("main")}
               >
                 <Check className="h-4 w-4" strokeWidth={2.5} />
                 {confirmLabel}
@@ -347,7 +348,7 @@ export function SectionConfirmCard({
               <button
                 type="button"
                 onClick={onStartEdit}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/40 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-white/80 hover:text-slate-900"
+                className={buttonClass("second")}
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Edit
@@ -428,7 +429,7 @@ function SortableLineRow({
       <div className="min-w-0 flex-1">
         {label ? (
           <>
-            <p className="text-[15px] font-semibold leading-snug text-slate-900">
+            <p className="text-ui font-medium leading-snug text-slate-900">
               {label}
             </p>
             <AutoGrowTextarea
@@ -436,14 +437,14 @@ function SortableLineRow({
               onChange={(nextBody) =>
                 onChangeText(nextBody.trim() ? `${label}: ${nextBody}` : label)
               }
-              className="mt-0.5 text-[15px] leading-snug text-slate-700"
+              className="mt-0.5 text-ui leading-snug text-slate-700"
             />
           </>
         ) : (
           <AutoGrowTextarea
             value={item.text}
             onChange={onChangeText}
-            className="text-[15px] leading-snug text-slate-800"
+            className="text-ui leading-snug text-slate-800"
           />
         )}
       </div>
@@ -580,13 +581,13 @@ export function InteractiveLineList({
             }
           }}
           placeholder={addPlaceholder}
-          className="min-w-0 flex-1 rounded-xl border border-slate-200/80 bg-white/50 px-3.5 py-2.5 text-[15px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-400/20"
+          className="min-w-0 flex-1 rounded-xl border border-slate-200/80 bg-white/50 px-3.5 py-2.5 text-ui text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-400/20"
         />
         <button
           type="button"
           onClick={addLine}
           disabled={!draft.trim()}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/60 px-3.5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+          className={buttonClass("second")}
         >
           <Plus className="h-4 w-4" />
           Add
@@ -635,7 +636,7 @@ export function TextArea({
       onChange={(e) => onChange(e.target.value)}
       rows={rows}
       placeholder={placeholder}
-      className="w-full rounded-xl border border-slate-200/80 bg-white/60 px-3.5 py-3 text-[15px] leading-relaxed text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-400/20"
+      className="w-full rounded-xl border border-slate-200/80 bg-white/60 px-3.5 py-3 text-read leading-relaxed text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-400/20"
     />
   );
 }

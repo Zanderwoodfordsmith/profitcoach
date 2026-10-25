@@ -29,7 +29,7 @@ function ActorAvatar({ profile }: { profile: ProfileRow }) {
           className="h-full w-full object-cover"
         />
       ) : (
-        <span className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-600">
+        <span className="flex h-full w-full items-center justify-center text-caption font-semibold text-slate-600">
           {profileInitialsFromProfile(profile)}
         </span>
       )}
@@ -176,7 +176,7 @@ export function EngagementActorsHover({
             className="block h-1.5 w-full bg-gradient-to-r from-sky-800 via-sky-500 to-sky-300"
           />
           <span className="block px-4 pb-3.5 pt-3">
-            <span className="block text-sm font-semibold leading-tight text-slate-800">
+            <span className="block text-sm font-medium leading-tight text-slate-800">
               {title}
             </span>
             {loading && shown.length === 0 ? (

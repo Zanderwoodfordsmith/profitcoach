@@ -4,6 +4,7 @@ import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { SupportTicketStatus } from "@/lib/support/tickets";
+import { buttonClass } from "@/components/ui/Button";
 
 export type SupportTicketFeedback = {
   helpful: boolean;
@@ -161,7 +162,7 @@ export function SupportHelpfulPanel({
                   disabled={
                     busy || comment.trim() === (existing?.comment ?? "")
                   }
-                  className="mt-2 inline-flex rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className={buttonClass("main", "small", "mt-2")}
                 >
                   Send note
                 </button>
@@ -264,7 +265,7 @@ export function SupportTicketActions({
           type="button"
           disabled={busy || !canChange}
           onClick={() => void setStatus(resolved ? "open" : "resolved")}
-          className="inline-flex items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className={buttonClass("second")}
         >
           {resolved ? "Reopen" : "Mark resolved"}
         </button>
@@ -272,7 +273,7 @@ export function SupportTicketActions({
           type="button"
           disabled={busy || !canChange}
           onClick={() => void removeTicket()}
-          className="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className={buttonClass("delete")}
         >
           Delete ticket
         </button>

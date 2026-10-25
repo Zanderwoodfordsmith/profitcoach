@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Loader2, Mic, Square, Volume2 } from "lucide-react";
 
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   BRIEF_SECTIONS,
   buildPracticeBrief,
@@ -52,7 +54,7 @@ type Props = {
 };
 
 const fieldClass =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[15px] leading-relaxed text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/25";
+  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-read leading-relaxed text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/25";
 
 export function PracticeBrief({
   payload,
@@ -167,10 +169,10 @@ export function PracticeBrief({
       <article className="min-w-0">
         {hideHeader ? null : (
           <header className="mb-10">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
+            <h2 className="text-heading font-semibold text-slate-950">
               {title}
             </h2>
-            <p className="mt-3 max-w-[62ch] text-[15px] leading-7 text-slate-600">
+            <p className="mt-3 max-w-[62ch] text-read leading-7 text-slate-600">
               {lede}
             </p>
           </header>
@@ -184,7 +186,7 @@ export function PracticeBrief({
               className="scroll-mt-24 border-b border-slate-200 pb-8"
               open={section.filled || section.id === "experience" || section.id === "priorities"}
             >
-              <summary className="flex cursor-pointer items-center justify-between gap-3 text-[1.375rem] font-semibold leading-snug tracking-[-0.02em] text-[#0f172a]">
+              <summary className="flex cursor-pointer items-center justify-between gap-3 text-title font-semibold text-[#0f172a]">
                 <span>{section.title}</span>
                 {onApproveSection ? (
                   <button
@@ -210,7 +212,7 @@ export function PracticeBrief({
                 {section.blocks.map((block, index) => {
                   if (block.kind === "gap") {
                     return (
-                      <p key={`${section.id}-gap-${index}`} className="text-[1.0625rem] leading-[1.55] text-[#475569]">
+                      <p key={`${section.id}-gap-${index}`} className="text-read text-[#475569]">
                         {block.text}
                       </p>
                     );
@@ -243,7 +245,7 @@ export function PracticeBrief({
                           type="button"
                           disabled={readOnly}
                           onClick={() => beginEdit(block.id, block.raw)}
-                          className="block w-full rounded-lg text-left text-[1.0625rem] leading-[1.55] text-[#1e293b] hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0c5290] disabled:hover:bg-transparent"
+                          className="block w-full rounded-lg text-left text-read text-[#1e293b] hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0c5290] disabled:hover:bg-transparent"
                         >
                           <span className="whitespace-pre-wrap">{block.text}</span>
                         </button>
@@ -260,7 +262,7 @@ export function PracticeBrief({
                     type="button"
                     onClick={onPullLinkedIn}
                     disabled={busy}
-                    className="text-sm font-medium text-[#0c5290] hover:text-[#083e6d] disabled:opacity-50"
+                    className={buttonClass("quiet", "small")}
                   >
                     {busy ? "Pulling LinkedIn…" : "Pull LinkedIn again"}
                   </button>
@@ -311,7 +313,7 @@ export function PracticeBrief({
         </div>
 
         {readOnly || hideComposer ? null : (
-          <div className="sticky bottom-4 mt-12 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-16px_rgba(5,30,54,0.35)]">
+          <div className={cardClass("raised", "sticky bottom-4 mt-12 p-4")}>
             {interviewDone && !question ? (
               <p className="text-sm leading-6 text-slate-700">
                 That is enough to write the brief. Correct any line above, or{" "}
@@ -321,9 +323,9 @@ export function PracticeBrief({
                 .
               </p>
             ) : question ? (
-              <p className="text-[15px] leading-7 text-slate-900">{question}</p>
+              <p className="text-read leading-7 text-slate-900">{question}</p>
             ) : (
-              <p className="text-[15px] leading-7 text-slate-700">
+              <p className="text-read leading-7 text-slate-700">
                 We already know what LinkedIn shows. The next few minutes fill the open lines.
               </p>
             )}
@@ -333,7 +335,7 @@ export function PracticeBrief({
                 type="button"
                 onClick={onStart}
                 disabled={busy}
-                className="mt-3 rounded-lg bg-[#0c5290] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0a4478] disabled:opacity-50"
+                className={buttonClass("main", "normal", "mt-3")}
               >
                 {busy ? "Starting…" : "Start talking"}
               </button>
@@ -363,7 +365,7 @@ export function PracticeBrief({
                       setReply("");
                       onReply(text);
                     }}
-                    className="rounded-lg bg-[#0c5290] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    className={buttonClass("main")}
                   >
                     {busy ? (
                       <span className="inline-flex items-center gap-2">
@@ -389,7 +391,7 @@ export function PracticeBrief({
                     <button
                       type="button"
                       onClick={() => onSpeak(question)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800"
+                      className={buttonClass("second")}
                     >
                       <Volume2 className="h-4 w-4" />
                       Read this aloud
@@ -526,7 +528,7 @@ function CareerBlock({
         className="block w-full space-y-3 rounded-lg text-left hover:bg-slate-50 disabled:hover:bg-transparent"
       >
         {results.map((result) => (
-          <p key={result.id} className="text-[1.0625rem] leading-[1.55] text-[#1e293b]">
+          <p key={result.id} className="text-read text-[#1e293b]">
             {careerSentenceFor(result)}
           </p>
         ))}
@@ -563,7 +565,7 @@ function CareerBlock({
           ))}
           <button
             type="button"
-            className="rounded-lg bg-[#0c5290] px-3 py-1.5 text-sm font-semibold text-white"
+            className={buttonClass("main", "small")}
             onClick={() => {
               onPatch({
                 proof: {
@@ -603,7 +605,7 @@ function Recommendation({
   onCommit: () => void;
 }) {
   return (
-    <div className="space-y-6 text-[1.0625rem] leading-[1.55] text-[#1e293b]">
+    <div className="space-y-6 text-read text-[#1e293b]">
       <p className="whitespace-pre-wrap">{report.experience_summary}</p>
       <div>
         <h4 className="text-base font-semibold text-slate-950">Proof we can use</h4>
@@ -625,15 +627,15 @@ function Recommendation({
         </ol>
       </div>
       <p>
-        <span className="font-semibold text-slate-950">Offer. </span>
+        <span className="font-medium text-slate-950">Offer. </span>
         {report.offer_direction}
       </p>
       <p>
-        <span className="font-semibold text-slate-950">Position. </span>
+        <span className="font-medium text-slate-950">Position. </span>
         {report.positioning}
       </p>
       <p>
-        <span className="font-semibold text-slate-950">Campaign. </span>
+        <span className="font-medium text-slate-950">Campaign. </span>
         {report.campaign_angle}
       </p>
       {report.decision_questions.length ? (

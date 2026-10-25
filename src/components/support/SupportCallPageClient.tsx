@@ -88,20 +88,20 @@ export function SupportCallPageClient({ hostSlug }: Props) {
         />
 
         <header className="mt-10 max-w-2xl text-center sm:mt-12">
-          <p className="flex items-center justify-center gap-3 text-[11px] font-semibold tracking-[0.22em] text-white/70 uppercase">
+          <p className="flex items-center justify-center gap-3 text-kicker font-semibold text-white/70 uppercase">
             <span aria-hidden className="h-px w-8 bg-white/25 sm:w-12" />
             The Profit Coach
             <span aria-hidden className="h-px w-8 bg-white/25 sm:w-12" />
           </p>
           <h1
-            className={`${fraunces.className} mt-4 text-[2.15rem] leading-[1.12] tracking-tight text-white sm:text-[2.75rem]`}
+            className={`${fraunces.className} mt-4 text-heading leading-[1.12] tracking-tight text-white sm:text-display`}
           >
             Book your 1-1
             <span className="mt-1 block italic text-[#7ec8f5]">
               20-Minute Support Call
             </span>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-slate-300 sm:text-base">
+          <p className="mx-auto mt-4 max-w-xl text-read leading-relaxed text-slate-300 sm:text-base">
             A short, no-pressure chat with {hostName} about whatever you need
             help with — the platform, your practice, or a question that&apos;s
             been sitting with you.

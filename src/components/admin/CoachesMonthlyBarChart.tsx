@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { cardClass } from "@/components/ui/Card";
 
 export type CoachForChart = {
   joined_at: string | null;
@@ -351,7 +352,7 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
   const showYearAxisRow = yearGroups.length > 0;
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className={cardClass("plain", "p-4")}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">
@@ -470,12 +471,12 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
               {[...yTicks].reverse().map((tick) => (
                 <span
                   key={tick}
-                  className="text-[10px] leading-none text-slate-500 sm:text-xs"
+                  className="text-caption leading-none text-slate-500"
                 >
                   {tick}
                 </span>
               ))}
-              <span className="invisible text-[10px]">0</span>
+              <span className="invisible text-caption">0</span>
             </div>
 
             <div className="min-w-0 flex-1">
@@ -531,7 +532,7 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
                           >
                             {isHovered ? (
                               <span
-                                className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-white/95 px-1 text-center text-[9px] font-semibold leading-tight text-slate-900 shadow-sm sm:text-[10px]"
+                                className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-white/95 px-1 text-center text-caption font-semibold leading-tight text-slate-900 shadow-sm"
                                 style={{ bottom: bottomPx + 12 }}
                               >
                                 {value}
@@ -580,7 +581,7 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
                       >
                         {value > 0 ? (
                           <span
-                            className={`mb-0.5 max-w-full truncate px-0.5 text-center text-[9px] font-semibold leading-tight sm:text-[10px] ${
+                            className={`mb-0.5 max-w-full truncate px-0.5 text-center text-caption font-semibold leading-tight ${
                               isHovered ? "text-slate-900" : "text-slate-700"
                             }`}
                           >
@@ -617,7 +618,7 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
                               : yearGroup.monthCount,
                           }}
                         >
-                          <span className="truncate text-center text-[10px] font-semibold text-slate-700 sm:text-xs">
+                          <span className="truncate text-center text-caption font-medium text-slate-700">
                             {yearGroup.label}
                           </span>
                         </div>
@@ -635,7 +636,7 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
                           flex: useQuarterlyLine ? 1 : group.monthKeys.length,
                         }}
                       >
-                        <span className="max-w-full truncate px-0.5 text-center text-[10px] leading-tight text-slate-600 sm:text-xs">
+                        <span className="max-w-full truncate px-0.5 text-center text-caption leading-tight text-slate-600">
                           {group.label.replace(" ", "\u00a0")}
                         </span>
                       </div>
@@ -653,7 +654,7 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
                       className="flex min-w-0 flex-1 flex-col items-center"
                     >
                       <span
-                        className={`max-w-full truncate text-center text-[10px] leading-tight sm:text-xs ${
+                        className={`max-w-full truncate text-center text-caption leading-tight ${
                           isHovered
                             ? "font-semibold text-slate-900"
                             : "text-slate-600"
@@ -661,7 +662,7 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
                       >
                         {bucket.label.replace(" ", "\u00a0")}
                       </span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-caption text-slate-400">
                         {mode === "new" ? `${value} new` : `${value} total`}
                       </span>
                     </div>

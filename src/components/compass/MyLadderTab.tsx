@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 
 import styles from "@/app/ladder/ladder.module.css";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   deriveCurrentLevelId,
   deriveNextLevelId,
@@ -628,7 +630,7 @@ export function MyLadderTab() {
               />
             ) : null}
             {isNext ? (
-              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700">
+              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-kicker font-semibold uppercase text-rose-700">
                 Next
               </span>
             ) : null}
@@ -641,7 +643,7 @@ export function MyLadderTab() {
                 aria-label="Your goal level"
               />
             ) : null}
-            <span className="text-right text-[0.95rem] font-medium tabular-nums leading-none text-slate-500 sm:text-[1.05rem]">
+            <span className="text-right text-read font-medium tabular-nums leading-none text-slate-500">
               {level.amountText}
             </span>
           </div>
@@ -713,7 +715,7 @@ export function MyLadderTab() {
             if (e.target === e.currentTarget) setGapPrompt(null);
           }}
         >
-          <div className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+          <div className={cardClass("raised", "relative w-full max-w-sm p-5")}>
             <button
               type="button"
               onClick={() => setGapPrompt(null)}
@@ -730,13 +732,13 @@ export function MyLadderTab() {
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               You&apos;re marking{" "}
-              <span className="font-semibold text-slate-800">
+              <span className="font-medium text-slate-800">
                 {gapPrompt.level.name}
               </span>
               , but{" "}
               {gapPrompt.missing.length === 1 ? (
                 <>
-                  <span className="font-semibold text-slate-800">
+                  <span className="font-medium text-slate-800">
                     {gapPrompt.missing[0].name}
                   </span>{" "}
                   isn&apos;t checked yet
@@ -759,7 +761,7 @@ export function MyLadderTab() {
                   setGapPrompt(null);
                   openTickFlow(level, missing);
                 }}
-                className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+                className={buttonClass("main", "normal", "w-full")}
               >
                 Add earlier steps
               </button>
@@ -770,14 +772,14 @@ export function MyLadderTab() {
                   setGapPrompt(null);
                   openTickFlow(level, []);
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                className={buttonClass("second", "normal", "w-full")}
               >
                 Only {gapPrompt.level.name}
               </button>
               <button
                 type="button"
                 onClick={() => setGapPrompt(null)}
-                className="w-full rounded-xl py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                className={buttonClass("quiet", "normal", "w-full")}
               >
                 Cancel
               </button>
@@ -796,7 +798,7 @@ export function MyLadderTab() {
             if (e.target === e.currentTarget) setDatePrompt(null);
           }}
         >
-          <div className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+          <div className={cardClass("raised", "relative w-full max-w-sm p-5")}>
             <button
               type="button"
               onClick={() => setDatePrompt(null)}
@@ -834,7 +836,7 @@ export function MyLadderTab() {
                         fillGaps
                       )
                     }
-                    className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                    className={buttonClass("main", "normal", "w-full")}
                   >
                     Today
                   </button>
@@ -848,7 +850,7 @@ export function MyLadderTab() {
                         fillGaps,
                       })
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                    className={buttonClass("second", "normal", "w-full")}
                   >
                     Choose a different date…
                   </button>
@@ -858,7 +860,7 @@ export function MyLadderTab() {
                     onClick={() =>
                       void markLevelWithGaps(promptLevel, null, fillGaps)
                     }
-                    className="w-full rounded-xl py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50"
+                    className={buttonClass("quiet", "normal", "w-full")}
                   >
                     No date
                   </button>
@@ -886,7 +888,7 @@ export function MyLadderTab() {
                         fillGaps,
                       })
                     }
-                    className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    className={buttonClass("second", "normal", "flex-1")}
                   >
                     Back
                   </button>
@@ -900,7 +902,7 @@ export function MyLadderTab() {
                         fillGaps
                       )
                     }
-                    className="flex-1 rounded-xl bg-sky-600 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                    className={buttonClass("main", "normal", "flex-1")}
                   >
                     Save
                   </button>
@@ -968,7 +970,7 @@ export function MyLadderTab() {
             </div>
           </div>
 
-          <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <section className={cardClass("plain", "mt-8 p-4 sm:p-5")}>
             <h2 className="text-lg font-semibold text-slate-900">
               Recent ladder level-ups
             </h2>
@@ -1033,7 +1035,7 @@ export function MyLadderTab() {
                   type="button"
                   disabled={feedLoading}
                   onClick={() => void loadMoreFeed()}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:opacity-50"
+                  className={buttonClass("second", "normal")}
                 >
                   {feedLoading ? "Loading…" : "Load more"}
                 </button>
@@ -1043,7 +1045,7 @@ export function MyLadderTab() {
         </div>
 
         <aside className="min-w-0 w-full lg:sticky lg:top-4 lg:w-full lg:self-start">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <section className={cardClass("plain", "p-5 sm:p-6")}>
             <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left lg:flex-col lg:items-center lg:text-center">
               <div className="relative h-20 w-20 shrink-0">
                 {avatarUrl ? (
@@ -1061,7 +1063,7 @@ export function MyLadderTab() {
                 )}
                 {showLadderLevelOnProfile && currentMeta ? (
                   <span
-                    className={`absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md ring-2 ring-white ${currentMeta.chipClassName}`}
+                    className={`absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full text-caption font-bold tabular-nums shadow-md ring-2 ring-white ${currentMeta.chipClassName}`}
                   >
                     {currentMeta.ordinal}
                   </span>
@@ -1096,11 +1098,11 @@ export function MyLadderTab() {
                 />
                 <span>Show my ladder number on my profile</span>
               </label>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-kicker font-semibold uppercase text-slate-500">
                 Monthly income
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                <span className="text-kicker font-medium uppercase text-slate-500">
                   Currency
                 </span>
                 <div
@@ -1136,7 +1138,7 @@ export function MyLadderTab() {
               </div>
 
               <div className="mt-2.5 flex min-w-0 items-end gap-2">
-                <span className="w-14 shrink-0 pb-1 text-xs font-semibold text-slate-800">
+                <span className="w-14 shrink-0 pb-1 text-xs font-medium text-slate-800">
                   Current
                 </span>
                 <div className="flex min-w-0 flex-1 items-end gap-1.5 border-b border-slate-200 pb-1 focus-within:border-sky-500">
@@ -1163,7 +1165,7 @@ export function MyLadderTab() {
                 </div>
               </div>
               <div className="mt-2.5 flex min-w-0 items-end gap-2">
-                <span className="w-14 shrink-0 pb-1 text-xs font-semibold text-slate-800">
+                <span className="w-14 shrink-0 pb-1 text-xs font-medium text-slate-800">
                   Clients
                 </span>
                 <div className="flex min-w-0 flex-1 items-end gap-1.5 border-b border-slate-200 pb-1 focus-within:border-sky-500">
@@ -1184,7 +1186,7 @@ export function MyLadderTab() {
                 </div>
               </div>
               {currentEstimatedTierId ? (
-                <p className="mt-1 pl-[3.25rem] text-[11px] text-slate-600">
+                <p className="mt-1 pl-[3.25rem] text-caption text-slate-600">
                   ~{" "}
                   <span className="font-medium text-slate-800">
                     {getLadderLevel(currentEstimatedTierId)?.name}
@@ -1194,7 +1196,7 @@ export function MyLadderTab() {
               ) : null}
 
               <div className="mt-2.5 flex min-w-0 flex-wrap items-end gap-2">
-                <span className="w-14 shrink-0 pb-1 text-xs font-semibold text-slate-800">
+                <span className="w-14 shrink-0 pb-1 text-xs font-medium text-slate-800">
                   Ideal
                 </span>
                 <div className="flex min-w-0 flex-1 items-end gap-1.5 border-b border-slate-200 pb-1 focus-within:border-sky-500">
@@ -1289,7 +1291,7 @@ export function MyLadderTab() {
                 </p>
               ) : null}
 
-              <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50/90 p-4">
+              <div className={cardClass("soft", "mt-5 p-4")}>
                 <h3 className="text-sm font-semibold text-slate-900">
                   What It Takes
                 </h3>
@@ -1319,7 +1321,7 @@ export function MyLadderTab() {
                 <p className="mt-4 text-xs font-semibold text-slate-900">
                   Client retention pace
                 </p>
-                <div className="mt-1.5 grid grid-cols-[1fr_auto] items-center border-b border-slate-200 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <div className="mt-1.5 grid grid-cols-[1fr_auto] items-center border-b border-slate-200 pb-1 text-kicker font-semibold uppercase text-slate-500">
                   <span>Keep clients</span>
                   <span className="text-right">Sign a client every...</span>
                 </div>
@@ -1365,7 +1367,7 @@ export function MyLadderTab() {
                   <p className="text-xs font-semibold text-slate-900">
                     Calls needed by close rate
                   </p>
-                  <div className="mt-2 grid grid-cols-[1fr_auto] items-center border-b border-slate-200 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <div className="mt-2 grid grid-cols-[1fr_auto] items-center border-b border-slate-200 pb-1 text-kicker font-semibold uppercase text-slate-500">
                     <span>Close rate</span>
                     <span className="text-right">Number of calls</span>
                   </div>
@@ -1394,9 +1396,9 @@ export function MyLadderTab() {
                     {[5, 10, 15].map((ratio) => (
                       <div
                         key={`lead-ratio-card-${ratio}`}
-                        className="rounded-lg border border-slate-200 bg-slate-50/80 p-3"
+                        className={cardClass("plain", "p-3")}
                       >
-                        <p className="text-xs font-semibold text-slate-700">
+                        <p className="text-xs font-medium text-slate-700">
                           {ratio} → 1 call
                         </p>
                         <ul className="mt-2 space-y-1.5">
@@ -1420,14 +1422,14 @@ export function MyLadderTab() {
                   <div className="mt-2 hidden overflow-x-auto lg:block">
                     <table className="min-w-full border-collapse text-sm">
                       <thead>
-                        <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        <tr className="border-b border-slate-200 text-kicker font-semibold uppercase text-slate-500">
                           <th className="py-1.5 pr-3 text-left">Lead to call ratio</th>
                           {closeRateCallScenarios.map((row) => (
                             <th key={`calls-${row.label}`} className="py-1.5 px-2 text-center">
                               <span className="block">
                                 {row.calls === null ? "—" : row.calls}
                               </span>
-                              <span className="block text-[10px] font-medium normal-case tracking-normal text-slate-400">
+                              <span className="block text-caption font-medium normal-case tracking-normal text-slate-400">
                                 calls
                               </span>
                             </th>

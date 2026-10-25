@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { Check, Copy, Info, Share2 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { buttonClass } from "@/components/ui/Button";
 import {
   CampaignSequenceBuilder,
   EMPTY_STEP_PEOPLE,
@@ -94,7 +95,7 @@ function TabHint({ text }: { text: string }) {
             <span
               role="tooltip"
               style={{ top: box.top, left: box.left }}
-              className="pointer-events-none fixed z-50 w-max max-w-[16rem] -translate-x-1/2 -translate-y-full rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-white shadow-sm"
+              className="pointer-events-none fixed z-50 w-max max-w-[16rem] -translate-x-1/2 -translate-y-full rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-caption font-medium leading-snug text-white shadow-sm"
             >
               {text}
             </span>,
@@ -572,11 +573,7 @@ export function LeadMagnetEditor() {
           onClick={() => setShareOpen(true)}
           aria-haspopup="dialog"
           aria-expanded={shareOpen}
-          className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 ${
-            shareOpen
-              ? "border-slate-400 bg-slate-50"
-              : "border-slate-300 bg-transparent hover:border-slate-400 hover:bg-slate-50/60"
-          }`}
+          className={buttonClass("second", "small", "shrink-0")}
         >
           <Share2 className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.25} aria-hidden />
           Share

@@ -80,6 +80,7 @@ import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { splitFullName } from "@/lib/splitFullName";
 import { canonicalLinkedInProfileUrl } from "@/lib/salesNavigator/linkedinUrl";
+import { buttonClass } from "@/components/ui/Button";
 
 export type { ProspectRow };
 
@@ -280,7 +281,7 @@ function ProspectNextCallCell({ next }: { next: ProspectNextCall | null | undefi
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <span
-        className={`inline-flex w-fit shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-medium leading-none ${nextCallStatusClass(next.status_normalized)}`}
+        className={`inline-flex w-fit shrink-0 rounded-full px-1.5 py-0.5 text-caption font-medium leading-none ${nextCallStatusClass(next.status_normalized)}`}
       >
         {statusLabel}
       </span>
@@ -1582,7 +1583,7 @@ export function ProspectsTable({
                   rel="noopener noreferrer"
                   data-row-action
                   onClick={(e) => e.stopPropagation()}
-                  className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                  className="w-fit text-left text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
                   title="Open Boss score report"
                 >
                   {p.boss_score}%
@@ -1595,14 +1596,14 @@ export function ProspectsTable({
                     e.stopPropagation();
                     setScorecardModalContactId(p.id);
                   }}
-                  className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                  className="w-fit text-left text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
                   title="View Boss scorecard"
                 >
                   {p.boss_score}%
                 </button>
               )}
               {p.boss_score_at ? (
-                <span className="text-[11px] leading-none text-slate-400">
+                <span className="text-caption leading-none text-slate-400">
                   {formatProspectLastAssessed(p.boss_score_at)}
                 </span>
               ) : null}
@@ -1614,7 +1615,7 @@ export function ProspectsTable({
                     e.stopPropagation();
                     void copyBossReportLink(p);
                   }}
-                  className="inline-flex w-fit items-center gap-1 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                  className="inline-flex w-fit items-center gap-1 text-left text-caption font-medium text-slate-400 hover:text-slate-600 hover:underline"
                   title="Copy shareable Boss report link"
                 >
                   {copiedBossLinkProspectId === p.id ? (
@@ -1641,7 +1642,7 @@ export function ProspectsTable({
               e.stopPropagation();
               void copyBossAssessmentLink(p);
             }}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+            className="inline-flex items-center gap-1 text-caption font-medium text-slate-400 hover:text-slate-600 hover:underline"
             title={
               p.email?.trim()
                 ? "Copy personalised Boss assessment link"
@@ -1673,13 +1674,13 @@ export function ProspectsTable({
                 e.stopPropagation();
                 router.push(`${workshopBasePath}?contact=${encodeURIComponent(p.id)}`);
               }}
-              className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+              className="w-fit text-left text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
               title="Open Boss Pro workshop"
             >
               {p.boss_score_premium}
             </button>
             {p.boss_score_premium_at ? (
-              <span className="text-[11px] leading-none text-slate-400">
+              <span className="text-caption leading-none text-slate-400">
                 {formatProspectLastAssessed(p.boss_score_premium_at)}
               </span>
             ) : null}
@@ -1691,7 +1692,7 @@ export function ProspectsTable({
                 e.stopPropagation();
                 void copyBossProDashboardLink(p);
               }}
-              className="inline-flex w-fit items-center gap-1 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline disabled:opacity-60"
+              className="inline-flex w-fit items-center gap-1 text-left text-caption font-medium text-slate-400 hover:text-slate-600 hover:underline disabled:opacity-60"
               title="Copy public Boss Pro dashboard link"
             >
               {sharingBossProDashboardId === p.id ? (
@@ -1722,7 +1723,7 @@ export function ProspectsTable({
                   `${workshopBasePath}?contact=${encodeURIComponent(p.id)}`
                 );
               }}
-              className="inline-flex w-fit items-center gap-1 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+              className="inline-flex w-fit items-center gap-1 text-left text-caption font-medium text-slate-400 hover:text-slate-600 hover:underline"
               title="Open Boss Pro workshop for this prospect"
             >
               <Play className="h-3 w-3 shrink-0" aria-hidden />
@@ -1736,7 +1737,7 @@ export function ProspectsTable({
                   e.stopPropagation();
                   void copyBossProAssessmentLink(p);
                 }}
-                className="inline-flex w-fit items-center gap-1 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                className="inline-flex w-fit items-center gap-1 text-left text-caption font-medium text-slate-400 hover:text-slate-600 hover:underline"
                 title={
                   p.email?.trim()
                     ? "Copy personalised Boss Pro assessment link"
@@ -2400,14 +2401,14 @@ export function ProspectsTable({
                     <button
                       type="button"
                       onClick={() => setBulkNextActionOpen(false)}
-                      className="rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                      className={buttonClass("quiet", "small")}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={bulkNextActionSaving}
-                      className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className={buttonClass("main", "small")}
                     >
                       {bulkNextActionSaving ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -2562,7 +2563,7 @@ export function ProspectsTable({
                           <span className="text-xs font-semibold text-slate-800">
                             {group.label}
                           </span>
-                          <span className="text-[11px] text-slate-500">
+                          <span className="text-caption text-slate-500">
                             {group.prospects.length}
                           </span>
                         </button>

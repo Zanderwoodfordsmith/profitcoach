@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SCORECARD_PROGRESS_FILL } from "@/components/scorecard/ScorecardProgressBar";
+import { buttonClass } from "@/components/ui/Button";
 
 const INSIGHTS_GENERATING_MESSAGES = [
   "Reviewing your BOSS scores…",
@@ -122,18 +123,20 @@ export function InsightsGeneratingProgress({
         <p className="text-center text-base font-medium leading-snug text-red-600">
           {error}
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            if (!finishedRef.current) {
-              finishedRef.current = true;
-              onFinished();
-            }
-          }}
-          className="mx-auto block text-sm font-semibold text-sky-600 hover:text-sky-700"
-        >
-          Dismiss
-        </button>
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              if (!finishedRef.current) {
+                finishedRef.current = true;
+                onFinished();
+              }
+            }}
+            className={buttonClass("quiet", "normal")}
+          >
+            Dismiss
+          </button>
+        </div>
       </div>
     );
   }

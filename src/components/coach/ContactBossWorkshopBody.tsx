@@ -21,6 +21,7 @@ import {
 import { computeProspectDimensionBreakdown } from "@/lib/playbookSessionNotes";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
+import { cardClass } from "@/components/ui/Card";
 
 type Contact = {
   id: string;
@@ -39,8 +40,7 @@ const NOTES_DEBOUNCE_MS = 800;
 const INSIGHTS_DEBOUNCE_MS = 3 * 60 * 1000;
 const INSIGHTS_STALE_MS = 2 * 60 * 60 * 1000;
 
-const WORKSHOP_CARD_SHELL =
-  "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]";
+const WORKSHOP_CARD_SHELL = cardClass("plain", "overflow-hidden");
 
 const WORKSHOP_CARD_HEADER =
   "border-b border-slate-600/40 bg-slate-700 px-4 py-2.5 text-sm font-semibold tracking-wide text-white";
@@ -756,7 +756,7 @@ export function ContactBossWorkshopBody({
         aria-hidden={false}
       >
         <div
-          className={`pointer-events-auto rounded-xl border border-slate-200 bg-white text-center shadow-xl ${
+          className={`${cardClass("raised", "pointer-events-auto text-center")} ${
             centerSessionGate
               ? "w-full max-w-lg px-7 py-8 sm:px-8 sm:py-9"
               : "max-w-md px-7 py-8 sm:max-w-lg sm:px-8 sm:py-9"
@@ -765,7 +765,7 @@ export function ContactBossWorkshopBody({
           <p className="text-sm font-semibold uppercase tracking-wide text-sky-700">
             BOSS score
           </p>
-          <h3 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl">
+          <h3 className="mt-3 text-subhead font-semibold text-slate-900 sm:text-2xl">
             {centeredGateTitle}
           </h3>
           {sessionGateSlot ? (
@@ -807,7 +807,7 @@ export function ContactBossWorkshopBody({
       <BossScoreDialStrip totalScore={displayPremiumTotal} pillarStats={pillarDialStats} />
 
       {showCharts && (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <section className={cardClass("plain", "p-4 sm:p-6")}>
           <h2 className="mb-5 text-base font-semibold text-slate-900">Charts</h2>
           <div className="grid gap-8 md:grid-cols-2">
             <div className="flex justify-center">

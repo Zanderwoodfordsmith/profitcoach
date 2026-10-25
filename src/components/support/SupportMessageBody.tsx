@@ -7,7 +7,7 @@ import {
 import { inlineTokens } from "@/lib/articles";
 
 const DEFAULT_CLASS =
-  "min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[15px] leading-relaxed";
+  "min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-read leading-relaxed";
 
 const LINK_CLASS = `${COMMUNITY_EXTERNAL_LINK_CLASS} break-all`;
 
@@ -58,7 +58,7 @@ export function SupportMessageBody({
       {inlineTokens(body).map((t, i) => {
         if (t.type === "strong") {
           return (
-            <strong key={i} className="font-semibold">
+            <strong key={i} className="font-medium">
               {t.text}
             </strong>
           );

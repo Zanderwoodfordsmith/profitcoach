@@ -76,7 +76,7 @@ export function PostEngagementBar({
                 ? "border-sky-300 bg-sky-50 text-sky-800"
                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
             } disabled:opacity-50`
-          : "inline-flex items-center gap-1.5 text-[15px] text-slate-500 hover:text-slate-700 disabled:opacity-50"
+          : "inline-flex items-center gap-1.5 text-ui text-slate-500 hover:text-slate-700 disabled:opacity-50"
       }
       aria-pressed={likedByMe}
     >
@@ -100,7 +100,7 @@ export function PostEngagementBar({
       className={
         detail
           ? "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-          : "inline-flex items-center gap-1.5 text-[15px] text-slate-500 hover:text-slate-700 disabled:opacity-50"
+          : "inline-flex items-center gap-1.5 text-ui text-slate-500 hover:text-slate-700 disabled:opacity-50"
       }
     >
       <MessageCircle
@@ -165,7 +165,7 @@ export function PostEngagementBar({
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center bg-slate-200 text-[10px] font-medium text-slate-600">
+                      <span className="flex h-full w-full items-center justify-center bg-slate-200 text-caption font-medium text-slate-600">
                         {profileInitialsFromProfile(a)}
                       </span>
                     )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy, Download, Loader2, Sparkles } from "lucide-react";
+import { Check, Copy, Download, Loader2 } from "lucide-react";
 
 import { ProfileOptimizerCanvas, SECTION_META } from "@/components/linkedinProfileOptimizer/ProfileOptimizerCanvas";
 import {
@@ -41,6 +41,7 @@ import { makeCoach } from "@/lib/printPack/coach.js";
 
 import { usePractice } from "../PracticeProvider";
 import { StatusSwitch } from "./StatusMenu";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 const SAVE_DEBOUNCE_MS = 700;
 /** The order "Write every part" goes in: the top of the profile first. */
@@ -147,6 +148,7 @@ export function LinkedInProfileSection() {
       if (sample) return;
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
       saveTimer.current = window.setTimeout(() => {
+        saveTimer.current = null;
         void saveOptimizerDraft(next, coachId).then((result) => {
           if (!result.ok) setError(result.error ?? "Could not save your profile draft.");
         });
@@ -205,6 +207,27 @@ export function LinkedInProfileSection() {
     // oldWritten is read once, when the profile first loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coachId, sample]);
+
+  // Ava can save a new profile from her chat. When the Blueprint reloads after that, show it,
+  // unless an edit here is still waiting to save.
+  const seenKnowledge = useRef(knowledge);
+  useEffect(() => {
+    if (sample || seenKnowledge.current === knowledge) return;
+    const before = seenKnowledge.current;
+    seenKnowledge.current = knowledge;
+    // The first load reads the profile itself.
+    if (loading || !before) return;
+    let cancelled = false;
+    void getOptimizer(coachId).then((result) => {
+      if (cancelled || saveTimer.current || !result.ok || !result.data?.profile) return;
+      setProfile(result.data.profile);
+      draftRef.current = result.data.draft ?? {};
+      setDraft(draftRef.current);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [knowledge, coachId, sample, loading]);
 
   const bannerCoach = useBannerCoach(coachId, Boolean(profile));
   const bannerSvgs = useMemo(() => {
@@ -411,7 +434,7 @@ export function LinkedInProfileSection() {
           onClick={() => void writeEverything()}
           className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
         >
-          {writingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
+          <AvaHalo size={16} dark state={writingAll ? "thinking" : "idle"} />
           {writingAll
             ? `Writing ${SECTION_META.find((s) => s.id === writingAll)?.label ?? ""}…`
             : "Write every part from my Blueprint"}

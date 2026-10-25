@@ -4,6 +4,7 @@ import {
   CampaignDialsPanel,
   type CampaignDialMetric,
 } from "@/components/campaigns/CampaignOverviewMetrics";
+import { cardClass } from "@/components/ui/Card";
 import {
   MAGNET_STAGE_LABEL,
   type MagnetAudience,
@@ -16,8 +17,7 @@ const STAGE_COLOR: Record<MagnetStage, string> = {
   completed: "#0c5290",
 };
 
-const CARD =
-  "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]";
+const CARD = cardClass("plain", "overflow-hidden");
 
 type Props = {
   audience: MagnetAudience | null;
@@ -103,7 +103,7 @@ export function LeadMagnetOverview({
 }: Props) {
   if (loading || !audience) {
     return (
-      <div className="rounded-2xl border border-slate-200 px-6 py-16 text-center text-sm text-slate-500">
+      <div className={cardClass("plain", "px-6 py-16 text-center text-sm text-slate-500")}>
         Loading overview…
       </div>
     );
@@ -170,7 +170,7 @@ export function LeadMagnetOverview({
                     <button
                       type="button"
                       onClick={() => onOpenStage(row.stage)}
-                      className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-1.5 text-left text-[15px] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                      className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-1.5 text-left text-ui hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
                     >
                       <span className="flex min-w-0 items-center gap-2.5 font-medium text-slate-700">
                         <span

@@ -20,6 +20,7 @@ import { SimCall, type SimCallSetup } from "@/components/simulator/SimCall";
 import { CallScript } from "./CallScript";
 import { Cast, QUICK_PACE, Trend, readPace, setPace, subscribePace } from "@/components/simulator/SimulatorHome";
 import { formatSimDate, useSimApi, useSimPrefix } from "@/components/simulator/simApi";
+import { cardClass } from "@/components/ui/Card";
 import "@/components/simulator/sim.css";
 
 type HomeData = { configured: boolean; sessions: CallSessionSummary[]; minutes: { used: number; limit: number | null } };
@@ -180,10 +181,10 @@ export function CallSimHome() {
               <p className="mt-2 text-[clamp(1.6rem,2.6vw,2.4rem)] font-light leading-[1.12] tracking-[-0.02em]">
                 {call.title} with {prospect.firstName}
               </p>
-              <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-[var(--sim-cream-soft)]">{brief.setup}</p>
+              <p className="mt-3 max-w-xl text-read leading-relaxed text-[var(--sim-cream-soft)]">{brief.setup}</p>
               {brief.sofar.length ? (
                 <div className="mt-4">
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--sim-cream-faint)]">
+                  <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">
                     {call.id === "roadmap" || call.id === "close-objections" ? "Your notes from the review" : from ? "Earlier in the call" : "Your notes"}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -216,7 +217,7 @@ export function CallSimHome() {
               <CallMenu value={callId} onChange={chooseCall} />
               {call.startable ? (
                 <div className="w-full max-w-sm">
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--sim-cream-faint)] lg:text-right">Start at</p>
+                  <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)] lg:text-right">Start at</p>
                   <div className="mt-2 flex flex-wrap gap-1.5 lg:justify-end" role="group" aria-label="Start at">
                     {call.parts.map((p, i) => {
                       const on = (from ?? call.parts[0].id) === p.id;
@@ -315,7 +316,7 @@ function CallMenu({ value, onChange }: { value: CallId; onChange: (id: CallId) =
         onClick={() => setOpen((o) => !o)}
       >
         <span className="min-w-0 flex-1 text-left">
-          <span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--sim-cream-faint)]">
+          <span className="block text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">
             {CALL_GROUPS.find((g) => g.id === current.group)?.title}
           </span>
           <span className="mt-1 block truncate">{current.title}</span>
@@ -330,7 +331,7 @@ function CallMenu({ value, onChange }: { value: CallId; onChange: (id: CallId) =
         >
           {CALL_GROUPS.map((g) => (
             <div key={g.id} className="py-1">
-              <p className="px-3 pb-1 pt-2 text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--sim-cream-faint)]">{g.title}</p>
+              <p className="px-3 pb-1 pt-2 text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">{g.title}</p>
               {CALLS.filter((c) => c.group === g.id).map((c) => (
                 <button
                   key={c.id}
@@ -344,8 +345,8 @@ function CallMenu({ value, onChange }: { value: CallId; onChange: (id: CallId) =
                   className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-[var(--sim-glass-strong)] ${c.id === value ? "bg-[var(--sim-glass-strong)]" : ""}`}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[0.9375rem] font-medium text-[var(--sim-cream)]">{c.title}</span>
-                    <span className="mt-0.5 block text-[0.8125rem] leading-snug text-[var(--sim-cream-soft)]">{c.line}</span>
+                    <span className="block text-ui font-medium text-[var(--sim-cream)]">{c.title}</span>
+                    <span className="mt-0.5 block text-ui leading-snug text-[var(--sim-cream-soft)]">{c.line}</span>
                   </span>
                   <span className="shrink-0 pt-0.5 text-xs text-[var(--sim-cream-faint)]">{c.minutes} min</span>
                 </button>
@@ -364,7 +365,7 @@ function ObjectionPicker({ kind, value, onChange }: { kind: "booking" | "close";
   return (
     <div className="w-full max-w-sm">
       <div className="flex items-center justify-between gap-3 lg:justify-end">
-        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--sim-cream-faint)]">
+        <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">
           Objections · {value.length} of up to {MAX_OBJECTIONS}, in order
         </p>
         <button type="button" onClick={() => onChange(surpriseObjections(kind))} className="inline-flex items-center gap-1 text-xs font-medium text-[var(--sim-cream)] hover:underline">
@@ -409,11 +410,11 @@ function History({ sessions, prefix }: { sessions: CallSessionSummary[] | null; 
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading
         </p>
       ) : done.length === 0 ? (
-        <p className="mt-4 max-w-md text-[0.9375rem] leading-relaxed text-slate-600">
+        <p className="mt-4 max-w-md text-read leading-relaxed text-slate-600">
           Your practice calls show up here, each with a score, how the call ended, and a report you can come back to.
         </p>
       ) : (
-        <ul className="mt-4 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <ul className={cardClass("plain", "mt-4 divide-y divide-slate-200 overflow-hidden")}>
           {done.map((s) => {
             const p = prospectById(s.prospect_id);
             const c = callById(s.call_id);
@@ -424,11 +425,11 @@ function History({ sessions, prefix }: { sessions: CallSessionSummary[] | null; 
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p?.face} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[0.9375rem] font-medium text-slate-900">
+                    <span className="block truncate text-ui font-medium text-slate-900">
                       {p?.firstName} · {c?.title}
                       {fromPart ? ` · from ${fromPart}` : ""}
                     </span>
-                    <span className="block text-[0.8125rem] text-slate-500">
+                    <span className="block text-ui text-slate-500">
                       {formatSimDate(s.started_at)} · {DIFFICULTIES.find((d) => d.id === s.difficulty)?.label}
                       {s.outcome ? ` · ${OUTCOME_LABEL[s.outcome]}` : ""}
                     </span>

@@ -286,7 +286,7 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
               <EditPersonNameButton
                 name={shownName}
                 onClick={() => setIdentityOpen(true)}
-                nameClassName="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"
+                nameClassName="text-2xl font-semibold tracking-tight text-slate-900 sm:text-heading"
               />
             ) : (
               title

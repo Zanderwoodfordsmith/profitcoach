@@ -81,7 +81,7 @@ function IcpCard({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             {rank === 1 && !chosen ? (
-              <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-700">
+              <p className="mb-0.5 text-kicker font-semibold uppercase text-sky-700">
                 Top recommendation
               </p>
             ) : null}

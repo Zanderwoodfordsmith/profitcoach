@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { FilePlus, LayoutTemplate } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { cardClass } from "@/components/ui/Card";
 import {
   CampaignTemplateList,
   TemplatePickerBackButton,
@@ -125,13 +126,13 @@ export function CampaignCreateModal({
                 type="button"
                 disabled={busy}
                 onClick={() => onCreateBlank(name, channel)}
-                className="flex min-h-[7.5rem] flex-col items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                className={cardClass("raised", "flex min-h-[7.5rem] flex-col items-start gap-3 px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2")}
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-[#0c5290]">
                   <FilePlus className="h-5 w-5" strokeWidth={2.1} aria-hidden />
                 </span>
                 <span>
-                  <span className="block text-[15px] font-semibold text-slate-900">
+                  <span className="block text-ui font-semibold text-slate-900">
                     Blank
                   </span>
                   <span className="mt-0.5 block text-sm leading-snug text-slate-600">
@@ -143,7 +144,7 @@ export function CampaignCreateModal({
                 type="button"
                 disabled={busy || channel !== "linkedin"}
                 onClick={() => setScreen("templates")}
-                className="flex min-h-[7.5rem] flex-col items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                className={cardClass("raised", "flex min-h-[7.5rem] flex-col items-start gap-3 px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2")}
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-[#0c5290]">
                   <LayoutTemplate
@@ -153,7 +154,7 @@ export function CampaignCreateModal({
                   />
                 </span>
                 <span>
-                  <span className="block text-[15px] font-semibold text-slate-900">
+                  <span className="block text-ui font-semibold text-slate-900">
                     Templates
                   </span>
                   <span className="mt-0.5 block text-sm leading-snug text-slate-600">

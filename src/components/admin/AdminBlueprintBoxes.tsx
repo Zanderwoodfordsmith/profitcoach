@@ -12,6 +12,8 @@ import {
   type FieldSpec,
   sectionKey,
 } from "@/lib/practiceKnowledge/blueprint";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { FIELD_WHY } from "@/lib/practiceKnowledge/fieldWhy";
 import { isNewsletterOverviewKey } from "@/lib/practiceKnowledge/newsletters";
 import { BLUEPRINT_OUTPUTS } from "@/lib/practiceKnowledge/outputs";
@@ -177,7 +179,7 @@ function Pop({ trigger, label, children, align = "left" }: { trigger: ReactNode;
       {open ? (
         <span
           role="tooltip"
-          className={`absolute top-full z-30 mt-1.5 w-72 rounded-xl bg-[#06223d] px-3.5 py-3 text-left text-[0.8125rem] font-normal leading-5 text-white shadow-[0_14px_30px_-12px_rgba(5,30,54,0.6)] ${
+          className={`absolute top-full z-30 mt-1.5 w-72 rounded-xl bg-[#06223d] px-3.5 py-3 text-left text-ui font-normal text-white shadow-[0_14px_30px_-12px_rgba(5,30,54,0.6)] ${
             align === "right" ? "right-0" : "left-0"
           }`}
         >
@@ -200,7 +202,7 @@ function PopList({ title, items }: { title: string; items: string[] }) {
   if (!items.length) return null;
   return (
     <span className="block [&+&]:mt-2.5">
-      <span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-sky-200">{title}</span>
+      <span className="block text-kicker font-semibold uppercase text-sky-200">{title}</span>
       <span className="mt-1 block space-y-0.5">
         {items.map((item) => (
           <span key={item} className="block">
@@ -318,17 +320,17 @@ export function AdminBlueprintBoxes() {
     <div className="mx-auto max-w-[92rem] px-4 py-8 md:px-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">Blueprint boxes</h2>
+          <h2 className="text-subhead font-semibold text-slate-900">Blueprint boxes</h2>
           <p className="mt-1 max-w-2xl text-sm text-slate-600">
             Every box the Blueprint asks for and every piece BCA writes, by page and section. Use it to decide what stays and what goes.
             The newsletter and its pieces live in Get Clients, Content, so they are not listed.
           </p>
         </div>
-        <div className="flex gap-2 text-sm font-medium">
-          <button type="button" onClick={() => setClosed(new Set())} className="rounded-full px-3 py-1.5 text-slate-600 ring-1 ring-slate-200 hover:bg-white hover:text-slate-900">
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setClosed(new Set())} className={buttonClass("second", "small")}>
             Expand all
           </button>
-          <button type="button" onClick={() => setClosed(new Set(allIds))} className="rounded-full px-3 py-1.5 text-slate-600 ring-1 ring-slate-200 hover:bg-white hover:text-slate-900">
+          <button type="button" onClick={() => setClosed(new Set(allIds))} className={buttonClass("second", "small")}>
             Collapse all
           </button>
         </div>
@@ -354,7 +356,7 @@ export function AdminBlueprintBoxes() {
         })}
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-2xl bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-200 lg:overflow-visible">
+      <div className={cardClass("plain", "mt-6 overflow-x-auto lg:overflow-visible")}>
         <table className="w-full min-w-[60rem] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-[24%]" />
@@ -364,7 +366,7 @@ export function AdminBlueprintBoxes() {
             <col className="w-[5.5rem]" />
           </colgroup>
           <thead>
-            <tr className="text-left text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-slate-500">
+            <tr className="text-left text-kicker font-semibold uppercase text-slate-500">
               <th className="rounded-tl-2xl border-b border-slate-200 bg-slate-50 px-3 py-3 pl-5">Name</th>
               <th className="border-b border-slate-200 bg-slate-50 px-3 py-3">Why we need it</th>
               <th className="border-b border-slate-200 bg-slate-50 px-3 py-3">Ava asks</th>
@@ -385,7 +387,7 @@ export function AdminBlueprintBoxes() {
                     <td colSpan={COLS} className="px-3 pb-2 pl-4 pt-8">
                       <button type="button" aria-expanded={groupOpen} onClick={() => toggle(`g:${group.label}`)} className="flex items-center gap-2 text-left">
                         <Chevron open={groupOpen} />
-                        <span className="text-xs font-bold uppercase tracking-[0.1em] text-[#0c5290]">{group.label}</span>
+                        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[#0c5290]">{group.label}</span>
                         <span className="text-xs text-slate-400">
                           {visiblePages.length} {visiblePages.length === 1 ? "page" : "pages"}
                         </span>
@@ -401,7 +403,7 @@ export function AdminBlueprintBoxes() {
                               <td colSpan={COLS} className="px-3 py-3 pl-9">
                                 <button type="button" aria-expanded={pageOpen} onClick={() => toggle(`p:${page.slug}`)} className="flex items-center gap-2 text-left">
                                   <Chevron open={pageOpen} />
-                                  <span className="text-[0.9375rem] font-semibold text-slate-900">{page.title}</span>
+                                  <span className="text-ui font-semibold text-slate-900">{page.title}</span>
                                   <span className="text-xs text-slate-400">{sections.reduce((n, s) => n + s.rows.length, 0)}</span>
                                 </button>
                                 {pageOpen ? <p className="mt-0.5 pl-6 text-xs text-slate-500">{page.summary}</p> : null}

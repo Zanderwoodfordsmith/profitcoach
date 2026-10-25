@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import { cardClass } from "@/components/ui/Card";
 
 import { ChecksList, JudgeBreakdown, ScoreCell, ScoreChip, VerdictButtons, pct, shortDate, type Verdict } from "@/components/admin/evals/ScoreBits";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
@@ -119,7 +120,7 @@ async function api<T>(query = ""): Promise<T> {
 
 function Tile({ label, value, hint }: { label: string; value: number | null | undefined; hint: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
+    <div className={cardClass("plain", "p-3")}>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">{value == null ? "–" : Math.round(value)}</p>
       <p className="text-xs text-slate-500">{hint}</p>
@@ -178,7 +179,7 @@ function CoachDetail({ row }: { row: CoachRow }) {
             const before = previous[p.artifact];
             const [, campaignName, status, people] = (p.source_ref ?? "").split("|");
             return (
-              <details key={p.id} className="rounded-lg border border-slate-200 bg-white p-3">
+              <details key={p.id} className={cardClass("plain", "p-3")}>
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-2">
                   <span>
                     <span className="text-sm font-semibold text-slate-900">{ARTIFACT_LABELS[p.artifact]}</span>
@@ -213,7 +214,7 @@ function CalibrationPanel({ c }: { c: CalibrationSummary }) {
   const pp = (x: number | null) => (x == null ? "–" : `${x > 0 ? "+" : ""}${(x * 100).toFixed(1)} pts`);
   const rho = (x: number | null | undefined) => (x == null ? "–" : x.toFixed(2));
   return (
-    <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+    <section className={cardClass("plain", "space-y-4 p-4")}>
       <div>
         <h2 className="text-sm font-semibold text-slate-900">Does the bar predict results?</h2>
         <p className="mt-1 text-sm text-slate-600">
@@ -279,7 +280,7 @@ function CalibrationPanel({ c }: { c: CalibrationSummary }) {
             ] as const
           ).map(([label, cal, first, second]) =>
             cal ? (
-              <div key={label} className="rounded border border-slate-200 p-3 text-sm text-slate-700">
+              <div key={label} className={cardClass("plain", "p-3 text-sm text-slate-700")}>
                 <p className="font-semibold text-slate-900">
                   {label} scored by the rubric ({cal.n})
                 </p>
@@ -418,7 +419,7 @@ export function CoachQualityBoard() {
                       </td>
                       <td className="px-3 py-2">
                         <ScoreChip score={r.overall} />
-                        {r.percentile.overall != null ? <div className="text-[11px] text-slate-500">top {Math.max(1, 100 - r.percentile.overall)}%</div> : null}
+                        {r.percentile.overall != null ? <div className="text-caption text-slate-500">top {Math.max(1, 100 - r.percentile.overall)}%</div> : null}
                       </td>
                       <td className="px-3 py-2">
                         <ScoreChip score={r.pillars.profile} />
@@ -450,7 +451,7 @@ export function CoachQualityBoard() {
           </div>
 
           {s.library.length ? (
-            <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <section className={cardClass("plain", "p-4")}>
               <h2 className="text-sm font-semibold text-slate-900">BCA&apos;s library templates</h2>
               <p className="mt-1 text-sm text-slate-600">Every coach starts from these, so a weak template shows up in every coach&apos;s campaigns.</p>
               <ul className="mt-3 space-y-2">

@@ -17,6 +17,8 @@ import { AdminCoachContentHistory } from "@/components/admin/AdminCoachContentHi
 import { CoachProfileBlueprint } from "@/components/admin/CoachProfileBlueprint";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { formatDateDisplay } from "@/lib/formatDateDisplay";
 import {
   lastLoginFreshness,
@@ -173,9 +175,9 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm md:p-8">
+    <section className={cardClass("plain", "p-6 md:p-8")}>
       <div className="mb-5">
-        <h2 className="text-xl font-bold tracking-[-0.02em] text-slate-900 md:text-2xl">
+        <h2 className="text-subhead font-semibold text-slate-900">
           {title}
         </h2>
         {description ? (
@@ -495,7 +497,7 @@ export default function AdminCoachDetailPage({
                     setImpersonatingCoachId(coach.id);
                     router.push("/coach");
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className={buttonClass("second")}
                 >
                   View as coach
                   <ArrowRight className="h-4 w-4" aria-hidden />
@@ -504,7 +506,7 @@ export default function AdminCoachDetailPage({
                   href={`/landing/a?coach=${encodeURIComponent(coach.slug)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className={buttonClass("second")}
                 >
                   Landing page
                   <ExternalLink className="h-4 w-4" aria-hidden />
@@ -514,7 +516,7 @@ export default function AdminCoachDetailPage({
                     href={`${CRM_LOCATION_BASE_URL}/${coach.crm_location_id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    className={buttonClass("second")}
                   >
                     Open CRM
                     <ExternalLink className="h-4 w-4" aria-hidden />
@@ -626,7 +628,7 @@ export default function AdminCoachDetailPage({
                 description="Access tier and billing status are independent. Tiers only restrict features when tier enforcement is enabled; lock a tier to stop Stripe from changing it (use for complimentary or manually granted access)."
               >
                 {accessDraft ? (
-                  <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                  <div className={cardClass("soft", "mb-6 p-4 sm:p-5")}>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <label className="space-y-1.5">
                         <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -719,7 +721,7 @@ export default function AdminCoachDetailPage({
                             type="button"
                             onClick={() => void saveAccessBilling()}
                             disabled={!dirty || savingAccess}
-                            className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-not-allowed disabled:opacity-50"
+                            className={buttonClass("main")}
                           >
                             {savingAccess ? (
                               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -842,7 +844,7 @@ export default function AdminCoachDetailPage({
                     . Their login is blocked and their contact details are cleared.
                   </p>
                 ) : confirmingRemoveAccess ? (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 sm:p-5">
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4 sm:p-5">
                     <p className="text-sm font-semibold text-slate-900">
                       Remove {coach.full_name?.trim() || "this coach"}&apos;s access?
                     </p>
@@ -868,7 +870,7 @@ export default function AdminCoachDetailPage({
                         type="button"
                         onClick={() => void removeAccess()}
                         disabled={removingAccess}
-                        className="inline-flex items-center gap-2 rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className={buttonClass("delete")}
                       >
                         {removingAccess ? (
                           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -882,7 +884,7 @@ export default function AdminCoachDetailPage({
                           setRemoveAccessError(null);
                         }}
                         disabled={removingAccess}
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className={buttonClass("quiet")}
                       >
                         Cancel
                       </button>
@@ -895,7 +897,7 @@ export default function AdminCoachDetailPage({
                   <button
                     type="button"
                     onClick={() => setConfirmingRemoveAccess(true)}
-                    className="rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50"
+                    className={buttonClass("delete")}
                   >
                     Remove access
                   </button>
@@ -927,7 +929,7 @@ export default function AdminCoachDetailPage({
           ) : null}
 
           {activeTab === "blueprint" ? (
-            <div className="h-[calc(100dvh-11.5rem)] min-h-[32rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className={cardClass("plain", "h-[calc(100dvh-11.5rem)] min-h-[32rem] overflow-hidden")}>
               <CoachProfileBlueprint coachId={coach.id} coachSlug={coach.slug} />
             </div>
           ) : null}
@@ -939,7 +941,7 @@ export default function AdminCoachDetailPage({
                 description="Successful charges only in the totals. Failed or canceled attempts stay in the list below but do not count."
               >
                 <div className="mb-6 flex flex-wrap gap-4 text-sm">
-                  <div className="rounded-xl bg-slate-50 px-4 py-3">
+                  <div className={cardClass("soft", "px-4 py-3")}>
                     <p className="text-xs font-medium uppercase tracking-wide text-slate-600">
                       Successful payments
                     </p>
@@ -948,7 +950,7 @@ export default function AdminCoachDetailPage({
                     </p>
                   </div>
                   {paymentSummary.totalsByCurrency.map(({ currency, cents }) => (
-                    <div key={currency} className="rounded-xl bg-emerald-50 px-4 py-3">
+                    <div key={currency} className="rounded-2xl bg-emerald-50 px-4 py-3">
                       <p className="text-xs font-medium uppercase tracking-wide text-emerald-800">
                         Paid ({currency})
                       </p>
@@ -958,7 +960,7 @@ export default function AdminCoachDetailPage({
                     </div>
                   ))}
                   {paymentSummary.remainingByCurrency.map((row) => (
-                    <div key={`${row.currency}-left`} className="rounded-xl bg-amber-50 px-4 py-3">
+                    <div key={`${row.currency}-left`} className="rounded-2xl bg-amber-50 px-4 py-3">
                       <p className="text-xs font-medium uppercase tracking-wide text-amber-800">
                         Remaining ({row.currency})
                       </p>

@@ -6,6 +6,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type RevenueLine = {
   id: string;
@@ -342,7 +344,7 @@ export default function CoachIncomePage() {
       />
 
       {snapshot3m && !loading ? (
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div className={cardClass("plain", "px-4 py-3")}>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Last 3 months (logged)
           </p>
@@ -384,7 +386,7 @@ export default function CoachIncomePage() {
 
       {tab === "ledger" ? (
         <>
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className={cardClass("plain", "p-4")}>
             <h2 className="text-sm font-semibold text-slate-900">Add income</h2>
             <form
               onSubmit={(e) => void submitAdd(e)}
@@ -450,7 +452,7 @@ export default function CoachIncomePage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:opacity-60"
+                  className={buttonClass("main", "normal")}
                 >
                   {saving ? "Saving…" : "Add entry"}
                 </button>
@@ -458,7 +460,7 @@ export default function CoachIncomePage() {
             </form>
           </section>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className={cardClass("plain", "overflow-x-auto")}>
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
@@ -526,14 +528,14 @@ export default function CoachIncomePage() {
                               <button
                                 type="submit"
                                 disabled={editSaving}
-                                className="rounded-md bg-sky-600 px-3 py-1 text-xs font-semibold text-white disabled:opacity-60"
+                                className={buttonClass("main", "small")}
                               >
                                 Save
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setEditingId(null)}
-                                className="text-xs text-slate-600"
+                                className={buttonClass("quiet", "small")}
                               >
                                 Cancel
                               </button>
@@ -594,7 +596,7 @@ export default function CoachIncomePage() {
           {matrix.rows.map((row) => (
             <article
               key={row.contactId ?? row.label}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+              className={cardClass("plain", "p-4")}
             >
               <h3 className="font-semibold text-slate-900">{row.label}</h3>
               <dl className="mt-3 space-y-2">
@@ -637,7 +639,7 @@ export default function CoachIncomePage() {
             </article>
           ) : null}
         </div>
-        <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm lg:block">
+        <div className={cardClass("plain", "hidden overflow-x-auto lg:block")}>
           <table className="w-full min-w-[36rem] border-separate border-spacing-0 text-left text-sm">
             <thead>
               <tr className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">

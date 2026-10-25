@@ -1,5 +1,6 @@
 "use client";
 
+import { cardClass } from "@/components/ui/Card";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -171,7 +172,7 @@ function ScoreQuickPicker({
         {classroomHref ? (
           <Link
             href={classroomHref}
-            className="shrink-0 text-xs font-semibold text-sky-700 underline-offset-2 hover:text-sky-600 hover:underline"
+            className="shrink-0 text-xs font-medium text-sky-700 underline-offset-2 hover:text-sky-600 hover:underline"
             onClick={onClose}
           >
             Lessons
@@ -193,7 +194,7 @@ function ScoreQuickPicker({
               }`}
             >
               <span className={`h-4 w-4 shrink-0 rounded-full ${option.visual}`} />
-              <span className="font-semibold capitalize">{option.value}</span>
+              <span className="font-medium capitalize">{option.value}</span>
               <span className="text-slate-500">{option.phrase}</span>
             </button>
           );
@@ -647,7 +648,7 @@ export default function CoachSignaturePage() {
           <div className="mt-2 flex items-center justify-end">
             <CompassScoringInfoPopover />
           </div>
-          <div className="divide-y divide-slate-200/90 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-sm">
+          <div className={cardClass("plain", "divide-y divide-slate-200/90 overflow-hidden")}>
               <div className="divide-y divide-slate-100">
                 {!hideOuterModules
                   ? SIGNATURE_MODEL_V2.pillars.map((pillar) => (
@@ -677,7 +678,7 @@ export default function CoachSignaturePage() {
                                   moduleLabel={m.diagramTitle}
                                 />
                               </div>
-                              <p className="col-start-2 row-start-1 min-w-0 text-pretty text-base font-semibold leading-snug text-slate-900 sm:text-[17px]">
+                              <p className="col-start-2 row-start-1 min-w-0 text-pretty text-base font-medium leading-snug text-slate-900 sm:text-read">
                                 {classroomHref ? (
                                   <Link
                                     href={classroomHref}
@@ -701,7 +702,7 @@ export default function CoachSignaturePage() {
                                 )}
                               </p>
                               <div className="col-start-2 row-start-2 flex min-w-0 items-start gap-1.5 sm:col-start-3 sm:row-start-1">
-                                <p className="min-w-0 flex-1 text-pretty text-base leading-snug text-slate-800 sm:text-[17px] sm:leading-[1.5]">
+                                <p className="min-w-0 flex-1 text-pretty text-base leading-snug text-slate-800 sm:text-read sm:leading-[1.5]">
                                   {m.question}
                                 </p>
                                 <HintPopover
@@ -747,7 +748,7 @@ export default function CoachSignaturePage() {
                             moduleLabel={row.lensLabel}
                           />
                         </div>
-                        <p className="col-start-2 row-start-1 min-w-0 text-pretty text-base font-semibold leading-snug text-slate-900 sm:text-[17px]">
+                        <p className="col-start-2 row-start-1 min-w-0 text-pretty text-base font-medium leading-snug text-slate-900 sm:text-read">
                           <button
                             type="button"
                             className="text-left underline-offset-2 hover:underline"
@@ -762,7 +763,7 @@ export default function CoachSignaturePage() {
                           </button>
                         </p>
                         <div className="col-start-2 row-start-2 flex min-w-0 items-start gap-1.5 sm:col-start-3 sm:row-start-1">
-                          <p className="min-w-0 flex-1 text-pretty text-base leading-snug text-slate-800 sm:text-[17px] sm:leading-[1.5]">
+                          <p className="min-w-0 flex-1 text-pretty text-base leading-snug text-slate-800 sm:text-read sm:leading-[1.5]">
                             {row.question}
                           </p>
                           <HintPopover

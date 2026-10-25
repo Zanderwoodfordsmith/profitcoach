@@ -93,7 +93,7 @@ export function ResourcesShell({ children }: { children: ReactNode }) {
             <div className={`flex items-center gap-2 border-b border-slate-200/70 px-3 py-3 ${navOpen ? "justify-between" : "lg:justify-center"}`}>
               <Link
                 href={base}
-                className={`text-[0.8125rem] font-semibold text-[#0f172a] hover:text-[#0c5290] ${navOpen ? "" : "lg:hidden"}`}
+                className={`text-ui font-semibold text-[#0f172a] hover:text-[#0c5290] ${navOpen ? "" : "lg:hidden"}`}
               >
                 The Resource Library
               </Link>
@@ -101,7 +101,7 @@ export function ResourcesShell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => setMobileOpen((open) => !open)}
                 aria-expanded={mobileOpen}
-                className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+                className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-ui font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
               >
                 Contents
                 <ChevronDown className={`h-4 w-4 transition-transform ${mobileOpen ? "rotate-180" : ""}`} aria-hidden />
@@ -143,7 +143,7 @@ export function ResourcesShell({ children }: { children: ReactNode }) {
 
 const ROW = "flex min-w-0 flex-1 items-start gap-2 rounded-[7px] px-2.5 py-1.5 text-sm leading-snug";
 const ROW_IDLE = "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0f172a]";
-const ROW_CURRENT = "bg-[#e0f2fe] font-semibold text-[#075985]";
+const ROW_CURRENT = "bg-[#e0f2fe] font-medium text-[#075985]";
 const COUNT = "text-xs font-medium tabular-nums text-[#94a3b8]";
 
 function Contents({
@@ -220,7 +220,7 @@ function Contents({
 
       {results ? (
         <div>
-          <p className="px-2.5 pb-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#94a3b8]">
+          <p className="px-2.5 pb-1 text-kicker font-semibold uppercase text-[#94a3b8]">
             {results.length === 0 ? "Nothing found" : `${results.length} ${results.length === 1 ? "page" : "pages"}`}
           </p>
           <ul>
@@ -270,7 +270,7 @@ function Contents({
                             if (inPillar.length === 0) return null;
                             return (
                               <div key={pillar} className="pt-2 first:pt-1">
-                                <p className="px-2 pb-0.5 text-[0.625rem] font-bold uppercase tracking-[0.1em] text-[#94a3b8]">{pillar}</p>
+                                <p className="px-2 pb-0.5 text-kicker font-semibold uppercase text-[#94a3b8]">{pillar}</p>
                                 {inPillar.map((g) => folder(g, false))}
                               </div>
                             );

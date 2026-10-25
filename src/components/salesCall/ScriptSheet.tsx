@@ -9,6 +9,8 @@ import { AREAS, type BossPlaybook, PLAYBOOKS } from "@/lib/bossData";
 import { type Block, type Tone, inToneOrder } from "@/lib/salesCall/blocks";
 import { OBJECTION_PAGES, type ObjectionId, pageById } from "@/lib/salesCall/objections";
 import type { Technique } from "@/lib/salesCall/techniques";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import type { PlaybookContent } from "@/lib/playbookContentTypes";
 
@@ -28,10 +30,10 @@ import { useGaps } from "./useGaps";
  * are larger but medium weight. SMALL is only for the hint above a set of
  * answers and the examples under an answer.
  */
-const BODY = "text-[1.0625rem] leading-[1.45] tracking-[-0.006em]";
+const BODY = "text-read leading-[1.45] tracking-[-0.006em]";
 const SMALL = "text-sm leading-[1.5]";
 /** A step softer than the bold lines to say, still clearly darker than the timing line under it. */
-export const SECTION = "text-[1.3125rem] font-normal leading-tight tracking-[-0.012em] text-slate-700";
+export const SECTION = "text-subhead font-normal leading-tight tracking-[-0.012em] text-slate-700";
 
 /** The script's one column, about 88 characters a line at 17px bold (40rem felt narrow, 46rem too wide). The pitch uses it too. */
 export const SCRIPT_COLUMN = "max-w-[42rem]";
@@ -153,13 +155,13 @@ function Message({ block, fill }: { block: Extract<Block, { type: "message" }>; 
     }
   };
   return (
-    <div className="rounded-xl bg-[#f3f6fa] px-5 py-4">
+    <div className={cardClass("soft", "px-5 py-4")}>
       <div className="mb-2 flex items-center justify-between gap-3">
         <p className={`font-medium text-slate-500 ${SMALL}`}>{block.label}</p>
         <button
           type="button"
           onClick={copy}
-          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-[#0c5290] hover:bg-white ${SMALL}`}
+          className={buttonClass("quiet", "small")}
         >
           {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
           {copied ? "Copied" : "Copy"}
@@ -196,7 +198,7 @@ function BossProLink({ text }: { text: string }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={`inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-4 py-2 font-medium text-[#0c5290] hover:bg-sky-100 ${SMALL}`}
+      className={buttonClass("second")}
     >
       {text}
       <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
@@ -216,7 +218,7 @@ function LeversLink({ text }: { text: string }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={`inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-4 py-2 font-medium text-[#0c5290] hover:bg-sky-100 ${SMALL}`}
+      className={buttonClass("second")}
     >
       {text}
       <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
@@ -308,7 +310,7 @@ function PlaybookHelp({ fill }: { fill: Ctx["fill"] }) {
         .slice(0, 8)
     : [];
   return (
-    <div className="rounded-xl bg-[#f3f6fa] px-5 py-4">
+    <div className={cardClass("soft", "px-5 py-4")}>
       {/* Find one fast: search, or scan all 50 the way BOSS Pro lays them out. */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <label className="relative min-w-0 flex-1 basis-60">
@@ -340,7 +342,7 @@ function PlaybookHelp({ fill }: { fill: Ctx["fill"] }) {
             matches.map((p) => (
               <li key={p.ref} className="border-b border-slate-100 last:border-b-0">
                 <button type="button" onClick={() => pickPlaybook(p)} className="flex w-full items-baseline justify-between gap-3 px-3 py-2 text-left hover:bg-sky-50">
-                  <span className={`font-semibold text-slate-900 ${SMALL}`}>{p.name}</span>
+                  <span className={`font-medium text-slate-900 ${SMALL}`}>{p.name}</span>
                   <span className={`text-slate-500 ${SMALL}`}>
                     {AREAS[p.area].name} · Level {p.level}, {PLAYBOOK_LEVELS[p.level - 1]}
                   </span>
@@ -426,7 +428,7 @@ function PlaybookHelp({ fill }: { fill: Ctx["fill"] }) {
         <div className="mt-5 space-y-5">
           <p className={`text-slate-600 ${BODY}`}>
             Playbook:{" "}
-            <a href={`/playbooks/${ref}`} target="_blank" rel="noreferrer" className="font-semibold text-[#0c5290] hover:underline">
+            <a href={`/playbooks/${ref}`} target="_blank" rel="noreferrer" className="font-medium text-[#0c5290] hover:underline">
               {playbook.name}
             </a>
           </p>
@@ -573,13 +575,13 @@ function Toggle({
       >
         <span aria-hidden className={`mt-[0.4rem] h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot}`} />
         {inline ? (
-          <span className="min-w-0 flex-1 text-[1.0625rem] leading-[1.3] tracking-[-0.01em] text-slate-900">
+          <span className="min-w-0 flex-1 text-read leading-[1.3] tracking-[-0.01em] text-slate-900">
             {ctx.fill(main)}
             {example ? <span className={`ml-2 text-slate-500 ${SMALL}`}>{ctx.fill(example)}</span> : null}
           </span>
         ) : (
           <span className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="text-[1.0625rem] leading-[1.3] tracking-[-0.01em] text-slate-900">{ctx.fill(main)}</span>
+            <span className="text-read leading-[1.3] tracking-[-0.01em] text-slate-900">{ctx.fill(main)}</span>
             {example ? <span className={`text-slate-600 ${SMALL}`}>{ctx.fill(example)}</span> : null}
           </span>
         )}
@@ -662,7 +664,7 @@ function Answers({ blocks, ctx, stack = false }: { blocks: Extract<Block, { type
               >
                 <span className="flex items-start gap-2">
                   <span aria-hidden className={`mt-[0.4rem] h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot}`} />
-                  <span className="text-[1.0625rem] leading-[1.3] tracking-[-0.01em] text-slate-900">{ctx.fill(main)}</span>
+                  <span className="text-read leading-[1.3] tracking-[-0.01em] text-slate-900">{ctx.fill(main)}</span>
                 </span>
                 {example ? <span className={`pl-[1.125rem] text-slate-600 ${SMALL}`}>{ctx.fill(example)}</span> : null}
               </button>

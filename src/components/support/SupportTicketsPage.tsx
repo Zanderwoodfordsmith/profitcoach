@@ -59,6 +59,8 @@ import {
   type SupportTicketAuthor,
   type SupportTicketStatus,
 } from "@/lib/support/tickets";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type TicketWithReplies = SupportTicket & {
   replies: SupportReply[];
@@ -213,21 +215,21 @@ function SupportWelcome({
             <button
               type="button"
               onClick={onNewTicket}
-              className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-5 py-3 text-base font-semibold text-white hover:bg-sky-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
+              className={buttonClass("main")}
             >
               <Plus className="h-5 w-5" aria-hidden />
               New ticket
             </button>
             <Link
               href={communityHref}
-              className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-5 py-3 text-base font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
+              className={buttonClass("second")}
             >
               Post in community
             </Link>
           </div>
         )}
         <ul className="mt-10 space-y-4 text-left">
-          <li className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <li className={cardClass("soft", "flex items-center gap-4 p-4")}>
             <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-200">
               <img
                 src="/support/zander.jpg"
@@ -244,7 +246,7 @@ function SupportWelcome({
               </span>
             </span>
           </li>
-          <li className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <li className={cardClass("soft", "flex items-center gap-4 p-4")}>
             <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-200">
               <img
                 src="/pam/pam-portrait.jpg"
@@ -837,7 +839,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       {loading ? (
         <p className="text-sm text-slate-600">Loading your tickets…</p>
       ) : emptyAll ? (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className={cardClass("plain", "flex min-h-0 flex-1 flex-col overflow-hidden")}>
           <SupportWelcome
             firstName={welcomeName}
             communityHref={communityHref}
@@ -861,14 +863,14 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
             >
               <div className="border-b border-slate-100 bg-white px-4 py-3">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="min-w-0 text-[15px] font-semibold leading-snug tracking-tight text-slate-950">
+                  <h2 className="min-w-0 text-ui font-semibold leading-snug tracking-tight text-slate-950">
                     Tickets
                   </h2>
                   <button
                     type="button"
                     disabled={composeOpen}
                     onClick={openComposer}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-sky-700 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className={buttonClass("main", "small", "shrink-0")}
                   >
                     <Plus className="h-3.5 w-3.5" aria-hidden />
                     New ticket
@@ -899,10 +901,10 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
                             }`}
                             aria-hidden
                           />
-                          <span className="text-[11px] font-semibold uppercase tracking-wide">
+                          <span className="text-kicker font-semibold uppercase ">
                             {section.label}
                           </span>
-                          <span className="tabular-nums text-[11px] font-medium opacity-70">
+                          <span className="tabular-nums text-caption font-medium opacity-70">
                             {section.tickets.length}
                           </span>
                         </button>
@@ -1044,7 +1046,7 @@ function StatusPill({
       className={`inline-flex shrink-0 items-center rounded-full font-semibold ring-1 ring-inset ${toneClass} ${
         size === "md"
           ? "gap-1.5 py-1 pl-3 pr-2.5 text-sm"
-          : "gap-1 px-1.5 py-0.5 text-[10px]"
+          : "gap-1 px-1.5 py-0.5 text-caption"
       }`}
     >
       <Icon
@@ -1102,11 +1104,11 @@ function TicketListRow({
         </span>
         <span className="flex w-8 shrink-0 flex-col items-end gap-1 pt-0.5">
           {unreadCount > 0 ? (
-            <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold text-white">
+            <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-caption font-semibold text-white">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           ) : null}
-          <span className="text-[11px] tabular-nums text-slate-400">
+          <span className="text-caption tabular-nums text-slate-400">
             {formatSupportRelativeCompact(
               supportTicketActivityAt(ticket, ticket.replies)
             )}
@@ -1150,7 +1152,7 @@ function SupportThreadPane({
         <button
           type="button"
           onClick={onBack}
-          className="mb-3 inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100 lg:hidden"
+          className={buttonClass("quiet", "small", "mb-3 lg:hidden")}
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Tickets
@@ -1169,7 +1171,7 @@ function SupportThreadPane({
                 <p className="mt-1 text-xs leading-none text-slate-500">
                   {formatSupportTicketDate(ticket.created_at)}
                   <span className="mx-1.5 text-slate-300">·</span>
-                  <span className="font-semibold text-slate-600">
+                  <span className="font-medium text-slate-600">
                     {SUPPORT_TYPE_LABELS[ticket.type]}
                   </span>
                 </p>
@@ -1178,7 +1180,7 @@ function SupportThreadPane({
             </div>
           </div>
         </div>
-        <h2 className="mt-3 text-lg font-semibold leading-snug tracking-tight text-slate-900 sm:text-xl">
+        <h2 className="mt-3 text-subhead font-semibold text-slate-900">
           {title}
         </h2>
         {previewingMember && unreadCount > 0 ? (

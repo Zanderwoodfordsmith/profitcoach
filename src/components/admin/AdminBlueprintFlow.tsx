@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight, Check, Copy, Loader2 } from "lucide-react";
 
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { FlowGraph, FlowKind, FlowNode, FlowNodeStatus } from "@/lib/practiceKnowledge/flow";
 
@@ -268,14 +270,14 @@ export function AdminBlueprintFlow() {
         type="button"
         aria-pressed={n.id === selected}
         onClick={() => select(n.id)}
-        className={`flex min-h-[34px] w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] font-medium leading-tight transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${NODE[n.kind]} ${
+        className={`flex min-h-[34px] w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ui font-medium leading-tight transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${NODE[n.kind]} ${
           n.id === selected ? "!ring-2 !ring-sky-500" : "hover:ring-sky-300"
         } ${related(n.id) ? "" : "opacity-30"}`}
       >
         <Dot kind={n.kind} />
         <span className="min-w-0 flex-1">{n.label}</span>
         {st ? <span title={STATE_DOT[st.state].label} className={`h-2 w-2 shrink-0 rounded-full ${STATE_DOT[st.state].cls}`} /> : null}
-        <span className={`font-mono text-[11px] tabular-nums ${n.kind === "out" ? "text-white/70" : "text-slate-400"}`} title="Outputs it reaches">
+        <span className={`font-mono text-caption tabular-nums ${n.kind === "out" ? "text-white/70" : "text-slate-400"}`} title="Outputs it reaches">
           {n.kind === "out" ? "" : n.reach}
         </span>
       </button>
@@ -395,9 +397,9 @@ export function AdminBlueprintFlow() {
             </div>
           </div>
 
-          <aside className="flex min-w-0 flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 lg:sticky lg:top-4">
+          <aside className={cardClass("plain", "flex min-w-0 flex-col gap-4 p-5 lg:sticky lg:top-4")}>
             <div>
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+              <p className="flex items-center gap-1.5 text-kicker font-semibold uppercase text-slate-500">
                 <Dot kind={node.kind} />
                 {KIND_LABEL[node.kind]}
               </p>
@@ -444,7 +446,7 @@ export function AdminBlueprintFlow() {
                     ] as const
                   ).map(([label, value]) => (
                     <div key={label} className="contents">
-                      <dt className="border-b border-slate-100 py-2 text-xs font-semibold text-slate-500 last-of-type:border-0">{label}</dt>
+                      <dt className="border-b border-slate-100 py-2 text-xs font-medium text-slate-500 last-of-type:border-0">{label}</dt>
                       <dd className="min-w-0 border-b border-slate-100 py-2">{value}</dd>
                     </div>
                   ))}
@@ -462,8 +464,8 @@ export function AdminBlueprintFlow() {
                           <span className={`h-2 w-2 shrink-0 rounded-full ${filled ? "bg-emerald-500" : f.required ? "bg-amber-400" : "bg-slate-200"}`} />
                         ) : null}
                         <span className="text-slate-800">{f.label}</span>
-                        {f.required ? <span className="text-[11px] text-slate-400">required</span> : null}
-                        <code className="ml-auto font-mono text-[11px] text-slate-400">{f.path}</code>
+                        {f.required ? <span className="text-caption text-slate-400">required</span> : null}
+                        <code className="ml-auto font-mono text-caption text-slate-400">{f.path}</code>
                       </li>
                     );
                   })}
@@ -491,7 +493,7 @@ export function AdminBlueprintFlow() {
                   const ids = ofKind(focus.up, [k]);
                   return ids.length ? (
                     <div key={k} className="flex flex-col gap-1">
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-caption text-slate-500">
                         {KIND_LABEL[k]} · {ids.length}
                       </p>
                       {chips(ids)}
@@ -502,7 +504,7 @@ export function AdminBlueprintFlow() {
             ) : null}
 
             {node.writer?.task ? (
-              <details className="rounded-xl border border-slate-200 px-3.5 py-2.5">
+              <details className={cardClass("plain", "px-3.5 py-2.5")}>
                 <summary className="cursor-pointer text-sm font-semibold text-slate-800">The task this writer is given</summary>
                 <pre className="mt-2 whitespace-pre-wrap font-mono text-xs leading-5 text-slate-700">{node.writer.task}</pre>
               </details>
@@ -514,7 +516,7 @@ export function AdminBlueprintFlow() {
                   type="button"
                   onClick={() => void showPrompt(node)}
                   disabled={prompt?.busy}
-                  className="self-start rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+                  className={buttonClass("main", "small", "self-start")}
                 >
                   {prompt?.busy ? "Building…" : coachId ? "Show the full prompt for this coach" : "Show the prompt"}
                 </button>
@@ -534,15 +536,15 @@ export function AdminBlueprintFlow() {
                         ] as const
                       ).map(([label, text]) =>
                         text ? (
-                          <div key={label} className="rounded-xl border border-slate-200">
+                          <div key={label} className={cardClass("plain", "overflow-hidden")}>
                             <div className="flex items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-1.5">
                               <span className="text-xs font-semibold text-slate-600">{label}</span>
                               <span className="flex items-center gap-3">
-                                <span className="font-mono text-[11px] text-slate-400">{text.length.toLocaleString()} chars</span>
+                                <span className="font-mono text-caption text-slate-400">{text.length.toLocaleString()} chars</span>
                                 <CopyButton text={text} />
                               </span>
                             </div>
-                            <pre className="max-h-96 overflow-auto whitespace-pre-wrap px-3 py-2 font-mono text-[11px] leading-5 text-slate-700">{text}</pre>
+                            <pre className="max-h-96 overflow-auto whitespace-pre-wrap px-3 py-2 font-mono text-caption leading-5 text-slate-700">{text}</pre>
                           </div>
                         ) : null
                       )}

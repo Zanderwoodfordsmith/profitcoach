@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
+import { cardClass } from "@/components/ui/Card";
 import { formatShortDate } from "@/lib/formatShortDate";
 import {
   MAGNET_STAGE_LABEL,
@@ -123,7 +124,7 @@ export function LeadMagnetPeople({
   ];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className={cardClass("plain", "overflow-hidden")}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Stage">
           {chips.map((chip) => {

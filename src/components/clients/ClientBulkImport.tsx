@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { PASTE_TEMPLATE_HEADERS, parsePastedClients } from "@/lib/clientRoster/paste";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 /** Paste every client at once from a spreadsheet. */
 export function ClientBulkImport({
@@ -42,7 +44,7 @@ export function ClientBulkImport({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+    <div className={cardClass("plain", "p-4 text-sm")}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-semibold text-slate-900">Add all your clients at once</h3>
         <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-800">
@@ -65,7 +67,7 @@ export function ClientBulkImport({
             setCopied(false);
           }
         }}
-        className="mt-2 rounded-md border border-slate-300 px-2.5 py-1 text-xs"
+        className={buttonClass("second", "small", "mt-2")}
       >
         {copied ? "Copied. Paste into row 1 of a sheet" : "Copy the column headings"}
       </button>
@@ -91,7 +93,7 @@ export function ClientBulkImport({
         type="button"
         disabled={busy || !parsed?.rows.length}
         onClick={() => void submit()}
-        className="mt-3 rounded-lg bg-sky-700 px-3 py-1.5 font-semibold text-white disabled:opacity-50"
+        className={buttonClass("main", "small", "mt-3")}
       >
         {busy ? "Adding…" : `Add ${parsed?.rows.length ?? 0} clients`}
       </button>

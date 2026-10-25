@@ -139,7 +139,7 @@ function Editable({
           onClick={clear}
           aria-label={`Clear ${placeholder}`}
           title="Clear"
-          className="absolute -right-1.5 -top-2 hidden h-4 w-4 items-center justify-center rounded-full bg-white text-[0.7rem] leading-none text-slate-500 shadow ring-1 ring-slate-200 hover:text-slate-900 group-hover/fill:flex"
+          className="absolute -right-1.5 -top-2 hidden h-4 w-4 items-center justify-center rounded-full bg-white text-caption leading-none text-slate-500 shadow ring-1 ring-slate-200 hover:text-slate-900 group-hover/fill:flex"
         >
           ×
         </button>

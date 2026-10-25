@@ -105,6 +105,8 @@ import {
   uploadCommunityCommentImageFile,
   type CommunityCommentMediaItem,
 } from "@/lib/communityCommentMedia";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type CommentRow = {
   id: string;
@@ -345,7 +347,7 @@ function UnsavedCommentDiscardDialog({
       onClick={onStay}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+        className={cardClass("raised", "w-full max-w-sm p-5")}
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -357,7 +359,7 @@ function UnsavedCommentDiscardDialog({
         >
           Leave without finishing?
         </h2>
-        <p className="mt-2 text-[15px] leading-snug text-slate-600">
+        <p className="mt-2 text-ui leading-snug text-slate-600">
           You haven&apos;t finished your comment yet. Do you want to leave without
           finishing?
         </p>
@@ -365,14 +367,14 @@ function UnsavedCommentDiscardDialog({
           <button
             type="button"
             onClick={onStay}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second")}
           >
             Stay
           </button>
           <button
             type="button"
             onClick={onLeave}
-            className="rounded-xl bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800"
+            className={buttonClass("main")}
           >
             Leave
           </button>
@@ -1825,7 +1827,7 @@ export function PostDetailModal({
           className={`relative flex min-h-0 w-full flex-col overflow-hidden bg-white ${
             presentation === "embedded"
               ? "min-h-0 flex-1"
-              : "max-h-[90dvh] rounded-2xl border border-slate-200 shadow-xl"
+              : cardClass("raised", "max-h-[90dvh]")
           }`}
         >
         <div
@@ -1838,11 +1840,11 @@ export function PostDetailModal({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-base font-semibold leading-tight text-slate-900">
+                    <div className="text-base font-medium leading-tight text-slate-900">
                       {authorName}
                     </div>
                     {post.is_pinned ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-sky-700">
                         <Pin className="h-3.5 w-3.5 fill-sky-500 text-sky-500" strokeWidth={1.75} />
                         Pinned
                       </span>
@@ -1857,7 +1859,7 @@ export function PostDetailModal({
                         <span className="mx-0.5 select-none text-slate-400">
                           ·
                         </span>
-                        <span className="font-semibold text-slate-500">
+                        <span className="font-medium text-slate-500">
                           {post.category.label}
                         </span>
                       </>
@@ -1906,7 +1908,7 @@ export function PostDetailModal({
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full border-0 border-b border-slate-200 bg-transparent px-0 pb-2 text-[calc(1.25rem+2px)] font-semibold text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0"
+                    className="w-full border-0 border-b border-slate-200 bg-transparent px-0 pb-2 text-title font-semibold text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0"
                     aria-label="Post title"
                   />
                   <MentionTextarea
@@ -1917,7 +1919,7 @@ export function PostDetailModal({
                     maxAutoHeightPx={0}
                     minAutoHeightPx={140}
                     showFormattingToolbar
-                    className="w-full border-0 bg-transparent px-0 pb-1 text-[calc(1rem+2px)] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
+                    className="w-full border-0 bg-transparent px-0 pb-1 text-read text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
                   />
                   <div>
                     <label className="mb-1 block text-xs font-medium text-slate-600">
@@ -2052,7 +2054,7 @@ export function PostDetailModal({
                         }
                         setEditSchedulePopoverOpen(false);
                       }}
-                      className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-400 transition hover:text-slate-600"
+                      className={buttonClass("quiet", "small")}
                     >
                       Cancel
                     </button>
@@ -2064,7 +2066,7 @@ export function PostDetailModal({
                           !editBody.trim()
                         }
                         onClick={() => void saveEdit()}
-                        className="rounded-lg bg-sky-700 px-5 py-2.5 text-base font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className={buttonClass("main")}
                       >
                         {saveEditBusy ? "Saving…" : "Save"}
                       </button>
@@ -2112,7 +2114,7 @@ export function PostDetailModal({
                               <div className="mt-3 flex items-center justify-between gap-2">
                                 <button
                                   type="button"
-                                  className="text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700"
+                                  className={buttonClass("quiet", "small")}
                                   onClick={() => {
                                     setEditScheduledAtLocal("");
                                     setEditSchedulePopoverOpen(false);
@@ -2122,7 +2124,7 @@ export function PostDetailModal({
                                 </button>
                                 <button
                                   type="button"
-                                  className="rounded-md bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                                  className={buttonClass("main", "small")}
                                   onClick={() => setEditSchedulePopoverOpen(false)}
                                 >
                                   Done
@@ -2134,12 +2136,12 @@ export function PostDetailModal({
                       ) : null}
                     </div>
                     {!isEditorAdmin && announcementsCategory ? (
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-caption text-slate-500">
                         Announcements are admin-only.
                       </p>
                     ) : null}
                     {isEditorAdmin && editScheduleSummary ? (
-                      <p className="text-right text-[11px] text-sky-700">
+                      <p className="text-right text-caption text-sky-700">
                         Scheduled for {editScheduleSummary}
                       </p>
                     ) : null}
@@ -2154,11 +2156,11 @@ export function PostDetailModal({
                 <div className="pb-3">
                   <h2
                     id="post-detail-title"
-                    className="mt-2.5 text-[calc(1.5rem+2px)] font-semibold leading-snug tracking-tight text-slate-900"
+                    className="mt-2.5 text-title font-semibold text-slate-900"
                   >
                     {post.title}
                   </h2>
-                  <div className="mt-2.5 text-[calc(1rem+2px)] leading-normal text-slate-800">
+                  <div className="mt-2.5 text-read text-slate-800">
                     {bodyExpanded || !needsBodyTruncation ? (
                       <CommunityPostMarkdownBody
                         body={post.body}
@@ -2286,10 +2288,10 @@ export function PostDetailModal({
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-[15px] font-semibold text-slate-900">
+                              <span className="text-ui font-medium text-slate-900">
                                 {ca}
                               </span>
-                              <span className="text-[13px] text-slate-500">
+                              <span className="text-ui text-slate-500">
                                 {formatCommunityPostTimestamp(c.created_at)}
                               </span>
                             </div>
@@ -2347,7 +2349,7 @@ export function PostDetailModal({
                                 }
                                 prioritizeUserId={mentionPrioritizeUserId}
                                 rows={3}
-                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-read text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                               />
                               <div className="flex items-center gap-2">
                                 <button
@@ -2357,14 +2359,14 @@ export function PostDetailModal({
                                     commentActionBusyId === c.id ||
                                     !(commentEditDrafts[c.id] ?? "").trim()
                                   }
-                                  className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+                                  className={buttonClass("main", "small")}
                                 >
                                   Save
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => cancelEditingComment(c.id)}
-                                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
+                                  className={buttonClass("quiet", "small")}
                                 >
                                   Cancel
                                 </button>
@@ -2382,7 +2384,7 @@ export function PostDetailModal({
                                   body={c.body}
                                   nameById={nameById}
                                   profileHrefByUserId={mentionProfileHrefByUserId}
-                                  className="mt-1 text-[17px] text-slate-800"
+                                  className="mt-1 text-read text-slate-800"
                                 />
                               ) : null}
                               <CommentMediaDisplay
@@ -2427,7 +2429,7 @@ export function PostDetailModal({
                                 prioritizeUserId={mentionPrioritizeUserId}
                                 placeholder="Write a reply…"
                                 rows={3}
-                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-read text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                               />
                               <ActingAsNotice
                                 coachPersonaId={coachPersona}
@@ -2460,7 +2462,7 @@ export function PostDetailModal({
                                       (replyPendingImages[c.id] ?? []).length ===
                                         0)
                                   }
-                                  className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+                                  className={buttonClass("main", "small")}
                                 >
                                   Reply
                                 </button>
@@ -2477,7 +2479,7 @@ export function PostDetailModal({
                                     });
                                     setReplyOpenFor(null);
                                   }}
-                                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
+                                  className={buttonClass("quiet", "small")}
                                 >
                                   Cancel
                                 </button>
@@ -2527,7 +2529,7 @@ export function PostDetailModal({
                                             className="h-7 w-7 shrink-0 rounded-full object-cover"
                                           />
                                         ) : (
-                                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-600">
+                                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-caption font-medium text-slate-600">
                                             {raInitials}
                                           </span>
                                         )}
@@ -2535,10 +2537,10 @@ export function PostDetailModal({
                                       <div className="min-w-0 flex-1">
                                         <div className="flex items-start justify-between gap-2">
                                           <div className="flex flex-wrap items-center gap-2">
-                                            <span className="text-[13px] font-semibold text-slate-900">
+                                            <span className="text-ui font-medium text-slate-900">
                                               {ra}
                                             </span>
-                                            <span className="text-[11px] text-slate-500">
+                                            <span className="text-caption text-slate-500">
                                               {formatCommunityPostTimestamp(
                                                 r.created_at
                                               )}
@@ -2608,7 +2610,7 @@ export function PostDetailModal({
                                               }
                                               prioritizeUserId={mentionPrioritizeUserId}
                                               rows={3}
-                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-read text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                             />
                                             <div className="flex items-center gap-2">
                                               <button
@@ -2622,7 +2624,7 @@ export function PostDetailModal({
                                                     commentEditDrafts[r.id] ?? ""
                                                   ).trim()
                                                 }
-                                                className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+                                                className={buttonClass("main", "small")}
                                               >
                                                 Save
                                               </button>
@@ -2631,7 +2633,7 @@ export function PostDetailModal({
                                                 onClick={() =>
                                                   cancelEditingComment(r.id)
                                                 }
-                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
+                                                className={buttonClass("quiet", "small")}
                                               >
                                                 Cancel
                                               </button>
@@ -2651,7 +2653,7 @@ export function PostDetailModal({
                                                 profileHrefByUserId={
                                                   mentionProfileHrefByUserId
                                                 }
-                                                className="mt-0.5 text-[17px] text-slate-800"
+                                                className="mt-0.5 text-read text-slate-800"
                                               />
                                             ) : null}
                                             <CommentMediaDisplay
@@ -2700,7 +2702,7 @@ export function PostDetailModal({
                                               prioritizeUserId={mentionPrioritizeUserId}
                                               placeholder="Write a reply…"
                                               rows={3}
-                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-read text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                             />
                                             <ActingAsNotice
                                               coachPersonaId={coachPersona}
@@ -2735,7 +2737,7 @@ export function PostDetailModal({
                                                     (replyPendingImages[r.id] ?? [])
                                                       .length === 0)
                                                 }
-                                                className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+                                                className={buttonClass("main", "small")}
                                               >
                                                 Reply
                                               </button>
@@ -2752,7 +2754,7 @@ export function PostDetailModal({
                                                   });
                                                   setReplyOpenFor(null);
                                                 }}
-                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
+                                                className={buttonClass("quiet", "small")}
                                               >
                                                 Cancel
                                               </button>
@@ -2827,7 +2829,7 @@ export function PostDetailModal({
                         placeholder="Your comment"
                         autoResize
                         maxAutoHeightPx={220}
-                        className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent px-3.5 py-2 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                        className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent px-3.5 py-2 text-read leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
                       />
                       <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-2 py-1.5">
                         <CommentFormatButtons
@@ -2846,7 +2848,7 @@ export function PostDetailModal({
                                 setTopCommentPendingImages([]);
                                 setCommentComposerFocused(false);
                               }}
-                              className="text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-800"
+                              className={buttonClass("quiet", "small")}
                             >
                               Cancel
                             </button>
@@ -2858,7 +2860,7 @@ export function PostDetailModal({
                                   topCommentPendingImages.length === 0)
                               }
                               onClick={() => void submitTopComment()}
-                              className="rounded-lg bg-sky-600 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white hover:bg-sky-700 disabled:opacity-50"
+                              className={buttonClass("main", "small")}
                             >
                               {submitting ? "Sending…" : "Comment"}
                             </button>
@@ -2886,7 +2888,7 @@ export function PostDetailModal({
                         autoResize
                         maxAutoHeightPx={72}
                         rows={1}
-                        className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent py-2 pl-3.5 pr-12 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                        className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent py-2 pl-3.5 pr-12 text-read leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
                       />
                       <div className="pointer-events-none absolute inset-y-0 right-1.5 flex items-center">
                         <CommentAttachButton

@@ -23,7 +23,7 @@ The second half of filling in the Blueprint. The answers are in (from Fill the g
 2. `show_section` for the page or section, then one short line: "Have a quick look over your Results. Happy with that, or anything you'd change?" Use `read_section` first if you need to know what is there. A short page can be checked whole; a long one, a section at a time.
 3. If they want a change, make it, then `show_section` on it again so it lights up, and ask "Right, are we good now?"
    - **Their answers:** `save_answer` with their new words and `replace: true`. To remove one item from a list, save the rest. To remove a whole answer, `clear_answer`.
-   - **Copy BCA wrote:** `propose_copy` with the whole section. It goes straight in. If they prefer the old one, `undo_copy`.
+   - **Copy BCA wrote:** `propose_copy` with the whole section. It shows as a draft card with "Save to Blueprint" and "Change it"; it goes in when they press Save. If they prefer the old one after saving, `undo_copy`.
 4. When they say yes (or "fine", "looks good", "move on"), `sign_off_section` with their words, for each section on what they just checked. Do not make a thing of it. Move to the next one.
 5. If they want BCA's view, or a fact will not firm up after two tries, `hand_to_bca` and carry on.
 6. At the end, one line on where they are: what is signed off, and what BCA does next.

@@ -12,6 +12,8 @@ import { AvaRoomBackground } from "./AvaStage";
 import { useAvaSession } from "./useAvaSession";
 
 const PANEL_KEY = "ava-chats-panel";
+/** Temporary: Zander is choosing between the two new-chat screens (24 Oct). Remove the switch once he picks. */
+const STYLE_KEY = "ava-start-style";
 
 /**
  * Ava's own page, inside the app: the sidebar stays, the room fills the
@@ -35,6 +37,22 @@ export function AvaPage() {
     }
     return saved ? saved === "1" : window.innerWidth >= 1280;
   });
+  const [startStyle, setStartStyle] = useState<"simple" | "face">(() => {
+    if (typeof window === "undefined") return "simple";
+    try {
+      return window.localStorage.getItem(STYLE_KEY) === "face" ? "face" : "simple";
+    } catch {
+      return "simple";
+    }
+  });
+  const chooseStyle = (next: "simple" | "face") => {
+    setStartStyle(next);
+    try {
+      window.localStorage.setItem(STYLE_KEY, next);
+    } catch {
+      /* private window */
+    }
+  };
   const session = useAvaSession();
   const { convo, chats, setDraft } = session;
 
@@ -73,7 +91,7 @@ export function AvaPage() {
 
   return (
     <AvaRoomProvider room="stage">
-      <div className="ava-ui ava-stage is-page" aria-label="Ava">
+      <div className="ava-ui ava-dark ava-stage is-page" aria-label="Ava">
         <div className="relative z-[1] flex min-h-0 flex-1">
           {panelOpen ? (
             <>
@@ -125,7 +143,7 @@ export function AvaPage() {
 
           {/* Her face belongs to the chat area, so opening the panel never pushes the words over it. */}
           <div className="ava-room-column flex min-w-0 flex-1 flex-col">
-            <AvaRoomBackground />
+            <AvaRoomBackground face={startStyle === "face"} />
             <header className="relative z-[2] flex shrink-0 items-center gap-2 px-4 pb-1 pt-4 sm:px-8">
               {panelOpen ? null : (
                 <button type="button" onClick={() => setPanel(true)} className="ava-glass-btn is-labelled" aria-label="Show your chats">
@@ -133,6 +151,15 @@ export function AvaPage() {
                 </button>
               )}
               <div ref={setSlot} className="flex min-w-0 flex-1 items-center justify-end gap-2" />
+              {convo.items.length === 0 ? (
+                <div className="ava-style-switch" role="group" aria-label="New chat screen (choosing)">
+                  {(["simple", "face"] as const).map((id) => (
+                    <button key={id} type="button" aria-pressed={startStyle === id} onClick={() => chooseStyle(id)}>
+                      {id === "simple" ? "Simple" : "With her face"}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </header>
             <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
               {session.agent ? (
@@ -141,6 +168,7 @@ export function AvaPage() {
                   transcribe={session.transcribe}
                   chats={chats}
                   greeting={session.greeting}
+                  first={session.first}
                   intro={session.intro}
                   starters={session.starters}
                   footnote="Or ask me anything below."
@@ -151,6 +179,7 @@ export function AvaPage() {
                   headerSlot={slot}
                   onHistory={session.loadChats}
                   labelled
+                  heroStyle={startStyle}
                 />
               ) : (
                 <p className="flex items-center gap-2 px-8 py-10 text-sm text-[var(--ava-muted)]">

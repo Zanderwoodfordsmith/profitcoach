@@ -15,6 +15,8 @@ import { formatInTimeZone } from "@/lib/booking/bookingTime";
 import { formatProspectPersonName } from "@/lib/prospectDisplayFormat";
 import type { ProspectNextCall } from "@/lib/prospectNextCall";
 import type { ProspectRow } from "@/lib/prospectRow";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type SlotDay = {
   date: string;
@@ -189,7 +191,7 @@ export function BookProspectModal({ prospect, onClose, onBooked }: Props) {
               type="button"
               disabled={submitting}
               onClick={() => void confirmBooking()}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+              className={buttonClass("main")}
             >
               {submitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -227,10 +229,10 @@ export function BookProspectModal({ prospect, onClose, onBooked }: Props) {
                   <button
                     type="button"
                     onClick={() => setSelectedCalendar(cal)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left hover:border-sky-300 hover:bg-sky-50/60"
+                    className={cardClass("raised", "flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:border-sky-300 hover:bg-sky-50/60")}
                   >
                     <span>
-                      <span className="block text-sm font-semibold text-slate-900">
+                      <span className="block text-sm font-medium text-slate-900">
                         {cal.name}
                       </span>
                       <span className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">

@@ -8,6 +8,8 @@ import {
   type WorkingChatMessage,
 } from "@/components/academy/working/WorkingLessonChat";
 import type { WorkingLessonId } from "@/lib/academy/workingLessons";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Row = { label: string; value: string };
 
@@ -129,7 +131,7 @@ export function WorkingLessonSketchStage({ lessonId, locked, onLock }: Props) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-[#f4f8fb] ring-1 ring-slate-200/80">
+    <div className={cardClass("soft", "overflow-hidden")}>
       <div
         aria-hidden
         className="h-1"
@@ -141,12 +143,12 @@ export function WorkingLessonSketchStage({ lessonId, locked, onLock }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-medium text-[#0c5290]">{sketch.source}</p>
-            <p className="mt-1 text-xl font-semibold tracking-tight text-slate-900 md:text-[1.35rem]">
+            <p className="mt-1 text-subhead font-semibold tracking-tight text-slate-900 md:text-title">
               {sketch.headline}
             </p>
           </div>
           {locked ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white">
               <Check className="h-3.5 w-3.5" strokeWidth={2.6} aria-hidden />
               Locked
             </span>
@@ -163,8 +165,8 @@ export function WorkingLessonSketchStage({ lessonId, locked, onLock }: Props) {
               key={row.label}
               className="grid gap-1 py-3 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-4"
             >
-              <dt className="text-sm font-semibold text-slate-900">{row.label}</dt>
-              <dd className="text-[15px] leading-relaxed text-slate-700">{row.value}</dd>
+              <dt className="text-sm font-medium text-slate-900">{row.label}</dt>
+              <dd className="text-read leading-relaxed text-slate-700">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -179,7 +181,7 @@ export function WorkingLessonSketchStage({ lessonId, locked, onLock }: Props) {
                 <button
                   type="button"
                   onClick={onLock}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-sky-400 hover:text-sky-800 sm:w-auto"
+                  className={buttonClass("second", "normal", "w-full sm:w-auto")}
                 >
                   Lock this draft
                 </button>

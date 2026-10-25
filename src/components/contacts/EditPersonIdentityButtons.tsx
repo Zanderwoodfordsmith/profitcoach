@@ -28,7 +28,7 @@ export function EditPersonNameButton({
         {name || "Add name"}
       </span>
       {needsName ? (
-        <span className="shrink-0 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800 ring-1 ring-inset ring-sky-200">
+        <span className="shrink-0 rounded-full bg-sky-50 px-2 py-0.5 text-caption font-medium text-sky-800 ring-1 ring-inset ring-sky-200">
           Add name
         </span>
       ) : (

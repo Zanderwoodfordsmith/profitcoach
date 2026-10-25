@@ -16,6 +16,7 @@ import {
   Wrench,
 } from "lucide-react";
 import type { CoachFeature } from "@/lib/coachAccess/tiers";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 export type DashboardNavItem = {
   href: string;
@@ -61,6 +62,11 @@ function IconBookOpen({ className }: { className?: string }) {
 
 function IconAcademy({ className }: { className?: string }) {
   return <GraduationCap className={className} />;
+}
+
+/** Ava's Halo, sized like the other sidebar icons. */
+function IconAva({ className }: { className?: string }) {
+  return <AvaHalo size={20} dark className={className} />;
 }
 
 function IconSparkles({ className }: { className?: string }) {
@@ -540,7 +546,7 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
   {
     href: "/admin/ava",
     label: "Ava",
-    icon: IconSparkles,
+    icon: IconAva,
   },
   {
     href: "/admin/campaign-library",

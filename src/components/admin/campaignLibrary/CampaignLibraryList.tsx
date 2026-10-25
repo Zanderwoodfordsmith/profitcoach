@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { CampaignChannelPills } from "@/components/campaigns/CampaignChannelPills";
 import { CampaignLibraryCreateDialog } from "@/components/admin/campaignLibrary/CampaignLibraryCreateDialog";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { campaignLibraryAuthHeaders } from "@/lib/campaignLibrary/authHeaders";
 import {
   CAMPAIGN_LIBRARY_KIND_LABEL,
@@ -340,7 +342,7 @@ export function CampaignLibraryList({
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#0a4578]"
+          className={buttonClass("main", "small")}
         >
           <Plus className="h-4 w-4" aria-hidden />
           Add {noun}
@@ -353,23 +355,23 @@ export function CampaignLibraryList({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className={cardClass("plain", "overflow-hidden")}>
         <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th scope="col" className="px-4 py-3 font-semibold">
+              <th scope="col" className="px-4 py-3 font-medium">
                 {CAMPAIGN_LIBRARY_TYPE_LABEL[itemType]}
               </th>
-              <th scope="col" className="px-3 py-3 font-semibold">
+              <th scope="col" className="px-3 py-3 font-medium">
                 Kind
               </th>
-              <th scope="col" className="w-[5rem] px-3 py-3 text-center font-semibold">
+              <th scope="col" className="w-[5rem] px-3 py-3 text-center font-medium">
                 Via
               </th>
-              <th scope="col" className="px-3 py-3 font-semibold">
+              <th scope="col" className="px-3 py-3 font-medium">
                 Steps
               </th>
-              <th scope="col" className="px-3 py-3 font-semibold">
+              <th scope="col" className="px-3 py-3 font-medium">
                 Updated
               </th>
               <th scope="col" className="w-12 px-3 py-3">
@@ -404,15 +406,15 @@ export function CampaignLibraryList({
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-medium text-slate-900">
                         {item.name}
                       </span>
                       {item.status === "published" ? (
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-caption font-semibold text-emerald-700">
                           Ready
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-semibold text-slate-500">
                           Draft
                         </span>
                       )}

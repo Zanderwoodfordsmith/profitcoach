@@ -5,6 +5,8 @@ import { ChevronLeft, Copy } from "lucide-react";
 import { BookingReminderSequenceCard } from "@/components/calls/BookingReminderSequenceCard";
 import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import type { BookingReminderStep } from "@/lib/booking/reminderSequence";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   calendar: CoachCalendarRow;
@@ -51,7 +53,7 @@ export function CallsCalendarEditor({
                 {calendar.name}
               </h2>
               <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                className={`inline-flex rounded-full px-2 py-0.5 text-kicker font-semibold uppercase ${
                   calendar.is_enabled
                     ? "bg-emerald-50 text-emerald-700"
                     : "bg-slate-100 text-slate-500"
@@ -68,7 +70,7 @@ export function CallsCalendarEditor({
           {calendar.is_public && calendar.is_enabled && bookUrl ? (
             <button
               type="button"
-              className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
+              className={buttonClass("quiet", "small", "shrink-0")}
               onClick={onCopyLink}
             >
               {copied ? (
@@ -84,7 +86,7 @@ export function CallsCalendarEditor({
         </div>
       </div>
 
-      <section className="space-y-4 rounded-xl border border-slate-200/80 bg-white px-4 py-4">
+      <section className={cardClass("plain", "space-y-4 px-4 py-4")}>
         <h3 className="text-sm font-semibold text-slate-900">Meeting</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm sm:col-span-2">
@@ -245,7 +247,7 @@ export function CallsCalendarEditor({
       <button
         type="button"
         disabled={saving}
-        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+        className={buttonClass("main")}
         onClick={onSave}
       >
         {saving ? "Saving…" : "Save calendar"}

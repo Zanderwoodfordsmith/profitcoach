@@ -32,13 +32,13 @@ export function GetAppModal({ open, onClose }: { open: boolean; onClose: () => v
               <span className="mt-2.5 flex items-center gap-2">
                 <AndroidIcon className="h-5 w-5 shrink-0 text-[#3ddc84]" />
                 <span>
-                  <strong className="font-semibold text-slate-900">Android</strong> shows an Install button.
+                  <strong className="font-medium text-slate-900">Android</strong> shows an Install button.
                 </span>
               </span>
               <span className="mt-1.5 flex items-center gap-2">
                 <AppleIcon className="h-5 w-5 shrink-0 text-slate-900" />
                 <span>
-                  <strong className="font-semibold text-slate-900">iPhone</strong> shows you the three taps.
+                  <strong className="font-medium text-slate-900">iPhone</strong> shows you the three taps.
                 </span>
               </span>
             </Step>

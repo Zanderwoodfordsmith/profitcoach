@@ -9,6 +9,8 @@ import {
   weeklyFocusHref,
   type WeeklyFocusWeek,
 } from "@/lib/academy/weeklyFocus";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   basePath: string;
@@ -48,22 +50,22 @@ export function WeeklyFocusView({ basePath, weekId }: Props) {
           />
         </div>
         <div className="p-6 md:p-8">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
+          <p className="text-kicker font-semibold uppercase text-amber-700">
             {isCurrent ? "This Week’s Focus" : "Past Focus"}
           </p>
-          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <p className="mt-3 text-kicker font-semibold uppercase text-slate-500">
             {selected.pathLabel}
             {!isCurrent ? ` · Week ${selected.weekOfYear}` : null}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+          <h1 className="mt-2 text-heading font-semibold tracking-tight text-slate-900">
             {selected.title}
           </h1>
           <p className="mt-3 text-base leading-relaxed text-slate-600">
             {selected.description}
           </p>
 
-          <div className="mt-6 rounded-xl border border-slate-200/80 bg-white/70 p-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <div className={cardClass("plain", "mt-6 p-5")}>
+            <p className="text-kicker font-semibold uppercase text-slate-500">
               This week’s action
             </p>
             <p className="mt-2 text-base font-medium leading-relaxed text-slate-900">
@@ -77,7 +79,7 @@ export function WeeklyFocusView({ basePath, weekId }: Props) {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={relatedPathHref}
-              className="inline-flex items-center gap-2 rounded-full bg-[#0c5290] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,82,144,0.28)] transition hover:bg-[#094274]"
+              className={buttonClass("main")}
             >
               Open {selected.pathLabel}
               <ArrowRight className="h-4 w-4" aria-hidden />
@@ -85,7 +87,7 @@ export function WeeklyFocusView({ basePath, weekId }: Props) {
             {!isCurrent ? (
               <Link
                 href={weeklyFocusHref(basePath)}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-white"
+                className={buttonClass("second")}
               >
                 Back to this week
               </Link>
@@ -136,13 +138,13 @@ function ArchiveRow({
         }`}
       >
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <p className="text-kicker font-semibold uppercase text-slate-500">
             Week {week.weekOfYear} · {week.pathLabel}
           </p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">{week.title}</p>
+          <p className="mt-1 text-sm font-medium text-slate-900">{week.title}</p>
           <p className="mt-1 line-clamp-2 text-sm text-slate-600">{week.action}</p>
         </div>
-        <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-[#0c5290]">
+        <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-sm font-medium text-[#0c5290]">
           Open
           <ArrowRight className="h-4 w-4" aria-hidden />
         </span>

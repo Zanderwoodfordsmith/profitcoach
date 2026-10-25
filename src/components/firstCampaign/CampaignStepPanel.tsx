@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { cardClass } from "@/components/ui/Card";
 
 /**
  * Shared chrome for each First Campaign step — eyebrow, title, and one
@@ -21,16 +22,16 @@ export function CampaignStepPanel({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_10px_40px_rgba(15,23,42,0.04)]">
+    <section className={cardClass("plain")}>
       <header className="border-b border-slate-100 px-5 pt-6 pb-5 sm:px-8 sm:pt-8 sm:pb-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0c5290]">
+        <p className="text-kicker font-semibold uppercase text-[#0c5290]">
           Step {step} of {total}
         </p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-heading">
           {title}
         </h2>
         {description ? (
-          <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500">
+          <p className="mt-2 max-w-2xl text-read leading-relaxed text-slate-500">
             {description}
           </p>
         ) : null}

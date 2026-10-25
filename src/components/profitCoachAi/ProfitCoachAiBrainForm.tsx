@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type BrainSectionId =
   | "superpowers"
@@ -290,7 +292,7 @@ export function ProfitCoachAiBrainForm({
             {clientResults.map((r, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className={cardClass("plain", "p-4")}
               >
                 <label className="mb-1 block text-xs font-medium text-slate-500">
                   Title
@@ -325,7 +327,7 @@ export function ProfitCoachAiBrainForm({
                   onClick={() =>
                     setClientResults(clientResults.filter((_, j) => j !== i))
                   }
-                  className="mt-2 text-xs font-medium text-rose-600 hover:underline"
+                  className={buttonClass("quiet", "small", "mt-2")}
                 >
                   Remove
                 </button>
@@ -336,7 +338,7 @@ export function ProfitCoachAiBrainForm({
               onClick={() =>
                 setClientResults([...clientResults, { title: "", story: "" }])
               }
-              className="rounded-xl border border-dashed border-slate-300 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className={buttonClass("second")}
             >
               + Add client result
             </button>
@@ -429,7 +431,7 @@ export function ProfitCoachAiBrainForm({
     <nav aria-label="Brain categories" className="flex min-h-0 flex-col">
       {BRAIN_GROUPS.map((group) => (
         <div key={group.label} className="mb-4 last:mb-0">
-          <p className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <p className="mb-1.5 px-2 text-kicker font-semibold uppercase text-slate-400">
             {group.label}
           </p>
           <ul className="flex flex-col gap-0.5">
@@ -516,11 +518,7 @@ export function ProfitCoachAiBrainForm({
           <button
             type="button"
             onClick={onCancel}
-            className={
-              isPage
-                ? "rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                : "flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            }
+            className={buttonClass("second", "normal", isPage ? "" : "flex-1")}
           >
             Cancel
           </button>
@@ -528,11 +526,7 @@ export function ProfitCoachAiBrainForm({
         <button
           type="submit"
           disabled={saving}
-          className={
-            isPage
-              ? "rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-              : "flex-1 rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-          }
+          className={buttonClass("main", "normal", isPage ? "" : "flex-1")}
         >
           {saving ? "Saving…" : "Save"}
         </button>

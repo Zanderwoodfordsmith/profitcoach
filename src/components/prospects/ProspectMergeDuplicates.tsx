@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
+import { buttonClass } from "@/components/ui/Button";
 
 export type DuplicateContactSummary = {
   id: string;
@@ -129,7 +130,7 @@ export function ProspectMergeDuplicates({
               type="button"
               disabled={mergingId === d.id}
               onClick={() => void mergeIntoThis(d.id)}
-              className="shrink-0 rounded-md bg-amber-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-900 disabled:opacity-60"
+              className={buttonClass("second", "small", "shrink-0")}
             >
               {mergingId === d.id ? "Merging…" : "Merge into this"}
             </button>

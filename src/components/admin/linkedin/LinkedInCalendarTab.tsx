@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HistoryPostItem, NewsletterIssueItem } from "@/lib/linkedinHistory/loadHistory";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { statusChipClass, type LinkedInPostItem } from "./types";
 
 type Props = {
@@ -47,7 +49,7 @@ function textKey(text: string): string {
 }
 
 function EntryChip({ entry, showTime = true }: { entry: Entry; showTime?: boolean }) {
-  const className = `flex w-full min-w-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-left text-[11px] font-medium ring-1 ring-inset transition hover:brightness-[0.97] ${entry.chip}`;
+  const className = `flex w-full min-w-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-left text-caption font-medium ring-1 ring-inset transition hover:brightness-[0.97] ${entry.chip}`;
   const body = (
     <>
       {showTime ? <span className="shrink-0 tabular-nums opacity-60">{entry.at.toFormat("h:mma").toLowerCase()}</span> : null}
@@ -150,12 +152,12 @@ export function LinkedInCalendarTab({ items, history = [], issues = [], onSelect
   const dayEntries = openDay ? byDay.get(openDay) ?? [] : [];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain", "overflow-hidden")}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second", "small")}
             onClick={() => {
               setOpenDay(null);
               setAnchor(new Date());
@@ -198,7 +200,7 @@ export function LinkedInCalendarTab({ items, history = [], issues = [], onSelect
         <>
           <div className="grid grid-cols-7 border-b border-slate-100">
             {days.slice(0, 7).map((d) => (
-              <div key={d.weekday} className="px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              <div key={d.weekday} className="px-2 py-2 text-center text-kicker font-semibold uppercase text-slate-400">
                 <span className="sm:hidden">{d.toFormat("ccccc")}</span>
                 <span className="hidden sm:inline">{d.toFormat("ccc")}</span>
               </div>
@@ -247,7 +249,7 @@ export function LinkedInCalendarTab({ items, history = [], issues = [], onSelect
                       <button
                         type="button"
                         onClick={() => setOpenDay(key)}
-                        className="w-full rounded-md px-1.5 py-0.5 text-left text-[11px] font-semibold text-slate-500 hover:bg-slate-100"
+                        className="w-full rounded-md px-1.5 py-0.5 text-left text-caption font-medium text-slate-500 hover:bg-slate-100"
                       >
                         +{list.length - MAX_CHIPS} more
                       </button>
@@ -306,7 +308,7 @@ function WeekGrid({ days, byDay, now }: { days: DateTime[]; byDay: Map<string, E
         <div className="relative grid grid-cols-[56px_repeat(7,minmax(0,1fr))]">
           <div className="border-r border-slate-100">
             {HOURS.map((h) => (
-              <div key={h} className="h-16 border-b border-slate-50 pr-2 text-right text-[10px] text-slate-400">
+              <div key={h} className="h-16 border-b border-slate-50 pr-2 text-right text-caption text-slate-400">
                 {DateTime.fromObject({ hour: h }).toFormat("h a")}
               </div>
             ))}

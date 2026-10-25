@@ -102,7 +102,7 @@ export function CreateClient({ draft, onClose }: { draft?: SimClient | null; onC
           {step === "describe" ? (
             <>
               <h1 className="text-[clamp(2rem,4.5vw,3.4rem)] font-light leading-[1.05] tracking-[-0.03em]">Describe a situation you want to practise.</h1>
-              <p className="mt-4 max-w-xl text-[1.0625rem] leading-relaxed text-[var(--sim-cream-soft)]">
+              <p className="mt-4 max-w-xl text-read leading-relaxed text-[var(--sim-cream-soft)]">
                 The business, the owner, the problem, and anything specific: numbers, people, what they&rsquo;ve tried. The more you give, the more real they&rsquo;ll feel.
               </p>
               <textarea
@@ -110,7 +110,7 @@ export function CreateClient({ draft, onClose }: { draft?: SimClient | null; onC
                 onChange={(e) => setSituation(e.target.value)}
                 rows={7}
                 placeholder={EXAMPLE}
-                className="sim-scroll mt-8 w-full resize-y rounded-2xl border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.5)] px-5 py-4 text-[1.0625rem] leading-relaxed text-[var(--sim-cream)] outline-none placeholder:text-[var(--sim-cream-faint)] focus:border-[var(--sim-cream)]"
+                className="sim-scroll mt-8 w-full resize-y rounded-2xl border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.5)] px-5 py-4 text-read leading-relaxed text-[var(--sim-cream)] outline-none placeholder:text-[var(--sim-cream-faint)] focus:border-[var(--sim-cream)]"
                 autoFocus
               />
               <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[var(--sim-cream-soft)]">
@@ -150,7 +150,7 @@ export function CreateClient({ draft, onClose }: { draft?: SimClient | null; onC
             </div>
           ) : client ? (
             <>
-              <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-[var(--sim-cream-faint)]">Does this sound right?</p>
+              <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">Does this sound right?</p>
               <div className="mt-6 grid items-center gap-8 sm:grid-cols-[auto_1fr]">
                 <div className="sim-face mx-auto aspect-square w-40">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -164,10 +164,10 @@ export function CreateClient({ draft, onClose }: { draft?: SimClient | null; onC
                   <p className="mt-4 text-[clamp(1.2rem,2vw,1.5rem)] font-light leading-snug">{client.line}</p>
                 </div>
               </div>
-              <p className="mt-6 text-[1.0625rem] leading-relaxed text-[var(--sim-cream-soft)]">{client.brief}</p>
+              <p className="mt-6 text-read leading-relaxed text-[var(--sim-cream-soft)]">{client.brief}</p>
               <div className="mt-6 grid gap-6 sm:grid-cols-2">
                 <div>
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-[var(--sim-cream-faint)]">What you&rsquo;ll need to find out</p>
+                  <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">What you&rsquo;ll need to find out</p>
                   <ul className="mt-3 grid gap-2">
                     {client.facts.map((f) => (
                       <li key={f.id} className="sim-fact">
@@ -177,7 +177,7 @@ export function CreateClient({ draft, onClose }: { draft?: SimClient | null; onC
                   </ul>
                 </div>
                 <div>
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-[var(--sim-cream-faint)]">How they push back</p>
+                  <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">How they push back</p>
                   <p className="mt-3 text-sm leading-relaxed text-[var(--sim-cream)]">{PUSHBACK_HELP[client.pushback.kind]?.title.replace(/^When they/, "They")}.</p>
                   <ul className="mt-2 space-y-1.5">
                     {client.pushback.medium.slice(0, 3).map((p) => (
@@ -196,7 +196,7 @@ export function CreateClient({ draft, onClose }: { draft?: SimClient | null; onC
                     onChange={(e) => setChange(e.target.value)}
                     rows={2}
                     placeholder="e.g. Make him more stubborn about price, and the business should be in Leeds."
-                    className="mt-2 w-full resize-y rounded-xl border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.5)] px-3.5 py-2.5 text-[0.9375rem] text-[var(--sim-cream)] outline-none placeholder:text-[var(--sim-cream-faint)] focus:border-[var(--sim-cream)]"
+                    className="mt-2 w-full resize-y rounded-xl border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.5)] px-3.5 py-2.5 text-ui text-[var(--sim-cream)] outline-none placeholder:text-[var(--sim-cream-faint)] focus:border-[var(--sim-cream)]"
                   />
                 </label>
                 <button type="button" className="sim-pill sim-pill-line mt-3" disabled={!change.trim()} onClick={() => void revise()}>

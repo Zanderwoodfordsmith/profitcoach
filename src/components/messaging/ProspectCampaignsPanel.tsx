@@ -196,7 +196,7 @@ export function ProspectCampaignsPanel({
           return (
             <span
               key={campaign.id}
-              className="inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200 bg-white py-0.5 pl-2.5 pr-1 text-[13px]"
+              className="inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200 bg-white py-0.5 pl-2.5 pr-1 text-ui"
             >
               <Link
                 href={`${campaignBase}/campaigns/${encodeURIComponent(campaign.campaignId)}`}
@@ -285,7 +285,7 @@ export function ProspectCampaignsPanel({
 
       {past.length > 0 ? (
         <div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+          <p className="mb-1.5 text-kicker font-semibold uppercase text-slate-600">
             Past
           </p>
           <ul className="flex flex-wrap gap-1.5">
@@ -294,7 +294,7 @@ export function ProspectCampaignsPanel({
                 <Link
                   href={`${campaignBase}/campaigns/${encodeURIComponent(campaign.campaignId)}`}
                   title={`${campaign.name} · ${leadStatusLabel(campaign.leadStatus)}`}
-                  className="inline-flex max-w-full truncate rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-0.5 text-[13px] text-slate-700 hover:text-slate-900"
+                  className="inline-flex max-w-full truncate rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-0.5 text-ui text-slate-700 hover:text-slate-900"
                 >
                   {campaign.name}
                   <span>

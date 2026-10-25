@@ -8,6 +8,7 @@ import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext"
 import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { AvaDock } from "@/components/ava/AvaDock";
+import { AvaSessionProvider } from "@/components/ava/useAvaSession";
 import { useAvaPageHost } from "@/components/ava/avaPageHost";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { AppPresenceHeartbeat } from "@/components/presence/AppPresenceHeartbeat";
@@ -177,6 +178,7 @@ export default function AdminLayout({
         avaInMobileNav={showAiSparkles}
         chromeEnabled={chromeEnabled}
       >
+      <AvaSessionProvider>
         <SearchOverlay />
         <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
           {playbooksReader ? null : isMinimalWorkshopChrome && workshopTopRightSlot ? (
@@ -238,8 +240,6 @@ export default function AdminLayout({
             </div>
           </main>
         </BossWorkshopChromeContext.Provider>
-      </DashboardChromeProvider>
-      <SalesNavImportToast />
       {aiPanelAvailable && aiPanelOpen && !avaPageHost && !avaChatPage ? (
         <AvaDock
           onClose={() => setAiOpen(false)}
@@ -247,6 +247,9 @@ export default function AdminLayout({
           onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
         />
       ) : null}
+      </AvaSessionProvider>
+      </DashboardChromeProvider>
+      <SalesNavImportToast />
     </div>
   );
 }

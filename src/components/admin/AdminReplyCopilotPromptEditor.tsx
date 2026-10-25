@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { DEFAULT_ANTHROPIC_MODEL } from "@/lib/anthropicModel";
+import { buttonClass } from "@/components/ui/Button";
 
 const MODEL_OPTIONS: Array<{ id: string; label: string }> = [
   { id: DEFAULT_ANTHROPIC_MODEL, label: "Claude Sonnet 4.6 (recommended)" },
@@ -156,7 +157,7 @@ export function AdminReplyCopilotPromptEditor() {
           type="button"
           onClick={() => void save({ system_prompt: prompt, model })}
           disabled={saving || !loaded}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+          className={buttonClass("main")}
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -164,7 +165,7 @@ export function AdminReplyCopilotPromptEditor() {
           type="button"
           onClick={() => void save({ reset: true, model })}
           disabled={saving || !loaded || usingDefault}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className={buttonClass("second")}
         >
           Reset to default
         </button>

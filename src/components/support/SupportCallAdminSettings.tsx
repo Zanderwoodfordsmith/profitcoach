@@ -9,6 +9,7 @@ import {
   SUPPORT_CALL_HOSTS,
   type SupportCallHostSlug,
 } from "@/lib/support/supportCallHosts";
+import { buttonClass } from "@/components/ui/Button";
 
 type Props = {
   appOrigin: string;
@@ -68,7 +69,7 @@ export function SupportCallAdminSettings({ appOrigin }: Props) {
           <button
             type="button"
             onClick={() => void copyLink()}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+            className={buttonClass("quiet", "small")}
           >
             <Copy className="h-3.5 w-3.5" aria-hidden />
             {copied ? "Copied" : "Copy"}

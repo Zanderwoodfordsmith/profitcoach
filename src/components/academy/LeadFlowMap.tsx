@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type KeyboardEvent } from "react";
+import { buttonClass } from "@/components/ui/Button";
 
 type FlowTone = "blue" | "sky" | "teal" | "green" | "amber" | "red" | "slate" | "muted";
 type Anchor = "top" | "right" | "bottom" | "left";
@@ -836,7 +837,7 @@ function NodeDetails({ node, onClose }: { node: DiagramNode; onClose: () => void
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em]" style={{ color: tone.text }}>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em]" style={{ color: tone.text }}>
             Route detail
           </p>
           <h3 className="mt-1 text-lg font-semibold text-slate-900">{node.title.replace("\n", " ")}</h3>
@@ -845,7 +846,7 @@ function NodeDetails({ node, onClose }: { node: DiagramNode; onClose: () => void
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+          className={buttonClass("quiet", "small")}
         >
           Close
         </button>
@@ -854,10 +855,10 @@ function NodeDetails({ node, onClose }: { node: DiagramNode; onClose: () => void
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {node.messageSteps.map((step) => (
             <div key={step.day} className={`rounded-lg p-2.5 ${tone.fill === "#ffffff" ? "bg-slate-50" : "bg-[#f1fafb]"}`}>
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: tone.text }}>
+              <p className="text-kicker font-semibold uppercase" style={{ color: tone.text }}>
                 {step.day}
               </p>
-              <p className="mt-1 text-xs font-semibold text-slate-800">{step.title}</p>
+              <p className="mt-1 text-xs font-medium text-slate-800">{step.title}</p>
               <p className="mt-0.5 text-xs leading-4 text-slate-600">{step.detail}</p>
             </div>
           ))}

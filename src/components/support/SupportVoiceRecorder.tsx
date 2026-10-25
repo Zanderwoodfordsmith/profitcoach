@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
 
 export type PendingSupportVoice = {
   blob: Blob;
@@ -422,7 +423,7 @@ export function SupportVoiceRecorder({
           <Mic className="h-4 w-4 shrink-0 text-rose-500" />
           <div className="min-w-0 flex-1">
             {dictateEnabled ? (
-              <p className="mb-1 text-[11px] font-medium text-slate-500">
+              <p className="mb-1 text-caption font-medium text-slate-500">
                 Voice note attached (for tone)
               </p>
             ) : null}
@@ -458,7 +459,7 @@ export function SupportVoiceRecorder({
                 "Cancelled. Allow the mic in browser settings, or upload an audio file."
               );
             }}
-            className="ml-auto rounded-md px-2 py-1 font-medium text-amber-800 hover:bg-amber-100"
+            className={buttonClass("quiet", "small", "ml-auto")}
           >
             Cancel
           </button>

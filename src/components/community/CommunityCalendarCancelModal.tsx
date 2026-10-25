@@ -8,6 +8,8 @@ import type {
   CommunityCalendarEventRow,
   CommunityCalendarOccurrence,
 } from "@/lib/communityCalendarTypes";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type CommunityCalendarCancelScope = "occurrence" | "series";
 
@@ -76,7 +78,7 @@ export function CommunityCalendarCancelModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="community-calendar-cancel-title"
-        className="relative z-[131] w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className={cardClass("raised", "relative z-[131] w-full max-w-xl overflow-hidden")}
       >
         <button
           type="button"
@@ -93,11 +95,11 @@ export function CommunityCalendarCancelModal({
           <div className="space-y-2 pr-8">
             <h2
               id="community-calendar-cancel-title"
-              className="text-lg font-bold text-slate-900"
+              className="text-lg font-semibold text-slate-900"
             >
               Cancel session?
             </h2>
-            <p className="text-sm font-semibold text-slate-900">
+            <p className="text-sm font-medium text-slate-900">
               {occurrence.title}
             </p>
             <p className="text-sm text-slate-600">{whenLabel}</p>
@@ -141,7 +143,7 @@ export function CommunityCalendarCancelModal({
               onClick={() => {
                 if (!saving) onClose();
               }}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className={buttonClass("second")}
             >
               Keep session
             </button>
@@ -151,7 +153,7 @@ export function CommunityCalendarCancelModal({
                   type="button"
                   disabled={saving}
                   onClick={() => void onConfirm("occurrence", trimmedReason)}
-                  className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                  className={buttonClass("delete")}
                 >
                   {saving ? "Cancelling…" : "This session only"}
                 </button>
@@ -159,7 +161,7 @@ export function CommunityCalendarCancelModal({
                   type="button"
                   disabled={saving}
                   onClick={() => void onConfirm("series")}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-100 disabled:opacity-50"
+                  className={buttonClass("delete")}
                 >
                   {saving ? "Cancelling…" : "Entire series"}
                 </button>
@@ -169,7 +171,7 @@ export function CommunityCalendarCancelModal({
                 type="button"
                 disabled={saving}
                 onClick={() => void onConfirm("occurrence", trimmedReason)}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                className={buttonClass("delete")}
               >
                 {saving ? "Cancelling…" : "Cancel session"}
               </button>

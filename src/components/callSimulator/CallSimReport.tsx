@@ -11,6 +11,8 @@ import type { CallSessionRow } from "@/lib/callSimulator/types";
 import { difficultyById } from "@/lib/simulator/difficulty";
 
 import { AreaList, ScoreRing, Transcript, unquote } from "@/components/simulator/SimReport";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { formatSimDate, useSimApi, useSimPrefix } from "@/components/simulator/simApi";
 import "@/components/simulator/sim.css";
 
@@ -118,7 +120,7 @@ export function CallSimReport({ id }: { id: string }) {
               {status === "abandoned" ? "This call was too short to score." : "Scoring your call"}
             </p>
             {status !== "abandoned" && waited >= 60 && !retrying && data.mine ? (
-              <button type="button" onClick={() => void retry()} className="mt-4 rounded-full bg-[#051e36] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0c5290]">
+              <button type="button" onClick={() => void retry()} className={buttonClass("main", "normal", "mt-4")}>
                 Try scoring again
               </button>
             ) : null}
@@ -137,12 +139,12 @@ export function CallSimReport({ id }: { id: string }) {
 
             {data.mine ? (
               <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <Link href={again} className="inline-flex items-center gap-2 rounded-full bg-[#051e36] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0c5290]">
+                <Link href={again} className={buttonClass("main")}>
                   <Repeat className="h-4 w-4" aria-hidden /> Practise again
                 </Link>
                 <Link
                   href={`${prefix}/script/${call.script}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                  className={buttonClass("second")}
                 >
                   Open the script
                 </Link>
@@ -158,15 +160,15 @@ export function CallSimReport({ id }: { id: string }) {
               <h2 className="text-xl font-semibold tracking-tight text-slate-900">Moments from the call</h2>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 {report.moments.map((m, i) => (
-                  <article key={i} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">
+                  <article key={i} className={cardClass("plain", "flex flex-col p-5")}>
                     <span className={`w-max rounded-full px-2.5 py-1 text-xs font-semibold ${m.kind === "good" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>
                       {m.kind === "good" ? "Worked well" : "Missed chance"}
                     </span>
-                    <p className="mt-3 text-[1.05rem] leading-snug text-slate-900">&ldquo;{unquote(m.quote)}&rdquo;</p>
+                    <p className="mt-3 text-read leading-snug text-slate-900">&ldquo;{unquote(m.quote)}&rdquo;</p>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600">{m.note}</p>
                     {m.tryInstead ? (
                       <p className="mt-auto pt-3 text-sm leading-relaxed text-slate-800">
-                        <span className="font-semibold text-[#0c5290]">Try instead: </span>&ldquo;{unquote(m.tryInstead)}&rdquo;
+                        <span className="font-medium text-[#0c5290]">Try instead: </span>&ldquo;{unquote(m.tryInstead)}&rdquo;
                       </p>
                     ) : null}
                   </article>
@@ -175,7 +177,7 @@ export function CallSimReport({ id }: { id: string }) {
             </section>
 
             <section className="sim-room mt-12 rounded-3xl px-6 py-8 text-center sm:px-10">
-              <p className="relative z-[2] text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-[var(--sim-cream-faint)]">Your one thing for next time</p>
+              <p className="relative z-[2] text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">Your one thing for next time</p>
               <p className="relative z-[2] mx-auto mt-3 max-w-3xl text-[clamp(1.25rem,2.2vw,1.75rem)] font-light leading-snug">{report.oneThing}</p>
             </section>
 

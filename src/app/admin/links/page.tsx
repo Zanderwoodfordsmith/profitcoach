@@ -9,6 +9,7 @@ import { adminExtraNavLinks } from "@/config/adminExtraNavLinks";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { cardClass } from "@/components/ui/Card";
 
 /** Built but on hold: kept out of the coach tabs until the project comes back (Proposals, 23 Oct). */
 const parkedProjectLinks = [
@@ -160,7 +161,7 @@ function LinkGroup({
   openInSameTab?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain")}>
       <h2 className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </h2>

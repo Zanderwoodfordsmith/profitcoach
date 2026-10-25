@@ -22,6 +22,7 @@ import {
 } from "@/lib/practiceKnowledge/blueprintGrid";
 import type { SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
 
 type Detail = { previews: Record<string, SectionPreview>; comments: SectionComment[] };
 type DetailState = Detail | "loading" | "error";
@@ -137,27 +138,27 @@ function Avatar({ name, url, size = "h-7 w-7" }: { name: string; url: string | n
     return <img src={url} alt="" className={`${size} shrink-0 rounded-full object-cover`} />;
   }
   return (
-    <span className={`${size} inline-flex shrink-0 items-center justify-center rounded-full bg-[#e0f2fe] text-[10px] font-bold text-[#075985]`}>
+    <span className={`${size} inline-flex shrink-0 items-center justify-center rounded-full bg-[#e0f2fe] text-caption font-bold text-[#075985]`}>
       {initials(name)}
     </span>
   );
 }
 
 function FieldsPreview({ preview }: { preview: Extract<SectionPreview, { kind: "fields" }> }) {
-  if (!preview.fields.length) return <p className="text-[13px] text-slate-500">Nothing is stored in this section.</p>;
+  if (!preview.fields.length) return <p className="text-ui text-slate-500">Nothing is stored in this section.</p>;
   return (
     <div className="space-y-3">
       {preview.fields.map((field) => (
         <div key={field.label}>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{field.label}</p>
+          <p className="text-kicker font-semibold uppercase text-slate-500">{field.label}</p>
           {!field.filled ? (
-            <p className={`mt-0.5 text-[13px] ${field.required ? "font-medium text-rose-700" : "text-slate-400"}`}>
+            <p className={`mt-0.5 text-ui ${field.required ? "font-medium text-rose-700" : "text-slate-400"}`}>
               {field.required ? "Not answered yet" : "Optional, empty"}
             </p>
           ) : field.values.length === 1 ? (
-            <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-5 text-slate-800">{field.values[0]}</p>
+            <p className="mt-0.5 whitespace-pre-wrap text-ui leading-5 text-slate-800">{field.values[0]}</p>
           ) : (
-            <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-[13px] leading-5 text-slate-800">
+            <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-ui leading-5 text-slate-800">
               {field.values.map((value, i) => (
                 <li key={i}>{value}</li>
               ))}
@@ -183,7 +184,7 @@ function ElementDots({ preview }: { preview: SectionPreview | undefined }) {
           />
         ))}
       </span>
-      <span className="text-[11px] text-slate-500">
+      <span className="text-caption text-slate-500">
         {answered} of {preview.fields.length} answered
       </span>
     </div>
@@ -267,11 +268,11 @@ function CellCard({
     >
       <div className="flex items-start gap-3 border-b border-slate-100 px-4 pb-3 pt-3.5">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{page.title}</p>
-          <h3 className="text-[15px] font-semibold leading-snug text-slate-900">{section.title}</h3>
+          <p className="text-kicker font-semibold uppercase text-slate-500">{page.title}</p>
+          <h3 className="text-ui font-semibold leading-snug text-slate-900">{section.title}</h3>
         </div>
         {look && cell?.tracked ? (
-          <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${look.pill}`}>
+          <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold ring-1 ring-inset ${look.pill}`}>
             <look.Icon className="h-3 w-3" strokeWidth={look.stroke} aria-hidden />
             {cellStatusLabel(cell)}
           </span>
@@ -287,12 +288,12 @@ function CellCard({
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 pt-3 text-[12px] text-slate-600">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 pt-3 text-caption text-slate-600">
         <span className="inline-flex items-center gap-1.5">
           <Avatar name={coach.name} url={coach.avatar_url} size="h-5 w-5" />
           <span className="font-medium text-slate-800">{coach.name}</span>
         </span>
-        <span className={cell?.owner === "bca" && cell.status !== "done" ? "font-semibold text-[#0c5290]" : ""}>
+        <span className={cell?.owner === "bca" && cell.status !== "done" ? "font-medium text-[#0c5290]" : ""}>
           {ownerLine(cell, coach.name)}
         </span>
         {cell?.revision ? <span className="text-slate-400">Updated {commentWhen(cell.revision).toLowerCase()}</span> : null}
@@ -303,38 +304,38 @@ function CellCard({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3">
         {detail === "error" ? (
-          <p className="text-[13px] text-rose-700">Could not load this section.</p>
+          <p className="text-ui text-rose-700">Could not load this section.</p>
         ) : !preview ? (
-          <p className="flex items-center gap-2 text-[13px] text-slate-500">
+          <p className="flex items-center gap-2 text-ui text-slate-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Loading
           </p>
         ) : preview.kind === "fields" ? (
           <FieldsPreview preview={preview} />
         ) : preview.markdown ? (
-          <div className="text-[13px] leading-5 text-slate-800">
+          <div className="text-ui leading-5 text-slate-800">
             <ProfitCoachAiMarkdown content={preview.markdown} />
             {preview.written_at ? (
-              <p className="mt-2 text-[11px] text-slate-400">
+              <p className="mt-2 text-caption text-slate-400">
                 Written {commentWhen(preview.written_at).toLowerCase()}
                 {preview.edited_at ? `, edited ${commentWhen(preview.edited_at).toLowerCase()}` : ""}
               </p>
             ) : null}
           </div>
         ) : (
-          <p className="text-[13px] text-slate-500">Not written yet.</p>
+          <p className="text-ui text-slate-500">Not written yet.</p>
         )}
 
         <div className="mt-4 border-t border-slate-100 pt-3">
-            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+            <p className="mb-2 flex items-center gap-1.5 text-kicker font-semibold uppercase text-slate-500">
               <MessageSquare className="h-3.5 w-3.5" aria-hidden />
               Comments{comments.length ? ` (${comments.length})` : ""}
               {unread && !pinned ? (
-                <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-bold normal-case tracking-normal text-white">{unread} new</span>
+                <span className="rounded-full bg-rose-500 px-1.5 text-caption font-bold normal-case tracking-normal text-white">{unread} new</span>
               ) : null}
             </p>
             {comments.length ? (
               <ol className="space-y-2.5">
-                {comments.length > 3 ? <li className="text-[11px] text-slate-400">{comments.length - 3} earlier</li> : null}
+                {comments.length > 3 ? <li className="text-caption text-slate-400">{comments.length - 3} earlier</li> : null}
                 {comments.slice(-3).map((comment) => (
                   <CommentItem key={comment.id} comment={comment} mine={comment.author_side === "bca"} compact />
                 ))}
@@ -353,15 +354,15 @@ function CellCard({
                 }}
                 rows={2}
                 placeholder={`Write to ${firstName(coach.name)} about this section`}
-                className="block w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-[13px] leading-5 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#1a8fd4] focus:ring-2 focus:ring-[#cfe6f8]"
+                className="block w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-ui leading-5 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#1a8fd4] focus:ring-2 focus:ring-[#cfe6f8]"
               />
               <div className="mt-1.5 flex items-center justify-between">
-                {error ? <span className="text-[12px] text-rose-700">{error}</span> : <span />}
+                {error ? <span className="text-caption text-rose-700">{error}</span> : <span />}
                 <button
                   type="button"
                   onClick={() => void send()}
                   disabled={!draft.trim() || sending}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#051e36] px-3 py-1 text-[12px] font-semibold text-white hover:bg-[#0c5290] disabled:opacity-40"
+                  className={buttonClass("main", "small")}
                 >
                   {sending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
                   Send
@@ -371,8 +372,8 @@ function CellCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-[12px]">
-        <Link href={adminSectionHref(page, key, coach.coach_id)} className="inline-flex items-center gap-1 font-semibold text-[#0c5290] hover:underline">
+      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-caption">
+        <Link href={adminSectionHref(page, key, coach.coach_id)} className="inline-flex items-center gap-1 font-medium text-[#0c5290] hover:underline">
           Open section
           <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
@@ -422,10 +423,10 @@ function StatusMark({
 }
 
 function PreviewBody({ preview, detail }: { preview: SectionPreview | undefined; detail: DetailState | undefined }) {
-  if (detail === "error") return <p className="text-[13px] text-rose-700">Could not load this section.</p>;
+  if (detail === "error") return <p className="text-ui text-rose-700">Could not load this section.</p>;
   if (!preview) {
     return (
-      <p className="flex items-center gap-2 text-[13px] text-slate-500">
+      <p className="flex items-center gap-2 text-ui text-slate-500">
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Loading
       </p>
     );
@@ -433,10 +434,10 @@ function PreviewBody({ preview, detail }: { preview: SectionPreview | undefined;
   if (preview.kind === "fields") return <FieldsPreview preview={preview} />;
   if (preview.markdown) {
     return (
-      <div className="text-[13px] leading-5 text-slate-800">
+      <div className="text-ui leading-5 text-slate-800">
         <ProfitCoachAiMarkdown content={preview.markdown} />
         {preview.written_at ? (
-          <p className="mt-2 text-[11px] text-slate-400">
+          <p className="mt-2 text-caption text-slate-400">
             Written {commentWhen(preview.written_at).toLowerCase()}
             {preview.edited_at ? `, edited ${commentWhen(preview.edited_at).toLowerCase()}` : ""}
           </p>
@@ -444,7 +445,7 @@ function PreviewBody({ preview, detail }: { preview: SectionPreview | undefined;
       </div>
     );
   }
-  return <p className="text-[13px] text-slate-500">Not written yet.</p>;
+  return <p className="text-ui text-slate-500">Not written yet.</p>;
 }
 
 function PageCard({
@@ -484,13 +485,13 @@ function PageCard({
     >
       <div className="flex items-start gap-3 border-b border-slate-100 px-4 pb-3 pt-3.5">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+          <p className="text-kicker font-semibold uppercase text-slate-500">
             {n.done} of {n.tracked || page.sections.length} done
             {n.bca ? ` · ${n.bca} with BCA` : ""}
           </p>
-          <h3 className="text-[15px] font-semibold leading-snug text-slate-900">{page.title}</h3>
+          <h3 className="text-ui font-semibold leading-snug text-slate-900">{page.title}</h3>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-[12px] text-slate-600">
+        <span className="inline-flex items-center gap-1.5 text-caption text-slate-600">
           <Avatar name={coach.name} url={coach.avatar_url} size="h-5 w-5" />
           <span className="font-medium text-slate-800">{coach.name}</span>
         </span>
@@ -511,14 +512,14 @@ function PageCard({
           return (
             <section key={ref.key} className="border-b border-slate-100 py-3 first:pt-0 last:border-b-0 last:pb-0">
               <div className="mb-2 flex items-start justify-between gap-2">
-                <h4 className="text-[13px] font-semibold text-slate-900">{ref.section.title}</h4>
+                <h4 className="text-ui font-semibold text-slate-900">{ref.section.title}</h4>
                 {look && cell?.tracked ? (
-                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${look.pill}`}>
+                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold ring-1 ring-inset ${look.pill}`}>
                     <look.Icon className="h-3 w-3" strokeWidth={look.stroke} aria-hidden />
                     {cellStatusLabel(cell)}
                   </span>
                 ) : (
-                  <span className="text-[11px] text-slate-400">Optional</span>
+                  <span className="text-caption text-slate-400">Optional</span>
                 )}
               </div>
               <PreviewBody preview={loaded?.previews[ref.key]} detail={detail} />
@@ -526,8 +527,8 @@ function PageCard({
           );
         })}
       </div>
-      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-[12px]">
-        <Link href={adminPageHref(page.slug, coach.coach_id)} className="inline-flex items-center gap-1 font-semibold text-[#0c5290] hover:underline">
+      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-caption">
+        <Link href={adminPageHref(page.slug, coach.coach_id)} className="inline-flex items-center gap-1 font-medium text-[#0c5290] hover:underline">
           Open page
           <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
@@ -910,25 +911,25 @@ export function BlueprintGrid() {
                 role="tab"
                 aria-selected={filter === f.id}
                 onClick={() => setFilter(f.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-ui font-medium ${
                   filter === f.id ? "bg-[#0c5290] text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 {f.label}
                 {f.count ? (
-                  <span className={`rounded-full px-1.5 text-[11px] font-bold ${countChip(filter === f.id, f.id)}`}>
+                  <span className={`rounded-full px-1.5 text-caption font-bold ${countChip(filter === f.id, f.id)}`}>
                     {f.count}
                   </span>
                 ) : null}
               </button>
             ))}
           </div>
-          <label className="inline-flex items-center gap-2 text-[13px] text-slate-600">
+          <label className="inline-flex items-center gap-2 text-ui text-slate-600">
             Sort
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
-              className="rounded-full border border-slate-200 bg-white py-1 pl-3 pr-7 text-[13px] text-slate-800 shadow-sm"
+              className="rounded-full border border-slate-200 bg-white py-1 pl-3 pr-7 text-ui text-slate-800 shadow-sm"
             >
               <option value="bca">Needs us first</option>
               <option value="progress">Least done first</option>
@@ -942,12 +943,12 @@ export function BlueprintGrid() {
               setPagesOpen(opening);
               if (!opening) close();
             }}
-            className="text-[13px] font-medium text-slate-600 hover:text-slate-900"
+            className="text-ui font-medium text-slate-600 hover:text-slate-900"
           >
             {collapsed.size === pages.length ? "Expand all" : "Collapse all"}
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[12px] text-slate-600">
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-caption text-slate-600">
           <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-[3px] bg-rose-400" />To do</span>
           <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-[3px] bg-amber-300" />Review</span>
           <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-[3px] bg-emerald-400" />Done</span>
@@ -975,7 +976,7 @@ export function BlueprintGrid() {
         >
           <table className="border-separate border-spacing-0 text-left text-sm">
             <thead className="sticky top-0 z-20 bg-slate-50">
-              <tr className="text-[11px] font-semibold text-slate-600">
+              <tr className="text-caption font-semibold text-slate-600">
                 <th
                   rowSpan={anyOpen ? 2 : 1}
                   className="sticky left-0 z-30 min-w-[13.5rem] border-b border-r border-slate-200 bg-slate-50 px-3 py-1.5 align-middle text-xs uppercase tracking-wide text-slate-500"
@@ -996,7 +997,7 @@ export function BlueprintGrid() {
                         type="button"
                         aria-expanded={open}
                         onClick={() => togglePage(page.slug)}
-                        className="relative mx-auto flex w-full max-w-full items-center justify-center px-4 py-0.5 text-center text-[11px] font-semibold leading-snug text-slate-600 hover:text-slate-900"
+                        className="relative mx-auto flex w-full max-w-full items-center justify-center px-4 py-0.5 text-center text-caption font-semibold leading-snug text-slate-600 hover:text-slate-900"
                       >
                         <span className={WRAP}>{page.title}</span>
                         <ChevronRight
@@ -1019,7 +1020,7 @@ export function BlueprintGrid() {
                           className={`border-b border-slate-200 bg-slate-50 px-0.5 pb-1.5 pt-0.5 align-bottom ${COL_W} ${i === 0 ? "border-l" : ""}`}
                         >
                           <span
-                            className={`block text-center text-[11px] leading-snug ${WRAP} ${
+                            className={`block text-center text-caption leading-snug ${WRAP} ${
                               hotKey === ref.key ? "font-semibold text-slate-900" : "font-medium text-slate-500"
                             }`}
                           >
@@ -1040,11 +1041,11 @@ export function BlueprintGrid() {
                     <Link href={`/admin/blueprint/coach?coach=${coach.coach_id}`} className="flex items-center gap-2.5">
                       <Avatar name={coach.name} url={coach.avatar_url} />
                       <span className="min-w-0">
-                        <span className="block truncate text-[13px] font-semibold text-slate-900 hover:underline">{coach.name}</span>
-                        <span className="block text-[11px] text-slate-500">
+                        <span className="block truncate text-ui font-medium text-slate-900 hover:underline">{coach.name}</span>
+                        <span className="block text-caption text-slate-500">
                           {n.done} of {n.tracked} done
-                          {n.bca ? <span className="font-semibold text-[#0c5290]"> · {n.bca} with BCA</span> : null}
-                          {n.unread ? <span className="font-semibold text-rose-600"> · {n.unread} new</span> : null}
+                          {n.bca ? <span className="font-medium text-[#0c5290]"> · {n.bca} with BCA</span> : null}
+                          {n.unread ? <span className="font-medium text-rose-600"> · {n.unread} new</span> : null}
                         </span>
                       </span>
                     </Link>

@@ -46,7 +46,7 @@ function StatusChip({ status }: { status: SectionStatus }) {
         : "border-slate-200 bg-white/90 text-slate-600";
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-caption font-semibold ${tone}`}
     >
       {statusLabel(status)}
     </span>
@@ -104,7 +104,7 @@ function ClampedCopy({
       <button
         type="button"
         onClick={onEdit}
-        className="w-full text-left whitespace-pre-wrap [overflow-wrap:anywhere] text-[14px] leading-[1.4] text-[#191919]"
+        className="w-full text-left whitespace-pre-wrap [overflow-wrap:anywhere] text-ui leading-[1.4] text-[#191919]"
       >
         {shown}
       </button>
@@ -115,7 +115,7 @@ function ClampedCopy({
             e.stopPropagation();
             setExpanded((v) => !v);
           }}
-          className="text-[14px] font-semibold text-[#666666] hover:text-[#191919] hover:underline"
+          className="text-ui font-semibold text-[#666666] hover:text-[#191919] hover:underline"
         >
           {expanded ? lessLabel : moreLabel}
         </button>
@@ -196,10 +196,10 @@ export function ProfileProgressStrip({
   return (
     <div className="sticky top-[4.5rem] z-10 -mx-1 rounded-xl border border-slate-200/80 bg-white/90 px-2 py-2 shadow-sm backdrop-blur sm:px-3">
       <div className="mb-1.5 flex items-center justify-between px-1">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+        <p className="text-kicker font-medium uppercase text-slate-400">
           Profile
         </p>
-        <p className="text-[11px] text-slate-500">
+        <p className="text-caption text-slate-500">
           {ready} of {PROFILE_SECTIONS.length} drafted
         </p>
       </div>
@@ -251,14 +251,14 @@ function EducationRow({ edu }: { edu: LinkedInEducation }) {
     <li className="flex gap-3">
       <LogoMark label={edu.school ?? "?"} />
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold leading-snug text-[#191919]">
+        <p className="text-ui font-semibold leading-snug text-[#191919]">
           {edu.school ?? "School"}
         </p>
         {degreeLine ? (
-          <p className="text-[14px] leading-snug text-[#191919]">{degreeLine}</p>
+          <p className="text-ui leading-snug text-[#191919]">{degreeLine}</p>
         ) : null}
         {dates ? (
-          <p className="mt-0.5 text-[12px] leading-snug text-[#666666]">{dates}</p>
+          <p className="mt-0.5 text-caption leading-snug text-[#666666]">{dates}</p>
         ) : null}
       </div>
     </li>
@@ -415,7 +415,7 @@ export function ProfileOptimizerCanvas({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-3">
-                <h2 className="text-[22px] font-semibold leading-tight tracking-[-0.01em] text-[#191919] sm:text-[24px]">
+                <h2 className="text-title font-semibold leading-tight text-[#191919]">
                   {snapshot.fullName ?? "LinkedIn profile"}
                 </h2>
                 {chipButton("headline")}
@@ -426,13 +426,13 @@ export function ProfileOptimizerCanvas({
                   onChange={onHeadline}
                   maxLength={FIELD_LIMITS.headline}
                   placeholder="Who you help + the outcome"
-                  className="mt-1 max-w-[42rem] text-[14px] leading-[1.35] text-[#191919] sm:text-[16px]"
+                  className="mt-1 max-w-[42rem] text-ui leading-[1.35] text-[#191919] sm:text-read"
                 />
               ) : (
                 <button
                   type="button"
                   onClick={() => onSelect("headline")}
-                  className="mt-1 max-w-[42rem] text-left text-[14px] leading-[1.35] text-[#191919] sm:text-[16px]"
+                  className="mt-1 max-w-[42rem] text-left text-ui leading-[1.35] text-[#191919] sm:text-read"
                 >
                   {headline.trim() || (
                     <span className="text-slate-400">
@@ -442,16 +442,16 @@ export function ProfileOptimizerCanvas({
                 </button>
               )}
               {snapshot.location ? (
-                <p className="mt-1.5 text-[14px] leading-snug text-[#666666]">
+                <p className="mt-1.5 text-ui leading-snug text-[#666666]">
                   {snapshot.location}
                 </p>
               ) : null}
               {connectionsLabel ? (
-                <p className="mt-1 text-[14px] font-semibold leading-snug text-[#0a66c2]">
+                <p className="mt-1 text-ui font-semibold leading-snug text-[#0a66c2]">
                   {connectionsLabel}
                 </p>
               ) : snapshot.followerCount != null ? (
-                <p className="mt-1 text-[14px] font-semibold leading-snug text-[#0a66c2]">
+                <p className="mt-1 text-ui font-semibold leading-snug text-[#0a66c2]">
                   {snapshot.followerCount.toLocaleString()} followers
                 </p>
               ) : null}
@@ -462,7 +462,7 @@ export function ProfileOptimizerCanvas({
                 {currentCompany ? (
                   <div className="flex items-center gap-2">
                     <LogoMark label={currentCompany} />
-                    <p className="text-[12px] font-semibold leading-snug text-[#191919]">
+                    <p className="text-caption font-semibold leading-snug text-[#191919]">
                       {currentCompany}
                     </p>
                   </div>
@@ -470,7 +470,7 @@ export function ProfileOptimizerCanvas({
                 {school ? (
                   <div className="flex items-center gap-2">
                     <LogoMark label={school} />
-                    <p className="text-[12px] font-semibold leading-snug text-[#191919]">
+                    <p className="text-caption font-semibold leading-snug text-[#191919]">
                       {school}
                     </p>
                   </div>
@@ -489,7 +489,7 @@ export function ProfileOptimizerCanvas({
       >
         <div className="px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-[16px] font-semibold leading-snug text-[#191919]">
+            <h3 className="text-read font-semibold leading-snug text-[#191919]">
               About
             </h3>
             {chipButton("about")}
@@ -500,7 +500,7 @@ export function ProfileOptimizerCanvas({
               onChange={onAbout}
               maxLength={FIELD_LIMITS.about}
               placeholder="Write to the owner — pain, mechanism, proof, next step"
-              className="mt-3 whitespace-pre-wrap [overflow-wrap:anywhere] text-[14px] leading-[1.4] text-[#191919]"
+              className="mt-3 whitespace-pre-wrap [overflow-wrap:anywhere] text-ui leading-[1.4] text-[#191919]"
             />
           ) : about.trim() ? (
             <ClampedCopy
@@ -514,7 +514,7 @@ export function ProfileOptimizerCanvas({
             <button
               type="button"
               onClick={() => onSelect("about")}
-              className="mt-3 w-full text-left text-[14px] leading-[1.4] text-slate-400"
+              className="mt-3 w-full text-left text-ui leading-[1.4] text-slate-400"
             >
               Add an About written to the owner you want to attract.
             </button>
@@ -528,7 +528,7 @@ export function ProfileOptimizerCanvas({
       >
         <div className="px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-[16px] font-semibold leading-snug text-[#191919]">
+            <h3 className="text-read font-semibold leading-snug text-[#191919]">
               Featured
             </h3>
             {chipButton("featured")}
@@ -551,7 +551,7 @@ export function ProfileOptimizerCanvas({
             })}
           </ul>
           {featuredItems.length > 3 ? (
-            <p className="mt-2 text-center text-[13px] font-semibold text-[#191919]">
+            <p className="mt-2 text-center text-ui font-semibold text-[#191919]">
               Show all {featuredItems.length} featured →
             </p>
           ) : null}
@@ -565,13 +565,13 @@ export function ProfileOptimizerCanvas({
               onChange={onFeaturedNotes}
               maxLength={FIELD_LIMITS.featuredNotes}
               placeholder="What to pin, in order — newsletter, proof, lead magnet — and why"
-              className="mt-3 whitespace-pre-wrap [overflow-wrap:anywhere] text-[14px] leading-[1.4] text-[#191919]"
+              className="mt-3 whitespace-pre-wrap [overflow-wrap:anywhere] text-ui leading-[1.4] text-[#191919]"
             />
           ) : featuredNotes.trim() ? (
             <button
               type="button"
               onClick={() => onSelect("featured")}
-              className="mt-3 w-full text-left whitespace-pre-wrap [overflow-wrap:anywhere] text-[14px] leading-[1.4] text-[#191919]"
+              className="mt-3 w-full text-left whitespace-pre-wrap [overflow-wrap:anywhere] text-ui leading-[1.4] text-[#191919]"
             >
               {featuredNotes}
             </button>
@@ -579,7 +579,7 @@ export function ProfileOptimizerCanvas({
             <button
               type="button"
               onClick={() => onSelect("featured")}
-              className="mt-3 w-full text-left text-[14px] leading-[1.4] text-slate-400"
+              className="mt-3 w-full text-left text-ui leading-[1.4] text-slate-400"
             >
               {featuredItems.length > 0
                 ? "Rewrite to get pin advice — keep, replace, or reorder these."
@@ -595,7 +595,7 @@ export function ProfileOptimizerCanvas({
       >
         <div className="px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-[16px] font-semibold leading-snug text-[#191919]">
+            <h3 className="text-read font-semibold leading-snug text-[#191919]">
               Experience
             </h3>
             {chipButton("experience")}
@@ -611,26 +611,26 @@ export function ProfileOptimizerCanvas({
                   }
                   maxLength={FIELD_LIMITS.experienceTitle}
                   placeholder="Current role title"
-                  className="text-[14px] font-semibold leading-snug text-[#191919]"
+                  className="text-ui font-semibold leading-snug text-[#191919]"
                 />
               ) : (
                 <button
                   type="button"
                   onClick={() => onSelect("experience")}
-                  className="text-left text-[14px] font-semibold leading-snug text-[#191919]"
+                  className="text-left text-ui font-semibold leading-snug text-[#191919]"
                 >
                   {currentTitle.trim() || "Current role"}
                 </button>
               )}
               {current?.company ? (
-                <p className="text-[14px] leading-snug text-[#191919]">
+                <p className="text-ui leading-snug text-[#191919]">
                   {[current.company, current.employmentType]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
               ) : null}
               {current ? (
-                <p className="mt-0.5 text-[12px] leading-snug text-[#666666]">
+                <p className="mt-0.5 text-caption leading-snug text-[#666666]">
                   {dateRange(current.start, current.end, current.duration)}
                 </p>
               ) : null}
@@ -642,7 +642,7 @@ export function ProfileOptimizerCanvas({
                   }
                   maxLength={FIELD_LIMITS.experienceDescription}
                   placeholder="Frame this role as client outcomes, not a job history"
-                  className="mt-1.5 whitespace-pre-wrap text-[14px] leading-snug text-[#191919]"
+                  className="mt-1.5 whitespace-pre-wrap text-ui leading-snug text-[#191919]"
                 />
               ) : currentDescription.trim() ? (
                 <ClampedCopy
@@ -657,7 +657,7 @@ export function ProfileOptimizerCanvas({
                 <button
                   type="button"
                   onClick={() => onSelect("experience")}
-                  className="mt-1.5 w-full text-left text-[14px] leading-snug text-slate-400"
+                  className="mt-1.5 w-full text-left text-ui leading-snug text-slate-400"
                 >
                   Rewrite this role around the outcome you help owners get.
                 </button>
@@ -677,7 +677,7 @@ export function ProfileOptimizerCanvas({
       {snapshot.education.length > 0 ? (
         <div className="overflow-hidden rounded-xl border border-[#e0e0e0] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.02)]">
           <div className="px-4 py-4 sm:px-6 sm:py-5">
-            <h3 className="text-[16px] font-semibold leading-snug text-[#191919]">
+            <h3 className="text-read font-semibold leading-snug text-[#191919]">
               Education
             </h3>
             <ul className="mt-4 space-y-5">
@@ -712,12 +712,12 @@ function FeaturedPlanEditor({
   const set = (i: number, patch: Partial<FeaturedPlanItem>) =>
     onChange(rows.map((row, j) => (j === i ? { ...row, ...patch } : row)));
   const input =
-    "w-full min-w-0 rounded-md border border-[#d0d0d0] bg-white px-2.5 py-1.5 text-[13px] text-[#191919] outline-none focus:border-[#0a66c2]";
+    "w-full min-w-0 rounded-md border border-[#d0d0d0] bg-white px-2.5 py-1.5 text-ui text-[#191919] outline-none focus:border-[#0a66c2]";
   return (
     <div className="mt-4 space-y-2.5">
       {FEATURED_SLOTS.map((slot, i) => (
         <div key={slot} className="grid gap-1.5 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1fr)] sm:items-center">
-          <span className="text-[13px] font-semibold text-[#191919]">{slot}</span>
+          <span className="text-ui font-semibold text-[#191919]">{slot}</span>
           <input
             value={rows[i].title}
             maxLength={FIELD_LIMITS.featuredTitle}
@@ -758,10 +758,10 @@ function FeaturedCard({
         <button type="button" onClick={onSelect} className={`${className} w-full`}>
           <div className="aspect-[16/9] w-full bg-[#e9e5df]" />
           <div className="px-2.5 py-2 sm:px-3 sm:py-2.5">
-            <p className="text-[12px] font-semibold leading-snug text-[#191919] sm:text-[13px]">
+            <p className="text-caption font-semibold leading-snug text-[#191919] sm:text-ui">
               {emptyLabel}
             </p>
-            <p className="mt-0.5 text-[11px] leading-snug text-[#666666] sm:text-[12px]">
+            <p className="mt-0.5 text-caption leading-snug text-[#666666]">
               Pin this
             </p>
           </div>
@@ -784,11 +784,11 @@ function FeaturedCard({
         )}
       </div>
       <div className="px-2.5 py-2 sm:px-3 sm:py-2.5">
-        <p className="line-clamp-2 text-[12px] font-semibold leading-snug text-[#191919] sm:text-[13px]">
+        <p className="line-clamp-2 text-caption font-semibold leading-snug text-[#191919] sm:text-ui">
           {item.title || emptyLabel}
         </p>
         {item.subtitle ? (
-          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-[#666666] sm:text-[12px]">
+          <p className="mt-0.5 line-clamp-2 text-caption leading-snug text-[#666666]">
             {item.subtitle}
           </p>
         ) : null}
@@ -823,14 +823,14 @@ function PastRole({ exp }: { exp: LinkedInExperience }) {
     <li className="flex gap-3 py-4 first:pt-0 last:pb-0">
       <LogoMark label={exp.company ?? exp.title ?? "?"} />
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold leading-snug text-[#191919]">
+        <p className="text-ui font-semibold leading-snug text-[#191919]">
           {exp.title ?? "Role"}
         </p>
         {companyLine ? (
-          <p className="text-[14px] leading-snug text-[#191919]">{companyLine}</p>
+          <p className="text-ui leading-snug text-[#191919]">{companyLine}</p>
         ) : null}
         {dates ? (
-          <p className="mt-0.5 text-[12px] leading-snug text-[#666666]">{dates}</p>
+          <p className="mt-0.5 text-caption leading-snug text-[#666666]">{dates}</p>
         ) : null}
         {exp.description ? (
           <ClampedCopy

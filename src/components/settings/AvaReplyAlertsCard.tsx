@@ -6,6 +6,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { SectionInfoTip } from "@/components/settings/IntegrationsSettingsTab";
 import { ProfileSectionCard } from "@/components/settings/ProfileFormLayout";
+import { buttonClass } from "@/components/ui/Button";
 
 type ReplyMode = "off" | "copilot" | "autopilot";
 type Settings = {
@@ -191,10 +192,9 @@ export function AvaReplyAlertsCard() {
 
   const s = state?.settings;
   const snoozedUntil = s?.nudges_snoozed_until && Date.parse(s.nudges_snoozed_until) > Date.now() ? s.nudges_snoozed_until : null;
-  const smallButton =
-    "inline-flex h-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800";
+  const smallButton = buttonClass("second", "small", "shrink-0");
   const rowClass = "flex items-center justify-between gap-3 border-b border-slate-50 py-2";
-  const checkLabelClass = "flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-900";
+  const checkLabelClass = "flex min-w-0 items-center gap-2 text-sm font-medium text-slate-900";
 
   return (
     <ProfileSectionCard
@@ -231,7 +231,7 @@ export function AvaReplyAlertsCard() {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <label
                         htmlFor={`ava-mode-${m.id}`}
-                        className={`text-sm font-semibold ${locked ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-900"}`}
+                        className={`text-sm font-medium ${locked ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-900"}`}
                       >
                         {m.label}
                       </label>
@@ -239,7 +239,7 @@ export function AvaReplyAlertsCard() {
                         <SectionInfoTip label={m.label} text={AUTOPILOT_INFO} wide />
                       ) : null}
                       {locked ? (
-                        <span className="rounded bg-slate-50 px-1.5 py-0.5 text-[11px] text-slate-400 ring-1 ring-inset ring-slate-200">
+                        <span className="rounded bg-slate-50 px-1.5 py-0.5 text-caption text-slate-400 ring-1 ring-inset ring-slate-200">
                           Coming soon
                         </span>
                       ) : null}
@@ -272,7 +272,7 @@ export function AvaReplyAlertsCard() {
                     type="button"
                     onClick={() => void enablePush()}
                     disabled={busy}
-                    className="inline-flex h-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50"
+                    className={buttonClass("second", "small", "shrink-0")}
                   >
                     {busy ? (pushOnHere ? "Sending…" : "Turning on…") : pushOnHere ? "Send test" : "Turn on here"}
                   </button>
@@ -285,7 +285,7 @@ export function AvaReplyAlertsCard() {
                   <input id="ava-whatsapp" type="checkbox" checked={s.notify_whatsapp} onChange={(e) => void save({ notify_whatsapp: e.target.checked })} />
                   WhatsApp from BCA
                   {state.hasPhone && !state.whatsappReady ? (
-                    <span className="text-[11px] font-normal text-slate-400">starting soon</span>
+                    <span className="text-caption font-normal text-slate-400">starting soon</span>
                   ) : null}
                 </label>
                 {s.notify_whatsapp ? (
@@ -309,14 +309,14 @@ export function AvaReplyAlertsCard() {
                           type="button"
                           onClick={() => void savePhone()}
                           disabled={phoneSaving}
-                          className="inline-flex h-8 shrink-0 items-center rounded-md bg-sky-600 px-3 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                          className={buttonClass("main", "small", "shrink-0")}
                         >
                           {phoneSaving ? "Saving…" : "Save"}
                         </button>
                       ) : null}
                     </div>
                     {!state.hasPhone && phoneDraft == null ? (
-                      <p className="mt-1 text-[11px] text-amber-800">Add your mobile so Ava can message you.</p>
+                      <p className="mt-1 text-caption text-amber-800">Add your mobile so Ava can message you.</p>
                     ) : null}
                   </div>
                 ) : null}
@@ -337,7 +337,7 @@ export function AvaReplyAlertsCard() {
               <SectionInfoTip label="Ava's nudges" text={NUDGES_INFO} />
             </div>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2">
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-medium text-slate-900">
                 {snoozedUntil
                   ? `Paused until ${new Date(snoozedUntil).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
                   : "On"}

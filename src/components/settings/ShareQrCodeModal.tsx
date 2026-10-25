@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Modal } from "@/components/ui/Modal";
+import { buttonClass } from "@/components/ui/Button";
 
 type ShareQrCodeModalProps = {
   open: boolean;
@@ -120,7 +121,7 @@ export function ShareQrCodeModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("quiet")}
           >
             Cancel
           </button>
@@ -128,7 +129,7 @@ export function ShareQrCodeModal({
             type="button"
             onClick={() => void downloadPng()}
             disabled={!dataUrl || downloading}
-            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className={buttonClass("main", "normal", "disabled:cursor-not-allowed")}
           >
             {downloading ? "Preparing…" : "Download PNG"}
           </button>

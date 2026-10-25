@@ -30,6 +30,8 @@ import { splitFullName } from "@/lib/splitFullName";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type ShareTarget =
   | {
@@ -426,18 +428,18 @@ export function ShareToProspectModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-[420px] overflow-y-auto rounded-[22px] bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+        className={cardClass("raised", "max-h-[90vh] w-full max-w-[420px] overflow-y-auto p-6")}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2
               id="share-link-title"
-              className="text-[21px] font-semibold tracking-[-0.02em] text-slate-900"
+              className="text-subhead font-semibold tracking-[-0.02em] text-slate-900"
             >
               Share {target.title}
             </h2>
-            <p className="mt-1 text-[13px] leading-snug text-slate-500">
+            <p className="mt-1 text-ui leading-snug text-slate-500">
               {personMode
                 ? personHint(target)
                 : "One link anyone can use. Post it, or send it anywhere."}
@@ -446,7 +448,7 @@ export function ShareToProspectModal({
           <button
             type="button"
             onClick={onClose}
-            className="mt-0.5 text-[15px] font-medium text-slate-400 transition hover:text-slate-700"
+            className="mt-0.5 text-ui font-medium text-slate-400 transition hover:text-slate-700"
           >
             Close
           </button>
@@ -473,7 +475,7 @@ export function ShareToProspectModal({
                   setMode(option.id);
                   if (option.id === "anyone") setSelectedId(null);
                 }}
-                className={`rounded-lg px-3 py-1.5 text-[14px] font-medium transition ${
+                className={`rounded-lg px-3 py-1.5 text-ui font-medium transition ${
                   mode === option.id
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-500 hover:text-slate-800"
@@ -494,15 +496,15 @@ export function ShareToProspectModal({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search prospects"
               aria-label="Choose a prospect"
-              className="w-full rounded-xl bg-slate-100 px-3.5 py-2.5 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-[#0c5290]/25"
+              className="w-full rounded-xl bg-slate-100 px-3.5 py-2.5 text-ui text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-[#0c5290]/25"
             />
             <div className="mt-2 max-h-44 overflow-y-auto">
               {loading ? (
-                <p className="px-1 py-6 text-center text-[13px] text-slate-500">
+                <p className="px-1 py-6 text-center text-ui text-slate-500">
                   Loading prospects
                 </p>
               ) : filtered.length === 0 ? (
-                <p className="px-1 py-6 text-center text-[13px] text-slate-500">
+                <p className="px-1 py-6 text-center text-ui text-slate-500">
                   {prospects.length === 0 ? "No prospects yet." : "No matches."}
                 </p>
               ) : (
@@ -523,11 +525,11 @@ export function ShareToProspectModal({
                           }`}
                         >
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[15px] font-medium text-slate-900">
+                            <span className="block truncate text-ui font-medium text-slate-900">
                               {prospect.full_name}
                             </span>
                             {meta ? (
-                              <span className="block truncate text-[13px] text-slate-500">
+                              <span className="block truncate text-ui text-slate-500">
                                 {meta}
                               </span>
                             ) : null}
@@ -549,14 +551,14 @@ export function ShareToProspectModal({
         ) : null}
 
         {reportLoading ? (
-          <p className="mt-4 flex items-center gap-2 text-[13px] text-slate-500">
+          <p className="mt-4 flex items-center gap-2 text-ui text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             Loading their report
           </p>
         ) : null}
 
         {displayHost && !personMode ? (
-          <p className="mt-4 truncate rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-[14px] text-slate-600">
+          <p className="mt-4 truncate rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-ui text-slate-600">
             {displayHost}
           </p>
         ) : null}
@@ -565,7 +567,7 @@ export function ShareToProspectModal({
             type="button"
             onClick={() => void copyLink()}
             disabled={!canCopy}
-            className="mt-4 block w-full truncate text-left text-[13px] text-slate-400 transition hover:text-slate-600 disabled:opacity-50"
+            className="mt-4 block w-full truncate text-left text-ui text-slate-400 transition hover:text-slate-600 disabled:opacity-50"
             title="Copy link"
           >
             {copied ? "Copied" : displayHost}
@@ -589,7 +591,7 @@ export function ShareToProspectModal({
                     key={item.id}
                     type="button"
                     onClick={() => setChannel(item.id)}
-                    className={`rounded-full px-3 py-1 text-[13px] font-medium transition ${
+                    className={`rounded-full px-3 py-1 text-ui font-medium transition ${
                       channel === item.id
                         ? "bg-[#0c5290] text-white"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -600,14 +602,14 @@ export function ShareToProspectModal({
                 ))}
               </div>
             ) : (
-              <p className="text-[13px] text-slate-500">
+              <p className="text-ui text-slate-500">
                 Add a phone, LinkedIn, or email on this prospect to send.
               </p>
             )}
           </div>
         ) : null}
 
-        {error ? <p className="mt-3 text-[13px] text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-ui text-rose-600">{error}</p> : null}
 
         {personMode ? (
           <div className="mt-6 flex items-center justify-end gap-4">
@@ -615,7 +617,7 @@ export function ShareToProspectModal({
               type="button"
               onClick={() => void copyLink()}
               disabled={!canCopy || (needsProspect && !selected)}
-              className="text-[15px] font-medium text-slate-500 transition hover:text-slate-800 disabled:text-slate-300"
+              className="text-ui font-medium text-slate-500 transition hover:text-slate-800 disabled:text-slate-300"
             >
               {copied ? "Copied" : "Copy"}
             </button>
@@ -623,7 +625,7 @@ export function ShareToProspectModal({
               type="button"
               onClick={() => void openConversation()}
               disabled={!canSend || sending}
-              className="rounded-full bg-[#0c5290] px-4 py-2 text-[15px] font-medium text-white transition hover:bg-[#051e36] disabled:bg-slate-200 disabled:text-slate-400"
+              className={buttonClass("main")}
             >
               {sending ? "Opening" : "Send"}
             </button>
@@ -634,7 +636,7 @@ export function ShareToProspectModal({
               type="button"
               onClick={() => void copyLink()}
               disabled={!canCopy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#0c5290] px-4 py-2 text-[15px] font-medium text-white transition hover:bg-[#051e36] disabled:bg-slate-200 disabled:text-slate-400"
+              className={buttonClass("main")}
             >
               {copied ? <Check className="h-4 w-4" aria-hidden /> : null}
               {copied ? "Copied" : "Copy link"}

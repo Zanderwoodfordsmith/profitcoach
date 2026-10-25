@@ -72,6 +72,8 @@ import {
   parseGoogleMapsSearchTerms,
 } from "@/lib/googleMaps/searchTerms";
 import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   POOL_IMPORT_OPTIONS,
   type PoolImportMode,
@@ -1040,7 +1042,7 @@ export function ImportPoolModal({
                 <button
                   type="button"
                   onClick={leadingOption.onSelect}
-                  className="flex w-full items-center gap-3.5 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                  className={cardClass("raised", "flex w-full items-center gap-3.5 px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40")}
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#0c5290]">
                     <Users className="h-4 w-4" aria-hidden />
@@ -1070,7 +1072,7 @@ export function ImportPoolModal({
                       setNotice(null);
                       setMode(option.id);
                     }}
-                    className="flex w-full items-center gap-3.5 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                    className={cardClass("raised", "flex w-full items-center gap-3.5 px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40")}
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#0c5290]">
                       <Icon className="h-4 w-4" aria-hidden />
@@ -1105,7 +1107,7 @@ export function ImportPoolModal({
                     setSalesNavSource("custom");
                     setSearchUrl("");
                   }}
-                  className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                  className={cardClass("raised", "flex items-start gap-3 px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40")}
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-slate-900">
@@ -1217,7 +1219,7 @@ export function ImportPoolModal({
                 <div className="space-y-2">
                   <p className="text-sm leading-snug text-slate-900">
                     We&apos;ll import company sizes{" "}
-                    <span className="font-semibold">{importTeamSummary}</span>.
+                    <span className="font-medium">{importTeamSummary}</span>.
                   </p>
                   {importTeamExtras.length > 0 ? (
                     <fieldset className="min-w-0">
@@ -1290,7 +1292,7 @@ export function ImportPoolModal({
                     type="button"
                     disabled={busy || !salesNavUrlReady}
                     onClick={() => void startSalesNavImport()}
-                    className="ml-auto inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                    className={buttonClass("main", "small", "ml-auto")}
                   >
                     Import to pool
                   </button>
@@ -1308,7 +1310,7 @@ export function ImportPoolModal({
                 </p>
               ) : null}
               <div>
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                   {visibleDraft.terms.length > 1 ? "Searches" : "Search"}
                 </span>
                 <div className="space-y-2">
@@ -1363,7 +1365,7 @@ export function ImportPoolModal({
                 ) : null}
               </div>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                   Country
                 </span>
                 <select
@@ -1387,7 +1389,7 @@ export function ImportPoolModal({
               </label>
               {googleMapsNeedsUsState(visibleDraft.country) ? (
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                     State
                   </span>
                   <select
@@ -1416,7 +1418,7 @@ export function ImportPoolModal({
               ) : null}
               {visibleDraft.country === GOOGLE_MAPS_COUNTRY_OTHER ? (
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                     Country name
                   </span>
                   <input
@@ -1431,7 +1433,7 @@ export function ImportPoolModal({
                 </label>
               ) : null}
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                   City or area
                   <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-500">
                     optional
@@ -1465,7 +1467,7 @@ export function ImportPoolModal({
                 )}
               </label>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                   Amount to import
                 </span>
                 <select
@@ -1514,7 +1516,7 @@ export function ImportPoolModal({
                       ? startGoogleSearchImport()
                       : startMapsImport())
                   }
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  className={buttonClass("main", "small")}
                 >
                   Import to pool
                 </button>
@@ -1608,7 +1610,7 @@ export function ImportPoolModal({
                     setError(null);
                     setCsvStage("file");
                   }}
-                  className="inline-flex items-center rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  className={buttonClass("main", "small")}
                 >
                   Continue
                 </button>
@@ -1635,7 +1637,7 @@ export function ImportPoolModal({
                   type="button"
                   disabled={busy || !csvText}
                   onClick={importMappedCsv}
-                  className="inline-flex items-center rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  className={buttonClass("main", "small")}
                 >
                   {busy ? "Importing…" : "Import"}
                 </button>
@@ -1647,7 +1649,7 @@ export function ImportPoolModal({
             <div className="space-y-4">
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="block sm:col-span-2">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                     Name
                   </span>
                   <input
@@ -1658,7 +1660,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                     Company
                   </span>
                   <input
@@ -1669,7 +1671,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                     Title
                   </span>
                   <input
@@ -1680,7 +1682,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                     Email
                   </span>
                   <input
@@ -1692,7 +1694,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                     Phone
                   </span>
                   <input
@@ -1704,7 +1706,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block sm:col-span-2">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mb-1 block text-kicker font-medium uppercase text-slate-600">
                     LinkedIn
                   </span>
                   <input
@@ -1737,7 +1739,7 @@ export function ImportPoolModal({
                       ],
                     });
                   }}
-                  className="rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 sm:col-span-2"
+                  className={buttonClass("main", "small", "sm:col-span-2")}
                 >
                   Add person
                 </button>
@@ -1767,7 +1769,7 @@ export function ImportPoolModal({
                       type="button"
                       disabled={busy || !pasteText.trim()}
                       onClick={() => void importPeople({ text: pasteText })}
-                      className="rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                      className={buttonClass("main", "small")}
                     >
                       Add links
                     </button>

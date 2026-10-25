@@ -69,140 +69,9 @@
   color: #78350f;
 }
 
-.ava-stage .ava-warn {
+.ava-dark .ava-warn {
   background: rgba(245, 180, 60, 0.12);
   color: #fcd9a0;
-}
-
-/* ------------------------------------------------------------------ */
-/* The orb: Ava's mark everywhere, from a 22px dot to the stage hero.  */
-/* ------------------------------------------------------------------ */
-
-.ava-orb {
-  position: relative;
-  display: inline-block;
-  flex-shrink: 0;
-  border-radius: 50%;
-}
-
-.ava-orb-sphere {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 26%, rgba(222, 240, 255, 0.9), rgba(222, 240, 255, 0) 42%),
-    radial-gradient(circle at 70% 78%, rgba(26, 143, 212, 0.85), rgba(26, 143, 212, 0) 56%),
-    radial-gradient(circle at 50% 50%, #0c3f73 22%, #051e36 74%);
-  box-shadow:
-    inset 0 0 10px rgba(110, 190, 245, 0.45),
-    inset 0 -5px 9px rgba(2, 10, 24, 0.75),
-    0 3px 10px -3px rgba(12, 82, 144, 0.55);
-}
-
-.ava-orb-glow,
-.ava-orb-ribbon,
-.ava-orb-rim {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.ava-orb-glow {
-  inset: -36%;
-  background: radial-gradient(
-    circle,
-    rgba(26, 143, 212, 0.42) 0%,
-    rgba(26, 143, 212, 0.14) 45%,
-    transparent 70%
-  );
-  filter: blur(18px);
-  animation: avaBreath 5s ease-in-out infinite;
-}
-
-.ava-orb-ribbon {
-  inset: 6%;
-  background: conic-gradient(
-    from 210deg,
-    transparent 0%,
-    transparent 52%,
-    rgba(150, 214, 250, 0.2) 62%,
-    rgba(214, 240, 255, 0.95) 72%,
-    rgba(26, 143, 212, 0.8) 82%,
-    transparent 92%
-  );
-  -webkit-mask: radial-gradient(circle, transparent 52%, #000 56%, #000 78%, transparent 82%);
-  mask: radial-gradient(circle, transparent 52%, #000 56%, #000 78%, transparent 82%);
-  filter: blur(2px);
-  animation: avaSpin 7s linear infinite;
-}
-
-.ava-orb-ribbon.two {
-  inset: 14%;
-  background: conic-gradient(
-    from 30deg,
-    transparent 0%,
-    transparent 60%,
-    rgba(190, 232, 255, 0.55) 74%,
-    rgba(12, 82, 144, 0.7) 84%,
-    transparent 94%
-  );
-  -webkit-mask: radial-gradient(circle, transparent 44%, #000 50%, #000 72%, transparent 78%);
-  mask: radial-gradient(circle, transparent 44%, #000 50%, #000 72%, transparent 78%);
-  filter: blur(3px);
-  animation: avaSpinBack 11s linear infinite;
-}
-
-.ava-orb-rim {
-  inset: -1px;
-  border: 1px solid rgba(160, 210, 245, 0.25);
-  box-shadow: inset 0 1px 12px rgba(200, 235, 255, 0.22);
-}
-
-/* Voice: the orb answers the call. Speaking swells, listening breathes. */
-.ava-orb.is-speaking .ava-orb-glow {
-  animation-duration: 1.4s;
-  opacity: 1;
-}
-
-.ava-orb.is-speaking .ava-orb-ribbon {
-  animation-duration: 2.6s;
-}
-
-.ava-orb.is-listening .ava-orb-glow {
-  animation-duration: 3s;
-}
-
-.ava-orb.is-quiet .ava-orb-glow,
-.ava-orb.is-quiet .ava-orb-ribbon {
-  animation-play-state: paused;
-  opacity: 0.45;
-}
-
-@keyframes avaSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes avaSpinBack {
-  from {
-    transform: rotate(140deg);
-  }
-  to {
-    transform: rotate(-220deg);
-  }
-}
-
-@keyframes avaBreath {
-  0%,
-  100% {
-    opacity: 0.75;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -223,19 +92,6 @@
   }
 }
 
-/* The side panel: see-through white glass, a bright edge, sky light at the
-   foot. Readable first: more white than the search overlay. */
-.ava-glass-panel {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(246, 250, 253, 0.8) 100%);
-  -webkit-backdrop-filter: blur(40px) saturate(1.4);
-  backdrop-filter: blur(40px) saturate(1.4);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    0 0 0 1px rgba(207, 230, 248, 0.75),
-    0 30px 70px -30px rgba(5, 30, 54, 0.5),
-    0 18px 60px -40px rgba(26, 143, 212, 0.55);
-}
-
 .ava-glass-glow {
   position: absolute;
   inset: auto 0 0 0;
@@ -244,27 +100,66 @@
   background: radial-gradient(90% 100% at 50% 125%, rgba(124, 195, 242, 0.32), rgba(124, 195, 242, 0) 70%);
 }
 
-.ava-glass-panel .ava-composer {
-  border-radius: 20px;
-  border-color: rgba(12, 82, 144, 0.14);
-  background: rgba(255, 255, 255, 0.78);
+/* The side panel in her blue room: the same blue as her page, a bright
+   glass edge, a soft glow at the foot. */
+.ava-dock-room {
   box-shadow:
-    inset 0 1px 0 #ffffff,
-    0 10px 30px -18px rgba(12, 82, 144, 0.45);
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(140, 205, 245, 0.28),
+    0 30px 70px -28px rgba(2, 14, 30, 0.7),
+    0 18px 60px -36px rgba(26, 143, 212, 0.7);
 }
 
-.ava-glass-panel .ava-composer:focus-within {
-  border-color: rgba(26, 143, 212, 0.45);
+/* The bright light at the foot of her room, mostly under the box, like dawn on the horizon. */
+.ava-dark .ava-glass-glow {
+  height: 34%;
+  background:
+    radial-gradient(75% 55% at 50% 112%, rgba(190, 228, 255, 0.75), rgba(124, 195, 242, 0.35) 45%, rgba(124, 195, 242, 0) 75%),
+    radial-gradient(110% 90% at 50% 120%, rgba(79, 179, 238, 0.45), rgba(79, 179, 238, 0) 70%);
+}
+
+/* The panel's header buttons: words as well as icons, clearly visible on the blue. */
+.ava-dock-room .ava-action {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.78125rem;
+  color: var(--ava-ink);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ava-dock-room .ava-action:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Starter rows in the panel, light or dark. */
+.ava-starter-row {
+  border-color: rgba(12, 82, 144, 0.12);
+  background: rgba(255, 255, 255, 0.62);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.ava-starter-row:hover {
+  border-color: rgba(26, 143, 212, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.ava-dark .ava-starter-row {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.ava-dark .ava-starter-row:hover {
+  border-color: rgba(140, 205, 245, 0.45);
+  background: rgba(255, 255, 255, 0.13);
 }
 
 /* Glass rows in the panel (past chats, recent chats). */
-.ava-ui:not(.ava-stage) .ava-recent-row {
+.ava-ui:not(.ava-dark) .ava-recent-row {
   border-color: rgba(12, 82, 144, 0.12);
   background: rgba(255, 255, 255, 0.62);
   color: var(--ava-ink);
 }
 
-.ava-ui:not(.ava-stage) .ava-recent-row:hover {
+.ava-ui:not(.ava-dark) .ava-recent-row:hover {
   border-color: rgba(26, 143, 212, 0.35);
   background: rgba(255, 255, 255, 0.92);
 }
@@ -279,7 +174,7 @@
   animation: avaShimmer 2.2s linear infinite;
 }
 
-.ava-stage .ava-shimmer {
+.ava-dark .ava-shimmer {
   background-image: linear-gradient(90deg, currentColor 0%, currentColor 38%, #7cc3f2 50%, currentColor 62%, currentColor 100%);
 }
 
@@ -313,7 +208,8 @@
 /* The stage: Ava full screen. A brand-blue room, her face, glass.     */
 /* ------------------------------------------------------------------ */
 
-.ava-stage {
+/* Ava's dark room: her page, her full screen and her side panel. */
+.ava-dark {
   --ava-ink: rgba(240, 247, 255, 0.97);
   --ava-body: rgba(226, 237, 250, 0.92);
   --ava-muted: rgba(196, 214, 236, 0.78);
@@ -336,25 +232,29 @@
   --ava-ok: #6ee7b7;
   --ava-danger: #fda4af;
   --ava-danger-tint: rgba(225, 80, 95, 0.14);
+  color: var(--ava-body);
+  /* The sidebar's gradient, made radial: sky at the bottom middle, brand blue, then navy at the edges. */
+  background: radial-gradient(140% 58% at 50% 112%, #4fb3ee 0%, #1a8fd4 20%, #0c5290 46%, #062a4d 72%, #051e36 100%);
+}
+
+.ava-stage {
   position: fixed;
   inset: 0;
   z-index: 95;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  color: var(--ava-body);
-  background: radial-gradient(85% 95% at 75% 40%, #3f7fbd 0%, #1f5f9c 42%, #0f4478 100%);
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   animation: avaStageIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.ava-stage ::selection {
+.ava-dark ::selection {
   background: rgba(26, 143, 212, 0.45);
   color: #fff;
 }
 
-.ava-stage .ava-scroll {
+.ava-dark .ava-scroll {
   scrollbar-color: rgba(200, 225, 250, 0.22) transparent;
 }
 
@@ -376,24 +276,28 @@
   pointer-events: none;
 }
 
-/* Her face fades in from the right while the conversation is empty, and
-   out once it starts. The photo's own mist does most of the fading. */
+/* The face style of her page (Zander is choosing, 24 Oct): her portrait fades in
+   from the right while the chat is empty, in the same radial room as the simple style. */
 .ava-room-face {
   position: absolute;
   inset: 0 0 0 auto;
   width: 86%;
   background-size: cover;
   background-position: 62% 30%;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 42%), linear-gradient(0deg, transparent 0%, #000 22%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(90deg, transparent 0%, #000 42%), linear-gradient(0deg, transparent 0%, #000 22%);
-  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0%, transparent 12%, #000 52%), linear-gradient(0deg, transparent 0%, #000 22%),
+    linear-gradient(180deg, transparent 0%, #000 20%);
+  -webkit-mask-composite: source-in, source-in;
+  mask-image:
+    linear-gradient(90deg, transparent 0%, transparent 12%, #000 52%), linear-gradient(0deg, transparent 0%, #000 22%),
+    linear-gradient(180deg, transparent 0%, #000 20%);
+  mask-composite: intersect, intersect;
   opacity: 0;
   transition: opacity 0.9s ease;
   animation: avaFaceBreathe 9s ease-in-out infinite;
 }
 
-.ava-stage:has(.ava-hero-e) .ava-room-face {
+.ava-stage:has(.ava-hero-face) .ava-room-face {
   opacity: 1;
 }
 
@@ -401,12 +305,59 @@
 .ava-room-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(6, 30, 60, 0.5) 0%, rgba(6, 30, 60, 0.28) 38%, rgba(6, 30, 60, 0) 62%);
+  /* The words side, plus a soft navy shade over the bright haze in her photo, left of her chin. */
+  background:
+    radial-gradient(30% 42% at 66% 72%, rgba(6, 30, 60, 0.5), rgba(6, 30, 60, 0) 72%),
+    linear-gradient(90deg, rgba(6, 30, 60, 0.5) 0%, rgba(6, 30, 60, 0.28) 38%, rgba(6, 30, 60, 0) 62%);
+  opacity: 0;
   transition: opacity 0.9s ease;
 }
 
-.ava-stage:not(:has(.ava-hero-e)) .ava-room-scrim {
-  opacity: 0.55;
+.ava-stage:has(.ava-hero-face) .ava-room-scrim {
+  opacity: 1;
+}
+
+@container (max-width: 1100px) {
+  .ava-room-face {
+    width: 54%;
+    background-position: 68% 28%;
+  }
+
+  .ava-hero-face .ava-hero-title {
+    font-size: 2.75rem;
+  }
+}
+
+@container (max-width: 860px) {
+  .ava-room-face {
+    width: 42%;
+    background-position: 72% 26%;
+  }
+
+  .ava-hero-face .ava-hero-actions {
+    max-width: 28rem;
+  }
+}
+
+@media (max-width: 899px) {
+  .ava-room-face {
+    width: 100%;
+    background-position: 70% 20%;
+  }
+
+  .ava-stage:has(.ava-hero-face) .ava-room-face {
+    opacity: 0.3;
+  }
+}
+
+@keyframes avaFaceBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.012);
+  }
 }
 
 /* Light rising from the bottom edge. */
@@ -414,7 +365,7 @@
   position: absolute;
   inset: auto 0 0 0;
   height: 38%;
-  background: radial-gradient(70% 100% at 40% 120%, rgba(26, 143, 212, 0.35), rgba(26, 143, 212, 0) 70%);
+  background: radial-gradient(70% 100% at 50% 120%, rgba(124, 195, 242, 0.3), rgba(124, 195, 242, 0) 70%);
 }
 
 .ava-room-dust {
@@ -428,36 +379,14 @@
   animation: avaDust 40s linear infinite alternate;
 }
 
-@keyframes avaFaceBreathe {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.012);
-  }
-}
-
 @keyframes avaDust {
   to {
     transform: translate3d(-2%, -3%, 0);
   }
 }
 
-/* On a narrow screen the face sits behind the words, so it stays faint. */
-@media (max-width: 899px) {
-  .ava-room-face {
-    width: 100%;
-    background-position: 70% 20%;
-  }
-
-  .ava-stage:has(.ava-hero-e) .ava-room-face {
-    opacity: 0.3;
-  }
-}
-
 /* The start screen: greeting, glass box and buttons on the left. */
-.ava-hero-e .ava-pill {
+.ava-hero-face .ava-pill {
   border-radius: 14px;
   padding: 0.75rem 1.125rem;
   font-size: 0.875rem;
@@ -508,34 +437,18 @@
   animation: none;
 }
 
-/* The chat area on her page: her face sizes to it, not to the window. */
+/* The chat area on her page: the start screen sizes to it, not to the window. */
 .ava-room-column {
   position: relative;
   container-type: inline-size;
 }
 
-@container (max-width: 1100px) {
-  .ava-room-face {
-    width: 54%;
-    background-position: 68% 28%;
-  }
-
+@container (max-width: 760px) {
   .ava-hero-e .ava-hero-title {
-    font-size: 2.75rem;
+    font-size: 2.5rem;
   }
 }
 
-/* Narrower still (a small laptop with the panel open): she steps back so the box stays clear. */
-@container (max-width: 860px) {
-  .ava-room-face {
-    width: 42%;
-    background-position: 72% 26%;
-  }
-
-  .ava-hero-e .ava-hero-actions {
-    max-width: 28rem;
-  }
-}
 
 /* Her chats, in a panel on the left of her page, like every other AI app. */
 .ava-chats-panel {
@@ -622,6 +535,34 @@
   }
 }
 
+/* The side panel's "See what I can help with": the list rises in. */
+.ava-arrive-soft {
+  animation: avaRise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Temporary switch on her page while Zander picks a new-chat screen. */
+.ava-style-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ava-style-switch button {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ava-muted);
+}
+
+.ava-style-switch button[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--ava-ink);
+}
+
 /* "Pick up where you left off" on her start screen. */
 .ava-recent-row {
   display: flex;
@@ -662,14 +603,7 @@
 }
 
 .ava-hero-title {
-  color: var(--ava-faint);
   animation: avaRise 0.6s 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.ava-hero-title em {
-  font-style: normal;
-  color: var(--ava-ink);
-  text-shadow: 0 0 24px rgba(120, 200, 245, 0.32);
 }
 
 .ava-hero-orb {
@@ -692,7 +626,7 @@
 }
 
 /* Glass on the stage: pills, composer, cards. */
-.ava-stage .ava-pill {
+.ava-dark .ava-pill {
   border-color: rgba(255, 255, 255, 0.13);
   background: rgba(255, 255, 255, 0.06);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
@@ -700,45 +634,73 @@
   color: var(--ava-muted);
 }
 
-.ava-stage .ava-pill:hover {
+.ava-dark .ava-pill:hover {
   border-color: rgba(140, 205, 245, 0.5);
   background: rgba(26, 143, 212, 0.16);
   color: var(--ava-ink);
   box-shadow: 0 10px 26px -12px rgba(26, 143, 212, 0.75);
 }
 
-.ava-stage .ava-pill.is-primary {
+.ava-dark .ava-pill.is-primary {
   border-color: rgba(140, 205, 245, 0.45);
   background: rgba(26, 143, 212, 0.24);
   color: var(--ava-ink);
 }
 
-.ava-stage .ava-composer {
+.ava-dark .ava-composer {
   border-radius: 26px;
-  border-color: rgba(255, 255, 255, 0.13);
-  background: linear-gradient(180deg, rgba(120, 190, 255, 0.12) 0%, rgba(40, 110, 200, 0.08) 100%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
+  border-color: rgba(255, 255, 255, 0.24);
+  /* Neutral frosted glass: a light white tint, no colour boost, so it reads as glass over the light, not blue. */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.08) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(100%);
+  backdrop-filter: blur(22px) saturate(100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 18px 48px -18px rgba(1, 8, 22, 0.9);
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 14px 40px -20px rgba(1, 8, 22, 0.65);
 }
 
-.ava-stage .ava-composer:focus-within {
-  border-color: rgba(140, 205, 245, 0.45);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 18px 48px -18px rgba(1, 8, 22, 0.9),
-    0 10px 40px -18px rgba(26, 143, 212, 0.8);
+/* The pill: fully round while it is one line. */
+.ava-dark .ava-composer.ava-pill-box {
+  border-radius: 28px;
 }
 
-.ava-stage .ava-send:not(:disabled) {
+/* Clear white words in the glass box. The pill is the only frame: the text field
+   draws no border, fill or outline of its own (pages like the Blueprint style textareas). */
+.ava-dark .ava-composer textarea {
+  font-size: 1.0625rem;
+  color: #ffffff;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.ava-dark .ava-composer textarea::placeholder {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+/* Clicked into: the edge brightens and a soft light rings the box, so you can see you are in it. */
+.ava-dark .ava-composer:focus-within {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.11) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 0 3px rgba(150, 210, 250, 0.22),
+    0 14px 40px -20px rgba(1, 8, 22, 0.65);
+}
+
+.ava-dark textarea {
+  caret-color: #ffffff;
+}
+
+.ava-dark .ava-send:not(:disabled) {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     0 8px 20px -6px rgba(26, 143, 212, 0.8);
 }
 
-.ava-stage .ava-user-bubble {
+.ava-dark .ava-user-bubble {
   border: 1px solid rgba(140, 205, 245, 0.26);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
@@ -747,32 +709,32 @@
     0 10px 28px -14px rgba(12, 82, 144, 0.9);
 }
 
-.ava-stage .ava-reply {
+.ava-dark .ava-reply {
   padding-left: 0.25rem;
   padding-right: 0.25rem;
 }
 
-.ava-stage .ava-card {
+.ava-dark .ava-card {
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   backdrop-filter: blur(20px) saturate(150%);
 }
 
 /* Markdown keeps its own slate colours on white; on the stage it follows Ava's ink. */
-.ava-stage .ava-md :is(strong, h1, h2, h3, p, li, blockquote) {
+.ava-dark .ava-md :is(strong, h1, h2, h3, p, li, blockquote) {
   color: inherit;
 }
 
-.ava-stage .ava-md strong {
+.ava-dark .ava-md strong {
   color: var(--ava-ink);
 }
 
-.ava-stage .ava-md :is(code, hr) {
+.ava-dark .ava-md :is(code, hr) {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.12);
   color: var(--ava-ink);
 }
 
-.ava-stage .ava-md a {
+.ava-dark .ava-md a {
   color: #8fd0f7;
   text-decoration-color: rgba(143, 208, 247, 0.5);
 }
@@ -788,9 +750,7 @@
   }
 
   .ava-room-face,
-  .ava-room-dust,
-  .ava-orb-glow,
-  .ava-orb-ribbon {
+  .ava-room-dust {
     animation: none;
   }
 }

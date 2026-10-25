@@ -120,12 +120,12 @@ export function CampaignLimitSlider({
           className="absolute inset-0 z-20 h-full w-full cursor-pointer appearance-none opacity-0"
         />
       </div>
-      <div className="flex justify-between text-[11px] tabular-nums text-slate-400">
+      <div className="flex justify-between text-caption tabular-nums text-slate-400">
         <span>{min}</span>
         <span>{max}</span>
       </div>
       {warn && warning ? (
-        <p className="text-[12px] leading-snug text-rose-700">{warning}</p>
+        <p className="text-caption leading-snug text-rose-700">{warning}</p>
       ) : null}
     </div>
   );

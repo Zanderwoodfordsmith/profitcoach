@@ -27,7 +27,7 @@ export function CsvColumnMatch({
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200">
       <table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <thead className="bg-slate-50 text-kicker font-semibold uppercase text-slate-500">
           <tr>
             <th className="px-3 py-2">Their column</th>
             <th className="px-3 py-2">Sample</th>

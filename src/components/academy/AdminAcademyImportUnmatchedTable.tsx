@@ -13,6 +13,8 @@ import {
   type LessonImportStatusRow,
 } from "@/lib/academy/lessonImportStatusClient";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type UnmatchedRow = NonNullable<AcademyImportSnapshotReport["unmatched"]>[number];
 
@@ -412,7 +414,7 @@ export function AdminAcademyImportUnmatchedTable({
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
+      <div className={cardClass("plain", "overflow-x-auto")}>
         <table className="w-full table-fixed divide-y divide-slate-200 text-sm">
           <colgroup>
             <col className="w-[4.5rem]" />
@@ -467,7 +469,7 @@ export function AdminAcademyImportUnmatchedTable({
                     <tr key={row.relativePath} className="align-top hover:bg-slate-50/50">
                       <td className="whitespace-nowrap px-3 py-2.5">
                         <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                             row.bestScore >= 0.72
                               ? "bg-emerald-50 text-emerald-800"
                               : row.bestScore >= 0.5
@@ -585,12 +587,12 @@ export function AdminAcademyImportUnmatchedTable({
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
                         {linked ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
                             <Check className="h-3 w-3" aria-hidden />
                             Linked
                           </span>
                         ) : (
-                          <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                          <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
                             Pending
                           </span>
                         )}
@@ -602,7 +604,7 @@ export function AdminAcademyImportUnmatchedTable({
                               type="button"
                               onClick={() => void clearLink(row.relativePath)}
                               disabled={isBusy}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                              className={buttonClass("second", "small")}
                             >
                               Clear
                             </button>
@@ -611,7 +613,7 @@ export function AdminAcademyImportUnmatchedTable({
                               type="button"
                               onClick={() => void saveLink(row)}
                               disabled={isBusy || !canLink}
-                              className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+                              className={buttonClass("main", "small")}
                             >
                               <Check className="h-3 w-3" aria-hidden />
                               {isBusy ? "…" : "Link"}
@@ -621,7 +623,7 @@ export function AdminAcademyImportUnmatchedTable({
                             type="button"
                             onClick={() => void deleteFile(row)}
                             disabled={isBusy}
-                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                            className={buttonClass("delete", "small")}
                             title="Delete this Drive file"
                           >
                             <Trash2 className="h-3 w-3" aria-hidden />

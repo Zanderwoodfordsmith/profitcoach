@@ -49,6 +49,7 @@ import {
   MEMBERSHIP_HERO_VIDEO_PATH,
 } from "@/lib/marketingAssets";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { cardClass } from "@/components/ui/Card";
 
 type PlanInfo = {
   key: MembershipPlanKey;
@@ -396,7 +397,7 @@ function FeatureSectionLabel({ title, first }: { title: string; first?: boolean 
   return (
     <div className={`col-span-full flex items-center gap-4 ${first ? "mb-2" : "mt-10 mb-2"}`}>
       <p
-        className="shrink-0 text-[12px] font-semibold uppercase text-slate-500"
+        className="shrink-0 text-caption font-semibold uppercase text-slate-500"
         style={{ letterSpacing: "0.12em" }}
       >
         {title}
@@ -417,7 +418,7 @@ function FeatureBlockCard({
 }) {
   const BlockIcon = FEATURE_BLOCK_ICONS[eyebrow] ?? Check;
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+    <div className={cardClass("plain", "p-7 sm:p-8")}>
       <div className="flex items-center gap-3">
         <span
           className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white"
@@ -426,19 +427,19 @@ function FeatureBlockCard({
           <BlockIcon className="h-[18px] w-[18px]" strokeWidth={2.25} />
         </span>
         <p
-          className="text-[11px] font-bold uppercase"
+          className="text-caption font-semibold uppercase"
           style={{ letterSpacing: "0.16em", color: CHATHAMS }}
         >
           {eyebrow}
         </p>
       </div>
       <h3
-        className="mt-4 text-xl font-bold text-slate-900"
+        className="mt-4 text-subhead font-semibold text-slate-900"
         style={{ letterSpacing: "-0.01em" }}
       >
         {headline}
       </h3>
-      <p className="mt-2.5 text-[14.5px] leading-relaxed text-slate-600">{description}</p>
+      <p className="mt-2.5 text-ui leading-relaxed text-slate-600">{description}</p>
     </div>
   );
 }
@@ -454,7 +455,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         aria-expanded={open}
       >
         <span
-          className={`text-[15px] font-medium leading-snug transition-colors sm:text-base ${
+          className={`text-ui font-medium leading-snug transition-colors sm:text-base ${
             open ? "text-slate-900" : "text-slate-800 group-hover:text-slate-900"
           }`}
         >
@@ -470,7 +471,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       {open && (
         <div className="space-y-3 pb-5">
           {a.split("\n\n").map((para) => (
-            <p key={para.slice(0, 24)} className="text-[14px] leading-relaxed text-slate-600 sm:text-[15px]">
+            <p key={para.slice(0, 24)} className="text-ui leading-relaxed text-slate-600 sm:text-ui">
               {para}
             </p>
           ))}
@@ -611,15 +612,15 @@ function FeatureInfoPopover({
             <BlockIcon className="h-5 w-5" strokeWidth={2.25} />
           </span>
           <h3
-            className="mt-3 text-[17px] font-bold text-slate-900"
+            className="mt-3 text-read font-semibold text-slate-900"
             style={{ letterSpacing: "-0.01em" }}
           >
             {block.eyebrow}
           </h3>
-          <p className="mt-1.5 text-[13.5px] font-semibold leading-snug" style={{ color: CHATHAMS }}>
+          <p className="mt-1.5 text-ui font-semibold leading-snug" style={{ color: CHATHAMS }}>
             {block.headline}
           </p>
-          <p className="mt-3 text-[13px] leading-relaxed text-slate-600">{block.description}</p>
+          <p className="mt-3 text-ui leading-relaxed text-slate-600">{block.description}</p>
         </div>
       </div>
     </>
@@ -815,7 +816,7 @@ export function MembershipPageClient() {
               <button
                 type="button"
                 onClick={scrollToPlans}
-                className="group inline-flex items-center gap-2.5 rounded-full px-8 py-4 text-[15px] font-semibold text-white transition hover:brightness-110"
+                className="group inline-flex items-center gap-2.5 rounded-full px-8 py-4 text-ui font-semibold text-white transition hover:brightness-110"
                 style={{ background: GO_GRADIENT, boxShadow: GO_SHADOW }}
               >
                 {copy.hero.cta}
@@ -851,14 +852,14 @@ export function MembershipPageClient() {
                   <Check className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-slate-900 sm:text-[15px]">
+                  <p className="text-ui font-semibold text-slate-900 sm:text-ui">
                     You&apos;re on {data!.tierLabel}
                     <span className="ml-1.5 font-normal text-slate-500">
                       · {statusLabel(data!.subscription.status, data!.subscription.cancelAtPeriodEnd)}
                     </span>
                   </p>
                   {data!.subscription.currentPeriodEnd && (
-                    <p className="text-[13px] text-slate-500 sm:text-sm">
+                    <p className="text-ui text-slate-500 sm:text-sm">
                       {data!.subscription.cancelAtPeriodEnd ? "Access until" : "Renews"}{" "}
                       {formatRenewalDate(data!.subscription.currentPeriodEnd)}
                     </p>
@@ -874,10 +875,10 @@ export function MembershipPageClient() {
                   <Check className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-slate-900 sm:text-[15px]">
+                  <p className="text-ui font-semibold text-slate-900 sm:text-ui">
                     You&apos;re on {data!.tierLabel}. Billed under an existing arrangement
                   </p>
-                  <p className="mt-0.5 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
+                  <p className="mt-0.5 text-ui leading-relaxed text-slate-500 sm:text-sm">
                     Nothing to do. To move to self‑serve billing, choose a level below.
                   </p>
                 </div>
@@ -899,7 +900,7 @@ export function MembershipPageClient() {
         )}
         {/* Situation banners for coaches without a subscription */}
         {!loading && data && inFirstSixMonths && (
-          <div className="mt-8 flex flex-wrap items-center gap-4 rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+          <div className={cardClass("plain", "mt-8 flex flex-wrap items-center gap-4 px-6 py-5")}>
             <span
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
               style={{ background: BRAND_GRADIENT }}
@@ -907,7 +908,7 @@ export function MembershipPageClient() {
               <Check className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-slate-900">
+              <p className="text-ui font-semibold text-slate-900">
                 You&apos;re still in your first 6 months. Nothing to do yet.
               </p>
               <p className="text-sm text-slate-500">
@@ -918,14 +919,14 @@ export function MembershipPageClient() {
           </div>
         )}
         {!loading && data && isComplimentary && (
-          <div className="mt-8 flex flex-wrap items-center gap-4 rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+          <div className={cardClass("plain", "mt-8 flex flex-wrap items-center gap-4 px-6 py-5")}>
             <span
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
               style={{ background: BRAND_GRADIENT }}
             >
               <Check className="h-5 w-5" />
             </span>
-            <p className="text-[15px] font-semibold text-slate-900">
+            <p className="text-ui font-semibold text-slate-900">
               Your membership is complimentary. No payment needed.
             </p>
           </div>
@@ -933,7 +934,7 @@ export function MembershipPageClient() {
         {!loading && data && !hasSubscription && needsChoice && (
           <div className="mt-8 flex flex-wrap items-center gap-4 rounded-3xl border border-amber-200 bg-amber-50 px-6 py-5 shadow-sm">
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-amber-950">
+              <p className="text-ui font-semibold text-amber-950">
                 You don&apos;t have an active membership yet.
               </p>
               <p className="text-sm text-amber-900/80">
@@ -968,7 +969,7 @@ export function MembershipPageClient() {
               <div />
               <div className="flex justify-center">
                 <span
-                  className="rounded-full px-4 py-1.5 text-[10px] font-bold uppercase text-white shadow-md"
+                  className="rounded-full px-4 py-1.5 text-caption font-bold uppercase text-white shadow-md"
                   style={{ background: GO_GRADIENT, letterSpacing: "0.14em" }}
                 >
                   Most popular
@@ -977,7 +978,7 @@ export function MembershipPageClient() {
               <div />
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className={cardClass("plain", "overflow-hidden")}>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[700px] text-sm" style={{ tableLayout: "fixed" }}>
                   <thead>
@@ -996,7 +997,7 @@ export function MembershipPageClient() {
                             }}
                           >
                             <span
-                              className="text-[1.375rem] font-bold text-slate-900"
+                              className="text-title font-semibold text-slate-900"
                               style={{ letterSpacing: "-0.01em" }}
                             >
                               {copy.tiers[key].name}
@@ -1013,7 +1014,7 @@ export function MembershipPageClient() {
                         return (
                           <th
                             key={key}
-                            className="px-5 pb-2 pt-2 text-center text-[14.5px] font-semibold leading-snug"
+                            className="px-5 pb-2 pt-2 text-center text-ui font-semibold leading-snug"
                             style={{
                               color: CHATHAMS,
                               ...(isPremiumCol ? { backgroundColor: "#eaf2fb" } : {}),
@@ -1032,7 +1033,7 @@ export function MembershipPageClient() {
                         return (
                           <th
                             key={key}
-                            className="px-5 pb-2 text-center text-[14px] font-normal leading-snug text-slate-600"
+                            className="px-5 pb-2 text-center text-ui font-normal leading-snug text-slate-600"
                             style={isPremiumCol ? { backgroundColor: "#eaf2fb" } : undefined}
                           >
                             {copy.tiers[key].chooseIf}
@@ -1043,7 +1044,7 @@ export function MembershipPageClient() {
                     {/* Feature column label */}
                     <tr className="border-b border-slate-200">
                       <th
-                        className="px-6 py-2.5 text-left text-[11px] font-bold uppercase text-slate-400"
+                        className="px-6 py-2.5 text-left text-caption font-semibold uppercase text-slate-400"
                         style={{ letterSpacing: "0.12em" }}
                       >
                         Feature
@@ -1073,9 +1074,9 @@ export function MembershipPageClient() {
                           return (
                             <td
                               key={ci}
-                              className={`px-6 py-4 text-[14.5px] ${
+                              className={`px-6 py-4 text-ui ${
                                 ci === 0
-                                  ? "min-w-[240px] whitespace-nowrap text-left font-semibold text-slate-800"
+                                  ? "min-w-[240px] whitespace-nowrap text-left font-medium text-slate-800"
                                   : "text-center text-slate-600"
                               }`}
                               style={isPremiumCol ? { backgroundColor: "#eaf2fb" } : undefined}
@@ -1144,15 +1145,15 @@ export function MembershipPageClient() {
                   <tr className="border-t border-slate-200">
                     <td className="px-6 py-6 align-middle">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[13px] font-medium text-slate-600">Pay yearly</span>
+                        <span className="text-ui font-medium text-slate-600">Pay yearly</span>
                         <span
-                          className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                          className="rounded-full px-2.5 py-0.5 text-caption font-semibold"
                           style={{ backgroundColor: "rgba(16,185,129,0.12)", color: GO_DEEP }}
                         >
                           Save 2 months
                         </span>
                       </div>
-                      <p className="mt-1.5 flex flex-col gap-0.5 text-[12px] leading-snug text-slate-400">
+                      <p className="mt-1.5 flex flex-col gap-0.5 text-caption leading-snug text-slate-400">
                         {(["core", "premium"] as const).map((key) => (
                           <a
                             key={key}
@@ -1182,7 +1183,7 @@ export function MembershipPageClient() {
                             border: "1px solid #e2e8f0",
                             color: CHATHAMS,
                           };
-                      const priceClass = `text-[12px] font-medium leading-tight ${
+                      const priceClass = `text-caption font-medium leading-tight ${
                         isPremiumCol ? "text-white/75" : "text-slate-500"
                       }`;
 
@@ -1199,7 +1200,7 @@ export function MembershipPageClient() {
                             className={ctaClass}
                             style={ctaStyle}
                           >
-                            <span className="text-[13.5px] font-semibold leading-tight">
+                            <span className="text-ui font-semibold leading-tight">
                               Join {tierCopy.name}
                             </span>
                             <span
@@ -1263,7 +1264,7 @@ export function MembershipPageClient() {
             <button
               type="button"
               onClick={scrollToPlans}
-              className="group inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[15px] font-semibold text-white transition hover:brightness-110"
+              className="group inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-ui font-semibold text-white transition hover:brightness-110"
               style={{ background: GO_GRADIENT, boxShadow: GO_SHADOW }}
             >
               {copy.hero.cta}
@@ -1312,14 +1313,14 @@ export function MembershipPageClient() {
                 {copy.finalCta.headlineLead}{" "}
                 <strong className="font-bold">{copy.finalCta.headlineBold}</strong>
               </h2>
-              <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-white/75">
+              <p className="mt-4 max-w-sm text-read leading-relaxed text-white/75">
                 {copy.finalCta.body}
               </p>
               <div className="mt-8">
                 <button
                   type="button"
                   onClick={scrollToPlans}
-                  className="group inline-flex items-center gap-2.5 rounded-full px-7 py-3.5 text-[15px] font-semibold text-white transition hover:brightness-110"
+                  className="group inline-flex items-center gap-2.5 rounded-full px-7 py-3.5 text-ui font-semibold text-white transition hover:brightness-110"
                   style={{ background: GO_GRADIENT, boxShadow: GO_SHADOW }}
                 >
                   {copy.finalCta.button}

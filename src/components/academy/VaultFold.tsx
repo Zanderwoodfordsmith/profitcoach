@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { supabaseClient } from "@/lib/supabaseClient";
 import "./vaultFold.css";
+import { buttonClass } from "@/components/ui/Button";
 
 const STORAGE_KEY = "pc-vault-open";
 
@@ -177,7 +178,7 @@ export function VaultFold({
               onClick={toggle}
               aria-expanded={open}
               aria-controls="vault-courses"
-              className="vault-fold-card__button mt-4 inline-flex self-start items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[#0c5290] shadow-sm transition hover:bg-sky-50"
+              className={buttonClass("second", "normal", "vault-fold-card__button mt-4 self-start")}
             >
               {toggleLabel}
             </button>
@@ -186,7 +187,7 @@ export function VaultFold({
       ) : (
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-slate-200/80 pt-6">
           <div className="min-w-0">
-            <h2 id="vault-heading" className="text-xl font-semibold tracking-tight text-slate-900">
+            <h2 id="vault-heading" className="text-subhead font-semibold tracking-tight text-slate-900">
               The Vault
             </h2>
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">{BLURB}</p>
@@ -196,7 +197,7 @@ export function VaultFold({
             onClick={toggle}
             aria-expanded={open}
             aria-controls="vault-courses"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0c5290] shadow-sm ring-1 ring-slate-200 transition hover:bg-sky-50"
+            className={buttonClass("second", "normal", "shrink-0")}
           >
             {toggleLabel}
           </button>

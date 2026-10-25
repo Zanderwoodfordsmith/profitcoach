@@ -319,7 +319,7 @@ export function ProspectHeaderTags({
             if (disabled) return;
             setOpen(true);
           }}
-          className="text-[12px] font-medium text-slate-400 transition hover:text-slate-600 disabled:opacity-50"
+          className="text-caption font-medium text-slate-400 transition hover:text-slate-600 disabled:opacity-50"
         >
           Add tag
         </button>

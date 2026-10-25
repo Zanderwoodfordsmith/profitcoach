@@ -89,6 +89,8 @@ import {
 import { useCampaignDemoPreview } from "@/hooks/useCampaignDemoPreview";
 import { CampaignDemoPreviewToggle } from "@/components/campaigns/CampaignDemoPreviewToggle";
 import { CampaignCreateModal } from "@/components/campaigns/CampaignCreateModal";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Account = {
   id: string;
@@ -491,11 +493,11 @@ function CampaignTableRow({
       </td>
       <td className="min-w-0 px-3 py-3.5 align-middle" style={cellStyle}>
         <div className="flex min-w-0 max-w-full items-center gap-2 text-left">
-          <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 group-hover:text-[#0c5290]">
+          <span className="truncate text-ui font-semibold tracking-tight text-slate-900 group-hover:text-[#0c5290]">
             {c.name}
           </span>
           {statusLabel ? (
-            <span className="shrink-0 text-[11px] font-medium text-slate-400">
+            <span className="shrink-0 text-caption font-medium text-slate-400">
               {statusLabel}
             </span>
           ) : null}
@@ -1092,7 +1094,7 @@ export function LinkedInCampaignsOverview() {
                   <button
                     type="button"
                     onClick={() => setShowSending(true)}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-transparent px-3 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                    className={buttonClass("second", "small")}
                   >
                     <SlidersHorizontal
                       className="h-3.5 w-3.5 text-slate-500"
@@ -1109,7 +1111,7 @@ export function LinkedInCampaignsOverview() {
                     setError(null);
                     setShowCreate(true);
                   }}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 text-sm font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                  className={buttonClass("main", "small")}
                 >
                   <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                   Create campaign
@@ -1135,7 +1137,7 @@ export function LinkedInCampaignsOverview() {
                 Loading campaigns…
               </div>
             ) : (
-              <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40 xl:col-start-1 xl:row-start-2 xl:h-full xl:min-h-0">
+              <div className={cardClass("plain", "flex flex-col overflow-hidden xl:col-start-1 xl:row-start-2 xl:h-full xl:min-h-0")}>
                 {sorted.length === 0 && archivedCampaigns.length === 0 ? (
                   <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
                     <p className="text-sm font-medium text-slate-800">
@@ -1150,7 +1152,7 @@ export function LinkedInCampaignsOverview() {
                         setError(null);
                         setShowCreate(true);
                       }}
-                      className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#0c5290] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0a457a]"
+                      className={buttonClass("main", "normal", "mt-4")}
                     >
                       <Plus
                         className="h-4 w-4"
@@ -1170,7 +1172,7 @@ export function LinkedInCampaignsOverview() {
                       >
                       <table className="w-full border-collapse text-left">
                         <thead>
-                          <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+                          <tr className="border-b border-slate-100 text-kicker font-semibold uppercase text-slate-400">
                             {canReorder ? (
                               <th scope="col" className="w-5 py-3 pl-1.5 pr-0 font-semibold">
                                 <span className="sr-only">Reorder</span>
@@ -1383,7 +1385,7 @@ export function LinkedInCampaignsOverview() {
               </div>
             )}
             <aside className="flex w-full flex-col gap-3 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:w-auto">
-              <div className="flex h-[min(34rem,calc(100dvh-12rem))] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+              <div className={cardClass("plain", "flex h-[min(34rem,calc(100dvh-12rem))] shrink-0 flex-col overflow-hidden")}>
                 <CampaignActivityPane preview={preview} />
               </div>
               {/* Locked, the cards show sample numbers under the blur. */}
@@ -1461,7 +1463,7 @@ export function LinkedInCampaignsOverview() {
               <button
                 type="button"
                 onClick={() => setConfirmRequest(null)}
-                className="rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                className={buttonClass("quiet", "small")}
               >
                 Cancel
               </button>
@@ -1473,11 +1475,10 @@ export function LinkedInCampaignsOverview() {
                   if (kind === "delete") void deleteCampaign(campaign);
                   else void archiveCampaign(campaign);
                 }}
-                className={`rounded-lg px-3 py-2 text-xs font-semibold text-white ${
-                  confirmRequest.kind === "delete"
-                    ? "bg-rose-600 hover:bg-rose-700"
-                    : "bg-[#0c5290] hover:bg-[#0a457a]"
-                }`}
+                className={buttonClass(
+                  confirmRequest.kind === "delete" ? "delete" : "main",
+                  "small"
+                )}
               >
                 {confirmRequest.kind === "delete"
                   ? "Delete campaign"
@@ -1547,7 +1548,7 @@ export function LinkedInCampaignsOverview() {
               Loading lead magnets…
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+            <div className={cardClass("plain", "overflow-hidden")}>
               <div className="flex justify-end border-b border-slate-100 px-5 py-3">
                 <PublicSlugEditor
                   slug={coachSlug ?? ""}

@@ -11,6 +11,8 @@ import {
   reactionsFromMessageMetadata,
 } from "@/lib/messaging/messageReactions";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type MessageRow = {
   id: string;
@@ -171,13 +173,13 @@ export function ProspectActivityFeed({
   const primaryConversationId = conversations[0]?.id ?? null;
 
   return (
-    <div className="flex h-full min-h-[28rem] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain", "flex h-full min-h-[28rem] flex-col overflow-hidden")}>
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">
             Activity & conversations
           </h2>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-caption text-slate-500">
             Messages, assessments, bookings, and form activity
           </p>
         </div>
@@ -185,7 +187,7 @@ export function ProspectActivityFeed({
           <button
             type="button"
             onClick={() => void load()}
-            className="text-xs font-medium text-slate-500 hover:text-slate-800"
+            className={buttonClass("quiet", "small")}
             disabled={loading}
           >
             {loading ? "…" : "Refresh"}
@@ -196,7 +198,7 @@ export function ProspectActivityFeed({
                 ? `${conversationsHref}?c=${encodeURIComponent(primaryConversationId)}`
                 : conversationsHref
             }
-            className="rounded-md bg-sky-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-sky-700"
+            className={buttonClass("main", "small")}
           >
             Open inbox
           </Link>
@@ -216,7 +218,7 @@ export function ProspectActivityFeed({
           feedByDay.map((group) => (
             <div key={group.label} className="space-y-2.5">
               <div className="flex justify-center py-1">
-                <span className="rounded-full bg-white/90 px-3 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
+                <span className="rounded-full bg-white/90 px-3 py-0.5 text-caption font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
                   {group.label}
                 </span>
               </div>
@@ -225,7 +227,7 @@ export function ProspectActivityFeed({
                   const a = item.activity;
                   const row = (
                     <>
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200/80 text-[10px] font-semibold text-slate-600">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200/80 text-caption font-semibold text-slate-600">
                         {activityGlyph(a.type)}
                       </span>
                       <span className="min-w-0 flex-1">
@@ -236,7 +238,7 @@ export function ProspectActivityFeed({
                           <span className="text-slate-500"> · {a.detail}</span>
                         ) : null}
                       </span>
-                      <span className="shrink-0 text-[10px] tabular-nums text-slate-400">
+                      <span className="shrink-0 text-caption tabular-nums text-slate-400">
                         {formatShortTime(a.at)}
                       </span>
                     </>
@@ -290,7 +292,7 @@ export function ProspectActivityFeed({
                   const label = outbound ? "You reacted" : "Reacted";
                   return (
                     <div key={m.id} className="flex justify-center">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-100/90 px-3 py-1 text-[11px] text-slate-500">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-100/90 px-3 py-1 text-caption text-slate-500">
                         <span className="text-sm leading-none">{emoji}</span>
                         <span className="font-medium text-slate-600">
                           {label}
@@ -307,7 +309,7 @@ export function ProspectActivityFeed({
                   return (
                     <div key={m.id} className="flex justify-center">
                       <div className="w-full max-w-[min(88%,40rem)] rounded-xl border border-dashed border-amber-200 bg-amber-50/80 px-3.5 py-2.5 text-sm text-amber-950">
-                        <div className="mb-1 text-[11px] font-medium text-amber-700">
+                        <div className="mb-1 text-caption font-medium text-amber-700">
                           Internal note · {formatShortTime(m.created_at)}
                         </div>
                         <div className="whitespace-pre-wrap">{body}</div>
@@ -341,7 +343,7 @@ export function ProspectActivityFeed({
                             : "rounded-bl-md bg-white ring-slate-200/80"
                       }`}
                     >
-                      <div className="mb-1 flex items-center gap-2 text-[11px] text-slate-500">
+                      <div className="mb-1 flex items-center gap-2 text-caption text-slate-500">
                         <span className="uppercase tracking-wide">
                           {m.channel}
                         </span>
@@ -351,7 +353,7 @@ export function ProspectActivityFeed({
                         </span>
                       </div>
                       {subject ? (
-                        <div className="mb-1 truncate text-xs font-semibold text-slate-800">
+                        <div className="mb-1 truncate text-xs font-medium text-slate-800">
                           {subject}
                         </div>
                       ) : null}
@@ -359,13 +361,13 @@ export function ProspectActivityFeed({
                         {open ? body : previewText(body, 180)}
                       </div>
                       {!open && body.length > 180 ? (
-                        <div className="mt-1 text-[11px] font-medium text-sky-700">
+                        <div className="mt-1 text-caption font-medium text-sky-700">
                           Show more
                         </div>
                       ) : null}
                       {failed && m.provider_error ? (
                         <div
-                          className="mt-1.5 truncate text-[11px] text-amber-700"
+                          className="mt-1.5 truncate text-caption text-amber-700"
                           title={m.provider_error}
                         >
                           Delivery issue
@@ -377,7 +379,7 @@ export function ProspectActivityFeed({
                             outbound ? "justify-end" : "justify-start"
                           }`}
                         >
-                          <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[13px] shadow-sm ring-1 ring-slate-200/90">
+                          <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-ui shadow-sm ring-1 ring-slate-200/90">
                             {chips}
                           </span>
                         </div>

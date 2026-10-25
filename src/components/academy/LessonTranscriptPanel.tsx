@@ -8,6 +8,7 @@ import {
   parseTranscriptItems,
   type TranscriptItem,
 } from "@/lib/academy/transcriptCues";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   transcriptText: string;
@@ -53,7 +54,7 @@ export function LessonTranscriptPanel({
   transcriptText,
   videoChapters,
   onSeekToSeconds,
-  className = "max-h-[min(48rem,70vh)] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-5 pb-4 pt-5",
+  className = cardClass("soft", "max-h-[min(48rem,70vh)] overflow-y-auto px-5 pb-4 pt-5"),
 }: Props) {
   const items = useMemo<TranscriptItem[]>(() => {
     const fromChapters = buildTranscriptItemsFromChapters(videoChapters);
@@ -66,7 +67,7 @@ export function LessonTranscriptPanel({
     if (!trimmed) return null;
     return (
       <pre
-        className={`${className} whitespace-pre-wrap font-sans text-[15px] leading-relaxed text-slate-700`}
+        className={`${className} whitespace-pre-wrap font-sans text-read leading-relaxed text-slate-700`}
       >
         {trimmed}
       </pre>
@@ -75,7 +76,7 @@ export function LessonTranscriptPanel({
 
   return (
     <div className={className}>
-      <ul className="space-y-4 font-sans text-[15px] text-slate-700">
+      <ul className="space-y-4 font-sans text-read text-slate-700">
         {items.map((item, index) => {
           if (item.type === "chapter") {
             return (

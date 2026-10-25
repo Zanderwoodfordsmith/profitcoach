@@ -137,7 +137,7 @@ export function CallsManageView({
                 />
                 <span className="min-w-0 flex-1 truncate">{item.name}</span>
                 {item.enabled ? null : (
-                  <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-kicker font-semibold uppercase text-slate-500">
                     Off
                   </span>
                 )}

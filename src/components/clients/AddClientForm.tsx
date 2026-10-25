@@ -1,5 +1,7 @@
 "use client";
 
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 type CoachOption = { id: string; label: string };
 
 type Props = {
@@ -48,7 +50,7 @@ export function AddClientForm({
   const showCoachSelector = Boolean(coachOptions && onCoachIdChange);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className={cardClass("plain", "p-4")}>
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-sm font-semibold text-slate-900">Add client</h2>
         <button
@@ -137,7 +139,7 @@ export function AddClientForm({
           <button
             type="submit"
             disabled={creating}
-            className="inline-flex w-fit items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:cursor-wait disabled:opacity-70"
+            className={buttonClass("main", "normal", "w-fit")}
           >
             {creating ? "Creating…" : "Create client"}
           </button>

@@ -10,6 +10,7 @@ import {
   FieldLabel,
   PrimaryButton,
 } from "@/components/firstCampaign/firstCampaignUi";
+import { buttonClass } from "@/components/ui/Button";
 
 const LINKEDIN_DOWNLOAD_DATA_URL =
   "https://www.linkedin.com/mypreferences/d/download-my-data";
@@ -255,7 +256,7 @@ function ColdListPanel({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+                  <tr className="border-b border-slate-100 text-kicker font-medium uppercase text-slate-400">
                     <th className="py-2 pr-3">Name</th>
                     <th className="py-2 pr-3">Company</th>
                     <th className="py-2 pr-3">Location</th>
@@ -437,7 +438,7 @@ function WarmListPanel({
             href={LINKEDIN_DOWNLOAD_DATA_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className={buttonClass("second")}
           >
             <ExternalLink className="h-3.5 w-3.5" />
             Open LinkedIn download page
@@ -497,7 +498,7 @@ function WarmListPanel({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+                  <tr className="border-b border-slate-100 text-kicker font-medium uppercase text-slate-400">
                     <th className="py-2 pr-3">Name</th>
                     <th className="py-2 pr-3">Title</th>
                     <th className="py-2 pr-3">Company</th>

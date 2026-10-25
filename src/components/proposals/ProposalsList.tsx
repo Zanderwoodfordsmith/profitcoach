@@ -8,6 +8,8 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { Proposal, ProposalKind } from "@/lib/proposals/types";
 import { ProposalStatusPill, proposalActivity } from "./ProposalStatus";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type ClientOption = { id: string; full_name: string | null; business_name: string | null; email: string | null };
 
@@ -120,7 +122,7 @@ export function ProposalsList({ kind = "proposal" }: { kind?: ProposalKind }) {
               setAdding(true);
               setError(null);
             }}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#0c5290] px-4 text-sm font-semibold text-white hover:bg-[#08396a]"
+            className={buttonClass("main")}
           >
             <Plus className="h-4 w-4" aria-hidden />
             {t.add}
@@ -130,13 +132,13 @@ export function ProposalsList({ kind = "proposal" }: { kind?: ProposalKind }) {
 
       {adding ? (
         <form
-          className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+          className={cardClass("plain", "mt-5 p-5")}
           onSubmit={(e) => {
             e.preventDefault();
             void create();
           }}
         >
-          <p className="text-sm font-semibold text-slate-900">{t.who}</p>
+          <p className="text-sm font-medium text-slate-900">{t.who}</p>
           {kind === "welcome" && clients.length ? (
             <label className="mt-3 block max-w-sm text-xs font-medium text-slate-600">
               Pick from your clients
@@ -174,11 +176,11 @@ export function ProposalsList({ kind = "proposal" }: { kind?: ProposalKind }) {
             </label>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button type="submit" disabled={saving} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#0c5290] px-4 text-sm font-semibold text-white hover:bg-[#08396a] disabled:opacity-50">
+            <button type="submit" disabled={saving} className={buttonClass("main")}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
               {saving ? "Writing it from your Blueprint…" : t.start}
             </button>
-            <button type="button" onClick={() => setAdding(false)} className="h-9 rounded-full px-3 text-sm font-medium text-slate-600 hover:text-slate-900">
+            <button type="button" onClick={() => setAdding(false)} className={buttonClass("quiet")}>
               Cancel
             </button>
           </div>
@@ -198,12 +200,12 @@ export function ProposalsList({ kind = "proposal" }: { kind?: ProposalKind }) {
             <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">{t.empty}</p>
           </div>
         ) : rows ? (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
             {rows.map((p) => (
               <li key={p.id}>
                 <Link href={`${base}/${p.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3.5 hover:bg-slate-50 sm:flex-nowrap">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-slate-900">{p.prospect_business || p.prospect_name}</span>
+                    <span className="block truncate text-sm font-medium text-slate-900">{p.prospect_business || p.prospect_name}</span>
                     <span className="block truncate text-xs text-slate-500">{p.prospect_business ? p.prospect_name : p.prospect_email ?? ""}</span>
                   </span>
                   <span className="text-xs text-slate-500 sm:w-48 sm:text-right">{proposalActivity(p)}</span>

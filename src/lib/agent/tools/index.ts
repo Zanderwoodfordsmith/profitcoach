@@ -6,6 +6,7 @@ import { blueprintTools } from "./blueprint";
 import { blueprintAvaTools } from "./blueprintAva";
 import { campaignPeopleTools } from "./campaignPeople";
 import { campaignTools } from "./campaigns";
+import { constraintTools } from "./constraint";
 import { coreTools } from "./core";
 import { escalateTools } from "./escalate";
 import { guideTools } from "./guide";
@@ -22,6 +23,7 @@ export const AGENT_TOOLS: AgentToolDef[] = [
   ...campaignTools,
   ...campaignPeopleTools,
   ...messagingTools,
+  ...constraintTools,
   ...blueprintTools,
   ...blueprintAvaTools,
   ...onboardingTools,

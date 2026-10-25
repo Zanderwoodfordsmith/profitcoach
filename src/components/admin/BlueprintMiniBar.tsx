@@ -46,10 +46,10 @@ export function BlueprintMiniBar({ counts }: { counts: GridCounts | undefined })
         <span className="h-full bg-rose-400" style={{ width: pct(counts.todo) }} />
       </span>
       {counts.bca ? (
-        <span className="rounded-full bg-[#0c5290] px-1.5 text-[10px] font-bold leading-4 text-white">{counts.bca}</span>
+        <span className="rounded-full bg-[#0c5290] px-1.5 text-caption font-bold leading-4 text-white">{counts.bca}</span>
       ) : null}
       {counts.unread ? (
-        <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white">
+        <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-caption font-bold leading-none text-white">
           {counts.unread}
         </span>
       ) : null}

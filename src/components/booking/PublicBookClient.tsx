@@ -12,6 +12,8 @@ import {
 import { formatInTimeZone } from "@/lib/booking/bookingTime";
 import { BookingDateTimePicker } from "@/components/booking/BookingDateTimePicker";
 import "./native-booking.css";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type BookMeta = {
   slug: string;
@@ -262,7 +264,7 @@ export function PublicBookClient({ slug }: Props) {
 
   if (metaError) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className={cardClass("plain", "mx-auto max-w-lg p-8 text-center")}>
         <p className="text-sm text-rose-600">{metaError}</p>
       </div>
     );
@@ -270,7 +272,7 @@ export function PublicBookClient({ slug }: Props) {
 
   if (!meta) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className={cardClass("plain", "mx-auto max-w-lg p-8 text-center")}>
         <p className="text-sm text-slate-600">Loading…</p>
       </div>
     );
@@ -278,7 +280,7 @@ export function PublicBookClient({ slug }: Props) {
 
   if (!meta.is_enabled) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className={cardClass("plain", "mx-auto max-w-lg p-8 text-center")}>
         <h1 className="text-xl font-semibold text-slate-900">{meta.display_name}</h1>
         <p className="mt-2 text-sm text-slate-600">
           Online booking is not enabled yet for this coach.
@@ -305,7 +307,7 @@ export function PublicBookClient({ slug }: Props) {
       success.timezone;
 
     return (
-      <div className="mx-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm sm:px-8">
+      <div className={cardClass("plain", "mx-auto w-full max-w-lg px-6 py-8 sm:px-8")}>
         <h1 className="text-center text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
           Thank you! Your meeting is confirmed.
         </h1>
@@ -315,7 +317,7 @@ export function PublicBookClient({ slug }: Props) {
           page or add it to your calendar below.
         </div>
 
-        <div className="mt-6 rounded-xl border border-slate-200 px-4 py-4">
+        <div className={cardClass("plain", "mt-6 px-4 py-4")}>
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
               <p className="text-sm text-slate-500">Your meeting is scheduled with:</p>
@@ -416,7 +418,7 @@ export function PublicBookClient({ slug }: Props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain", "mx-auto w-full max-w-5xl overflow-hidden")}>
       <div className="flex flex-wrap items-center justify-center gap-6 border-b border-slate-100 px-4 py-3 text-sm">
         <button
           type="button"
@@ -426,7 +428,7 @@ export function PublicBookClient({ slug }: Props) {
           }`}
         >
           <span
-            className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
+            className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-caption ${
               step === "book"
                 ? "bg-emerald-500 text-white"
                 : step === "form"
@@ -444,7 +446,7 @@ export function PublicBookClient({ slug }: Props) {
           }`}
         >
           <span
-            className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
+            className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-caption ${
               step === "book" ? "bg-sky-600 text-white" : "bg-slate-200 text-slate-500"
             }`}
           >
@@ -505,7 +507,7 @@ export function PublicBookClient({ slug }: Props) {
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           <button
             type="submit"
-            className="w-full rounded-xl bg-sky-600 py-3 text-sm font-semibold text-white hover:bg-sky-700"
+            className={buttonClass("main", "normal", "w-full")}
           >
             Continue
           </button>

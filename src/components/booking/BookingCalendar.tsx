@@ -76,14 +76,14 @@ export function BookingCalendar({
       <div className="mx-auto w-full max-w-[532px] overflow-hidden rounded-xl bg-white shadow-[0_18px_40px_rgba(6,26,46,0.28)]">
         <div className="flex flex-col items-center bg-white p-0 text-center">
           {showThanks ? (
-            <p className="m-0 box-border w-full bg-[#75c1ff] px-5 py-3.5 text-center text-[clamp(1.05rem,1.6vw,1.15rem)] font-bold leading-snug text-[#0c2438]">
+            <p className="m-0 box-border w-full bg-[#75c1ff] px-5 py-3.5 text-center text-[clamp(1.05rem,1.6vw,1.15rem)] font-semibold leading-snug text-[#0c2438]">
               {first
                 ? `Thanks ${first}, pick a time that works`
                 : "Pick a time that works"}
             </p>
           ) : null}
           <div className="flex flex-col items-center gap-2 px-[22px] pb-3 pt-4">
-            <h3 className="m-0 text-center text-[1.05rem] font-semibold tracking-tight text-[rgba(12,36,56,0.72)]">
+            <h3 className="m-0 text-center text-read font-semibold tracking-tight text-[rgba(12,36,56,0.72)]">
               {title}
             </h3>
             <p className="m-0 inline-flex items-center justify-center gap-1.5 text-sm font-medium leading-snug text-[rgba(12,36,56,0.55)]">

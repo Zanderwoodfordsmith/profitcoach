@@ -42,8 +42,8 @@ export function MembershipSidebarPromo({
           <Sparkles className="h-4 w-4 text-emerald-50" strokeWidth={2.25} aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold leading-tight text-white">Join Premium</p>
-          <p className="text-[11px] leading-snug text-emerald-50/85">Weekly calls and tools</p>
+          <p className="text-ui font-semibold leading-tight text-white">Join Premium</p>
+          <p className="text-caption leading-snug text-emerald-50/85">Weekly calls and tools</p>
         </div>
       </div>
     </Link>

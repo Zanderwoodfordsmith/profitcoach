@@ -119,6 +119,7 @@ import {
   type PoolTableViewSettings,
 } from "@/lib/pool/poolTableViews";
 import { paginationItems } from "@/lib/communityPagination";
+import { buttonClass } from "@/components/ui/Button";
 import { isMagnetPlaybookId } from "@/lib/leadMagnets/catalog";
 import type { CsvExportScope } from "@/components/table/TableCsvExportButton";
 import {
@@ -2108,12 +2109,12 @@ export function CampaignPoolHub({
                 </button>
               )}
               {row.linkedin_premium ? (
-                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-amber-700">
+                <span className="text-kicker font-medium uppercase text-amber-700">
                   Premium
                 </span>
               ) : null}
               {row.open_profile ? (
-                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-sky-700">
+                <span className="text-kicker font-medium uppercase text-sky-700">
                   Open profile
                 </span>
               ) : null}
@@ -2138,7 +2139,7 @@ export function CampaignPoolHub({
               poolSourceLabel(row.source)
             ) : option.key === "campaign" ? (
               row.in_campaign ? (
-                <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-800">
+                <span className="rounded-full bg-sky-50 px-2 py-0.5 text-caption font-medium text-sky-800">
                   In campaign
                 </span>
               ) : (
@@ -2200,7 +2201,7 @@ export function CampaignPoolHub({
                           : { kind: "row", id: row.id }
                       );
                     }}
-                    className="text-[12px] font-medium text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="text-caption font-medium text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Add
                   </button>
@@ -2268,7 +2269,7 @@ export function CampaignPoolHub({
                   type="button"
                   disabled={actionBusy}
                   onClick={() => void findPerson([row.id])}
-                  className="text-xs font-semibold text-[#0c5290] hover:underline disabled:opacity-50"
+                  className="text-xs font-medium text-[#0c5290] hover:underline disabled:opacity-50"
                 >
                   Find
                 </button>
@@ -2303,7 +2304,7 @@ export function CampaignPoolHub({
                         <ProspectTagChip key={tag} tag={tag} title={tag} />
                       ))}
                       {row.tags.length > 3 ? (
-                        <span className="self-center text-[10px] font-medium tabular-nums text-slate-400">
+                        <span className="self-center text-caption font-medium tabular-nums text-slate-400">
                           +{row.tags.length - 3}
                         </span>
                       ) : null}
@@ -2413,7 +2414,7 @@ export function CampaignPoolHub({
               role="menu"
               className="absolute left-0 z-[90] mt-1 w-56 rounded-md border border-slate-200 bg-white py-2 shadow-lg"
             >
-              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <p className="px-3 pb-1 text-kicker font-semibold uppercase text-slate-500">
                 Group by
               </p>
               <button
@@ -2579,7 +2580,7 @@ export function CampaignPoolHub({
                       />
                       {listMenuOpen === "add" ? (
                         <div className="absolute right-0 z-30 mt-1 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                          <p className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                          <p className="px-3 py-1.5 text-kicker font-medium uppercase text-slate-400">
                             Add to list
                           </p>
                           {importLists.filter((list) => list.id !== activeViewId)
@@ -2634,7 +2635,7 @@ export function CampaignPoolHub({
                               <button
                                 type="submit"
                                 disabled={actionBusy || !newListName.trim()}
-                                className="shrink-0 rounded-md bg-sky-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                                className={buttonClass("main", "small", "shrink-0")}
                               >
                                 Create
                               </button>
@@ -2676,7 +2677,7 @@ export function CampaignPoolHub({
                       />
                       {listMenuOpen === "remove" && activeViewId === "pool" ? (
                         <div className="absolute right-0 z-30 mt-1 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                          <p className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                          <p className="px-3 py-1.5 text-kicker font-medium uppercase text-slate-400">
                             Remove from list
                           </p>
                           {importLists.length === 0 ? (
@@ -2747,11 +2748,11 @@ export function CampaignPoolHub({
                       );
                     }}
                     aria-busy={addProgress != null}
-                    className={`inline-flex h-10 shrink-0 items-center rounded-lg bg-emerald-600 px-3.5 text-sm font-semibold text-white ${
-                      addProgress
-                        ? "cursor-wait disabled:text-white disabled:opacity-100"
-                        : "hover:bg-emerald-700 disabled:opacity-50"
-                    }`}
+                    className={buttonClass(
+                      "main",
+                      "normal",
+                      addProgress ? "shrink-0 cursor-wait disabled:opacity-100!" : "shrink-0"
+                    )}
                   >
                     {addProgress
                       ? addProgress.done > 0
@@ -2794,7 +2795,7 @@ export function CampaignPoolHub({
                       setTagsMenuOpen(false);
                       setMatchMenuOpen((open) => !open);
                     }}
-                    className="inline-flex h-10 shrink-0 items-center rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                    className={buttonClass("second", "normal", "shrink-0")}
                   >
                     {loadingMore
                       ? "Add to a list"
@@ -2862,7 +2863,7 @@ export function CampaignPoolHub({
                         <button
                           type="submit"
                           disabled={actionBusy || !matchListName.trim()}
-                          className="shrink-0 rounded-md bg-[#0c5290] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#0a467c] disabled:opacity-50"
+                          className={buttonClass("main", "small", "shrink-0")}
                         >
                           Create
                         </button>
@@ -2877,7 +2878,7 @@ export function CampaignPoolHub({
                   setMatchMenuOpen(false);
                   setImportOpen(true);
                 }}
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 text-sm font-semibold text-white hover:bg-sky-700"
+                className={buttonClass("main", "normal", "shrink-0")}
               >
                 <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                 Import

@@ -37,7 +37,7 @@ function actorDisplayName(actor: LandingActor): string {
 function ActorAvatar({ actor }: { actor: LandingActor }) {
   return (
     <span className="inline-flex h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200 ring-2 ring-white">
-      <span className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-600">
+      <span className="flex h-full w-full items-center justify-center text-caption font-semibold text-slate-600">
         {actorInitials(actor)}
       </span>
     </span>

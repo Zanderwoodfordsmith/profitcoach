@@ -10,6 +10,7 @@ import {
   type PersonalisedLinkProduct,
 } from "@/components/settings/PersonalisedLinkModal";
 import { ShareQrCodeModal } from "@/components/settings/ShareQrCodeModal";
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { buildEmbedSnippet } from "@/lib/embedMode";
 import {
@@ -109,7 +110,7 @@ export function LeadMagnetShareSettings({
       className={
         embedded
           ? "space-y-4"
-          : "space-y-4 rounded-2xl border border-slate-200/90 bg-white px-5 py-4 shadow-sm shadow-slate-200/40"
+          : cardClass("plain", "space-y-4 px-5 py-4")
       }
     >
       {embedded ? null : (
@@ -131,7 +132,7 @@ export function LeadMagnetShareSettings({
 
       {magnetId === "boss-score" ? (
         <>
-          <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-4">
+          <div className={cardClass("soft", "p-4")}>
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               Landing page
             </p>
@@ -325,7 +326,7 @@ function LinkRow({
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium text-slate-900">{title}</p>
             {primary ? (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-kicker font-semibold uppercase text-sky-800">
                 Main link
               </span>
             ) : null}
@@ -424,10 +425,10 @@ function MassSendLink({
         <div className="mt-3 space-y-2 pl-6">
           <p className="text-xs leading-relaxed text-slate-500">
             Paste into campaigns, emails, or SMS. Set your{" "}
-            <code className="font-mono text-[11px]">coach_url_slug</code>{" "}
+            <code className="font-mono text-caption">coach_url_slug</code>{" "}
             custom value to your public slug.
           </p>
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+          <div className={cardClass("plain", "px-4 py-3")}>
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium text-slate-800">CRM link</p>
               <button
@@ -438,7 +439,7 @@ function MassSendLink({
                 {copied ? "Copied!" : "Copy link"}
               </button>
             </div>
-            <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-slate-900 p-3 text-[11px] text-slate-100">
+            <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-slate-900 p-3 text-caption text-slate-100">
               <code>{templateUrl}</code>
             </pre>
           </div>
@@ -485,7 +486,7 @@ function EmbedBlock({
   onCopy: (code: string) => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+    <div className={cardClass("plain", "px-4 py-3")}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-slate-800">{label}</p>
@@ -499,7 +500,7 @@ function EmbedBlock({
           {copied ? "Copied!" : "Copy code"}
         </button>
       </div>
-      <pre className="mt-2 max-h-36 overflow-auto rounded-md bg-slate-900 p-3 text-[11px] text-slate-100">
+      <pre className="mt-2 max-h-36 overflow-auto rounded-md bg-slate-900 p-3 text-caption text-slate-100">
         <code>{code}</code>
       </pre>
     </div>

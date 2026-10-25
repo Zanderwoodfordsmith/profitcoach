@@ -44,6 +44,7 @@ import type {
 } from "@/lib/cashFlowForecast/types";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { cardClass } from "@/components/ui/Card";
 
 type ForecastPayload = {
   startMonday: string;
@@ -208,7 +209,7 @@ function CustomerRow({
               </span>
               {row.amountOwedCents ? (
                 <span
-                  className={`shrink-0 text-[10px] font-semibold tabular-nums ${owedInlineClass(row.owedLabel)}`}
+                  className={`shrink-0 text-caption font-semibold tabular-nums ${owedInlineClass(row.owedLabel)}`}
                   title={owedTitle}
                 >
                   {formatForecastMoney(row.amountOwedCents)}
@@ -216,13 +217,13 @@ function CustomerRow({
               ) : null}
             </div>
             {row.note ? (
-              <div className="truncate text-[10px] leading-snug text-slate-500">
+              <div className="truncate text-caption leading-snug text-slate-500">
                 {row.note}
               </div>
             ) : null}
             {dueLine ? (
               <div
-                className={`truncate text-[10px] ${owedInlineClass(row.owedLabel)}`}
+                className={`truncate text-caption ${owedInlineClass(row.owedLabel)}`}
               >
                 {row.owedLabel === "Overdue" ? `due ${dueLine}` : dueLine}
               </div>
@@ -501,7 +502,7 @@ export function CashFlowForecastClient() {
 
   if (allowed === false) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
+      <div className={cardClass("plain", "p-6")}>
         <p className="text-sm text-rose-600">You do not have access to this page.</p>
       </div>
     );
@@ -509,7 +510,7 @@ export function CashFlowForecastClient() {
 
   if (loading || allowed === null) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
+      <div className={cardClass("plain", "p-6")}>
         <p className="text-sm text-slate-600">Loading cash flow forecast…</p>
       </div>
     );
@@ -559,7 +560,7 @@ export function CashFlowForecastClient() {
               </tr>
               <tr className="border-b border-slate-200 bg-slate-50">
                 <th
-                  className="sticky left-0 z-[2] border-r border-slate-200/80 bg-slate-50 px-2 py-1 text-left text-[10px] font-medium text-slate-500"
+                  className="sticky left-0 z-[2] border-r border-slate-200/80 bg-slate-50 px-2 py-1 text-left text-caption font-medium text-slate-500"
                   style={forecastMetricColumnStyle()}
                 >
                   Balance
@@ -766,11 +767,11 @@ export function CashFlowForecastClient() {
                               {row.label}
                             </div>
                             {row.note ? (
-                              <div className="truncate text-[10px] text-slate-500">
+                              <div className="truncate text-caption text-slate-500">
                                 {row.note}
                               </div>
                             ) : row.monthlyAmountCents ? (
-                              <div className="truncate text-[10px] text-slate-500">
+                              <div className="truncate text-caption text-slate-500">
                                 {formatForecastMoney(row.monthlyAmountCents)}/mo
                                 {row.paymentDayOfMonth
                                   ? ` · ~day ${row.paymentDayOfMonth}`

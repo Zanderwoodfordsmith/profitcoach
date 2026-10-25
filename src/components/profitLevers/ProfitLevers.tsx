@@ -18,6 +18,8 @@ import {
   type LeverKey,
   type Levers,
 } from "@/lib/profitLevers";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 import "./profitLevers.css";
 
@@ -54,16 +56,16 @@ export function ProfitLevers({ business }: { business?: string | null }) {
 
   return (
     <div className="mx-auto w-full max-w-[76rem] space-y-6 pb-16 pt-2">
-      <section className="rounded-2xl border border-slate-200 bg-white px-6 py-5 md:px-8 md:py-6">
+      <section className={cardClass("plain", "px-6 py-5 md:px-8 md:py-6")}>
         <p className={`${SMALL} text-slate-500`}>{business ? `${business}, a year` : "A year"}</p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
           <div>
             {changed ? (
-              <p className="text-[2.25rem] font-semibold leading-tight tracking-[-0.02em] text-slate-900">
+              <p className="text-display font-semibold leading-tight text-slate-900">
                 <span className={NAVY}>{extraProfit >= 0 ? "+" : "-"}{formatMoney(Math.abs(extraProfit))}</span> gross profit
               </p>
             ) : (
-              <p className="text-[2.25rem] font-semibold leading-tight tracking-[-0.02em] text-slate-900">
+              <p className="text-display font-semibold leading-tight text-slate-900">
                 {formatMoney(before.grossProfit)} gross profit
               </p>
             )}
@@ -108,7 +110,7 @@ export function ProfitLevers({ business }: { business?: string | null }) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white" aria-label="Their numbers">
+        <section className={cardClass("plain", "min-w-0")} aria-label="Their numbers">
           <div className={`grid grid-cols-[minmax(0,1fr)_7.5rem] items-end gap-x-4 border-b border-slate-100 px-6 pb-2 pt-4 text-slate-500 md:grid-cols-[minmax(0,1.1fr)_7.5rem_minmax(0,1fr)_5.5rem] ${SMALL}`}>
             <span>Their numbers</span>
             <span>Now</span>
@@ -140,9 +142,7 @@ function Pill({ children, onClick, quiet }: { children: ReactNode; onClick: () =
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-medium ${SMALL} ${
-        quiet ? "bg-slate-100 text-slate-700 hover:bg-slate-200" : "bg-[#0c5290] text-white hover:bg-[#0a4578]"
-      }`}
+      className={buttonClass(quiet ? "second" : "main")}
     >
       {children}
     </button>
@@ -329,7 +329,7 @@ function Box({ label, was, is, isMoved, delta, sub }: { label: string; was: stri
   return (
     <div className={`min-w-0 flex-1 basis-0 rounded-xl border bg-white px-2 py-2.5 text-center ${isMoved ? "border-sky-200" : "border-slate-200"}`} style={{ maxWidth: "15rem" }}>
       <p className="text-xs leading-tight text-slate-500">{label}</p>
-      <p className={`mt-0.5 text-[1.0625rem] font-semibold tabular-nums ${isMoved ? NAVY : "text-slate-900"}`}>{is}</p>
+      <p className={`mt-0.5 text-read font-semibold tabular-nums ${isMoved ? NAVY : "text-slate-900"}`}>{is}</p>
       {isMoved ? (
         <p className="text-xs leading-snug tabular-nums text-slate-500">
           <span className={`font-medium ${delta.startsWith("-") ? "text-red-700" : "text-emerald-700"}`}>{delta}</span>

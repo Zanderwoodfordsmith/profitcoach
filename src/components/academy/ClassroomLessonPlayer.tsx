@@ -12,7 +12,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ChevronDown, ChevronLeft, FilePenLine, Play } from "lucide-react";
+import { createPortal } from "react-dom";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  FilePenLine,
+  PanelLeftOpen,
+  Play,
+  X,
+} from "lucide-react";
 
 import { AdminLessonSidebarMenu } from "@/components/academy/AdminLessonSidebarMenu";
 import {
@@ -836,6 +845,19 @@ export function ClassroomLessonPlayer({
   const lessonCount = hubLessonCount(course);
   const contentsOnLeft = contentsPosition === "left";
   const minimal = chrome === "minimal";
+  // Phones: the contents slide in over the lesson instead of sitting above it.
+  const [contentsOpen, setContentsOpen] = useState(false);
+  useEffect(() => {
+    setContentsOpen(false);
+  }, [lesson.id]);
+  useEffect(() => {
+    if (!contentsOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setContentsOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [contentsOpen]);
   const currentLessonDraft =
     lessonContextInCourse(course, lesson.id)?.lesson.draft === true ||
     lesson.draft === true;
@@ -1148,16 +1170,8 @@ export function ClassroomLessonPlayer({
     </ul>
   );
 
-  const sidebar = (
-    <aside
-      className={`w-full shrink-0 lg:self-start ${
-        minimal
-          ? "lg:w-[22.5rem]"
-          : contentsOnLeft
-            ? "lg:w-80"
-            : "lg:w-96"
-      } ${minimal ? "" : "lg:sticky lg:top-28"}`}
-    >
+  const sidebarBody = (
+    <>
       {minimal ? (
         <div>
           {contentsBackLabel ? (
@@ -1200,7 +1214,79 @@ export function ClassroomLessonPlayer({
           {sectionList}
         </div>
       )}
+    </>
+  );
+
+  const sidebar = (
+    <aside
+      className={`w-full shrink-0 max-lg:hidden lg:self-start ${
+        minimal
+          ? "lg:w-[22.5rem]"
+          : contentsOnLeft
+            ? "lg:w-80"
+            : "lg:w-96"
+      } ${minimal ? "" : "lg:sticky lg:top-28"}`}
+    >
+      {sidebarBody}
     </aside>
+  );
+
+  const phoneContents = (
+    <>
+      <button
+        type="button"
+        onClick={() => setContentsOpen(true)}
+        aria-expanded={contentsOpen}
+        aria-controls="lesson-contents-drawer"
+        className="flex w-full min-w-0 items-center gap-2.5 rounded-xl bg-white px-3.5 py-2.5 text-left text-sm shadow-sm ring-1 ring-slate-200 lg:hidden"
+      >
+        <PanelLeftOpen className="h-4 w-4 shrink-0 text-slate-600" aria-hidden />
+        <span className="min-w-0 flex-1 truncate font-semibold text-slate-900">
+          {course.title}
+        </span>
+        <span className="shrink-0 text-xs text-slate-500">
+          {lessonCount} lesson{lessonCount === 1 ? "" : "s"}
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+      </button>
+      {/* In a portal so no parent clips the fixed layer. */}
+      {contentsOpen
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[110] lg:hidden"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Course contents"
+            >
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/50"
+                aria-label="Close contents"
+                onClick={() => setContentsOpen(false)}
+              />
+              <div
+                id="lesson-contents-drawer"
+                className="absolute inset-y-0 left-0 flex w-[min(22rem,88vw)] flex-col bg-[#f8fafc] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-xl"
+              >
+                <div className="flex justify-end px-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setContentsOpen(false)}
+                    aria-label="Close contents"
+                    className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6">
+                  {sidebarBody}
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 
   const main = (
@@ -1328,6 +1414,7 @@ export function ClassroomLessonPlayer({
           minimal ? "gap-5 lg:gap-8" : "gap-8"
         } ${contentsOnLeft && !minimal ? "lg:gap-6" : ""}`}
       >
+        {phoneContents}
         {contentsOnLeft ? (
           <>
             {sidebar}

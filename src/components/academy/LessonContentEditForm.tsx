@@ -20,6 +20,8 @@ import { uploadAcademyLessonVideoFile } from "@/lib/academyLessonVideo";
 import { probeBrowserMediaDurationLabel } from "@/lib/academy/probeBrowserMediaDuration";
 import type { AcademyRecommendedAction } from "@/lib/academy/lessonActions";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 /** Mirrors the reader's tabs — actions sit with the Overview, as coaches see them. */
 type EditTabId = "overview" | "guide";
@@ -198,7 +200,7 @@ export function LessonContentEditForm({
     <form
       id={formId}
       onSubmit={onSubmit}
-      className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] md:p-8"
+      className={cardClass("plain", "p-6 md:p-8")}
     >
       <header className="mb-6 border-b border-slate-200/80 pb-4">
         <label className="sr-only" htmlFor={`${formId}-title`}>
@@ -206,7 +208,7 @@ export function LessonContentEditForm({
         </label>
         <div className="flex min-w-0 items-center gap-2">
           {titlePrefix ? (
-            <span className="shrink-0 text-xl md:text-2xl" aria-hidden>
+            <span className="shrink-0 text-subhead md:text-2xl" aria-hidden>
               {titlePrefix}
             </span>
           ) : null}
@@ -217,7 +219,7 @@ export function LessonContentEditForm({
             onChange={(e) => onTitleChange(e.target.value)}
             required
             placeholder="Lesson title"
-            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-xl font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 md:text-2xl"
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-subhead font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 md:text-2xl"
           />
         </div>
         {headerExtra ? <div className="mt-4">{headerExtra}</div> : null}
@@ -232,7 +234,7 @@ export function LessonContentEditForm({
             onUploadFile={(file) => void handleVideoUpload(file)}
           />
 
-          <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+          <div className={cardClass("soft", "mb-8 p-4")}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -262,7 +264,7 @@ export function LessonContentEditForm({
                 type="button"
                 disabled={uploading}
                 onClick={() => audioInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60"
+                className={buttonClass("second", "small")}
               >
                 <Upload className="h-3.5 w-3.5" aria-hidden />
                 {uploading
@@ -330,7 +332,7 @@ export function LessonContentEditForm({
             <p className="text-xs text-slate-500">
               Short what / why — the first thing coaches read under the video.
             </p>
-            <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+            <label className={buttonClass("second", "small", "shrink-0 cursor-pointer")}>
               <FileUp className="h-3.5 w-3.5" aria-hidden />
               Import .md file
               <input

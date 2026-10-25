@@ -36,6 +36,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const LIST_DROPDOWN =
   "absolute left-0 z-[90] mt-1 w-[min(92vw,20rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg";
@@ -400,7 +402,7 @@ export function CallsHub({
             Calls
           </button>
           {!calendarEditorOpen && onAdminPath && !impersonatingCoachId ? (
-            <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+            <p className={cardClass("plain", "px-4 py-3 text-sm text-slate-600")}>
               These are{" "}
               <span className="font-medium text-slate-800">
                 your personal booking calendars
@@ -424,7 +426,7 @@ export function CallsHub({
               calendarEditorOpen ? null : (
                 <Suspense
                   fallback={
-                    <section className="rounded-xl border border-slate-200/80 bg-white p-4">
+                    <section className={cardClass("plain", "p-4")}>
                       <p className="text-sm text-slate-600">
                         Loading integrations…
                       </p>
@@ -646,7 +648,7 @@ export function CallsHub({
           onClick={() => setDetail(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+            className={cardClass("raised", "w-full max-w-md p-5")}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-slate-900">
@@ -670,7 +672,7 @@ export function CallsHub({
                 href={detail.meeting_join_url}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-3 inline-block text-sm font-semibold text-sky-700 hover:underline"
+                className="mt-3 inline-block text-sm font-medium text-sky-700 hover:underline"
               >
                 Join meeting
               </a>
@@ -680,7 +682,7 @@ export function CallsHub({
                 href={detail.zoom_recording_url}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-2 block text-sm font-semibold text-sky-700 hover:underline"
+                className="mt-2 block text-sm font-medium text-sky-700 hover:underline"
               >
                 Watch recording
               </a>
@@ -707,7 +709,7 @@ export function CallsHub({
                     key={value}
                     type="button"
                     disabled={statusBusy}
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    className={buttonClass("second", "small")}
                     onClick={() => void updateNativeStatus(detail, value)}
                   >
                     {label}
@@ -717,7 +719,7 @@ export function CallsHub({
             ) : null}
             <button
               type="button"
-              className="mt-5 w-full rounded-lg bg-slate-900 py-2 text-sm font-semibold text-white"
+              className={buttonClass("main", "normal", "mt-5 w-full")}
               onClick={() => {
                 onRowClick?.(detail);
                 setDetail(null);

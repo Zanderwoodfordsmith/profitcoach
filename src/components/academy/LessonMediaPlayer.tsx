@@ -181,7 +181,7 @@ export function LessonMediaPlayer({
           </div>
           {hasAudio ? (
             <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-[var(--brand-chathams)]/80 px-3 py-2">
-              <p className="text-[11px] font-medium text-white/70">
+              <p className="text-caption font-medium text-white/70">
                 Prefer audio? Switch anytime.
               </p>
               <LessonMediaModeToggle
@@ -206,7 +206,7 @@ export function LessonMediaPlayer({
           </div>
           {hasAudio ? (
             <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-[var(--brand-chathams)]/80 px-3 py-2">
-              <p className="text-[11px] font-medium text-white/70">
+              <p className="text-caption font-medium text-white/70">
                 Prefer audio? Switch anytime.
               </p>
               <LessonMediaModeToggle

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { ArrowUpRight, Check, ChevronRight, Copy, LayoutGrid, List, Loader2, Newspaper, RefreshCw, X } from "lucide-react";
 import { Blocks } from "@/components/practice/document/Blocks";
 import "@/components/practice/document/blueprint.css";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 import type { LinkedInHistoryPayload, NewsletterDraftItem, NewsletterIssueItem } from "@/lib/linkedinHistory/loadHistory";
 import { daysAgoLabel } from "./useLinkedInHistory";
-import { LI_BLUE } from "./types";
 
 const CADENCE: Record<string, string> = { weekly: "Weekly", fortnightly: "Fortnightly", monthly: "Monthly" };
 
@@ -61,7 +62,7 @@ function IssueCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white text-left shadow-sm transition hover:border-slate-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A66C2]"
+      className={cardClass("raised", "group flex flex-col overflow-hidden text-left transition hover:border-slate-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A66C2]")}
     >
       <div className="relative w-full overflow-hidden bg-slate-100">
         {cover ? (
@@ -71,12 +72,12 @@ function IssueCard({
           <CoverPlaceholder title={title} />
         )}
         {badge ? (
-          <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-slate-800 shadow-sm">{badge}</span>
+          <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-caption font-semibold text-slate-800 shadow-sm">{badge}</span>
         ) : null}
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <p className="text-xs font-medium text-slate-500">{eyebrow}</p>
-        <p className="line-clamp-2 text-[0.9375rem] font-semibold leading-snug text-slate-900">{title}</p>
+        <p className="line-clamp-2 text-ui font-semibold leading-snug text-slate-900">{title}</p>
         <p className="mt-auto pt-1 text-xs tabular-nums text-slate-500">{meta}</p>
       </div>
     </button>
@@ -115,7 +116,7 @@ function IssueRow({
           )}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[0.9375rem] font-semibold text-slate-900">{title}</span>
+          <span className="block truncate text-ui font-semibold text-slate-900">{title}</span>
           <span className="mt-0.5 block text-xs tabular-nums text-slate-500">
             {date}
             {meta ? ` · ${meta}` : ""}
@@ -245,8 +246,7 @@ function Reader({
                 href={opened.issue.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white"
-                style={{ backgroundColor: LI_BLUE }}
+                className={buttonClass("main", "small")}
               >
                 Open on LinkedIn
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -256,7 +256,7 @@ function Reader({
               type="button"
               disabled={!blocks}
               onClick={() => void copy()}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className={buttonClass("second", "small")}
             >
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? "Copied" : "Copy text"}
@@ -277,7 +277,7 @@ function Reader({
               </p>
             )}
             {post ? (
-              <section className="mt-12 rounded-2xl bg-slate-50 p-5">
+              <section className={cardClass("soft", "mt-12 p-5")}>
                 <h3 className="text-sm font-semibold text-slate-900">Post about this issue</h3>
                 <p className="mt-0.5 text-xs text-slate-500">For the feed, so people open it.</p>
                 <div className="mt-4">
@@ -366,18 +366,18 @@ export function NewsletterIssuesTab({
 
   return (
     <div className="space-y-8">
-      <header className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <header className={cardClass("plain", "p-5 sm:p-6")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Newsletter</p>
-            <h2 className="mt-1 text-xl font-semibold tracking-[-0.01em] text-slate-900">{name}</h2>
+            <h2 className="mt-1 text-subhead font-semibold text-slate-900">{name}</h2>
             {settings?.description ? <p className="mt-1 max-w-[60ch] text-sm text-slate-600">{settings.description}</p> : null}
             {facts.length ? <p className="mt-2 text-xs tabular-nums text-slate-500">{facts.join(" · ")}</p> : null}
           </div>
           {blueprintHref ? (
             <Link
               href={blueprintHref}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className={buttonClass("second", "small", "shrink-0")}
             >
               Edit in Blueprint
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -392,7 +392,7 @@ export function NewsletterIssuesTab({
         ) : blueprintHref ? (
           <p className="mt-4 border-t border-slate-100 pt-3 text-sm text-slate-500">
             The name, who it&apos;s for and the call to action aren&apos;t set yet.{" "}
-            <Link href={blueprintHref} className="font-semibold text-slate-700 underline-offset-2 hover:underline">
+            <Link href={blueprintHref} className="font-medium text-slate-700 underline-offset-2 hover:underline">
               Set them in your Blueprint
             </Link>
             .
@@ -405,7 +405,7 @@ export function NewsletterIssuesTab({
               type="button"
               onClick={onImport}
               disabled={importing}
-              className="inline-flex items-center gap-1 font-semibold text-slate-500 hover:text-slate-800 disabled:opacity-50"
+              className="inline-flex items-center gap-1 font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
             >
               <RefreshCw className={`h-3 w-3 ${importing ? "animate-spin" : ""}`} />
               {importing ? "Refreshing…" : "Refresh"}
@@ -424,8 +424,7 @@ export function NewsletterIssuesTab({
             type="button"
             onClick={onImport}
             disabled={importing}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            style={{ backgroundColor: LI_BLUE }}
+            className={buttonClass("main")}
           >
             {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {importing ? "Importing…" : "Import from LinkedIn"}
@@ -462,7 +461,7 @@ export function NewsletterIssuesTab({
       {drafts.length && view === "list" ? (
         <section>
           <h3 className="mb-3 text-sm font-semibold text-slate-900">Next up</h3>
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+          <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
             {drafts.map((draft) => (
               <IssueRow
                 key={draft.key}
@@ -481,7 +480,7 @@ export function NewsletterIssuesTab({
       {issues.length && view === "list" ? (
         <section>
           <h3 className="mb-3 text-sm font-semibold text-slate-900">Published</h3>
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+          <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
             {issues.map((issue) => (
               <IssueRow
                 key={issue.id}

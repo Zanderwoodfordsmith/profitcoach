@@ -67,7 +67,7 @@ export function ChecksList({ checks }: { checks: CheckResult[] }) {
       {failed.map((c, i) => (
         <div key={`${c.id}-${i}`} className="flex gap-2 text-sm">
           <span
-            className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase ${
+            className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-kicker font-semibold uppercase ${
               c.level === "gate" ? "bg-rose-100 text-rose-800" : c.level === "penalty" ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-600"
             }`}
           >

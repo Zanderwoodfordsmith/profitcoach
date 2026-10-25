@@ -7,6 +7,8 @@ import {
   supportCallMeetingLocationUrl,
 } from "@/lib/support/supportCallHosts";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   forSlug: string;
@@ -130,7 +132,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200/80 bg-white p-4">
+      <div className={cardClass("plain", "p-4")}>
         <p className="text-sm text-slate-600">Loading call options…</p>
       </div>
     );
@@ -147,7 +149,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white p-4">
+    <div className={cardClass("plain", "p-4")}>
       <h3 className="text-sm font-semibold text-slate-900">Call options</h3>
       <p className="mt-0.5 text-xs text-slate-500">
         Length, how far ahead people can book, and notice before a slot. Starts
@@ -218,7 +220,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
               patchLocal("min_notice_hours", Number(e.target.value) || 0)
             }
           />
-          <span className="mt-1 block text-[11px] text-slate-400">
+          <span className="mt-1 block text-caption text-slate-400">
             How soon the next bookable slot can be
           </span>
         </label>
@@ -239,7 +241,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
               )
             }
           />
-          <span className="mt-1 block text-[11px] text-slate-400">
+          <span className="mt-1 block text-caption text-slate-400">
             How far into the future slots appear
           </span>
         </label>
@@ -252,7 +254,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
           type="button"
           disabled={saving}
           onClick={() => void save()}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+          className={buttonClass("main")}
         >
           {saving ? "Saving…" : "Save options"}
         </button>

@@ -7,6 +7,7 @@ import {
   SALES_NAV_BASE_SEARCH_LESSON_ID,
   SALES_NAV_CONSOLIDATED_LESSON_ID,
 } from "@/lib/academy/lessonVideoChapters";
+import { buttonClass } from "@/components/ui/Button";
 
 const BASE_SEARCH_LESSON_ID = SALES_NAV_BASE_SEARCH_LESSON_ID;
 
@@ -25,7 +26,7 @@ export function LessonBaseSearchCta({ lessonId }: { lessonId: string }) {
       href={SALES_NAV_BASE_SEARCH_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="mb-6 inline-flex max-w-full items-center gap-2 rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
+      className={buttonClass("main", "normal", "mb-6 h-auto! min-h-10 max-w-full py-2.5 whitespace-normal!")}
     >
       Look, we&apos;ve done this for you. Now just click here
       <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />

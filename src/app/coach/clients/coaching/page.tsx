@@ -14,6 +14,7 @@ import {
 } from "@/lib/clientCoaching/defaults";
 import { parseClientWorkspaceTab } from "@/lib/clientCoaching/normalize";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { cardClass } from "@/components/ui/Card";
 
 type ClientOption = { id: string; fullName: string; businessName: string | null };
 
@@ -128,7 +129,7 @@ function CoachingHubInner() {
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
         {!loading && !error ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className={cardClass("plain", "p-6")}>
             <h2 className="text-lg font-semibold tracking-tight text-slate-900">
               Select a client
             </h2>
@@ -156,7 +157,7 @@ function CoachingHubInner() {
                   : null}
               </p>
             ) : (
-              <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
+              <ul className={cardClass("plain", "mt-4 divide-y divide-slate-100 overflow-hidden")}>
                 {clients.map((c) => (
                   <li key={c.id}>
                     <button

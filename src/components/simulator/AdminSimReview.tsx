@@ -12,6 +12,8 @@ import type { SimAssessmentRow, SimSessionRow } from "@/lib/simulator/types";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
 import { formatSimDate } from "./simApi";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Summary = Omit<SimSessionRow, "transcript" | "live" | "conversation_ids" | "report">;
 type Attempt = SimAssessmentRow & { sessions: Summary[] };
@@ -74,7 +76,7 @@ export function AdminSimReview() {
         <ArrowLeft className="h-4 w-4" aria-hidden /> Client simulator
       </Link>
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">Certification review</h1>
-      <p className="mt-1 text-[0.9375rem] text-slate-600">Three coaching sessions per attempt. Change any score, add a note, then confirm the result.</p>
+      <p className="mt-1 text-ui text-slate-600">Three coaching sessions per attempt. Change any score, add a note, then confirm the result.</p>
       {error ? <p className="mt-6 text-sm text-red-700">{error}</p> : null}
       {!data && !error ? (
         <p className="mt-8 flex items-center gap-2 text-sm text-slate-500">
@@ -94,7 +96,7 @@ export function AdminSimReview() {
             Each coach gets {data.monthlyMinutes} a month (MONTHLY_MINUTES in src/lib/simulator/server.ts). A minute of voice uses about 1,000 ElevenLabs credits.
           </p>
           {data.usage.length ? (
-            <ul className="mt-3 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <ul className={cardClass("plain", "mt-3 divide-y divide-slate-200 overflow-hidden")}>
               {data.usage.map((u) => (
                 <li key={u.coach_id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
                   <span className="min-w-0 flex-1 truncate font-medium text-slate-900">{coach(u.coach_id)?.full_name ?? "Coach"}</span>
@@ -109,7 +111,7 @@ export function AdminSimReview() {
             <p className="mt-3 text-sm text-slate-500">No practice yet this month.</p>
           )}
           <h2 className="mt-12 text-lg font-semibold tracking-tight text-slate-900">Recent practice</h2>
-          <ul className="mt-3 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <ul className={cardClass("plain", "mt-3 divide-y divide-slate-200 overflow-hidden")}>
             {data.recent.map((s) => (
               <li key={s.id}>
                 <SessionRow s={s} coachName={coach(s.coach_id)?.full_name ?? "Coach"} />
@@ -169,14 +171,14 @@ function AttemptCard({ attempt, coach, onSaved }: { attempt: Attempt; coach?: Co
   }
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5">
+    <article className={cardClass("plain", "p-5")}>
       <div className="flex flex-wrap items-center gap-3">
         {coach?.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={coach.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover" />
         ) : null}
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-slate-900">{coach?.full_name ?? "Coach"}</p>
+          <p className="font-medium text-slate-900">{coach?.full_name ?? "Coach"}</p>
           <p className="text-sm text-slate-500">
             Started {formatSimDate(attempt.created_at)} · {STATUS[attempt.status]}
           </p>
@@ -220,10 +222,10 @@ function AttemptCard({ attempt, coach, onSaved }: { attempt: Attempt; coach?: Co
             className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => void save(false)} disabled={saving} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
+            <button type="button" onClick={() => void save(false)} disabled={saving} className={buttonClass("second")}>
               Save
             </button>
-            <button type="button" onClick={() => void save(true)} disabled={saving} className="rounded-full bg-[#051e36] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c5290]">
+            <button type="button" onClick={() => void save(true)} disabled={saving} className={buttonClass("main")}>
               Confirm result
             </button>
             {message ? <span className="text-sm text-slate-600">{message}</span> : null}

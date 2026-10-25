@@ -9,10 +9,11 @@ import {
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { sectionByKey } from "./blueprint";
-import { sanitizeBlocks } from "./blocks";
+import { blocksToMarkdown, sanitizeBlocks } from "./blocks";
+import { ensureCoachLinkedIn, type CoachLinkedIn } from "./coachLinkedIn";
 import { fitConnectionNote } from "./connectionNote";
 import { listOnboardingTranscripts, onboardingTranscriptText } from "./ingestOnboarding";
-import { SECTION_SKILLS, skillSystemPrompt, skillUserPrompt } from "./skills";
+import { SECTION_SKILLS, skillSystemPrompt, skillUserPrompt, writerContract } from "./skills";
 import { listValue } from "./sourced";
 import {
   ensurePracticeKnowledge,
@@ -100,15 +101,48 @@ export async function writeSectionBlocks(
   return { blocks: blocks.length ? await fitConnectionNote(key, blocks) : blocks, error };
 }
 
+/** What a writer is told when the person asked for changes to a draft. */
+function changesText(changes: string, base: BlueprintBlock[] | null): string {
+  return [
+    `## Changes asked for\n\n${changes.trim().slice(0, 2_000)}`,
+    "Make these changes. They are notes on the writing. A new fact (a number, a client, a result, a year) only goes in if it is already in what they told us above. Otherwise keep the placeholder.",
+    base?.length ? `## The draft to change\n\n${blocksToMarkdown(base).slice(0, 12_000)}` : "",
+    "Write the changed section now. Return only the JSON object.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/**
+ * A draft of one "We build" section, not saved. A writer that reads LinkedIn
+ * gets it imported first when we can find the coach's address. The page's
+ * build and Ava both write through here, so they read the same things.
+ */
+export async function draftSection(
+  coachId: string,
+  key: string,
+  opts?: { changes?: string | null; base?: BlueprintBlock[] | null; linkedinUrl?: string | null }
+): Promise<{ blocks: BlueprintBlock[]; linkedin: CoachLinkedIn | null }> {
+  const linkedin = writerContract(key).sources.has("linkedin")
+    ? await ensureCoachLinkedIn(coachId, { linkedinUrl: opts?.linkedinUrl })
+    : null;
+  const { system, user, maxTokens } = await sectionPrompt(coachId, key);
+  const changes = opts?.changes?.trim();
+  const { blocks, error } = await writeSectionBlocks(key, {
+    system,
+    user: changes ? `${user}\n\n${changesText(changes, opts?.base ?? null)}` : user,
+    maxTokens,
+  });
+  if (!blocks.length) throw new Error(error || "The section came back empty. Try again.");
+  return { blocks, linkedin };
+}
+
 /**
  * Write one "We build" section for a coach and save it. Used by the build
  * route and by admin scripts. Throws with a readable message on failure.
  */
 export async function buildSection(coachId: string, key: string): Promise<PracticeKnowledgeRow> {
-  const { system, user, maxTokens } = await sectionPrompt(coachId, key);
-  const { blocks, error } = await writeSectionBlocks(key, { system, user, maxTokens });
-  if (!blocks.length) throw new Error(error || "The section came back empty. Try again.");
-
+  const { blocks } = await draftSection(coachId, key);
   return saveBuiltSection({
     coachId,
     key,

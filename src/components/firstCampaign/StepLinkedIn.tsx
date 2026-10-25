@@ -266,7 +266,7 @@ export function StepLinkedIn({
 
           {topExperiences.length > 0 ? (
             <div className="mt-4">
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+              <p className="mb-2 text-kicker font-medium uppercase text-slate-400">
                 Recent roles
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -281,7 +281,7 @@ export function StepLinkedIn({
 
           {snapshot.skills.length > 0 ? (
             <div className="mt-4">
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+              <p className="mb-2 text-kicker font-medium uppercase text-slate-400">
                 Skills
               </p>
               <div className="flex flex-wrap gap-1.5">

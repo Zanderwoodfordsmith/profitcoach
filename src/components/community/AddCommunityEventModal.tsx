@@ -28,6 +28,8 @@ import {
   COMMUNITY_CALENDAR_TIMEZONES,
   defaultCommunityCalendarTimezone,
 } from "@/lib/communityCalendarTimezones";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 4000;
@@ -426,12 +428,12 @@ export function AddCommunityEventModal({
       aria-labelledby="add-event-title"
     >
       <div
-        className="max-h-[min(92vh,900px)] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+        className={cardClass("raised", "max-h-[min(92vh,900px)] w-full max-w-xl overflow-y-auto p-5")}
         onClick={(e) => e.stopPropagation()}
       >
         <h2
           id="add-event-title"
-          className="text-xl font-bold text-slate-900"
+          className="text-subhead font-semibold text-slate-900"
         >
           {isEdit ? "Edit event" : "Add event"}
         </h2>
@@ -525,7 +527,7 @@ export function AddCommunityEventModal({
           </label>
 
           {recurring ? (
-            <div className="space-y-4 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-4">
+            <div className={cardClass("soft", "space-y-4 px-3 py-4")}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-slate-600">Repeat every</span>
                 <select
@@ -801,7 +803,7 @@ export function AddCommunityEventModal({
           </div>
 
           {isEdit ? (
-            <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className={cardClass("soft", "space-y-2 p-3")}>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
                 Recording
               </p>
@@ -913,7 +915,7 @@ export function AddCommunityEventModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className={buttonClass("quiet")}
           >
             Cancel
           </button>
@@ -921,7 +923,7 @@ export function AddCommunityEventModal({
             type="button"
             disabled={!canSubmit}
             onClick={() => void submit()}
-            className="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className={buttonClass("main")}
           >
             {saving ? (isEdit ? "Saving…" : "Adding…") : isEdit ? "Save" : "Add"}
           </button>

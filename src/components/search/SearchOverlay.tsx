@@ -19,7 +19,6 @@ import {
   MessageSquare,
   Play,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
@@ -60,6 +59,7 @@ import {
   type SearchPreview,
 } from "@/lib/search/types";
 import "./searchMotion.css";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 const LISTBOX_ID = "search-overlay-listbox";
 const PLACEHOLDER = "Search lessons, videos, posts and people";
@@ -613,12 +613,12 @@ function SearchDialog({
               <button
                 type="button"
                 onClick={() => onAskAi(q)}
-                aria-label="Ask AI"
-                title="Ask Profit Coach AI"
+                aria-label="Ask Ava"
+                title="Ask Ava"
                 className="search-ask-ai ml-1 inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 sm:px-4"
               >
-                <Sparkles className="h-[18px] w-[18px]" strokeWidth={1.75} />
-                <span className="hidden sm:inline">Ask AI</span>
+                <AvaHalo size={20} dark />
+                <span className="hidden sm:inline">Ask Ava</span>
               </button>
             ) : null}
           </div>
@@ -668,8 +668,8 @@ function SearchDialog({
                   onClick={() => onAskAi(q)}
                   className="mt-5 inline-flex items-center gap-2 rounded-full bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
                 >
-                  <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-                  Ask AI instead
+                  <AvaHalo size={18} dark />
+                  Ask Ava instead
                 </button>
               ) : null}
             </div>

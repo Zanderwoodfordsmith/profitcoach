@@ -96,6 +96,8 @@ export function formatCommunityRelativeFutureLong(
 export type CommunityEventHappeningWhen = {
   /** e.g. "at 4pm today" or "in 45 minutes" */
   label: string;
+  /** Phone-width version: "today 4pm", "Mon 4pm", "in 45 min". */
+  shortLabel: string;
   /** Short zone for clock-time labels (e.g. "SAST"); null for relative copy. */
   timezoneShort: string | null;
 };
@@ -120,7 +122,11 @@ export function formatCommunityEventHappeningWhen(
   viewerTimezone: string,
   now = Date.now()
 ): CommunityEventHappeningWhen {
-  const empty: CommunityEventHappeningWhen = { label: "", timezoneShort: null };
+  const empty: CommunityEventHappeningWhen = {
+    label: "",
+    shortLabel: "",
+    timezoneShort: null,
+  };
   const zone = viewerTimezone?.trim() || "UTC";
   const start = DateTime.fromISO(startsAtIso, { zone: "utc" }).setZone(zone);
   if (!start.isValid) return empty;
@@ -133,6 +139,7 @@ export function formatCommunityEventHappeningWhen(
   if (diff < HOUR_MS) {
     return {
       label: `in ${formatFutureMinutesHoursDays(diff)}`,
+      shortLabel: `in ${Math.max(1, Math.floor(diff / 60_000))} min`,
       timezoneShort: null,
     };
   }
@@ -144,18 +151,20 @@ export function formatCommunityEventHappeningWhen(
       new Date(start.toMillis())
     );
     let label: string;
+    let shortLabel: string;
     if (start.hasSame(nowInZone, "day")) {
       label = `at ${time} today`;
+      shortLabel = `today ${time}`;
     } else if (start.hasSame(nowInZone.plus({ days: 1 }), "day")) {
       label = `at ${time} tomorrow`;
+      shortLabel = `tomorrow ${time}`;
     } else {
       label = `at ${time} ${start.toFormat("cccc")}`;
+      shortLabel = `${start.toFormat("ccc")} ${time}`;
     }
-    return { label, timezoneShort };
+    return { label, shortLabel, timezoneShort };
   }
 
-  return {
-    label: `in ${formatFutureMinutesHoursDays(diff)}`,
-    timezoneShort: null,
-  };
+  const label = `in ${formatFutureMinutesHoursDays(diff)}`;
+  return { label, shortLabel: label, timezoneShort: null };
 }

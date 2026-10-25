@@ -11,6 +11,7 @@ import {
   type ProgrammeIntakeTimeCommitment,
 } from "@/config/programmeIntake";
 import type { RoleIcon } from "@/lib/booking/bookCallQualify";
+import { buttonClass } from "@/components/ui/Button";
 
 type StepId = "situation" | "goal" | "time" | "linkedin";
 
@@ -315,7 +316,7 @@ export function WelcomeIntakeSurvey({
                 >
                   <RoleGlyph name={option.icon} />
                 </span>
-                <span className="text-center text-[12.5px] font-semibold leading-tight tracking-[-0.01em]">
+                <span className="text-center text-caption font-medium leading-tight">
                   {option.label}
                 </span>
               </button>
@@ -348,7 +349,7 @@ export function WelcomeIntakeSurvey({
                   >
                     <GoalGlyph name={option.icon} />
                   </span>
-                  <span className="text-center text-[12.5px] font-semibold leading-tight tracking-[-0.01em]">
+                  <span className="text-center text-caption font-medium leading-tight">
                     {option.label}
                   </span>
                 </button>
@@ -359,7 +360,7 @@ export function WelcomeIntakeSurvey({
             type="button"
             disabled={busy || goals.length === 0}
             onClick={goNext}
-            className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-not-allowed disabled:opacity-40"
+            className={buttonClass("main", "normal", "w-full")}
           >
             Continue
           </button>
@@ -392,7 +393,7 @@ export function WelcomeIntakeSurvey({
                 >
                   <TimeGlyph />
                 </span>
-                <span className="text-center text-[12.5px] font-semibold leading-tight tracking-[-0.01em]">
+                <span className="text-center text-caption font-medium leading-tight">
                   {option.label}
                 </span>
               </button>
@@ -415,7 +416,7 @@ export function WelcomeIntakeSurvey({
             type="button"
             disabled={busy}
             onClick={goNext}
-            className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:opacity-50"
+            className={buttonClass("main", "normal", "w-full")}
           >
             {busy ? "Saving…" : "Finish intake"}
           </button>
@@ -427,7 +428,7 @@ export function WelcomeIntakeSurvey({
           type="button"
           onClick={goBack}
           disabled={busy || stepIndex === 0}
-          className="text-sm font-medium text-slate-500 transition hover:text-slate-700 disabled:opacity-40"
+          className={buttonClass("quiet", "small")}
         >
           Back
         </button>
@@ -435,7 +436,7 @@ export function WelcomeIntakeSurvey({
           type="button"
           onClick={onSkip}
           disabled={busy}
-          className="text-sm font-medium text-slate-500 transition hover:text-slate-700"
+          className={buttonClass("quiet", "small")}
         >
           Skip for now
         </button>

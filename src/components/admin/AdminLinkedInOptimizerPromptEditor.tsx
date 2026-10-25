@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { buttonClass } from "@/components/ui/Button";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { PROFILE_REWRITE_DEFAULT_VOICE } from "@/lib/linkedinProfileOptimizer/prompts";
 
@@ -113,7 +114,7 @@ export function AdminLinkedInOptimizerPromptEditor() {
           type="button"
           onClick={() => void save({ system_prompt: prompt })}
           disabled={saving || !loaded}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+          className={buttonClass("main")}
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -121,7 +122,7 @@ export function AdminLinkedInOptimizerPromptEditor() {
           type="button"
           onClick={() => void save({ reset: true })}
           disabled={saving || !loaded || usingDefault}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className={buttonClass("second")}
         >
           Reset to default
         </button>

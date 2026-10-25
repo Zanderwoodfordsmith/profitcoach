@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
+import { cardClass } from "@/components/ui/Card";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { SalesNavImportRunRow } from "@/app/api/admin/sales-nav-imports/route";
 
@@ -133,9 +134,9 @@ export function SalesNavImportsPanel() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className={cardClass("plain", "overflow-x-auto")}>
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
+              <thead className="border-b border-slate-200 bg-slate-50 text-kicker font-medium uppercase text-slate-500">
                 <tr>
                   <th className="px-3 py-2.5 font-medium">When</th>
                   <th className="px-3 py-2.5 font-medium">Status</th>
@@ -255,8 +256,8 @@ export function SalesNavImportsPanel() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+    <div className={cardClass("plain", "px-4 py-3")}>
+      <p className="text-kicker font-medium uppercase text-slate-400">
         {label}
       </p>
       <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-slate-900">

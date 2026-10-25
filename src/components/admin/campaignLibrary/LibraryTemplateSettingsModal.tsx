@@ -2,6 +2,7 @@
 
 import { useEffect, useId } from "react";
 import { X } from "lucide-react";
+import { cardClass } from "@/components/ui/Card";
 import { WeeklyHoursEditor } from "@/components/booking/WeeklyHoursEditor";
 import { CampaignLimitSlider } from "@/components/campaigns/CampaignLimitSlider";
 import type { CampaignLibraryTemplateSettings } from "@/lib/campaignLibrary/types";
@@ -53,7 +54,7 @@ export function LibraryTemplateSettingsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl"
+        className={cardClass("raised", "relative max-h-[90vh] w-full max-w-lg overflow-y-auto")}
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <h2
@@ -74,7 +75,7 @@ export function LibraryTemplateSettingsModal({
         <div className="space-y-6 px-5 py-5">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-medium text-slate-900">
                 Stop when they reply
               </p>
               <p className="mt-0.5 text-xs leading-snug text-slate-500">

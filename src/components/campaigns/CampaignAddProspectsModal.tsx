@@ -10,6 +10,8 @@ import { resolveProspectSourceLabel } from "@/lib/prospectSourceKind";
 import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 import {
   audienceItemSourceLabel,
@@ -1182,7 +1184,7 @@ export function CampaignAddProspectsModal({
             })}
           </div>
         ) : (
-        <div className="mt-4 flex gap-4 border-b border-slate-200 px-5 text-xs font-semibold">
+        <div className="mt-4 flex gap-4 border-b border-slate-200 px-5 text-xs font-medium">
           {TAB_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -1329,7 +1331,7 @@ export function CampaignAddProspectsModal({
                       ) : null}
                     </div>
                   </div>
-                  <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200">
+                  <div className={cardClass("plain", "mt-3 flex min-h-0 flex-1 flex-col overflow-hidden")}>
                     <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2">
                       <input
                         type="checkbox"
@@ -1411,7 +1413,7 @@ export function CampaignAddProspectsModal({
                                       .join(" · ") || "—"}
                                   </div>
                                 </div>
-                                <span className="text-[11px] font-medium text-slate-600">
+                                <span className="text-caption font-medium text-slate-600">
                                   {inCampaign
                                     ? "Already added"
                                     : row.blacklisted
@@ -1453,7 +1455,7 @@ export function CampaignAddProspectsModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  className={buttonClass("quiet", "small")}
                 >
                   Cancel
                 </button>
@@ -1461,7 +1463,7 @@ export function CampaignAddProspectsModal({
                   type="button"
                   disabled={busy || !namedListId || namedIdsToAdd.length === 0}
                   onClick={() => void addFromNamedList()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  className={buttonClass("main", "small")}
                 >
                   {busy ? (
                     addingLabel
@@ -1756,7 +1758,7 @@ export function CampaignAddProspectsModal({
                     : "Only people with a LinkedIn profile can join this campaign."}
               </p>
 
-              <div className="mt-3 min-h-0 flex-1 overflow-hidden rounded-lg border border-slate-200">
+              <div className={cardClass("plain", "mt-3 min-h-0 flex-1 overflow-hidden")}>
                 <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2">
                   <input
                     type="checkbox"
@@ -1818,27 +1820,27 @@ export function CampaignAddProspectsModal({
                               </div>
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-0.5">
-                              <span className="text-[11px] font-medium text-slate-500">
+                              <span className="text-caption font-medium text-slate-500">
                                 {row.status.label}
                               </span>
                               {state === "in_campaign" ? (
-                                <span className="text-[11px] text-slate-400">
+                                <span className="text-caption text-slate-400">
                                   Already added
                                 </span>
                               ) : state === "no_linkedin" ? (
-                                <span className="text-[11px] text-amber-700">
+                                <span className="text-caption text-amber-700">
                                   No LinkedIn
                                 </span>
                               ) : state === "no_email" ? (
-                                <span className="text-[11px] text-amber-700">
+                                <span className="text-caption text-amber-700">
                                   No email
                                 </span>
                               ) : state === "no_phone" ? (
-                                <span className="text-[11px] text-amber-700">
+                                <span className="text-caption text-amber-700">
                                   No phone
                                 </span>
                               ) : row.tags?.length ? (
-                                <span className="max-w-[9rem] truncate text-[11px] text-slate-400">
+                                <span className="max-w-[9rem] truncate text-caption text-slate-400">
                                   {row.tags.join(", ")}
                                 </span>
                               ) : null}
@@ -1871,7 +1873,7 @@ export function CampaignAddProspectsModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  className={buttonClass("quiet", "small")}
                 >
                   Cancel
                 </button>
@@ -1879,7 +1881,7 @@ export function CampaignAddProspectsModal({
                   type="button"
                   disabled={busy || prospectIdsToAdd.length === 0}
                   onClick={() => void addFromContacts()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  className={buttonClass("main", "small")}
                 >
                   {busy ? (
                     addingLabel
@@ -1912,7 +1914,7 @@ export function CampaignAddProspectsModal({
                   type="button"
                   disabled={busy || (!searchUrl.trim() && !searchKeywords.trim())}
                   onClick={() => void runLinkedInSearch(null)}
-                  className="rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  className={buttonClass("main", "small")}
                 >
                   Search
                 </button>
@@ -1921,7 +1923,7 @@ export function CampaignAddProspectsModal({
                     type="button"
                     disabled={busy}
                     onClick={() => void runLinkedInSearch(searchCursor)}
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium"
+                    className={buttonClass("second", "small")}
                   >
                     Next page
                   </button>
@@ -1944,14 +1946,14 @@ export function CampaignAddProspectsModal({
                           }))
                       )
                     }
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium"
+                    className={buttonClass("second", "small")}
                   >
                     Add {searchHits.filter((h) => h.linkedin_url).length}
                   </button>
                 ) : null}
               </div>
               {searchHits.length ? (
-                <ul className="max-h-48 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">
+                <ul className={cardClass("plain", "max-h-48 divide-y divide-slate-100 overflow-y-auto")}>
                   {searchHits.map((h, i) => (
                     <li key={`${h.linkedin_url}-${i}`} className="px-3 py-2">
                       <div className="truncate text-sm font-medium">
@@ -1987,7 +1989,7 @@ export function CampaignAddProspectsModal({
                 }}
               />
               {csvRows.length ? (
-                <div className="rounded-lg border border-slate-200 bg-white px-3.5 py-3">
+                <div className={cardClass("plain", "px-3.5 py-3")}>
                   <p className="text-sm font-medium text-slate-900">
                     {csvFileName}: {csvRows.length}{" "}
                     {csvRows.length === 1 ? "person" : "people"} found
@@ -2010,7 +2012,7 @@ export function CampaignAddProspectsModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  className={buttonClass("quiet", "small")}
                 >
                   Cancel
                 </button>
@@ -2018,7 +2020,7 @@ export function CampaignAddProspectsModal({
                   type="button"
                   disabled={busy || csvEligibleCount === 0}
                   onClick={() => void addFromCsv()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  className={buttonClass("main", "small")}
                 >
                   {busy ? (
                     addingLabel
@@ -2045,7 +2047,7 @@ export function CampaignAddProspectsModal({
                 type="button"
                 disabled={busy || !importText.trim()}
                 onClick={() => void importLeads()}
-                className="rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                className={buttonClass("main", "small")}
               >
                 Add to staging
               </button>

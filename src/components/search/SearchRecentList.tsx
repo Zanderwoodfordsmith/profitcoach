@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Briefcase, FileText, Play, UserRound, type LucideIcon } from "lucide-react";
+import { cardClass } from "@/components/ui/Card";
 import { formatCommunityRelativeActivityAgo } from "@/lib/communityRelativeTime";
 import type { RecentVisit, RecentVisitKind } from "@/lib/search/recentVisits";
 
@@ -39,7 +40,7 @@ export function SearchRecentList({ recent }: { recent: RecentVisit[] }) {
       >
         Recently opened
       </h2>
-      <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.05)]">
+      <ul className={cardClass("plain", "mt-3 divide-y divide-slate-100 overflow-hidden")}>
         {recent.map((visit) => (
           <li key={visit.href}>
             <Link

@@ -87,7 +87,7 @@ export function InlineEditableText({
   return (
     <div className={className}>
       {label ? (
-        <div className="text-[11px] text-slate-400">{label}</div>
+        <div className="text-caption text-slate-400">{label}</div>
       ) : null}
       {editing ? (
         <div className={label ? "mt-0.5" : undefined}>
@@ -145,7 +145,7 @@ export function InlineEditableText({
             />
           )}
           {error ? (
-            <p className="mt-1 text-[11px] text-rose-600">{error}</p>
+            <p className="mt-1 text-caption text-rose-600">{error}</p>
           ) : null}
         </div>
       ) : (

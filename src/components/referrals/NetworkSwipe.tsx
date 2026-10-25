@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type PointerEvent } from "react";
 import { prospectInitials } from "@/components/prospects/ProspectTableAvatar";
+import { buttonClass } from "@/components/ui/Button";
 import type { DeckCard, NetworkRating } from "@/lib/referrals/network";
 
 const SWIPE_DISTANCE = 110;
@@ -9,7 +10,7 @@ const EXIT_MS = 180;
 
 function Photo({ name, url, size }: { name: string; url: string | null; size: "lg" | "sm" }) {
   const [failed, setFailed] = useState(false);
-  const box = size === "lg" ? "h-28 w-28 text-2xl" : "h-9 w-9 text-[11px]";
+  const box = size === "lg" ? "h-28 w-28 text-2xl" : "h-9 w-9 text-caption";
   if (!url || failed) {
     return (
       <span
@@ -37,7 +38,7 @@ export { Photo as NetworkPhoto };
 
 function Kbd({ children }: { children: string }) {
   return (
-    <kbd className="rounded border border-current/30 px-1.5 py-0.5 font-sans text-[11px] leading-none opacity-70">
+    <kbd className="rounded border border-current/30 px-1.5 py-0.5 font-sans text-caption leading-none opacity-70">
       {children}
     </kbd>
   );
@@ -193,14 +194,14 @@ export function NetworkSwipe({ card, nextCard, canUndo, onRate, onUndo }: Props)
         <button
           type="button"
           onClick={() => commit("unknown")}
-          className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className={buttonClass("second")}
         >
           <Kbd>←</Kbd> Don&apos;t know
         </button>
         <button
           type="button"
           onClick={() => commit("known")}
-          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0c5290] to-[#1a8fd4] px-4 py-3 text-sm font-semibold text-white hover:opacity-95"
+          className={buttonClass("main")}
         >
           True <Kbd>→</Kbd>
         </button>

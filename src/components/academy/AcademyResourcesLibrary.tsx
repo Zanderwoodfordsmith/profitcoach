@@ -28,6 +28,7 @@ import {
 } from "@/lib/academy/resourcesCatalog";
 import type { AcademyResourceArea, AcademyResourceKind } from "@/lib/academy/parseResourcesMarkdown";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   catalog: AcademyResourcesCatalog;
@@ -91,7 +92,7 @@ function topicKey(sectionId: string, topic: string | null): string {
 function ResourceKindBadge({ kind }: { kind: AcademyResourceKind }) {
   const Icon = KIND_ICONS[kind];
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium text-slate-600">
       <Icon className="h-3 w-3" aria-hidden />
       {ACADEMY_RESOURCE_KIND_LABELS[kind]}
     </span>
@@ -226,8 +227,8 @@ function ExpandableHeaderRow({
             isSection ? "py-3.5" : "border-l-2 border-slate-300/80 py-2.5"
           } ${
             isSection
-              ? "text-sm font-bold tracking-tight text-slate-900"
-              : "text-xs font-semibold text-slate-600"
+              ? "text-sm font-semibold tracking-tight text-slate-900"
+              : "text-xs font-medium text-slate-600"
           }`}
         >
           <ChevronDown
@@ -239,13 +240,13 @@ function ExpandableHeaderRow({
           <span className="min-w-0 flex-1">
             <span className="block">{title}</span>
             {subtitle ? (
-              <span className="mt-0.5 block text-[11px] font-normal normal-case tracking-normal text-slate-500">
+              <span className="mt-0.5 block text-caption font-normal normal-case tracking-normal text-slate-500">
                 {subtitle}
               </span>
             ) : null}
           </span>
           {count != null ? (
-            <span className="mt-0.5 shrink-0 rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+            <span className="mt-0.5 shrink-0 rounded-full bg-white/80 px-2 py-0.5 text-caption font-medium text-slate-500">
               {count}
             </span>
           ) : null}
@@ -516,7 +517,7 @@ function ResourcesGroupedTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain", "overflow-hidden")}>
       <table className="w-full table-fixed text-left text-sm">
         <ResourcesTableHeader />
         <tbody>
@@ -554,7 +555,7 @@ function ResourcesSearchTable({
   onDelete?: (resource: AcademyResourceRow) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain", "overflow-hidden")}>
       <table className="w-full table-fixed text-left text-sm">
         <ResourcesTableHeader showTopic />
         <tbody>
@@ -701,7 +702,7 @@ export function AcademyResourcesLibrary({ catalog, canManage = false }: Props) {
           onDelete={handleDelete}
         />
       ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div className={cardClass("plain", "p-5 md:p-6")}>
           <p className="text-sm text-slate-600">
             {flatSections.reduce((count, section) => count + section.resources.length, 0)} resources
             in {ACADEMY_RESOURCE_AREA_LABELS[area]}.

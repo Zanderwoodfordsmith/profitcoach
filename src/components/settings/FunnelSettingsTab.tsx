@@ -24,6 +24,8 @@ import { buildEmbedSnippet } from "@/lib/embedMode";
 import { callsCalendarsHref } from "@/lib/booking/callsCalendarsPath";
 import { ProspectsLandingStats } from "@/components/prospects/ProspectsLandingStats";
 import { ShareQrCodeModal } from "@/components/settings/ShareQrCodeModal";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const CRM_APP_BASE_URL = "https://app.procoachplatform.com/";
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -74,7 +76,7 @@ function SectionCard({
         : null;
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section className={cardClass("plain", "overflow-hidden")}>
       {accentClass ? <div className={`h-1 ${accentClass}`} aria-hidden /> : null}
       <div className="p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
@@ -136,7 +138,7 @@ function LinkPreviewRow({
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium text-slate-900">{title}</p>
             {primary ? (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-kicker font-semibold uppercase text-sky-800">
                 Main link
               </span>
             ) : null}
@@ -247,10 +249,10 @@ function CollapsibleCrmMassSendLink({
             Merge fields pull each contact&apos;s name, email, and business from
             their record, so you can message a list without creating links one by
             one. Set your{" "}
-            <code className="font-mono text-[11px]">coach_url_slug</code> custom
+            <code className="font-mono text-caption">coach_url_slug</code> custom
             value to your public slug above.
           </FieldHint>
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+          <div className={cardClass("plain", "px-4 py-3")}>
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium text-slate-800">CRM link</p>
               <button
@@ -261,7 +263,7 @@ function CollapsibleCrmMassSendLink({
                 {copied ? "Copied!" : "Copy link"}
               </button>
             </div>
-            <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
+            <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-slate-900 p-3 text-caption leading-relaxed text-slate-100">
               <code>{templateUrl}</code>
             </pre>
           </div>
@@ -317,7 +319,7 @@ function EmbedSnippetBlock({
   onCopy: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+    <div className={cardClass("plain", "px-4 py-3")}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-slate-800">{label}</p>
@@ -331,7 +333,7 @@ function EmbedSnippetBlock({
           {copied ? "Copied!" : "Copy code"}
         </button>
       </div>
-      <pre className="mt-2 max-h-36 overflow-auto rounded-md bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
+      <pre className="mt-2 max-h-36 overflow-auto rounded-md bg-slate-900 p-3 text-caption leading-relaxed text-slate-100">
         <code>{code}</code>
       </pre>
     </div>
@@ -382,7 +384,7 @@ function SidebarVideoCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain", "overflow-hidden")}>
       {playing ? (
         <video
           ref={videoRef}
@@ -580,7 +582,7 @@ function CrmLeadCaptureFields({
         />
         <FieldHint>
           Paste the location ID or full URL (
-          <code className="font-mono text-[11px]">
+          <code className="font-mono text-caption">
             {CRM_LOCATION_BASE_URL}/&lt;location-id&gt;
           </code>
           ).
@@ -777,7 +779,7 @@ export function FunnelSettingsTab({
                 title="Boss Score"
                 description="Lead-generation funnel with a landing page and short scorecard."
               >
-                <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-4">
+                <div className={cardClass("soft", "p-4")}>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Landing page
                   </p>
@@ -920,7 +922,7 @@ export function FunnelSettingsTab({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+              className={buttonClass("main")}
             >
               {saving ? "Saving…" : "Save funnel settings"}
             </button>

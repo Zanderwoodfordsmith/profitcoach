@@ -9,6 +9,7 @@ import { AREAS, LEVELS } from "@/lib/bossData";
 import type { PlaybookSummary } from "@/lib/playbookContentTypes";
 
 import { areaHeroGradient, PlaybookCard } from "./PlaybookCard";
+import { cardClass } from "@/components/ui/Card";
 
 type ViewMode = "grid" | "list";
 
@@ -143,7 +144,7 @@ export function PlaybooksLibrary({
       {!loading && !error && viewMode === "list" && (
         <div className="flex flex-col gap-8">
           {grouped.map(({ area, items }) => (
-            <section key={area.id} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <section key={area.id} className={cardClass("plain")}>
               <div className="border-b border-slate-100 px-4 py-3">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
                   {area.name}
@@ -172,7 +173,7 @@ export function PlaybooksLibrary({
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#0c5290] sm:text-[11px]">
+                          <p className="text-kicker font-semibold uppercase text-[#0c5290]">
                             {meta}
                           </p>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -180,7 +181,7 @@ export function PlaybooksLibrary({
                               {s.name}
                             </span>
                             {locked ? (
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-kicker font-semibold uppercase text-slate-600">
                                 Locked
                               </span>
                             ) : null}
@@ -192,7 +193,7 @@ export function PlaybooksLibrary({
                           >
                             {desc || "A concise overview will appear here once content is published."}
                           </p>
-                          <p className="mt-3 text-sm font-semibold text-slate-900">
+                          <p className="mt-3 text-sm font-medium text-slate-900">
                             Open playbook{" "}
                             <span
                               className="inline-block transition-transform duration-300 group-hover:translate-x-1"

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Lock, Pencil } from "lucide-react";
 
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { DECISION_FIELDS, DECISION_GROUPS, proposedDecision } from "@/lib/practiceKnowledge/decisionDefaults";
 import type { DecisionRecordPayload } from "@/lib/practiceKnowledge/types";
 
@@ -61,12 +63,12 @@ export function DecisionRecordView() {
 
   return (
     <div className="space-y-6">
-      <p className="max-w-[60ch] text-[0.9375rem] leading-[1.6] text-[var(--bp-muted)]">{status}</p>
+      <p className="max-w-[60ch] text-read text-[var(--bp-muted)]">{status}</p>
 
       {groups.map((group, index) => (
-        <section key={group.label} className="bp-keep bp-block overflow-hidden rounded-2xl border border-[#e3e8ef] bg-white">
+        <section key={group.label} className={cardClass("plain", "bp-keep bp-block overflow-hidden")}>
           <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[#eef1f5] px-5 py-3">
-            <h3 className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-[var(--bp-ink)]">{group.label}</h3>
+            <h3 className="text-subhead font-semibold text-[var(--bp-ink)]">{group.label}</h3>
             <div className="bp-no-print flex items-center gap-2">
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -83,7 +85,7 @@ export function DecisionRecordView() {
                     setDraft({ ...values });
                     setEditing(true);
                   }}
-                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--bp-muted)] hover:bg-[var(--bp-tint)] hover:text-[var(--bp-ink)]"
+                  className={buttonClass("quiet", "small")}
                 >
                   <Pencil className="h-3.5 w-3.5" aria-hidden />
                   Edit
@@ -97,7 +99,7 @@ export function DecisionRecordView() {
               return (
                 <div key={field.key} className="grid gap-x-8 gap-y-1.5 py-4 @xl:grid-cols-[minmax(11rem,15rem)_1fr]">
                   <dt>
-                    <span className="block text-[0.9375rem] font-semibold text-[var(--bp-ink)]">{field.label}</span>
+                    <span className="block text-ui font-medium text-[var(--bp-ink)]">{field.label}</span>
                     <span className="mt-0.5 block text-sm leading-5 text-[var(--bp-muted)]">{field.help}</span>
                   </dt>
                   <dd className="min-w-0">
@@ -107,12 +109,12 @@ export function DecisionRecordView() {
                         placeholder={`e.g. ${field.example}`}
                         rows={Math.max(1, Math.ceil((draft[field.key]?.length ?? 0) / 60))}
                         onChange={(e) => setDraft((d) => (d ? { ...d, [field.key]: e.target.value } : d))}
-                        className="w-full resize-y rounded-xl border border-[#cdd8e4] bg-white px-3.5 py-2.5 text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]"
+                        className="w-full resize-y rounded-xl border border-[#cdd8e4] bg-white px-3.5 py-2.5 text-read text-[var(--bp-ink)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]"
                       />
                     ) : value ? (
-                      <p className="bp-tinted rounded-xl bg-[#f3f5f8] px-3.5 py-2.5 text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)]">{value}</p>
+                      <p className="bp-tinted rounded-xl bg-[#f3f5f8] px-3.5 py-2.5 text-read text-[var(--bp-ink)]">{value}</p>
                     ) : (
-                      <p className="rounded-xl border border-dashed border-[#d3dae3] px-3.5 py-2.5 text-[0.9844rem] leading-[1.6] text-[var(--bp-faint)]">
+                      <p className="rounded-xl border border-dashed border-[#d3dae3] px-3.5 py-2.5 text-read text-[var(--bp-faint)]">
                         e.g. {field.example}
                       </p>
                     )}
@@ -130,14 +132,14 @@ export function DecisionRecordView() {
             type="button"
             disabled={saving}
             onClick={() => void save()}
-            className="rounded-full bg-[var(--bp-navy)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-14px_rgba(5,30,54,0.8)] hover:bg-[var(--bp-blue)] disabled:opacity-50"
+            className={buttonClass("main")}
           >
             {saving ? "Saving…" : "Save"}
           </button>
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="rounded-full px-4 py-2 text-sm font-semibold text-[var(--bp-muted)] hover:text-[var(--bp-ink)]"
+            className={buttonClass("quiet")}
           >
             Cancel
           </button>

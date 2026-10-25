@@ -8,6 +8,8 @@ import {
   validateCrmLocationId,
 } from "@/lib/ghlCalendarSync";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const CRM_APP_BASE_URL = "https://app.procoachplatform.com/";
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -179,7 +181,7 @@ export function BookingCalendarProviderCard({
 
   if (loading) {
     return (
-      <section className="rounded-xl border border-slate-200/80 bg-white p-4">
+      <section className={cardClass("plain", "p-4")}>
         <p className="text-sm text-slate-600">Loading booking provider…</p>
       </section>
     );
@@ -188,7 +190,7 @@ export function BookingCalendarProviderCard({
   const crmFields = (
     <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
       <p className="text-sm font-semibold text-slate-900">CRM calendar</p>
-      <p className="text-[11px] leading-relaxed text-slate-500">
+      <p className="text-caption leading-relaxed text-slate-500">
         Prospects book through your Pro Coach Platform embed. Paste the
         location and iframe below.
       </p>
@@ -230,7 +232,7 @@ export function BookingCalendarProviderCard({
           }
           placeholder="BsRxKtV0lVHcvvZ6qHtu"
         />
-        <span className="mt-1 block text-[11px] leading-relaxed text-slate-500">
+        <span className="mt-1 block text-caption leading-relaxed text-slate-500">
           Paste the ID or the full location URL.
         </span>
       </label>
@@ -263,7 +265,7 @@ export function BookingCalendarProviderCard({
           }
           placeholder="https://hooks.example.com/coach-leads"
         />
-        <span className="mt-1 block text-[11px] leading-relaxed text-slate-500">
+        <span className="mt-1 block text-caption leading-relaxed text-slate-500">
           We POST when we capture an email and again with the score.
         </span>
       </label>
@@ -271,7 +273,7 @@ export function BookingCalendarProviderCard({
         type="button"
         disabled={savingCrm}
         onClick={() => void saveCrmDetails()}
-        className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+        className={buttonClass("main", "small")}
       >
         {savingCrm ? "Saving…" : "Save CRM details"}
       </button>
@@ -280,9 +282,9 @@ export function BookingCalendarProviderCard({
 
   if (compact) {
     return (
-      <section className="rounded-xl border border-slate-200/80 bg-white p-4">
+      <section className={cardClass("plain", "p-4")}>
         <label className="block">
-          <span className="text-sm font-semibold text-slate-900">
+          <span className="text-sm font-medium text-slate-900">
             Calendar provider
           </span>
           <select
@@ -298,7 +300,7 @@ export function BookingCalendarProviderCard({
             <option value="ghl">CRM calendar</option>
           </select>
         </label>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-1.5 text-caption leading-relaxed text-slate-500">
           {provider === "ghl"
             ? "Prospects see your CRM embed. Fill in the details below."
             : "Prospects book the calendars on the left."}
@@ -313,7 +315,7 @@ export function BookingCalendarProviderCard({
   }
 
   return (
-    <section className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5">
+    <section className={cardClass("plain", "p-4 sm:p-5")}>
       <h2 className="text-base font-semibold text-slate-900">
         Booking calendar provider
       </h2>
@@ -340,7 +342,7 @@ export function BookingCalendarProviderCard({
               : "border-slate-200 bg-white hover:border-slate-300",
           ].join(" ")}
         >
-          <span className="block text-sm font-semibold text-slate-900">
+          <span className="block text-sm font-medium text-slate-900">
             Profit Coach calendars
           </span>
           <span className="mt-1 block text-xs text-slate-600">
@@ -360,7 +362,7 @@ export function BookingCalendarProviderCard({
               : "border-slate-200 bg-white hover:border-slate-300",
           ].join(" ")}
         >
-          <span className="block text-sm font-semibold text-slate-900">
+          <span className="block text-sm font-medium text-slate-900">
             CRM calendar
           </span>
           <span className="mt-1 block text-xs text-slate-600">

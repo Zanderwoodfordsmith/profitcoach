@@ -13,6 +13,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { cardClass } from "@/components/ui/Card";
 
 function displayName(e: CommunityLadderEventDTO): string {
   const fromParts = [e.first_name, e.last_name]
@@ -138,7 +139,7 @@ export function LadderLevelUpsCard() {
   })();
 
   return (
-    <div className="mt-4 rounded-xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm">
+    <div className={cardClass("plain", "mt-4 px-4 py-4")}>
       <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
         <Trophy className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
@@ -189,10 +190,10 @@ export function LadderLevelUpsCard() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[0.9375rem] font-semibold leading-snug text-slate-900">
+                    <p className="truncate text-ui font-medium leading-snug text-slate-900">
                       {displayName(ev)}
                     </p>
-                    <p className="mt-0.5 truncate text-[0.8125rem] leading-snug text-slate-600">
+                    <p className="mt-0.5 truncate text-ui leading-snug text-slate-600">
                       {lvl?.name ?? ev.to_level}
                     </p>
                   </div>

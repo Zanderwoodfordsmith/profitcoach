@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Loader2, RefreshCw } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type QueueLead = {
   id: string;
@@ -168,7 +170,7 @@ export function LinkedInInterestQueue() {
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm shadow-slate-200/40 sm:p-6">
+    <section className={cardClass("plain", "space-y-4 p-5 sm:p-6")}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">
@@ -183,7 +185,7 @@ export function LinkedInInterestQueue() {
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className={buttonClass("second", "small")}
         >
           {loading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -204,7 +206,7 @@ export function LinkedInInterestQueue() {
           interested here (or from the campaign lead list).
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+        <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
           {leads.map((lead) => {
             const name =
               [lead.first_name, lead.last_name].filter(Boolean).join(" ") ||
@@ -240,7 +242,7 @@ export function LinkedInInterestQueue() {
                           onClick={() =>
                             void mark(lead.id, { outcome: "positive" })
                           }
-                          className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                          className="rounded-lg bg-emerald-600 px-2.5 py-1 text-caption font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                         >
                           Positive
                         </button>
@@ -250,7 +252,7 @@ export function LinkedInInterestQueue() {
                           onClick={() =>
                             void mark(lead.id, { outcome: "soft" })
                           }
-                          className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-50"
+                          className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-caption font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-50"
                         >
                           Neutral
                         </button>
@@ -260,13 +262,13 @@ export function LinkedInInterestQueue() {
                           onClick={() =>
                             void mark(lead.id, { outcome: "negative" })
                           }
-                          className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-900 hover:bg-rose-100 disabled:opacity-50"
+                          className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-caption font-semibold text-rose-900 hover:bg-rose-100 disabled:opacity-50"
                         >
                           Deselect
                         </button>
                       </>
                     ) : (
-                      <span className="self-center text-[11px] font-medium text-slate-600">
+                      <span className="self-center text-caption font-medium text-slate-600">
                         {lead.interest_outcome === "positive"
                           ? "Positive"
                           : lead.interest_outcome === "soft"
@@ -291,7 +293,7 @@ export function LinkedInInterestQueue() {
                             status: "assessment_sent",
                           })
                         }
-                        className="rounded-lg bg-[#0c5290] px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50"
+                        className={buttonClass("main", "small")}
                       >
                         Sent scorecard
                       </button>
@@ -306,7 +308,7 @@ export function LinkedInInterestQueue() {
                             status: "assessment_done",
                           })
                         }
-                        className="rounded-lg bg-[#0c5290] px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50"
+                        className={buttonClass("main", "small")}
                       >
                         Took scorecard
                       </button>
@@ -322,7 +324,7 @@ export function LinkedInInterestQueue() {
                             status: "call_offered",
                           })
                         }
-                        className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                        className={buttonClass("second", "small")}
                       >
                         Offered call
                       </button>
@@ -333,7 +335,7 @@ export function LinkedInInterestQueue() {
                         onClick={() =>
                           void navigator.clipboard.writeText(assessmentUrl)
                         }
-                        className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-medium hover:bg-slate-50"
+                        className={buttonClass("second", "small")}
                       >
                         Copy scorecard link
                       </button>
@@ -345,17 +347,17 @@ export function LinkedInInterestQueue() {
                   lead.status === "replied" ||
                   lead.interest_outcome) ? (
                   <details className="mt-2">
-                    <summary className="cursor-pointer text-[11px] font-medium text-slate-500">
+                    <summary className="cursor-pointer text-caption font-medium text-slate-500">
                       How to reply — playbook snippets
                     </summary>
                     <div className="mt-2 space-y-3">
                       {groupsForLead(lead).map((group) => (
                         <div key={group.id}>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                          <p className="text-kicker font-semibold uppercase text-slate-400">
                             {group.label}
                           </p>
                           {group.description ? (
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-caption text-slate-400">
                               {group.description}
                             </p>
                           ) : null}
@@ -375,9 +377,9 @@ export function LinkedInInterestQueue() {
                                     onClick={() =>
                                       void navigator.clipboard.writeText(filled)
                                     }
-                                    className="w-full rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:bg-slate-100"
+                                    className="w-full rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-caption text-slate-700 hover:bg-slate-100"
                                   >
-                                    <span className="font-semibold text-slate-800">
+                                    <span className="font-medium text-slate-800">
                                       {s.when}
                                       <span className="font-normal text-slate-400">
                                         {channelHint}
@@ -395,7 +397,7 @@ export function LinkedInInterestQueue() {
                                           fillSnippet(s.emailBody!, lead)
                                         )
                                       }
-                                      className="mt-1 w-full rounded-lg border border-dashed border-slate-200 px-2.5 py-1 text-left text-[10px] text-slate-500 hover:bg-slate-50"
+                                      className="mt-1 w-full rounded-lg border border-dashed border-slate-200 px-2.5 py-1 text-left text-caption text-slate-500 hover:bg-slate-50"
                                     >
                                       Copy email version (longer)
                                     </button>

@@ -182,7 +182,7 @@ function ChapterScrubberTrack({
 
       {hoveredSegment ? (
         <div
-          className="pointer-events-none absolute bottom-full z-10 mb-2 max-w-[min(18rem,calc(100%-0.5rem))] -translate-x-1/2 rounded-md bg-slate-950/95 px-2.5 py-1 text-[10px] font-medium leading-snug text-white shadow-lg ring-1 ring-white/10"
+          className="pointer-events-none absolute bottom-full z-10 mb-2 max-w-[min(18rem,calc(100%-0.5rem))] -translate-x-1/2 rounded-md bg-slate-950/95 px-2.5 py-1 text-caption font-medium leading-snug text-white shadow-lg ring-1 ring-white/10"
           style={{ left: `${hoverRatio * 100}%` }}
           role="tooltip"
         >
@@ -565,7 +565,7 @@ export function LessonVideoPlayer({
       {!started ? (
         <div className="absolute inset-0 z-[1] flex items-center justify-center bg-black/25 px-4">
           <div className="w-full max-w-xs rounded-2xl border border-white/10 bg-[var(--brand-chathams)]/70 p-5 text-center backdrop-blur-[2px] sm:max-w-sm sm:p-6">
-            <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+            <p className="text-subhead font-semibold tracking-tight text-white sm:text-2xl">
               {firstName ? `Hey ${firstName}` : "Ready when you are"}
             </p>
             <p className="mt-1.5 text-sm text-white/85 sm:text-base">
@@ -652,7 +652,7 @@ export function LessonVideoPlayer({
               className="inline-flex h-7 items-center gap-0.5 rounded px-1 text-white transition hover:bg-white/20 sm:px-1.5"
             >
               <ListVideo className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              <span className="text-[10px] font-semibold tabular-nums">
+              <span className="text-caption font-semibold tabular-nums">
                 {chapterMenu.activeIndex + 1}/{chapterMenu.chapters.length}
               </span>
               <ChevronDown className="h-3 w-3 opacity-80" aria-hidden />
@@ -711,7 +711,7 @@ export function LessonVideoPlayer({
                           </span>
                         </span>
                         {durationLabel ? (
-                          <span className="shrink-0 pt-px text-[10px] tabular-nums text-white/50">
+                          <span className="shrink-0 pt-px text-caption tabular-nums text-white/50">
                             {durationLabel}
                           </span>
                         ) : null}
@@ -733,7 +733,7 @@ export function LessonVideoPlayer({
           onSeek={onSeekInput}
         />
 
-        <p className="shrink-0 text-[11px] font-medium tabular-nums text-white/95">
+        <p className="shrink-0 text-caption font-medium tabular-nums text-white/95">
           {formatTime(displayCurrentTime)}
           <span className="text-white/60"> / {formatTime(displayDuration)}</span>
         </p>

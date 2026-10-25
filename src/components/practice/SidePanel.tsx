@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Maximize2, MessageSquare, X } from "lucide-react";
 
-import { AvaAction, AvaOrb, AvaRoomProvider } from "@/components/ava/AvaKit";
+import { AvaAction, AvaRoomProvider } from "@/components/ava/AvaKit";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 import type { AgentShow } from "@/lib/agent/types";
 import type { BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
 
@@ -46,16 +47,23 @@ export function SidePanel({
   }
 
   const unread = comments ? Object.values(comments.threads).reduce((n, t) => n + t.unread, 0) : 0;
+  // Ava's tab is her blue room, the same as everywhere else; Comments stays on white.
+  const dark = mode === "assistant";
   const tab = (active: boolean) =>
     `inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#cfe6f8] ${
-      active ? "bg-white text-[var(--ava-ink)] shadow-[0_1px_3px_rgba(5,30,54,0.14)]" : "text-[var(--ava-muted)] hover:text-[var(--ava-ink)]"
+      active
+        ? dark
+          ? "bg-white/15 text-[var(--ava-ink)]"
+          : "bg-white text-[var(--ava-ink)] shadow-[0_1px_3px_rgba(5,30,54,0.14)]"
+        : "text-[var(--ava-muted)] hover:text-[var(--ava-ink)]"
     }`;
 
   return (
-    <AvaRoomProvider room="panel">
-      <div className="ava-ui flex h-full min-h-0 flex-col bg-white">
-        <div className="flex items-center gap-1.5 border-b border-[var(--ava-rule)] px-3 py-2.5">
-          <div role="tablist" aria-label="Side panel" className="flex flex-1 rounded-full bg-[#eef3f8] p-0.5">
+    <AvaRoomProvider room="panel" dark={dark}>
+      <div className={`ava-ui relative flex h-full min-h-0 flex-col overflow-hidden ${dark ? "ava-dark" : "bg-white"}`}>
+        {dark ? <span className="ava-glass-glow" aria-hidden /> : null}
+        <div className="relative z-[1] flex items-center gap-1.5 border-b border-[var(--ava-rule)] px-3 py-2.5">
+          <div role="tablist" aria-label="Side panel" className={`flex flex-1 rounded-full p-0.5 ${dark ? "bg-white/[0.08]" : "bg-[#eef3f8]"}`}>
             <button
               type="button"
               role="tab"
@@ -66,7 +74,7 @@ export function SidePanel({
               }}
               className={tab(mode === "assistant")}
             >
-              <AvaOrb size={15} />
+              <AvaHalo size={16} dark={dark} />
               Ava
             </button>
             <button
@@ -91,7 +99,7 @@ export function SidePanel({
           ) : null}
           <AvaAction iconOnly icon={<X className="h-4 w-4" aria-hidden />} label="Close panel" onClick={closeAll} />
         </div>
-        <div className="min-h-0 flex-1">
+        <div className="relative z-[1] min-h-0 flex-1">
           {mode === "comments" ? (
             sectionKey ? (
               <CommentsPanel key={sectionKey} />

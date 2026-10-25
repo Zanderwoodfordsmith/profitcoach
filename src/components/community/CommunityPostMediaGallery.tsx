@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { FileText, Mic, Play, X } from "lucide-react";
 import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import { inferCommunityPostMediaKindFromUrl } from "@/lib/communityPostMedia";
+import { cardClass } from "@/components/ui/Card";
 
 function isFileItem(item: CommunityPostMediaItem): boolean {
   return (
@@ -195,7 +196,7 @@ function CommunityPostMediaLightbox({
         onClick={(e) => e.stopPropagation()}
       >
         {audio ? (
-          <div className="w-[min(28rem,90vw)] rounded-2xl bg-white p-5 shadow-2xl">
+          <div className={cardClass("raised", "w-[min(28rem,90vw)] p-5")}>
             <p className="mb-3 text-sm font-medium text-slate-700">Voice note</p>
             <audio src={item.url} controls autoPlay className="w-full" />
           </div>

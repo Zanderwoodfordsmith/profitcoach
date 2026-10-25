@@ -11,6 +11,8 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -137,13 +139,13 @@ export function CampaignTemplateList({
               type="button"
               disabled={busy}
               onClick={() => onPick(template)}
-              className="flex w-full items-start gap-3 rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+              className={cardClass("raised", "flex w-full items-start gap-3 px-4 py-3.5 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2")}
             >
               <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#0c5290]">
                 <Icon className="h-5 w-5" strokeWidth={2.1} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-[15px] font-semibold text-slate-900">
+                <span className="block truncate text-ui font-semibold text-slate-900">
                   {template.name}
                 </span>
                 {CAMPAIGN_LIBRARY_KIND_LABEL[template.kind] !== template.name ? (
@@ -199,7 +201,7 @@ export function CampaignTemplatePickerModal({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            className={buttonClass("quiet")}
           >
             Cancel
           </button>

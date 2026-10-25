@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ChevronRight, Eraser, LayoutList, Lightbulb } from "lucide-react";
 
 import "../practice/document/blueprint.css";
+import { buttonClass } from "@/components/ui/Button";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { ScriptCard } from "@/lib/salesCall/library";
@@ -122,10 +123,10 @@ function ScriptLibraryPage({ script, asked }: { script: ScriptCard; asked: strin
         <section aria-labelledby="part-title" className="min-w-0 flex-1 space-y-6 bg-white px-6 py-8 md:px-10 lg:px-14">
           <header className="flex items-start justify-between gap-4 border-b border-slate-200 pb-6">
             <div>
-              <h2 id="part-title" className="text-[1.625rem] font-normal leading-tight tracking-[-0.015em] text-slate-900">
+              <h2 id="part-title" className="text-title font-normal leading-tight text-slate-900">
                 {part.title}
               </h2>
-              <p className="mt-1 text-[1.0625rem] leading-[1.45] text-slate-600">{part.goal}</p>
+              <p className="mt-1 text-read leading-[1.45] text-slate-600">{part.goal}</p>
             </div>
             <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {gaps.filled ? (
@@ -133,7 +134,7 @@ function ScriptLibraryPage({ script, asked }: { script: ScriptCard; asked: strin
                 type="button"
                 onClick={gaps.clearAll}
                 title="Clear everything you've typed into the gaps, ready for the next person"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#f3f6fa] px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200/60 hover:text-slate-900"
+                className={buttonClass("quiet", "normal", "shrink-0")}
               >
                 <Eraser className="h-4 w-4" aria-hidden />
                 Clear details
@@ -143,7 +144,7 @@ function ScriptLibraryPage({ script, asked }: { script: ScriptCard; asked: strin
               <button
                 type="button"
                 onClick={() => setCoachingOpen(true)}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-sky-50 px-3.5 py-2 text-sm font-medium text-[#0c5290] hover:bg-sky-100"
+                className={buttonClass("second", "normal", "shrink-0")}
               >
                 <Lightbulb className="h-4 w-4" aria-hidden />
                 Tips
@@ -180,15 +181,15 @@ function ScriptOverview({
       <header className="bp-cover px-6 pb-10 pt-9 text-white md:px-12 md:pb-11 md:pt-11">
         <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between xl:gap-10">
           <div className="min-w-0">
-            <p className="text-[0.8125rem] font-semibold uppercase tracking-[0.32em] text-white/80">{script.eyebrow}</p>
+            <p className="text-ui font-semibold uppercase tracking-[0.32em] text-white/80">{script.eyebrow}</p>
             <h1 id="script-title" className="bp-display mt-4 text-[2.5rem] font-medium leading-[1.02] tracking-[-0.035em] md:text-[3.25rem]">
               {script.title}
             </h1>
-            <p className="mt-5 max-w-[46ch] text-[1.0625rem] leading-[1.55] text-white/80">{script.summary}</p>
+            <p className="mt-5 max-w-[46ch] text-read leading-[1.55] text-white/80">{script.summary}</p>
             <button
               type="button"
               onClick={() => onOpen(outline[0].id)}
-              className="mt-7 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[0.9375rem] font-semibold text-[#0c5290] shadow-sm transition hover:bg-sky-50"
+              className="mt-7 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-ui font-semibold text-[#0c5290] shadow-sm transition hover:bg-sky-50"
             >
               {script.parts ? "Start with part 1" : "Start the call"}
               <ArrowRight className="h-4 w-4" aria-hidden />
@@ -205,7 +206,7 @@ function ScriptOverview({
 
       <div className="bp-home-field px-6 py-10 md:px-12">
         <div className="bp-home-group max-w-[52rem]">
-          <h2 className="bp-display text-[1.375rem] font-medium text-[var(--bp-navy)]">{script.parts ? "What's in it" : "The call, step by step"}</h2>
+          <h2 className="bp-display text-title font-medium text-[var(--bp-navy)]">{script.parts ? "What's in it" : "The call, step by step"}</h2>
           <ol className="mt-5 space-y-3">
             {outline.map((p, i) => (
               <li key={p.id}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonClass } from "@/components/ui/Button";
 import {
   useEffect,
   useRef,
@@ -205,7 +206,7 @@ export function ScheduledMessageCard({
     <div className="flex justify-end px-1">
       <div className="min-w-0 max-w-[min(88%,28rem)] rounded-2xl rounded-br-md border border-dashed border-amber-300 bg-amber-50/90 px-3.5 py-2.5 text-sm text-amber-950 shadow-sm">
         <div className="flex items-start justify-between gap-2">
-          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+          <p className="inline-flex items-center gap-1.5 text-kicker font-semibold uppercase text-amber-800">
             <Clock className="h-3 w-3" aria-hidden />
             {failed ? "Send failed" : "Scheduled to send"}
           </p>
@@ -219,7 +220,7 @@ export function ScheduledMessageCard({
             />
           ) : null}
         </div>
-        <p className="mt-0.5 text-[11px] tabular-nums text-amber-800/80">
+        <p className="mt-0.5 text-caption tabular-nums text-amber-800/80">
           {failed && message.last_error
             ? message.last_error
             : formatShortDateTime(message.scheduled_for)}
@@ -256,25 +257,25 @@ export function ScheduledMessageCard({
                   setError(null);
                   setDraft(message.body_text ?? "");
                 }}
-                className="rounded-md px-2 py-1 text-[11px] font-medium text-amber-900/80 hover:bg-amber-100 disabled:opacity-50"
+                className={buttonClass("quiet", "small")}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={locked || !draft.trim()}
-                className="rounded-md bg-amber-800 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-amber-900 disabled:cursor-not-allowed disabled:bg-amber-300"
+                className={buttonClass("main", "small")}
               >
                 {saving ? "Saving…" : "Save"}
               </button>
             </div>
           </form>
         ) : (
-          <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-amber-950">
+          <p className="mt-2 whitespace-pre-wrap text-ui leading-relaxed text-amber-950">
             {message.body_text?.trim() || "(No text)"}
           </p>
         )}
-        {error ? <p className="mt-1.5 text-[11px] text-rose-700">{error}</p> : null}
+        {error ? <p className="mt-1.5 text-caption text-rose-700">{error}</p> : null}
       </div>
     </div>
   );

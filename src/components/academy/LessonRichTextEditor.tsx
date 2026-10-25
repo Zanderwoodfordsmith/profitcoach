@@ -46,6 +46,8 @@ import {
   uploadAcademyLessonImageFile,
   validateAcademyLessonImageFile,
 } from "@/lib/academyLessonImage";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   markdown: string;
@@ -654,7 +656,7 @@ export function LessonRichTextEditor({
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
                     <span className="font-medium">{label}</span>
-                    <span className="ml-auto text-[10px] text-slate-400">{hint}</span>
+                    <span className="ml-auto text-caption text-slate-400">{hint}</span>
                   </button>
                 ))}
               </div>
@@ -745,7 +747,7 @@ export function LessonRichTextEditor({
             ))}
             <label
               title="Custom colour"
-              className="relative flex h-6 w-6 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed border-slate-300 bg-white text-[10px] font-semibold text-slate-500 hover:border-slate-400"
+              className="relative flex h-6 w-6 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed border-slate-300 bg-white text-caption font-semibold text-slate-500 hover:border-slate-400"
             >
               +
               <input
@@ -780,7 +782,7 @@ export function LessonRichTextEditor({
             ))}
             <label
               title="Custom accordion background (click inside accordion first)"
-              className="relative flex h-6 w-6 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-dashed border-slate-300 bg-white text-[10px] font-semibold text-slate-500 hover:border-slate-400"
+              className="relative flex h-6 w-6 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-dashed border-slate-300 bg-white text-caption font-semibold text-slate-500 hover:border-slate-400"
             >
               +
               <input
@@ -913,7 +915,7 @@ export function LessonRichTextEditor({
             if (e.target === e.currentTarget) closeEmbed();
           }}
         >
-          <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+          <div className={cardClass("raised", "flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden")}>
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <h3 className="text-base font-semibold text-slate-900">
                 {editingEmbed ? "Edit HTML embed" : "Embed HTML"}
@@ -921,7 +923,7 @@ export function LessonRichTextEditor({
               <button
                 type="button"
                 onClick={closeEmbed}
-                className="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100"
+                className={buttonClass("quiet", "small")}
               >
                 Cancel
               </button>
@@ -951,7 +953,7 @@ export function LessonRichTextEditor({
                   <button
                     type="button"
                     onClick={removeEmbed}
-                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                    className={buttonClass("delete", "small")}
                   >
                     Remove embed
                   </button>
@@ -959,7 +961,7 @@ export function LessonRichTextEditor({
                 <button
                   type="button"
                   onClick={saveEmbed}
-                  className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-700"
+                  className={buttonClass("main", "small")}
                 >
                   {editingEmbed ? "Update" : "Insert"}
                 </button>

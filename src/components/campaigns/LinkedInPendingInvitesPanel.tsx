@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Minus, Plus, RefreshCw } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { PendingInvitesSpeedDial } from "@/components/campaigns/PendingInvitesSpeedDial";
 import {
   AUTO_DAILY_MAX,
@@ -252,14 +254,14 @@ export function LinkedInPendingInvitesPanel() {
         </p>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm shadow-slate-200/40 sm:p-5">
+      <section className={cardClass("plain", "p-4 sm:p-5")}>
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-slate-900">Pending load</h2>
           <button
             type="button"
             disabled={busy}
             onClick={() => void load()}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+            className={buttonClass("quiet", "small")}
           >
             <RefreshCw className="h-3.5 w-3.5" aria-hidden />
             Refresh
@@ -269,13 +271,13 @@ export function LinkedInPendingInvitesPanel() {
           <PendingInvitesSpeedDial count={total} />
         </div>
         {hasMore ? (
-          <p className="mt-2 text-center text-[11px] text-slate-500">
+          <p className="mt-2 text-center text-caption text-slate-500">
             Showing oldest of {total}+ pending
           </p>
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm shadow-slate-200/40 sm:p-5">
+      <section className={cardClass("plain", "p-4 sm:p-5")}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-slate-900">Auto-clean</h2>
@@ -299,7 +301,7 @@ export function LinkedInPendingInvitesPanel() {
           >
             {autoOn ? (
               <span
-                className="pointer-events-none absolute top-1/2 left-[6px] -translate-y-1/2 text-[10px] font-bold tracking-wide text-white"
+                className="pointer-events-none absolute top-1/2 left-[6px] -translate-y-1/2 text-caption font-bold tracking-wide text-white"
                 aria-hidden
               >
                 On
@@ -317,7 +319,7 @@ export function LinkedInPendingInvitesPanel() {
         </p>
       </section>
 
-      <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm shadow-slate-200/40 sm:p-5">
+      <section className={cardClass("plain", "p-4 sm:p-5")}>
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Withdraw now</h2>
           <p className="mt-0.5 text-xs text-slate-600">Always the oldest first.</p>
@@ -335,14 +337,14 @@ export function LinkedInPendingInvitesPanel() {
             type="button"
             disabled={busy || total === 0}
             onClick={() => void withdrawOldest()}
-            className="rounded-xl bg-[#0c5290] px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+            className={buttonClass("main")}
           >
             {busy ? "Withdrawing…" : `Withdraw ${clampedManual} oldest`}
           </button>
         </div>
       </section>
 
-      <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+      <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
         {invites.length === 0 ? (
           <li className="px-5 py-10 text-center">
             <p className="text-sm font-medium text-slate-900">Nothing pending</p>
@@ -373,14 +375,14 @@ export function LinkedInPendingInvitesPanel() {
                     </p>
                   ) : null}
                   {age ? (
-                    <p className="mt-1 text-[11px] text-slate-600">{age}</p>
+                    <p className="mt-1 text-caption text-slate-600">{age}</p>
                   ) : null}
                 </div>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => void withdrawOne(invite.id)}
-                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-40"
+                  className={buttonClass("second", "small", "shrink-0")}
                 >
                   Withdraw
                 </button>

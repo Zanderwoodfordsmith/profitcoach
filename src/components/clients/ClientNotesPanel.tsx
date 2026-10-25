@@ -5,6 +5,8 @@ import type { ClientSessionRow } from "@/lib/clientCoaching/loadClientSessions";
 import { formatShortDateTime } from "@/lib/formatShortDate";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { ClientSessionsList } from "@/components/clients/ClientSessionsList";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   contactId: string;
@@ -112,7 +114,7 @@ export function ClientNotesPanel({
           showLogButton
         />
       </div>
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+      <section className={cardClass("plain", "p-4")}>
         <h3 className="text-sm font-semibold text-slate-900">Session notes</h3>
         {!active ? (
           <p className="mt-3 text-sm text-slate-500">
@@ -142,14 +144,14 @@ export function ClientNotesPanel({
                 type="button"
                 onClick={() => void handleSave()}
                 disabled={saving}
-                className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-70"
+                className={buttonClass("main", "small")}
               >
                 {saving ? "Saving…" : "Save notes"}
               </button>
               <button
                 type="button"
                 onClick={() => setActive(null)}
-                className="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                className={buttonClass("quiet", "small")}
               >
                 Close
               </button>

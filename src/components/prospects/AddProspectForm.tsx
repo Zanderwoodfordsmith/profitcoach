@@ -1,5 +1,8 @@
 "use client";
 
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
+
 type CoachOption = { id: string; label: string };
 
 type Props = {
@@ -54,7 +57,7 @@ export function AddProspectForm({
     onCoachIdChange !== undefined;
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className={cardClass("plain", "p-4")}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">
@@ -167,14 +170,14 @@ export function AddProspectForm({
             <button
               type="submit"
               disabled={creating}
-              className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:cursor-wait disabled:opacity-70"
+              className={buttonClass("main")}
             >
               {creating ? "Creating prospect…" : "Create prospect"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="text-xs font-medium text-slate-600 hover:text-slate-800"
+              className={buttonClass("quiet", "small")}
             >
               Cancel
             </button>

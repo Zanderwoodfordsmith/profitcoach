@@ -35,6 +35,8 @@ import {
   type ContentLinkPick,
 } from "@/components/community/ContentLinkPicker";
 import { broadcastMentionsForQuery } from "@/lib/communityMentionUsers";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type MentionUser = {
   id: string;
@@ -1152,7 +1154,7 @@ export function MentionTextarea({
 
   const linkPanel = !richFormatting ? null : linkTarget ? (
     <div
-      className={`relative z-20 ${linkPanelSpacing} rounded-xl border border-slate-200 bg-white p-3 shadow-lg`}
+      className={cardClass("raised", `relative z-20 ${linkPanelSpacing} p-3`)}
       role="group"
       aria-label={linkTarget.index === null ? "Add link" : "Edit link"}
       onMouseDown={(e) => e.stopPropagation()}
@@ -1203,14 +1205,14 @@ export function MentionTextarea({
         ) : null}
         <button
           type="button"
-          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+          className={buttonClass("quiet", "small")}
           onClick={closeLinkForm}
         >
           Cancel
         </button>
         <button
           type="button"
-          className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+          className={buttonClass("main", "small")}
           disabled={!normalizeCommunityPostLinkUrl(linkUrlDraft)}
           onClick={applyLink}
         >
@@ -1297,14 +1299,14 @@ export function MentionTextarea({
             </button>
             <button
               type="button"
-              className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-1.5 text-caption font-semibold text-slate-700 transition hover:bg-slate-50"
               onMouseDown={preventToolbarBlur}
               onClick={() => applyLinePrefix("### ")}
               aria-label="Heading 3"
               title="Heading 3"
             >
               <Heading3 className="h-3.5 w-3.5" strokeWidth={2.1} />
-              <span className="text-[11px] leading-none">3</span>
+              <span className="text-caption leading-none">3</span>
             </button>
             <button
               type="button"

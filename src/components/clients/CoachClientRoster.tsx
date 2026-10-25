@@ -33,6 +33,8 @@ import {
 } from "@/lib/clientRoster/format";
 import { clientWorkspacePath } from "@/lib/clientCoaching/defaults";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type CoachClientRosterItem = {
   id: string;
@@ -256,13 +258,11 @@ function AddClientComposer({
   return (
     <form
       onSubmit={handleSave}
-      className={`rounded-2xl border border-slate-200 bg-white ${
-        prominent ? "p-6 sm:p-8" : "p-5"
-      }`}
+      className={cardClass("plain", prominent ? "p-6 sm:p-8" : "p-5")}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+          <h2 className="text-subhead font-semibold tracking-tight text-slate-900">
             Add a client
           </h2>
           <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-600">
@@ -274,7 +274,7 @@ function AddClientComposer({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            className={buttonClass("quiet", "small", "shrink-0")}
           >
             Close
           </button>
@@ -309,7 +309,7 @@ function AddClientComposer({
           type="button"
           onClick={() => void handleImport()}
           disabled={busy != null}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-60"
+          className={buttonClass("main")}
         >
           {busy === "import" ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -377,7 +377,7 @@ function AddClientComposer({
         <button
           type="submit"
           disabled={busy != null}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60"
+          className={buttonClass("second")}
         >
           {busy === "save" ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -605,7 +605,7 @@ function ClientEditor({
         <button
           type="submit"
           disabled={busy}
-          className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-60"
+          className={buttonClass("main")}
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           {busy ? "Saving…" : "Save"}
@@ -742,7 +742,7 @@ export function CoachClientRoster({
             <button
               type="button"
               onClick={() => setBulkOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className={buttonClass("second", "small")}
             >
               Add many
             </button>
@@ -751,7 +751,7 @@ export function CoachClientRoster({
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-600"
+              className={buttonClass("main", "small")}
             >
               <Plus className="h-4 w-4" aria-hidden />
               Add client
@@ -778,7 +778,7 @@ export function CoachClientRoster({
       ) : null}
 
       {clients.length > 0 ? (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-[0_12px_32px_-24px_rgba(15,23,42,0.35)]">
+        <div className={cardClass("plain", "overflow-x-auto")}>
           <table className="w-full min-w-[960px] border-collapse text-left">
             <caption className="sr-only">Your clients</caption>
             <thead>
@@ -852,7 +852,7 @@ export function CoachClientRoster({
                           <div className="flex items-center gap-3">
                             <Avatar client={client} />
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-slate-900">
+                              <p className="truncate text-sm font-medium text-slate-900">
                                 {client.fullName}
                               </p>
                               {secondary ? (

@@ -42,7 +42,7 @@ export function StudioHubCard({
       </div>
       <div className="flex flex-1 flex-col p-5">
         <p
-          className={`text-[10px] font-semibold uppercase tracking-[0.28em] ${eyebrowClassName}`}
+          className={`text-kicker font-semibold uppercase ${eyebrowClassName}`}
         >
           {eyebrow}
         </p>

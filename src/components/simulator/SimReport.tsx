@@ -18,6 +18,8 @@ import { TalkItThrough } from "./TalkItThrough";
 import { Transcript, unquote, type ReplayShown } from "./Transcript";
 import { formatSimDate, useSimApi, useSimPrefix } from "./simApi";
 import { QUICK_PACE, readPace } from "./SimulatorHome";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import "./sim.css";
 
 // Moved to Transcript.tsx; still exported here for the Call simulator.
@@ -187,23 +189,23 @@ export function SimReport({ id }: { id: string }) {
 
             {data.mine ? (
               <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <button type="button" onClick={() => setTalking(true)} className="inline-flex items-center gap-2 rounded-full bg-[#051e36] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0c5290]">
+                <button type="button" onClick={() => setTalking(true)} className={buttonClass("main")}>
                   <MessageCircle className="h-4 w-4" aria-hidden /> Talk it through with Ava
                 </button>
-                <Link href={again} className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50">
+                <Link href={again} className={buttonClass("second")}>
                   <Repeat className="h-4 w-4" aria-hidden /> Practise again
                 </Link>
                 <button
                   type="button"
                   onClick={() => setSharing(true)}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                  className={buttonClass("second")}
                 >
                   <Share2 className="h-4 w-4" aria-hidden /> {s.shared_at ? "Shared with the community" : "Share with the community"}
                 </button>
                 {data.canFollowUp && s.mode === "practice" ? (
                   <Link
                     href={`${prefix}/simulator?client=${client.id}&situation=follow-up&level=${s.difficulty}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                    className={buttonClass("second")}
                   >
                     <StepForward className="h-4 w-4" aria-hidden /> Continue with {client.firstName}
                   </Link>
@@ -217,18 +219,18 @@ export function SimReport({ id }: { id: string }) {
             </div>
 
             <section className="mt-12">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900">Moments from the call</h2>
+              <h2 className="text-subhead font-semibold tracking-tight text-slate-900">Moments from the call</h2>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 {report.moments.map((m, i) => (
-                  <article key={i} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">
+                  <article key={i} className={cardClass("plain", "flex flex-col p-5")}>
                     <span className={`w-max rounded-full px-2.5 py-1 text-xs font-semibold ${m.kind === "good" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>
                       {m.kind === "good" ? "Worked well" : "Missed chance"}
                     </span>
-                    <p className="mt-3 text-[1.05rem] leading-snug text-slate-900">&ldquo;{unquote(m.quote)}&rdquo;</p>
+                    <p className="mt-3 text-read leading-snug text-slate-900">&ldquo;{unquote(m.quote)}&rdquo;</p>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600">{m.note}</p>
                     {m.tryInstead ? (
                       <p className="mt-auto pt-3 text-sm leading-relaxed text-slate-800">
-                        <span className="font-semibold text-[#0c5290]">Try instead: </span>&ldquo;{unquote(m.tryInstead)}&rdquo;
+                        <span className="font-medium text-[#0c5290]">Try instead: </span>&ldquo;{unquote(m.tryInstead)}&rdquo;
                       </p>
                     ) : null}
                   </article>
@@ -237,13 +239,13 @@ export function SimReport({ id }: { id: string }) {
             </section>
 
             <section className="sim-room mt-12 rounded-3xl px-6 py-8 text-center sm:px-10">
-              <p className="relative z-[2] text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-[var(--sim-cream-faint)]">Your one thing for next time</p>
+              <p className="relative z-[2] text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">Your one thing for next time</p>
               <p className="relative z-[2] mx-auto mt-3 max-w-3xl text-[clamp(1.25rem,2.2vw,1.75rem)] font-light leading-snug">{report.oneThing}</p>
             </section>
 
             <section className="mt-12 grid gap-8 md:grid-cols-2">
               <div>
-                <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+                <h2 className="text-subhead font-semibold tracking-tight text-slate-900">
                   What {client.firstName} shared · {report.found.length} of {client.facts.length}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">The dashed ones were there to find.</p>
@@ -264,7 +266,7 @@ export function SimReport({ id }: { id: string }) {
               </div>
               {report.agreedActions.length ? (
                 <div>
-                  <h2 className="text-xl font-semibold tracking-tight text-slate-900">What {client.firstName} agreed to</h2>
+                  <h2 className="text-subhead font-semibold tracking-tight text-slate-900">What {client.firstName} agreed to</h2>
                   <ul className="mt-4 space-y-2">
                     {report.agreedActions.map((a) => (
                       <li key={a} className="flex items-start gap-2 rounded-xl bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-700 ring-1 ring-slate-200">
@@ -345,7 +347,7 @@ export function ScoreRing({ score, reviewed, max = 50 }: { score: number; review
 export function AreaList({ title, areas }: { title: string; areas: ScoredArea[] }) {
   const total = areas.reduce((s, a) => s + a.score, 0);
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+    <section className={cardClass("plain", "p-5")}>
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-semibold tracking-tight text-slate-900">{title}</h2>
         <p className="text-sm tabular-nums text-slate-500">{total} / {areas.length * 5}</p>
@@ -355,7 +357,7 @@ export function AreaList({ title, areas }: { title: string; areas: ScoredArea[] 
           <li key={a.id}>
             <details className="group py-3">
               <summary className="flex cursor-pointer list-none items-center gap-3">
-                <span className="min-w-0 flex-1 text-[0.9375rem] font-medium text-slate-800">{a.label}</span>
+                <span className="min-w-0 flex-1 text-ui font-medium text-slate-800">{a.label}</span>
                 <span className="flex gap-1" aria-label={`${a.score} out of 5`}>
                   {[1, 2, 3, 4, 5].map((n) => (
                     <span key={n} className={`h-2 w-5 rounded-full ${n <= a.score ? (a.score >= 4 ? "bg-[#0c5290]" : a.score === 3 ? "bg-[#4a88c2]" : "bg-amber-400") : "bg-slate-200"}`} />
@@ -366,7 +368,7 @@ export function AreaList({ title, areas }: { title: string; areas: ScoredArea[] 
               <p className="mt-2 text-sm leading-relaxed text-slate-600">{a.evidence}</p>
               {a.better ? (
                 <p className="mt-2 text-sm leading-relaxed text-slate-800">
-                  <span className="font-semibold text-[#0c5290]">Better: </span>
+                  <span className="font-medium text-[#0c5290]">Better: </span>
                   {a.better}
                 </p>
               ) : null}

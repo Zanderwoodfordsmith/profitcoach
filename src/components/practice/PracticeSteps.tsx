@@ -89,18 +89,18 @@ function StepControl({
     <>
       <StepMark state={state} index={PRACTICE_STEPS.findIndex((step) => step.id === id)} />
       <span
-        className={`mt-2.5 block text-[0.8125rem] leading-snug ${
+        className={`mt-2.5 block text-ui leading-snug ${
           state === "waiting" ? "font-medium text-[var(--bp-faint)]" : "font-semibold text-[var(--bp-ink)]"
         }`}
       >
         {label}
       </span>
       {note ? (
-        <span className={`mt-0.5 block text-[0.6875rem] font-semibold ${state === "waiting" ? "text-[var(--bp-faint)]" : "text-[#1a8fd4]"}`}>
+        <span className={`mt-0.5 block text-caption font-medium ${state === "waiting" ? "text-[var(--bp-faint)]" : "text-[#1a8fd4]"}`}>
           {note}
         </span>
       ) : (
-        <span className="mt-0.5 block text-[0.6875rem] font-semibold text-[#1ec4b6]">Done</span>
+        <span className="mt-0.5 block text-caption font-medium text-[#1ec4b6]">Done</span>
       )}
     </>
   );

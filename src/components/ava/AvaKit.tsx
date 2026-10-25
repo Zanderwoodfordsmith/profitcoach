@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from "react";
-import { AlertTriangle, ArrowUp, Check, ExternalLink, Loader2, Mic, Square } from "lucide-react";
+import { createContext, useContext, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { AlertTriangle, ArrowUp, AudioLines, Check, ExternalLink, Loader2, Mic, Square } from "lucide-react";
 
 import type { AgentChatSummary } from "@/components/agent/useAgentConversation";
 import { commentWhen } from "@/components/practice/comments/SectionCommentsUI";
@@ -21,14 +21,20 @@ import "./ava.css";
 
 export type AvaRoom = "panel" | "stage";
 
-const AvaRoomContext = createContext<AvaRoom>("panel");
+/** Where Ava is drawn, and whether that room is her dark blue one. */
+const AvaRoomContext = createContext<{ room: AvaRoom; dark: boolean }>({ room: "panel", dark: false });
 
-export function AvaRoomProvider({ room, children }: { room: AvaRoom; children: ReactNode }) {
-  return <AvaRoomContext.Provider value={room}>{children}</AvaRoomContext.Provider>;
+export function AvaRoomProvider({ room, dark = room === "stage", children }: { room: AvaRoom; dark?: boolean; children: ReactNode }) {
+  return <AvaRoomContext.Provider value={{ room, dark }}>{children}</AvaRoomContext.Provider>;
 }
 
 export function useAvaRoom(): AvaRoom {
-  return useContext(AvaRoomContext);
+  return useContext(AvaRoomContext).room;
+}
+
+/** True in her dark blue room: her page, her full screen and the side panel. */
+export function useAvaDark(): boolean {
+  return useContext(AvaRoomContext).dark;
 }
 
 export type AvaVoice = {
@@ -37,39 +43,6 @@ export type AvaVoice = {
   failed: string | null;
   toggle: () => Promise<void> | void;
 };
-
-/** Ava's mark: a small glossy orb. With motion it gets the moving light of the stage hero. */
-export function AvaOrb({
-  size = 24,
-  motion = false,
-  state,
-  className = "",
-  style,
-}: {
-  size?: number;
-  motion?: boolean;
-  state?: "speaking" | "listening" | "quiet";
-  className?: string;
-  style?: CSSProperties;
-}) {
-  return (
-    <span
-      aria-hidden
-      className={`ava-orb ${state ? `is-${state}` : ""} ${className}`}
-      style={{ width: size, height: size, ...style }}
-    >
-      {motion ? <span className="ava-orb-glow" /> : null}
-      <span className="ava-orb-sphere" />
-      {motion ? (
-        <>
-          <span className="ava-orb-ribbon" />
-          <span className="ava-orb-ribbon two" />
-          <span className="ava-orb-rim" />
-        </>
-      ) : null}
-    </span>
-  );
-}
 
 /** A header action: a labelled pill in the panel, a round glass button on the stage. */
 export function AvaAction({
@@ -110,7 +83,7 @@ export function AvaAction({
       onClick={onClick}
       aria-label={iconOnly ? label : undefined}
       title={iconOnly ? label : undefined}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ava-ring)] ${
+      className={`ava-action inline-flex shrink-0 items-center gap-1 rounded-full text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ava-ring)] ${
         iconOnly ? "p-1.5" : "px-2 py-1"
       } ${
         active
@@ -151,7 +124,10 @@ export function AvaProposalCard({
   showCoach?: boolean;
   onDecide: (decision: "confirm" | "cancel") => void;
 }) {
-  const copy = action.tool === "propose_copy";
+  // A Blueprint draft: nothing is saved until Save. A rewrite can be read before and after.
+  const copy = Boolean(action.draft) || action.tool === "propose_copy";
+  const [showing, setShowing] = useState<"new" | "now">("new");
+  const before = action.before && action.status === "pending" ? action.before : null;
   const changed = action.details.find((row) => row.label === "What changed")?.value;
   const rows = action.details.filter(
     (row) => row.label !== "What changed" && row.label !== "For" && !(copy && row.label === "Section")
@@ -161,7 +137,7 @@ export function AvaProposalCard({
       <div className="px-4 pb-1 pt-3.5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-[var(--ava-sky)]">
-            {copy ? "New version" : "Needs your OK"}
+            {copy ? (action.before ? "New version" : "Draft") : "Needs your OK"}
           </p>
           {showCoach && action.coachName ? (
             <span className="shrink-0 rounded-full bg-[var(--ava-tint)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ava-muted)]">
@@ -182,9 +158,30 @@ export function AvaProposalCard({
           </dl>
         ) : null}
       </div>
+      {before ? (
+        <div className="mx-4 mt-2.5 flex gap-1" role="tablist" aria-label="Before and after">
+          {(["new", "now"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={showing === tab}
+              onClick={() => setShowing(tab)}
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                showing === tab ? "bg-[var(--ava-tint)] text-[var(--ava-ink)]" : "text-[var(--ava-muted)] hover:text-[var(--ava-ink)]"
+              }`}
+            >
+              {tab === "new" ? "New version" : "What it says now"}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {action.preview ? (
         <div className="ava-scroll mx-4 my-2.5 max-h-72 overflow-y-auto rounded-xl bg-[var(--ava-tint)] px-3.5 py-3">
-          <ProfitCoachAiMarkdown content={action.preview} className="ava-md text-[13.5px] leading-relaxed text-[var(--ava-body)]" />
+          <ProfitCoachAiMarkdown
+            content={before && showing === "now" ? before : action.preview}
+            className="ava-md text-[13.5px] leading-relaxed text-[var(--ava-body)]"
+          />
         </div>
       ) : null}
       {action.warning && action.status === "pending" ? (
@@ -203,7 +200,7 @@ export function AvaProposalCard({
               className="ava-primary inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Check className="h-3.5 w-3.5" aria-hidden />}
-              {copy ? "Use this version" : "Confirm"}
+              {copy ? "Save to Blueprint" : "Confirm"}
             </button>
             <button
               type="button"
@@ -211,7 +208,7 @@ export function AvaProposalCard({
               onClick={() => onDecide("cancel")}
               className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--ava-muted)] hover:bg-[var(--ava-tint)] hover:text-[var(--ava-ink)] disabled:opacity-50"
             >
-              {copy ? "Keep mine" : "Cancel"}
+              {copy ? "Change it" : "Cancel"}
             </button>
           </>
         ) : action.status === "running" ? (
@@ -220,10 +217,10 @@ export function AvaProposalCard({
           </span>
         ) : action.status === "done" ? (
           <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--ava-ok)]">
-            <Check className="h-3.5 w-3.5" aria-hidden /> {copy ? "In your blueprint" : "Done"}
+            <Check className="h-3.5 w-3.5" aria-hidden /> {copy ? "In the Blueprint" : "Done"}
           </span>
         ) : action.status === "cancelled" ? (
-          <span className="text-sm text-[var(--ava-faint)]">{copy ? "Kept yours" : "Cancelled"}</span>
+          <span className="text-sm text-[var(--ava-faint)]">{copy ? "Not saved" : "Cancelled"}</span>
         ) : (
           <span className="text-sm font-medium text-[var(--ava-danger)]">Didn&apos;t work{action.error ? `: ${action.error}` : ""}</span>
         )}
@@ -252,7 +249,7 @@ export function AvaFeed({
   /** Called when a link inside the app is followed (the stage docks itself). */
   onNavigate?: () => void;
 }) {
-  const room = useAvaRoom();
+  const dark = useAvaDark();
   const running = [...items].reverse().find((item) => item.type === "tool" && item.ok === null);
   const last = items[items.length - 1];
   const waiting = streaming && (!last || last.type !== "assistant" || Boolean(running));
@@ -307,7 +304,7 @@ export function AvaFeed({
       })}
       {waiting ? (
         <p className="flex items-center gap-2.5 pl-0.5 text-sm text-[var(--ava-muted)]">
-          <AvaHalo size={20} state="thinking" dark={room === "stage"} />
+          <AvaHalo size={20} state="thinking" dark={dark} />
           <span className="ava-shimmer">{running && running.type === "tool" ? `${running.label}…` : "Ava is thinking…"}</span>
         </p>
       ) : null}
@@ -338,7 +335,7 @@ export function AvaStarter({ primary = false, onClick, children }: { primary?: b
       className={`w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ava-ring)] ${
         primary
           ? "ava-primary"
-          : "border border-[rgba(12,82,144,0.12)] bg-white/60 text-[var(--ava-ink)] hover:border-[rgba(26,143,212,0.35)] hover:bg-white/90"
+          : "ava-starter-row border text-[var(--ava-ink)]"
       }`}
     >
       {children}
@@ -365,6 +362,7 @@ export function AvaComposer({
   voice: AvaVoice;
 }) {
   const room = useAvaRoom();
+  const dark = useAvaDark();
   const stage = room === "stage";
 
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -422,17 +420,39 @@ export function AvaComposer({
       rows={1}
       placeholder={voice.transcribing ? "Turning your voice into text…" : placeholder}
       className={`block w-full resize-none bg-transparent text-[0.9375rem] leading-6 text-[var(--ava-ink)] outline-none placeholder:text-[var(--ava-faint)] ${
-        stage ? "min-w-0 flex-1 px-1.5 py-2" : "px-4 pb-1 pt-3"
+        stage || dark ? "min-w-0 flex-1 px-1 py-2" : "px-4 pb-1 pt-3"
       }`}
     />
   );
 
-  if (stage) {
+  if (stage || dark) {
+    // Her dark rooms: one glass pill. Voice sits on the right; it becomes Send once there are words to send.
+    const typed = Boolean(value.trim()) || busy;
+    const voiceButton = (
+      <button
+        type="button"
+        onClick={() => void voice.toggle()}
+        aria-pressed={voice.recording}
+        aria-label={voice.recording ? "Stop and turn into text" : "Talk instead of typing"}
+        title={voice.recording ? "Stop" : "Talk"}
+        disabled={voice.transcribing}
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ava-ring)] ${
+          voice.recording ? "bg-[var(--ava-danger-tint)] text-[var(--ava-danger)]" : "text-[var(--ava-ink)] hover:bg-[var(--ava-tint)]"
+        }`}
+      >
+        {voice.transcribing ? (
+          <Loader2 className="h-[1.125rem] w-[1.125rem] animate-spin" aria-hidden />
+        ) : voice.recording ? (
+          <Square className="h-4 w-4" aria-hidden />
+        ) : (
+          <AudioLines className="h-5 w-5" aria-hidden />
+        )}
+      </button>
+    );
     return (
-      <div className="ava-composer flex items-end gap-1.5 border p-1.5">
-        {speak}
+      <div className="ava-composer ava-pill-box flex items-end gap-1 border py-1.5 pl-4 pr-1.5">
         {box}
-        {send}
+        {typed && !voice.recording && !voice.transcribing ? send : voiceButton}
       </div>
     );
   }

@@ -23,6 +23,8 @@ import {
 } from "@/lib/profitCoachAi/registry";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { studioDisplayTitle } from "@/lib/profitCoachAi/studioHub";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 import { ProfitCoachAiBrainForm } from "./ProfitCoachAiBrainForm";
 
@@ -505,13 +507,13 @@ export function ProfitCoachAiWorkspace({
                         >
                           {m.role === "user" ? (
                             <div className="max-w-[90%] text-right sm:max-w-[85%]">
-                              <p className="text-[15px] leading-relaxed text-slate-700 whitespace-pre-wrap break-words">
+                              <p className="text-read leading-relaxed text-slate-700 whitespace-pre-wrap break-words">
                                 {m.content}
                               </p>
                             </div>
                           ) : (
                             <div className="max-w-[92%] border-l-2 border-sky-300/70 pl-4 sm:max-w-[88%]">
-                              <p className="text-[15px] leading-relaxed text-slate-800 whitespace-pre-wrap break-words">
+                              <p className="text-read leading-relaxed text-slate-800 whitespace-pre-wrap break-words">
                                 {m.content}
                                 {streaming &&
                                 m.id === messages[messages.length - 1]?.id ? (
@@ -539,14 +541,14 @@ export function ProfitCoachAiWorkspace({
                           goToBrainTab(lastUserTurnRef.current);
                           setShowSaveOffer(false);
                         }}
-                        className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700"
+                        className={buttonClass("main", "small")}
                       >
                         Save to brain
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowSaveOffer(false)}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                        className={buttonClass("quiet", "small")}
                       >
                         Not now
                       </button>
@@ -577,7 +579,7 @@ export function ProfitCoachAiWorkspace({
                           ?.placeholder ?? "What do you need to write…"
                       }
                       disabled={streaming}
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400/20 disabled:opacity-60"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-ui text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400/20 disabled:opacity-60"
                     />
                     <button
                       type="submit"
@@ -615,7 +617,7 @@ export function ProfitCoachAiWorkspace({
                             : "border-slate-200 bg-white hover:border-slate-300"
                         }`}
                       >
-                        <span className="font-semibold text-slate-900">
+                        <span className="font-medium text-slate-900">
                           {r.label}
                         </span>
                         <span className="mt-1 block text-slate-600">
@@ -672,12 +674,12 @@ export function ProfitCoachAiWorkspace({
                 <button
                   type="button"
                   onClick={() => void handleNewChat()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-800 py-2.5 text-sm font-medium text-white hover:bg-slate-700"
+                  className={buttonClass("main", "normal", "w-full")}
                 >
                   <Plus className="h-4 w-4 shrink-0" aria-hidden />
                   New chat
                 </button>
-                <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-1.5">
+                <div className={cardClass("soft", "min-h-0 flex-1 overflow-y-auto p-1.5")}>
                   {loadingChats ? (
                     <p className="p-2 text-sm text-slate-500">Loading…</p>
                   ) : chats.length === 0 ? (
@@ -712,7 +714,7 @@ export function ProfitCoachAiWorkspace({
                               />
                               <button
                                 type="submit"
-                                className="shrink-0 rounded bg-sky-600 px-2 text-xs text-white"
+                                className={buttonClass("main", "small", "shrink-0")}
                               >
                                 OK
                               </button>
@@ -724,14 +726,14 @@ export function ProfitCoachAiWorkspace({
                                 onClick={() => void openChat(c.id)}
                                 className={`min-w-0 flex-1 truncate px-2 py-2 text-left text-xs ${
                                   selectedChatId === c.id
-                                    ? "font-semibold text-sky-800"
+                                    ? "font-medium text-sky-800"
                                     : "text-slate-700"
                                 }`}
                               >
                                 <span className="block truncate">
                                   {c.title || "Untitled"}
                                 </span>
-                                <span className="mt-0.5 block text-[10px] text-slate-500">
+                                <span className="mt-0.5 block text-caption text-slate-500">
                                   {formatChatRelativeTime(c.updated_at)}
                                 </span>
                               </button>
@@ -764,7 +766,7 @@ export function ProfitCoachAiWorkspace({
                             <div className="mt-1 flex flex-wrap gap-2 px-1 pb-1">
                               <button
                                 type="button"
-                                className="text-[10px] font-medium text-rose-600 hover:underline"
+                                className={buttonClass("delete", "small")}
                                 onClick={async () => {
                                   const headers = await authHeaders();
                                   if (!headers) return;
@@ -787,7 +789,7 @@ export function ProfitCoachAiWorkspace({
                               </button>
                               <button
                                 type="button"
-                                className="text-[10px] text-slate-500 hover:underline"
+                                className={buttonClass("quiet", "small")}
                                 onClick={() => setDeleteConfirmId(null)}
                               >
                                 Cancel

@@ -34,7 +34,7 @@ export function InfoTip({ label, children }: { label: string; children: ReactNod
         <span
           id={id}
           role="tooltip"
-          className="absolute left-0 top-full z-30 mt-1 w-72 max-w-[80vw] space-y-1.5 rounded-xl bg-[var(--bp-navy)] px-3.5 py-2.5 text-left text-[0.8125rem] font-normal normal-case leading-5 tracking-normal text-white shadow-[0_14px_30px_-12px_rgba(5,30,54,0.6)]"
+          className="absolute left-0 top-full z-30 mt-1 w-72 max-w-[80vw] space-y-1.5 rounded-xl bg-[var(--bp-navy)] px-3.5 py-2.5 text-left text-ui font-normal normal-case leading-5 tracking-normal text-white shadow-[0_14px_30px_-12px_rgba(5,30,54,0.6)]"
         >
           {children}
         </span>

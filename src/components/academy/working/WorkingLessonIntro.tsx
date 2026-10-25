@@ -65,7 +65,7 @@ export function WorkingLessonIntro({ title, body, seconds }: Props) {
           <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] font-medium text-white/55">
+          <span className="block text-caption font-medium text-white/55">
             Replay · {seconds}s
           </span>
           <span className="block truncate text-sm font-medium">{title}</span>
@@ -95,7 +95,7 @@ export function WorkingLessonIntro({ title, body, seconds }: Props) {
           <p className="text-xs font-medium text-white/70">
             {seconds} seconds
           </p>
-          <p className="mt-1 max-w-xl text-lg font-semibold tracking-tight md:text-xl">
+          <p className="mt-1 max-w-xl text-lg font-semibold tracking-tight md:text-subhead">
             {title}
           </p>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/80">

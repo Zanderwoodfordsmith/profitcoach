@@ -12,6 +12,7 @@ import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { AvaDock } from "@/components/ava/AvaDock";
+import { AvaSessionProvider } from "@/components/ava/useAvaSession";
 import { useAvaPageHost } from "@/components/ava/avaPageHost";
 import { useCoachAgentAccess } from "@/components/agent/useAgentAccess";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
@@ -283,6 +284,7 @@ export default function CoachLayout({
         avaInMobileNav={showAiSparkles}
         chromeEnabled={chromeEnabled}
       >
+      <AvaSessionProvider>
       <SearchOverlay />
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {!playbooksReader && isMinimalWorkshopChrome && workshopTopRightSlot ? (
@@ -356,8 +358,6 @@ export default function CoachLayout({
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>
-      </DashboardChromeProvider>
-      <SalesNavImportToast />
       {aiPanelAvailable && aiPanelOpen && !avaPageHost && !avaChatPage ? (
         <AvaDock
           onClose={() => setAiOpen(false)}
@@ -365,6 +365,9 @@ export default function CoachLayout({
           onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
         />
       ) : null}
+      </AvaSessionProvider>
+      </DashboardChromeProvider>
+      <SalesNavImportToast />
     </div>
   );
 }

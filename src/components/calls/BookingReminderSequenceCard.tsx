@@ -7,6 +7,8 @@ import {
   newReminderStep,
   type BookingReminderStep,
 } from "@/lib/booking/reminderSequence";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   sequence: BookingReminderStep[];
@@ -32,7 +34,7 @@ export function BookingReminderSequenceCard({
   calendarName,
 }: Props) {
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200/80 bg-white px-4 py-4">
+    <section className={cardClass("plain", "space-y-4 px-4 py-4")}>
       <div>
         <h3 className="text-sm font-semibold text-slate-900">
           Reminder sequence
@@ -42,7 +44,7 @@ export function BookingReminderSequenceCard({
             ? `Sent for ${calendarName} bookings from your connected inbox (and SMS when a number is on the booking).`
             : "Sent from your connected inbox (and SMS when a number is on the booking)."}{" "}
           Tokens:{" "}
-          <code className="text-[11px]">
+          <code className="text-caption">
             {"{{first_name}} {{coach_name}} {{calendar_title}} {{when}} {{where}}"}
           </code>
         </p>
@@ -54,7 +56,7 @@ export function BookingReminderSequenceCard({
           return (
             <li key={step.id} className="space-y-3 py-4 first:pt-0 last:pb-0">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border-slate-300 text-sky-600"
@@ -74,7 +76,7 @@ export function BookingReminderSequenceCard({
                 {step.kind === "reminder" ? (
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50 hover:text-rose-700"
+                    className={buttonClass("quiet", "small")}
                     onClick={() =>
                       onChange(sequence.filter((s) => s.id !== step.id))
                     }
@@ -176,7 +178,7 @@ export function BookingReminderSequenceCard({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={buttonClass("second")}
           onClick={() => onChange([...sequence, newReminderStep()])}
         >
           <Plus className="h-4 w-4" aria-hidden />
@@ -186,7 +188,7 @@ export function BookingReminderSequenceCard({
           <button
             type="button"
             disabled={saving}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+            className={buttonClass("main")}
             onClick={onSave}
           >
             {saving ? "Saving…" : "Save sequence"}

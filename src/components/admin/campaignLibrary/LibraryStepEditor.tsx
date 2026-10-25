@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil } from "lucide-react";
+import { cardClass } from "@/components/ui/Card";
 import {
   StepInlineEditor,
   type SequenceStep,
@@ -177,7 +178,7 @@ export function LibraryStepEditor({ itemId }: { itemId: string }) {
         <div className="min-w-0">
           <Link
             href={libraryListHref("step")}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800"
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             Library
@@ -203,7 +204,7 @@ export function LibraryStepEditor({ itemId }: { itemId: string }) {
               />
             ) : (
               <>
-                <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+                <h1 className="min-w-0 truncate text-subhead font-semibold text-slate-900">
                   {item.name}
                 </h1>
                 <button
@@ -267,7 +268,7 @@ export function LibraryStepEditor({ itemId }: { itemId: string }) {
         </div>
       ) : null}
 
-      <div className="mx-auto mt-6 max-w-2xl space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
+      <div className={cardClass("plain", "mx-auto mt-6 max-w-2xl space-y-4 p-5")}>
         <label className="block text-sm font-medium text-slate-700">
           Step type
           <select

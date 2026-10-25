@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { LinkedInCalendarTab } from "./linkedin/LinkedInCalendarTab";
 import { LinkedInHistoryStats } from "./linkedin/LinkedInHistoryStats";
@@ -25,7 +27,7 @@ export function AdminCoachContentHistory({ coachId }: { coachId: string }) {
   const daysSince = history.data?.last_import?.days_since_ok ?? null;
 
   return (
-    <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className={cardClass("plain", "space-y-5 p-5")}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-900">Posts and newsletter</h2>
@@ -40,7 +42,7 @@ export function AdminCoachContentHistory({ coachId }: { coachId: string }) {
             type="button"
             onClick={() => void refresh()}
             disabled={history.importing}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className={buttonClass("second", "small")}
           >
             {history.importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             {history.importing ? "Importing…" : lastOk ? "Refresh" : "Import now"}

@@ -14,6 +14,8 @@ import {
   setSectionHidden,
   type PipelineLayout,
 } from "@/lib/pipelineLayout";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   open: boolean;
@@ -63,7 +65,7 @@ export function PipelineCustomizePanel({
             <button
               type="button"
               onClick={() => onChange(addCustomColumn(layout))}
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
+              className={buttonClass("quiet", "small")}
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               Add column
@@ -78,7 +80,7 @@ export function PipelineCustomizePanel({
               return (
                 <li
                   key={col.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                  className={cardClass("soft", "p-3")}
                 >
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col">
@@ -108,7 +110,7 @@ export function PipelineCustomizePanel({
                     }
                     className="h-9 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
                   />
-                  <label className="flex items-center gap-1 text-[11px] text-slate-500">
+                  <label className="flex items-center gap-1 text-caption text-slate-500">
                     <input
                       type="checkbox"
                       checked={!col.hidden}
@@ -143,20 +145,20 @@ export function PipelineCustomizePanel({
 
                 <div className="mt-3 pl-8">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                    <p className="text-kicker font-medium uppercase text-slate-500">
                       Sections
                     </p>
                     <button
                       type="button"
                       onClick={() => onChange(addCustomSection(layout, col.id))}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-700 hover:text-sky-900"
+                      className="inline-flex items-center gap-1 text-caption font-medium text-sky-700 hover:text-sky-900"
                     >
                       <Plus className="h-3 w-3.5" />
                       Add
                     </button>
                   </div>
                   {col.sections.length === 0 ? (
-                    <p className="mt-2 text-[11px] text-slate-400">
+                    <p className="mt-2 text-caption text-slate-400">
                       No sections — cards stack in one list.
                     </p>
                   ) : (
@@ -208,7 +210,7 @@ export function PipelineCustomizePanel({
                             }
                             className="h-8 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-sky-400"
                           />
-                          <label className="flex items-center gap-1 text-[11px] text-slate-500">
+                          <label className="flex items-center gap-1 text-caption text-slate-500">
                             <input
                               type="checkbox"
                               checked={!section.hidden}

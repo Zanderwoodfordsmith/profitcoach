@@ -23,7 +23,7 @@ export function CallsCalendarKey({
       {KEY_ITEMS.map((item) => (
         <li
           key={item.label}
-          className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600"
+          className="flex items-center gap-1.5 text-caption font-medium text-slate-600"
         >
           <span
             className={`h-2.5 w-2.5 shrink-0 rounded-sm border ${item.swatchClass}`}

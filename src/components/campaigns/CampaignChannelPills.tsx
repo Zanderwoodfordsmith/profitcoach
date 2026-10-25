@@ -112,7 +112,7 @@ export function CampaignChannelPills({
         return (
           <span
             key={channel}
-            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-caption font-semibold ${pill.className}`}
           >
             <pill.Icon className="h-3.5 w-3.5 shrink-0" />
             {pill.label}

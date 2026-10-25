@@ -10,6 +10,7 @@ import {
   type RoadmapProject,
 } from "@/lib/roadmap/projectTypes";
 import { ROADMAP_IMPACT_LEVELS, type RoadmapJob } from "@/lib/roadmap/types";
+import { cardClass } from "@/components/ui/Card";
 
 /**
  * First version (23 Oct morning), kept to compare. The current view is RoadmapProjectsView.
@@ -141,7 +142,7 @@ export function RoadmapProjectsViewV1({ jobs, authHeaders, onOpenProject }: Prop
       {PROJECT_STAGES.map((stage) => {
         const list = ordered(stage);
         return (
-          <section key={stage} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <section key={stage} className={cardClass("plain", "overflow-hidden")}>
             <header className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-slate-100 px-4 py-2.5">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <span className={`h-2.5 w-2.5 rounded-full ${STAGE_STYLE[stage].dot}`} aria-hidden />
@@ -198,17 +199,17 @@ function ProjectRow({
             type="button"
             onClick={onOpen}
             title="Open this project's jobs in the List view"
-            className="group inline-flex items-center gap-1 text-[0.9375rem] font-semibold text-slate-900 hover:text-[#0c5290]"
+            className="group inline-flex items-center gap-1 text-ui font-semibold text-slate-900 hover:text-[#0c5290]"
           >
             {row.name}
             <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-[#0c5290]" aria-hidden />
           </button>
           {s.review ? (
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-900 ring-1 ring-inset ring-amber-200">
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-caption font-semibold text-amber-900 ring-1 ring-inset ring-amber-200">
               {s.review} waiting on you
             </span>
           ) : null}
-          {!row.saved ? <span className="text-[11px] text-slate-400">not sorted yet</span> : null}
+          {!row.saved ? <span className="text-caption text-slate-400">not sorted yet</span> : null}
         </div>
         <input
           id={`goal-${row.name}`}
@@ -228,7 +229,7 @@ function ProjectRow({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+        <label className="flex items-center gap-1 text-caption font-medium text-slate-500">
           Stage
           <select
             id={`stage-${row.name}`}
@@ -243,7 +244,7 @@ function ProjectRow({
             ))}
           </select>
         </label>
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500" title="Impact: coach results, cash, member happiness or less work for Zander">
+        <label className="flex items-center gap-1 text-caption font-medium text-slate-500" title="Impact: coach results, cash, member happiness or less work for Zander">
           Impact
           <select
             id={`impact-${row.name}`}
@@ -259,7 +260,7 @@ function ProjectRow({
             ))}
           </select>
         </label>
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500" title="Ease: how soon the whole project could be live">
+        <label className="flex items-center gap-1 text-caption font-medium text-slate-500" title="Ease: how soon the whole project could be live">
           Ease
           <select
             id={`ease-${row.name}`}
@@ -275,7 +276,7 @@ function ProjectRow({
             ))}
           </select>
         </label>
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+        <label className="flex items-center gap-1 text-caption font-medium text-slate-500">
           From
           <input
             id={`start-${row.name}`}
@@ -285,7 +286,7 @@ function ProjectRow({
             onChange={(e) => onSave(row.name, { start_on: e.target.value || null })}
           />
         </label>
-        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+        <label className="flex items-center gap-1 text-caption font-medium text-slate-500">
           To
           <input
             id={`target-${row.name}`}
@@ -311,7 +312,7 @@ function Timeline({ rows }: { rows: Row[] }) {
   const pct = (t: number) => `${Math.min(100, Math.max(0, ((t - start) / (end - start)) * 100))}%`;
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
+    <section className={cardClass("plain", "p-4")}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold text-slate-900">The next 12 weeks</h2>
         <p className="text-xs text-slate-500">Loose dates. Change them on each project below.</p>
@@ -320,7 +321,7 @@ function Timeline({ rows }: { rows: Row[] }) {
         <div className="min-w-[44rem]">
           <div className="grid grid-cols-[10rem_minmax(0,1fr)] gap-3">
             <span />
-            <div className="grid text-[11px] text-slate-400" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }}>
+            <div className="grid text-caption text-slate-400" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }}>
               {Array.from({ length: WEEKS }, (_, i) => (
                 <span key={i} className="border-l border-slate-100 pl-1 tabular-nums">
                   {shortDate(start + i * 7 * DAY)}
@@ -341,7 +342,7 @@ function Timeline({ rows }: { rows: Row[] }) {
                   <div className="relative h-6 rounded bg-slate-50">
                     <span className="absolute inset-y-0 w-px bg-rose-400" style={{ left: pct(today) }} aria-hidden />
                     {off ? (
-                      <span className="absolute inset-y-0 left-1 flex items-center text-[11px] text-slate-400">Outside these 12 weeks</span>
+                      <span className="absolute inset-y-0 left-1 flex items-center text-caption text-slate-400">Outside these 12 weeks</span>
                     ) : (
                       <span
                         className={`absolute inset-y-1 rounded ${STAGE_STYLE[r.stage].bar}`}
@@ -370,7 +371,7 @@ function ProjectGrid({ rows }: { rows: Row[] }) {
   const scored = rows.filter((r) => r.impact && r.ease);
   const unscored = rows.filter((r) => !(r.impact && r.ease));
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
+    <section className={cardClass("plain", "p-4")}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold text-slate-900">Projects by impact and ease</h2>
         <p className="text-xs text-slate-500">Top right: worth most for the least effort. Parked projects left out.</p>
@@ -387,7 +388,7 @@ function ProjectGrid({ rows }: { rows: Row[] }) {
                   {scored
                     .filter((r) => r.impact === impact && r.ease === ease)
                     .map((r) => (
-                      <span key={r.name} className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STAGE_STYLE[r.stage].chip}`}>
+                      <span key={r.name} className={`rounded-full px-2 py-0.5 text-caption font-semibold ${STAGE_STYLE[r.stage].chip}`}>
                         {r.name}
                       </span>
                     ))}
@@ -397,7 +398,7 @@ function ProjectGrid({ rows }: { rows: Row[] }) {
           ))}
           <span />
           {SCORES.map((ease) => (
-            <span key={ease} className="text-center text-[11px] text-slate-500">
+            <span key={ease} className="text-center text-caption text-slate-500">
               Ease {ease}
             </span>
           ))}

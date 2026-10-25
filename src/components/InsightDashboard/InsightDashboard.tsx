@@ -18,6 +18,7 @@ import {
   computeLevelScores,
   computePillarScoresWithFoundation,
 } from "@/lib/bossScores";
+import { cardClass } from "@/components/ui/Card";
 
 type LevelColorScheme = "original" | "diagram";
 
@@ -158,7 +159,7 @@ function SpeedDialGauge({ score, size = 160 }: { score: number; size?: number })
         x={cx}
         y={cy - 10}
         textAnchor="middle"
-        className="font-mono text-[32px] font-bold text-slate-900"
+        className="font-mono text-heading font-bold text-slate-900"
       >
         {score}
       </text>
@@ -166,7 +167,7 @@ function SpeedDialGauge({ score, size = 160 }: { score: number; size?: number })
         x={cx}
         y={cy + 10}
         textAnchor="middle"
-        className="text-[10px] font-medium text-slate-400"
+        className="text-caption font-medium text-slate-400"
       >
         out of 100
       </text>
@@ -314,7 +315,7 @@ function ScoreRow({
         <div className="min-w-0 flex-1">
           {tag && (
             <p
-              className="mb-0.5 text-xs font-bold uppercase tracking-[0.25em]"
+              className="mb-0.5 text-xs font-semibold uppercase tracking-[0.25em]"
               style={{ color: tagColor }}
             >
               {tag}
@@ -357,7 +358,7 @@ function PillarDivider({
         —
       </span>
       <span
-        className="text-xs font-bold uppercase tracking-[0.2em]"
+        className="text-xs font-semibold uppercase tracking-[0.2em]"
         style={{ color }}
       >
         {label}
@@ -429,10 +430,10 @@ function InsightPanel({
           </svg>
         )}
       </div>
-      <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
         {isOverview ? "Overview" : "Insight"}
       </p>
-      <h4 className="mb-2 text-lg font-bold leading-tight text-slate-800">
+      <h4 className="mb-2 text-lg font-semibold leading-tight text-slate-800">
         {insight.title}
       </h4>
       <div className="whitespace-pre-line text-base leading-relaxed text-slate-600">
@@ -440,7 +441,7 @@ function InsightPanel({
       </div>
       {!isOverview && priorityPlaybooks.length > 0 && (
         <div className="mt-4">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
             Your priority playbooks
           </p>
           <div className="flex flex-col gap-2">
@@ -578,12 +579,12 @@ export function InsightDashboard({
   return (
     <div className={`flex flex-col gap-6 ${className}`.trim()}>
       {showHeroCard ? (
-        <section className="rounded-[18px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className={cardClass("plain", "p-5")}>
           <div className="flex items-center gap-7">
             <SpeedDialGauge score={totalScore} />
             <div className="min-w-0 flex-1">
               <p
-                className="mb-1.5 text-xs font-bold uppercase tracking-widest"
+                className="mb-1.5 text-xs font-semibold uppercase tracking-widest"
                 style={{ color: levelColors[overall.level - 1]?.accent ?? "#0c5290" }}
               >
                 Level {overall.level} — {overall.name}
@@ -705,9 +706,9 @@ export function InsightDashboard({
 
       {/* Two-panel card */}
       <section
-        className={`flex min-h-[420px] overflow-hidden rounded-[18px] border border-slate-200 bg-white shadow-sm ${
+        className={cardClass("plain", `flex min-h-[420px] overflow-hidden ${
           compactPanel ? "flex-col xl:flex-row" : ""
-        }`}
+        }`)}
       >
         <div
           className={`flex flex-col gap-3 p-4 sm:p-5 ${compactPanel ? "min-w-0 flex-1" : ""}`}

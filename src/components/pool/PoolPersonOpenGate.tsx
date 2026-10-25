@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { cardClass } from "@/components/ui/Card";
 import {
   DashboardPageSection,
   StickyPageHeader,
@@ -94,13 +95,13 @@ export function PoolPersonOpenGate() {
       }
     >
       <div className="flex h-full min-h-0 flex-col py-3">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className={cardClass("plain", "flex min-h-0 flex-1 flex-col overflow-hidden")}>
           <div className="border-b border-slate-100 px-4 py-3">
-            <div className="truncate text-sm font-semibold text-slate-900">
+            <div className="truncate text-sm font-medium text-slate-900">
               {name}
             </div>
             {subtitle ? (
-              <div className="truncate text-[13px] text-slate-600">{subtitle}</div>
+              <div className="truncate text-ui text-slate-600">{subtitle}</div>
             ) : null}
           </div>
           <div className="px-4 py-6">

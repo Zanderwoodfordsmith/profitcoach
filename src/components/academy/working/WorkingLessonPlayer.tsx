@@ -17,10 +17,11 @@ import {
   type WorkingLessonDef,
   type WorkingLessonId,
 } from "@/lib/academy/workingLessons";
+import { cardClass } from "@/components/ui/Card";
 
 const BASE = "/admin/academy/classroom/working";
 
-const LESSON_SLAB = "rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/60";
+const LESSON_SLAB = cardClass("plain");
 const LESSON_SLAB_GUTTER = "px-6 md:px-8";
 const LESSON_SLAB_HEADER = `${LESSON_SLAB_GUTTER} pt-5 pb-4 md:pt-6 md:pb-5`;
 const LESSON_SLAB_STAGE = LESSON_SLAB_GUTTER;
@@ -78,7 +79,7 @@ function CourseProgressSummary({
         aria-label={`${pct}% complete`}
       />
       <span
-        className={`pointer-events-none absolute top-1/2 z-10 text-[11px] font-semibold tabular-nums ${
+        className={`pointer-events-none absolute top-1/2 z-10 text-caption font-semibold tabular-nums ${
           labelOutside ? "text-slate-600" : "text-white"
         }`}
         style={
@@ -133,7 +134,7 @@ export function WorkingLessonPlayer({ lesson }: { lesson: WorkingLessonDef }) {
             <div className="flex items-baseline justify-between gap-3">
               <Link
                 href={`${BASE}/${WORKING_LESSONS[0].id}`}
-                className="min-w-0 text-xl font-semibold leading-none tracking-tight text-slate-900 transition hover:text-sky-700"
+                className="min-w-0 text-subhead font-semibold leading-none tracking-tight text-slate-900 transition hover:text-sky-700"
               >
                 {WORKING_COURSE.title}
               </Link>
@@ -154,7 +155,7 @@ export function WorkingLessonPlayer({ lesson }: { lesson: WorkingLessonDef }) {
                     <div
                       className={`group/lesson relative z-0 flex min-w-0 items-center gap-2 py-2 text-sm transition before:pointer-events-none before:absolute before:-inset-x-2 before:inset-y-0 before:z-[-1] before:rounded-md before:content-[''] ${
                         active
-                          ? "text-[15px] font-medium text-sky-950 before:bg-sky-100"
+                          ? "text-ui font-medium text-sky-950 before:bg-sky-100"
                           : "font-normal text-slate-700 hover:before:bg-slate-50"
                       }`}
                     >
@@ -193,7 +194,7 @@ export function WorkingLessonPlayer({ lesson }: { lesson: WorkingLessonDef }) {
                 className={`${LESSON_SLAB_HEADER} flex items-start justify-between gap-3`}
               >
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-xl font-semibold leading-snug tracking-tight text-slate-900 md:text-[26px]">
+                  <h2 className="text-subhead font-semibold leading-snug tracking-tight text-slate-900 md:text-title">
                     {lesson.title}
                   </h2>
                 </div>
@@ -227,7 +228,7 @@ export function WorkingLessonPlayer({ lesson }: { lesson: WorkingLessonDef }) {
                 <LessonPlayerTabs
                   flush
                   overview={
-                    <div className="max-w-prose space-y-3 text-[15px] leading-relaxed text-slate-700">
+                    <div className="max-w-prose space-y-3 text-read leading-relaxed text-slate-700">
                       {lesson.overviewMarkdown.split("\n\n").map((para) => (
                         <p key={para}>{para}</p>
                       ))}

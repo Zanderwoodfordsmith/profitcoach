@@ -336,8 +336,8 @@ export function CommunityMembersView() {
 
   if (view === "map") {
     return (
-      <div className="min-w-0 w-full pt-5 lg:pt-6">
-        <div className="mb-4 flex justify-end">{viewToggle}</div>
+      <div className="min-w-0 w-full pt-2 sm:pt-5 lg:pt-6">
+        <div className="mb-4 flex justify-center sm:justify-end">{viewToggle}</div>
         <CommunityMembersMap />
       </div>
     );
@@ -345,7 +345,7 @@ export function CommunityMembersView() {
 
   return (
     <ContentWithRail>
-      <ContentWithRailMain className="flex min-h-0 flex-col pt-5 lg:pt-6">
+      <ContentWithRailMain className="flex min-h-0 flex-col pt-2 sm:pt-5 lg:pt-6">
       {loadError ? (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {loadError}
@@ -353,7 +353,7 @@ export function CommunityMembersView() {
       ) : null}
 
       <div
-        className={`flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 ${
+        className={`flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-4 sm:gap-y-2 ${
           loadError ? "mt-4" : ""
         }`}
       >
@@ -371,8 +371,11 @@ export function CommunityMembersView() {
             <span className={countClass("admins")}>{counts.admins}</span>
           </Link>
         </div>
-        <div className="ml-auto">{viewToggle}</div>
-        <div className="relative shrink-0" ref={sortMenuRef}>
+        {/* Phones: List | Map centred on its own row, so the pills and sort share the next. */}
+        <div className="order-first flex w-full justify-center sm:order-none sm:ml-auto sm:w-auto">
+          {viewToggle}
+        </div>
+        <div className="relative ml-auto shrink-0 sm:ml-0" ref={sortMenuRef}>
           <button
             type="button"
             aria-expanded={sortMenuOpen}
@@ -427,7 +430,8 @@ export function CommunityMembersView() {
         </div>
       </div>
 
-      <ul className="mt-6 space-y-3">
+      {/* Phones: cards run edge to edge, like posts in the feed. */}
+      <ul className="mt-6 space-y-3 max-md:-mx-4">
         {pagedMembers.map((m) => {
           const name = displayName(m);
           const initials = profileInitialsFromName(name);
@@ -446,17 +450,19 @@ export function CommunityMembersView() {
           return (
             <li
               key={m.id}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow"
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow max-md:rounded-none max-md:border-x-0"
             >
-              <div className="flex gap-3">
-                <div className="relative h-14 w-14 shrink-0">
+              {/* Phones: small photo beside the name, details full width below,
+                  View profile at the bottom. Wider: photo left, button right. */}
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3">
+                <div className="relative col-[1/2] row-[1/2] h-11 w-11 shrink-0 self-center md:row-[1/3] md:h-14 md:w-14 md:self-start">
                   {m.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={m.avatar_url}
                       alt=""
                       referrerPolicy="no-referrer"
-                      className={`h-14 w-14 rounded-full object-cover ring-2 ring-white ${
+                      className={`h-11 w-11 rounded-full object-cover ring-2 ring-white md:h-14 md:w-14 ${
                         m.role === "admin"
                           ? "shadow-[0_0_0_3px_rgb(2_132_199)]"
                           : "shadow-[0_0_0_1px_rgb(226_232_240)]"
@@ -464,7 +470,7 @@ export function CommunityMembersView() {
                     />
                   ) : (
                     <div
-                      className={`flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-base font-semibold text-slate-600 ring-2 ring-white ${
+                      className={`flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-base font-semibold md:h-14 md:w-14 text-slate-600 ring-2 ring-white ${
                         m.role === "admin"
                           ? "shadow-[0_0_0_3px_rgb(2_132_199)]"
                           : "shadow-[0_0_0_1px_rgb(226_232_240)]"
@@ -481,7 +487,7 @@ export function CommunityMembersView() {
                     />
                   ) : null}
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="col-[2/4] row-[1/2] min-w-0 self-center md:col-[2/3]">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <p className="truncate font-semibold text-slate-900">
                       {name}
@@ -506,6 +512,8 @@ export function CommunityMembersView() {
                   {m.slug ? (
                     <p className="truncate text-xs text-slate-500">@{m.slug}</p>
                   ) : null}
+                </div>
+                <div className="col-[1/4] row-[2/3] min-w-0 max-md:mt-2 md:col-[2/3]">
                   {sub ? (
                     <p className="mt-0.5 truncate text-xs text-slate-600">
                       {sub}
@@ -542,7 +550,7 @@ export function CommunityMembersView() {
                 {profileHref ? (
                   <Link
                     href={profileHref}
-                    className="inline-flex shrink-0 self-start whitespace-nowrap rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700"
+                    className="col-[1/4] row-[3/4] mt-3 inline-flex shrink-0 self-start justify-self-start whitespace-nowrap rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 md:col-[3/4] md:row-[1/3] md:mt-0"
                   >
                     View profile
                   </Link>

@@ -106,6 +106,7 @@ export function PostCard({
   };
 
   const pinnedChromeClass = post.is_pinned ? "border-sky-200" : "";
+  const hasMedia = post.media.length > 0;
   const isScheduledForFuture = useMemo(() => {
     if (!post.published_at) return false;
     const at = new Date(post.published_at).getTime();
@@ -197,9 +198,18 @@ export function PostCard({
         </div>
       </div>
 
-      <div className="mt-3 flex w-full min-w-0 gap-3">
-        <div className={`min-w-0 flex-1 ${post.media.length > 0 ? "pr-2" : ""}`}>
-          <h2 className="line-clamp-2 text-xl font-semibold leading-snug tracking-tight text-slate-900">
+      {/* Phones: title full width, then preview text with a small picture beside it.
+          Wider screens: the picture sits to the right of title, text and likes. */}
+      <div
+        className={`mt-3 grid w-full min-w-0 gap-x-3 ${
+          hasMedia ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-1"
+        }`}
+      >
+          <h2
+            className={`line-clamp-2 text-xl font-semibold leading-snug tracking-tight text-slate-900 ${
+              hasMedia ? "col-span-2 sm:col-span-1 sm:pr-2" : ""
+            }`}
+          >
             <button
               type="button"
               onClick={(e) => {
@@ -211,7 +221,11 @@ export function PostCard({
               <SearchHighlight html={titleHighlightHtml} fallback={post.title} />
             </button>
           </h2>
-          <div className="mt-0.5 line-clamp-2 text-base leading-relaxed text-slate-600">
+          <div
+            className={`mt-0.5 line-clamp-2 text-base leading-normal text-slate-600 md:leading-relaxed ${
+              hasMedia ? "col-start-1 sm:pr-2" : ""
+            }`}
+          >
             {bodyHighlightHtml ? (
               <SearchHighlight html={bodyHighlightHtml} />
             ) : previewBody ? (
@@ -225,7 +239,10 @@ export function PostCard({
               "\u00a0"
             )}
           </div>
-          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+          <div
+            className={`mt-3 ${hasMedia ? "col-span-2 sm:col-span-1 sm:pr-2" : ""}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <PostEngagementBar
               postId={post.id}
               likeCount={optimisticLikeCount}
@@ -241,9 +258,8 @@ export function PostCard({
               onEngagementHoverChange={setEngagementHoverOpen}
             />
           </div>
-        </div>
-        {post.media.length > 0 ? (
-          <div className="h-[80px] w-[92px] shrink-0 self-start">
+        {hasMedia ? (
+          <div className="col-[2/3] row-[2/3] mt-1 h-[52px] w-[64px] self-start sm:row-[1/4] sm:mt-0 sm:h-[80px] sm:w-[92px]">
             <CommunityPostMediaThumb
               item={post.media[0]}
               playIconSize="sm"

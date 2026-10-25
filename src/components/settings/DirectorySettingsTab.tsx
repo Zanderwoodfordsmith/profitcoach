@@ -11,6 +11,8 @@ import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type DirectoryProfile = {
   first_name: string | null;
@@ -371,7 +373,7 @@ export function DirectorySettingsTab({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+            className={buttonClass("main")}
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -405,7 +407,7 @@ export function DirectorySettingsTab({
             <>
               <p className="mb-3 text-xs text-slate-500">
                 Click{" "}
-                <span className="font-semibold text-slate-700">View profile</span>{" "}
+                <span className="font-medium text-slate-700">View profile</span>{" "}
                 to see what it looks like expanded.
               </p>
               <article className="flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
@@ -466,7 +468,7 @@ export function DirectorySettingsTab({
                     </button>
                   </div>
                   <div className="relative rounded-lg bg-slate-50/70 p-2 ring-1 ring-slate-100 focus-within:ring-sky-200">
-                    <div className="mb-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    <div className="mb-1 flex items-center gap-1 text-kicker font-semibold uppercase text-slate-400">
                       <Pencil className="h-3 w-3" aria-hidden />
                       Summary
                     </div>
@@ -566,7 +568,7 @@ export function DirectorySettingsTab({
                   </div>
 
                   <div className="rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-100 focus-within:ring-sky-200">
-                    <p className="mb-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="mb-1 flex items-center gap-1 text-kicker font-semibold uppercase text-slate-400">
                       <Pencil className="h-3 w-3" aria-hidden />
                       Card summary
                     </p>
@@ -584,7 +586,7 @@ export function DirectorySettingsTab({
                   </div>
 
                   <div className="rounded-xl bg-slate-50/50 p-3 ring-1 ring-slate-100 focus-within:ring-sky-200">
-                    <p className="mb-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="mb-1 flex items-center gap-1 text-kicker font-semibold uppercase text-slate-400">
                       <Pencil className="h-3 w-3" aria-hidden />
                       Full bio
                     </p>
@@ -618,7 +620,7 @@ export function DirectorySettingsTab({
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-24">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className={cardClass("plain", "p-4")}>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               Visibility
             </p>
@@ -631,7 +633,7 @@ export function DirectorySettingsTab({
               className="mt-3 flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-3 text-left ring-1 ring-slate-100 transition hover:bg-slate-100/80 disabled:opacity-60"
             >
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-slate-900">
+                <span className="block text-sm font-medium text-slate-900">
                   Show in directory
                 </span>
                 <span className="mt-0.5 block text-xs text-slate-500">
@@ -661,7 +663,7 @@ export function DirectorySettingsTab({
             ) : null}
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className={cardClass("plain", "p-4")}>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               LinkedIn
             </p>
@@ -681,7 +683,7 @@ export function DirectorySettingsTab({
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-sm font-medium text-slate-900">
                       {linkedinImport.snapshot.fullName ?? "Imported"}
                     </p>
                     <p className="text-xs text-slate-500">
@@ -690,14 +692,14 @@ export function DirectorySettingsTab({
                     </p>
                   </div>
                 </div>
-                <p className="text-[11px] leading-relaxed text-slate-400">
+                <p className="text-caption leading-relaxed text-slate-400">
                   We use this to draft your directory summary and bio.
                 </p>
                 <button
                   type="button"
                   disabled={linkedinImporting || aiBusy}
                   onClick={() => void handleLinkedInImport()}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+                  className={buttonClass("second", "normal", "w-full")}
                 >
                   {linkedinImporting ? "Importing…" : "Re-import LinkedIn"}
                 </button>
@@ -723,7 +725,7 @@ export function DirectorySettingsTab({
                   type="button"
                   disabled={linkedinImporting || !linkedinUrlDraft.trim()}
                   onClick={() => void handleLinkedInImport()}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#0A66C2] px-3 py-2 text-sm font-semibold text-white hover:bg-[#004182] disabled:opacity-60"
+                  className={buttonClass("main", "normal", "w-full")}
                 >
                   <LinkedInSolidIcon className="h-3.5 w-3.5" />
                   {linkedinImporting
@@ -748,7 +750,7 @@ export function DirectorySettingsTab({
             ) : null}
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className={cardClass("plain", "p-4")}>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               Writing help
             </p>
@@ -756,7 +758,7 @@ export function DirectorySettingsTab({
               <button
                 type="button"
                 onClick={() => setAiOpen(true)}
-                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800 hover:bg-sky-100"
+                className={buttonClass("second", "normal", "mt-3 w-full")}
               >
                 <Sparkles className="h-3.5 w-3.5" aria-hidden />
                 Help me write
@@ -778,7 +780,7 @@ export function DirectorySettingsTab({
                   type="button"
                   disabled={aiBusy}
                   onClick={() => void handleAiDraft()}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+                  className={buttonClass("main", "normal", "w-full")}
                 >
                   <Sparkles className="h-3.5 w-3.5" aria-hidden />
                   {aiBusy ? "Drafting…" : "Draft summary & bio"}
@@ -789,7 +791,7 @@ export function DirectorySettingsTab({
                     setAiOpen(false);
                     setAiError(null);
                   }}
-                  className="w-full text-center text-xs font-medium text-slate-500 hover:text-slate-700"
+                  className={buttonClass("quiet", "small", "w-full")}
                 >
                   Close
                 </button>
@@ -798,7 +800,7 @@ export function DirectorySettingsTab({
                     {aiError}
                   </p>
                 ) : (
-                  <p className="text-[11px] leading-relaxed text-slate-400">
+                  <p className="text-caption leading-relaxed text-slate-400">
                     Fills both the card summary and full bio. Edit anything before
                     you save.
                   </p>
@@ -807,7 +809,7 @@ export function DirectorySettingsTab({
             )}
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className={cardClass("plain", "p-4")}>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               Links
             </p>
@@ -816,7 +818,7 @@ export function DirectorySettingsTab({
                 href="/directory"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                className={buttonClass("second", "normal", "w-full")}
               >
                 Browse directory
               </Link>
@@ -825,7 +827,7 @@ export function DirectorySettingsTab({
                   href={publicHref}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                  className={buttonClass("second", "normal", "w-full")}
                 >
                   Edit your page
                 </Link>
@@ -833,7 +835,7 @@ export function DirectorySettingsTab({
               <button
                 type="button"
                 onClick={onEditProfile}
-                className="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                className={buttonClass("second", "normal", "w-full")}
               >
                 Edit profile details
               </button>

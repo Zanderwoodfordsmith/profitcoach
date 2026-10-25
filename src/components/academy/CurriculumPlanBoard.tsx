@@ -57,6 +57,8 @@ import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { Modal } from "@/components/ui/Modal";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const DECISION_STYLES: Record<CurriculumDecision, string> = {
   undecided: "bg-white text-slate-500 ring-slate-300",
@@ -163,7 +165,7 @@ async function authHeaders(): Promise<Record<string, string>> {
 function DecisionBadge({ decision }: { decision: CurriculumDecision }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${DECISION_STYLES[decision]}`}
+      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-caption font-medium ring-1 ring-inset ${DECISION_STYLES[decision]}`}
     >
       {CURRICULUM_DECISION_LABELS[decision]}
     </span>
@@ -241,7 +243,7 @@ function ContentIcons({ content }: { content: LessonContentPresence | null }) {
 const controlClass =
   "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100";
 const fieldClass = `w-full ${controlClass}`;
-const labelClass = "text-xs font-semibold text-slate-600";
+const labelClass = "text-xs font-medium text-slate-600";
 
 function RowEditor({
   row,
@@ -288,7 +290,7 @@ function RowEditor({
   };
 
   return (
-    <div className="grid gap-4 rounded-2xl bg-white p-4 ring-1 ring-inset ring-slate-200 sm:p-5 lg:grid-cols-4">
+    <div className={cardClass("plain", "grid gap-4 p-4 sm:p-5 lg:grid-cols-4")}>
       <label className="flex flex-col gap-1.5 lg:col-span-2">
         <span className={labelClass}>{row.lessonId ? "New title (blank keeps the current one)" : "Title"}</span>
         <input
@@ -443,7 +445,7 @@ function RowEditor({
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50"
+            className={buttonClass("delete", "small")}
           >
             <Trash2 className="h-4 w-4" />
             {row.lessonId ? "Clear plan" : "Remove new lesson"}
@@ -471,14 +473,14 @@ function LessonCell({
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span
-          className={`font-semibold ${
+          className={`font-medium ${
             leaving ? "text-slate-400 line-through decoration-slate-300" : "text-slate-950"
           }`}
         >
           {row.currentTitle ?? rowDisplayTitle(row)}
         </span>
         {row.isDraft ? (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">Draft</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium text-slate-500">Draft</span>
         ) : null}
       </div>
       {renamed ? <p className="mt-0.5 text-xs text-sky-800">New title: {newTitle}</p> : null}
@@ -560,10 +562,10 @@ function GroupToggle({
       <Caret open={open} />
       <span className={`text-sm font-semibold ${draft ? "text-slate-400" : "text-slate-800"}`}>{label}</span>
       {draft ? (
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">All draft</span>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium text-slate-500">All draft</span>
       ) : null}
       {isNew ? (
-        <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200">
+        <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-caption font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200">
           New section
         </span>
       ) : null}
@@ -960,7 +962,7 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
           <button
             type="button"
             onClick={() => setRulesOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-600 hover:bg-white hover:text-slate-900"
+            className={buttonClass("quiet")}
           >
             <Info className="h-4 w-4" />
             Rules
@@ -969,21 +971,21 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
           <button
             type="button"
             onClick={() => updateCollapsed(new Set())}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second")}
           >
             Expand all
           </button>
           <button
             type="button"
             onClick={() => updateCollapsed(new Set(allGroupKeys))}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second")}
           >
             Collapse all
           </button>
           <button
             type="button"
             onClick={() => setAdding((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className={buttonClass("main")}
           >
             {adding ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             New lesson
@@ -1082,7 +1084,7 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
                 </li>
               ))}
             </ol>
-            <div className="mt-6 rounded-xl bg-slate-50 px-4 py-4 sm:px-5">
+            <div className={cardClass("soft", "mt-6 px-4 py-4 sm:px-5")}>
               <p className="text-sm font-semibold text-slate-950">{LESSON_OPENING_STANDARD.title}</p>
               <ol className="mt-2 space-y-1 text-sm leading-6 text-slate-600">
                 {LESSON_OPENING_STANDARD.steps.map((step) => (
@@ -1117,7 +1119,7 @@ function DriveLeftovers({ leftovers }: { leftovers: CurriculumDriveLeftovers }) 
     : null;
 
   return (
-    <details className="group rounded-2xl bg-white ring-1 ring-inset ring-slate-200">
+    <details className={cardClass("plain", "group")}>
       <summary className="flex cursor-pointer list-none items-center gap-2.5 px-4 py-3 sm:px-5">
         <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-slate-500 transition-transform group-open:rotate-0" />
         <span className="text-sm font-semibold text-slate-800">Old transcripts in Drive with no lesson</span>
@@ -1134,7 +1136,7 @@ function DriveLeftovers({ leftovers }: { leftovers: CurriculumDriveLeftovers }) 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {byFolder.map(([folder, files]) => (
             <div key={folder} className="min-w-0">
-              <p className="text-xs font-semibold text-slate-600">{folder}</p>
+              <p className="text-xs font-medium text-slate-600">{folder}</p>
               <ul className="mt-1.5 space-y-1">
                 {files.map((name, i) => (
                   <li key={`${name}:${i}`} className="flex min-w-0 items-start gap-2 text-sm text-slate-700">
@@ -1169,7 +1171,7 @@ function AddLessonForm({
 
   return (
     <form
-      className="grid gap-3 rounded-2xl bg-white p-4 ring-1 ring-inset ring-slate-200 sm:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end"
+      className={cardClass("plain", "grid gap-3 p-4 sm:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end")}
       onSubmit={async (e) => {
         e.preventDefault();
         if (!title.trim()) return;
@@ -1216,7 +1218,7 @@ function AddLessonForm({
       <button
         type="submit"
         disabled={busy || !title.trim()}
-        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+        className={buttonClass("main")}
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         Add

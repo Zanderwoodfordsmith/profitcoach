@@ -103,7 +103,7 @@ export function leadChip(status: string | null) {
 export function ActivityTableHeader() {
   return (
     <div
-      className={`${ACTIVITY_ROW_GRID} shrink-0 items-center border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500`}
+      className={`${ACTIVITY_ROW_GRID} shrink-0 items-center border-b border-slate-200 bg-slate-50 px-3 py-2 text-caption font-semibold text-slate-500`}
     >
       <div>Lead</div>
       <div>Status</div>

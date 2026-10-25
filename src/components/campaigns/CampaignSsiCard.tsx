@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, CircleHelp } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { cardClass } from "@/components/ui/Card";
 import { DEMO_PREVIEW_SSI } from "@/lib/campaigns/demoPreview";
 import { BOSS_PRO_RING_TRACK } from "@/lib/bossProDialGradients";
 
@@ -148,12 +149,12 @@ function SsiSpeedDial({
       <div className="pointer-events-none absolute inset-x-0 bottom-1 flex flex-col items-center">
         <p
           className={`font-semibold leading-none tabular-nums tracking-tight text-slate-900 ${
-            compact ? "text-[1.7rem]" : "text-[2.35rem]"
+            compact ? "text-title" : "text-display"
           }`}
         >
           {label}
         </p>
-        <p className="mt-1 text-[11px] font-medium text-slate-500">of 100</p>
+        <p className="mt-1 text-caption font-medium text-slate-500">of 100</p>
       </div>
     </div>
   );
@@ -253,7 +254,7 @@ export function CampaignSsiCard({
     pillars.length > 0 && !unavailable && !loading && !disconnected;
 
   return (
-    <section className="relative z-10 shrink-0 overflow-visible rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+    <section className={cardClass("plain", "relative z-10 shrink-0 overflow-visible")}>
       <div className="flex items-center gap-4 py-4 pl-5 pr-5">
         <div className="min-w-0 flex-1">
           <h2 className="min-w-0 text-lg font-semibold leading-snug tracking-tight text-slate-900">

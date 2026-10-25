@@ -17,6 +17,8 @@ import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import { DEFAULT_WEEKDAY_AVAILABILITY } from "@/lib/booking/computeBookingSlots";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 function CalendarToggle({
   on,
@@ -43,7 +45,7 @@ function CalendarToggle({
     >
       {on ? (
         <span
-          className="pointer-events-none absolute top-1/2 left-[6px] -translate-y-1/2 text-[10px] font-bold tracking-wide text-white"
+          className="pointer-events-none absolute top-1/2 left-[6px] -translate-y-1/2 text-caption font-bold tracking-wide text-white"
           aria-hidden
         >
           On
@@ -537,7 +539,7 @@ export function CallsCalendarSettings({
         }
       >
         {!hideCalendars ? (
-          <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white">
+          <section className={cardClass("plain", "min-w-0")}>
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
               <h2 className="text-sm font-semibold text-slate-900">
                 Booking calendars
@@ -549,7 +551,7 @@ export function CallsCalendarSettings({
                   setShowCreate((open) => !open);
                   setError(null);
                 }}
-                className="text-xs font-semibold text-sky-700 hover:text-sky-800 disabled:opacity-50"
+                className={buttonClass("quiet", "small")}
               >
                 New calendar
               </button>
@@ -572,7 +574,7 @@ export function CallsCalendarSettings({
                   type="button"
                   disabled={busy}
                   onClick={() => void createCalendar()}
-                  className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                  className={buttonClass("main")}
                 >
                   {busy ? "Creating…" : "Create"}
                 </button>
@@ -582,7 +584,7 @@ export function CallsCalendarSettings({
             <div className="overflow-x-auto">
               <table className="w-full min-w-[28rem] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+                  <tr className="border-b border-slate-100 text-kicker font-semibold uppercase text-slate-400">
                     <th scope="col" className="w-14 px-4 py-3 font-semibold">
                       <span className="sr-only">On or off</span>
                     </th>
@@ -620,7 +622,7 @@ export function CallsCalendarSettings({
                         <button
                           type="button"
                           onClick={() => openEditor(cal.slug)}
-                          className="truncate text-sm font-semibold text-slate-900 hover:text-sky-700"
+                          className="truncate text-sm font-medium text-slate-900 hover:text-sky-700"
                         >
                           {cal.name}
                         </button>

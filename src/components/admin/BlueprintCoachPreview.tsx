@@ -109,13 +109,13 @@ function CoachSwitcher({
         title="Switch coach"
         className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-0.5 text-left hover:bg-slate-100"
       >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e0f2fe] text-[0.6875rem] font-bold text-[#075985]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e0f2fe] text-caption font-bold text-[#075985]">
           {current?.id === EMPTY_PREVIEW ? "—" : initials(name)}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[0.8125rem] font-semibold text-[#0f172a]">{name}</span>
+          <span className="block truncate text-ui font-medium text-[#0f172a]">{name}</span>
           {current?.detail ? (
-            <span className="block truncate text-[0.6875rem] text-slate-500">{current.detail}</span>
+            <span className="block truncate text-caption text-slate-500">{current.detail}</span>
           ) : null}
         </span>
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
@@ -157,7 +157,7 @@ function CoachSwitcher({
               return (
                 <li key={o.id}>
                   {firstUnstarted && !q ? (
-                    <p className="px-2.5 pb-1 pt-2 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-slate-400">
+                    <p className="px-2.5 pb-1 pt-2 text-kicker font-semibold uppercase text-slate-400">
                       Not started
                     </p>
                   ) : null}

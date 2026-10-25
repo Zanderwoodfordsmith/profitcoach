@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type CoachInfo = {
   full_name: string | null;
@@ -21,11 +23,11 @@ export function CoachAttribution({ coach }: Props) {
     coach.coach_business_name && coach.full_name ? coach.coach_business_name : null;
 
   return (
-    <aside className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <aside className={cardClass("plain", "mt-12 p-6")}>
       <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
         Written by
       </p>
-      <p className="mt-1 text-xl font-semibold text-slate-900">{displayName}</p>
+      <p className="mt-1 text-subhead font-semibold text-slate-900">{displayName}</p>
       {displayBusiness && (
         <p className="mt-0.5 text-base text-slate-600">{displayBusiness}</p>
       )}
@@ -47,7 +49,7 @@ export function CoachAttribution({ coach }: Props) {
         <div className="flex-1">
           <Link
             href={`/landing/a?coach=${encodeURIComponent(coach.slug)}`}
-            className="inline-flex items-center rounded-md bg-sky-600 px-4 py-2.5 text-base font-medium text-white hover:bg-sky-700"
+            className={buttonClass("main")}
           >
             Work with {displayName.split(" ")[0]}
           </Link>
@@ -56,7 +58,7 @@ export function CoachAttribution({ coach }: Props) {
               href={coach.linkedin_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-3 inline-flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2.5 text-base font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass("second", "normal", "ml-3")}
             >
               <LinkedInSolidIcon className="h-5 w-5 shrink-0" />
               Connect with me on LinkedIn

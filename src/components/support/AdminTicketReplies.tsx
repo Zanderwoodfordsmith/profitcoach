@@ -118,6 +118,7 @@ import {
   type SupportTicketAuthor,
   type SupportTicketStatus,
 } from "@/lib/support/tickets";
+import { cardClass } from "@/components/ui/Card";
 
 type ComposerMode = "reply" | "note";
 
@@ -1664,7 +1665,7 @@ export function AdminTicketReplies({
                           role="menu"
                           className="absolute bottom-full left-0 z-40 mb-2 min-w-[14rem] overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-900/10"
                         >
-                          <p className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                          <p className="px-2.5 py-1.5 text-kicker font-semibold uppercase text-slate-400">
                             Templates
                           </p>
                           {SUPPORT_CALL_HOSTS.map((host) => (
@@ -1847,7 +1848,7 @@ export function AdminTicketReplies({
       {modeToggle}
       {composerMode === "note" ? (
         <>
-          <p className="text-[11px] text-amber-800">
+          <p className="text-caption text-amber-800">
             Internal only — coaches cannot see this note.
           </p>
           <div className="flex items-end gap-2">
@@ -1876,7 +1877,7 @@ export function AdminTicketReplies({
       ) : (
         <>
           {reportStatus === "resolved" ? (
-            <p className="text-[11px] text-slate-500">
+            <p className="text-caption text-slate-500">
               This ticket is resolved — sending a reply will reopen it.
             </p>
           ) : null}
@@ -1941,7 +1942,7 @@ export function AdminTicketReplies({
             </div>
           </div>
           {notifyNote ? (
-            <p className="text-[11px] text-slate-600">{notifyNote}</p>
+            <p className="text-caption text-slate-600">{notifyNote}</p>
           ) : null}
         </>
       )}
@@ -2116,7 +2117,7 @@ export function AdminTicketReplies({
                         />
                       ) : null}
                       <span className="select-none text-slate-400">·</span>
-                      <span className="font-semibold text-slate-600">
+                      <span className="font-medium text-slate-600">
                         {openingMessage.typeLabel}
                       </span>
                     </p>
@@ -2125,7 +2126,7 @@ export function AdminTicketReplies({
                 </div>
               </div>
             </div>
-            <h2 className="mt-3 text-lg font-semibold leading-snug tracking-tight text-slate-900 sm:text-xl">
+            <h2 className="mt-3 text-subhead font-semibold text-slate-900">
               {openingMessage.title}
             </h2>
             <SupportOpeningBody key={reportId} text={openingMessage.body}>
@@ -2173,7 +2174,7 @@ export function AdminTicketReplies({
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-slate-200 bg-[#f7f8fa] p-3">
+    <div className={cardClass("soft", "mt-3 p-3")}>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Conversation
       </p>

@@ -617,7 +617,7 @@ export function ProspectsHub({
                   role="menu"
                   className="absolute left-0 z-[90] mt-1 w-56 rounded-md border border-slate-200 bg-white py-2 shadow-lg"
                 >
-                  <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="px-3 pb-1 text-kicker font-semibold uppercase text-slate-500">
                     Group by
                   </p>
                   <button
@@ -674,7 +674,7 @@ export function ProspectsHub({
                     </select>
                   </label>
                   {groupField ? (
-                    <p className="px-3 pt-2 text-[11px] leading-snug text-slate-500">
+                    <p className="px-3 pt-2 text-caption leading-snug text-slate-500">
                       Drag group headers in the list to set a manual order.
                     </p>
                   ) : null}
@@ -688,7 +688,7 @@ export function ProspectsHub({
                   role="menu"
                   className="absolute left-0 z-[90] mt-1 w-52 rounded-md border border-slate-200 bg-white py-2 shadow-lg"
                 >
-                  <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="px-3 pb-1 text-kicker font-semibold uppercase text-slate-500">
                     Show on cards
                   </p>
                   {CARD_FIELD_OPTIONS.map((option) => (

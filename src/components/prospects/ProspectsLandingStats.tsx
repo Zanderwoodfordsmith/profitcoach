@@ -19,6 +19,7 @@ import {
   type LandingStatsRange,
   type LandingStatsRangePreset,
 } from "@/lib/landingStatsRange";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   coachSlug: string | null;
@@ -38,9 +39,10 @@ function StatCard({
 }) {
   return (
     <article
-      className={`flex h-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${
-        hoverable ? "cursor-default transition hover:border-sky-200 hover:shadow-md" : ""
-      }`}
+      className={cardClass(
+        "plain",
+        `flex h-full flex-col p-4 ${hoverable ? "cursor-default transition hover:border-sky-200 hover:shadow-md" : ""}`
+      )}
     >
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>

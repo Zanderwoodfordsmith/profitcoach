@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { ArrowUp, Loader2, Mic, PhoneOff, Square } from "lucide-react";
 
-import { AvaOrb } from "@/components/ava/AvaKit";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import type { AvaCallProtocol } from "@/lib/practiceKnowledge/intakeCall";
 
@@ -320,7 +320,7 @@ function CallFrame({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 flex-col items-center border-b border-[var(--bp-rule)] px-4 pb-4 pt-6 text-center">
-        <AvaOrb size={76} motion state={orb} />
+        <AvaHalo size={76} state={orb === "quiet" ? "idle" : orb} />
         <p className="mt-4 text-sm font-semibold text-[var(--bp-ink)]">{protocol === "intake" ? "First call" : "Follow-up"}</p>
         <p className="mt-0.5 text-xs font-medium text-[var(--bp-muted)]" aria-live="polite">
           {status}

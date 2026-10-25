@@ -5,12 +5,13 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { PanelLeftClose, PanelLeftOpen, Sparkles, X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 
 import type { AgentShow } from "@/lib/agent/types";
 import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES, sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
+import { AvaHalo } from "@/components/ava/AvaHalo";
 import { setAvaPageHost } from "@/components/ava/avaPageHost";
 import { NavHoverHints } from "@/components/layout/NavHoverHints";
 
@@ -510,7 +511,7 @@ export function PracticeShell({
                 onClick={openAssistant}
                 className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
               >
-                <Sparkles className="h-4 w-4" aria-hidden />
+                <AvaHalo size={18} dark />
                 Ask Ava
               </button>
             ) : null}
@@ -530,7 +531,7 @@ export function PracticeShell({
                   onClick={openAssistant}
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--bp-blue)]"
                 >
-                  <Sparkles className="h-4 w-4" aria-hidden />
+                  <AvaHalo size={18} dark />
                   Ask Ava
                 </button>
               ) : null}
@@ -588,7 +589,7 @@ export function PracticeShell({
           onClick={openAssistant}
           className="bp-no-print fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-[var(--bp-navy)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_-12px_rgba(5,30,54,0.7)] lg:hidden"
         >
-          <Sparkles className="h-4 w-4" aria-hidden />
+          <AvaHalo size={18} dark />
           Ask Ava
         </button>
       ) : null}

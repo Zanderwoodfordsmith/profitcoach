@@ -19,6 +19,8 @@ import {
   type LessonImportStatusReport,
   type LessonImportStatusRow,
 } from "@/lib/academy/lessonImportStatusClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   status: LessonImportStatusReport;
@@ -126,20 +128,20 @@ function overallStatusFromStates(states: {
 function OverallStatusChip({ status }: { status: OverallStatus }) {
   if (status === "ready") {
     return (
-      <span className="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+      <span className="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-caption font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
         Ready
       </span>
     );
   }
   if (status === "gaps") {
     return (
-      <span className="inline-flex rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-800 ring-1 ring-inset ring-rose-200/80">
+      <span className="inline-flex rounded-md bg-rose-50 px-2 py-0.5 text-caption font-medium text-rose-800 ring-1 ring-inset ring-rose-200/80">
         Gaps
       </span>
     );
   }
   return (
-    <span className="inline-flex rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-900 ring-1 ring-inset ring-amber-200/80">
+    <span className="inline-flex rounded-md bg-amber-50 px-2 py-0.5 text-caption font-medium text-amber-900 ring-1 ring-inset ring-amber-200/80">
       Partial
     </span>
   );
@@ -148,13 +150,13 @@ function OverallStatusChip({ status }: { status: OverallStatus }) {
 function PublishBadge({ isDraft }: { isDraft: boolean }) {
   if (isDraft) {
     return (
-      <span className="inline-flex rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 ring-1 ring-inset ring-amber-200/80">
+      <span className="inline-flex rounded-md bg-amber-50 px-1.5 py-0.5 text-kicker font-semibold uppercase text-amber-900 ring-1 ring-inset ring-amber-200/80">
         Draft
       </span>
     );
   }
   return (
-    <span className="inline-flex rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+    <span className="inline-flex rounded-md bg-emerald-50 px-1.5 py-0.5 text-kicker font-semibold uppercase text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
       Live
     </span>
   );
@@ -260,7 +262,7 @@ function FilterScorecard({
           : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
       }`}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+      <p className="text-kicker font-semibold uppercase text-slate-600">
         {label}
       </p>
       <p className={`mt-1 text-2xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
@@ -307,7 +309,7 @@ function LessonKindBadge({ row }: { row: LessonImportStatusRow }) {
 
   return (
     <span
-      className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${lessonKindBadgeClass(row.kind)}`}
+      className={`shrink-0 rounded-md px-1.5 py-0.5 text-kicker font-semibold uppercase ring-1 ring-inset ${lessonKindBadgeClass(row.kind)}`}
       title={detail ?? label}
     >
       {label}
@@ -324,22 +326,22 @@ function TableStatusHeader() {
     <div
       className={`grid ${STATUS_COLS} items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2`}
     >
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+      <span className="text-kicker font-semibold uppercase text-slate-600">
         Lesson
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+      <span className="text-center text-kicker font-semibold uppercase text-slate-600">
         Time
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+      <span className="text-center text-kicker font-semibold uppercase text-slate-600">
         Status
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+      <span className="text-center text-kicker font-semibold uppercase text-slate-600">
         Content
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+      <span className="text-center text-kicker font-semibold uppercase text-slate-600">
         Video
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+      <span className="text-center text-kicker font-semibold uppercase text-slate-600">
         Transcript
       </span>
     </div>
@@ -479,7 +481,7 @@ function SectionTree({
           <span
             className={
               isRule
-                ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600"
+                ? "text-kicker font-semibold uppercase text-slate-600"
                 : depth === 0
                   ? "text-sm font-semibold text-slate-800"
                   : "text-sm font-medium text-slate-700"
@@ -679,7 +681,7 @@ export function AdminAcademyImportStatus({
         />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className={cardClass("plain", "overflow-hidden")}>
         <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
           <div>
             <label htmlFor="import-filter" className="block text-xs font-medium text-slate-600">
@@ -721,14 +723,14 @@ export function AdminAcademyImportStatus({
           <button
             type="button"
             onClick={expandAll}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second")}
           >
             Expand all
           </button>
           <button
             type="button"
             onClick={collapseAll}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second")}
           >
             Collapse all
           </button>
@@ -797,7 +799,7 @@ export function AdminAcademyImportStatus({
         ) : null}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className={cardClass("plain", "overflow-hidden")}>
         <button
           type="button"
           onClick={() => setDriveOpen((open) => !open)}
@@ -824,7 +826,7 @@ export function AdminAcademyImportStatus({
                 {unmatched.length} unmatched
               </span>
             ) : (
-              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
                 Clear
               </span>
             )}

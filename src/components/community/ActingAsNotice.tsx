@@ -11,6 +11,7 @@ import {
   saveCommunityDraftHandoff,
   type CommunityDraftHandoff,
 } from "@/lib/communityDraftHandoff";
+import { buttonClass } from "@/components/ui/Button";
 
 type Props = {
   /** Coach the admin is viewing as (from `coachPersonaForCommunity`); null hides the notice. */
@@ -68,17 +69,17 @@ export function ActingAsNotice({
   return (
     <div
       role="status"
-      className={`flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 py-1.5 pl-2.5 pr-1.5 text-[13px] leading-snug text-amber-900 ${className}`}
+      className={`flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 py-1.5 pl-2.5 pr-1.5 text-ui leading-snug text-amber-900 ${className}`}
     >
       <UserRoundCog className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
       <span className="min-w-0 flex-1">
-        This will post as <span className="font-semibold">{label}</span>, not
+        This will post as <span className="font-medium">{label}</span>, not
         you. You&apos;re viewing the app as them.
       </span>
       <button
         type="button"
         onClick={switchToMe}
-        className="shrink-0 rounded-md border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-900 transition hover:bg-amber-100"
+        className={buttonClass("second", "small", "shrink-0")}
       >
         Post as me
       </button>

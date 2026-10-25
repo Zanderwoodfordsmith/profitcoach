@@ -5,11 +5,11 @@ import { Eye, EyeOff } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { OutlinedTextField } from "@/components/settings/OutlinedFormField";
 import { ProfileFieldRow } from "@/components/settings/ProfileFormLayout";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 function outlineButtonClass(disabled?: boolean) {
-  return `rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 ${
-    disabled ? "cursor-not-allowed opacity-50" : ""
-  }`;
+  return buttonClass("second", "small", disabled ? "cursor-not-allowed opacity-50" : "");
 }
 
 export type AccountEmailPasswordFieldsProps = {
@@ -231,7 +231,7 @@ export function AccountEmailPasswordFields({
         <>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 max-w-xs">
-              <p className="text-sm font-semibold text-slate-900">Email</p>
+              <p className="text-sm font-medium text-slate-900">Email</p>
               <p className="mt-0.5 break-all text-sm text-slate-600">{email ?? "—"}</p>
             </div>
             <button
@@ -249,7 +249,7 @@ export function AccountEmailPasswordFields({
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-slate-900">Password</p>
+              <p className="text-sm font-medium text-slate-900">Password</p>
               <p className="mt-0.5 text-sm text-slate-600">Change your password</p>
             </div>
             <button
@@ -269,7 +269,7 @@ export function AccountEmailPasswordFields({
 
       {emailOpen ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
+          <div className={cardClass("raised", "w-full max-w-md p-5")}>
             <h3 className="text-base font-semibold text-slate-900">
               {isImpersonating ? "Change coach email" : "Change email"}
             </h3>
@@ -296,7 +296,7 @@ export function AccountEmailPasswordFields({
               <button
                 type="button"
                 onClick={() => setEmailOpen(false)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                className={buttonClass("quiet")}
               >
                 Cancel
               </button>
@@ -304,7 +304,7 @@ export function AccountEmailPasswordFields({
                 type="button"
                 disabled={emailBusy}
                 onClick={() => void submitEmailChange()}
-                className="rounded-md bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                className={buttonClass("main")}
               >
                 {emailBusy ? "Saving…" : "Update email"}
               </button>
@@ -315,7 +315,7 @@ export function AccountEmailPasswordFields({
 
       {pwdOpen ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
+          <div className={cardClass("raised", "w-full max-w-md p-5")}>
             <h3 className="text-base font-semibold text-slate-900">
               {isImpersonating ? "Change coach password" : "Change password"}
             </h3>
@@ -357,7 +357,7 @@ export function AccountEmailPasswordFields({
                   setShowPassword(false);
                   setPwdOpen(false);
                 }}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                className={buttonClass("quiet")}
               >
                 Cancel
               </button>
@@ -365,7 +365,7 @@ export function AccountEmailPasswordFields({
                 type="button"
                 disabled={pwdBusy}
                 onClick={() => void submitPasswordChange()}
-                className="rounded-md bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                className={buttonClass("main")}
               >
                 {pwdBusy ? "Saving…" : "Update password"}
               </button>

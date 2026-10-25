@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
@@ -123,7 +125,7 @@ export default function AdminCoachRevenuePage() {
         <p className="text-sm text-slate-600">No coaches found.</p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className={cardClass("plain", "overflow-x-auto")}>
         <table className="min-w-[56rem] w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -143,7 +145,7 @@ export default function AdminCoachRevenuePage() {
                 <td className="px-4 py-2 align-top">
                   <p className="font-medium text-slate-900">{row.full_name ?? "—"}</p>
                   <p className="text-xs text-slate-600">{row.coach_business_name ?? "—"}</p>
-                  <p className="mt-1 text-[11px] text-slate-500">{row.slug}</p>
+                  <p className="mt-1 text-caption text-slate-500">{row.slug}</p>
                 </td>
                 <td className="px-4 py-2 text-center text-slate-800">{row.client_count}</td>
                 <td className="whitespace-nowrap px-4 py-2 text-right font-medium text-slate-900">
@@ -177,7 +179,7 @@ export default function AdminCoachRevenuePage() {
                       setImpersonatingCoachId(row.coachId);
                       router.push("/coach/income");
                     }}
-                    className="rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-800 hover:bg-sky-200"
+                    className={buttonClass("second", "small")}
                   >
                     Open ledger
                   </button>

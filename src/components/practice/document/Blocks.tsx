@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { AlertTriangle, Check, Copy, Info, Lightbulb, Pencil } from "lucide-react";
 
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 
 function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
@@ -16,7 +18,7 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
           window.setTimeout(() => setCopied(false), 1600);
         });
       }}
-      className="bp-no-print inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--bp-blue)] transition-colors hover:bg-[var(--bp-tint-strong)]"
+      className={buttonClass("quiet", "small", "bp-no-print")}
     >
       {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
       {copied ? "Copied" : label}
@@ -36,9 +38,9 @@ function MessageBlock({
   const [saving, setSaving] = useState(false);
   const chars = editing ? draft.length : block.body.length;
   return (
-    <figure className="bp-keep overflow-hidden rounded-2xl border border-[var(--bp-rule)] bg-white shadow-[0_10px_30px_-22px_rgba(5,30,54,0.45)]">
+    <figure className={cardClass("plain", "bp-keep overflow-hidden")}>
       <figcaption className="flex items-center justify-between gap-3 border-b border-[var(--bp-rule)] bg-[var(--bp-tint)] px-4 py-2">
-        <span className="min-w-0 truncate text-[0.8125rem] font-semibold text-[var(--bp-ink)]">
+        <span className="min-w-0 truncate text-ui font-semibold text-[var(--bp-ink)]">
           {block.label || "Message"}
         </span>
         <span className="flex shrink-0 items-center gap-2">
@@ -50,7 +52,7 @@ function MessageBlock({
                 setDraft(block.body);
                 setEditing(true);
               }}
-              className="bp-no-print inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--bp-muted)] transition-colors hover:bg-[var(--bp-tint-strong)] hover:text-[var(--bp-blue)]"
+              className={buttonClass("quiet", "small", "bp-no-print")}
             >
               <Pencil className="h-3.5 w-3.5" aria-hidden />
               Edit
@@ -65,7 +67,7 @@ function MessageBlock({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={Math.min(18, Math.max(4, draft.split("\n").length + 1))}
-            className="block w-full resize-y rounded-lg border border-[var(--bp-rule)] px-3 py-2 text-[0.9375rem] leading-[1.65] text-[var(--bp-body)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]"
+            className="block w-full resize-y rounded-lg border border-[var(--bp-rule)] px-3 py-2 text-read text-[var(--bp-body)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]"
           />
           <div className="mt-2 flex gap-2">
             <button
@@ -77,21 +79,21 @@ function MessageBlock({
                 setSaving(false);
                 if (ok) setEditing(false);
               }}
-              className="rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
+              className={buttonClass("main", "small")}
             >
               {saving ? "Saving…" : "Save"}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--bp-muted)] hover:bg-[var(--bp-tint)]"
+              className={buttonClass("quiet", "small")}
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <p className="whitespace-pre-wrap px-4 py-3.5 text-[0.9375rem] leading-[1.65] text-[var(--bp-body)]">
+        <p className="whitespace-pre-wrap px-4 py-3.5 text-read text-[var(--bp-body)]">
           {block.body}
         </p>
       )}
@@ -134,7 +136,7 @@ function Timeline({ block }: { block: Extract<BlueprintBlock, { type: "timeline"
                   }}
                 />
               </div>
-              <p className="mt-3 text-[0.9375rem] font-semibold leading-snug text-[var(--bp-ink)]">{item.title}</p>
+              <p className="mt-3 text-ui font-semibold leading-snug text-[var(--bp-ink)]">{item.title}</p>
               {item.detail ? <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">{item.detail}</p> : null}
             </div>
           ))}
@@ -148,7 +150,7 @@ function Timeline({ block }: { block: Extract<BlueprintBlock, { type: "timeline"
               {item.when}
             </span>
             <span>
-              <span className="block text-[0.9375rem] font-semibold text-[var(--bp-ink)]">{item.title}</span>
+              <span className="block text-ui font-semibold text-[var(--bp-ink)]">{item.title}</span>
               {item.detail ? <span className="mt-0.5 block text-sm leading-6 text-[var(--bp-muted)]">{item.detail}</span> : null}
             </span>
           </li>
@@ -173,19 +175,19 @@ export function Blocks({
         switch (block.type) {
           case "lede":
             return (
-              <p key={key} className="bp-display text-[1.3125rem] leading-[1.5] text-[var(--bp-ink)] @2xl:text-[1.4375rem]">
+              <p key={key} className="bp-display text-subhead leading-[1.5] text-[var(--bp-ink)] @2xl:text-title">
                 {block.text}
               </p>
             );
           case "paragraph":
             return (
-              <p key={key} className="max-w-[68ch] whitespace-pre-line text-[1.0078rem] leading-[1.7]">
+              <p key={key} className="max-w-[68ch] whitespace-pre-line text-read">
                 {block.text}
               </p>
             );
           case "heading":
             return (
-              <h4 key={key} className="!mt-9 text-[1.0625rem] font-semibold tracking-[-0.01em] text-[var(--bp-ink)]">
+              <h4 key={key} className="!mt-9 text-subhead font-semibold text-[var(--bp-ink)]">
                 {block.text}
               </h4>
             );
@@ -193,7 +195,7 @@ export function Blocks({
             return (
               <ul key={key} className="max-w-[68ch] space-y-2.5">
                 {block.items.map((item, j) => (
-                  <li key={j} className="grid grid-cols-[0.875rem_1fr] gap-2.5 text-[1.0078rem] leading-[1.65]">
+                  <li key={j} className="grid grid-cols-[0.875rem_1fr] gap-2.5 text-read">
                     <span aria-hidden className="mt-[0.62em] h-1.5 w-1.5 rounded-[1px] bg-[var(--bp-sky)]" />
                     <span>{item}</span>
                   </li>
@@ -204,7 +206,7 @@ export function Blocks({
             return (
               <ol key={key} className="max-w-[68ch] space-y-2.5">
                 {block.items.map((item, j) => (
-                  <li key={j} className="grid grid-cols-[1.75rem_1fr] gap-2 text-[1.0078rem] leading-[1.65]">
+                  <li key={j} className="grid grid-cols-[1.75rem_1fr] gap-2 text-read">
                     <span className="bp-num pt-px text-sm font-semibold text-[var(--bp-blue)]">{j + 1}.</span>
                     <span>{item}</span>
                   </li>
@@ -222,7 +224,7 @@ export function Blocks({
                 >
                   <path d="M0 24V14.2C0 6.4 4.3 1.6 12.2 0l1.4 3C9 4.6 7 7.4 6.8 11.2H13V24H0Zm19 0V14.2C19 6.4 23.3 1.6 31.2 0l1.4 3C28 4.6 26 7.4 25.8 11.2H32V24H19Z" />
                 </svg>
-                <p className="bp-display whitespace-pre-line text-[1.25rem] italic leading-[1.55] text-[var(--bp-ink)]">
+                <p className="bp-display whitespace-pre-line text-subhead italic leading-[1.55] text-[var(--bp-ink)]">
                   {block.text}
                 </p>
                 {block.cite ? (
@@ -243,10 +245,10 @@ export function Blocks({
                     className="border-[var(--bp-rule)] px-5 py-5 @2xl:[&:not(:first-child)]:border-l"
                   >
                     <dt className="sr-only">{item.label}</dt>
-                    <dd className="bp-display bp-num text-[2rem] font-medium leading-none text-[var(--bp-navy)] @2xl:text-[2.375rem]">
+                    <dd className="bp-display bp-num text-heading font-medium leading-none text-[var(--bp-navy)] @2xl:text-display">
                       {item.value}
                     </dd>
-                    <dd className="mt-2 text-[0.8125rem] leading-5 text-[var(--bp-muted)]">{item.label}</dd>
+                    <dd className="mt-2 text-ui leading-5 text-[var(--bp-muted)]">{item.label}</dd>
                   </div>
                 ))}
               </dl>
@@ -256,8 +258,8 @@ export function Blocks({
               <dl key={key} className="bp-keep grid gap-x-8 gap-y-3 @xl:grid-cols-[minmax(8rem,12rem)_1fr]">
                 {block.items.map((item, j) => (
                   <div key={j} className="contents">
-                    <dt className="pt-0.5 text-[0.8125rem] font-semibold text-[var(--bp-muted)]">{item.label}</dt>
-                    <dd className="text-[1.0078rem] leading-[1.6] text-[var(--bp-ink)]">{item.value}</dd>
+                    <dt className="pt-0.5 text-ui font-medium text-[var(--bp-muted)]">{item.label}</dt>
+                    <dd className="text-read text-[var(--bp-ink)]">{item.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -265,11 +267,11 @@ export function Blocks({
           case "table":
             return (
               <div key={key} className="bp-keep bp-scroll -mx-1 overflow-x-auto px-1">
-                <table className="bp-table w-full min-w-[34rem] border-separate border-spacing-0 overflow-hidden rounded-xl border border-[var(--bp-rule)] text-left text-[0.875rem]">
+                <table className="bp-table w-full min-w-[34rem] border-separate border-spacing-0 overflow-hidden rounded-xl border border-[var(--bp-rule)] text-left text-ui">
                   <thead>
                     <tr>
                       {block.columns.map((col) => (
-                        <th key={col} className="px-3.5 py-2.5 text-[0.75rem] font-semibold uppercase tracking-[0.05em]">
+                        <th key={col} className="px-3.5 py-2.5 text-kicker font-semibold uppercase">
                           {col}
                         </th>
                       ))}
@@ -281,7 +283,7 @@ export function Blocks({
                         {row.map((cell, c) => (
                           <td
                             key={c}
-                            className={`bp-num px-3.5 py-3 leading-[1.55] ${c === 0 ? "font-semibold text-[var(--bp-ink)]" : "text-[var(--bp-body)]"}`}
+                            className={`bp-num px-3.5 py-3 leading-[1.55] ${c === 0 ? "font-medium text-[var(--bp-ink)]" : "text-[var(--bp-body)]"}`}
                           >
                             {cell}
                           </td>
@@ -306,7 +308,7 @@ export function Blocks({
             return (
               <aside key={key} className={`bp-keep bp-tinted flex gap-3 rounded-xl px-4 py-3.5 ${tone.className}`}>
                 <Icon className={`mt-0.5 h-[1.125rem] w-[1.125rem] shrink-0 ${tone.iconClass}`} aria-hidden />
-                <div className="text-[0.9375rem] leading-[1.6]">
+                <div className="text-read">
                   {block.title ? <p className="font-semibold">{block.title}</p> : null}
                   <p className="whitespace-pre-line">{block.text}</p>
                 </div>
@@ -321,13 +323,13 @@ export function Blocks({
                     {j < block.items.length - 1 ? (
                       <span aria-hidden className="absolute left-[0.9375rem] top-8 bottom-[-1.25rem] w-px bg-[var(--bp-rule)]" />
                     ) : null}
-                    <span className="bp-num relative flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bp-navy)] text-[0.8125rem] font-semibold text-white">
+                    <span className="bp-num relative flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bp-navy)] text-ui font-semibold text-white">
                       {j + 1}
                     </span>
                     <span className="pt-1">
                       <span className="block font-semibold leading-snug text-[var(--bp-ink)]">{item.title}</span>
                       {item.detail ? (
-                        <span className="mt-1 block max-w-[64ch] whitespace-pre-line text-[0.9375rem] leading-[1.65] text-[var(--bp-muted)]">
+                        <span className="mt-1 block max-w-[64ch] whitespace-pre-line text-read text-[var(--bp-muted)]">
                           {item.detail}
                         </span>
                       ) : null}

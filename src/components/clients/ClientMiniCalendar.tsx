@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   /** ISO timestamps of sessions to highlight */
@@ -64,7 +65,7 @@ export function ClientMiniCalendar({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+    <section className={cardClass("plain", "p-4")}>
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-900">Sessions</h3>
         <div className="flex items-center gap-1">
@@ -98,7 +99,7 @@ export function ClientMiniCalendar({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase tracking-wide text-slate-400">
+      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-kicker font-medium uppercase text-slate-400">
         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
           <div key={d}>{d}</div>
         ))}

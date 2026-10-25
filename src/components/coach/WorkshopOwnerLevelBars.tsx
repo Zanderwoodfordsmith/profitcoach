@@ -81,7 +81,7 @@ export function WorkshopOwnerLevelBars({ answers }: WorkshopOwnerLevelBarsProps)
               ) : null}
               <div className="min-w-0 flex-1">
                 <p
-                  className="text-xs font-bold uppercase tracking-wider"
+                  className="text-xs font-semibold uppercase tracking-wider"
                   style={{ color: accent }}
                 >
                   Level {ls.level}

@@ -12,6 +12,8 @@ import { splitFullName } from "@/lib/splitFullName";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type PersonalisedLinkProduct = "boss-score" | "boss-pro";
 
@@ -280,7 +282,7 @@ export function PersonalisedLinkModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 shadow-xl"
+        className={cardClass("raised", "max-h-[90vh] w-full max-w-lg overflow-y-auto p-5")}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -302,7 +304,7 @@ export function PersonalisedLinkModal({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            className={buttonClass("quiet", "small", "shrink-0")}
           >
             Close
           </button>
@@ -313,7 +315,7 @@ export function PersonalisedLinkModal({
             <button
               type="button"
               onClick={openNewProspectForm}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-sky-300 bg-sky-50/60 px-4 py-2.5 text-sm font-medium text-sky-800 transition hover:border-sky-400 hover:bg-sky-50"
+              className={buttonClass("second", "normal", "w-full")}
             >
               <span aria-hidden>+</span>
               Add new prospect
@@ -471,7 +473,7 @@ export function PersonalisedLinkModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("quiet")}
           >
             Cancel
           </button>
@@ -479,14 +481,14 @@ export function PersonalisedLinkModal({
             type="button"
             onClick={handleGenerate}
             disabled={!canGenerate}
-            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className={buttonClass("main", "normal", "disabled:cursor-not-allowed")}
           >
             Generate link
           </button>
         </div>
 
         {generatedLink ? (
-          <div className="mt-5 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className={cardClass("soft", "mt-5 space-y-3 p-4")}>
             <label
               htmlFor="personalised_generated_link"
               className="block text-xs font-medium uppercase tracking-wide text-slate-500"

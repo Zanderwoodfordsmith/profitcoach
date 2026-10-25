@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { LEVELS } from "@/lib/bossData";
 import type { PlaybookSummary } from "@/lib/playbookContentTypes";
+import { cardClass } from "@/components/ui/Card";
 
 export type { PlaybookSummary };
 
@@ -72,7 +73,7 @@ export function PlaybookCard({
   return (
     <Link
       href={href}
-      className={`group flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[1.25rem] border border-slate-200/90 bg-white text-left shadow-[0_2px_14px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-slate-300/90 hover:shadow-[0_18px_44px_-16px_rgba(12,82,144,0.38)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290] focus-visible:ring-offset-2 ${
+      className={`${cardClass("raised")} group flex h-full min-h-0 min-w-0 flex-col overflow-hidden text-left transition duration-300 hover:-translate-y-1 hover:border-slate-300/90 hover:shadow-[0_18px_44px_-16px_rgba(12,82,144,0.38)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290] focus-visible:ring-offset-2 ${
         locked ? "opacity-[0.92]" : ""
       }`}
     >
@@ -130,12 +131,12 @@ export function PlaybookCard({
         {(locked || useStatus) && (
           <div className="absolute right-3 top-3 flex flex-wrap items-center justify-end gap-1.5">
             {locked ? (
-              <span className="rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700 shadow-sm ring-1 ring-black/5 backdrop-blur-sm">
+              <span className="rounded-full bg-white/92 px-2.5 py-1 text-kicker font-semibold uppercase text-slate-700 shadow-sm ring-1 ring-black/5 backdrop-blur-sm">
                 Locked
               </span>
             ) : null}
             {useStatus ? (
-              <span className="rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700 shadow-sm ring-1 ring-black/5 backdrop-blur-sm">
+              <span className="rounded-full bg-white/92 px-2.5 py-1 text-kicker font-semibold uppercase text-slate-700 shadow-sm ring-1 ring-black/5 backdrop-blur-sm">
                 {STATUS_LABEL[status]}
               </span>
             ) : null}
@@ -150,10 +151,10 @@ export function PlaybookCard({
       </div>
 
       <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0c5290] sm:text-[11px]">
+        <p className="text-kicker font-semibold uppercase text-[#0c5290]">
           {metaLine}
         </p>
-        <h3 className="mt-2.5 font-semibold leading-snug tracking-[-0.02em] text-slate-900 transition-colors group-hover:text-[#0c5290] sm:text-[1.125rem]">
+        <h3 className="mt-2.5 font-semibold leading-snug tracking-[-0.02em] text-slate-900 transition-colors group-hover:text-[#0c5290] sm:text-lg">
           {summary.name}
         </h3>
         <p
@@ -163,7 +164,7 @@ export function PlaybookCard({
         >
           {displayDescription}
         </p>
-        <p className="mt-auto pt-5 text-sm font-semibold text-slate-900">
+        <p className="mt-auto pt-5 text-sm font-medium text-slate-900">
           Open playbook{" "}
           <span
             className="inline-block transition-transform duration-300 group-hover:translate-x-1"

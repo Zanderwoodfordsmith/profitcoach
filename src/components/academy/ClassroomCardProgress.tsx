@@ -27,7 +27,7 @@ export function ClassroomCardProgress({ value, label }: Props) {
           aria-label={label}
         />
         <span
-          className={`pointer-events-none absolute top-1/2 z-10 text-[11px] font-semibold leading-none tabular-nums ${
+          className={`pointer-events-none absolute top-1/2 z-10 text-caption font-semibold leading-none tabular-nums ${
             labelOutside ? "text-slate-500" : "text-white"
           }`}
           style={

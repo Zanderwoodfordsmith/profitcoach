@@ -31,13 +31,15 @@ import {
   parseCoachStyle,
   type CoachStyle,
 } from "@/lib/practiceKnowledge/coachStyle";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 
 import { usePractice } from "../PracticeProvider";
 import { InfoTip } from "./InfoTip";
 
 const INPUT =
-  "bp-input w-full rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-2.5 text-left text-[0.9844rem] leading-[1.6] text-[var(--bp-ink)] transition-[background-color,border-color,box-shadow] placeholder:text-[#9aa8b8] hover:border-[#d3dce6] hover:bg-[#f0f4f8] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)] focus:outline-none";
+  "bp-input w-full rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-2.5 text-left text-read text-[var(--bp-ink)] transition-[background-color,border-color,box-shadow] placeholder:text-[#9aa8b8] hover:border-[#d3dce6] hover:bg-[#f0f4f8] focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)] focus:outline-none";
 
 const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -152,10 +154,10 @@ function FieldLabel({
 }) {
   return (
     <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-      <span className="text-[0.875rem] font-semibold text-[var(--bp-ink)]">{label}</span>
+      <span className="text-ui font-medium text-[var(--bp-ink)]">{label}</span>
       {help ? <InfoTip label={label}>{help}</InfoTip> : null}
       {mark ? (
-        <span className="rounded-full bg-[#fff4e0] px-2 py-px text-[0.6875rem] font-semibold text-[#8a5300]">{mark}</span>
+        <span className="rounded-full bg-[#fff4e0] px-2 py-px text-caption font-semibold text-[#8a5300]">{mark}</span>
       ) : null}
     </div>
   );
@@ -730,8 +732,8 @@ function EmailConnect({ field }: { field: FieldSpec }) {
             const connected = Boolean(account) || justConnected === row.provider;
             return (
               <li key={row.provider} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3.5 py-1.5">
-                <p className="min-w-0 truncate text-[0.9375rem] text-[var(--bp-ink)]">
-                  <span className="font-semibold">{row.title}</span>
+                <p className="min-w-0 truncate text-ui text-[var(--bp-ink)]">
+                  <span className="font-medium">{row.title}</span>
                   {email ? <span className="text-[var(--bp-muted)]"> · {email}</span> : null}
                 </p>
                 {connected ? (
@@ -744,7 +746,7 @@ function EmailConnect({ field }: { field: FieldSpec }) {
                     type="button"
                     disabled={Boolean(busy) || sample}
                     onClick={() => void connect(row.provider)}
-                    className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-[var(--bp-ink)] ring-1 ring-[#e3e8ef] hover:ring-[#1a8fd4] disabled:opacity-50"
+                    className={buttonClass("second", "small")}
                   >
                     {busy === row.provider ? "Connecting…" : `Connect ${row.title}`}
                   </button>
@@ -779,7 +781,7 @@ function SocialField({
   return (
     <div className="bp-inline">
       <div>
-        <label htmlFor={id} className="px-0.5 text-[0.875rem] font-semibold text-[var(--bp-ink)]">
+        <label htmlFor={id} className="px-0.5 text-ui font-medium text-[var(--bp-ink)]">
           {meta.label}
         </label>
         <div className="flex min-w-0 items-center gap-2">
@@ -887,7 +889,7 @@ export function SetupSocials() {
         disabled={Boolean(busy) || sample}
         onClick={() => void connect(provider)}
         aria-label={`Connect ${SOCIAL_NETWORK_META[network].label}`}
-        className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-[var(--bp-ink)] ring-1 ring-[#e3e8ef] hover:ring-[#1a8fd4] disabled:opacity-50"
+        className={buttonClass("second", "small")}
       >
         {busy === provider ? "Connecting…" : "Connect"}
       </button>
@@ -1048,13 +1050,13 @@ function ScaleSliders({
   onCommit: (key: string, n: number) => void;
 }) {
   return (
-    <div className="divide-y divide-[#eef1f5] rounded-2xl border border-[#e3e9f0] bg-white px-4 @xl:px-5">
+    <div className={cardClass("plain", "divide-y divide-[#eef1f5] px-4 @xl:px-5")}>
       {scales.map((d) => {
         const n = value[d.key];
         const id = `scale-${d.key}`;
         return (
           <div key={d.key} className="py-3.5">
-            <div className="mb-2 flex items-center justify-between gap-3 text-[0.8125rem]">
+            <div className="mb-2 flex items-center justify-between gap-3 text-ui">
               <span className={`font-medium ${n <= 2 && set ? "text-[var(--bp-ink)]" : "text-[var(--bp-muted)]"}`}>{d.left}</span>
               <label htmlFor={id} className="rounded-full bg-[var(--bp-tint-strong)] px-2.5 py-0.5 text-xs font-semibold text-[var(--bp-blue)]">
                 {d.stops[n - 1]}
@@ -1131,7 +1133,7 @@ function ToneSliders({ field, changed }: { field: FieldSpec; changed?: boolean }
             <button
               type="button"
               onClick={() => commit(tone)}
-              className="rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)]"
+              className={buttonClass("main", "small")}
             >
               Keep this
             </button>
@@ -1178,16 +1180,16 @@ function CoachStyleSliders({ field, changed }: { field: FieldSpec; changed?: boo
   return (
     <div>
       <div className="mb-1.5 flex items-center gap-2 px-0.5">
-        <span className="text-[0.875rem] font-semibold text-[var(--bp-ink)]">{field.label}</span>
+        <span className="text-ui font-medium text-[var(--bp-ink)]">{field.label}</span>
         <button
           type="button"
           onClick={() => setExplain(true)}
-          className="text-[0.8125rem] font-semibold text-[var(--bp-blue)] hover:underline"
+          className="text-ui font-medium text-[var(--bp-blue)] hover:underline"
         >
           How to choose
         </button>
         {changed ? (
-          <span className="rounded-full bg-[#fff4e0] px-2 py-px text-[0.6875rem] font-semibold text-[#8a5300]">Changed</span>
+          <span className="rounded-full bg-[#fff4e0] px-2 py-px text-caption font-semibold text-[#8a5300]">Changed</span>
         ) : null}
       </div>
       <Modal
@@ -1207,14 +1209,14 @@ function CoachStyleSliders({ field, changed }: { field: FieldSpec; changed?: boo
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 {d.ends.map((text, i) => (
                   <div key={i} className="rounded-2xl bg-white/60 px-4 py-3">
-                    <p className="text-sm font-semibold text-[#0c5290]">{i === 0 ? d.left : d.right}</p>
-                    <p className="mt-0.5 text-[0.9375rem] leading-relaxed text-slate-700">{text}</p>
+                    <p className="text-sm font-medium text-[#0c5290]">{i === 0 ? d.left : d.right}</p>
+                    <p className="mt-0.5 text-read leading-relaxed text-slate-700">{text}</p>
                   </div>
                 ))}
               </div>
             </section>
           ))}
-          <p className="text-[0.9375rem] leading-relaxed text-slate-700">
+          <p className="text-read leading-relaxed text-slate-700">
             Most coaches sit somewhere in the middle on at least one. Our writers use your answers so messages sound like working
             with you, and you attract owners who suit how you coach.
           </p>

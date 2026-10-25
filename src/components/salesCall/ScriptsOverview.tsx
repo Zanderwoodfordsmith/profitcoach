@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowRight, CalendarClock, Gauge, Map, MessageCircleQuestion, PhoneIncoming, Send, type LucideIcon } from "lucide-react";
 
 import { CallSimBanner } from "@/components/callSimulator/CallSimBanner";
+import { cardClass } from "@/components/ui/Card";
 import { SCRIPTS, type ScriptCard } from "@/lib/salesCall/library";
 
 const ICONS: Record<ScriptCard["icon"], LucideIcon> = {
@@ -39,11 +40,11 @@ export function ScriptsOverview() {
                 <img src={s.cover} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
               </div>
               <div className="flex flex-1 flex-col p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em]" style={{ color: s.eyebrowColour }}>
+                <p className="text-kicker font-semibold uppercase" style={{ color: s.eyebrowColour }}>
                   {s.eyebrow}
                 </p>
                 <h2 className="mt-1.5 text-xl font-semibold leading-snug tracking-tight text-slate-900">{s.title}</h2>
-                <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-slate-600">{s.blurb}</p>
+                <p className="mt-1.5 text-read leading-relaxed text-slate-600">{s.blurb}</p>
                 <div className="mt-auto pt-4">
                   {/* On hover, the sidebar's selected blue (SIDEBAR_NAV_ACTIVE). */}
                   <span className="box-border flex h-[29px] w-full items-center justify-center gap-1.5 rounded-full border border-slate-300/50 bg-slate-200/90 text-xs font-semibold text-slate-600 transition group-hover:border-transparent group-hover:bg-[linear-gradient(155deg,#0a6fa8_0%,#1aa3e0_100%)] group-hover:text-white">
@@ -66,7 +67,7 @@ function ScriptsOverviewV1() {
   const prefix = usePathname()?.startsWith("/admin") ? "/admin" : "/coach";
   return (
     <div className="space-y-6 py-2">
-      <p className="max-w-2xl text-[1.0625rem] leading-relaxed text-slate-600">
+      <p className="max-w-2xl text-read leading-relaxed text-slate-600">
         Every conversation with an owner, in order. Reach out or call a new lead to book a BOSS Score Review. The review gives real value. The Profit Roadmap call is where they decide.
       </p>
       <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -77,14 +78,14 @@ function ScriptsOverviewV1() {
             <li key={s.id}>
               <Link
                 href={`${prefix}/script/${s.id}`}
-                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2"
+                className={cardClass("raised", "group flex h-full flex-col overflow-hidden transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2")}
               >
                 <div className="relative flex aspect-[16/7] flex-col justify-between p-5" style={{ backgroundColor: s.colour }}>
                   <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/12 ring-1 ring-white/20">
                     <Icon className="h-6 w-6 text-white" aria-hidden />
                   </span>
                   <div>
-                    <p className="text-[10px] font-light uppercase tracking-[0.32em] text-white/80">{s.eyebrow}</p>
+                    <p className="text-kicker font-light uppercase text-white/80">{s.eyebrow}</p>
                     <p className="mt-1 text-lg font-semibold leading-snug tracking-tight text-white">{s.title}</p>
                   </div>
                 </div>

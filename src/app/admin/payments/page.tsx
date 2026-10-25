@@ -20,6 +20,8 @@ import { PaymentAttentionList } from "@/components/admin/PaymentAttentionList";
 import { PaymentCoachAssignMenu } from "@/components/admin/PaymentCoachAssignMenu";
 import { PaymentsMonthlyBarChart } from "@/components/admin/PaymentsMonthlyBarChart";
 import { StickyPageHeader } from "@/components/layout";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
@@ -544,7 +546,7 @@ function PaymentGroupUpfrontColumn({
           style={{ width: `${upfront.percent}%` }}
         />
       </div>
-      <p className="mt-0.5 truncate text-right text-[10px] font-medium normal-case tracking-normal text-slate-600">
+      <p className="mt-0.5 truncate text-right text-caption font-medium normal-case tracking-normal text-slate-600">
         {formatMoney(upfront.paidCents, currency)}
         <span className="text-slate-400">
           {" "}
@@ -571,7 +573,7 @@ function PaymentGroupRecurringColumn({
       >
         <div className="h-full w-full rounded-full bg-sky-400/90" />
       </div>
-      <p className="mt-0.5 truncate text-right text-[10px] font-medium normal-case tracking-normal text-sky-700">
+      <p className="mt-0.5 truncate text-right text-caption font-medium normal-case tracking-normal text-sky-700">
         {formatMoney(recurring.paidCents, currency)}
         <span className="text-sky-500/80">
           {" "}
@@ -1668,7 +1670,7 @@ export default function AdminPaymentsPage() {
       />
 
       {showAddPayment ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className={cardClass("plain", "p-4")}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Add payment</h2>
@@ -1777,7 +1779,7 @@ export default function AdminPaymentsPage() {
               <button
                 type="submit"
                 disabled={creatingPayment}
-                className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:cursor-wait disabled:opacity-70"
+                className={buttonClass("main")}
               >
                 {creatingPayment ? "Saving…" : "Add payment"}
               </button>
@@ -1787,7 +1789,7 @@ export default function AdminPaymentsPage() {
       ) : null}
 
       <section
-        className="flex min-h-0 flex-col overflow-visible rounded-xl border border-slate-200 bg-white shadow-sm"
+        className={cardClass("plain", "flex min-h-0 flex-col overflow-visible")}
         style={{ maxHeight: "calc(100dvh - 11rem)" }}
       >
         <div className="shrink-0 border-b border-slate-100 px-4 py-2">
@@ -2107,7 +2109,7 @@ export default function AdminPaymentsPage() {
         ) : null}
 
         <div
-          className={`min-h-0 flex-1 overflow-x-auto overflow-y-auto rounded-b-xl ${
+          className={`min-h-0 flex-1 overflow-x-auto overflow-y-auto rounded-b-2xl ${
             paymentView === "attention" ? "hidden" : ""
           }`}
         >

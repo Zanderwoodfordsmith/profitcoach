@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { CoreBrainTab } from "@/components/admin/brand/CoreBrainTab";
+import { DesignBoard } from "@/components/designBoard/DesignBoard";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import { NineStepRoadmap } from "@/components/profitSystem/NineStepRoadmap";
 import { OwnerLevelsDiagram } from "@/components/profitSystem/OwnerLevelsDiagram";
@@ -32,6 +33,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 
 const TABS = [
   { key: "typography", label: "Typography" },
+  { key: "design", label: "Design" },
   { key: "graphics", label: "Graphics" },
   { key: "model", label: "Model" },
   { key: "frameworks", label: "Frameworks" },
@@ -823,6 +825,7 @@ function BrandPageInner() {
       />
       <div className="mt-4 pb-10">
         {tab === "typography" ? <TypographyTab /> : null}
+        {tab === "design" ? <DesignBoard /> : null}
         {tab === "graphics" ? <GraphicsTab /> : null}
         {tab === "model" ? <ModelTab /> : null}
         {tab === "frameworks" ? (

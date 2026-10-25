@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Arm = { key: string; label: string; body: string };
 type Slot = { key: string; label: string; hint?: string; max?: number };
@@ -70,14 +72,14 @@ export function CampaignGroupTestPanel({
       <div className="mt-4 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span>
-            <span className="font-semibold">In a BCA group test</span>
+            <span className="font-medium">In a BCA group test</span>
             {currentTest ? `: ${currentTest.name}` : ""}. Half your people get version A, half get B, and results pool with other coaches. The wording is fixed so the comparison is fair.
           </span>
           <button
             type="button"
             disabled={busy}
             onClick={() => void call("DELETE", { campaignId })}
-            className="rounded-md border border-violet-300 bg-white px-2.5 py-1 text-xs disabled:opacity-50"
+            className={buttonClass("second", "small")}
           >
             Leave test
           </button>
@@ -90,7 +92,7 @@ export function CampaignGroupTestPanel({
   if (!tests.length) return null;
 
   return (
-    <div className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+    <div className={cardClass("plain", "mt-4 px-3 py-2 text-sm")}>
       <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between text-left">
         <span>
           <span className="font-medium text-slate-900">Join a BCA group test</span>
@@ -137,7 +139,7 @@ export function CampaignGroupTestPanel({
               ))}
               <div className="grid gap-2 sm:grid-cols-2">
                 {test.arms.map((arm) => (
-                  <div key={arm.key} className="rounded border border-slate-200 bg-slate-50 p-2">
+                  <div key={arm.key} className={cardClass("soft", "p-2")}>
                     <p className="text-xs font-medium text-slate-500">
                       Version {arm.key}: {arm.label}
                     </p>
@@ -152,7 +154,7 @@ export function CampaignGroupTestPanel({
                 type="button"
                 disabled={busy}
                 onClick={() => void call("POST", { campaignId, testId: test.id, fills })}
-                className="rounded-md bg-slate-900 px-3 py-1.5 text-white disabled:opacity-50"
+                className={buttonClass("main", "small")}
               >
                 Join this test
               </button>

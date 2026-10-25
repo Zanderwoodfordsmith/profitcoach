@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { buttonClass } from "@/components/ui/Button";
 
 type Ava = { id: string; suggestion: string | null; reason: string | null; draft: string | null; autopilotText: string | null };
 
@@ -47,7 +48,7 @@ export function AvaDraftBar({
   if (current.autopilotText) {
     return (
       <div className="shrink-0 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-slate-700">
-        <span className="font-semibold text-sky-800">Ava is replying for you</span> in about a minute. To stop it, cancel the
+        <span className="font-medium text-sky-800">Ava is replying for you</span> in about a minute. To stop it, cancel the
         scheduled message below.
       </div>
     );
@@ -57,7 +58,7 @@ export function AvaDraftBar({
     <div className="shrink-0 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-slate-700">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>
-          <span className="font-semibold text-sky-800">Ava:</span> {current.suggestion}
+          <span className="font-medium text-sky-800">Ava:</span> {current.suggestion}
           {current.reason ? <span className="text-slate-500"> · {current.reason}</span> : null}
         </span>
         <span className="flex gap-2">
@@ -68,7 +69,7 @@ export function AvaDraftBar({
               void mark("used");
               setAva(null);
             }}
-            className="rounded-md bg-sky-700 px-2.5 py-1 font-medium text-white hover:bg-sky-600"
+            className={buttonClass("main", "small")}
           >
             Use draft
           </button>
@@ -78,7 +79,7 @@ export function AvaDraftBar({
               void mark("dismissed");
               setAva(null);
             }}
-            className="rounded-md px-2 py-1 text-slate-500 hover:text-slate-800"
+            className={buttonClass("quiet", "small")}
           >
             Dismiss
           </button>

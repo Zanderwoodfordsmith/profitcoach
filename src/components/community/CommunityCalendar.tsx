@@ -74,6 +74,8 @@ import type { CommunityCalendarCancelScope } from "@/components/community/Commun
 import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
 import { CommunityCalendarSubscribeButton } from "@/components/community/CommunityCalendarSubscribeModal";
 import { useBelowBreakpoint } from "@/hooks/useBreakpoint";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const LIST_PAGE_SIZE = 6;
 
@@ -940,14 +942,14 @@ export function CommunityCalendar({
             <button
               type="button"
               onClick={goToday}
-              className="order-2 w-fit rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 sm:order-1"
+              className={buttonClass("second", "normal", "order-2 w-fit sm:order-1")}
             >
               Today
             </button>
 
             <div className="order-1 flex flex-1 flex-col items-center sm:order-2">
               {effectiveViewMode === "list" ? (
-                <h2 className="min-w-[10rem] text-center text-lg font-bold text-slate-900 sm:text-xl">
+                <h2 className="min-w-[10rem] text-center text-lg font-semibold text-slate-900 sm:text-subhead">
                   {listViewTitle}
                 </h2>
               ) : (
@@ -960,7 +962,7 @@ export function CommunityCalendar({
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
-                  <h2 className="min-w-[10rem] text-center text-lg font-bold text-slate-900 sm:text-xl">
+                  <h2 className="min-w-[10rem] text-center text-lg font-semibold text-slate-900 sm:text-subhead">
                     {monthTitle}
                   </h2>
                   <button
@@ -1014,7 +1016,7 @@ export function CommunityCalendar({
                             }`}
                           >
                             <span>{city}</span>
-                            <span className="font-normal text-[10px] text-slate-500">
+                            <span className="font-normal text-caption text-slate-500">
                               {z.replace(/_/g, " ")}
                             </span>
                           </button>
@@ -1032,7 +1034,7 @@ export function CommunityCalendar({
                 <button
                   type="button"
                   onClick={() => onAddModalOpenChange(true)}
-                  className="h-10 shrink-0 rounded-full bg-sky-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                  className={buttonClass("main", "normal", "shrink-0")}
                 >
                   Add event
                 </button>
@@ -1116,7 +1118,7 @@ export function CommunityCalendar({
                     return (
                       <div
                         key={h}
-                        className={`border-b border-slate-200 bg-slate-50 px-1 py-2 text-center text-xs font-bold text-slate-900 ${
+                        className={`border-b border-slate-200 bg-slate-50 px-1 py-2 text-center text-xs font-semibold text-slate-900 ${
                           isWeekendHeader ? WEEKEND_CELL_BG_CLASS : ""
                         }`}
                       >
@@ -1273,7 +1275,7 @@ export function CommunityCalendar({
                             );
                           })}
                           {dayEvents.length > 3 ? (
-                            <li className="text-[10px] text-slate-500">
+                            <li className="text-caption text-slate-500">
                               +{dayEvents.length - 3} more
                             </li>
                           ) : null}
@@ -1285,7 +1287,7 @@ export function CommunityCalendar({
                 </div>
               </div>
             ) : (
-              <div className="mt-6 max-lg:overflow-x-auto rounded-xl border border-slate-200 bg-white max-md:hidden">
+              <div className={cardClass("plain", "mt-6 max-lg:overflow-x-auto max-md:hidden")}>
                 <div className="min-w-[44rem] lg:min-w-0">
                   <div
                     className={`${WEEK_GRID_BASE_CLASS} items-end border-b border-slate-200 bg-white`}
@@ -1295,7 +1297,7 @@ export function CommunityCalendar({
                     }}
                   >
                     <div className="flex flex-col justify-end border-r border-slate-200 px-1 pb-2 pt-2">
-                      <span className="text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                      <span className="text-center text-kicker font-semibold uppercase text-slate-500">
                         {tzOffsetLabel}
                       </span>
                     </div>
@@ -1314,7 +1316,7 @@ export function CommunityCalendar({
                           aria-label={`${h} ${day.toFormat("MMMM d")}`}
                         >
                           <div
-                            className={`text-[11px] font-bold uppercase tracking-wide ${
+                            className={`text-kicker font-semibold uppercase ${
                               isToday ? "text-sky-700" : "text-slate-500"
                             }`}
                           >
@@ -1362,7 +1364,7 @@ export function CommunityCalendar({
                             className="relative border-b border-slate-100"
                             style={{ height: WEEK_PX_PER_HOUR }}
                           >
-                            <span className="absolute right-1 top-0 -translate-y-1/2 text-[11px] tabular-nums text-slate-500">
+                            <span className="absolute right-1 top-0 -translate-y-1/2 text-caption tabular-nums text-slate-500">
                               {weekMonday
                                 .set({ hour, minute: 0, second: 0 })
                                 .setZone(viewTz)
@@ -1436,14 +1438,14 @@ export function CommunityCalendar({
                                 const inner = (
                                   <>
                                     <p
-                                      className={`line-clamp-2 text-[11px] font-semibold leading-snug ${
+                                      className={`line-clamp-2 text-caption font-semibold leading-snug ${
                                         ev.isCancelled ? "line-through" : ""
                                       }`}
                                     >
                                       {ev.title}
                                     </p>
                                     <p
-                                      className={`mt-0.5 text-[10px] font-medium leading-tight ${
+                                      className={`mt-0.5 text-caption font-medium leading-tight ${
                                         isKickoff
                                           ? communityCalendarKickoffWeekBlockTimeClass(
                                               Boolean(ev.isCancelled)
@@ -1675,7 +1677,7 @@ export function CommunityCalendar({
                                 {isLive ? <CalendarLiveBadge /> : null}
                               </p>
                               <h3
-                                className={`mt-1 text-lg font-bold ${
+                                className={`mt-1 text-lg font-semibold ${
                                   ev.isCancelled
                                     ? communityCalendarCancelledTextClass()
                                     : isKickoff
@@ -1721,7 +1723,7 @@ export function CommunityCalendar({
                               href={watchUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="mt-[0.3rem] inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                              className={buttonClass("main", "small", "mt-[0.3rem]")}
                             >
                               <Video className="h-4 w-4 shrink-0" />
                               Watch recording
@@ -1736,7 +1738,7 @@ export function CommunityCalendar({
 
               {listOccurrences.length > LIST_PAGE_SIZE ? (
                 <nav
-                  className="flex flex-col gap-3 rounded-xl bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  className={cardClass("soft", "flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between")}
                   aria-label="Event list pagination"
                 >
                   <div className="flex flex-wrap items-center gap-2">

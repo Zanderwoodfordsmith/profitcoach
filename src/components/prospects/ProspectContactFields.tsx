@@ -53,7 +53,7 @@ export function ProspectContactFields({
       />
       <div>
         <div className="flex items-center gap-1.5">
-          <div className="text-[11px] text-slate-400">Phone</div>
+          <div className="text-caption text-slate-400">Phone</div>
           {whatsappKnown && values.phone?.trim() ? (
             <span
               className="inline-flex items-center"
@@ -93,7 +93,7 @@ export function ProspectContactFields({
         onSave={(next) => onSave({ business_name: next })}
       />
       <div>
-        <div className="text-[11px] text-slate-400">Website</div>
+        <div className="text-caption text-slate-400">Website</div>
         <div className="mt-0.5 flex items-start gap-1.5">
           <div className="min-w-0 flex-1">
             <InlineEditableText
@@ -126,7 +126,7 @@ export function ProspectContactFields({
         </div>
       </div>
       <div>
-        <div className="text-[11px] text-slate-400">LinkedIn</div>
+        <div className="text-caption text-slate-400">LinkedIn</div>
         <div className="mt-0.5 flex items-start gap-1.5">
           <div className="min-w-0 flex-1">
             <InlineEditableText

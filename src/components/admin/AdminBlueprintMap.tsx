@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
+import { buttonClass } from "@/components/ui/Button";
 
 import { PageHeaderDescriptionInfo } from "@/components/layout/PageHeaderDescriptionInfo";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
@@ -43,7 +44,7 @@ function SourceTag({ source }: { source: SectionSource }) {
   return (
     <span
       title={SECTION_SOURCES[source].hint}
-      className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${SOURCE_CLASS[source]}`}
+      className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${SOURCE_CLASS[source]}`}
     >
       {SECTION_SOURCES[source].label}
     </span>
@@ -112,14 +113,14 @@ export function AdminBlueprintMap() {
         ))}
         <Link
           href="/admin/blueprint/flow"
-          className="ml-auto rounded-full px-3 py-1.5 text-sm font-medium text-sky-700 hover:underline"
+          className={buttonClass("quiet", "normal", "ml-auto")}
         >
           Flow map
         </Link>
         <button
           type="button"
           onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(BLUEPRINT_GROUPS.map((g) => g.label)))}
-          className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
+          className={buttonClass("quiet")}
         >
           {allCollapsed ? "Expand all" : "Collapse all"}
         </button>
@@ -160,7 +161,7 @@ export function AdminBlueprintMap() {
                         type="button"
                         aria-expanded={open}
                         onClick={() => toggleGroup(group.label)}
-                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-600 hover:text-slate-900"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 hover:text-slate-900"
                       >
                         <ChevronRight
                           aria-hidden

@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { CircleHelp, X } from "lucide-react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   CAMPAIGN_PRIORITY_LEVELS,
   campaignPriorityLevelFromStored,
@@ -206,7 +208,7 @@ export function CampaignSettingsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative w-full max-w-md overflow-visible rounded-2xl bg-white shadow-xl"
+        className={cardClass("raised", "relative w-full max-w-md overflow-visible")}
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <h2
@@ -247,7 +249,7 @@ export function CampaignSettingsModal({
                     aria-selected={selected}
                     disabled={busy}
                     onClick={() => setPriority(level)}
-                    className={`rounded-full px-3 py-1.5 text-[13px] font-semibold leading-tight transition duration-150 disabled:opacity-50 ${
+                    className={`rounded-full px-3 py-1.5 text-ui font-semibold leading-tight transition duration-150 disabled:opacity-50 ${
                       selected
                         ? "bg-[#0c5290] text-white"
                         : "text-slate-500 hover:text-slate-800"
@@ -289,7 +291,7 @@ export function CampaignSettingsModal({
             >
               {stopOnReply ? (
                 <span
-                  className="pointer-events-none absolute top-1/2 left-[6px] -translate-y-1/2 text-[10px] font-bold tracking-wide text-white"
+                  className="pointer-events-none absolute top-1/2 left-[6px] -translate-y-1/2 text-caption font-bold tracking-wide text-white"
                   aria-hidden
                 >
                   On
@@ -334,7 +336,7 @@ export function CampaignSettingsModal({
                       aria-selected={selected}
                       disabled={busy}
                       onClick={() => setLife(tab.id)}
-                      className={`py-1.5 pl-2.5 text-[13px] font-semibold leading-tight disabled:opacity-50 ${
+                      className={`py-1.5 pl-2.5 text-ui font-semibold leading-tight disabled:opacity-50 ${
                         selected ? "" : "hover:text-slate-800"
                       }`}
                     >
@@ -367,7 +369,7 @@ export function CampaignSettingsModal({
                   <button
                     type="button"
                     onClick={() => setConfirmingDelete(false)}
-                    className="rounded-full px-2.5 py-1 text-[12px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    className={buttonClass("quiet", "small")}
                   >
                     Keep
                   </button>
@@ -375,7 +377,7 @@ export function CampaignSettingsModal({
                     type="button"
                     disabled={busy}
                     onClick={onDelete}
-                    className="rounded-full bg-rose-800 px-2.5 py-1 text-[12px] font-semibold text-white hover:bg-rose-900 disabled:opacity-50"
+                    className={buttonClass("delete", "small")}
                   >
                     Delete
                   </button>

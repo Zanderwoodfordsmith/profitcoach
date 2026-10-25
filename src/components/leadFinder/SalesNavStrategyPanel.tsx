@@ -8,6 +8,8 @@ import type {
   ProspectSearchStrategiesResult,
   ProspectSearchStrategy,
 } from "@/lib/salesNavigator/prospectSearch/types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const fieldClass =
   "w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900";
@@ -187,7 +189,7 @@ export function SalesNavStrategyPanel({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+        className={buttonClass("second", "small")}
         title="Suggest Sales Navigator searches from your avatar"
       >
         <Sparkles className="h-3.5 w-3.5" />
@@ -213,7 +215,7 @@ export function SalesNavStrategyPanel({
           ) : null}
 
           <label className="block">
-            <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            <span className="mb-1 block text-kicker font-medium uppercase text-slate-400">
               Ideal avatar / industry
             </span>
             <input
@@ -225,7 +227,7 @@ export function SalesNavStrategyPanel({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            <span className="mb-1 block text-kicker font-medium uppercase text-slate-400">
               Notes (optional)
             </span>
             <input
@@ -237,7 +239,7 @@ export function SalesNavStrategyPanel({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            <span className="mb-1 block text-kicker font-medium uppercase text-slate-400">
               Words from 3 good profiles (optional)
             </span>
             <textarea
@@ -252,7 +254,7 @@ export function SalesNavStrategyPanel({
             type="button"
             disabled={loading}
             onClick={() => void generate()}
-            className="inline-flex items-center justify-center gap-2 bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+            className={buttonClass("main")}
           >
             {loading ? (
               <>
@@ -271,8 +273,8 @@ export function SalesNavStrategyPanel({
 
           {result ? (
             <div className="space-y-3">
-              <div className="rounded-md border border-slate-200 bg-white px-3 py-2.5">
-                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+              <div className={cardClass("plain", "px-3 py-2.5")}>
+                <p className="text-kicker font-medium uppercase text-slate-400">
                   {patternLabel(result.namingPattern)}
                 </p>
                 {brainSourceLabel(result.usedBrainSource) ? (
@@ -299,11 +301,11 @@ export function SalesNavStrategyPanel({
                   return (
                     <li
                       key={strategy.id}
-                      className="rounded-md border border-slate-200 bg-slate-50/40 px-3 py-3"
+                      className={cardClass("plain", "px-3 py-3")}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                          <p className="text-kicker font-medium uppercase text-slate-400">
                             #{strategy.priority} · {kindLabel(strategy.kind)}
                           </p>
                           <h3 className="mt-0.5 text-sm font-semibold text-slate-900">

@@ -369,7 +369,7 @@ function CallRoom({ setup, onDone, onDropped }: { setup: SimCallSetup; onDone: (
     practice && panelOpen ? (
             <aside className="sim-glass sim-scroll absolute inset-y-0 right-0 z-[4] w-[min(92vw,340px)] overflow-y-auto rounded-l-3xl bg-[rgba(8,28,48,0.72)] p-5 lg:static lg:mr-6 lg:mb-6 lg:rounded-3xl">
               <div className="flex items-center justify-between">
-                <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-[var(--sim-cream-faint)]">
+                <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">
                   {facts.length ? `Found so far · ${live.found.length} of ${facts.length}` : "Help"}
                 </p>
                 <button type="button" onClick={() => setPanelOpen(false)} className="rounded-full p-1 text-[var(--sim-cream-faint)] hover:text-[var(--sim-cream)] lg:hidden" aria-label="Close">
@@ -388,8 +388,8 @@ function CallRoom({ setup, onDone, onDropped }: { setup: SimCallSetup; onDone: (
               </div>
               {tips ? (
                 <div className={facts.length ? "mt-6" : "mt-3"}>
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-[var(--sim-cream-faint)]">Tip</p>
-                  <p key={live.tip} className="sim-caption mt-2 !text-[1.05rem] !leading-snug">
+                  <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">Tip</p>
+                  <p key={live.tip} className="sim-caption mt-2 !text-read !leading-snug">
                     {live.tip || situation.stages[Math.max(0, stageIndex)]?.aim}
                   </p>
                 </div>
@@ -640,8 +640,8 @@ function CallRoom({ setup, onDone, onDropped }: { setup: SimCallSetup; onDone: (
 
       {phase === "timeout" ? (
         <Overlay>
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-[var(--sim-cream-faint)]">Paused</p>
-          <p className="mt-2 text-xl font-light">{client.firstName} won&rsquo;t say anything until you&rsquo;re back.</p>
+          <p className="text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">Paused</p>
+          <p className="mt-2 text-subhead font-light">{client.firstName} won&rsquo;t say anything until you&rsquo;re back.</p>
           {shownLines.length ? (
             <div className="mt-4 space-y-2 text-sm leading-snug">
               {[...shownLines].reverse().find((l) => l.role === "client") ? (
@@ -658,9 +658,9 @@ function CallRoom({ setup, onDone, onDropped }: { setup: SimCallSetup; onDone: (
           ) : null}
           {note ? (
             <div className="mt-3 space-y-4">
-              <p className="text-[1.05rem] leading-relaxed text-[var(--sim-cream)]">{note.working}</p>
-              <p className="text-[1.05rem] leading-relaxed text-[var(--sim-cream)]">{note.next}</p>
-              <p className="rounded-2xl bg-[var(--sim-glass-strong)] px-4 py-3 text-[1.05rem] leading-relaxed">
+              <p className="text-read leading-relaxed text-[var(--sim-cream)]">{note.working}</p>
+              <p className="text-read leading-relaxed text-[var(--sim-cream)]">{note.next}</p>
+              <p className="rounded-2xl bg-[var(--sim-glass-strong)] px-4 py-3 text-read leading-relaxed">
                 <span className="block text-xs font-medium text-[var(--sim-cream-faint)]">Try asking</span>
                 &ldquo;{note.ask.trim().replace(/^["'\u201c]+|["'\u201d]+$/g, "")}&rdquo;
               </p>
@@ -695,7 +695,7 @@ function CallRoom({ setup, onDone, onDropped }: { setup: SimCallSetup; onDone: (
 
       {phase === "confirm-end" ? (
         <Overlay>
-          <p className="text-xl font-light">End the session?</p>
+          <p className="text-subhead font-light">End the session?</p>
           <p className="mt-2 text-sm text-[var(--sim-cream-soft)]">
             {practice ? "You'll get your score and a report straight after." : "This counts as your certification session."}
           </p>
@@ -717,7 +717,7 @@ function CallRoom({ setup, onDone, onDropped }: { setup: SimCallSetup; onDone: (
 
       {phase === "dropped" || phase === "error" ? (
         <Overlay>
-          <p className="text-xl font-light">{phase === "dropped" ? "The call dropped" : "The call couldn't connect"}</p>
+          <p className="text-subhead font-light">{phase === "dropped" ? "The call dropped" : "The call couldn't connect"}</p>
           <p className="mt-2 text-sm text-[var(--sim-cream-soft)]">
             {error ?? `${client.firstName} remembers everything so far. Pick up where you left off, or end and get your feedback.`}
           </p>
@@ -742,7 +742,7 @@ function CallRoom({ setup, onDone, onDropped }: { setup: SimCallSetup; onDone: (
 
       {phase === "too-short" ? (
         <Overlay>
-          <p className="text-xl font-light">Too short to score</p>
+          <p className="text-subhead font-light">Too short to score</p>
           <p className="mt-2 text-sm text-[var(--sim-cream-soft)]">Talk with {client.firstName} for a few minutes, then end it to get a report.</p>
           <div className="mt-5">
             <button type="button" className="sim-pill sim-pill-solid" onClick={onDropped}>

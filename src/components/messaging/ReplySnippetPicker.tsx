@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonClass } from "@/components/ui/Button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -306,7 +307,7 @@ export function ReplySnippetPicker({
                             className="flex w-full items-start gap-2 px-4 py-3 text-left hover:bg-slate-50"
                           >
                             <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-semibold text-slate-900">
+                              <span className="block text-sm font-medium text-slate-900">
                                 {s.when}
                               </span>
                               {!expanded ? (
@@ -330,7 +331,7 @@ export function ReplySnippetPicker({
                                 <button
                                   type="button"
                                   onClick={() => pick(s)}
-                                  className="rounded-md bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-800"
+                                  className={buttonClass("main", "small")}
                                 >
                                   Insert
                                 </button>

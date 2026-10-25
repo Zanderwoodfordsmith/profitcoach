@@ -23,9 +23,9 @@ import { AgentToolError, bool, coachOf, num, str } from "./util";
 
 /**
  * Ava's Blueprint tools, for coaches and admins. Facts (the coach's answers)
- * are only ever saved from the coach's own words. Written copy goes straight
- * into the section; the person reads it on the page and tells Ava to keep it,
- * change it or put it back. Nothing to click.
+ * are only ever saved from the coach's own words. Written copy is a draft on a
+ * card first (before and after); it reaches the section only when the person
+ * presses Save, and can be put back afterwards.
  */
 
 /** About You pages, in the order coaches are asked: proof first, practical setup last. */
@@ -307,7 +307,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
     label: "Writing the new version",
     needsCoach: true,
     description:
-      "Write a new version of a written Blueprint section (copy BCA wrote, never the coach's answers) straight into the section. It is live on the page at once, and the version before is kept so undo_copy can put it back. Send the whole section in the blueprint block format.",
+      "Draft a new version of a written Blueprint section (copy BCA wrote, never the coach's answers). It is shown on a card with what it says now, Save to Blueprint and Change it; nothing is saved until they press Save. Once saved, the version before is kept so undo_copy can put it back. Send the whole section in the blueprint block format.",
     input_schema: {
       type: "object",
       properties: {
@@ -316,6 +316,21 @@ export const blueprintAvaTools: AgentToolDef[] = [
         summary: { type: "string", description: "One line on what changed and why" },
       },
       required: ["section", "blocks", "summary"],
+    },
+    // The draft waits on a card (before and after) until they press Save.
+    gate: async (input, ctx) => {
+      const coach = coachOf(ctx);
+      const { ref, blocks, existing } = await checkCopy(input, coach.id);
+      const summary = str(input, "summary");
+      return {
+        confirm: true,
+        draft: true,
+        title: existing ? `New version of "${where(ref)}"` : `Draft of "${where(ref)}"`,
+        details: [...(summary ? [{ label: "What changed", value: summary.slice(0, 300) }] : []), { label: "Section", value: where(ref) }],
+        warning: existing?.edited_at && existing.model !== "ava" ? "This section was edited by hand. Saving replaces those edits." : undefined,
+        preview: blocksToMarkdown(blocks),
+        before: existing ? blocksToMarkdown(existing.blocks) : undefined,
+      };
     },
     run: async (input, ctx) => {
       const coach = coachOf(ctx);
@@ -366,7 +381,10 @@ export const blueprintAvaTools: AgentToolDef[] = [
       const current = (await ensurePracticeKnowledge(coach.id)).built_sections[ref.key];
       const previous = current?.previous;
       if (!current || !previous) throw new AgentToolError(`There is no earlier version of ${where(ref)} to put back.`);
-      if (current.edited_at !== previous.replaced_at) {
+      // Untouched since the last save from the chat: an edit you made, or a draft saved from a card.
+      const untouched =
+        current.edited_at === previous.replaced_at || (!current.edited_at && current.generated_at === previous.replaced_at);
+      if (!untouched) {
         throw new AgentToolError(
           `${where(ref)} was changed by hand after your edit, so putting the old version back would lose that. Ask what they want and write it with propose_copy.`
         );

@@ -16,6 +16,8 @@ import {
   type SupportCallHostSlug,
 } from "@/lib/support/supportCallHosts";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type SlotDay = {
   date: string;
@@ -318,7 +320,7 @@ export function SupportTicketBookCall({
               setBooked(null);
               setOpen(true);
             }}
-            className="mt-2 text-xs font-semibold text-emerald-800 hover:underline"
+            className="mt-2 text-xs font-medium text-emerald-800 hover:underline"
           >
             Book another
           </button>
@@ -369,8 +371,8 @@ export function SupportTicketBookCall({
 
       <div className="mt-3">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-slate-700">Length</span>
-          <span className="text-[11px] text-slate-600">{duration} min</span>
+          <span className="text-xs font-medium text-slate-700">Length</span>
+          <span className="text-caption text-slate-600">{duration} min</span>
         </div>
         <div className="flex gap-1">
           {DURATION_PRESETS.map((mins) => (
@@ -429,7 +431,7 @@ export function SupportTicketBookCall({
           {WEEKDAYS.map((label, index) => (
             <span
               key={`${label}-${index}`}
-              className="py-1 text-[10px] font-semibold text-slate-600"
+              className="py-1 text-caption font-medium text-slate-600"
             >
               {label}
             </span>
@@ -468,7 +470,7 @@ export function SupportTicketBookCall({
             })
           )}
         </div>
-        <p className="mt-1.5 text-[11px] text-slate-600">
+        <p className="mt-1.5 text-caption text-slate-600">
           {slotsLoading ? "Loading open times…" : `Times in ${tzShort}`}
         </p>
       </div>
@@ -511,7 +513,7 @@ export function SupportTicketBookCall({
           )}
 
           <label className="mt-2 block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">
+            <span className="mb-1 block text-xs font-medium text-slate-700">
               Time
             </span>
             <input
@@ -531,7 +533,7 @@ export function SupportTicketBookCall({
       ) : null}
 
       {startsAt && !listed ? (
-        <p className="mt-2 text-[11px] leading-snug text-slate-700">
+        <p className="mt-2 text-caption leading-snug text-slate-700">
           This isn&apos;t on the public hours. Only this call is added. The
           booking page stays the same.
         </p>
@@ -550,7 +552,7 @@ export function SupportTicketBookCall({
       ) : null}
 
       {confirming && whenLabel ? (
-        <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+        <div className={cardClass("plain", "mt-3 px-3 py-2.5")}>
           <p className="text-xs leading-snug text-slate-800">
             Book {duration} min with {supportCallHostDisplayName(host)} on{" "}
             {whenLabel.date}, {whenLabel.range}
@@ -561,7 +563,7 @@ export function SupportTicketBookCall({
               type="button"
               disabled={submitting || !guestEmail}
               onClick={() => void book()}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-sky-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50"
+              className={buttonClass("main", "small", "flex-1")}
             >
               {submitting ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -572,7 +574,7 @@ export function SupportTicketBookCall({
               type="button"
               disabled={submitting}
               onClick={() => setConfirming(false)}
-              className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+              className={buttonClass("quiet", "small")}
             >
               Back
             </button>
@@ -583,7 +585,7 @@ export function SupportTicketBookCall({
           type="button"
           disabled={!startsAt || !guestEmail || submitting}
           onClick={() => setConfirming(true)}
-          className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-sky-700 px-2.5 py-2 text-xs font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className={buttonClass("main", "small", "mt-3 w-full")}
         >
           Book call
         </button>
@@ -592,7 +594,7 @@ export function SupportTicketBookCall({
       <button
         type="button"
         onClick={onOpenSettings}
-        className="mt-2 text-[11px] font-medium text-sky-800 hover:underline"
+        className="mt-2 text-caption font-medium text-sky-800 hover:underline"
       >
         Weekly hours are in Settings
       </button>

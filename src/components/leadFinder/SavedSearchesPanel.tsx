@@ -245,7 +245,7 @@ export function SavedSearchesPanel({
     <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">
+          <h2 className="text-ui font-semibold tracking-tight text-slate-900">
             One-click searches
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
@@ -276,7 +276,7 @@ export function SavedSearchesPanel({
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <label className="block">
-          <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          <span className="mb-1 block text-kicker font-medium uppercase text-slate-400">
             {market === "US" ? "City" : "Town"}
           </span>
           <input
@@ -289,7 +289,7 @@ export function SavedSearchesPanel({
         </label>
         {market === "GB" ? (
           <label className="block">
-            <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            <span className="mb-1 block text-kicker font-medium uppercase text-slate-400">
               Postcode
             </span>
             <input
@@ -303,7 +303,7 @@ export function SavedSearchesPanel({
           </label>
         ) : (
           <label className="block">
-            <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            <span className="mb-1 block text-kicker font-medium uppercase text-slate-400">
               State
             </span>
             <select
@@ -338,14 +338,14 @@ export function SavedSearchesPanel({
         onClick={handleClick}
         trailing={
           loadingStrategies ? (
-            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+            <span className="inline-flex items-center gap-1 text-caption text-slate-400">
               <Loader2 className="h-3 w-3 animate-spin" />
               Matching avatar…
             </span>
           ) : strategyError && !industryHint ? (
-            <span className="text-[11px] text-slate-400">{strategyError}</span>
+            <span className="text-caption text-slate-400">{strategyError}</span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+            <span className="inline-flex items-center gap-1 text-caption text-slate-400">
               <Sparkles className="h-3 w-3" />
               From your avatar / ICP
             </span>
@@ -383,7 +383,7 @@ function SearchRow({
   return (
     <div className="mt-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+        <p className="text-kicker font-medium uppercase text-slate-400">
           {title}
         </p>
         {trailing}

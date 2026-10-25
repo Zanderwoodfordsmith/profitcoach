@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { buttonClass } from "@/components/ui/Button";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export function AdminCoachAiPromptEditor() {
@@ -95,7 +96,7 @@ export function AdminCoachAiPromptEditor() {
           type="button"
           onClick={() => void handleSave()}
           disabled={saving || !loaded}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+          className={buttonClass("main")}
         >
           {saving ? "Saving…" : "Save"}
         </button>

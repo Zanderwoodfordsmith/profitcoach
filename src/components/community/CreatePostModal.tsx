@@ -42,6 +42,8 @@ import {
   COMMUNITY_POLL_MIN_OPTIONS,
   COMMUNITY_POLL_OPTION_MAX_LENGTH,
 } from "@/lib/communityPostPoll";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type CreatePostLessonContext = {
   courseId: string;
@@ -401,7 +403,7 @@ export function CreatePostModal({
 
   return (
     <div
-      className="relative z-50 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+      className={cardClass("raised", "relative z-50 w-full p-5")}
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-post-title"
@@ -429,8 +431,8 @@ export function CreatePostModal({
             <span className="text-xs font-semibold text-slate-600">ME</span>
           </span>
         )}
-        <p id="create-post-title" className="text-[15px] text-slate-600">
-          <span className="font-semibold text-slate-900">
+        <p id="create-post-title" className="text-ui text-slate-600">
+          <span className="font-medium text-slate-900">
             {authorLabel === "You" ? "Your" : `${authorLabel}'s`}
           </span>{" "}
           <span className="text-slate-500">new post</span>
@@ -598,7 +600,7 @@ export function CreatePostModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-400 transition hover:text-slate-600"
+                  className={buttonClass("quiet", "small")}
                 >
                   Cancel
                 </button>
@@ -606,7 +608,7 @@ export function CreatePostModal({
                   type="button"
                   disabled={!canSubmit}
                   onClick={() => void submit()}
-                  className="rounded-lg bg-sky-700 px-5 py-2.5 text-base font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={buttonClass("main")}
                 >
                   {saving
                     ? "Posting…"
@@ -644,7 +646,7 @@ export function CreatePostModal({
                         <div className="mt-3 flex items-center justify-between gap-2">
                           <button
                             type="button"
-                            className="text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700"
+                            className={buttonClass("quiet", "small")}
                             onClick={() => {
                               setScheduledAtLocal("");
                               setSchedulePopoverOpen(false);
@@ -654,7 +656,7 @@ export function CreatePostModal({
                           </button>
                           <button
                             type="button"
-                            className="rounded-md bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                            className={buttonClass("main", "small")}
                             onClick={() => setSchedulePopoverOpen(false)}
                           >
                             Done
@@ -666,21 +668,21 @@ export function CreatePostModal({
                 ) : null}
               </div>
               {isAuthorAdmin && !isLessonQa && scheduleSummary ? (
-                <p className="text-right text-[11px] text-sky-700">
+                <p className="text-right text-caption text-sky-700">
                   Scheduled for {scheduleSummary}
                 </p>
               ) : null}
             </div>
           </div>
           {pollOpen && !isLessonQa ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+            <div className={cardClass("soft", "p-3")}>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Poll
                 </p>
                 <button
                   type="button"
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600"
+                  className={buttonClass("quiet", "small")}
                   onClick={() => setPollOpen(false)}
                 >
                   Remove poll
@@ -763,7 +765,7 @@ export function CreatePostModal({
             </ul>
           ) : null}
           {!isAuthorAdmin && announcementsCategory ? (
-            <p className="text-[11px] text-slate-500">Announcements are admin-only.</p>
+            <p className="text-caption text-slate-500">Announcements are admin-only.</p>
           ) : null}
         </div>
       </div>
@@ -779,7 +781,7 @@ export function CreatePostModal({
           onDrop={(e) => e.preventDefault()}
         >
           <div
-            className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl"
+            className={cardClass("raised", "w-full max-w-sm p-5")}
             role="dialog"
             aria-modal="true"
           >
@@ -838,7 +840,7 @@ export function CreatePostModal({
             <div className="mt-4 flex items-center justify-end gap-4">
               <button
                 type="button"
-                className="text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600"
+                className={buttonClass("quiet", "small")}
                 onClick={() => {
                   setVideoDialogOpen(false);
                   setVideoUrl("");
@@ -848,7 +850,7 @@ export function CreatePostModal({
               </button>
               <button
                 type="button"
-                className="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+                className={buttonClass("main")}
                 disabled={videoUrl.trim().length === 0}
                 onClick={() => {
                   if (videoUrl.trim().length > 0) {

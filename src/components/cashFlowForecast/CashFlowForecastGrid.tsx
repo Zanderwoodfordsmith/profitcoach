@@ -194,7 +194,7 @@ export function ForecastExpandableHeaderRow({
           <div className="min-w-0">
             <div className={`truncate text-sm font-semibold ${accentClass}`}>{title}</div>
             {subtitle ? (
-              <div className="truncate text-[10px] text-slate-500">{subtitle}</div>
+              <div className="truncate text-caption text-slate-500">{subtitle}</div>
             ) : null}
           </div>
         </button>

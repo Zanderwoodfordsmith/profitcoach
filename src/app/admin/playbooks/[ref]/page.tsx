@@ -17,6 +17,8 @@ import type {
 } from "@/lib/playbookContentTypes";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export default function AdminPlaybookDetailPage({
   params,
@@ -202,7 +204,7 @@ export default function AdminPlaybookDetailPage({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
+              className={buttonClass("main")}
             >
               Edit content
             </button>
@@ -211,7 +213,7 @@ export default function AdminPlaybookDetailPage({
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                className={buttonClass("quiet")}
               >
                 Cancel
               </button>
@@ -219,7 +221,7 @@ export default function AdminPlaybookDetailPage({
                 type="submit"
                 form="playbook-edit-form"
                 disabled={saving}
-                className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:opacity-70"
+                className={buttonClass("main")}
               >
                 {saving ? "Saving…" : "Save"}
               </button>
@@ -236,9 +238,9 @@ export default function AdminPlaybookDetailPage({
         <form
           id="playbook-edit-form"
           onSubmit={handleSave}
-          className="flex flex-col gap-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+          className={cardClass("plain", "flex flex-col gap-8 p-6")}
         >
-          <section className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+          <section className={cardClass("soft", "p-4")}>
             <button
               type="button"
               onClick={() => setPasteExpanded((e) => !e)}
@@ -322,7 +324,7 @@ export default function AdminPlaybookDetailPage({
                           : "No sections recognized. Check format."
                       );
                     }}
-                    className="rounded-md bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-500"
+                    className={buttonClass("second")}
                   >
                     Parse and fill form
                   </button>
@@ -353,7 +355,7 @@ export default function AdminPlaybookDetailPage({
             <h2 className="text-sm font-semibold text-slate-900">What It Looks Like</h2>
             <div className="mt-4 space-y-4">
               {(["broken", "ok", "working"] as const).map((key) => (
-                <div key={key} className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                <div key={key} className={cardClass("soft", "p-4")}>
                   <label className="text-xs font-medium text-slate-600">
                     {form.whatItLooksLike[key].emoji} {form.whatItLooksLike[key].label}
                   </label>
@@ -481,7 +483,7 @@ export default function AdminPlaybookDetailPage({
             {form.actionSections.length > 0 ? (
               <div className="mt-4 space-y-6">
                 {form.actionSections.map((sec, si) => (
-                  <div key={si} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                  <div key={si} className={cardClass("soft", "p-4")}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 space-y-2">
                         <input
@@ -535,7 +537,7 @@ export default function AdminPlaybookDetailPage({
                     </div>
                     <div className="mt-4 space-y-3">
                       {sec.actions.map((play, pi) => (
-                        <div key={pi} className="rounded-lg border border-slate-200 bg-white p-3">
+                        <div key={pi} className={cardClass("plain", "p-3")}>
                           <div className="flex flex-wrap gap-2">
                             <input
                               type="number"
@@ -765,7 +767,7 @@ export default function AdminPlaybookDetailPage({
               <>
               <div className="mt-3 space-y-4">
               {form.actions.map((play, i) => (
-                <div key={i} className="rounded-lg border border-slate-200 p-4">
+                <div key={i} className={cardClass("plain", "p-4")}>
                   <div className="flex flex-wrap gap-3">
                     <label className="flex items-center gap-1 text-xs text-slate-600">
                       Number
@@ -1001,7 +1003,7 @@ export default function AdminPlaybookDetailPage({
               {form.relatedPlaybooks.map((item, i) => (
                 <div
                   key={i}
-                  className="flex flex-col gap-2 rounded-lg border border-slate-200 p-4"
+                  className={cardClass("plain", "flex flex-col gap-2 p-4")}
                 >
                   <div className="flex items-center gap-2">
                     <input

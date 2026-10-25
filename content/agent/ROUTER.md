@@ -17,6 +17,7 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 | Add a list or people to a campaign, remove, pause or move people | `campaign-people` | `lists`, `campaigns` |
 | Write or rewrite campaign messages, use the blueprint's messaging | `campaign-messaging` | `campaigns` |
 | Write a LinkedIn newsletter, VIP inbox, post, article or InMail about an issue | `linkedin-marketing` | `improve-section` to tighten a written piece |
+| "What's holding me back", "where am I stuck", "what's my constraint", "why am I not getting clients" | `constraint` | The capability it points to for the fix |
 | Practise the Profit System pitch, or tailor the nine steps to this prospect | `personalised-pitch` | Their Blueprint script if they have one |
 | Admin only: research the avatar or pain points, rewrite the LinkedIn profile or headlines, write a blueprint section | `blueprint-writing` | `campaign-messaging` to use the result |
 | "How do I…", "where is…", "show me", a walkthrough | `guide` | |
@@ -29,4 +30,4 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 
 ## Capability ids
 
-`fill-the-gaps`, `check-blueprint`, `improve-section`, `practice-ready`, `find-prospects`, `sales-navigator-import`, `google-maps-import`, `google-search-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `linkedin-marketing`, `personalised-pitch`, `blueprint-writing`, `guide`, `coach-access`, `escalate-to-bca`.
+`fill-the-gaps`, `check-blueprint`, `improve-section`, `practice-ready`, `find-prospects`, `sales-navigator-import`, `google-maps-import`, `google-search-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `linkedin-marketing`, `personalised-pitch`, `constraint`, `blueprint-writing`, `guide`, `coach-access`, `escalate-to-bca`.

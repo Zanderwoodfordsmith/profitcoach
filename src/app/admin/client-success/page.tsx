@@ -9,6 +9,7 @@ import { OutlinedSelect } from "@/components/settings/OutlinedFormField";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { cardClass } from "@/components/ui/Card";
 
 type MatrixCoachRow = {
   id: string;
@@ -389,7 +390,7 @@ export default function AdminClientSuccessPage() {
       ) : null}
 
       <div className="overflow-x-auto">
-        <div className="inline-block rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div className={cardClass("plain", "inline-block p-2")}>
           <table className="border-separate border-spacing-0 text-left text-sm">
           <thead>
             <tr className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -576,7 +577,7 @@ export default function AdminClientSuccessPage() {
                   return (
                     <td
                       key={`totals-${column.moduleId}`}
-                      className={`border-t border-slate-200 px-2 py-2 text-center text-[11px] text-slate-700 ${
+                      className={`border-t border-slate-200 px-2 py-2 text-center text-caption text-slate-700 ${
                         isPillarStart(columns, colIndex) ? PILLAR_DIVIDER : ""
                       }`}
                       style={tintStyle(
@@ -627,7 +628,7 @@ export default function AdminClientSuccessPage() {
                   return (
                     <td
                       key={`totals-yellow-${column.moduleId}`}
-                      className={`border-t border-slate-200 px-2 py-2 text-center text-[11px] text-slate-700 ${
+                      className={`border-t border-slate-200 px-2 py-2 text-center text-caption text-slate-700 ${
                         isPillarStart(columns, colIndex) ? PILLAR_DIVIDER : ""
                       }`}
                       style={tintStyle(
@@ -681,7 +682,7 @@ export default function AdminClientSuccessPage() {
                   return (
                     <td
                       key={`totals-green-${column.moduleId}`}
-                      className={`border-t border-slate-200 px-2 py-2 text-center text-[11px] text-slate-700 ${
+                      className={`border-t border-slate-200 px-2 py-2 text-center text-caption text-slate-700 ${
                         isPillarStart(columns, colIndex) ? PILLAR_DIVIDER : ""
                       }`}
                       style={tintStyle(
@@ -739,7 +740,7 @@ export default function AdminClientSuccessPage() {
                   return (
                     <td
                       key={`totals-pct-${column.moduleId}`}
-                      className={`border-t border-slate-200 px-2 py-2 text-center text-[11px] font-semibold text-slate-700 ${
+                      className={`border-t border-slate-200 px-2 py-2 text-center text-caption font-semibold text-slate-700 ${
                         isPillarStart(columns, colIndex) ? PILLAR_DIVIDER : ""
                       }`}
                     >
@@ -799,7 +800,7 @@ export default function AdminClientSuccessPage() {
         </div>
       </div>
       {!loading && !error && filteredRows.length > 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className={cardClass("plain", "p-4")}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-semibold text-slate-800">Module comparison graph</p>
             <div className="flex items-center gap-3 text-xs text-slate-600">

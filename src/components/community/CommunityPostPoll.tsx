@@ -10,6 +10,7 @@ import {
   type CommunityPostPollTally,
 } from "@/lib/communityPostPoll";
 import { supabaseErrorMessage } from "@/lib/supabaseErrorMessage";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   postId: string;
@@ -91,7 +92,7 @@ export function CommunityPostPoll({
   const total = tally?.total ?? 0;
 
   return (
-    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+    <div className={cardClass("soft", "mt-3 p-3")}>
       <ul className="space-y-2" role="radiogroup" aria-label="Poll options">
         {poll.options.map((option) => {
           const count = tally?.counts[option.id] ?? 0;
@@ -105,7 +106,7 @@ export function CommunityPostPoll({
                 aria-checked={mine}
                 disabled={!tally || busy}
                 onClick={() => void vote(option.id)}
-                className={`relative flex w-full items-center gap-2.5 overflow-hidden rounded-lg border bg-white px-3 py-2.5 text-left text-[15px] transition disabled:cursor-default ${
+                className={`relative flex w-full items-center gap-2.5 overflow-hidden rounded-lg border bg-white px-3 py-2.5 text-left text-ui transition disabled:cursor-default ${
                   mine
                     ? "border-sky-400 text-slate-900"
                     : "border-slate-200 text-slate-800 hover:border-slate-300"

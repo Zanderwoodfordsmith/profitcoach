@@ -16,6 +16,8 @@ import { clientWorkspacePath } from "@/lib/clientCoaching/defaults";
 import type { ClientWorkspaceContact } from "@/lib/clientCoaching/types";
 import { suggestContactIdentity } from "@/lib/contacts/suggestContactIdentity";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   contact: ClientWorkspaceContact;
@@ -36,7 +38,7 @@ function initials(name: string): string {
 function InfoCell({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      <dt className="text-kicker font-semibold uppercase text-slate-400">
         {label}
       </dt>
       <dd className="mt-0.5 truncate text-sm text-slate-800">{value || "—"}</dd>
@@ -77,7 +79,7 @@ export function ClientOverviewPanel({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.7fr)]">
-        <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <section className={cardClass("plain", "p-5")}>
           <div className="flex flex-wrap items-start gap-4">
             <EditPersonPhotoButton
               onClick={onEditIdentity}
@@ -97,14 +99,14 @@ export function ClientOverviewPanel({
               )}
             </EditPersonPhotoButton>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-700">
+              <p className="text-kicker font-semibold uppercase text-sky-700">
                 Client overview
               </p>
               <h2 className="mt-0.5">
                 <EditPersonNameButton
                   name={name}
                   onClick={onEditIdentity}
-                  nameClassName="text-xl font-semibold tracking-tight text-slate-900"
+                  nameClassName="text-subhead font-semibold tracking-tight text-slate-900"
                 />
               </h2>
               {contact.headline || contact.jobTitle ? (
@@ -119,7 +121,7 @@ export function ClientOverviewPanel({
                   href={contact.linkedinUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className={buttonClass("second", "small")}
                 >
                   <LinkedInSolidIcon className="h-3.5 w-3.5" />
                   LinkedIn
@@ -128,7 +130,7 @@ export function ClientOverviewPanel({
               <button
                 type="button"
                 onClick={onViewAsClient}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                className={buttonClass("second", "small")}
               >
                 View as client
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -151,21 +153,21 @@ export function ClientOverviewPanel({
           <div className="mt-5 grid gap-2 sm:grid-cols-3">
             <Link
               href={bossHref}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-left transition hover:border-sky-300 hover:bg-sky-50/50"
+              className={cardClass("raised", "px-3 py-2.5 text-left transition hover:border-sky-300 hover:bg-sky-50/50")}
             >
               <p className="text-sm font-semibold text-slate-900">Boss Pro</p>
               <p className="mt-0.5 text-xs text-slate-500">Workshop & scores</p>
             </Link>
             <Link
               href={playbooksHref}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-left transition hover:border-sky-300 hover:bg-sky-50/50"
+              className={cardClass("raised", "px-3 py-2.5 text-left transition hover:border-sky-300 hover:bg-sky-50/50")}
             >
               <p className="text-sm font-semibold text-slate-900">Playbooks</p>
               <p className="mt-0.5 text-xs text-slate-500">Delivery progress</p>
             </Link>
             <Link
               href={notesHref}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-left transition hover:border-sky-300 hover:bg-sky-50/50"
+              className={cardClass("raised", "px-3 py-2.5 text-left transition hover:border-sky-300 hover:bg-sky-50/50")}
             >
               <p className="text-sm font-semibold text-slate-900">Session notes</p>
               <p className="mt-0.5 text-xs text-slate-500">Coaching sheet</p>

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ExternalLink, Eye } from "lucide-react";
 
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   ARTICLE_STATUSES,
   staticLiveSlugFor,
@@ -108,14 +110,14 @@ export default function AdminBlogPage() {
           </p>
         </div>
         {staticSlug ? (
-          <span className="shrink-0 rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-800">
+          <span className="shrink-0 rounded-full bg-teal-100 px-2 py-0.5 text-caption font-semibold text-teal-800">
             Static page live
           </span>
         ) : null}
         <select
           value={a.editorial_status}
           onChange={(e) => void setStatus(a.slug, e.target.value as ArticleStatus)}
-          className={`shrink-0 rounded-full border-0 px-2 py-1 text-[11px] font-semibold focus:outline-none ${STATUS_STYLES[a.editorial_status]}`}
+          className={`shrink-0 rounded-full border-0 px-2 py-1 text-caption font-semibold focus:outline-none ${STATUS_STYLES[a.editorial_status]}`}
         >
           {ARTICLE_STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -126,7 +128,7 @@ export default function AdminBlogPage() {
         <Link
           href={`/preview/blog-post/${encodeURIComponent(a.slug)}`}
           target="_blank"
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+          className={buttonClass("second", "small", "shrink-0")}
         >
           <Eye className="h-3.5 w-3.5" /> Preview
         </Link>
@@ -135,7 +137,7 @@ export default function AdminBlogPage() {
             href={`/blog/${staticSlug}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-50"
+            className={buttonClass("quiet", "small", "shrink-0")}
           >
             <ExternalLink className="h-3.5 w-3.5" /> Live page
           </a>
@@ -176,7 +178,7 @@ export default function AdminBlogPage() {
             <h2 className="text-sm font-semibold text-slate-900">
               Not yet published ({unpublishedOnly.length})
             </h2>
-            <ul className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <ul className={cardClass("plain", "mt-2 divide-y divide-slate-100 overflow-hidden")}>
               {unpublishedOnly.map(row)}
               {unpublishedOnly.length === 0 ? (
                 <li className="px-4 py-4 text-sm text-slate-400">None.</li>
@@ -191,7 +193,7 @@ export default function AdminBlogPage() {
               The DB copy here is the reviewable source; visitors see the
               static page. Compare with Preview vs Live page.
             </p>
-            <ul className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <ul className={cardClass("plain", "mt-2 divide-y divide-slate-100 overflow-hidden")}>
               {withStatic.map(row)}
             </ul>
           </section>

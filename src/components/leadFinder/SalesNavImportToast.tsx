@@ -399,11 +399,11 @@ export function SalesNavImportToast() {
           </div>
         ) : null}
         {toast.kind === "success" ? (
-          <span className="mt-1.5 inline-block text-xs font-semibold underline underline-offset-2">
+          <span className="mt-1.5 inline-block text-xs font-medium underline underline-offset-2">
             View
           </span>
         ) : toast.kind === "progress" ? (
-          <span className="mt-1.5 inline-block text-xs font-semibold underline underline-offset-2">
+          <span className="mt-1.5 inline-block text-xs font-medium underline underline-offset-2">
             Open
           </span>
         ) : null}

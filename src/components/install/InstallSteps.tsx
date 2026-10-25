@@ -23,7 +23,7 @@ function OnSwitch() {
 }
 
 function B({ children }: { children: ReactNode }) {
-  return <strong className="font-semibold text-slate-900">{children}</strong>;
+  return <strong className="font-medium text-slate-900">{children}</strong>;
 }
 
 const icon = "h-[18px] w-[18px]";
@@ -87,7 +87,7 @@ export function InstallSteps({ device }: { device: StepsDevice }) {
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0c5290]/10 text-sm font-semibold text-[#0c5290]">
             {i + 1}
           </span>
-          <span className="pt-0.5 text-[15px] leading-7 text-slate-800">{step}</span>
+          <span className="pt-0.5 text-read leading-7 text-slate-800">{step}</span>
         </li>
       ))}
     </ol>

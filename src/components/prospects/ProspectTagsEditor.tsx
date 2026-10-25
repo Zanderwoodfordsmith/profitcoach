@@ -11,6 +11,7 @@ import {
   DEFAULT_PROSPECT_TAGS,
   mergeProspectTagCatalog,
 } from "@/lib/prospects/tagAppearance";
+import { buttonClass } from "@/components/ui/Button";
 
 type Props = {
   tags: string[];
@@ -93,7 +94,7 @@ export function ProspectTagsEditor({
         <button
           type="submit"
           disabled={saving || !draft.trim()}
-          className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-sky-900 hover:border-sky-300 hover:bg-sky-50 disabled:opacity-50"
+          className={buttonClass("second", "small", "shrink-0")}
         >
           Add
         </button>

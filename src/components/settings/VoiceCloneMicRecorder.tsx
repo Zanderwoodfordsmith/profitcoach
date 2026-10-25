@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { recordingBlobToWavFile } from "@/lib/audio/wav";
+import { buttonClass } from "@/components/ui/Button";
 
 const MIC_STORAGE_KEY = "profit-coach:voice-clone:mic-id";
 const MAX_RECORD_MS = 90_000;
@@ -381,7 +382,7 @@ export function VoiceCloneMicRecorder({ disabled, onRecorded, onClear }: Props) 
             type="button"
             onClick={enableMic}
             disabled={disabled || asking}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className={buttonClass("second", "small", "disabled:cursor-not-allowed")}
           >
             {asking ? "Waiting for microphone…" : "Enable microphone"}
           </button>
@@ -389,7 +390,7 @@ export function VoiceCloneMicRecorder({ disabled, onRecorded, onClear }: Props) 
             <button
               type="button"
               onClick={cancelMicAsk}
-              className="rounded-md px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              className={buttonClass("quiet", "small")}
             >
               Cancel
             </button>
@@ -400,7 +401,7 @@ export function VoiceCloneMicRecorder({ disabled, onRecorded, onClear }: Props) 
           <div>
             <label
               htmlFor="voice-clone-mic"
-              className="mb-1 block text-[11px] font-medium text-slate-500"
+              className="mb-1 block text-caption font-medium text-slate-500"
             >
               Microphone
             </label>
@@ -428,7 +429,7 @@ export function VoiceCloneMicRecorder({ disabled, onRecorded, onClear }: Props) 
               style={{ width: `${Math.round(level * 100)}%` }}
             />
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-caption text-slate-500">
             Speak a few words — the bar should move if this is the right mic.
           </p>
 
@@ -447,7 +448,7 @@ export function VoiceCloneMicRecorder({ disabled, onRecorded, onClear }: Props) 
                 type="button"
                 onClick={startRecording}
                 disabled={disabled || saving}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={buttonClass("second", "small", "disabled:cursor-not-allowed")}
               >
                 {previewUrl ? "Re-record" : "Record"}
               </button>
@@ -457,7 +458,7 @@ export function VoiceCloneMicRecorder({ disabled, onRecorded, onClear }: Props) 
               {recording ? " recording" : saving ? " saving" : ""}
             </span>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-caption text-slate-500">
             Aim for about 30 seconds reading the script. Max 90 seconds.
           </p>
         </>

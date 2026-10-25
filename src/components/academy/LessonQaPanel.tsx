@@ -36,6 +36,7 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { cardClass } from "@/components/ui/Card";
 
 const LESSON_QA_SELECT = `
   id,
@@ -299,7 +300,7 @@ export function LessonQaPanel({
             type="button"
             onClick={() => setComposeOpen(true)}
             disabled={Boolean(error) && categories.length === 0}
-            className="mb-2 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className={cardClass("raised", "mb-2 flex w-full items-center gap-3 px-4 py-3 text-left transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60")}
           >
             {composeAvatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -337,7 +338,7 @@ export function LessonQaPanel({
             return (
               <li key={post.id} className="relative">
                 {isPrivate ? (
-                  <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-200">
+                  <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-caption font-medium text-amber-800 ring-1 ring-amber-200">
                     <Lock className="h-3 w-3" aria-hidden />
                     Private
                   </span>

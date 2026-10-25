@@ -17,6 +17,7 @@ import type { AcademyResourceRow } from "@/lib/academy/resources";
 import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
 import type { LessonVideoChapter } from "@/lib/academy/lessonVideoChapters";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
 
 const FORM_ID = "legacy-lesson-edit-form";
 const SHELL_TARGET = "__shell__";
@@ -495,7 +496,7 @@ export function AdminClassroomLessonEditor({
       <button
         type="button"
         onClick={() => requestLeave(discardEdits)}
-        className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+        className={buttonClass("quiet")}
       >
         Cancel
       </button>
@@ -503,7 +504,7 @@ export function AdminClassroomLessonEditor({
         type="submit"
         form={FORM_ID}
         disabled={saving || uploading}
-        className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:opacity-70"
+        className={buttonClass("main")}
       >
         {saving ? "Saving…" : "Save"}
       </button>

@@ -46,6 +46,7 @@ import type {
 
 import { SectionCommentsProvider } from "./comments/SectionCommentsContext";
 import { playSpeech, primeCallAudio } from "./ava/callAudio";
+import { randomUuid } from "@/lib/randomUuid";
 
 type PracticeContextValue = {
   loading: boolean;
@@ -579,7 +580,7 @@ export function PracticeProvider({
       current[key] = `${status}|${at}`;
       const log = [...(base.review.status_log?.value ?? [])];
       log.push({
-        id: crypto.randomUUID(),
+        id: randomUuid(),
         section: key,
         from,
         to: status,
@@ -639,7 +640,7 @@ export function PracticeProvider({
       if (!base || !text || !page) return;
       const notes = [...(base.review.notes?.value ?? [])];
       notes.push({
-        id: crypto.randomUUID(),
+        id: randomUuid(),
         body: text,
         at: new Date().toISOString(),
         page,

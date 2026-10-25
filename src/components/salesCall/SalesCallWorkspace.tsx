@@ -18,6 +18,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { CoachingNotes, collectNotes, ObjectionPages, SCRIPT_COLUMN, SECTION, Sheet, SheetBody, TechniqueModal } from "./ScriptSheet";
 import { type SlotKey, type Slots, fillText } from "./slots";
 import { useGaps } from "./useGaps";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 /**
  * Get Clients → Script. Left: the phases of the call. Middle: what to
@@ -53,7 +55,7 @@ const OBJECTION_IDLE = "text-slate-600 hover:bg-white/80 hover:text-slate-900";
 
 const FACTS_DELAY = 2500;
 /** A pitch paragraph is a line to say, so it matches the script's: 17px, bold. The editable one matches too. */
-const READY_TEXT = "py-1 text-[1.0625rem] font-semibold leading-[1.45] tracking-[-0.006em] text-slate-900";
+const READY_TEXT = "py-1 text-read font-semibold leading-[1.45] tracking-[-0.006em] text-slate-900";
 /** Listening sends the microphone in chunks this long. */
 const LISTEN_CHUNK_MS = 20_000;
 
@@ -163,7 +165,7 @@ function splitAtLive(blocks: Block[]): ({ kind: "script"; blocks: Block[] } | { 
 function SayLine({ label, text }: { label: string; text: ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-500">{label}</p>
+      <p className="text-xs font-medium text-slate-500">{label}</p>
       <p className={`mt-1.5 whitespace-pre-line ${READY_TEXT}`}>{text}</p>
     </div>
   );
@@ -232,7 +234,7 @@ function VersionOption({
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <span className={`text-sm font-semibold ${selected ? "text-sky-800" : "text-slate-900"}`}>{title}</span>
-          {suggested ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[0.6875rem] font-semibold text-emerald-700">Suggested</span> : null}
+          {suggested ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-caption font-semibold text-emerald-700">Suggested</span> : null}
         </span>
         <span className="mt-0.5 block text-sm text-slate-600">{line}</span>
       </span>
@@ -244,11 +246,11 @@ function VersionOption({
 function SayThis({ label, text }: { label: string; text: ReactNode }) {
   return (
     <div className="rounded-2xl bg-[#06223d] px-5 py-4 text-white shadow-[0_10px_30px_-18px_rgba(6,34,61,0.8)]">
-      <p className="flex items-center gap-1.5 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-sky-200">
+      <p className="flex items-center gap-1.5 text-kicker font-semibold uppercase text-sky-200">
         <Sparkles className="h-3.5 w-3.5" aria-hidden />
         {label}
       </p>
-      <p className="mt-2 whitespace-pre-line text-[1.0625rem] font-semibold leading-[1.45] tracking-[-0.006em]">{text}</p>
+      <p className="mt-2 whitespace-pre-line text-read font-semibold leading-[1.45] tracking-[-0.006em]">{text}</p>
     </div>
   );
 }
@@ -260,7 +262,7 @@ function AutoText({
   ariaLabel,
   id,
   placeholder,
-  className = "-mx-2 block w-[calc(100%+1rem)] rounded-lg border border-transparent bg-transparent px-2 py-1 text-[1.0625rem] font-semibold leading-[1.45] tracking-[-0.006em] text-slate-900 outline-none hover:border-slate-200 focus:border-sky-300 focus:bg-white",
+  className = "-mx-2 block w-[calc(100%+1rem)] rounded-lg border border-transparent bg-transparent px-2 py-1 text-read font-semibold leading-[1.45] tracking-[-0.006em] text-slate-900 outline-none hover:border-slate-200 focus:border-sky-300 focus:bg-white",
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -667,7 +669,7 @@ export function SalesCallWorkspace() {
     pitch: (
       <div className="space-y-4">
         {/* Two ways to pitch, from the same facts. The coach picks one; each keeps its own draft. */}
-        <p className="text-[1.0625rem] leading-[1.55] text-slate-600">
+        <p className="text-read leading-[1.55] text-slate-600">
           Pick one of these two to take them through. You only need one. On a follow-up call, use the other.
         </p>
         <div role="tablist" aria-label="Pitch" className="grid gap-3 sm:grid-cols-2">
@@ -695,7 +697,7 @@ export function SalesCallWorkspace() {
                   <span className="flex flex-wrap items-center gap-2">
                     <span className={`text-base font-semibold ${on ? "text-sky-800" : "text-slate-800"}`}>{k.title}</span>
                     {draft.pitchFit === k.id ? (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[0.6875rem] font-semibold text-emerald-700">Suggested</span>
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-caption font-semibold text-emerald-700">Suggested</span>
                     ) : null}
                   </span>
                   <span className="mt-1 block text-sm text-slate-600">{k.line}</span>
@@ -708,14 +710,14 @@ export function SalesCallWorkspace() {
         </div>
         {draft.pitchFit && draft.pitchWhy ? (
           <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-800">Suggested: {PITCH_KINDS.find((k) => k.id === draft.pitchFit)?.title}.</span> {draft.pitchWhy}
+            <span className="font-medium text-slate-800">Suggested: {PITCH_KINDS.find((k) => k.id === draft.pitchFit)?.title}.</span> {draft.pitchWhy}
           </p>
         ) : null}
 
         {picker === 1 ? (
           // Which version to read: personalised first, the ready-made ones as the fallback. Switching keeps both.
           <div className="border-t border-slate-100 pt-4">
-            <p className="text-sm font-semibold text-slate-800">Which version?</p>
+            <p className="text-sm font-medium text-slate-800">Which version?</p>
             <div
               className={`mt-2 flex flex-wrap items-center gap-3 rounded-2xl border-2 px-4 py-3 transition ${
                 personal ? "border-sky-600 bg-sky-50" : "border-slate-200 bg-white"
@@ -762,7 +764,7 @@ export function SalesCallWorkspace() {
                   type="button"
                   onClick={() => void writePitch(kind)}
                   disabled={pitchBusy[kind] || !draft.notes.trim()}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                  className={buttonClass("main", "normal", "shrink-0")}
                 >
                   {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
                   {kindWritten ? "Update with new notes" : "Personalise"}
@@ -815,7 +817,7 @@ export function SalesCallWorkspace() {
         ) : picker === 2 ? (
           // Which version to read, in one menu: the personalised one first, then the ready-made ones, each explained. Switching keeps them all.
           <div ref={versionMenu} className="relative border-t border-slate-100 pt-4">
-            <p className="text-sm font-semibold text-slate-800">Which version?</p>
+            <p className="text-sm font-medium text-slate-800">Which version?</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -833,7 +835,7 @@ export function SalesCallWorkspace() {
                   {pitchBusy[kind] ? <Loader2 className="h-5 w-5 animate-spin" /> : personal ? <Sparkles className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-semibold text-slate-500">{personal ? "Written for this owner" : "Ready-made"}</span>
+                  <span className="block text-xs font-medium text-slate-500">{personal ? "Written for this owner" : "Ready-made"}</span>
                   <span className={`block text-base font-semibold ${personal ? "text-sky-800" : "text-slate-900"}`}>
                     {personal ? personalTitle : angle.title}
                   </span>
@@ -859,7 +861,7 @@ export function SalesCallWorkspace() {
                   onClick={() => void writePitch(kind)}
                   disabled={!draft.notes.trim()}
                   title={draft.notes.trim() ? undefined : "Take notes in Discovery first"}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                  className={buttonClass("main", "normal", "shrink-0")}
                 >
                   {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
                   {kindWritten ? "Update with new notes" : "Personalise"}
@@ -878,7 +880,7 @@ export function SalesCallWorkspace() {
 
             {versionOpen ? (
               <div role="listbox" aria-label="Which version?" className="absolute inset-x-0 z-20 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-20px_rgba(6,34,61,0.45)]">
-                <p className="px-3 pb-1 pt-2 text-xs font-semibold text-slate-500">Written for this owner</p>
+                <p className="px-3 pb-1 pt-2 text-xs font-medium text-slate-500">Written for this owner</p>
                 <VersionOption
                   selected={personal}
                   icon={<Sparkles className="h-4 w-4" />}
@@ -896,7 +898,7 @@ export function SalesCallWorkspace() {
                     setVersionOpen(false);
                   }}
                 />
-                <p className="mt-2 border-t border-slate-100 px-3 pb-1 pt-3 text-xs font-semibold text-slate-500">
+                <p className="mt-2 border-t border-slate-100 px-3 pb-1 pt-3 text-xs font-medium text-slate-500">
                   Ready-made{" "}
                   <span className="font-normal">
                     {kind === "phases" ? "· Built with Pam's know-how, with their details dropped in" : "· In Pam's words, with their details dropped in"}
@@ -922,9 +924,9 @@ export function SalesCallWorkspace() {
         ) : (
           // Two tabs: the pitch written for this owner, or a ready-made one. Each keeps its own, so switching loses nothing.
           <div className="border-t border-slate-100 pt-4">
-            <p className="text-sm font-semibold text-slate-800">Which version?</p>
+            <p className="text-sm font-medium text-slate-800">Which version?</p>
             {/* One box: the tabs across the top, the chosen tab's panel straight under them. */}
-            <div className="mt-2 rounded-2xl border border-slate-200 bg-white">
+            <div className={cardClass("plain", "mt-2")}>
             <div role="tablist" aria-label="Which version?" className="grid grid-cols-2 gap-1 rounded-t-[15px] border-b border-slate-200 bg-slate-100 p-1">
               {(["personal", "ready"] as const).map((t) => {
                 const on = t === tab;
@@ -1099,7 +1101,7 @@ export function SalesCallWorkspace() {
                     )}
                   </div>
                   <p className="mt-2 text-sm text-slate-600">
-                    <span className="font-semibold text-slate-800">Check in:</span> {written?.check || ready.check}
+                    <span className="font-medium text-slate-800">Check in:</span> {written?.check || ready.check}
                   </p>
                 </section>
               );
@@ -1111,7 +1113,7 @@ export function SalesCallWorkspace() {
           <>
             {pitch?.thread ? (
               <p className="text-sm text-slate-600">
-                <span className="font-semibold text-slate-800">Their golden thread:</span> {pitch.thread}
+                <span className="font-medium text-slate-800">Their golden thread:</span> {pitch.thread}
               </p>
             ) : null}
             <SayLine label="Open with" text={fill(STEPS_INTRO)} />
@@ -1125,7 +1127,7 @@ export function SalesCallWorkspace() {
                 <ol className="mt-3 space-y-5">
                   {pillar.steps.map((n) => (
                     <li key={n}>
-                      <p className="text-xs font-semibold text-slate-500">
+                      <p className="text-xs font-medium text-slate-500">
                         Step {n} · {STEP_NAMES[n - 1]}
                       </p>
                       <div className="mt-1.5">
@@ -1189,7 +1191,7 @@ export function SalesCallWorkspace() {
                   </span>
                   <span className="flex-1 whitespace-nowrap font-medium">{p.title}</span>
                   {badge ? (
-                    <span className={`text-[0.6875rem] font-semibold ${active ? "text-sky-200" : "text-sky-700"}`}>{badge}</span>
+                    <span className={`text-caption font-semibold ${active ? "text-sky-200" : "text-sky-700"}`}>{badge}</span>
                   ) : null}
                 </button>
                 {PAGED[p.id] && active ? (
@@ -1241,7 +1243,7 @@ export function SalesCallWorkspace() {
         {/* The page's heading, framed off from the script by a rule. */}
         <header className="flex items-start justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
-            <h2 id="phase-title" className="text-[1.625rem] font-normal leading-tight tracking-[-0.015em] text-slate-900">
+            <h2 id="phase-title" className="text-title font-normal leading-tight text-slate-900">
               {shownPage ? (
                 <>
                   <span aria-hidden className="mr-2">{shownPage.emoji}</span>
@@ -1251,14 +1253,14 @@ export function SalesCallWorkspace() {
                 current.title
               )}
             </h2>
-            <p className="mt-1 text-[1.0625rem] leading-[1.45] text-slate-600">{shownPage ? shownPage.summary : current.goal}</p>
+            <p className="mt-1 text-read leading-[1.45] text-slate-600">{shownPage ? shownPage.summary : current.goal}</p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {coachingNotes.length ? (
             <button
               type="button"
               onClick={() => setCoachingOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3.5 py-2 text-sm font-medium text-[#0c5290] hover:bg-sky-100"
+              className={buttonClass("second")}
             >
               <Lightbulb className="h-4 w-4" aria-hidden />
               Tips
@@ -1268,7 +1270,7 @@ export function SalesCallWorkspace() {
             <button
               type="button"
               onClick={() => setNotesOpen(true)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#f3f6fa] px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200/60 hover:text-slate-900"
+              className={buttonClass("second", "normal", "shrink-0")}
             >
               <NotebookPen className="h-4 w-4" aria-hidden />
               Call notes · {factCount}/5
@@ -1368,7 +1370,7 @@ export function SalesCallWorkspace() {
                 </option>
               ))}
             </datalist>
-            <button type="button" onClick={newCall} className="shrink-0 text-xs font-semibold text-slate-500 hover:text-slate-900">
+            <button type="button" onClick={newCall} className="shrink-0 text-xs font-medium text-slate-500 hover:text-slate-900">
               New call
             </button>
             <button type="button" onClick={() => setNotesOpen(false)} aria-label="Hide notes" title="Hide notes" className="shrink-0 text-slate-400 hover:text-slate-800">
@@ -1417,7 +1419,7 @@ export function SalesCallWorkspace() {
         <div className="px-5 py-5">
           <div className="flex items-baseline justify-between">
             <h3 className="font-semibold text-slate-900">Call details</h3>
-            <span className="text-xs font-semibold text-slate-500">{factCount} of 5 facts</span>
+            <span className="text-xs font-medium text-slate-500">{factCount} of 5 facts</span>
           </div>
           <p className="mt-0.5 text-xs text-slate-500">Filled from your notes. Change anything and the script updates.</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1426,7 +1428,7 @@ export function SalesCallWorkspace() {
               { key: "business", label: "Business", value: draft.business },
             ].map((field) => (
               <label key={field.key} className="block">
-                <span className="text-xs font-semibold text-slate-500">{field.label}</span>
+                <span className="text-xs font-medium text-slate-500">{field.label}</span>
                 <input
                   id={`cd-${field.key}`}
                   value={field.value}
@@ -1448,7 +1450,7 @@ export function SalesCallWorkspace() {
                     <Circle className="mt-1 h-4 w-4 shrink-0 text-slate-300" aria-hidden />
                   )}
                   <label className="min-w-0 flex-1">
-                    <span className="text-xs font-semibold text-slate-500">{f.label}</span>
+                    <span className="text-xs font-medium text-slate-500">{f.label}</span>
                     <AutoText
                       id={`cd-${f.key}`}
                       value={value}
@@ -1463,7 +1465,7 @@ export function SalesCallWorkspace() {
           </ul>
           {draft.nextQuestion ? (
             <div className="mt-4 rounded-lg bg-white px-3.5 py-3 ring-1 ring-sky-200">
-              <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-[#0c5290]">Ask next</p>
+              <p className="text-kicker font-semibold uppercase text-[#0c5290]">Ask next</p>
               <p className="mt-1 text-sm text-slate-900">{draft.nextQuestion}</p>
             </div>
           ) : null}

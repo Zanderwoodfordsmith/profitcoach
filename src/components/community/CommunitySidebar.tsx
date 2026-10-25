@@ -14,6 +14,8 @@ import {
   communityMemberStatusLabel,
 } from "@/components/community/communityMemberProfileHover";
 import { CONTENT_WITH_RAIL_RAIL_CLASS } from "@/components/layout";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const BANNER_SRC = "/brand/profit-coach-logo-colour-white-bg.png";
 
@@ -92,7 +94,7 @@ export function CommunitySidebar({
       <span className="text-xl font-bold tabular-nums text-slate-900">
         {rosterLoaded ? value : "–"}
       </span>
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+      <span className="text-kicker font-semibold uppercase text-slate-500">
         {label}
       </span>
     </Link>
@@ -108,8 +110,8 @@ export function CommunitySidebar({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
-        <div className="overflow-hidden rounded-t-xl">
+      <div className={cardClass("plain")}>
+        <div className="overflow-hidden rounded-t-2xl">
           <div className="relative aspect-[16/9] w-full bg-white">
             <Image
               src={BANNER_SRC}
@@ -122,14 +124,14 @@ export function CommunitySidebar({
           </div>
         </div>
         <div className="p-4">
-          <h2 className="text-lg font-bold leading-snug text-slate-900">
+          <h2 className="text-lg font-semibold leading-snug text-slate-900">
             Profit Coach Community
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
             {COMMUNITY_BLURB}
           </p>
 
-          <div className="mt-5 grid grid-cols-3 divide-x divide-slate-200 rounded-lg border border-slate-200 bg-slate-50/80">
+          <div className={cardClass("soft", "mt-5 grid grid-cols-3 divide-x divide-slate-200 overflow-hidden")}>
             {statLink(`${base}/members`, counts.members, "Members")}
             {statLink(`${base}/members?filter=online`, counts.online, "Online")}
             {statLink(`${base}/members?filter=admins`, counts.admins, "Admins")}
@@ -139,7 +141,7 @@ export function CommunitySidebar({
             <button
               type="button"
               onClick={calendarAddEvent.onClick}
-              className="mt-4 w-full rounded-lg bg-sky-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+              className={buttonClass("main", "normal", "mt-4 w-full")}
             >
               Add event
             </button>
@@ -147,13 +149,13 @@ export function CommunitySidebar({
 
           <div className="mt-4">
             <div className="mb-2 flex items-baseline justify-between gap-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-kicker font-semibold uppercase text-slate-500">
                 Recently active
               </p>
               {pathname.startsWith(`${base}/members`) ? null : (
                 <Link
                   href={`${base}/members`}
-                  className="text-[10px] font-semibold uppercase tracking-wide text-sky-700 hover:text-sky-900"
+                  className="text-kicker font-semibold uppercase text-sky-700 hover:text-sky-900"
                 >
                   View all
                 </Link>

@@ -9,6 +9,8 @@ import {
   shortStepLabel,
 } from "@/components/campaigns/CampaignActivityRows";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import {
   demoPreviewRemindQueue,
   isDemoPreviewId,
@@ -171,7 +173,7 @@ export function LinkedInRemindQueue({
       );
     }
     return (
-      <section className="rounded-2xl border border-slate-200/90 bg-white px-5 py-8 text-center text-sm text-slate-500 shadow-sm shadow-slate-200/40">
+      <section className={cardClass("plain", "px-5 py-8 text-center text-sm text-slate-500")}>
         <Loader2 className="mx-auto h-4 w-4 animate-spin" />
         <p className="mt-2">Loading…</p>
       </section>
@@ -255,7 +257,7 @@ export function LinkedInRemindQueue({
                           type="button"
                           disabled={busy || preview}
                           onClick={() => void act(item.job_id, "complete")}
-                          className="rounded-lg bg-[#0c5290] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50"
+                          className={buttonClass("main", "small")}
                         >
                           {busy ? "Saving…" : "Mark as called"}
                         </button>
@@ -263,7 +265,7 @@ export function LinkedInRemindQueue({
                           type="button"
                           disabled={busy || preview}
                           onClick={() => void act(item.job_id, "snooze", { hours: 24 })}
-                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                          className={buttonClass("second", "small")}
                         >
                           Snooze
                         </button>
@@ -281,7 +283,7 @@ export function LinkedInRemindQueue({
                               return;
                             void act(item.job_id, "skip");
                           }}
-                          className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                          className={buttonClass("quiet", "small")}
                         >
                           Skip
                         </button>
@@ -310,7 +312,7 @@ export function LinkedInRemindQueue({
                             onClick={() =>
                               void act(item.job_id, "send", { body: draft })
                             }
-                            className="rounded-lg bg-[#0c5290] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50"
+                            className={buttonClass("main", "small")}
                           >
                             {busy ? "Sending…" : "Send"}
                           </button>
@@ -320,7 +322,7 @@ export function LinkedInRemindQueue({
                             onClick={() =>
                               void act(item.job_id, "snooze", { hours: 24 })
                             }
-                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                            className={buttonClass("second", "small")}
                           >
                             Snooze
                           </button>
@@ -336,7 +338,7 @@ export function LinkedInRemindQueue({
                                 return;
                               void act(item.job_id, "skip");
                             }}
-                            className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                            className={buttonClass("quiet", "small")}
                           >
                             Skip
                           </button>

@@ -5,6 +5,7 @@ import {
   SIGNATURE_COMPASS_PILLAR_COVER_HEX,
   getSignaturePillarTitleById,
 } from "@/lib/signatureModelV2";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   href: string;
@@ -63,7 +64,7 @@ export function AcademyCourseCard({
   return (
     <Link
       href={href}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2"
+      className={cardClass("raised", "group flex flex-col overflow-hidden transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2")}
     >
       <div className="relative aspect-[16/9] bg-slate-200">
         {!coverImageUrl ? (
@@ -85,7 +86,7 @@ export function AcademyCourseCard({
         <div className="relative flex h-full flex-col justify-end p-5">
           {!hideCoverEyebrow ? (
             <p
-              className={`text-[10px] font-light uppercase tracking-[0.32em] ${coverImageUrl ? "text-white/85" : text.eyebrow}`}
+              className={`text-kicker font-light uppercase ${coverImageUrl ? "text-white/85" : text.eyebrow}`}
             >
               {topEyebrow}
             </p>

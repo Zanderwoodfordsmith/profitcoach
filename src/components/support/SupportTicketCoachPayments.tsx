@@ -141,7 +141,7 @@ export function SupportTicketCoachPayments({
                       {formatPaymentDate(payment.paid_at)}
                     </span>
                     <span
-                      className={`inline-flex max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium ${paymentBillingKindBadgeClass(payment.billing_kind)}`}
+                      className={`inline-flex max-w-full truncate rounded-full px-1.5 py-0.5 text-caption font-medium ${paymentBillingKindBadgeClass(payment.billing_kind)}`}
                     >
                       {paymentBillingKindLabel(payment.billing_kind)}
                     </span>

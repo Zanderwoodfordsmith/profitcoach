@@ -16,6 +16,8 @@ import {
   svgForInline,
 } from "@/lib/printPack/browserExport";
 import type { ProgrammeBrochure } from "@/lib/practiceKnowledge/brochure";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { ProgrammeBrochureCard } from "./ProgrammeBrochure";
 import { TOOLKIT_VIEWS, type ToolkitGraphicsView } from "./ToolkitTabs";
 
@@ -146,7 +148,7 @@ export function ToolkitHub({ view }: { view: ToolkitGraphicsView }) {
             {details && !hasLink ? (
               <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 Set your public link in{" "}
-                <Link href={linksHref} className="font-semibold underline underline-offset-2">
+                <Link href={linksHref} className="font-medium underline underline-offset-2">
                   Links
                 </Link>{" "}
                 to put your own QR code on these.
@@ -246,13 +248,11 @@ function AssetCard({
     }
   }
 
-  const button =
-    "rounded-full border px-3.5 py-1.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:opacity-60";
-  const primary = `${button} border-[#0c5290] bg-[#0c5290] text-white hover:bg-[#0a467b]`;
-  const secondary = `${button} border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900`;
+  const primary = buttonClass("main", "small");
+  const secondary = buttonClass("second", "small");
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.05),0_3px_8px_-3px_rgb(15_23_42/0.08)] [content-visibility:auto]">
+    <article className={cardClass("plain", "flex flex-col overflow-hidden [content-visibility:auto]")}>
       <div
         className="flex h-60 items-center justify-center bg-slate-50 p-3 [&>svg]:h-full [&>svg]:w-full"
         role="img"

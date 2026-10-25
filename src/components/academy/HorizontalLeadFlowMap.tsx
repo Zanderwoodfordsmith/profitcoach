@@ -42,6 +42,8 @@ import {
   type Point,
 } from "@/components/academy/leadFlowMapModel";
 import "./funnelRange.css";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type SetupCard = {
   id: string;
@@ -554,7 +556,7 @@ export function HorizontalLeadFlowMap({
             <button
               type="button"
               onClick={() => setFunnelOpen((open) => !open)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 ${
                 funnelOpen
                   ? "bg-[#0c5290] text-white"
                   : "bg-[#0c5290]/12 text-[#063056] hover:bg-[#0c5290]/20"
@@ -689,7 +691,7 @@ function FunnelCustomisePanel({
           <button
             type="button"
             onClick={onReset}
-            className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            className={buttonClass("quiet", "small")}
           >
             Reset
           </button>
@@ -709,10 +711,10 @@ function FunnelCustomisePanel({
           {rateRows.map((row) => (
             <div
               key={row.key}
-              className="flex h-full flex-col justify-center rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-sm"
+              className={cardClass("plain", "flex h-full flex-col justify-center px-3 py-2")}
             >
               <div className="flex items-baseline justify-between gap-2">
-                <label htmlFor={`funnel-rate-${row.key}`} className="text-[14px] font-semibold text-slate-700">
+                <label htmlFor={`funnel-rate-${row.key}`} className="text-ui font-medium text-slate-700">
                   {row.label}
                 </label>
                 <span className="text-sm font-semibold tabular-nums text-[#087890]">
@@ -763,7 +765,7 @@ function ClientsWantedControl({
     <div className="flex w-[6.5rem] shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-[#0c5290]/25 bg-[#0c5290]/[0.06] px-1.5 py-2 shadow-sm">
       <label
         htmlFor="funnel-clients-wanted"
-        className="whitespace-nowrap text-[12px] font-semibold tracking-tight text-slate-700"
+        className="whitespace-nowrap text-caption font-medium tracking-tight text-slate-700"
       >
         New clients
       </label>
@@ -853,7 +855,7 @@ function StepSectionHeader({
   return (
     <div className="flex items-center gap-2.5 rounded-t-xl border-b border-[#0c5290]/35 bg-[#0c5290]/[0.28] px-3.5 py-2.5 backdrop-blur-[1px]">
       <span
-        className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#0c5290] text-[11px] font-bold text-white shadow-sm"
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#0c5290] text-caption font-bold text-white shadow-sm"
         aria-hidden
       >
         {step}
@@ -901,7 +903,7 @@ function SetupRowView({
               <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#0c5290]/10 text-[#0c5290]">
                 <Icon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden />
               </span>
-              <span className="min-w-0 text-[13px] font-semibold leading-[1.25] text-slate-800">
+              <span className="min-w-0 text-ui font-semibold leading-[1.25] text-slate-800">
                 {titleLines.map((line) => (
                   <span key={line} className="block">
                     {line}
@@ -956,9 +958,9 @@ function SetupCardHover({
       role="tooltip"
     >
       <span className="flex items-start justify-between gap-3">
-        <span className="min-w-0 text-[22px] font-semibold leading-snug text-slate-900">{title}</span>
+        <span className="min-w-0 text-title font-semibold leading-snug text-slate-900">{title}</span>
         {card.href ? (
-          <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-[#0c5290] px-2.5 py-1 text-[11px] font-semibold text-white">
+          <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-[#0c5290] px-2.5 py-1 text-caption font-semibold text-white">
             Open lesson
             <ArrowRight className="h-3 w-3" aria-hidden />
           </span>
@@ -1101,7 +1103,7 @@ function HoverProse({ text }: { text: string }) {
   return (
     <div className="space-y-2.5">
       {paragraphs.map((paragraph) => (
-        <p key={paragraph.slice(0, 48)} className="text-[15px] leading-6 text-slate-600">
+        <p key={paragraph.slice(0, 48)} className="text-ui leading-6 text-slate-600">
           {paragraph}
         </p>
       ))}
@@ -1112,7 +1114,7 @@ function HoverProse({ text }: { text: string }) {
 function HoverDetailsList({ details }: { details: string[] }) {
   if (details.length === 0) return null;
   return (
-    <ul className="mt-3.5 space-y-2.5 border-t border-slate-100 pt-3.5 text-[14px] leading-5 text-slate-700">
+    <ul className="mt-3.5 space-y-2.5 border-t border-slate-100 pt-3.5 text-ui leading-5 text-slate-700">
       {details.map((detail) => (
         <li key={detail} className="flex gap-2">
           <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#4b9bb3]" />
@@ -1130,7 +1132,7 @@ function HoverExampleBlock({ example }: { example: HoverExample }) {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-left text-[13px] font-semibold text-[#0c5290] transition hover:bg-[#0c5290]/8"
+        className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-left text-ui font-semibold text-[#0c5290] transition hover:bg-[#0c5290]/8"
         aria-expanded={open}
       >
         <span>{example.label}</span>
@@ -1140,7 +1142,7 @@ function HoverExampleBlock({ example }: { example: HoverExample }) {
         />
       </button>
       {open ? (
-        <div className="mt-2 max-h-56 space-y-2.5 overflow-y-auto rounded-lg bg-slate-50/90 px-3 py-2.5 text-[14px] leading-5 text-slate-700">
+        <div className="mt-2 max-h-56 space-y-2.5 overflow-y-auto rounded-lg bg-slate-50/90 px-3 py-2.5 text-ui leading-5 text-slate-700">
           {example.body.split(/\n\n+/).map((paragraph) => (
             <p key={paragraph.slice(0, 40)}>{paragraph}</p>
           ))}
@@ -1181,11 +1183,11 @@ function HorizontalHoverCard({
       }}
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="min-w-0 text-[22px] font-semibold leading-snug text-slate-900">{title}</h3>
+        <h3 className="min-w-0 text-title font-semibold leading-snug text-slate-900">{title}</h3>
         {node.href ? (
           <a
             href={node.href}
-            className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-[#0c5290] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-[#0a4580]"
+            className={buttonClass("main", "small", "mt-0.5 shrink-0")}
           >
             Open lesson
             <ArrowRight className="h-3 w-3" aria-hidden />
@@ -1197,7 +1199,7 @@ function HorizontalHoverCard({
         <HoverProse text={node.description} />
       </div>
       {node.note ? (
-        <p className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-[13px] font-medium leading-5 text-amber-950/80">
+        <p className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-ui font-medium leading-5 text-amber-950/80">
           {node.note}
         </p>
       ) : null}
@@ -1309,21 +1311,21 @@ function HorizontalFlowLabel({
 
 function HorizontalNodeDetails({ node, onClose }: { node: DiagramNode; onClose: () => void }) {
   return (
-    <aside className="relative mt-4 rounded-2xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_14px_45px_rgba(21,50,79,0.08)] backdrop-blur-sm">
+    <aside className={cardClass("plain", "relative mt-4 p-5")}>
       <button
         type="button"
         onClick={onClose}
-        className="absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+        className={buttonClass("quiet", "small", "absolute right-4 top-4")}
       >
         Close
       </button>
-      <p className="pr-20 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Node detail</p>
-      <h2 className="mt-1 text-xl font-semibold text-slate-900">{node.title.replace("\n", " ")}</h2>
+      <p className="pr-20 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Node detail</p>
+      <h2 className="mt-1 text-subhead font-semibold text-slate-900">{node.title.replace("\n", " ")}</h2>
       <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{node.description}</p>
       {node.details ? (
         <ul className="mt-4 grid max-w-4xl gap-2 text-sm leading-5 text-slate-600 md:grid-cols-2">
           {node.details.map((detail) => (
-            <li key={detail} className="rounded-xl bg-slate-50 px-3 py-2">
+            <li key={detail} className={cardClass("soft", "px-3 py-2")}>
               {detail}
             </li>
           ))}
@@ -1332,7 +1334,7 @@ function HorizontalNodeDetails({ node, onClose }: { node: DiagramNode; onClose: 
       {node.href ? (
         <Link
           href={node.href}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0c5290] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[#0a4580]"
+          className={buttonClass("main", "normal", "mt-4")}
         >
           Open lesson
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />

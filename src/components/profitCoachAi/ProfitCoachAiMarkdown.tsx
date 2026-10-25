@@ -14,7 +14,7 @@ const components: Components = {
     <p className="mb-2 last:mb-0 [&:not(:first-child)]:mt-2">{children}</p>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold text-slate-900">{children}</strong>
+    <strong className="font-medium text-slate-900">{children}</strong>
   ),
   em: ({ children }) => <em className="italic">{children}</em>,
   ul: ({ children }) => (
@@ -31,7 +31,7 @@ const components: Components = {
     <p className="mb-2 text-base font-semibold text-slate-900">{children}</p>
   ),
   h3: ({ children }) => (
-    <p className="mb-1.5 text-[15px] font-semibold text-slate-900">{children}</p>
+    <p className="mb-1.5 text-ui font-semibold text-slate-900">{children}</p>
   ),
   blockquote: ({ children }) => (
     <blockquote
@@ -44,13 +44,13 @@ const components: Components = {
     const isBlock = Boolean(className?.includes("language-"));
     if (isBlock) {
       return (
-        <code className="block overflow-x-auto rounded-lg bg-slate-100 px-3 py-2 font-mono text-[13px] text-slate-800">
+        <code className="block overflow-x-auto rounded-lg bg-slate-100 px-3 py-2 font-mono text-ui text-slate-800">
           {children}
         </code>
       );
     }
     return (
-      <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[13px] text-slate-800">
+      <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-ui text-slate-800">
         {children}
       </code>
     );

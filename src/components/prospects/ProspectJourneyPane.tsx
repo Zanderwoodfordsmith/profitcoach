@@ -39,6 +39,8 @@ import {
   loadProspectFeed,
   peekProspectFeed,
 } from "@/lib/messaging/prefetchProspectOpen";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type PaneTab = "activity" | "calls" | "notes";
 
@@ -486,7 +488,7 @@ export function ProspectJourneyPane({
                 {noteError ? (
                   <p className="min-w-0 text-xs text-rose-600">{noteError}</p>
                 ) : (
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-caption text-slate-400">
                     Internal only. ⌘↵ to save
                   </p>
                 )}
@@ -494,7 +496,7 @@ export function ProspectJourneyPane({
                   type="button"
                   onClick={() => void saveNote()}
                   disabled={noteSaving || !noteDraft.trim()}
-                  className="shrink-0 rounded-md bg-sky-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  className={buttonClass("main", "small", "shrink-0")}
                 >
                   {noteSaving ? "Saving…" : "Add note"}
                 </button>
@@ -526,16 +528,16 @@ export function ProspectJourneyPane({
                           className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-200/80"
                         />
                       ) : (
-                        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-[10px] font-semibold text-sky-800">
+                        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-caption font-semibold text-sky-800">
                           {prospectInitials(writtenBy.name)}
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between gap-2">
-                          <p className="truncate text-sm font-semibold text-slate-900">
+                          <p className="truncate text-sm font-medium text-slate-900">
                             {writtenBy.name}
                           </p>
-                          <p className="shrink-0 text-[11px] text-slate-400">
+                          <p className="shrink-0 text-caption text-slate-400">
                             {formatRelativeAgo(note.created_at)}
                           </p>
                         </div>
@@ -553,14 +555,14 @@ export function ProspectJourneyPane({
         ) : tab === "calls" ? (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
-              <p className="text-[13px] text-slate-500">
+              <p className="text-ui text-slate-500">
                 {calls.length === 1 ? "1 call" : `${calls.length} calls`}
               </p>
               {prospect ? (
                 <button
                   type="button"
                   onClick={() => setBookingOpen(true)}
-                  className="rounded-md bg-sky-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-sky-700"
+                  className={buttonClass("main", "small")}
                 >
                   Book a call
                 </button>
@@ -579,7 +581,7 @@ export function ProspectJourneyPane({
                 <div className="space-y-5">
                   {upcomingCalls.length > 0 ? (
                     <section>
-                      <p className="mb-2 text-[11px] font-medium text-slate-400">
+                      <p className="mb-2 text-caption font-medium text-slate-400">
                         Upcoming
                       </p>
                       <ul className="space-y-2">
@@ -591,7 +593,7 @@ export function ProspectJourneyPane({
                   ) : null}
                   {pastCalls.length > 0 ? (
                     <section>
-                      <p className="mb-2 text-[11px] font-medium text-slate-400">
+                      <p className="mb-2 text-caption font-medium text-slate-400">
                         Past
                       </p>
                       <ul className="space-y-2">
@@ -623,7 +625,7 @@ export function ProspectJourneyPane({
                     key={group.label}
                     className={groupIndex > 0 ? "mt-1" : undefined}
                   >
-                    <p className="mb-2 pl-9 text-[11px] font-medium text-slate-400">
+                    <p className="mb-2 pl-9 text-caption font-medium text-slate-400">
                       {group.label}
                     </p>
                     <ol>
@@ -671,7 +673,7 @@ export function ProspectJourneyPane({
                                 >
                                   {event.title}
                                 </span>
-                                <span className="shrink-0 pt-0.5 text-[11px] tabular-nums text-slate-400">
+                                <span className="shrink-0 pt-0.5 text-caption tabular-nums text-slate-400">
                                   {formatShortTime(event.at)}
                                 </span>
                               </span>
@@ -749,10 +751,10 @@ export function ProspectJourneyPane({
 
 function CallRowItem({ call }: { call: CallRow }) {
   return (
-    <li className="rounded-lg border border-slate-200/80 bg-white px-3 py-2.5">
+    <li className={cardClass("plain", "px-3 py-2.5")}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-slate-800">{call.title}</p>
-        <p className="shrink-0 text-[11px] font-medium capitalize text-slate-500">
+        <p className="shrink-0 text-caption font-medium capitalize text-slate-500">
           {callStatusLabel(call.status)}
         </p>
       </div>

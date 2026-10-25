@@ -5,6 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type CalendarItem = {
   id: string;
@@ -113,7 +115,7 @@ function IntegrationRow({
       <div className="flex items-center gap-3 px-4 py-3.5">
         <span className="shrink-0">{mark}</span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="text-sm font-medium text-slate-900">{title}</p>
           <p className="truncate text-xs text-slate-500">{subtitle}</p>
         </div>
         <div className="shrink-0">{action}</div>
@@ -253,7 +255,7 @@ function CalendarPrefsPanel({
           type="button"
           disabled={saving || busyIds.length === 0 || !status.calendars.length}
           onClick={onSave}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+          className={buttonClass("main")}
         >
           {saving ? "Saving…" : "Save preferences"}
         </button>
@@ -628,7 +630,7 @@ export function GoogleCalendarBookingCard({
 
   if (loading) {
     return (
-      <section className="rounded-xl border border-slate-200/80 bg-white p-4">
+      <section className={cardClass("plain", "p-4")}>
         <p className="text-sm text-slate-600">Loading integrations…</p>
       </section>
     );
@@ -715,7 +717,7 @@ export function GoogleCalendarBookingCard({
   );
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
+    <section className={cardClass("plain", "overflow-hidden")}>
       <div className="border-b border-slate-100 px-4 py-3">
         <h2 className="text-sm font-semibold text-slate-900">
           {compact ? "Google Calendar" : "Integrations"}

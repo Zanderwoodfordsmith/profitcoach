@@ -47,6 +47,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { supportComposerFallbackBody } from "@/lib/support/supportTicketMedia";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
 
 type TicketWithReplies = SupportTicket & { replies: SupportReply[] };
 
@@ -570,7 +571,7 @@ export function SupportTicketChat({
                       <button
                         type="submit"
                         disabled={busy || !canSend}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-sky-700 px-3 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                        className={buttonClass("main", "small")}
                         aria-label="Send message"
                       >
                         <Send className="h-3.5 w-3.5" aria-hidden />

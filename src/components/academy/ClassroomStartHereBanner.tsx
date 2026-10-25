@@ -31,7 +31,7 @@ export function ClassroomStartHereBanner({
       <div className="relative flex w-full flex-col gap-5 p-6">
         <div className="min-w-0">
           {eyebrow.trim() ? (
-            <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/85">
+            <p className="inline-flex items-center gap-1.5 text-kicker font-semibold uppercase text-white/85">
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
               {eyebrow}
             </p>

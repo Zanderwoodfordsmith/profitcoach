@@ -31,6 +31,8 @@ import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type LinkedInImportProfile = {
   linkedinUrl: string;
@@ -595,7 +597,7 @@ export function BossDashboardSettings({
                   type="button"
                   onClick={() => void handleLinkedInImport()}
                   disabled={linkedinImporting || !linkedinUrl.trim()}
-                  className="inline-flex h-[34px] shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={buttonClass("second", "small", "shrink-0")}
                 >
                   {linkedinImporting ? (
                     <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -604,18 +606,18 @@ export function BossDashboardSettings({
                 </button>
               </div>
               {linkedinImport?.scrapedAt ? (
-                <span className="text-[11px] text-slate-500">
+                <span className="text-caption text-slate-500">
                   Last imported{" "}
                   {new Date(linkedinImport.scrapedAt).toLocaleString()}
                 </span>
               ) : linkedinImportLoading ? (
-                <span className="text-[11px] text-slate-500">Checking…</span>
+                <span className="text-caption text-slate-500">Checking…</span>
               ) : null}
               {linkedinImportError ? (
                 <p className="text-sm text-red-600">{linkedinImportError}</p>
               ) : null}
               {linkedinImport?.snapshot ? (
-                <div className="mt-1 flex gap-3 rounded-md border border-slate-200 bg-slate-50/80 p-3">
+                <div className={cardClass("soft", "mt-1 flex gap-3 p-3")}>
                   {linkedinImport.snapshot.photoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- remote LinkedIn CDN URL
                     <img
@@ -681,7 +683,7 @@ export function BossDashboardSettings({
                 href={`/directory/${encodeURIComponent(directorySlug)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                className={buttonClass("second", "small")}
               >
                 Edit your page
               </Link>
@@ -734,7 +736,7 @@ export function BossDashboardSettings({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            className={buttonClass("main")}
           >
             {saving ? "Saving…" : "Save profile"}
           </button>

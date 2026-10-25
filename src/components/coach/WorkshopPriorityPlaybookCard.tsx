@@ -69,7 +69,7 @@ export function WorkshopPriorityPlaybookCard({
         <div className="mt-6">
           <h3 className="text-xl font-semibold leading-tight sm:text-2xl">{name}</h3>
           <p className="mt-2 text-sm text-white/80">
-            <span className="font-semibold text-white/95">Current Level:</span>{" "}
+            <span className="font-medium text-white/95">Current Level:</span>{" "}
             <span
               className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold text-white"
               style={{ background: levelSolid(level) }}

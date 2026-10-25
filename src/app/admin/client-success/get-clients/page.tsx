@@ -8,6 +8,7 @@ import { useRequireAdminRole } from "@/hooks/useRequireAdminRole";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { ClientInsights } from "@/lib/clientRoster/insights";
 import type { CoachHealthRow, HealthLevel } from "@/lib/coachHealth";
+import { cardClass } from "@/components/ui/Card";
 
 const LEVEL_STYLE: Record<HealthLevel, string> = {
   red: "bg-rose-100 text-rose-800",
@@ -56,7 +57,7 @@ function BcaClientsPanel() {
       </div>
     ) : null;
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
+    <section className={cardClass("plain", "p-4")}>
       <h2 className="text-sm font-semibold text-slate-900">Coaches&apos; clients across BCA</h2>
       <p className="mt-1 text-sm text-slate-600">
         {insights.clients} clients from {data.coaches_with_clients} coaches. {insights.described} described, {insights.best} rated 4 or 5,{" "}
@@ -142,7 +143,7 @@ export default function AdminGetClientsHealthPage() {
                 .
               </p>
             ) : null}
-            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <div className={cardClass("plain", "overflow-x-auto")}>
               <table className="w-full text-sm tabular-nums">
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">

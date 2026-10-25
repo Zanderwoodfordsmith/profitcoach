@@ -21,6 +21,8 @@ import {
 import { TimeTrackerGrid } from "./TimeTrackerGrid";
 import { TimeTrackerBlockModal, type BlockDraft } from "./TimeTrackerBlockModal";
 import { TimeTrackerSelect } from "./TimeTrackerSelect";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 function initials(name: string | null, email: string | null): string {
   const source = (name || email || "?").trim();
@@ -354,7 +356,7 @@ export function TimeTrackerBoard() {
                 }`}
               >
                 <span
-                  className={`flex h-6 w-6 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold ${
+                  className={`flex h-6 w-6 items-center justify-center overflow-hidden rounded-full text-caption font-semibold ${
                     isSelected ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
                   }`}
                 >
@@ -372,7 +374,7 @@ export function TimeTrackerBoard() {
                 <span className="max-w-[140px] truncate">{adminLabel(admin)}</span>
                 {isMe && (
                   <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                    className={`rounded-full px-1.5 py-0.5 text-caption font-semibold ${
                       isSelected ? "bg-white/20" : "bg-sky-100 text-sky-700"
                     }`}
                   >
@@ -399,7 +401,7 @@ export function TimeTrackerBoard() {
           <button
             type="button"
             onClick={() => setWeekAnchor(new Date())}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("second", "small")}
           >
             Today
           </button>
@@ -411,7 +413,7 @@ export function TimeTrackerBoard() {
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          <span className="ml-1 text-sm font-semibold text-slate-800">
+          <span className="ml-1 text-sm font-medium text-slate-800">
             {formatWeekRange(weekAnchor)}
           </span>
           {loadingGrid && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
@@ -442,7 +444,7 @@ export function TimeTrackerBoard() {
 
       {/* Settings panel */}
       {editable && showSettings && (
-        <div className="flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className={cardClass("soft", "flex flex-wrap items-end gap-4 p-4")}>
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Day starts at

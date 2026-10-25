@@ -5,6 +5,8 @@ import { Film, Link2, Upload, X } from "lucide-react";
 
 import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
 import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Props = {
   videoUrl: string;
@@ -134,7 +136,7 @@ export function LessonFeaturedMedia({
             <button
               type="button"
               onClick={applyEmbed}
-              className="shrink-0 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-500"
+              className={buttonClass("main", "normal", "shrink-0")}
             >
               Apply
             </button>
@@ -169,7 +171,7 @@ export function LessonFeaturedMedia({
           type="button"
           onClick={pickFile}
           disabled={uploading}
-          className="flex min-h-[7.5rem] flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-5 text-center shadow-sm transition hover:border-sky-300 hover:bg-sky-50/30 disabled:opacity-60"
+          className={cardClass("raised", "flex min-h-[7.5rem] flex-col items-center justify-center gap-2 px-4 py-5 text-center transition hover:border-sky-300 hover:bg-sky-50/30 disabled:opacity-60")}
         >
           <span className="flex gap-2 text-slate-400">
             <Film className="h-5 w-5" aria-hidden />
@@ -184,7 +186,7 @@ export function LessonFeaturedMedia({
         <button
           type="button"
           onClick={() => setEmbedOpen((o) => !o)}
-          className="flex min-h-[7.5rem] flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-5 text-center shadow-sm transition hover:border-sky-300 hover:bg-sky-50/30"
+          className={cardClass("raised", "flex min-h-[7.5rem] flex-col items-center justify-center gap-2 px-4 py-5 text-center transition hover:border-sky-300 hover:bg-sky-50/30")}
         >
           <Link2 className="h-5 w-5 text-slate-400" aria-hidden />
           <span className="text-sm font-medium text-slate-700">Embed YouTube or Vimeo</span>
@@ -224,7 +226,7 @@ export function LessonFeaturedMedia({
           <button
             type="button"
             onClick={applyEmbed}
-            className="shrink-0 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-500"
+            className={buttonClass("main", "normal", "shrink-0")}
           >
             Add
           </button>

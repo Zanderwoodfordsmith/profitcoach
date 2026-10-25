@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Pencil } from "lucide-react";
 import type React from "react";
 import { ProfileTimezoneSelect } from "@/components/settings/ProfileTimezoneSelect";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const inputClass =
   "w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
@@ -23,7 +25,7 @@ export function ProfileSectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
+    <section className={cardClass("plain", "overflow-hidden")}>
       {title ? (
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
           <div className="min-w-0">
@@ -72,7 +74,7 @@ export function ProfileFieldRow({
       <div className="min-w-0">
         {children}
         {hint ? (
-          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{hint}</p>
+          <p className="mt-1 text-caption leading-relaxed text-slate-500">{hint}</p>
         ) : null}
       </div>
     </div>
@@ -276,7 +278,7 @@ export function ProfileIdentityCard({
             <button
               type="button"
               onClick={() => setEditing((open) => !open)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+              className={buttonClass("second", "small", "shrink-0")}
             >
               <Pencil className="h-3 w-3" aria-hidden />
               {editing ? "Done" : "Edit"}
@@ -300,7 +302,7 @@ export function ProfileIdentityCard({
                 autoComplete="address-level2"
               />
               {onChangeMapPin ? (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-caption">
                   <button
                     type="button"
                     onClick={onChangeMapPin}
@@ -320,13 +322,13 @@ export function ProfileIdentityCard({
                 </div>
               ) : null}
               {locationGeocodedManual ? (
-                <p className="text-[11px] text-slate-500">
+                <p className="text-caption text-slate-500">
                   Pin placed manually — editing the text won&apos;t move it until
                   you remove it or pick a new spot.
                 </p>
               ) : null}
               <div>
-                <p className="mb-1 text-[11px] font-medium text-slate-400">
+                <p className="mb-1 text-caption font-medium text-slate-400">
                   Timezone
                 </p>
                 <ProfileTimezoneSelect

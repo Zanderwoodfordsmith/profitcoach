@@ -277,7 +277,7 @@ export function Transcript({
               {current === "loading" ? <Loader2 className="h-5 w-5 animate-spin" /> : playing ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}
             </button>
             <div className="min-w-0 flex-1">
-              <div className="relative h-5 text-[0.6875rem] text-[var(--sim-cream-faint)]">
+              <div className="relative h-5 text-caption text-[var(--sim-cream-faint)]">
                 {nowChapter ? (
                   <span className="text-[var(--sim-cream)] sm:hidden">{stageLabels?.[nowChapter.stage] ?? nowChapter.stage}</span>
                 ) : null}
@@ -399,7 +399,7 @@ export function Transcript({
                   <img src={face} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
                 ) : null}
                 <div className={`max-w-[min(85%,560px)] ${coach ? "text-right" : ""}`}>
-                  <p className="mb-1 px-1 text-[0.6875rem] text-[var(--sim-cream-faint)]">
+                  <p className="mb-1 px-1 text-caption text-[var(--sim-cream-faint)]">
                     {coach ? "You" : name}
                     {place && conversationIds.length ? (
                       <button type="button" onClick={() => void seek(place.part, place.t)} className="ml-1 rounded px-1 underline-offset-2 hover:text-[var(--sim-cream)] hover:underline" aria-label={`Play from ${clock(place.t)}`}>
@@ -413,7 +413,7 @@ export function Transcript({
                     )}
                   </p>
                   <p
-                    className={`whitespace-pre-wrap px-4 py-2.5 text-left text-[0.9375rem] leading-relaxed transition-shadow duration-300 ${
+                    className={`whitespace-pre-wrap px-4 py-2.5 text-left text-read leading-relaxed transition-shadow duration-300 ${
                       coach
                         ? "rounded-2xl rounded-br-md bg-[var(--sim-cream)] text-[var(--sim-navy)]"
                         : "rounded-2xl rounded-bl-md border border-[var(--sim-cream-line)] bg-[rgba(5,30,54,0.55)] text-[var(--sim-cream)]"
@@ -427,7 +427,7 @@ export function Transcript({
                 <div className="space-y-2 pl-10 lg:pl-0 lg:pt-4">
                   {notes.map((n, j) => (
                     <div key={j} className="sim-glass rounded-2xl px-3.5 py-2.5">
-                      <p className="flex items-center gap-1.5 text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-[var(--sim-cream-faint)]">
+                      <p className="flex items-center gap-1.5 text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">
                         <span className={`h-1.5 w-1.5 rounded-full ${REMARK[n.kind].dot}`} aria-hidden />
                         {REMARK[n.kind].label}
                       </p>
@@ -444,7 +444,7 @@ export function Transcript({
                   ))}
                   {replay ? (
                     <div className="rounded-2xl border border-[rgba(143,227,184,0.35)] bg-[rgba(143,227,184,0.08)] px-3.5 py-2.5">
-                      <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-[var(--sim-good)]">Your second try · {VERDICT[replay.verdict]}</p>
+                      <p className="text-kicker font-semibold uppercase text-[var(--sim-good)]">Your second try · {VERDICT[replay.verdict]}</p>
                       <p className="mt-1 text-sm leading-snug text-[var(--sim-cream)]">{replay.note}</p>
                       {replay.tryNext ? <p className="mt-1.5 text-sm leading-snug text-[var(--sim-cream-soft)]">Next time: &ldquo;{unquote(replay.tryNext)}&rdquo;</p> : null}
                     </div>

@@ -12,6 +12,7 @@ import {
 import { formatInTimeZone } from "@/lib/booking/bookingTime";
 import { BookingDateTimePicker } from "@/components/booking/BookingDateTimePicker";
 import "./native-booking.css";
+import { cardClass } from "@/components/ui/Card";
 
 type BookMeta = {
   slug: string;
@@ -346,7 +347,7 @@ export function NativeBookingEmbed({
           page or add it to your calendar below.
         </div>
 
-        <div className="mt-6 rounded-xl border border-slate-200 px-4 py-4">
+        <div className={cardClass("plain", "mt-6 px-4 py-4")}>
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
               <p className="text-sm text-slate-500">Your meeting is scheduled with:</p>

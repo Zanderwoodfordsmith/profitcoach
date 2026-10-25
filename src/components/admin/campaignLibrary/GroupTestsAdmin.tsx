@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 type Arm = { key: string; label: string; body: string };
@@ -86,14 +88,14 @@ export function GroupTestsAdmin() {
           and merge fields like <code>{"{{first_name}}"}</code>, <code>{"{{location}}"}</code> or <code>{"{{profile_hook}}"}</code>{" "}
           (a line Ava writes from their LinkedIn profile).
         </p>
-        <button type="button" onClick={() => setDraft({ ...EMPTY })} className="rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white">
+        <button type="button" onClick={() => setDraft({ ...EMPTY })} className={buttonClass("main")}>
           New test
         </button>
       </div>
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
 
       {draft ? (
-        <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
+        <div className={cardClass("plain", "space-y-3 p-4 text-sm")}>
           <label className="block text-xs text-slate-600">
             Name
             <input id="gt-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="mt-1 block w-full rounded border border-slate-300 px-2 py-1" />
@@ -172,11 +174,11 @@ export function GroupTestsAdmin() {
               onClick={async () => {
                 if (await send("POST", draft)) setDraft(null);
               }}
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-white"
+              className={buttonClass("main")}
             >
               Save draft
             </button>
-            <button type="button" onClick={() => setDraft(null)} className="rounded-md px-3 py-1.5 text-slate-600">
+            <button type="button" onClick={() => setDraft(null)} className={buttonClass("quiet")}>
               Cancel
             </button>
           </div>
@@ -186,7 +188,7 @@ export function GroupTestsAdmin() {
       {tests === null ? <p className="text-sm text-slate-500">Loading tests…</p> : null}
       {tests?.length === 0 && !draft ? <p className="text-sm text-slate-500">No group tests yet.</p> : null}
       {tests?.map((t) => (
-        <article key={t.id} className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
+        <article key={t.id} className={cardClass("plain", "p-4 text-sm")}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="font-semibold text-slate-900">
               {t.name} <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-normal capitalize text-slate-600">{t.status}</span>
@@ -194,16 +196,16 @@ export function GroupTestsAdmin() {
             <div className="flex gap-2">
               {t.status === "draft" ? (
                 <>
-                  <button type="button" onClick={() => setDraft({ ...t, hypothesis: t.hypothesis ?? "" })} className="rounded-md border border-slate-300 px-2.5 py-1 text-xs">
+                  <button type="button" onClick={() => setDraft({ ...t, hypothesis: t.hypothesis ?? "" })} className={buttonClass("quiet", "small")}>
                     Edit
                   </button>
-                  <button type="button" onClick={() => void send("PATCH", { id: t.id, status: "live" })} className="rounded-md bg-emerald-700 px-2.5 py-1 text-xs text-white">
+                  <button type="button" onClick={() => void send("PATCH", { id: t.id, status: "live" })} className={buttonClass("main", "small")}>
                     Go live
                   </button>
                 </>
               ) : null}
               {t.status === "live" ? (
-                <button type="button" onClick={() => void send("PATCH", { id: t.id, status: "ended" })} className="rounded-md border border-slate-300 px-2.5 py-1 text-xs">
+                <button type="button" onClick={() => void send("PATCH", { id: t.id, status: "ended" })} className={buttonClass("second", "small")}>
                   End test
                 </button>
               ) : null}

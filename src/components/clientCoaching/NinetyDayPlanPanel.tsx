@@ -14,6 +14,8 @@ import type {
   NinetyDayWeek,
   QuarterKey,
 } from "@/lib/clientCoaching/types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type ViewMode = "list" | "board" | "timeline";
 
@@ -76,9 +78,7 @@ function ItemCard({
 }) {
   return (
     <div
-      className={`rounded-lg border border-slate-200 bg-white shadow-sm ${
-        compact ? "p-2.5" : "p-3"
-      }`}
+      className={cardClass("plain", compact ? "p-2.5" : "p-3")}
     >
       <input
         className="w-full border-0 bg-transparent p-0 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
@@ -194,7 +194,7 @@ export function NinetyDayPlanPanel({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+          <h2 className="text-subhead font-semibold tracking-tight text-slate-900">
             90-Day plan
           </h2>
           <p className="mt-1 max-w-xl text-sm text-slate-600">
@@ -213,7 +213,7 @@ export function NinetyDayPlanPanel({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:opacity-60"
+            className={buttonClass("main")}
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -301,7 +301,7 @@ export function NinetyDayPlanPanel({
         <button
           type="button"
           onClick={() => addItem()}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm hover:border-sky-300 hover:bg-sky-50"
+          className={buttonClass("second", "small")}
         >
           + Add action
         </button>
@@ -333,7 +333,7 @@ export function NinetyDayPlanPanel({
             return (
               <div
                 key={col.id}
-                className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+                className={cardClass("soft", "p-3")}
               >
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -400,7 +400,7 @@ export function NinetyDayPlanPanel({
               return (
                 <div
                   key={week}
-                  className="w-44 shrink-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                  className={cardClass("plain", "w-44 shrink-0 p-3")}
                 >
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-700">
                     Week {week}

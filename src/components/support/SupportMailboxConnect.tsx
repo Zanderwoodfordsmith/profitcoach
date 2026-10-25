@@ -3,6 +3,7 @@
 import { Link2, Loader2, Mail, Unplug } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
 
 type MailboxAccount = {
   id: string;
@@ -199,7 +200,7 @@ export function SupportMailboxConnect() {
             type="button"
             disabled={busy}
             onClick={() => void disconnect()}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className={buttonClass("second", "small")}
           >
             <Unplug className="h-3.5 w-3.5" aria-hidden />
             Disconnect
@@ -210,7 +211,7 @@ export function SupportMailboxConnect() {
           type="button"
           disabled={busy || !configured}
           onClick={() => void connect(false)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+          className={buttonClass("second", "small")}
           title={
             configured
               ? "Connect support@ Gmail via Unipile — used for inbound tickets and reply emails"
@@ -222,9 +223,9 @@ export function SupportMailboxConnect() {
         </button>
       )}
       {note ? (
-        <span className="text-[11px] text-emerald-700">{note}</span>
+        <span className="text-caption text-emerald-700">{note}</span>
       ) : null}
-      {error ? <span className="text-[11px] text-rose-700">{error}</span> : null}
+      {error ? <span className="text-caption text-rose-700">{error}</span> : null}
     </div>
   );
 }

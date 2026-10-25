@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import type { ProspectRow } from "@/lib/prospectRow";
+import { buttonClass } from "@/components/ui/Button";
 
 type Props = {
   prospect: ProspectRow | null;
@@ -87,14 +88,14 @@ export function ProspectCrmLinkModal({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            className={buttonClass("quiet")}
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className={buttonClass("main")}
           >
             {saving ? (
               <>

@@ -17,6 +17,7 @@ import {
 } from "@/components/coach/WorkshopSessionPicker";
 import { isAdminUnscopedBossProView } from "@/lib/isBossWorkshopPath";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { cardClass } from "@/components/ui/Card";
 
 type PickRow = {
   id: string;
@@ -905,7 +906,7 @@ function CoachWorkshopPageContent() {
 
       <div className="flex min-w-0 flex-col gap-6 overflow-x-hidden">
       {!isMinimalChrome && !sessionSummary && (!loading || sessionSummary) && !error && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className={cardClass("plain", "p-5 sm:p-6")}>
           <WorkshopSessionPicker idPrefix="workshop-main" {...workshopPickerProps} />
         </div>
       )}

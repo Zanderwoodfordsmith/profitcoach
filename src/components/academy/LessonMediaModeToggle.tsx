@@ -26,7 +26,7 @@ export function LessonMediaModeToggle({
 
   const btn = (active: boolean) =>
     compact
-      ? `inline-flex items-center gap-1 rounded px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
+      ? `inline-flex items-center gap-1 rounded px-1.5 py-1 text-kicker font-semibold uppercase transition ${
           active
             ? "bg-white text-slate-900"
             : "text-white/75 hover:bg-white/10 hover:text-white"

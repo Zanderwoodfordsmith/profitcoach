@@ -50,14 +50,14 @@ export function WorkingLessonChat({
         {messages.map((message, index) =>
           message.role === "user" ? (
             <div key={`${index}-${message.role}`} className="flex justify-end">
-              <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-sky-600 px-3.5 py-2.5 text-[15px] leading-relaxed text-white">
+              <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-sky-600 px-3.5 py-2.5 text-read leading-relaxed text-white">
                 {message.content}
               </p>
             </div>
           ) : (
             <p
               key={`${index}-${message.role}`}
-              className="max-w-[95%] whitespace-pre-wrap text-[15px] leading-relaxed text-slate-800"
+              className="max-w-[95%] whitespace-pre-wrap text-read leading-relaxed text-slate-800"
             >
               {message.content}
             </p>
@@ -101,7 +101,7 @@ export function WorkingLessonChat({
             }}
             rows={1}
             placeholder={placeholder}
-            className="min-h-[2.25rem] max-h-28 flex-1 resize-none bg-transparent py-1.5 text-[15px] text-slate-800 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed"
+            className="min-h-[2.25rem] max-h-28 flex-1 resize-none bg-transparent py-1.5 text-read text-slate-800 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed"
           />
           <button
             type="submit"

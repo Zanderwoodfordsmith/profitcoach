@@ -169,7 +169,11 @@ function turnText(input: AgentTurnInput): string {
   const { action } = input;
   const what = `"${action.title}"${action.coachName ? ` for ${action.coachName}` : ""}`;
   const body =
-    action.status === "done"
+    action.draft && action.status === "cancelled"
+      ? `The person pressed Change it on the draft ${what}. Nothing was saved. Ask what they want changed in one short question (unless they already said), then write a new draft with their changes.`
+      : action.draft && action.status === "done"
+        ? `The person saved the draft ${what} to the Blueprint. Result: ${JSON.stringify(action.result ?? null).slice(0, 2_000)}`
+        : action.status === "done"
       ? `The person confirmed ${what}. It ran. Result: ${JSON.stringify(action.result ?? null).slice(0, 4_000)}`
       : action.status === "failed"
         ? `The person confirmed ${what}, but it failed: ${action.error ?? "unknown error"}.`
@@ -276,7 +280,10 @@ export async function runAgentTurn(opts: {
     isError: boolean;
     additions: string[];
   }> {
-    const input = (block.input ?? {}) as AgentToolInput;
+    // Keys starting with "_" are frozen on a card by a gate (a written draft). The model never sets them.
+    const input = Object.fromEntries(
+      Object.entries((block.input ?? {}) as AgentToolInput).filter(([key]) => !key.startsWith("_"))
+    ) as AgentToolInput;
 
     if (block.name === OPEN_CAPABILITY_TOOL) {
       const id = typeof input.id === "string" ? input.id.trim() : "";
@@ -336,20 +343,25 @@ export async function runAgentTurn(opts: {
             coachId: ctx.coach!.id,
             coachName: ctx.coach!.name,
             tool: tool.name,
-            input,
+            input: decision.input ?? input,
             title: decision.title,
             details: decision.details,
             warning: decision.warning,
             preview: decision.preview,
+            before: decision.before,
+            draft: decision.draft,
           });
           emit({ type: "tool_end", id: block.id, name: tool.name, ok: true });
           emit({ type: "action", action });
           return {
-            content: JSON.stringify({
-              status: "awaiting_confirmation",
-              action_id: action.id,
-              card: action.title,
-            }),
+            content: capText(
+              JSON.stringify({
+                status: "awaiting_confirmation",
+                action_id: action.id,
+                card: action.title,
+                ...(decision.forModel ?? {}),
+              })
+            ),
             isError: false,
             additions: [],
           };

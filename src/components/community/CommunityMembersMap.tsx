@@ -9,6 +9,8 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type MapMember = {
   id: string;
@@ -209,7 +211,7 @@ export function CommunityMembersMap() {
   const locationDirty = locationDraft.trim() !== (myLocation?.location ?? "");
 
   return (
-    <div className="relative z-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className={cardClass("plain", "relative z-0 overflow-hidden")}>
       <div className="relative z-0 h-[calc(100vh-220px)] min-h-[480px] w-full">
         {state.status === "loading" ? (
           <div className="flex h-full w-full items-center justify-center text-sm text-slate-500">
@@ -230,7 +232,7 @@ export function CommunityMembersMap() {
 
         {state.status !== "loading" ? (
           <div className="absolute right-3 top-3 z-[1000] w-[min(18.5rem,calc(100%-1.5rem))] rounded-xl border border-slate-200/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-kicker font-semibold uppercase text-slate-500">
               Your location
             </p>
             <label className="sr-only" htmlFor="community-map-location">
@@ -268,16 +270,16 @@ export function CommunityMembersMap() {
             <button
               type="button"
               onClick={() => setPinModalOpen(true)}
-              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+              className={buttonClass("second", "small", "mt-2 w-full")}
             >
               <MapPin className="h-3.5 w-3.5 text-sky-700" aria-hidden />
               {hasPin ? "Update map pin" : "Place pin on map"}
             </button>
             {locationMessage ? (
-              <p className="mt-1.5 text-[11px] text-emerald-700">{locationMessage}</p>
+              <p className="mt-1.5 text-caption text-emerald-700">{locationMessage}</p>
             ) : null}
             {locationError ? (
-              <p className="mt-1.5 text-[11px] text-rose-600">{locationError}</p>
+              <p className="mt-1.5 text-caption text-rose-600">{locationError}</p>
             ) : null}
           </div>
         ) : null}

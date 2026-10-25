@@ -12,6 +12,8 @@ import { useWheelViewMode } from "@/lib/useWheelViewMode";
 import type { StoredInsights } from "@/lib/insightGenerator";
 import { computeAreaScores, getTotalScore } from "@/lib/bossScores";
 import type { AnswersMap } from "@/lib/bossScores";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 const BossGridTransposed = dynamic(
   () =>
@@ -346,7 +348,7 @@ export default function ClientDashboardPage() {
               <button
                 type="button"
                 onClick={editingScores ? stopEditingScores : startEditingScores}
-                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                className={buttonClass("second")}
               >
                 {editingScores ? "Done" : "Edit scores"}
               </button>
@@ -354,7 +356,7 @@ export default function ClientDashboardPage() {
             {!loading && !error && !hasAssessment && (
               <Link
                 href={`/assessment-pro/${encodeURIComponent(coachSlug)}?from=dashboard`}
-                className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-700"
+                className={buttonClass("main")}
               >
                 Take BOSS Review
               </Link>
@@ -535,7 +537,7 @@ export default function ClientDashboardPage() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section className={cardClass("plain", "p-4")}>
               <h2 className="mb-4 text-sm font-semibold text-slate-900">
                 Score breakdown
               </h2>
@@ -543,7 +545,7 @@ export default function ClientDashboardPage() {
                 <BossDoughnut scores={answers} />
               </div>
             </section>
-            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section className={cardClass("plain", "p-4")}>
               <h2 className="mb-4 text-sm font-semibold text-slate-900">
                 Focus areas
               </h2>
@@ -552,7 +554,7 @@ export default function ClientDashboardPage() {
           </div>
 
           {hasAssessment && showCoachBooking ? (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className={cardClass("plain", "p-6")}>
               <h2 className="text-lg font-semibold text-slate-900">
                 Book your strategy call
               </h2>

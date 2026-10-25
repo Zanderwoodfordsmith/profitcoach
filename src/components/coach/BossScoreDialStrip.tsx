@@ -24,6 +24,7 @@ import {
   type ProspectDimensionKey,
 } from "@/lib/prospectScoreGuide";
 import { BossGridInfoIcon } from "@/components/BossGrid/BossGridInfoIcon";
+import { cardClass } from "@/components/ui/Card";
 
 import {
   BOSS_PILLAR_DIAL_GRADIENTS,
@@ -33,8 +34,7 @@ import {
   type BossPillarDialKey,
 } from "@/lib/bossProDialGradients";
 
-const DIAL_CARD_SHELL =
-  "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]";
+const DIAL_CARD_SHELL = cardClass("plain", "overflow-hidden");
 
 const CARD_HEADER =
   "border-b border-slate-600/40 bg-slate-700 px-4 py-2.5 text-sm font-semibold tracking-wide text-white";
@@ -215,7 +215,7 @@ function StrokeRingGauge({
           ) : null}
         </span>
         {centerSecondary ? (
-          <span className="mt-0.5 text-[10px] font-medium tabular-nums text-slate-500 sm:text-[11px]">
+          <span className="mt-0.5 text-caption font-medium tabular-nums text-slate-500">
             {centerSecondary}
           </span>
         ) : null}
@@ -301,7 +301,7 @@ function PillarDialCell({
           }}
           aria-hidden
         />
-        <span className="text-xs font-semibold leading-snug text-slate-700 sm:text-sm">
+        <span className="text-xs font-medium leading-snug text-slate-700 sm:text-sm">
           {stat.label}
         </span>
       </div>
@@ -594,7 +594,7 @@ function ProgressCategoryPopover({
           {description ? (
             <p className="mt-1.5 text-sm leading-snug text-slate-600">{description}</p>
           ) : null}
-          <p className="mt-1.5 text-[11px] text-slate-500">
+          <p className="mt-1.5 text-caption text-slate-500">
             {playbooks.length} playbook{playbooks.length === 1 ? "" : "s"}
           </p>
           <ul className="mt-2 max-h-[220px] space-y-0.5 overflow-y-auto">
@@ -687,7 +687,7 @@ function ProgressLegend({
           accentColor={item.color}
           onPlaybookClick={onPlaybookClick}
         >
-          <span className="inline-flex items-center gap-1 text-[11px] leading-tight text-slate-600">
+          <span className="inline-flex items-center gap-1 text-caption leading-tight text-slate-600">
             <span
               className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/5"
               style={{ backgroundColor: item.color }}

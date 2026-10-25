@@ -5,6 +5,8 @@ import {
   POOL_IMPORT_OPTIONS,
   type PoolImportMode,
 } from "@/components/campaigns/poolImportOptions";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type CampaignAddChoice =
   | { source: "pool" }
@@ -40,10 +42,10 @@ export function CampaignAudienceEmpty({
   return (
     <div className="flex min-h-[min(36rem,70vh)] items-center justify-center px-2 py-10 pb-28 sm:px-6 sm:py-14">
       <div className="mx-auto w-full max-w-[38rem] text-center">
-        <h2 className="text-[1.75rem] font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
+        <h2 className="text-heading font-semibold text-slate-900">
           {heading}
         </h2>
-        <p className="mx-auto mt-3 max-w-[34rem] text-base leading-relaxed text-slate-600 sm:text-[1.0625rem]">
+        <p className="mx-auto mt-3 max-w-[34rem] text-base leading-relaxed text-slate-600 sm:text-read">
           {body}
         </p>
 
@@ -52,11 +54,7 @@ export function CampaignAudienceEmpty({
             <button
               type="button"
               onClick={onSetupSteps}
-              className={`inline-flex h-12 items-center gap-2 rounded-xl px-5 text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 ${
-                hasSteps
-                  ? "border border-slate-300 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50"
-                  : "bg-[#0c5290] text-white hover:bg-[#0a457a]"
-              }`}
+              className={buttonClass(hasSteps ? "second" : "main")}
             >
               <ListOrdered className="h-5 w-5" strokeWidth={2.1} aria-hidden />
               {hasSteps ? "Review steps" : "Set up steps"}
@@ -106,13 +104,13 @@ function AddMethodButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3.5 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+      className={cardClass("raised", "flex w-full items-center gap-3.5 px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40")}
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#0c5290]">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-slate-900">
+        <span className="block text-sm font-medium text-slate-900">
           {label}
         </span>
         <span className="mt-0.5 block text-sm leading-snug text-slate-600">

@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { CalendarClock, Loader2, Pencil, Send, Trash2 } from "lucide-react";
-import { LI_BLUE, postTypeLabel, type LinkedInPostItem } from "./types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
+import { postTypeLabel, type LinkedInPostItem } from "./types";
 
 type Props = {
   items: LinkedInPostItem[];
@@ -153,7 +155,7 @@ export function LinkedInLibraryTab({
               return (
                 <li
                   key={item.id}
-                  className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+                  className={cardClass("plain", "flex flex-col overflow-hidden")}
                 >
                   {thumb && isVideo ? (
                     // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -173,7 +175,7 @@ export function LinkedInLibraryTab({
                     />
                   ) : null}
                   <div className="flex flex-1 flex-col p-3">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <div className="flex items-center gap-2 text-kicker font-semibold uppercase text-slate-400">
                       <span>{postTypeLabel(item.post_type)}</span>
                     </div>
                     <p className="mt-1 line-clamp-3 flex-1 text-sm text-slate-800">
@@ -192,8 +194,7 @@ export function LinkedInLibraryTab({
                             type="button"
                             disabled={busyId === item.id}
                             onClick={() => void confirmSchedule(item)}
-                            className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white"
-                            style={{ backgroundColor: LI_BLUE }}
+                            className={buttonClass("main", "small")}
                           >
                             Confirm
                           </button>
@@ -203,7 +204,7 @@ export function LinkedInLibraryTab({
                               setScheduleForId(null);
                               setScheduledAtLocal("");
                             }}
-                            className="text-[11px] font-semibold text-slate-500"
+                            className={buttonClass("quiet", "small")}
                           >
                             Cancel
                           </button>
@@ -214,7 +215,7 @@ export function LinkedInLibraryTab({
                         <button
                           type="button"
                           onClick={() => onUseInComposer(item)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                          className={buttonClass("second", "small")}
                         >
                           <Pencil className="h-3 w-3" />
                           Edit
@@ -226,7 +227,7 @@ export function LinkedInLibraryTab({
                             setScheduleForId(item.id);
                             setScheduledAtLocal("");
                           }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                          className={buttonClass("second", "small")}
                         >
                           <CalendarClock className="h-3 w-3" />
                           Schedule
@@ -235,8 +236,7 @@ export function LinkedInLibraryTab({
                           type="button"
                           disabled={busyId === item.id}
                           onClick={() => void postNow(item)}
-                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-white"
-                          style={{ backgroundColor: LI_BLUE }}
+                          className={buttonClass("main", "small")}
                         >
                           {busyId === item.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -249,7 +249,7 @@ export function LinkedInLibraryTab({
                           type="button"
                           disabled={busyId === item.id}
                           onClick={() => void deleteDraft(item.id)}
-                          className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50"
+                          className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-caption font-semibold text-rose-600 hover:bg-rose-50"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>

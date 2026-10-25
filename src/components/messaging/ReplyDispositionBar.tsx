@@ -195,7 +195,7 @@ export function ReplyDispositionBar({
                   title="Clear this mark if you're not sure yet"
                   onMouseEnter={() => setActiveIndex(OPTIONS.length)}
                   onClick={() => choose(null)}
-                  className={`mt-0.5 px-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 ${
+                  className={`mt-0.5 px-1 text-caption font-medium text-slate-500 hover:text-slate-800 ${
                     activeIndex === OPTIONS.length
                       ? "rounded outline outline-2 outline-offset-1 outline-sky-300"
                       : ""

@@ -3,6 +3,8 @@
 import { useId, useRef, useState, type ReactNode } from "react";
 import { MessageSquare, Mic, Upload, Video, X } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   formatWaitDuration,
@@ -75,7 +77,7 @@ export function InviteOpenProfileInmail({
           <span className="font-medium text-slate-800">
             Send them a message instead of an invite
           </span>
-          <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-500">
+          <span className="mt-0.5 block text-caption leading-relaxed text-slate-500">
             Open Profiles take messages from anyone, so it lands straight in
             their inbox, doesn&apos;t use your weekly invites, and has room for
             up to 1,900 characters.
@@ -94,7 +96,7 @@ export function InviteOpenProfileInmail({
             onCommit={onCommit}
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[11px] leading-relaxed text-slate-500">
+            <p className="text-caption leading-relaxed text-slate-500">
               Empty, or with [brackets] still in it, they get your connection
               note instead.
             </p>
@@ -105,7 +107,7 @@ export function InviteOpenProfileInmail({
                   patch({ open_profile_message: OPEN_PROFILE_MESSAGE_TEMPLATE });
                   onCommit();
                 }}
-                className="rounded-md border border-sky-200 bg-white px-2.5 py-1 text-xs font-medium text-[#0c5290] hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                className={buttonClass("second", "small")}
               >
                 Start from the template
               </button>
@@ -182,9 +184,9 @@ export function InviteNoConnectBranch({
       {selected && !libraryMode ? (
         <div className="mt-2 space-y-2">
           {campaigns.length === 0 ? (
-            <p className="text-[11px] text-rose-800">Create another campaign first.</p>
+            <p className="text-caption text-rose-800">Create another campaign first.</p>
           ) : (
-            <label className="block text-[11px] font-medium text-slate-600">
+            <label className="block text-caption font-medium text-slate-600">
               Campaign
               <select
                 value={branch.no_connect_campaign_id ?? ""}
@@ -207,7 +209,7 @@ export function InviteNoConnectBranch({
             </label>
           )}
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-medium text-slate-600">Wait</span>
+            <span className="text-caption font-medium text-slate-600">Wait</span>
             <input
               type="number"
               min={1}
@@ -245,7 +247,7 @@ export function InviteNoConnectBranch({
                 </option>
               ))}
             </select>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-caption text-slate-500">
               ({formatWaitDuration(branch.no_connect_wait_hours)})
             </span>
           </div>
@@ -383,7 +385,7 @@ export function MessageStepMedia({
                 type="button"
                 aria-pressed={on}
                 onClick={() => selectKind(option.id)}
-                className={`inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-[13px] font-semibold leading-tight transition duration-150 ${
+                className={`inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-ui font-semibold leading-tight transition duration-150 ${
                   on
                     ? "bg-[#1a8fd4] text-white"
                     : "text-slate-400 hover:text-slate-600"
@@ -404,7 +406,7 @@ export function MessageStepMedia({
             disabled={busy}
             aria-describedby={hintId}
             onClick={() => inputRef.current?.click()}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#0c5290] px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-[#0c5290]/20 hover:bg-[#0a4478] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a8fd4] focus-visible:ring-offset-2 disabled:opacity-50"
+            className={buttonClass("main", "normal", "shrink-0")}
           >
             <Upload className="h-4 w-4" aria-hidden />
             {busy ? "Uploading…" : "Upload"}
@@ -431,7 +433,7 @@ export function MessageStepMedia({
         </div>
       ) : null}
       {media ? (
-        <div className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+        <div className={cardClass("soft", "mt-2 flex items-center gap-2 px-3 py-2")}>
           {media.kind === "voice" ? (
             <Mic className="h-4 w-4 text-slate-500" aria-hidden />
           ) : (
@@ -448,7 +450,7 @@ export function MessageStepMedia({
                 href={signedUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] font-semibold text-[#0c5290] hover:underline"
+                className="text-caption font-medium text-[#0c5290] hover:underline"
               >
                 Preview
               </a>
@@ -469,7 +471,7 @@ export function MessageStepMedia({
           </button>
         </div>
       ) : null}
-      {error ? <p className="mt-1 text-[11px] text-rose-700">{error}</p> : null}
+      {error ? <p className="mt-1 text-caption text-rose-700">{error}</p> : null}
     </div>
   );
 }

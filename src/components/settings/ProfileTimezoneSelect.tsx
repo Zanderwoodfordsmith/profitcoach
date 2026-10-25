@@ -105,10 +105,10 @@ export function ProfileTimezoneSelect({
         ))}
       </ProfileMinimalSelect>
       {tzBusy ? (
-        <p className="mt-0.5 text-[11px] text-slate-500">Saving…</p>
+        <p className="mt-0.5 text-caption text-slate-500">Saving…</p>
       ) : null}
       {tzError ? (
-        <p className="mt-0.5 text-[11px] text-rose-600">{tzError}</p>
+        <p className="mt-0.5 text-caption text-rose-600">{tzError}</p>
       ) : null}
     </div>
   );

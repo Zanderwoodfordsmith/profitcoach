@@ -3,6 +3,7 @@ import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { normalizeOptimizerDraft } from "@/lib/linkedinProfileOptimizer/draft";
+import { findCoachLinkedInUrl } from "@/lib/practiceKnowledge/coachLinkedIn";
 import type {
   LinkedInImportProfile,
   ProfileOptimizerDraft,
@@ -56,9 +57,11 @@ export async function GET(request: Request) {
     );
   }
 
+  // Before an import, offer the address from wherever we already have it (Blueprint, connected LinkedIn).
   const savedLinkedinUrl =
     (profileRow?.linkedin_url as string | null)?.trim() ||
     (data?.linkedin_url as string | null) ||
+    (!data ? (await findCoachLinkedInUrl(coachId).catch(() => null))?.url : null) ||
     null;
 
   if (!data) {

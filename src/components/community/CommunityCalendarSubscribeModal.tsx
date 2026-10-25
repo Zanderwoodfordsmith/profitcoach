@@ -5,6 +5,7 @@ import { CalendarPlus, Check, Copy, Download, X } from "lucide-react";
 
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { buttonClass } from "@/components/ui/Button";
 
 type SubscribeUrls = {
   httpsUrl: string;
@@ -232,7 +233,7 @@ export function CommunityCalendarSubscribeModal({
               <button
                 type="button"
                 onClick={() => void downloadIcs()}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700"
+                className={buttonClass("main", "normal", "w-full")}
               >
                 <Download className="h-4 w-4" aria-hidden />
                 Download .ics
@@ -252,20 +253,20 @@ export function CommunityCalendarSubscribeModal({
                   <button
                     type="button"
                     disabled
-                    className="flex h-11 w-full cursor-not-allowed items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-400"
+                    className={buttonClass("second", "normal", "w-full")}
                   >
                     Google Calendar
                   </button>
                   <a
                     href={urls.appleUrl}
-                    className="flex h-11 items-center justify-center rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                    className={buttonClass("second", "normal", "w-full")}
                   >
                     Apple Calendar
                   </a>
                   <button
                     type="button"
                     disabled
-                    className="flex h-11 w-full cursor-not-allowed items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-400"
+                    className={buttonClass("second", "normal", "w-full")}
                   >
                     Outlook
                   </button>
@@ -276,13 +277,13 @@ export function CommunityCalendarSubscribeModal({
                     href={urls.googleUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-11 items-center justify-center rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                    className={buttonClass("second", "normal", "w-full")}
                   >
                     Google Calendar
                   </a>
                   <a
                     href={urls.appleUrl}
-                    className="flex h-11 items-center justify-center rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                    className={buttonClass("second", "normal", "w-full")}
                   >
                     Apple Calendar
                   </a>
@@ -290,7 +291,7 @@ export function CommunityCalendarSubscribeModal({
                     href={urls.outlookUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-11 items-center justify-center rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                    className={buttonClass("second", "normal", "w-full")}
                   >
                     Outlook
                   </a>
@@ -300,7 +301,7 @@ export function CommunityCalendarSubscribeModal({
               <button
                 type="button"
                 onClick={() => void copyFeedUrl()}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                className={buttonClass("second", "normal", "w-full")}
               >
                 {copied ? (
                   <>
@@ -350,7 +351,7 @@ export function CommunityCalendarSubscribeButton({
         onClick={() => setOpen(true)}
         className={
           className ??
-          "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3.5 text-sm font-medium text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
+          buttonClass("second", "normal", "shrink-0")
         }
       >
         <CalendarPlus className="h-4 w-4" strokeWidth={1.75} aria-hidden />

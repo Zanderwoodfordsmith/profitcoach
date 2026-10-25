@@ -27,6 +27,7 @@ import {
   providerLabel,
   type UnipileConnectProvider,
 } from "@/lib/unipile/providers";
+import { buttonClass } from "@/components/ui/Button";
 
 type AccountRow = {
   id: string;
@@ -262,7 +263,7 @@ function IntegrationRow({
     >
       <div className="min-w-0 pr-2">
         <div className="flex items-center gap-1">
-          <p className="text-sm font-semibold leading-snug text-slate-900">
+          <p className="text-sm font-medium leading-snug text-slate-900">
             {title}
           </p>
           {info ? (
@@ -270,7 +271,7 @@ function IntegrationRow({
           ) : null}
         </div>
         {subtitle ? (
-          <p className="truncate text-[11px] leading-snug text-slate-500">
+          <p className="truncate text-caption leading-snug text-slate-500">
             {subtitle}
           </p>
         ) : null}
@@ -643,10 +644,10 @@ export function IntegrationsSettingsTab() {
 
   const statusBoxClass =
     "inline-flex h-7 w-full items-center justify-center rounded-md px-2 text-xs font-medium";
-  const connectButtonClass = `${statusBoxClass} border border-slate-200 bg-white text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50`;
+  const connectButtonClass = buttonClass("second", "small", "w-full");
   const connectedClass = `${statusBoxClass} bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200`;
   const connectingClass = `${statusBoxClass} bg-slate-50 text-slate-500 ring-1 ring-inset ring-slate-200`;
-  const comingSoonClass = `${statusBoxClass} bg-slate-50 text-[11px] text-slate-400 ring-1 ring-inset ring-slate-200`;
+  const comingSoonClass = `${statusBoxClass} bg-slate-50 text-caption text-slate-400 ring-1 ring-inset ring-slate-200`;
 
   return (
     <ProfileSectionCard
@@ -656,7 +657,7 @@ export function IntegrationsSettingsTab() {
           type="button"
           disabled={busy === "sync" || loading}
           onClick={() => void syncAll()}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
+          className={buttonClass("quiet", "small")}
         >
           {busy === "sync" ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

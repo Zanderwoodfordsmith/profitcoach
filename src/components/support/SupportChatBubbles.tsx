@@ -24,6 +24,7 @@ import {
   type SupportReply,
   type SupportTicketAuthor,
 } from "@/lib/support/tickets";
+import { buttonClass } from "@/components/ui/Button";
 
 function calendarDayKey(iso: string): string {
   const d = new Date(iso);
@@ -177,7 +178,7 @@ function SupportInternalNoteCard({
               className="h-3.5 w-3.5 shrink-0 text-amber-600"
               strokeWidth={2}
             />
-            <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-amber-800">
+            <span className="min-w-0 flex-1 truncate text-caption font-medium text-amber-800">
               Internal note
               <span className="font-normal text-amber-700/70">
                 {" · "}
@@ -186,11 +187,11 @@ function SupportInternalNoteCard({
               </span>
             </span>
           </button>
-          <span className="shrink-0 text-[10px] tabular-nums text-amber-600/70">
+          <span className="shrink-0 text-caption tabular-nums text-amber-600/70">
             {formatShortTime(note.created_at)}
           </span>
           {note.edited_at ? (
-            <span className="shrink-0 text-[10px] text-amber-600/70">
+            <span className="shrink-0 text-caption text-amber-600/70">
               · edited
             </span>
           ) : null}
@@ -244,20 +245,20 @@ function SupportInternalNoteCard({
                   setError(null);
                   setDraft(note.body);
                 }}
-                className="rounded-md px-2 py-1 text-[11px] font-medium text-amber-900/75 hover:bg-amber-100 disabled:opacity-50"
+                className="rounded-md px-2 py-1 text-caption font-medium text-amber-900/75 hover:bg-amber-100 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy || !canSave}
-                className="rounded-md bg-amber-800 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-amber-900 disabled:cursor-not-allowed disabled:bg-amber-300"
+                className="rounded-md bg-amber-800 px-2.5 py-1 text-caption font-medium text-white hover:bg-amber-900 disabled:cursor-not-allowed disabled:bg-amber-300"
               >
                 {busy ? "Saving…" : "Save"}
               </button>
             </div>
             {error ? (
-              <p className="text-[10px] text-rose-600">{error}</p>
+              <p className="text-caption text-rose-600">{error}</p>
             ) : null}
           </form>
         ) : open ? (
@@ -267,7 +268,7 @@ function SupportInternalNoteCard({
               className="min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed text-amber-950"
             />
             {error ? (
-              <p className="mt-1 text-[10px] text-rose-600">{error}</p>
+              <p className="mt-1 text-caption text-rose-600">{error}</p>
             ) : null}
           </div>
         ) : null}
@@ -288,7 +289,7 @@ export function SupportChatAvatar({
   size?: "xs" | "md";
 }) {
   const initials = profileInitialsFromName(name);
-  const box = size === "xs" ? "h-5 w-5 text-[9px]" : "h-9 w-9 text-[11px]";
+  const box = size === "xs" ? "h-5 w-5 text-[9px]" : "h-9 w-9 text-caption";
   if (avatarUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -581,18 +582,14 @@ export function SupportChatBubble({
                   setError(null);
                   setDraft(reply.body);
                 }}
-                className={
-                  outbound
-                    ? "rounded-md px-2 py-1 text-[11px] font-medium text-sky-900/75 hover:bg-sky-200/50 disabled:opacity-50"
-                    : "rounded-md px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                }
+                className={buttonClass("quiet", "small")}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy || !canSave}
-                className="rounded-md bg-sky-700 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-sky-300"
+                className={buttonClass("main", "small")}
               >
                 {busy ? "Saving…" : "Save"}
               </button>
@@ -613,7 +610,7 @@ export function SupportChatBubble({
             outbound ? "justify-end" : "justify-start"
           } ${metaTone}`}
         >
-          <span className="text-[10px] tabular-nums">
+          <span className="text-caption tabular-nums">
             {formatShortTime(reply.created_at)}
           </span>
           {showEmailChannel && reply.via_email ? (
@@ -623,7 +620,7 @@ export function SupportChatBubble({
             />
           ) : null}
           {reply.edited_at ? (
-            <span className="text-[10px] opacity-80">· edited</span>
+            <span className="text-caption opacity-80">· edited</span>
           ) : null}
           {canManage && !editing ? (
             <SupportReplyActionsMenu
@@ -643,8 +640,8 @@ export function SupportChatBubble({
           <p
             className={
               outbound
-                ? "mt-1 text-[10px] text-rose-800"
-                : "mt-1 text-[10px] text-rose-600"
+                ? "mt-1 text-caption text-rose-800"
+                : "mt-1 text-caption text-rose-600"
             }
           >
             {error}
@@ -711,7 +708,7 @@ export function SupportChatThread({
       {byDay.map((group) => (
         <div key={group.key} className="space-y-3">
           <div className="flex justify-center py-1">
-            <span className="rounded-full bg-white/90 px-3 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
+            <span className="rounded-full bg-white/90 px-3 py-0.5 text-caption font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
               {group.label}
             </span>
           </div>
@@ -896,14 +893,14 @@ export function ScheduledSupportBubble({
                   setError(null);
                   setDraft(body);
                 }}
-                className="rounded-md px-2 py-1 text-[11px] font-medium text-sky-900/75 hover:bg-sky-200/50 disabled:opacity-50"
+                className={buttonClass("quiet", "small")}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={locked || !canSave}
-                className="rounded-md bg-sky-700 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-sky-300"
+                className={buttonClass("main", "small")}
               >
                 {saving ? "Saving…" : "Save"}
               </button>
@@ -921,7 +918,7 @@ export function ScheduledSupportBubble({
         )}
         <div className="mt-1.5 flex items-center justify-end gap-1 text-sky-800/55">
           <span
-            className={`rounded px-1 py-px text-[10px] font-semibold ${
+            className={`rounded px-1 py-px text-caption font-semibold ${
               failed
                 ? "bg-rose-100 text-rose-800"
                 : "bg-amber-100 text-amber-800"
@@ -929,7 +926,7 @@ export function ScheduledSupportBubble({
           >
             {failed ? "Failed" : "Scheduled"}
           </span>
-          <span className="text-[10px] tabular-nums">
+          <span className="text-caption tabular-nums">
             {scheduledTimeLabel(scheduledFor)}
           </span>
           {emailNotify ? (
@@ -953,9 +950,9 @@ export function ScheduledSupportBubble({
           ) : null}
         </div>
         {failed && lastError ? (
-          <p className="mt-1 text-[10px] text-rose-800">{lastError}</p>
+          <p className="mt-1 text-caption text-rose-800">{lastError}</p>
         ) : null}
-        {error ? <p className="mt-1 text-[10px] text-rose-800">{error}</p> : null}
+        {error ? <p className="mt-1 text-caption text-rose-800">{error}</p> : null}
       </div>
       <SupportChatAvatar name={name} avatarUrl={author?.avatar_url} tone="sky" />
     </div>

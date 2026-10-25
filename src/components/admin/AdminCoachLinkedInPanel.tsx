@@ -10,6 +10,8 @@ import type {
 } from "@/lib/apify/linkedinProfileTypes";
 import { formatDateDisplay } from "@/lib/formatDateDisplay";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export type AdminCoachLinkedInProfile = {
   linkedin_url: string;
@@ -534,9 +536,9 @@ export function AdminCoachLinkedInPanel({
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-6">
+      <div className={cardClass("plain", "flex flex-wrap items-start justify-between gap-3 p-5 sm:p-6")}>
         <div>
-          <h2 className="text-xl font-bold tracking-[-0.02em] text-slate-900 md:text-2xl">
+          <h2 className="text-subhead font-semibold text-slate-900 md:text-2xl">
             LinkedIn profile
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-slate-600">
@@ -564,7 +566,7 @@ export function AdminCoachLinkedInPanel({
               href={linkedinUrl || profile?.linkedin_url || "#"}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+              className={buttonClass("second")}
             >
               Open profile
               <ExternalLink className="h-4 w-4" aria-hidden />
@@ -574,7 +576,7 @@ export function AdminCoachLinkedInPanel({
             type="button"
             disabled={!canImport || importing}
             onClick={() => void handleRefresh(Boolean(profile))}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className={buttonClass("second")}
           >
             {importing ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

@@ -45,6 +45,8 @@ import { Caret, MetaDropdown, SCORE_TONE, ScoreDropdown, useDismiss } from "@/co
 import { WorkshopActivityPanel } from "@/components/BossGrid/WorkshopActivityPanel";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import type { WorkshopComment } from "@/lib/playbookSessionNotes";
@@ -939,7 +941,7 @@ export default function AdminRoadmapPage() {
                             type="button"
                             aria-expanded={!folded}
                             onClick={() => toggleSection(section.status)}
-                            className={`flex w-full items-center gap-1.5 px-1 py-1 text-left text-[11px] font-bold uppercase tracking-wide ${section.tone}`}
+                            className={`flex w-full items-center gap-1.5 px-1 py-1 text-left text-kicker font-semibold uppercase ${section.tone}`}
                           >
                             <Caret open={!folded} />
                             {section.label}
@@ -1006,7 +1008,7 @@ export default function AdminRoadmapPage() {
                   {FILTER_STATUS_GROUPS.map((group, gi) => (
                     <div key={gi}>
                       {group.label ? (
-                        <p className="px-2 pb-0.5 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="px-2 pb-0.5 pt-1.5 text-kicker font-semibold uppercase text-slate-400">
                           {group.label}
                         </p>
                       ) : null}
@@ -1295,7 +1297,7 @@ export default function AdminRoadmapPage() {
             onClick={() =>
               setComposingIn((c) => (c === "toolbar" ? null : "toolbar"))
             }
-            className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-700"
+            className={buttonClass("main", "small")}
           >
             <Plus className="h-3.5 w-3.5" /> Add job
           </button>
@@ -1526,19 +1528,19 @@ function CleanJobCard({
           // Project line carries the Total, so the title gets the full width.
           <>
             <div className="mb-0.5 flex items-center justify-between gap-2">
-              <p className="truncate text-[11px] font-medium text-slate-500">{job.project}</p>
+              <p className="truncate text-caption font-medium text-slate-500">{job.project}</p>
               <span className="flex shrink-0 items-center gap-1.5">
                 {job.urgent ? <UrgentFlag /> : null}
                 {total !== null ? <TotalBadge total={total} size="sm" /> : null}
               </span>
             </div>
-            <p className="line-clamp-3 text-sm font-semibold leading-snug text-slate-900">
+            <p className="line-clamp-3 text-sm font-medium leading-snug text-slate-900">
               {job.title}
             </p>
           </>
         ) : (
           <div className="flex items-start justify-between gap-2">
-            <p className="line-clamp-3 text-sm font-semibold leading-snug text-slate-900">
+            <p className="line-clamp-3 text-sm font-medium leading-snug text-slate-900">
               {job.title}
             </p>
             <span className="flex shrink-0 items-center gap-1.5">
@@ -1656,7 +1658,7 @@ function JobCard({
       }`}
     >
       {showProject && job.project ? (
-        <p className="mb-0.5 truncate text-[11px] font-semibold text-slate-500">
+        <p className="mb-0.5 truncate text-caption font-medium text-slate-500">
           {job.project}
         </p>
       ) : null}
@@ -1734,7 +1736,7 @@ function StatusDropdown({
           {STATUS_MENU.map((group, gi) => (
             <div key={gi} className={gi > 0 ? "mt-1 border-t border-slate-100 pt-1" : ""}>
               {group.label ? (
-                <p className="px-2 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                <p className="px-2 pb-0.5 pt-1 text-kicker font-semibold uppercase text-slate-400">
                   {group.label}
                 </p>
               ) : null}
@@ -2079,7 +2081,7 @@ function JobDetailModal({
             <div className="px-6 pb-8 pt-7 md:px-10 md:pt-8">
               <div ref={headingRef} className="flex items-start justify-between gap-6">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-kicker font-semibold uppercase text-slate-500">
                     Job <JobNumber n={job.job_number} />
                     {job.project ? <span className="text-slate-400"> · {job.project}</span> : null}
                   </p>
@@ -2092,7 +2094,7 @@ function JobDetailModal({
                       const t = title.trim();
                       if (t && t !== job.title) void onPatch(job.id, { title: t });
                     }}
-                    className="mt-1 w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-2xl font-bold tracking-tight text-slate-900 focus:outline-none focus:ring-0 md:text-3xl"
+                    className="mt-1 w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-2xl font-semibold tracking-tight text-slate-900 focus:outline-none focus:ring-0 md:text-heading"
                   />
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -2303,7 +2305,7 @@ function JobDetailModal({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 disabled:opacity-40"
+                  className={buttonClass("second", "small")}
                 >
                   {uploading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -2370,7 +2372,7 @@ function JobDetailModal({
                 <button
                   type="button"
                   onClick={() => void onDelete(job.id)}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                  className={buttonClass("delete", "small")}
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Delete job
                 </button>
@@ -2442,7 +2444,7 @@ function AddJobComposer({
           if (e.key === "Escape") onCancel();
         }}
         placeholder="What's the job?"
-        className="w-full resize-none border-0 bg-transparent p-1 text-[13px] leading-snug text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
+        className="w-full resize-none border-0 bg-transparent p-1 text-ui leading-snug text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
       />
       <div className="flex flex-wrap items-center gap-1">
         {areas.map((a) => (
@@ -2450,7 +2452,7 @@ function AddJobComposer({
             key={a}
             type="button"
             onClick={() => setArea(a)}
-            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+            className={`rounded-full px-2 py-0.5 text-caption font-semibold transition ${
               area === a
                 ? areaMeta(a).chip
                 : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
@@ -2467,7 +2469,7 @@ function AddJobComposer({
               type="button"
               onClick={() => void submit()}
               disabled={!title.trim()}
-              className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-sky-700 transition hover:bg-sky-50 disabled:text-slate-300 disabled:hover:bg-transparent"
+              className="rounded px-1.5 py-0.5 text-caption font-medium text-sky-700 transition hover:bg-sky-50 disabled:text-slate-300 disabled:hover:bg-transparent"
             >
               Add
             </button>
@@ -2611,7 +2613,7 @@ function ZoneLabel({
   return (
     <div className={`px-0.5 leading-tight ${right ? "text-right" : ""}`}>
       <p className={`text-sm font-semibold ${zone.text}`}>{zone.label}</p>
-      <p className={`text-[11px] opacity-80 ${zone.text}`}>{zone.hint}</p>
+      <p className={`text-caption opacity-80 ${zone.text}`}>{zone.hint}</p>
     </div>
   );
 }
@@ -2763,7 +2765,7 @@ function ImpactEaseGraph({
   return (
     <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-stretch">
       <div
-        className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-slate-200 bg-white py-3 pl-1 pr-3"
+        className={cardClass("plain", "min-w-0 flex-1 overflow-x-auto py-3 pl-1 pr-3")}
         style={{ height }}
       >
         <div className="flex h-full min-w-[40rem] flex-col">
@@ -2826,7 +2828,7 @@ function ImpactEaseGraph({
                                 return next;
                               })
                             }
-                            className="self-start rounded px-1 py-0.5 text-[11px] font-semibold text-slate-500 transition hover:bg-white/70 hover:text-slate-800"
+                            className="self-start rounded px-1 py-0.5 text-caption font-medium text-slate-500 transition hover:bg-white/70 hover:text-slate-800"
                           >
                             {openCells.has(key) ? "Show fewer" : `+${cellJobs.length - CELL_LIMIT} more`}
                           </button>
@@ -2855,7 +2857,7 @@ function ImpactEaseGraph({
                 </div>
               ))}
             </div>
-            <div className="flex shrink-0 items-center justify-between pl-0.5 pt-1.5 text-sm font-semibold text-slate-700">
+            <div className="flex shrink-0 items-center justify-between pl-0.5 pt-1.5 text-sm font-medium text-slate-700">
               <span>↑ Impact: bigger results</span>
               <span>Ease: quicker to deliver →</span>
             </div>
@@ -2872,7 +2874,7 @@ function ImpactEaseGraph({
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           <span
-            className="text-xs font-semibold"
+            className="text-xs font-medium"
             style={{ writingMode: "vertical-rl" }}
           >
             Effort · Not scored {unscored.length}
@@ -2883,7 +2885,7 @@ function ImpactEaseGraph({
         className={`w-full shrink-0 flex-col gap-3 lg:w-72 ${sidebarOpen ? "flex" : "flex lg:hidden"}`}
         style={{ height }}
       >
-        <section className="relative shrink-0 rounded-xl border border-slate-200 bg-white p-4">
+        <section className={cardClass("plain", "relative shrink-0 p-4")}>
           <button
             type="button"
             onClick={toggleSidebar}
@@ -2951,7 +2953,7 @@ function ImpactEaseGraph({
               <p className="px-1 pb-1 text-xs text-slate-500">Everything planned is scored.</p>
             ) : null}
           </div>
-          <div className="mt-2 border-t border-slate-200/80 px-1 pt-2 text-[11px] text-slate-500">
+          <div className="mt-2 border-t border-slate-200/80 px-1 pt-2 text-caption text-slate-500">
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
               {[
                 { color: "#2563eb", label: "In progress" },
@@ -3004,7 +3006,7 @@ function GraphChip({
         onOpen();
       }}
       title={`#${job.job_number} · ${job.title} (${STATUS_META[job.status].label})`}
-      className={`flex min-w-0 cursor-pointer items-center gap-1.5 rounded border bg-white px-1.5 py-1 text-[11px] font-medium leading-tight text-slate-800 transition hover:border-slate-300 hover:shadow-sm active:cursor-grabbing ${
+      className={`flex min-w-0 cursor-pointer items-center gap-1.5 rounded border bg-white px-1.5 py-1 text-caption font-medium leading-tight text-slate-800 transition hover:border-slate-300 hover:shadow-sm active:cursor-grabbing ${
         job.status === "parked" ? "border-dashed border-slate-300 opacity-60" : "border-slate-200"
       }`}
     >
@@ -3362,7 +3364,7 @@ function RoadmapListTable({
                             </td>
                             <td className="px-3 py-2.5">
                               <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_META[job.status].chip}`}
+                                className={`rounded-full px-2 py-0.5 text-caption font-semibold ${STATUS_META[job.status].chip}`}
                               >
                                 {STATUS_META[job.status].label}
                               </span>

@@ -31,6 +31,8 @@ import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
 import type { CampaignAddChoice } from "@/components/campaigns/CampaignAudienceEmpty";
 import { dispositionFromInterestOutcome } from "@/lib/prospects/replyDispositionInfer";
@@ -165,7 +167,7 @@ function ProgressRail({ dots }: { dots: LeadProgressDot[] }) {
         const current = dot.state === "current";
         const error = dot.state === "error";
         const size = current
-          ? "h-7 w-7 text-[11px] font-semibold"
+          ? "h-7 w-7 text-caption font-semibold"
           : remaining
             ? "h-3.5 w-3.5 text-[8px]"
             : "h-5 w-5 text-[9px] font-medium";
@@ -678,7 +680,7 @@ export function CampaignProspectsActivityTable({
           {repliesHref ? (
             <Link
               href={repliesHref}
-              className="ml-1 inline-flex h-10 shrink-0 items-center rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-semibold text-slate-800 hover:border-slate-400 hover:bg-slate-50"
+              className={buttonClass("second", "normal", "ml-1 shrink-0")}
             >
               View replies
             </Link>
@@ -686,7 +688,7 @@ export function CampaignProspectsActivityTable({
           <button
             type="button"
             onClick={() => onAdd()}
-            className="inline-flex h-10 shrink-0 items-center rounded-lg bg-[#0c5290] px-3.5 text-sm font-semibold text-white hover:bg-[#0a457a]"
+            className={buttonClass("main", "normal", "shrink-0")}
           >
             Add prospects
           </button>
@@ -702,10 +704,10 @@ export function CampaignProspectsActivityTable({
         </div>
       ) : (
         <div
-          className="overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200 bg-white"
+          className={cardClass("plain", "overflow-x-auto overflow-y-hidden")}
           aria-label="Campaign prospect activity"
         >
-          <div className={`${ROW} border-b border-slate-200 bg-slate-50 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500`}>
+          <div className={`${ROW} border-b border-slate-200 bg-slate-50 py-2.5 text-kicker font-semibold uppercase text-slate-500`}>
             <div className="flex w-8 shrink-0 items-center justify-center">
               <input
                 type="checkbox"
@@ -1005,7 +1007,7 @@ function ContactCell({
       <div
         id={panelId}
         role="tooltip"
-        className="fixed z-[220] rounded-xl border border-slate-200 bg-white p-4 shadow-xl ring-1 ring-slate-900/5"
+        className={cardClass("raised", "fixed z-[220] p-4")}
         style={{
           left: position.left,
           top: position.top,
@@ -1061,7 +1063,7 @@ function ContactCell({
           </div>
         ) : null}
         {profile?.about ? (
-          <p className="mt-3 line-clamp-5 whitespace-pre-line text-[13px] leading-relaxed text-slate-700">
+          <p className="mt-3 line-clamp-5 whitespace-pre-line text-ui leading-relaxed text-slate-700">
             {profile.about}
           </p>
         ) : null}
@@ -1070,7 +1072,7 @@ function ContactCell({
             {href ? (
               <Link
                 href={href}
-                className="inline-flex h-8 items-center rounded-lg bg-[#0c5290] px-3 text-xs font-semibold text-white hover:bg-[#0a457a]"
+                className={buttonClass("main", "small")}
               >
                 Open prospect
               </Link>
@@ -1078,7 +1080,7 @@ function ContactCell({
               <button
                 type="button"
                 onClick={() => void openLead()}
-                className="inline-flex h-8 items-center rounded-lg bg-[#0c5290] px-3 text-xs font-semibold text-white hover:bg-[#0a457a]"
+                className={buttonClass("main", "small")}
               >
                 Open prospect
               </button>
@@ -1088,7 +1090,7 @@ function ContactCell({
                 href={lead.linkedin_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:border-slate-400 hover:bg-slate-50"
+                className={buttonClass("second", "small")}
               >
                 <LinkedInSolidIcon className="h-3.5 w-3.5" />
                 LinkedIn
@@ -1267,7 +1269,7 @@ function ProgressHoverCard({
         id={panelId}
         role="dialog"
         aria-label={`Sequence progress for ${name}`}
-        className="fixed z-[220] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5"
+        className={cardClass("raised", "fixed z-[220] overflow-hidden")}
         style={{
           left: position.left,
           top: position.top,
@@ -1279,7 +1281,7 @@ function ProgressHoverCard({
       >
         <div className="border-b border-slate-100 px-3 py-2.5">
           <p className="truncate text-sm font-semibold text-slate-900">{name}</p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          <p className="mt-0.5 text-caption text-slate-500">
             {dots.length
               ? `${progressDoneCount(dots)} of ${dots.length} steps done`
               : "No sequence steps yet"}
@@ -1389,7 +1391,7 @@ function LeadActivityDetail({
       {lead.last_error ? (
         <p className="text-xs text-rose-700">{lead.last_error}</p>
       ) : null}
-      <ol className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+      <ol className={cardClass("plain", "divide-y divide-slate-200")}>
         {action.map((step) => {
           const job = [...jobs]
             .filter((j) => j.step_id === step.id)

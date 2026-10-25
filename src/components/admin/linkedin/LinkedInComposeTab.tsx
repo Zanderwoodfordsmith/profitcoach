@@ -31,6 +31,8 @@ import {
   type LinkedInPostItem,
   type LinkedInProfilePreview,
 } from "./types";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type MediaPreview = LinkedInMediaItem & { signedUrl?: string | null };
 
@@ -754,7 +756,7 @@ export function LinkedInComposeTab({
   return (
     <div className="mx-auto w-full max-w-[560px]">
         {editingId || editingCopyOfPublished ? (
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-[12px] text-sky-950">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-caption text-sky-950">
             <p className="font-semibold">
               {editingId
                 ? "Editing queue item"
@@ -763,13 +765,13 @@ export function LinkedInComposeTab({
             <button
               type="button"
               onClick={() => resetComposer()}
-              className="text-[11px] font-semibold text-sky-800 hover:underline"
+              className="text-caption font-medium text-sky-800 hover:underline"
             >
               Discard
             </button>
           </div>
         ) : null}
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className={cardClass("plain", "overflow-hidden")}>
           <div className="flex items-start gap-3 px-4 pt-4">
             <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-slate-200">
               {profile.photoUrl ? (
@@ -896,9 +898,9 @@ export function LinkedInComposeTab({
           ) : null}
 
           {panel === "link" ? (
-            <div className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+            <div className={cardClass("soft", "mx-4 mb-3 mt-2 p-3")}>
               <div className="flex items-center justify-between gap-2">
-                <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <label className="text-kicker font-semibold uppercase text-slate-500">
                   Link preview
                 </label>
                 <button
@@ -916,7 +918,7 @@ export function LinkedInComposeTab({
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+              <p className="mt-1 text-caption text-slate-500">
                 LinkedIn’s API does not scrape the page — set a title (and optional
                 description). Use Fetch to pull Open Graph values, then edit.
               </p>
@@ -937,7 +939,7 @@ export function LinkedInComposeTab({
                   type="button"
                   disabled={linkPreviewBusy || !articleUrl.trim()}
                   onClick={() => void fetchLinkPreview()}
-                  className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className={buttonClass("second", "small", "shrink-0")}
                 >
                   {linkPreviewBusy ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -946,7 +948,7 @@ export function LinkedInComposeTab({
                   )}
                 </button>
               </div>
-              <label className="mt-3 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mt-3 block text-kicker font-semibold uppercase text-slate-500">
                 Card title
               </label>
               <input
@@ -956,7 +958,7 @@ export function LinkedInComposeTab({
                 placeholder="Title shown on the link card"
                 className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/25"
               />
-              <label className="mt-2 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mt-2 block text-kicker font-semibold uppercase text-slate-500">
                 Description <span className="font-normal normal-case">(optional)</span>
               </label>
               <textarea
@@ -997,13 +999,13 @@ export function LinkedInComposeTab({
           ) : null}
 
           {panel === "image" ? (
-            <div className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+            <div className={cardClass("soft", "mx-4 mb-3 mt-2 p-3")}>
               <div className="flex items-center justify-between gap-2">
                 <div className="inline-flex rounded-lg bg-white p-0.5 ring-1 ring-slate-200">
                   <button
                     type="button"
                     onClick={() => setImageTab("upload")}
-                    className={`rounded-md px-3 py-1.5 text-[12px] font-semibold ${
+                    className={`rounded-md px-3 py-1.5 text-caption font-semibold ${
                       imageTab === "upload"
                         ? "bg-slate-900 text-white"
                         : "text-slate-600 hover:bg-slate-100"
@@ -1014,7 +1016,7 @@ export function LinkedInComposeTab({
                   <button
                     type="button"
                     onClick={() => setImageTab("templates")}
-                    className={`rounded-md px-3 py-1.5 text-[12px] font-semibold ${
+                    className={`rounded-md px-3 py-1.5 text-caption font-semibold ${
                       imageTab === "templates"
                         ? "bg-slate-900 text-white"
                         : "text-slate-600 hover:bg-slate-100"
@@ -1048,18 +1050,17 @@ export function LinkedInComposeTab({
                   }`}
                 >
                   <Upload className="mx-auto h-6 w-6 text-slate-400" />
-                  <p className="mt-2 text-sm font-semibold text-slate-800">
+                  <p className="mt-2 text-sm font-medium text-slate-800">
                     Drop images here
                   </p>
-                  <p className="mt-1 text-[12px] text-slate-500">
+                  <p className="mt-1 text-caption text-slate-500">
                     JPEG, PNG, GIF, or WebP · up to {imageSlotsLeft} more
                   </p>
                   <button
                     type="button"
                     disabled={busy === "upload" || imageSlotsLeft <= 0}
                     onClick={() => imageInputRef.current?.click()}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                    style={{ backgroundColor: LI_BLUE }}
+                    className={buttonClass("main", "small", "mt-4")}
                   >
                     {busy === "upload" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1085,31 +1086,31 @@ export function LinkedInComposeTab({
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-[11px] text-slate-400">
+                          <div className="flex h-full items-center justify-center text-caption text-slate-400">
                             {previewBusy ? "Rendering…" : "Quote"}
                           </div>
                         )}
                       </div>
-                      <p className="mt-1.5 text-[11px] font-semibold text-slate-800">
+                      <p className="mt-1.5 text-caption font-medium text-slate-800">
                         Quote card
                       </p>
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-caption text-slate-500">
                         Photo · name · big line
                       </p>
                     </button>
                     <div className="rounded-xl border border-dashed border-slate-200 bg-white/60 p-2 text-left opacity-60">
-                      <div className="flex aspect-square items-center justify-center rounded-lg bg-slate-100 text-[11px] font-semibold text-slate-400">
+                      <div className="flex aspect-square items-center justify-center rounded-lg bg-slate-100 text-caption font-medium text-slate-400">
                         Soon
                       </div>
-                      <p className="mt-1.5 text-[11px] font-semibold text-slate-600">
+                      <p className="mt-1.5 text-caption font-medium text-slate-600">
                         More templates
                       </p>
-                      <p className="text-[10px] text-slate-400">Coming next</p>
+                      <p className="text-caption text-slate-400">Coming next</p>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <label className="text-kicker font-semibold uppercase text-slate-500">
                       Type into template
                     </label>
                     <textarea
@@ -1119,7 +1120,7 @@ export function LinkedInComposeTab({
                       placeholder="The big line that goes on the image…"
                       className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/25"
                     />
-                    <p className="mt-1 text-[11px] text-slate-500">
+                    <p className="mt-1 text-caption text-slate-500">
                       Uses your photo, name, and “
                       {profile.quoteHandle || "Profit Coach"}” from Settings.
                     </p>
@@ -1129,8 +1130,7 @@ export function LinkedInComposeTab({
                     type="button"
                     disabled={busy === "quote" || !quoteText.trim()}
                     onClick={() => void handleGenerateQuote()}
-                    className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                    style={{ backgroundColor: LI_BLUE }}
+                    className={buttonClass("main", "small")}
                   >
                     {busy === "quote" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1145,9 +1145,9 @@ export function LinkedInComposeTab({
           ) : null}
 
           {panel === "video" ? (
-            <div className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+            <div className={cardClass("soft", "mx-4 mb-3 mt-2 p-3")}>
               <div className="flex items-center justify-between gap-2">
-                <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <label className="text-kicker font-semibold uppercase text-slate-500">
                   Video
                 </label>
                 <button
@@ -1172,18 +1172,17 @@ export function LinkedInComposeTab({
                 }`}
               >
                 <Video className="mx-auto h-6 w-6 text-slate-400" />
-                <p className="mt-2 text-sm font-semibold text-slate-800">
+                <p className="mt-2 text-sm font-medium text-slate-800">
                   Drop an MP4 here
                 </p>
-                <p className="mt-1 text-[12px] text-slate-500">
+                <p className="mt-1 text-caption text-slate-500">
                   One video · ~3s–30 min · up to 200MB
                 </p>
                 <button
                   type="button"
                   disabled={busy === "upload"}
                   onClick={() => videoInputRef.current?.click()}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                  style={{ backgroundColor: LI_BLUE }}
+                  className={buttonClass("main", "small", "mt-4")}
                 >
                   {busy === "upload" ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1197,9 +1196,9 @@ export function LinkedInComposeTab({
           ) : null}
 
           {panel === "document" ? (
-            <div className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+            <div className={cardClass("soft", "mx-4 mb-3 mt-2 p-3")}>
               <div className="flex items-center justify-between gap-2">
-                <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <label className="text-kicker font-semibold uppercase text-slate-500">
                   Document
                 </label>
                 <button
@@ -1224,18 +1223,17 @@ export function LinkedInComposeTab({
                 }`}
               >
                 <FileText className="mx-auto h-6 w-6 text-slate-400" />
-                <p className="mt-2 text-sm font-semibold text-slate-800">
+                <p className="mt-2 text-sm font-medium text-slate-800">
                   Drop a document here
                 </p>
-                <p className="mt-1 text-[12px] text-slate-500">
+                <p className="mt-1 text-caption text-slate-500">
                   PDF, DOC, DOCX, PPT, or PPTX · up to 100MB
                 </p>
                 <button
                   type="button"
                   disabled={busy === "upload"}
                   onClick={() => documentInputRef.current?.click()}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                  style={{ backgroundColor: LI_BLUE }}
+                  className={buttonClass("main", "small", "mt-4")}
                 >
                   {busy === "upload" ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1255,7 +1253,7 @@ export function LinkedInComposeTab({
                 busy === "upload" || hasExclusiveMedia || (!hasExclusiveMedia && media.length >= 9)
               }
               onClick={openImagePanel}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-slate-100 disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-ui font-medium hover:bg-slate-100 disabled:opacity-50 ${
                 panel === "image" ? "bg-slate-100 text-slate-900" : "text-slate-600"
               }`}
             >
@@ -1266,7 +1264,7 @@ export function LinkedInComposeTab({
               type="button"
               disabled={busy === "upload" || hasImages || hasDocument || hasVideo}
               onClick={openVideoPanel}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-slate-100 disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-ui font-medium hover:bg-slate-100 disabled:opacity-50 ${
                 panel === "video" ? "bg-slate-100 text-slate-900" : "text-slate-600"
               }`}
             >
@@ -1277,7 +1275,7 @@ export function LinkedInComposeTab({
               type="button"
               disabled={busy === "upload" || hasImages || hasVideo || hasDocument}
               onClick={openDocumentPanel}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-slate-100 disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-ui font-medium hover:bg-slate-100 disabled:opacity-50 ${
                 panel === "document" ? "bg-slate-100 text-slate-900" : "text-slate-600"
               }`}
             >
@@ -1288,14 +1286,14 @@ export function LinkedInComposeTab({
               type="button"
               onClick={() => setPanel("link")}
               disabled={hasExclusiveMedia}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-slate-100 disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-ui font-medium hover:bg-slate-100 disabled:opacity-50 ${
                 panel === "link" ? "bg-slate-100 text-slate-900" : "text-slate-600"
               }`}
             >
               <Link2 className="h-4 w-4 text-sky-600" />
               Link
             </button>
-            <p className="ml-auto pr-2 text-[11px] text-slate-400">
+            <p className="ml-auto pr-2 text-caption text-slate-400">
               {hasVideo ? "Video · " : hasDocument ? "Doc · " : hasImages ? "Image · " : ""}
               {content.length.toLocaleString()}
             </p>
@@ -1335,7 +1333,7 @@ export function LinkedInComposeTab({
 
         {scheduleMode ? (
           <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-3">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-sky-900">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-sky-900">
               <CalendarClock className="h-3.5 w-3.5" />
               Publish at
             </label>
@@ -1352,7 +1350,7 @@ export function LinkedInComposeTab({
                   setScheduleMode(false);
                   setScheduledAtLocal("");
                 }}
-                className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                className="text-xs font-medium text-slate-500 hover:text-slate-800"
               >
                 Cancel
               </button>
@@ -1380,7 +1378,7 @@ export function LinkedInComposeTab({
                 type="button"
                 disabled={!!busy}
                 onClick={() => resetComposer()}
-                className="rounded-full px-3 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+                className={buttonClass("quiet")}
               >
                 Cancel edit
               </button>
@@ -1389,7 +1387,7 @@ export function LinkedInComposeTab({
               type="button"
               disabled={!connected || !!busy}
               onClick={() => void handleSaveDraft()}
-              className="rounded-full px-3 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+              className={buttonClass("quiet")}
             >
               {busy === "draft" ? "Saving…" : editingId ? "Update draft" : "Save draft"}
             </button>
@@ -1397,7 +1395,7 @@ export function LinkedInComposeTab({
               type="button"
               disabled={!connected || !!busy}
               onClick={() => void handleSchedule()}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+              className={buttonClass("second")}
             >
               {busy === "schedule" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1410,8 +1408,7 @@ export function LinkedInComposeTab({
               type="button"
               disabled={!connected || !!busy}
               onClick={() => void handlePostNow()}
-              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
-              style={{ backgroundColor: LI_BLUE }}
+              className={buttonClass("main")}
             >
               {busy === "post" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

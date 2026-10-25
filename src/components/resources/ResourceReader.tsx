@@ -31,6 +31,8 @@ import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
 import { useRecordRecentVisit } from "@/lib/search/recentVisits";
 
 import { ALL_PAGES, KindTile } from "./librarySearch";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type Loaded = {
   page: ResourcePage;
@@ -49,13 +51,11 @@ const FILE_LABEL: Record<BlockOf<"file">["format"], string> = {
 };
 
 /** Blueprint buttons: navy for the main action, white for the rest. */
-const BUTTON =
-  "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a8fd4] focus-visible:ring-offset-2";
-const PRIMARY = `${BUTTON} bg-[var(--bp-navy)] text-white hover:bg-[var(--bp-blue)]`;
-const SECONDARY = `${BUTTON} border border-[var(--bp-rule)] bg-white text-[var(--bp-ink)] hover:bg-[var(--bp-tint)]`;
+const PRIMARY = buttonClass("main", "small", "shrink-0");
+const SECONDARY = buttonClass("second", "small", "shrink-0");
 /** Content sits on solid white so long text stays crisp; the shadow matches the Blueprint's cards. */
-const CARD = "rounded-2xl border border-[var(--bp-rule)] bg-white shadow-[0_12px_28px_-20px_rgba(5,30,54,0.45)]";
-const H2 = "text-[1.5rem] font-semibold leading-tight tracking-[-0.025em] text-[var(--bp-ink)]";
+const CARD = cardClass("plain");
+const H2 = "text-title font-semibold text-[var(--bp-ink)]";
 const LINK =
   "font-medium text-[var(--bp-blue)] underline decoration-[#0c5290]/30 underline-offset-[3px] hover:decoration-[#0c5290]";
 
@@ -137,12 +137,12 @@ function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded
 
   const md: Components = {
     h2: ({ children }) => <h2 className={`${H2} mt-12 first:mt-0`}>{children}</h2>,
-    h3: ({ children }) => <h3 className="mt-9 text-[1.1875rem] font-semibold leading-snug tracking-[-0.015em] text-[var(--bp-ink)] first:mt-0">{children}</h3>,
+    h3: ({ children }) => <h3 className="mt-9 text-subhead font-semibold text-[var(--bp-ink)] first:mt-0">{children}</h3>,
     h4: ({ children }) => <h4 className="mt-7 font-semibold text-[var(--bp-ink)] first:mt-0">{children}</h4>,
     p: ({ children }) => <p className="mt-4 max-w-[70ch] first:mt-0">{children}</p>,
     ul: ({ children }) => <ul className="mt-3 max-w-[70ch] list-disc space-y-1.5 pl-6 marker:text-[var(--bp-sky)] [&_ul]:mt-1.5">{children}</ul>,
     ol: ({ children }) => <ol className="mt-3 max-w-[70ch] list-decimal space-y-1.5 pl-6 marker:font-semibold marker:text-[var(--bp-blue)]">{children}</ol>,
-    strong: ({ children }) => <strong className="font-semibold text-[var(--bp-ink)]">{children}</strong>,
+    strong: ({ children }) => <strong className="font-medium text-[var(--bp-ink)]">{children}</strong>,
     hr: () => <hr className="my-10 border-[var(--bp-rule)]" />,
     // eslint-disable-next-line @next/next/no-img-element
     img: ({ src, alt }) => <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} loading="lazy" className={`rs-keep my-6 w-full ${CARD}`} />,
@@ -163,7 +163,7 @@ function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded
     },
     table: ({ children }) => (
       <div className={`rs-keep mt-6 overflow-x-auto ${CARD}`}>
-        <table className="w-full min-w-[40rem] border-collapse text-left text-[0.9375rem] leading-relaxed">{children}</table>
+        <table className="w-full min-w-[40rem] border-collapse text-left text-ui leading-relaxed">{children}</table>
       </div>
     ),
     th: ({ children }) => (
@@ -178,7 +178,7 @@ function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded
         const markdown = docs[block.file] ?? "";
         if (!markdown.trim()) return null;
         return (
-          <div key={key} className="text-[1.0625rem] leading-[1.7]">
+          <div key={key} className="text-read leading-[1.7]">
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]} components={md}>
               {markdown}
             </ReactMarkdown>
@@ -212,7 +212,7 @@ function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded
     <div className="mx-auto w-full max-w-[54rem] px-5 pb-12 pt-8 md:px-10 md:pt-10 print:p-0">
       <header className="pb-2">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-          <h1 className="min-w-0 flex-1 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-[#0f172a] md:text-[2rem]">{page.title}</h1>
+          <h1 className="min-w-0 flex-1 text-heading font-semibold text-[#0f172a]">{page.title}</h1>
           <div className="rs-no-print flex shrink-0 flex-wrap items-center gap-2 sm:pt-1">
             {page.lesson ? (
               <Link href={appHref(page.lesson)} className={SECONDARY}>
@@ -240,7 +240,7 @@ function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded
         {prev ? (
           <Link href={hrefFor(prev)} className="rounded-xl px-4 py-3 transition-colors hover:bg-white/70">
             <span className="block text-xs font-medium text-[var(--bp-faint)]">Previous</span>
-            <span className="mt-0.5 block font-semibold text-[var(--bp-ink)]">{prev.title}</span>
+            <span className="mt-0.5 block font-medium text-[var(--bp-ink)]">{prev.title}</span>
           </Link>
         ) : (
           <span />
@@ -248,7 +248,7 @@ function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded
         {next ? (
           <Link href={hrefFor(next)} className="rounded-xl px-4 py-3 text-right transition-colors hover:bg-white/70">
             <span className="block text-xs font-medium text-[var(--bp-faint)]">Next</span>
-            <span className="mt-0.5 block font-semibold text-[var(--bp-ink)]">{next.title}</span>
+            <span className="mt-0.5 block font-medium text-[var(--bp-ink)]">{next.title}</span>
           </Link>
         ) : null}
       </nav>
@@ -299,7 +299,7 @@ function SheetBlock({ block, hrefForSlug }: { block: BlockOf<"sheet">; hrefForSl
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className={H2}>{group.label}</h2>
               {group.page ? (
-                <Link href={hrefForSlug(group.page)} className="rs-no-print inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:text-[var(--bp-navy)]">
+                <Link href={hrefForSlug(group.page)} className="rs-no-print inline-flex items-center gap-1 text-sm font-medium text-[var(--bp-blue)] hover:text-[var(--bp-navy)]">
                   How to run it
                   <ChevronRight className="h-4 w-4" aria-hidden />
                 </Link>
@@ -311,7 +311,7 @@ function SheetBlock({ block, hrefForSlug }: { block: BlockOf<"sheet">; hrefForSl
           <ul className={`divide-y divide-[var(--bp-rule)] overflow-hidden ${CARD}`}>
             {group.tabs.map((tab) => (
               <li key={tab.gid} className="rs-keep px-5 py-3.5">
-                <a href={sheetUrl(block.id, tab.gid)} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--bp-ink)] hover:text-[var(--bp-blue)]">
+                <a href={sheetUrl(block.id, tab.gid)} target="_blank" rel="noopener noreferrer" className="font-medium text-[var(--bp-ink)] hover:text-[var(--bp-blue)]">
                   {tab.title}
                   <ArrowUpRight className="ml-1 inline h-4 w-4 align-[-0.15em] text-[var(--bp-faint)]" aria-hidden />
                 </a>
@@ -402,7 +402,7 @@ function LinksBlock({ block, hrefForSlug }: { block: BlockOf<"links">; hrefForSl
       <ul className={`divide-y divide-[var(--bp-rule)] overflow-hidden ${CARD}`}>
         {block.links.map((link) => {
           const external = /^https?:/.test(link.url);
-          const titleClass = `font-semibold hover:text-[var(--bp-blue)] ${link.broken ? "text-[var(--bp-muted)] line-through decoration-[var(--bp-faint)]" : "text-[var(--bp-ink)]"}`;
+          const titleClass = `font-medium hover:text-[var(--bp-blue)] ${link.broken ? "text-[var(--bp-muted)] line-through decoration-[var(--bp-faint)]" : "text-[var(--bp-ink)]"}`;
           return (
             <li key={link.url} className="rs-keep px-5 py-3.5">
               {external ? (

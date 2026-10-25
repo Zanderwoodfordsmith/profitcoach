@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import type {
   MirrorConversation,
   MirrorMessage,
@@ -102,7 +104,7 @@ export function LinkedInMirrorInbox() {
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className={buttonClass("main")}
         >
           {loading ? "Loading…" : "Reload snapshot"}
         </button>
@@ -114,7 +116,7 @@ export function LinkedInMirrorInbox() {
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+      <div className={cardClass("soft", "px-3 py-2 text-xs text-slate-600")}>
         <strong className="text-slate-800">How to refresh:</strong> Reload the
         extension → open the side panel on LinkedIn →{" "}
         <strong>Sync LI Inbox</strong>. That scrapes from your browser IP (not
@@ -138,9 +140,9 @@ export function LinkedInMirrorInbox() {
         </div>
       ) : null}
 
-      <div className="grid min-h-[480px] overflow-hidden rounded-2xl border border-slate-200 bg-white md:grid-cols-[280px_1fr]">
+      <div className={cardClass("plain", "grid min-h-[480px] overflow-hidden md:grid-cols-[280px_1fr]")}>
         <aside className="border-b border-slate-200 md:border-b-0 md:border-r">
-          <div className="border-b border-slate-100 px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+          <div className="border-b border-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
             Conversations
           </div>
           <ul className="max-h-[520px] overflow-y-auto">
@@ -160,7 +162,7 @@ export function LinkedInMirrorInbox() {
                       active ? "bg-slate-100" : "hover:bg-slate-50"
                     }`}
                   >
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-sm font-medium text-slate-900">
                       {c.title}
                     </p>
                     {c.subtitle ? (
@@ -169,7 +171,7 @@ export function LinkedInMirrorInbox() {
                       </p>
                     ) : null}
                     {c.lastActivityAt ? (
-                      <p className="mt-1 text-[11px] text-slate-400">
+                      <p className="mt-1 text-caption text-slate-400">
                         {formatWhen(c.lastActivityAt)}
                       </p>
                     ) : null}
@@ -221,14 +223,14 @@ export function LinkedInMirrorInbox() {
                     }`}
                   >
                     {!m.fromMe ? (
-                      <p className="mb-1 text-[11px] font-semibold text-slate-500">
+                      <p className="mb-1 text-caption font-medium text-slate-500">
                         {m.fromName}
                       </p>
                     ) : null}
                     <p className="whitespace-pre-wrap">{m.body}</p>
                     {m.sentAt ? (
                       <p
-                        className={`mt-1 text-[10px] ${
+                        className={`mt-1 text-caption ${
                           m.fromMe ? "text-sky-100/90" : "text-slate-400"
                         }`}
                       >

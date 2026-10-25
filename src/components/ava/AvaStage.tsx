@@ -7,22 +7,26 @@ import { Minimize2, X } from "lucide-react";
 import { AvaAction, AvaRoomProvider } from "./AvaKit";
 import { AvaHalo } from "./AvaHalo";
 
-/** Her face, fading into the room while the conversation is empty. Placeholder until Zander picks the face. */
-const AVA_FACE_WIDE = "/ava/face-wide.webp";
+
 
 /**
- * Ava full screen: her own room in a brand blue, her face fading in on the
- * right until the conversation starts (chosen 24 Oct 2026, start screen E).
+ * Ava full screen: her own room in the brand's radial blue, lighter at the
+ * bottom, darker towards the edges (24 Oct 2026).
  * The conversation inside is the same one as in the side panel; it hands
  * its title and History / New into the header slot.
  */
-/** Ava's room: the blue, her face (while the conversation is empty), the shade and the light. */
-export function AvaRoomBackground() {
+/** Ava's room: the radial blue (in ava.css), faint dust, light rising from the bottom, and, on the face style of
+ * her page, her portrait fading in on the right while the chat is empty. */
+export function AvaRoomBackground({ face = false }: { face?: boolean }) {
   return (
     <div className="ava-stage-bg" aria-hidden>
       <span className="ava-room-dust" />
-      <span className="ava-room-face" style={{ backgroundImage: `url(${AVA_FACE_WIDE})` }} />
-      <span className="ava-room-scrim" />
+      {face ? (
+        <>
+          <span className="ava-room-face" style={{ backgroundImage: "url(/ava/face-wide.webp)" }} />
+          <span className="ava-room-scrim" />
+        </>
+      ) : null}
       <span className="ava-room-glow" />
     </div>
   );
@@ -62,7 +66,7 @@ export function AvaStage({
 
   return createPortal(
     <AvaRoomProvider room="stage">
-      <div className="ava-ui ava-stage" role="dialog" aria-modal="true" aria-label="Ava">
+      <div className="ava-ui ava-dark ava-stage" role="dialog" aria-modal="true" aria-label="Ava">
         <AvaRoomBackground />
         <header className="relative z-[2] flex shrink-0 items-center gap-3 px-4 pb-2 pt-4 sm:px-8">
           <div className="flex shrink-0 items-center gap-2.5">

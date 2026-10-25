@@ -142,7 +142,7 @@ export function GoogleMapsImportWaitPanel({
             style={{ width: `${pct}%` }}
           />
         </div>
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-amber-900/65">
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-caption text-amber-900/65">
           <span>{pct}% complete</span>
           {peopleFound > 0 ? (
             <span>

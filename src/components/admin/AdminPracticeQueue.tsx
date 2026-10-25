@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { cardClass } from "@/components/ui/Card";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { PracticeStatus } from "@/lib/practiceKnowledge/types";
 
@@ -62,7 +63,7 @@ export function AdminPracticeQueue() {
         </p>
       ) : null}
       {items.length ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className={cardClass("plain", "overflow-hidden")}>
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>

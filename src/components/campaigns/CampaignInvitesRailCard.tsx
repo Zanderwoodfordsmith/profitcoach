@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { CircleHelp } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { cardClass } from "@/components/ui/Card";
 import { PendingInvitesSpeedDial } from "@/components/campaigns/PendingInvitesSpeedDial";
 import { DEMO_PREVIEW_INVITE_TOTAL } from "@/lib/campaigns/demoPreview";
 import {
@@ -234,14 +235,14 @@ export function CampaignInvitesRailCard({
   const autoOn = snap?.policy.mode !== "off" && snap != null;
 
   return (
-    <section className="relative z-20 shrink-0 overflow-visible rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+    <section className={cardClass("plain", "relative z-20 shrink-0 overflow-visible")}>
       <div className="flex items-center gap-4 py-3 pl-4 pr-5">
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold tracking-tight text-slate-900">
             Pending invites
           </h2>
           {disconnected ? (
-            <p className="mt-2 text-[11px] text-slate-500">
+            <p className="mt-2 text-caption text-slate-500">
               Connect LinkedIn to load this
             </p>
           ) : (
@@ -270,7 +271,7 @@ export function CampaignInvitesRailCard({
             </div>
           )}
           {error ? (
-            <p className="mt-2 text-[11px] text-rose-900">{error}</p>
+            <p className="mt-2 text-caption text-rose-900">{error}</p>
           ) : null}
         </div>
 

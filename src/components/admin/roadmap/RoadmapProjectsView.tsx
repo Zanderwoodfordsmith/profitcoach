@@ -10,6 +10,7 @@ import {
   type RoadmapProject,
 } from "@/lib/roadmap/projectTypes";
 import { ROADMAP_IMPACT_LEVELS, type RoadmapJob } from "@/lib/roadmap/types";
+import { cardClass } from "@/components/ui/Card";
 import { Caret, MetaDropdown, ScoreDropdown, useDismiss } from "./roadmapUi";
 import { RoadmapProjectsViewV1 } from "./RoadmapProjectsViewV1";
 
@@ -298,11 +299,11 @@ function ProjectRows({
               type="button"
               onClick={onOpenJobs}
               title={row.goal ? `${row.goal}\n\nOpen this project's jobs` : "Open this project's jobs"}
-              className="truncate text-[0.9375rem] font-medium text-slate-900 transition hover:text-[#0c5290]"
+              className="truncate text-ui font-medium text-slate-900 transition hover:text-[#0c5290]"
             >
               {row.name}
             </button>
-            {!row.saved ? <span className="shrink-0 text-[11px] text-slate-400">new</span> : null}
+            {!row.saved ? <span className="shrink-0 text-caption text-slate-400">new</span> : null}
           </div>
         </td>
         <td className="px-3 py-2.5">
@@ -465,7 +466,7 @@ function Timeline({ rows }: { rows: Row[] }) {
   const weeks = Array.from({ length: WEEKS }, (_, i) => start + i * 7 * DAY);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white px-4 pb-4 pt-3.5">
+    <section className={cardClass("plain", "px-4 pb-4 pt-3.5")}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-medium tracking-[-0.01em] text-slate-950">The next 12 weeks</h2>
         <p className="text-xs text-slate-400">Rough dates. Set them in the When column.</p>
@@ -476,7 +477,7 @@ function Timeline({ rows }: { rows: Row[] }) {
             <span />
             <div className="relative grid pt-6" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }}>
               {weeks.map((w) => (
-                <span key={w} className="border-l border-slate-100 pb-1.5 pl-1.5 text-[11px] tabular-nums text-slate-400">
+                <span key={w} className="border-l border-slate-100 pb-1.5 pl-1.5 text-caption tabular-nums text-slate-400">
                   {short(w)}
                 </span>
               ))}
@@ -522,7 +523,7 @@ function Timeline({ rows }: { rows: Row[] }) {
             <span />
             <div className="relative">
               <span className="absolute bottom-0 top-4 w-px bg-rose-400" style={{ left: `${at(now)}%` }} />
-              <span className="absolute top-0 -translate-x-1/2 rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold leading-4 text-white" style={{ left: `${at(now)}%` }}>
+              <span className="absolute top-0 -translate-x-1/2 rounded-full bg-rose-500 px-1.5 text-caption font-semibold leading-4 text-white" style={{ left: `${at(now)}%` }}>
                 Today
               </span>
             </div>
@@ -549,7 +550,7 @@ function ProjectGrid({ rows }: { rows: Row[] }) {
   const unscored = rows.filter((r) => !(r.impact && r.ease));
   const scores = [1, 2, 3, 4, 5];
   return (
-    <section className="mt-8 rounded-xl border border-slate-200 bg-white px-4 pb-4 pt-3.5">
+    <section className={cardClass("plain", "mt-8 px-4 pb-4 pt-3.5")}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-medium tracking-[-0.01em] text-slate-950">Where each project sits</h2>
         <p className="text-xs text-slate-400">Top right: worth most for the least effort. Parked left out.</p>
@@ -576,7 +577,7 @@ function ProjectGrid({ rows }: { rows: Row[] }) {
           ))}
           <span />
           {scores.map((ease) => (
-            <span key={ease} className="pt-1 text-center text-[11px] text-slate-400">
+            <span key={ease} className="pt-1 text-center text-caption text-slate-400">
               {PROJECT_EASE_LEVELS[ease]}
             </span>
           ))}

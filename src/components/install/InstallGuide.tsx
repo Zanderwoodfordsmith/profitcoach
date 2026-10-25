@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Download, Loader2 } from "lucide-react";
 import { useInstallDevice } from "@/lib/installDevice";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 import { InstallQrCode } from "@/components/install/InstallQrCode";
 import { InstallArrow, InstallSteps } from "@/components/install/InstallSteps";
 
@@ -67,7 +69,7 @@ export function InstallGuide() {
             height={72}
             className="h-[72px] w-[72px] rounded-[18px] shadow-sm ring-1 ring-black/5"
           />
-          <h1 className="mt-4 text-xl font-semibold text-slate-900">
+          <h1 className="mt-4 text-subhead font-semibold text-slate-900">
             {done ? "You're all set" : "Put Profit Coach on your phone"}
           </h1>
           <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
@@ -77,7 +79,7 @@ export function InstallGuide() {
           </p>
         </div>
 
-        <div className="mt-6 rounded-xl border border-slate-200/80 bg-white p-5">
+        <div className={cardClass("plain", "mt-6 p-5")}>
           {device === null ? (
             <div className="flex justify-center py-6">
               <Loader2 className="h-5 w-5 animate-spin text-slate-400" aria-hidden />
@@ -88,7 +90,7 @@ export function InstallGuide() {
               {device === "installed" ? (
                 <a
                   href="/coach"
-                  className="w-full rounded-lg bg-[#0c5290] px-4 py-3 text-center text-sm font-semibold text-white hover:bg-[#0a4578]"
+                  className={buttonClass("main", "normal", "w-full")}
                 >
                   Open Profit Coach
                 </a>
@@ -106,7 +108,7 @@ export function InstallGuide() {
               type="button"
               onClick={() => void install()}
               disabled={installing}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0c5290] px-4 py-3.5 text-base font-semibold text-white hover:bg-[#0a4578] disabled:opacity-60"
+              className={buttonClass("main", "normal", "w-full")}
             >
               {installing ? (
                 <Loader2 className="h-5 w-5 animate-spin" aria-hidden />

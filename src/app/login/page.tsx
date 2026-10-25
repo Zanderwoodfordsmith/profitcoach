@@ -109,7 +109,8 @@ export default function LoginPage() {
       title="Welcome back"
       subtitle="Sign in to Profit Coach to continue coaching with clarity."
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Chrome on iPhone adds __gcruniqueid to the form and inputs before React loads. */}
+      <form onSubmit={handleSubmit} className="space-y-4" suppressHydrationWarning>
         <div className="space-y-1.5">
           <label htmlFor="email" className={authLabelClassName}>
             Email
@@ -123,6 +124,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             className={authInputClassName}
+            suppressHydrationWarning
           />
         </div>
         <div className="space-y-1.5">
@@ -139,6 +141,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               className={`${authInputClassName} pr-20`}
+              suppressHydrationWarning
             />
             <button
               type="button"

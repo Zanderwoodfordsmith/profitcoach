@@ -6,6 +6,8 @@ import {
 } from "@/lib/accountProfileTimezones";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
 import { Plus, X } from "lucide-react";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 export const WEEKDAYS = [
   { value: 1, label: "Mon" },
@@ -95,7 +97,7 @@ export function WeeklyHoursEditor({
   }`;
 
   return (
-    <div className={plain ? "" : "rounded-xl border border-slate-200/80 bg-white p-4"}>
+    <div className={plain ? "" : cardClass("plain", "p-4")}>
       {plain ? null : <h3 className="text-sm font-semibold text-slate-900">{title}</h3>}
       {!plain && hint ? (
         <p className="mt-0.5 text-xs text-slate-500">{hint}</p>
@@ -129,7 +131,7 @@ export function WeeklyHoursEditor({
               className="flex flex-wrap items-start gap-2 rounded-lg px-1 py-1"
             >
               <label
-                className={`inline-flex items-center gap-2 font-semibold text-slate-700 ${
+                className={`inline-flex items-center gap-2 font-medium text-slate-700 ${
                   plain ? "w-16 py-1.5 text-sm" : "w-10 gap-1.5 py-1 text-xs"
                 }`}
               >
@@ -192,7 +194,7 @@ export function WeeklyHoursEditor({
                   ))}
                 </div>
               ) : (
-                <span className={plain ? "py-1.5 text-sm text-slate-400" : "py-1 text-[11px] text-slate-400"}>Off</span>
+                <span className={plain ? "py-1.5 text-sm text-slate-400" : "py-1 text-caption text-slate-400"}>Off</span>
               )}
             </li>
           );
@@ -205,8 +207,8 @@ export function WeeklyHoursEditor({
         onClick={onSave}
         className={
           plain
-            ? "mt-4 rounded-full bg-[#051e36] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#0c5290] disabled:opacity-60"
-            : "mt-4 w-full rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+            ? buttonClass("main", "small", "mt-4")
+            : buttonClass("main", "normal", "mt-4 w-full")
         }
       >
         {saving ? "Saving…" : saveLabel}

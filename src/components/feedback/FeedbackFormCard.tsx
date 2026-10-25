@@ -6,6 +6,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
 import type { SupportTicketType } from "@/lib/support/tickets";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
+import { buttonClass } from "@/components/ui/Button";
+import { cardClass } from "@/components/ui/Card";
 
 type FeedbackFormCardProps = {
   onSubmitted?: () => void;
@@ -59,7 +61,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className={cardClass("plain", "p-6")}>
       <h2 className="text-2xl font-semibold text-slate-900">New support ticket</h2>
       <p className="mt-2 text-base leading-relaxed text-slate-600">
         Ask a question, share an idea, or report a bug.
@@ -109,7 +111,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
         }}
       >
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Title
           </label>
           <input
@@ -122,7 +124,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Details (optional)
           </label>
           <textarea
@@ -137,13 +139,13 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
           <p className="text-sm text-rose-600">{feedbackError}</p>
         ) : null}
         {feedbackSuccess ? (
-          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-base font-semibold text-emerald-700">
+          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-base font-medium text-emerald-700">
             {feedbackSuccess}
           </p>
         ) : null}
         <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 flex-1">
-            <span className="mb-2 block text-sm font-semibold text-slate-700">
+            <span className="mb-2 block text-sm font-medium text-slate-700">
               Type
             </span>
             <div
@@ -176,7 +178,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
           <button
             type="submit"
             disabled={feedbackBusy || !feedbackTitle.trim()}
-            className="rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50 sm:shrink-0"
+            className={buttonClass("main", "normal", "sm:shrink-0")}
           >
             {feedbackBusy ? "Submitting..." : "Submit"}
           </button>

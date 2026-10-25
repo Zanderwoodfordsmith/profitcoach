@@ -36,12 +36,12 @@ export function TableToolbarButton({
       <span className="relative inline-flex">
         {icon}
         {badge != null ? (
-          <span className="absolute -right-2 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
+          <span className="absolute -right-2 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-caption font-semibold leading-none text-white">
             {badge}
           </span>
         ) : null}
       </span>
-      <span className="text-[10px] font-medium leading-none text-slate-500">
+      <span className="text-caption font-medium leading-none text-slate-500">
         {label}
       </span>
     </button>
