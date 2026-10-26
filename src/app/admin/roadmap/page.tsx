@@ -84,7 +84,7 @@ const STATUS_META: Record<RoadmapStatus, { label: string; chip: string }> = {
   review: { label: "Review", chip: "bg-yellow-200/80 text-yellow-900" },
   done: { label: "Ready", chip: "bg-emerald-100 text-emerald-800" },
   staged: { label: "On staging", chip: "bg-cyan-100 text-cyan-800" },
-  live: { label: "Live", chip: "bg-teal-100 text-teal-800" },
+  live: { label: "Live", chip: "bg-slate-300/80 text-slate-700" },
   evaluate: { label: "Evaluate", chip: "bg-violet-100 text-violet-800" },
   parked: { label: "Parked", chip: "bg-slate-200/70 text-slate-500" },
   vetoed: { label: "Vetoed", chip: "bg-rose-100 text-rose-700" },
@@ -2190,20 +2190,6 @@ function JobDetailModal({
                     </span>
                   </MetaRow>
                 </div>
-                <div className="sm:col-span-2">
-                  {job.app_path ? (
-                    <MetaRow icon={Link2} label="Page">
-                      <a
-                        href={job.app_path}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-2 font-medium text-sky-700 hover:underline"
-                      >
-                        {job.app_path}
-                      </a>
-                    </MetaRow>
-                  ) : null}
-                </div>
               </div>
 
               <div className="mt-6 border-t border-slate-200" role="presentation" />
@@ -2292,6 +2278,25 @@ function JobDetailModal({
                   className="mt-1 w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 hover:bg-slate-50 focus:border-sky-400 focus:bg-white focus:outline-none"
                 />
               </div>
+
+              {/* Links */}
+              {job.app_path ? (
+                <>
+                  <h3 className="mt-6 text-sm font-semibold text-slate-900">Links</h3>
+                  <div className="mt-2">
+                    <MetaRow icon={Link2} label="Page">
+                      <a
+                        href={job.app_path}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2 font-medium text-sky-700 hover:underline"
+                      >
+                        {job.app_path}
+                      </a>
+                    </MetaRow>
+                  </div>
+                </>
+              ) : null}
 
               {/* Images */}
               <div className="mt-6 flex items-center justify-between">

@@ -48,7 +48,7 @@ export const ROADMAP_AREA_META: Record<
   { label: string; hint: string; dot: string; chip: string }
 > = {
   "set-up": {
-    label: "Set up",
+    label: "Done for you",
     hint: "Practice install: Blueprint, brand, website, profile, onboarding",
     dot: "bg-violet-500",
     chip: "bg-violet-100 text-violet-800",
