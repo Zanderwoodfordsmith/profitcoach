@@ -1,5 +1,7 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
+
 import { AvaHalo } from "@/components/ava/AvaHalo";
 import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
 import { DashboardTopActions } from "./DashboardTopActions";
@@ -20,7 +22,7 @@ export function DashboardChromeActions({
   className = "",
 }: DashboardChromeActionsProps) {
   const chrome = useDashboardChrome();
-  const { profileLoading, avatarLabel, avatarImageUrl } = useDashboardProfile(
+  const { profile, profileLoading, avatarLabel, avatarImageUrl } = useDashboardProfile(
     chrome?.avatarOverride
   );
   if (!chrome?.chromeEnabled) return null;
@@ -54,7 +56,12 @@ export function DashboardChromeActions({
               : "bg-transparent text-slate-700 hover:bg-slate-50"
           }`}
         >
-          <AvaHalo size={24} state={chrome.aiPanelOpen ? "listening" : "idle"} />
+          {/* The Halo is admin-only until Ava's new look opens to coaches. */}
+          {profile?.role === "admin" ? (
+            <AvaHalo size={24} state={chrome.aiPanelOpen ? "listening" : "idle"} />
+          ) : (
+            <Sparkles className="h-6 w-6" />
+          )}
         </button>
       ) : null}
       <button

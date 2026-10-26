@@ -474,7 +474,6 @@ export function coachClientsTabItems(
       href: `${prefix}/simulator`,
       label: "Client simulator",
       description: "Practise out loud with AI clients and get a score",
-      adminPreview: true,
     },
   ];
 }

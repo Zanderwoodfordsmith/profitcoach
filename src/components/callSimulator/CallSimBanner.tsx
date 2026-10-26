@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, Lock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
-import { useShowAdminPreviewTabs } from "@/components/layout/CoachToolsHubTabs";
 import { PROSPECTS } from "@/lib/callSimulator/prospects";
 import "@/components/academy/classroomSystemBanner.css";
 
@@ -12,13 +11,10 @@ import "@/components/academy/classroomSystemBanner.css";
  * Under the script cards: the Call simulator's way in. Built like
  * Classroom's Portfolio System bar (mist copy, picture on the right), with
  * the owners' faces in the navy room where Classroom has its map.
- * Admin-only until Zander releases it.
  */
 export function CallSimBanner() {
   const pathname = usePathname() ?? "";
   const onAdmin = pathname.startsWith("/admin");
-  const show = useShowAdminPreviewTabs(onAdmin);
-  if (!show) return null;
   const prefix = onAdmin ? "/admin" : "/coach";
   // The middle face is largest, the others step down and fade either side.
   const order = [PROSPECTS[4], PROSPECTS[2], PROSPECTS[0], PROSPECTS[3], PROSPECTS[5]].filter(Boolean);
@@ -53,7 +49,6 @@ export function CallSimBanner() {
       <div className="classroom-system-banner__copy classroom-system-banner__copy--mist flex flex-col justify-center p-5 sm:p-6">
         <h2 className="inline-flex items-center gap-1.5 text-lg font-semibold leading-snug tracking-tight text-slate-900">
           Call simulator
-          <Lock className="h-3.5 w-3.5 text-slate-400" aria-label="Admin preview, not released to coaches" />
         </h2>
         <p className="mt-1.5 max-w-md text-pretty text-sm leading-relaxed text-slate-600">
           Practise these calls out loud with AI owners, from a cold call to the close. Pick the objections to face, start at any part, and get a score with notes on every line.

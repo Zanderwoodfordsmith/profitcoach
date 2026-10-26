@@ -14,7 +14,6 @@ import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { AvaDock } from "@/components/ava/AvaDock";
 import { AvaSessionProvider } from "@/components/ava/useAvaSession";
 import { useAvaPageHost } from "@/components/ava/avaPageHost";
-import { useCoachAgentAccess } from "@/components/agent/useAgentAccess";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
@@ -191,9 +190,8 @@ export default function CoachLayout({
   const { profile: viewerProfile, profileLoading } = useDashboardProfile();
   /** Admin-only docked panel — hidden while impersonating so "View as coach" matches members. */
   const adminAiPanel = viewerProfile?.role === "admin" && !impersonatingCoachId;
-  /** Coaches get the panel, Agent only, once an admin switches the agent on for them. */
-  const coachAgentPanel = useCoachAgentAccess(viewerProfile?.role === "coach");
-  const aiPanelAvailable = adminAiPanel || coachAgentPanel;
+  /** Coaches don't get the panel until Ava's new look opens to them. */
+  const aiPanelAvailable = adminAiPanel;
   const showAiSparkles = aiPanelAvailable;
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiPanelFullscreen, setAiPanelFullscreen] = useState(false);
