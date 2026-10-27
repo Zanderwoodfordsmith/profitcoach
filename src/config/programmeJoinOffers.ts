@@ -11,6 +11,7 @@ import { programmeJoinCheckoutHref } from "@/config/programmeJoin";
  *   STRIPE_PRICE_PROGRAMME_JOIN_THREE_PAY=…
  *   STRIPE_PRICE_PROGRAMME_JOIN_THREE_PAY_1=…
  *   STRIPE_PRICE_PROGRAMME_JOIN_PAY_IN_FULL_9900=…
+ *   STRIPE_PRICE_PROGRAMME_JOIN_PAY_IN_FULL_10000=…
  */
 export const PROGRAMME_JOIN_PAY_IN_FULL_PRICE_ID =
   process.env.STRIPE_PRICE_PROGRAMME_JOIN_PAY_IN_FULL?.trim() ||
@@ -34,6 +35,11 @@ export const PROGRAMME_JOIN_THREE_PAY_1_PRICE_ID =
 export const PROGRAMME_JOIN_PAY_IN_FULL_9900_PRICE_ID =
   process.env.STRIPE_PRICE_PROGRAMME_JOIN_PAY_IN_FULL_9900?.trim() ||
   "price_1U3cwtEz5QxIrr4nnXcbZyTs";
+
+/** Live pay in full: £10,000 once. */
+export const PROGRAMME_JOIN_PAY_IN_FULL_10000_PRICE_ID =
+  process.env.STRIPE_PRICE_PROGRAMME_JOIN_PAY_IN_FULL_10000?.trim() ||
+  "price_1UV9JzEz5QxIrr4nJz5RL2XH";
 
 export const PROGRAMME_JOIN_TWO_PAY_4950_PRICE_ID =
   process.env.STRIPE_PRICE_PROGRAMME_JOIN_TWO_PAY_4950?.trim() ||
@@ -78,6 +84,7 @@ export type ProgrammeJoinOfferSlug =
   | "three-pay"
   | "three-pay-1"
   | "pay-in-full-9900"
+  | "pay-in-full-10000"
   | "two-pay-4950"
   | "four-pay-2600"
   | "four-pay-2500"
@@ -303,6 +310,14 @@ export const PROGRAMME_JOIN_OFFERS: Record<
     installmentAmount: 9900,
     paymentCount: 1,
     totalAmount: 9900,
+  }),
+  "pay-in-full-10000": liveOffer({
+    slug: "pay-in-full-10000",
+    priceId: PROGRAMME_JOIN_PAY_IN_FULL_10000_PRICE_ID,
+    currency: "gbp",
+    installmentAmount: 10000,
+    paymentCount: 1,
+    totalAmount: 10000,
   }),
   "two-pay-4950": liveOffer({
     slug: "two-pay-4950",
