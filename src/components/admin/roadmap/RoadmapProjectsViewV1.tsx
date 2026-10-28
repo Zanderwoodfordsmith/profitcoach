@@ -39,8 +39,7 @@ const SCORES = [1, 2, 3, 4, 5] as const;
 const STAGE_STYLE: Record<ProjectStage, { bar: string; dot: string; chip: string }> = {
   now: { bar: "bg-[#0c5290]", dot: "bg-[#0c5290]", chip: "bg-[#0c5290] text-white" },
   next: { bar: "bg-sky-400", dot: "bg-sky-400", chip: "bg-sky-100 text-sky-900" },
-  later: { bar: "bg-slate-300", dot: "bg-slate-300", chip: "bg-slate-100 text-slate-700" },
-  parked: { bar: "bg-amber-300", dot: "bg-amber-300", chip: "bg-amber-50 text-amber-900" },
+  done: { bar: "bg-emerald-400", dot: "bg-emerald-400", chip: "bg-emerald-50 text-emerald-900" },
 };
 
 const SHIPPED = new Set(["done", "staged", "live"]);
@@ -139,7 +138,7 @@ export function RoadmapProjectsViewV1({ jobs, authHeaders, onOpenProject }: Prop
   return (
     <div className="mt-3 space-y-5 pb-10">
       {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
-      <Timeline rows={[...ordered("now"), ...ordered("next"), ...ordered("later")]} />
+      <Timeline rows={[...ordered("now"), ...ordered("next")]} />
 
       {PROJECT_STAGES.map((stage) => {
         const list = ordered(stage);
@@ -166,7 +165,7 @@ export function RoadmapProjectsViewV1({ jobs, authHeaders, onOpenProject }: Prop
         );
       })}
 
-      <ProjectGrid rows={rows.filter((r) => r.stage !== "parked")} />
+      <ProjectGrid rows={rows.filter((r) => r.stage !== "done")} />
     </div>
   );
 }

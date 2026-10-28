@@ -18,17 +18,33 @@ export type LandingContent = {
   values: FeatureItem[];
   closeHeading: string;
   closeSubheading: string;
+  /** Hero line under the headline (landing C and D). */
+  intro: string;
+  /** Coach's own hero headline; when unset the headline variant's default shows. */
+  headlineLead?: string;
+  headlineHighlight?: string;
 };
 
-/** Keys coaches may override via profiles.landing_copy_overrides (expand over time). */
-export const LANDING_COPY_OVERRIDE_KEYS = ["eyebrow"] as const;
+/** Keys coaches may override via profiles.landing_copy_overrides, edited on the page itself. */
+export const LANDING_COPY_OVERRIDE_KEYS = [
+  "eyebrow",
+  "headlineLead",
+  "headlineHighlight",
+  "intro",
+] as const;
 export type LandingCopyOverrideKey = (typeof LANDING_COPY_OVERRIDE_KEYS)[number];
 
 export type LandingCopyOverrides = Partial<Pick<LandingContent, LandingCopyOverrideKey>>;
 
-const OVERRIDE_MAX_LEN: Record<LandingCopyOverrideKey, number> = {
+export const LANDING_OVERRIDE_MAX_LEN: Record<LandingCopyOverrideKey, number> = {
   eyebrow: 120,
+  headlineLead: 80,
+  headlineHighlight: 60,
+  intro: 400,
 };
+
+const DEFAULT_INTRO =
+  'Successful business owners master all 5 "Owner Levels" across profit, systems, team, and strategy. How many have you nailed? Take the Free BOSS Scorecard and find out where you really stand.';
 
 /** URL query params preserved from landing → assessment (prospect personalization). */
 export const LANDING_TO_ASSESSMENT_PARAMS = ["company", "prospect"] as const;
@@ -71,6 +87,7 @@ export function getDefaultLandingContent(kind: LandingKind): LandingContent {
       closeHeading: "Are You The BOSS Of Your Business, Or Is It The BOSS Of You?",
       closeSubheading:
         "Find out in 3 minutes. 50 questions. 10 areas. 5 levels. One score out of 100. One clear focus area.",
+      intro: DEFAULT_INTRO,
     };
   }
 
@@ -108,6 +125,7 @@ export function getDefaultLandingContent(kind: LandingKind): LandingContent {
     ],
     closeHeading: "Get The Clarity To Grow Profit And Buy Back Time",
     closeSubheading: "One diagnostic. One score. One focus. One next move.",
+    intro: DEFAULT_INTRO,
   };
 }
 
@@ -121,7 +139,7 @@ export function sanitizeLandingCopyOverrides(input: unknown): LandingCopyOverrid
   for (const key of LANDING_COPY_OVERRIDE_KEYS) {
     const raw = src[key];
     if (typeof raw !== "string") continue;
-    const max = OVERRIDE_MAX_LEN[key];
+    const max = LANDING_OVERRIDE_MAX_LEN[key];
     const cleaned = raw
       .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
       .trim()

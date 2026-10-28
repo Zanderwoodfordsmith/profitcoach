@@ -63,7 +63,7 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
   {
     href: "/admin/client-success",
     label: "Client success matrix",
-    hint: "Also under Coaches hub tabs",
+    hint: "Signature scores per coach (off the Coaches tabs for now)",
   },
   {
     href: "/admin/calls?tab=settings",

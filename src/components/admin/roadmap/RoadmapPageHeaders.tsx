@@ -1,19 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, FileText, MessageSquareText } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, MessageSquareText } from "lucide-react";
 import type { RoadmapInitiative } from "@/lib/roadmap/projectTypes";
 import { InitiativeIcon } from "./InitiativeIcon";
-import { InitiativesIcon, JobIcon, ProjectIcon } from "./roadmapIcons";
+import { InitiativesIcon, ProjectIcon } from "./roadmapIcons";
 import { initiativeHref, projectHref } from "./useRoadmapData";
 
 /**
- * The row under Product's top bar on a project's or initiative's own page: a
- * trail back up, then the page's own tabs as pills. The top bar itself never
+ * The row under Product's top bar on an initiative's own page (hidden since
+ * 28 Oct): a trail back up, then its tabs as pills. Projects have one page. The top bar itself never
  * changes (it always reads Product with Initiatives, Projects, Jobs, Curriculum).
  */
 
-export type ProjectTab = "overview" | "updates" | "jobs";
 export type InitiativeTab = "overview" | "updates" | "projects";
 
 type Pill = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; active: boolean };
@@ -42,43 +41,15 @@ function Pills({ label, items }: { label: string; items: Pill[] }) {
 
 const sep = <ChevronRight className="h-3.5 w-3.5 text-slate-300" aria-hidden />;
 
-export function ProjectNav({
-  name,
-  initiative,
-  active,
-}: {
-  name: string;
-  initiative: RoadmapInitiative | null;
-  active: ProjectTab;
-}) {
+/** Above a project's jobs on the board: the way back to the project's page. */
+export function ProjectNav({ name }: { name: string }) {
   return (
-    <div className="mt-5">
-      <nav aria-label="Where you are" className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
-        <Link href="/admin/roadmap/projects" className="inline-flex items-center gap-1.5 hover:text-slate-900">
-          <ProjectIcon className="h-3.5 w-3.5" aria-hidden />
-          Projects
-        </Link>
-        {initiative ? (
-          <>
-            {sep}
-            <Link href={initiativeHref(initiative.id)} className="inline-flex items-center gap-1.5 hover:text-slate-900">
-              <InitiativeIcon initiative={initiative} size="sm" />
-              {initiative.name}
-            </Link>
-          </>
-        ) : null}
-        {sep}
-        <span className="font-medium text-slate-900">{name}</span>
-      </nav>
-      <Pills
-        label={name}
-        items={[
-          { href: projectHref(name), label: "Overview", icon: FileText, active: active === "overview" },
-          { href: projectHref(name, "updates"), label: "Updates", icon: MessageSquareText, active: active === "updates" },
-          { href: projectHref(name, "jobs"), label: "Jobs", icon: JobIcon, active: active === "jobs" },
-        ]}
-      />
-    </div>
+    <nav aria-label="Where you are" className="mt-5 text-sm">
+      <Link href={projectHref(name)} className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-slate-900">
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+        {name}
+      </Link>
+    </nav>
   );
 }
 

@@ -4,7 +4,7 @@ When a prospect gets a message, they check the profile to see if the claim is re
 
 ## Public or discreet
 - Public: the coach can say they are a business coach. Lead with who they help and the result.
-- Discreet: still employed or under a non-compete. Position them as an operator and adviser. Do not say "coach". Lead with expertise and results.
+- Discreet: still employed, under a non-compete, or best known as an expert in their industry. Position them as an operator and adviser. Do not say "coach". Lead with expertise and results. No "book a call" anywhere: the call to action is the BOSS Scorecard or subscribing to their newsletter.
 
 ## Headline formulas (write options with different angles)
 - Transformation + audience: "Helping {avatar} {outcome}, {method or differentiator}"

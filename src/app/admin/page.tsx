@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { CoachesSaveViewButton } from "@/components/admin/CoachesSaveViewButton";
 import { CoachesTableViewBar } from "@/components/admin/CoachesTableViewBar";
+import { GettingLiveList } from "@/components/admin/GettingLiveList";
+import { ProspectsViewSwitcher } from "@/components/prospects/ProspectsViewSwitcher";
+import { ProspectsPipelineToolbar, type ProspectsToolbarMenu } from "@/components/prospects/ProspectsPipelineToolbar";
 import { GenerateCertificateModal } from "@/components/admin/GenerateCertificateModal";
-import { CoachesMonthlyBarChart } from "@/components/admin/CoachesMonthlyBarChart";
 import {
   CoachPaymentsCellContent,
   CoachPaymentsPopover,
@@ -41,7 +43,6 @@ import {
 } from "@/lib/admin/coachTableSort";
 import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote";
 import { StickyPageHeader } from "@/components/layout";
-import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
@@ -52,10 +53,7 @@ import {
   lastLoginFreshnessClasses,
 } from "@/lib/lastLoginFreshness";
 import { buildCoachLandingLink } from "@/lib/buildCoachLandingLink";
-import {
-  TableCsvExportButton,
-  type CsvExportScope,
-} from "@/components/table/TableCsvExportButton";
+import { type CsvExportScope } from "@/components/table/TableCsvExportButton";
 import { coachSlugFromFullName } from "@/lib/coachSlug";
 import { isSystemCoachSlug } from "@/lib/primaryCoachConstants";
 import { exportCoachesToCsv } from "@/lib/exportCoachesCsv";
@@ -68,18 +66,14 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   ArrowRight,
-  ArrowUpDown,
   Award,
   ChevronDown,
-  Columns3,
   ExternalLink,
   GripVertical,
   Loader2,
   Plus,
-  Search,
   X,
 } from "lucide-react";
-import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 
@@ -741,6 +735,22 @@ function formatMemberFor(joinedIso: string): { label: string; totalDays: number 
 
 export default function AdminPage() {
   const router = useRouter();
+  // The built-in Getting live view (?view=getting-live), beside the saved table views.
+  const [gettingLiveView, setGettingLiveView] = useState(false);
+  const [gettingLiveLayout, setGettingLiveLayout] = useState<"list" | "board">("list");
+  useEffect(() => {
+    setGettingLiveView(new URLSearchParams(window.location.search).get("view") === "getting-live");
+  }, []);
+  const showGettingLive = useCallback(
+    (on: boolean) => {
+      setGettingLiveView(on);
+      const url = new URL(window.location.href);
+      if (on) url.searchParams.set("view", "getting-live");
+      else url.searchParams.delete("view");
+      router.replace(`${url.pathname}${url.search}`, { scroll: false });
+    },
+    [router]
+  );
   const { setImpersonatingCoachId } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [checkingRole, setCheckingRole] = useState(true);
@@ -803,12 +813,9 @@ export default function AdminPage() {
   const [draggingColumnKey, setDraggingColumnKey] = useState<
     keyof CoachTableColumnVisibility | null
   >(null);
-  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
-  const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
-  const [sortMenuOpen, setSortMenuOpen] = useState(false);
-  const columnsMenuRef = useRef<HTMLDivElement | null>(null);
-  const filtersMenuRef = useRef<HTMLDivElement | null>(null);
-  const sortMenuRef = useRef<HTMLDivElement | null>(null);
+  // One toolbar menu open at a time (Filter, Sort or Columns), as on Prospects.
+  const [toolbarMenu, setToolbarMenu] = useState<ProspectsToolbarMenu>(null);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
   const [directorySavingId, setDirectorySavingId] = useState<string | null>(
     null
   );
@@ -838,36 +845,14 @@ export default function AdminPage() {
   );
 
   useEffect(() => {
-    if (!columnsMenuOpen && !filtersMenuOpen && !sortMenuOpen) return;
+    if (!toolbarMenu) return;
     function handlePointerDown(e: MouseEvent) {
-      const target = e.target as Node;
-      if (
-        columnsMenuRef.current &&
-        columnsMenuRef.current.contains(target)
-      ) {
-        return;
-      }
-      if (
-        filtersMenuRef.current &&
-        filtersMenuRef.current.contains(target)
-      ) {
-        return;
-      }
-      if (sortMenuRef.current && sortMenuRef.current.contains(target)) {
-        return;
-      }
-      if (
-        columnsMenuRef.current &&
-        !columnsMenuRef.current.contains(target)
-      ) {
-        setColumnsMenuOpen(false);
-      }
-      setFiltersMenuOpen(false);
-      setSortMenuOpen(false);
+      if (toolbarRef.current && toolbarRef.current.contains(e.target as Node)) return;
+      setToolbarMenu(null);
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [columnsMenuOpen, filtersMenuOpen, sortMenuOpen]);
+  }, [toolbarMenu]);
 
   const currentViewSettings = useMemo(
     (): CoachTableViewSettings => ({
@@ -2236,11 +2221,6 @@ export default function AdminPage() {
         </p>
       ) : null}
 
-      <CoachesMonthlyBarChart
-        coaches={memberCoaches}
-        loading={loading || checkingRole}
-      />
-
       {showAddCoach && (
         <section className={cardClass("plain", "p-4")}>
           <div className="flex items-start justify-between gap-3">
@@ -2392,11 +2372,13 @@ export default function AdminPage() {
         <div className="border-b border-slate-100 px-4 pt-3">
           <CoachesTableViewBar
             views={coachTableViews.views}
-            activeViewId={coachTableViews.activeViewId}
+            activeViewId={gettingLiveView ? null : coachTableViews.activeViewId}
             currentUserId={coachTableViews.currentUserId}
             onSwitchView={(viewId) => {
+              if (gettingLiveView) showGettingLive(false);
               void coachTableViews.switchView(viewId);
             }}
+            builtInViews={[{ key: "getting-live", label: "Getting live", active: gettingLiveView, onSelect: () => showGettingLive(true) }]}
             onAddView={(name, isPrivate) => {
               void coachTableViews.addViewFromCurrent(name, isPrivate);
             }}
@@ -2411,56 +2393,27 @@ export default function AdminPage() {
             }}
           />
         </div>
-        <div className="border-b border-slate-100 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full sm:max-w-xs">
-              <Search
-                className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                aria-hidden
-              />
-              <input
-                id="coach-search"
-                type="search"
-                value={coachSearchTerm}
-                onChange={(e) => setCoachSearchTerm(e.target.value)}
-                placeholder="Search coaches"
-                className={fieldClass("input", "small", "pl-9")}
-              />
-            </div>
-
-            <TableToolbarAddButton
-              onClick={() => {
-                setShowAddCoach(true);
-                setCreateError(null);
-                setCreateSuccess(null);
-              }}
+        {gettingLiveView ? (
+          <div className="p-4">
+            <GettingLiveList
+              view={gettingLiveLayout}
+              from="getting-live"
+              viewSwitcher={
+                <ProspectsViewSwitcher view={gettingLiveLayout} onChange={setGettingLiveLayout} ariaLabel="Getting live view" boardLabel="Board view" />
+              }
             />
-
-            <TableToolbarButton
-              label="Certificate"
-              title="Generate certificate"
-              onClick={() => setShowCertificateModal(true)}
-              icon={<Award className="h-5 w-5 text-slate-500" aria-hidden />}
-            />
-
-            <div ref={filtersMenuRef} className="relative">
-              <TableToolbarButton
-                label="Filters"
-                aria-haspopup="true"
-                aria-expanded={filtersMenuOpen}
-                aria-controls="coach-filters-menu"
-                active={filtersMenuOpen}
-                badge={activeFilterCount > 0 ? activeFilterCount : null}
-                onClick={() => {
-                  setFiltersMenuOpen((open) => !open);
-                  setSortMenuOpen(false);
-                  setColumnsMenuOpen(false);
-                }}
-                icon={
-                  <FilterSlidersIcon className="h-5 w-5 text-slate-500" />
-                }
-              />
-              {filtersMenuOpen ? (
+          </div>
+        ) : (
+        <>
+        <div ref={toolbarRef} className="border-b border-slate-100 px-4 py-3">
+          <ProspectsPipelineToolbar
+            search={coachSearchTerm}
+            onSearchChange={setCoachSearchTerm}
+            searchPlaceholder="Search coaches…"
+            menu={toolbarMenu}
+            onMenuChange={setToolbarMenu}
+            filterCount={activeFilterCount}
+            filterMenu={
                 <div
                   id="coach-filters-menu"
                   role="menu"
@@ -2584,28 +2537,9 @@ export default function AdminPage() {
                     </div>
                   </div>
                 </div>
-              ) : null}
-            </div>
-
-            <div ref={sortMenuRef} className="relative">
-              <TableToolbarButton
-                label="Sort"
-                aria-haspopup="true"
-                aria-expanded={sortMenuOpen}
-                aria-controls="coach-sort-menu"
-                active={sortMenuOpen}
-                badge={hasActiveSort ? sorts.length : null}
-                title={hasActiveSort ? "Sort (active)" : "Sort"}
-                onClick={() => {
-                  setSortMenuOpen((open) => !open);
-                  setFiltersMenuOpen(false);
-                  setColumnsMenuOpen(false);
-                }}
-                icon={
-                  <ArrowUpDown className="h-5 w-5 text-slate-500" aria-hidden />
-                }
-              />
-              {sortMenuOpen ? (
+            }
+            sortActive={hasActiveSort}
+            sortMenu={
                 <div
                   id="coach-sort-menu"
                   role="menu"
@@ -2723,32 +2657,14 @@ export default function AdminPage() {
                     ) : null}
                   </div>
                 </div>
-              ) : null}
-            </div>
-
-            <div ref={columnsMenuRef} className="relative">
-              <TableToolbarButton
-                label="Columns"
-                id="coach-columns-trigger"
-                aria-haspopup="true"
-                aria-expanded={columnsMenuOpen}
-                aria-controls="coach-columns-menu"
-                active={columnsMenuOpen}
-                onClick={() => {
-                  setColumnsMenuOpen((open) => !open);
-                  setFiltersMenuOpen(false);
-                  setSortMenuOpen(false);
-                }}
-                icon={
-                  <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
-                }
-              />
-              {columnsMenuOpen ? (
+            }
+            fieldsLabel="Columns"
+            fieldsMenu={
                 <div
                   id="coach-columns-menu"
                   role="menu"
                   aria-labelledby="coach-columns-trigger"
-                  className="absolute right-0 z-[90] mt-1 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,18rem)] overflow-y-auto rounded-md border border-slate-200 bg-white py-2 shadow-lg"
+                  className="absolute left-0 z-[90] mt-1 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,18rem)] overflow-y-auto rounded-md border border-slate-200 bg-white py-2 shadow-lg"
                 >
                   <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Shown
@@ -2779,19 +2695,26 @@ export default function AdminPage() {
                     );
                   })}
                 </div>
-              ) : null}
-            </div>
-
-            <TableCsvExportButton
-              disabled={loading || filteredCoaches.length === 0}
-              entityLabel="coaches"
-              selectedCount={selectedCount}
-              totalMatchingCount={filteredCoaches.length}
-              onExportShown={(scope) => handleExportCoachesCsv("shown", scope)}
-              onExportAll={(scope) => handleExportCoachesCsv("all", scope)}
-            />
-
-            <div className="ml-auto flex items-center gap-2">
+            }
+            exportDisabled={loading || filteredCoaches.length === 0}
+            exportEntityLabel="coaches"
+            exportSelectedCount={selectedCount}
+            exportMatchingCount={filteredCoaches.length}
+            onExportShown={(scope) => handleExportCoachesCsv("shown", scope)}
+            onExportAll={(scope) => handleExportCoachesCsv("all", scope)}
+            actions={
+              <TableToolbarButton
+                label="Certificate"
+                title="Generate certificate"
+                onClick={() => {
+                  setToolbarMenu(null);
+                  setShowCertificateModal(true);
+                }}
+                icon={<Award className="h-5 w-5 text-slate-500" aria-hidden />}
+              />
+            }
+            end={
+              <>
               <CoachesSaveViewButton
                 isDirty={coachTableViews.isDirty}
                 autosave={coachTableViews.autosave}
@@ -2843,8 +2766,22 @@ export default function AdminPage() {
                       ? `${memberCoaches.length} ${memberCoaches.length === 1 ? "coach" : "coaches"}`
                       : `${filteredCoaches.length} of ${memberCoaches.length}`}
               </p>
-            </div>
-          </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddCoach(true);
+                    setCreateError(null);
+                    setCreateSuccess(null);
+                  }}
+                  aria-pressed={showAddCoach}
+                  className={buttonClass("main", "normal", "shrink-0")}
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+                  Add coach
+                </button>
+              </>
+            }
+          />
         </div>
         <div className="overflow-x-auto">
         <table className="w-max min-w-max text-left text-sm">
@@ -3002,6 +2939,8 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+        </>
+        )}
       </section>
 
       {webhookEditCoachId && (

@@ -15,6 +15,7 @@ import {
 } from "@/components/admin/AdminCoachLinkedInPanel";
 import { AdminCoachContentHistory } from "@/components/admin/AdminCoachContentHistory";
 import { CoachProfileBlueprint } from "@/components/admin/CoachProfileBlueprint";
+import { CoachGettingLive } from "@/components/admin/CoachGettingLive";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { badgeClass } from "@/components/ui/Badge";
@@ -116,7 +117,7 @@ type CoachPayment = {
   billing_kind_override: PaymentBillingKind | null;
 };
 
-type TabId = "overview" | "linkedin" | "blueprint" | "payments";
+type TabId = "overview" | "getting-live" | "linkedin" | "blueprint" | "payments";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
 
@@ -217,7 +218,7 @@ export default function AdminCoachDetailPage({
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "payments" || tab === "linkedin" || tab === "blueprint" || tab === "practice") {
+    if (tab === "payments" || tab === "linkedin" || tab === "blueprint" || tab === "getting-live" || tab === "practice") {
       setActiveTab(tab === "practice" ? "blueprint" : tab);
     } else if (!tab) {
       setActiveTab("overview");
@@ -425,6 +426,13 @@ export default function AdminCoachDetailPage({
     coach?.slug ||
     "Coach";
 
+  // Back goes where the coach was opened from: the Getting live view on Coaches, or all coaches.
+  const from = searchParams.get("from");
+  const back =
+    from === "getting-live"
+      ? { href: "/admin?view=getting-live", label: "Getting live" }
+      : { href: "/admin", label: "All coaches" };
+
   const tabButton = (id: TabId, label: string) => (
     <button
       key={id}
@@ -466,10 +474,10 @@ export default function AdminCoachDetailPage({
         <div className="space-y-4">
           <header className="space-y-3">
             <Link
-              href="/admin"
+              href={back.href}
               className="inline-flex text-sm font-medium text-sky-600 hover:text-sky-700"
             >
-              ← All coaches
+              ← {back.label}
             </Link>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
@@ -528,6 +536,7 @@ export default function AdminCoachDetailPage({
           <div className="border-b border-slate-200/80">
             <nav className="-mb-px flex flex-wrap gap-x-8 gap-y-1" aria-label="Coach sections">
               {tabButton("overview", "Overview")}
+              {tabButton("getting-live", "Getting live")}
               {tabButton("linkedin", "LinkedIn")}
               {tabButton("blueprint", "Blueprint")}
               {tabButton("payments", `Payments (${paymentSummary.succeededCount})`)}
@@ -926,6 +935,8 @@ export default function AdminCoachDetailPage({
             <AdminCoachContentHistory coachId={coach.id} />
             </div>
           ) : null}
+
+          {activeTab === "getting-live" ? <CoachGettingLive coachId={coach.id} /> : null}
 
           {activeTab === "blueprint" ? (
             <div className={cardClass("plain", "h-[calc(100dvh-11.5rem)] min-h-[32rem] overflow-hidden")}>

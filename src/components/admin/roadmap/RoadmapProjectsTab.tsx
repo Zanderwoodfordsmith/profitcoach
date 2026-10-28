@@ -17,7 +17,7 @@ const SHOW_KEY = "roadmap-projects-show";
 /** Product → Projects: every project as a list, a board by stage, on the impact and ease grid, or on the 12-week timeline. */
 export function RoadmapProjectsTab() {
   const router = useRouter();
-  const { jobs, initiatives, error } = useRoadmapData();
+  const { jobs, error } = useRoadmapData();
   const [creating, setCreating] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -72,7 +72,7 @@ export function RoadmapProjectsTab() {
           New project
         </button>
       </div>
-      {creating ? <NewProjectSheet initiatives={initiatives ?? []} onClose={() => setCreating(false)} /> : null}
+      {creating ? <NewProjectSheet onClose={() => setCreating(false)} /> : null}
       {error ? <p className="mt-4 text-sm font-medium text-rose-600">{error}</p> : null}
       {jobs ? (
         <RoadmapProjectsView

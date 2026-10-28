@@ -5,15 +5,26 @@ import { recallTraffic, rememberTraffic } from "@/lib/trafficSource";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import type { LandingContent, LandingCopyOverrides } from "@/lib/landingCopy";
+import type {
+  LandingContent,
+  LandingCopyOverrideKey,
+  LandingCopyOverrides,
+} from "@/lib/landingCopy";
 import {
   getDefaultLandingContent,
   mergeLandingContent,
+  LANDING_COPY_OVERRIDE_KEYS,
   LANDING_TO_ASSESSMENT_PARAMS,
   sanitizeProspectUrlParam,
 } from "@/lib/landingCopy";
 import { LandingVariantC } from "@/components/landing/LandingVariantC";
 import { LandingVariantD } from "@/components/landing/LandingVariantD";
+import {
+  LandingEditBar,
+  type LandingCopyEditor,
+  type LandingSaveState,
+} from "@/components/landing/landingEdit";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoachConstants";
 import { LANDING_CONTACT_SESSION_KEY } from "@/lib/assessmentContactParams";
 import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
@@ -103,6 +114,8 @@ export default function LandingVariantPage() {
   const coachSlug = coachSlugFromUrl || getPrimaryCoachSlug();
   const isEmbedded = isEmbeddedRequest(searchParams);
   useEmbedAutoResize(isEmbedded);
+  // ?edit=1: the coach (or an admin) changes the hero wording on the page itself.
+  const wantsEdit = searchParams.get("edit") === "1" && Boolean(coachSlugFromUrl);
 
   const router = useRouter();
   const [coach, setCoach] = useState<CoachInfo | null>(null);
@@ -117,6 +130,12 @@ export default function LandingVariantPage() {
   const [phone, setPhone] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editAccess, setEditAccess] = useState<{ ownerName: string | null } | null>(null);
+  const [editMode, setEditMode] = useState<"edit" | "live">("edit");
+  const [editSave, setEditSave] = useState<LandingSaveState>("saved");
+  const [editError, setEditError] = useState<string | null>(null);
+  // Saves merge into one JSON column on the server, so they go one at a time.
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
 
   const isVariantA = variant === "a";
   const isVariantB = variant === "b";
@@ -131,7 +150,7 @@ export default function LandingVariantPage() {
   }, []);
 
   useEffect(() => {
-    if (!validVariant) return;
+    if (!validVariant || wantsEdit) return;
     const sessionId = getOrSetSessionId();
     if (viewTracked.current) return;
     viewTracked.current = true;
@@ -145,7 +164,69 @@ export default function LandingVariantPage() {
         session_id: sessionId,
       }),
     }).catch(() => {});
-  }, [validVariant, trackVariant, trackCoachSlug]);
+  }, [validVariant, wantsEdit, trackVariant, trackCoachSlug]);
+
+  useEffect(() => {
+    if (!wantsEdit) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      const res = await fetch(
+        `/api/coach/landing-copy?slug=${encodeURIComponent(coachSlugFromUrl)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      ).catch(() => null);
+      if (cancelled || !res?.ok) return;
+      const body = (await res.json()) as {
+        overrides: LandingCopyOverrides;
+        name: string | null;
+        actingAsAdmin: boolean;
+      };
+      setLandingOverrides(body.overrides);
+      setEditAccess({ ownerName: body.actingAsAdmin ? body.name : null });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [wantsEdit, coachSlugFromUrl]);
+
+  function saveOverrides(patch: Partial<Record<LandingCopyOverrideKey, string | null>>) {
+    setLandingOverrides((prev) => {
+      const next: Record<string, string> = { ...prev };
+      for (const [key, value] of Object.entries(patch)) {
+        if (value) next[key] = value;
+        else delete next[key];
+      }
+      return next;
+    });
+    setEditSave("saving");
+    setEditError(null);
+    const run = saveQueue.current.then(async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("You have been signed out. Sign in again to keep editing.");
+      const res = await fetch("/api/coach/landing-copy", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: coachSlugFromUrl, overrides: patch }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error || "That did not save. Try again.");
+    });
+    saveQueue.current = run.then(
+      () => setEditSave("saved"),
+      (err: unknown) => {
+        setEditSave("error");
+        setEditError(err instanceof Error ? err.message : "That did not save. Try again.");
+      }
+    );
+  }
+
+  function resetWording() {
+    if (!window.confirm("Put the BCA wording back on your landing page?")) return;
+    saveOverrides(Object.fromEntries(LANDING_COPY_OVERRIDE_KEYS.map((k) => [k, null])));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -345,6 +426,23 @@ export default function LandingVariantPage() {
   );
   const prospectCompany = sanitizeProspectUrlParam(searchParams.get("company"));
   const prospectName = sanitizeProspectUrlParam(searchParams.get("prospect"));
+  const defaultIntro = getDefaultLandingContent(landingKind).intro;
+  const copyEditor: LandingCopyEditor | undefined =
+    editAccess && editMode === "edit"
+      ? { save: (key, value) => saveOverrides({ [key]: value || null }) }
+      : undefined;
+  const editBar = editAccess ? (
+    <LandingEditBar
+      ownerName={editAccess.ownerName}
+      mode={editMode}
+      onMode={setEditMode}
+      save={editSave}
+      error={editError}
+      hasChanges={Object.keys(landingOverrides).length > 0}
+      onReset={resetWording}
+      doneHref="/coach/campaigns/magnets/boss-score"
+    />
+  ) : null;
 
   const legacyProps: LandingVariantLegacyProps = {
     coachSlug,
@@ -375,62 +473,77 @@ export default function LandingVariantPage() {
 
   if (isVariantB) {
     return (
-      <LandingVariantD
-        headlineVariant="b"
-        landingContent={landingContent}
-        prospectCompany={prospectCompany}
-        prospectName={prospectName}
-        scrollToForm={scrollToForm}
-        form={
-          <LandingOptInForm
-            {...legacyProps}
-            variant="light"
-            cta={landingContent.cta}
-            embedded
-            figmaLandingC
-          />
-        }
-      />
+      <>
+        <LandingVariantD
+          headlineVariant="b"
+          landingContent={landingContent}
+          editor={copyEditor}
+          defaultIntro={defaultIntro}
+          prospectCompany={prospectCompany}
+          prospectName={prospectName}
+          scrollToForm={scrollToForm}
+          form={
+            <LandingOptInForm
+              {...legacyProps}
+              variant="light"
+              cta={landingContent.cta}
+              embedded
+              figmaLandingC
+            />
+          }
+        />
+        {editBar}
+      </>
     );
   }
 
   if (isVariantC) {
     return (
-      <LandingVariantC
-        landingContent={landingContent}
-        prospectCompany={prospectCompany}
-        prospectName={prospectName}
-        scrollToForm={scrollToForm}
-        form={
-          <LandingOptInForm
-            {...legacyProps}
-            variant="light"
-            cta={landingContent.cta}
-            embedded
-            figmaLandingC
-          />
-        }
-      />
+      <>
+        <LandingVariantC
+          landingContent={landingContent}
+          editor={copyEditor}
+          defaultIntro={defaultIntro}
+          prospectCompany={prospectCompany}
+          prospectName={prospectName}
+          scrollToForm={scrollToForm}
+          form={
+            <LandingOptInForm
+              {...legacyProps}
+              variant="light"
+              cta={landingContent.cta}
+              embedded
+              figmaLandingC
+            />
+          }
+        />
+        {editBar}
+      </>
     );
   }
 
   if (isVariantD) {
     return (
-      <LandingVariantD
-        landingContent={landingContent}
-        prospectCompany={prospectCompany}
-        prospectName={prospectName}
-        scrollToForm={scrollToForm}
-        form={
-          <LandingOptInForm
-            {...legacyProps}
-            variant="light"
-            cta={landingContent.cta}
-            embedded
-            figmaLandingC
-          />
-        }
-      />
+      <>
+        <LandingVariantD
+          landingContent={landingContent}
+          editor={copyEditor}
+          defaultIntro={defaultIntro}
+          prospectCompany={prospectCompany}
+          prospectName={prospectName}
+          scrollToForm={scrollToForm}
+          form={
+            <LandingOptInForm
+              {...legacyProps}
+              variant="light"
+              cta={landingContent.cta}
+              embedded
+              figmaLandingC
+            />
+          }
+        />
+        {editBar}
+      </>
     );
   }
 

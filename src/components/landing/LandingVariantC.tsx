@@ -9,7 +9,9 @@ import {
 } from "@/components/landing/DashboardStyleLevelBars";
 import { LandingHeroHeadline } from "@/components/landing/LandingHeroHeadline";
 import { BossScoreWordmark } from "@/components/scorecard/BossScoreWordmark";
-import type { LandingContent } from "@/lib/landingCopy";
+import { LANDING_OVERRIDE_MAX_LEN, type LandingContent } from "@/lib/landingCopy";
+import { Editable } from "@/components/directoryProfile/Editable";
+import { LANDING_EDIT_FIELD, type LandingCopyEditor } from "@/components/landing/landingEdit";
 import type { LandingHeroHeadlineVariant } from "@/lib/landingHeroHeadline";
 
 const DEMO_TOTAL = 47;
@@ -108,13 +110,44 @@ function EyebrowLight({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Dark-banner eyebrow — frosted pill on navy. */
-function EyebrowDark({ children }: { children: React.ReactNode }) {
+/** Dark-banner eyebrow — frosted pill on navy. Stretches to hold a field while editing. */
+function EyebrowDark({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-[#5a9fd4]/35 bg-[#0a3a66]/55 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#e8f4ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[6px]">
+    <span
+      className={`${wide ? "flex w-full max-w-xl" : "inline-flex"} items-center gap-2 rounded-full border border-[#5a9fd4]/35 bg-[#0a3a66]/55 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#e8f4ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-[6px]`}
+    >
       <Sparkles className="size-3 shrink-0 text-[#7ec8ff]" strokeWidth={2.25} aria-hidden />
       {children}
     </span>
+  );
+}
+
+/** Hero line under the headline: the text itself, or a field while the coach edits. */
+function HeroIntro({
+  text,
+  defaultText,
+  editor,
+  className,
+}: {
+  text: string;
+  defaultText: string;
+  editor?: LandingCopyEditor;
+  className: string;
+}) {
+  if (!editor) return <p className={className}>{text}</p>;
+  return (
+    <div className={className}>
+      <Editable
+        value={text}
+        editing
+        onCommit={(v) => editor.save("intro", v)}
+        label="Line under the headline"
+        placeholder={defaultText}
+        multiline
+        maxLength={LANDING_OVERRIDE_MAX_LEN.intro}
+        className={LANDING_EDIT_FIELD}
+      />
+    </div>
   );
 }
 
@@ -194,6 +227,10 @@ export type LandingVariantCProps = {
   heroLayout?: "stack" | "split";
   /** Hero headline A/B: `d` = main, `b` = alt headline (same layout). */
   headlineVariant?: LandingHeroHeadlineVariant;
+  /** Set while the coach edits their page: the hero wording becomes fields. */
+  editor?: LandingCopyEditor;
+  /** BCA wording, shown as the hint in an emptied field. */
+  defaultIntro?: string;
 };
 
 export function LandingVariantC({
@@ -204,6 +241,8 @@ export function LandingVariantC({
   form,
   heroLayout = "stack",
   headlineVariant = "d",
+  editor,
+  defaultIntro = "",
 }: LandingVariantCProps) {
   const bottomCtaLabel = "Get My BOSS Score";
   const splitHero = heroLayout === "split";
@@ -243,9 +282,26 @@ export function LandingVariantC({
             {splitHero ? (
               <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center lg:gap-12 xl:gap-16">
                 <div className="flex min-w-0 flex-col items-start text-left">
-                  <EyebrowDark>{landingContent.eyebrow}</EyebrowDark>
+                  <EyebrowDark wide={Boolean(editor)}>
+                    {editor ? (
+                      <Editable
+                        value={landingContent.eyebrow}
+                        editing
+                        onCommit={(v) => editor.save("eyebrow", v)}
+                        label="Who it is for"
+                        placeholder="e.g. For engineering founders, £500K–£5M"
+                        maxLength={LANDING_OVERRIDE_MAX_LEN.eyebrow}
+                        className={`${LANDING_EDIT_FIELD} min-w-0 flex-1 uppercase`}
+                      />
+                    ) : (
+                      landingContent.eyebrow
+                    )}
+                  </EyebrowDark>
                   <LandingHeroHeadline
                     variant={headlineVariant}
+                    lead={landingContent.headlineLead}
+                    highlight={landingContent.headlineHighlight}
+                    editor={editor}
                     className="mt-5 text-[clamp(40px,6.2vw,62px)] leading-[1.08] lg:text-[clamp(42px,5.4vw,68px)] xl:text-[clamp(44px,4.8vw,76px)]"
                   />
                   {prospectCompany || prospectName ? (
@@ -269,11 +325,12 @@ export function LandingVariantC({
                       ) : null}
                     </p>
                   ) : null}
-                  <p className="mt-6 max-w-xl text-pretty text-[clamp(18px,2.2vw,22px)] font-normal leading-[1.55] text-[#eef2f6]">
-                    Successful business owners master all 5 &quot;Owner Levels&quot; across profit,
-                    systems, team, and strategy. How many have you nailed? Take the Free BOSS Scorecard
-                    and find out where you really stand.
-                  </p>
+                  <HeroIntro
+                    text={landingContent.intro}
+                    defaultText={defaultIntro}
+                    editor={editor}
+                    className={`mt-6 text-pretty text-[clamp(18px,2.2vw,22px)] font-normal leading-[1.55] text-[#eef2f6] ${editor ? "w-full max-w-xl" : "max-w-xl"}`}
+                  />
                 </div>
                 <div className="flex min-w-0 justify-center lg:justify-end">
                   <div className="w-full max-w-[min(100%,560px)] lg:max-w-[min(100%,620px)]">
@@ -292,6 +349,9 @@ export function LandingVariantC({
               <>
                 <LandingHeroHeadline
                   variant={headlineVariant}
+                  lead={landingContent.headlineLead}
+                  highlight={landingContent.headlineHighlight}
+                  editor={editor}
                   className="text-[clamp(36px,7vw,64px)] leading-[1.1]"
                 />
                 {prospectCompany || prospectName ? (
@@ -315,11 +375,12 @@ export function LandingVariantC({
                     ) : null}
                   </p>
                 ) : null}
-                <p className="mt-6 max-w-[min(100%,1180px)] text-pretty text-[clamp(18px,2.5vw,22px)] font-normal leading-[1.55] text-[#eef2f6]">
-                  Successful business owners master all 5 &quot;Owner Levels&quot; across profit, systems,
-                  team, and strategy. How many have you nailed? Take the Free BOSS Scorecard and find out
-                  where you really stand.
-                </p>
+                <HeroIntro
+                  text={landingContent.intro}
+                  defaultText={defaultIntro}
+                  editor={editor}
+                  className={`mt-6 max-w-[min(100%,1180px)] text-pretty text-[clamp(18px,2.5vw,22px)] font-normal leading-[1.55] text-[#eef2f6] ${editor ? "w-full" : ""}`}
+                />
 
                 <div className="mt-10 w-full max-w-[min(100%,920px)] sm:mt-12">
                   <div className="overflow-hidden rounded-[22.661px] bg-transparent shadow-[0_28px_80px_-24px_rgba(0,0,0,0.45)]">

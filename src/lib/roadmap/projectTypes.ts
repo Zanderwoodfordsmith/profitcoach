@@ -1,12 +1,12 @@
 /** A roadmap project's own fields (table roadmap_projects); its jobs are roadmap_jobs with project = name. */
-export const PROJECT_STAGES = ["now", "next", "later", "parked"] as const;
+/** Projects are work with an end (28 Oct): Now, Next, then Done. Ideas without an end live in the backlog by area. */
+export const PROJECT_STAGES = ["now", "next", "done"] as const;
 export type ProjectStage = (typeof PROJECT_STAGES)[number];
 
 export const PROJECT_STAGE_META: Record<ProjectStage, { label: string; hint: string }> = {
   now: { label: "Now", hint: "Being built. Overnight work comes from here first." },
   next: { label: "Next", hint: "Up after Now. Small jobs here are fine." },
-  later: { label: "Later", hint: "Worth doing, not yet." },
-  parked: { label: "Parked", hint: "Far from launch. Pages kept out of the way (Tools and links)." },
+  done: { label: "Done", hint: "Finished. Pick the next project from the backlog." },
 };
 
 export type RoadmapProject = {

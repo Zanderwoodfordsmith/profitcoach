@@ -36,7 +36,7 @@ import {
 import { MetaDropdown, ScoreBarsPair } from "./roadmapUi";
 import { blankProject, initiativeHref, projectHref, roadmapAuthHeaders, useRoadmapData } from "./useRoadmapData";
 
-const STAGE_RANK = { now: 0, next: 1, later: 2, parked: 3 } as const;
+const STAGE_RANK = { now: 0, next: 1, done: 2 } as const;
 
 /** An initiative's projects, Now first. */
 function projectsIn(initiativeId: string, projects: RoadmapProject[]): RoadmapProject[] {
@@ -491,7 +491,7 @@ export function RoadmapInitiativeProjects({ id }: { id: string }) {
               </div>
             ) : null}
           </div>
-          {creating ? <NewProjectSheet initiatives={initiatives ?? []} defaultInitiativeId={id} onClose={() => setCreating(false)} /> : null}
+          {creating ? <NewProjectSheet defaultInitiativeId={id} onClose={() => setCreating(false)} /> : null}
         </div>
       )}
     </InitiativeShell>

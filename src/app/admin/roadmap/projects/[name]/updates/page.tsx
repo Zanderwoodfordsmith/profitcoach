@@ -1,6 +1,7 @@
-import { RoadmapProjectUpdatesTab } from "@/components/admin/roadmap/RoadmapProjectPage";
+import { redirect } from "next/navigation";
 
+/** Updates live on the project's page now (28 Oct). */
 export default async function AdminRoadmapProjectUpdatesPage({ params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
-  return <RoadmapProjectUpdatesTab name={decodeURIComponent(name)} />;
+  redirect(`/admin/roadmap/projects/${name}`);
 }

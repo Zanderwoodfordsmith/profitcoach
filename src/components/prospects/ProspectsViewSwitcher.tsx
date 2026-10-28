@@ -7,18 +7,21 @@ export type ProspectsView = "board" | "list";
 type Props = {
   view: ProspectsView;
   onChange: (view: ProspectsView) => void;
+  /** Group label, and the board button's label, for other pages that reuse it. */
+  ariaLabel?: string;
+  boardLabel?: string;
 };
 
-export function ProspectsViewSwitcher({ view, onChange }: Props) {
+export function ProspectsViewSwitcher({ view, onChange, ariaLabel = "Prospects view", boardLabel = "Pipeline view" }: Props) {
   return (
     <div
       className="inline-flex h-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white"
       role="group"
-      aria-label="Prospects view"
+      aria-label={ariaLabel}
     >
       <button
         type="button"
-        aria-label="Pipeline view"
+        aria-label={boardLabel}
         aria-pressed={view === "board"}
         onClick={() => onChange("board")}
         className={`flex items-center justify-center px-3 transition ${

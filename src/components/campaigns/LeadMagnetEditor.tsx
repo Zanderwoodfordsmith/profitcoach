@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { Check, Copy, Info, Share2 } from "lucide-react";
+import { Check, Copy, Info, PencilLine, Share2 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { buttonClass } from "@/components/ui/Button";
 import {
@@ -568,16 +568,27 @@ export function LeadMagnetEditor() {
             )}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          aria-haspopup="dialog"
-          aria-expanded={shareOpen}
-          className={buttonClass("second", "small", "shrink-0")}
-        >
-          <Share2 className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.25} aria-hidden />
-          Share
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {magnet.id === "boss-score" && coachSlug ? (
+            <a
+              href={`/score/${encodeURIComponent(coachSlug)}?edit=1`}
+              className={buttonClass("second", "small")}
+            >
+              <PencilLine className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.25} aria-hidden />
+              Edit your page
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={shareOpen}
+            className={buttonClass("second", "small")}
+          >
+            <Share2 className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.25} aria-hidden />
+            Share
+          </button>
+        </div>
       </div>
 
       {error ? (

@@ -31,15 +31,18 @@ export const ROADMAP_VISIBILITIES = ["internal", "members"] as const;
 export type RoadmapVisibility = (typeof ROADMAP_VISIBILITIES)[number];
 
 /**
- * Product categories, in coach-journey order (free text in the DB; keep these
- * as the working set). Most effort belongs in get-clients: lead volume is the
- * limiter, so anything that lifts reply, booking or close rates means a coach
- * needs fewer leads per client.
+ * Where a job shows up in the app (free text in the DB; keep these as the
+ * working set). Since 28 Oct the backlog is sorted by these places, and only
+ * work with an end is a project. Most effort belongs in Get Clients: lead
+ * volume is the limiter.
  */
 export const ROADMAP_AREAS = [
   "set-up",
+  "ava",
   "get-clients",
+  "scripts",
   "keep-clients",
+  "academy",
   "platform",
 ] as const;
 
@@ -49,25 +52,43 @@ export const ROADMAP_AREA_META: Record<
 > = {
   "set-up": {
     label: "Done for you",
-    hint: "Practice install: Blueprint, brand, website, profile, onboarding",
+    hint: "Practice install: Blueprint, website, profile, onboarding",
     dot: "bg-violet-500",
     chip: "bg-violet-100 text-violet-800",
   },
+  ava: {
+    label: "Ava",
+    hint: "Ava for coaches: her look, tools, WhatsApp, voice",
+    dot: "bg-indigo-500",
+    chip: "bg-indigo-100 text-indigo-800",
+  },
   "get-clients": {
-    label: "Get clients",
-    hint: "Leads, replies, bookings, closes",
+    label: "Get Clients",
+    hint: "Campaigns, prospects, calls, booking, content, lead gen",
     dot: "bg-sky-500",
     chip: "bg-sky-100 text-sky-800",
   },
+  scripts: {
+    label: "Scripts",
+    hint: "Scripts, BOSS Score Review, proposals, sales videos",
+    dot: "bg-cyan-500",
+    chip: "bg-cyan-100 text-cyan-800",
+  },
   "keep-clients": {
-    label: "Keep clients",
-    hint: "Deliver for clients and keep them: packs, briefs, client tools",
+    label: "Keep Clients",
+    hint: "Clients, playbooks, client workspace, agreement",
     dot: "bg-emerald-500",
     chip: "bg-emerald-100 text-emerald-800",
   },
+  academy: {
+    label: "Academy",
+    hint: "Community, Classroom, Vault, directory, alerts",
+    dot: "bg-rose-400",
+    chip: "bg-rose-100 text-rose-800",
+  },
   platform: {
-    label: "Platform",
-    hint: "The app itself: Classroom, Ava plumbing, admin, fixes",
+    label: "App and ops",
+    hint: "Billing, brand, the roadmap, how we ship",
     dot: "bg-amber-500",
     chip: "bg-amber-100 text-amber-800",
   },

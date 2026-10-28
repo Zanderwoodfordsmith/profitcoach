@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarRange, ChevronDown, ChevronUp, Loader2, Plus } from "lucide-react";
+import Link from "next/link";
+import { CalendarRange, Loader2, Plus } from "lucide-react";
 import {
   PROJECT_EASE_LEVELS,
   PROJECT_STAGE_META,
@@ -18,7 +19,7 @@ import { cardClass } from "@/components/ui/Card";
 import { fieldClass } from "@/components/ui/Field";
 import { InitiativeIcon } from "./InitiativeIcon";
 import { HealthChip } from "./roadmapHealth";
-import { ProjectIcon } from "./roadmapIcons";
+import { JobIcon, ProjectIcon } from "./roadmapIcons";
 import { Caret, MetaDropdown, ScoreBarsPair, ScoreDropdown, StatusIcon, useDismiss } from "./roadmapUi";
 import { RoadmapProjectsViewV1 } from "./RoadmapProjectsViewV1";
 
@@ -46,23 +47,18 @@ type Row = RoadmapProject & { saved: boolean };
 const DAY = 86_400_000;
 const WEEKS = 12;
 const LAYOUT_KEY = "roadmap-projects-layout";
-const GROUP_KEY = "roadmap-projects-group";
 
-/** Grouping beside the old one until Zander picks: initiatives (new) or stages. */
-type GroupBy = "initiative" | "stage";
-
-const STAGE_RANK: Record<ProjectStage, number> = { now: 0, next: 1, later: 2, parked: 3 };
-
-/** Now is the brand navy, Next the sky, Later quiet, Parked amber. */
+/** Now is the brand navy, Next the sky, Done green. */
 export const STAGE_TONE: Record<ProjectStage, { dot: string; bar: string; pill: string; chip: string }> = {
   now: { dot: "bg-[#0c5290]", bar: "bg-[#0c5290]", pill: "bg-[#0c5290] text-white", chip: "bg-[#0c5290] text-white" },
   next: { dot: "bg-sky-500", bar: "bg-sky-500", pill: "bg-sky-100 text-sky-800", chip: "bg-sky-100 text-sky-900" },
-  later: { dot: "bg-slate-400", bar: "bg-slate-300", pill: "bg-slate-200/80 text-slate-700", chip: "bg-slate-100 text-slate-700" },
-  parked: { dot: "bg-amber-400", bar: "bg-amber-300", pill: "bg-amber-100 text-amber-800", chip: "bg-amber-50 text-amber-900" },
+  done: { dot: "bg-emerald-500", bar: "bg-emerald-400", pill: "bg-emerald-100 text-emerald-800", chip: "bg-emerald-50 text-emerald-900" },
 };
 
 const COLUMNS = [
   { key: "project", label: "Project", width: 300 },
+  // Open jobs as one number, like Projects on Initiatives; beside "Where it stands" until Zander picks.
+  { key: "count", label: "Jobs", width: 70 },
   { key: "jobs", label: "Where it stands", width: 290 },
   // Impact and ease sit side by side, each just wide enough for its bars.
   { key: "impact", label: "Impact", width: 64 },
@@ -145,24 +141,8 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
   const [initiatives, setInitiatives] = useState<RoadmapInitiative[]>([]);
   /** Each project's latest update, for the health chip on board cards. */
   const [latest, setLatest] = useState<Map<string, RoadmapProjectUpdate>>(() => new Map());
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
-  const [openRow, setOpenRow] = useState<string | null>(null);
-  const [groupBy, setGroupBy] = useState<GroupBy>(() => {
-    try {
-      return typeof window !== "undefined" && window.localStorage.getItem(GROUP_KEY) === "stage" ? "stage" : "initiative";
-    } catch {
-      return "initiative";
-    }
-  });
-  const pickGroup = (next: GroupBy) => {
-    setGroupBy(next);
-    try {
-      window.localStorage.setItem(GROUP_KEY, next);
-    } catch {
-      // Remembering the grouping is only a convenience.
-    }
-  };
-
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(["done"]));
+  const [openRows, setOpenRows] = useState<Set<string>>(() => new Set());
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -218,35 +198,6 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
     if (!res?.ok) setError("That change didn't save. Refresh and try again.");
   };
 
-  const saveInitiative = async (id: string, patch: Partial<RoadmapInitiative>) => {
-    setInitiatives((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
-    const headers = await authHeaders();
-    if (!headers) return;
-    const res = await fetch("/api/admin/roadmap/initiatives", { method: "PATCH", headers, body: JSON.stringify({ id, ...patch }) }).catch(() => null);
-    if (!res?.ok) setError("That change didn't save. Refresh and try again.");
-  };
-
-  const addInitiative = async (name: string) => {
-    const headers = await authHeaders();
-    if (!headers) return;
-    const res = await fetch("/api/admin/roadmap/initiatives", { method: "POST", headers, body: JSON.stringify({ name }) }).catch(() => null);
-    const body = (await res?.json().catch(() => null)) as { initiative?: RoadmapInitiative } | null;
-    if (!res?.ok || !body?.initiative) setError("Could not add the initiative.");
-    else setInitiatives((prev) => [...prev, body.initiative!]);
-  };
-
-  /** Swap places with the initiative above or below. */
-  const moveInitiative = (index: number, by: -1 | 1) => {
-    const a = orderedInitiatives[index];
-    const b = orderedInitiatives[index + by];
-    if (!a || !b) return;
-    const aOrder = a.sort_order === b.sort_order ? b.sort_order + by : b.sort_order;
-    void saveInitiative(a.id, { sort_order: aOrder });
-    void saveInitiative(b.id, { sort_order: a.sort_order });
-  };
-
-  const orderedInitiatives = [...initiatives].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
-
   if (error && !saved) return <p className="mt-4 text-sm font-medium text-rose-600">{error}</p>;
   if (!saved) {
     return (
@@ -258,15 +209,8 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
 
   const inStage = (stage: ProjectStage) =>
     rows.filter((r) => r.stage === stage).sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
-  const byStage = (a: Row, b: Row) =>
-    STAGE_RANK[a.stage] - STAGE_RANK[b.stage] || a.sort_order - b.sort_order || a.name.localeCompare(b.name);
-  const knownInitiatives = new Set(initiatives.map((i) => i.id));
-  const loose = rows.filter((r) => !r.initiative_id || !knownInitiatives.has(r.initiative_id)).sort(byStage);
-
   type Group = { key: string; rows: Row[]; heading: (open: boolean, toggle: () => void) => React.ReactNode };
-  const groups: Group[] =
-    groupBy === "stage"
-      ? PROJECT_STAGES.map((stage) => ({
+  const groups: Group[] = PROJECT_STAGES.map((stage) => ({
           key: stage,
           rows: inStage(stage),
           heading: (open, toggle) => (
@@ -284,48 +228,13 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
               <span className="hidden text-xs text-slate-400 sm:inline">{PROJECT_STAGE_META[stage].hint}</span>
             </button>
           ),
-        }))
-      : [
-          ...orderedInitiatives.map((ini, i) => {
-            const list = rows.filter((r) => r.initiative_id === ini.id).sort(byStage);
-            return {
-              key: ini.id,
-              rows: list,
-              heading: (open: boolean, toggle: () => void) => (
-                <InitiativeHeading
-                  initiative={ini}
-                  count={list.length}
-                  open={open}
-                  onToggle={toggle}
-                  onSave={(patch) => void saveInitiative(ini.id, patch)}
-                  onMoveUp={i > 0 ? () => moveInitiative(i, -1) : undefined}
-                  onMoveDown={i < orderedInitiatives.length - 1 ? () => moveInitiative(i, 1) : undefined}
-                />
-              ),
-            };
-          }),
-          ...(loose.length
-            ? [
-                {
-                  key: "none",
-                  rows: loose,
-                  heading: (open: boolean, toggle: () => void) => (
-                    <button type="button" aria-expanded={open} onClick={toggle} className="inline-flex items-center gap-2.5 py-1 text-left">
-                      <Caret open={open} />
-                      <span className="text-lg font-medium tracking-[-0.01em] text-slate-500">No initiative</span>
-                      <span className="text-sm tabular-nums text-slate-400">{loose.length}</span>
-                    </button>
-                  ),
-                },
-              ]
-            : []),
-        ];
+        }));
 
   return (
     <div className="mt-4 pb-6">
       {error ? <p className="mb-3 text-sm font-medium text-rose-600">{error}</p> : null}
 
-      {show === "timeline" ? <Timeline rows={[...inStage("now"), ...inStage("next"), ...inStage("later")]} onOpen={onOpenProject} /> : null}
+      {show === "timeline" ? <Timeline rows={[...inStage("now"), ...inStage("next")]} onOpen={onOpenProject} /> : null}
       {show === "board" ? (
         <ProjectBoard
           columns={PROJECT_STAGES.map((stage) => ({ stage, rows: inStage(stage) }))}
@@ -336,25 +245,9 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
           onMove={(name, stage) => void save(name, { stage })}
         />
       ) : null}
-      {show === "graph" ? <ProjectGrid rows={rows.filter((r) => r.stage !== "parked")} onOpen={onOpenProject} /> : null}
+      {show === "graph" ? <ProjectGrid rows={rows.filter((r) => r.stage !== "done")} onOpen={onOpenProject} /> : null}
       {show === "list" ? (
         <>
-          <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
-            <span>Group by</span>
-            <div className="inline-flex rounded-full bg-slate-200/60 p-0.5">
-              {(["initiative", "stage"] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  aria-pressed={groupBy === g}
-                  onClick={() => pickGroup(g)}
-                  className={`rounded-full px-2.5 py-0.5 font-medium transition ${groupBy === g ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
-                >
-                  {g === "initiative" ? "Initiative" : "Stage"}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Sideways scroll only below lg: an overflow box would stop the headings sticking. */}
           <div className="mt-2 overflow-x-auto lg:overflow-visible">
@@ -399,9 +292,15 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
                             key={row.name}
                             row={row}
                             jobs={jobsBy.get(row.name) ?? []}
-                            initiatives={orderedInitiatives}
-                            expanded={openRow === row.name}
-                            onToggle={() => setOpenRow((cur) => (cur === row.name ? null : row.name))}
+                            expanded={openRows.has(row.name)}
+                            onToggle={() =>
+                              setOpenRows((cur) => {
+                                const next = new Set(cur);
+                                if (next.has(row.name)) next.delete(row.name);
+                                else next.add(row.name);
+                                return next;
+                              })
+                            }
                             onSave={save}
                             onOpenJobs={() => onOpenProject(row.name)}
                           />
@@ -410,7 +309,7 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
                     {open && !group.rows.length ? (
                       <tr className="border-t border-slate-200">
                         <td colSpan={COLUMNS.length} className="py-3 pl-[1.625rem] text-sm text-slate-400">
-                          {groupBy === "initiative" ? "No projects yet. Open a project and pick this initiative." : "Nothing here."}
+                          Nothing here.
                         </td>
                       </tr>
                     ) : null}
@@ -420,17 +319,18 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
             </table>
           </div>
 
-          {groupBy === "initiative" ? <AddInitiative onAdd={(name) => void addInitiative(name)} /> : null}
         </>
       ) : null}
     </div>
   );
 }
 
+/** Open jobs first by how far along they are, then ideas and parked. */
+export const JOB_ORDER = ["in_progress", "review", "done", "staged", "up_next", "todo", "evaluate", "parked"];
+
 function ProjectRows({
   row,
   jobs,
-  initiatives,
   expanded,
   onToggle,
   onSave,
@@ -438,14 +338,18 @@ function ProjectRows({
 }: {
   row: Row;
   jobs: RoadmapJob[];
-  initiatives: RoadmapInitiative[];
   expanded: boolean;
   onToggle: () => void;
   onSave: (name: string, patch: Partial<RoadmapProject>) => void;
   onOpenJobs: () => void;
 }) {
   const c = counts(jobs);
-  const [goal, setGoal] = useState(row.goal ?? "");
+  // Every job not yet live, ideas and parked ones included, so it matches the project's own page.
+  const openJobs = jobs
+    .filter((j) => j.status !== "live" && j.status !== "vetoed")
+    .sort((a, b) => JOB_ORDER.indexOf(a.status) - JOB_ORDER.indexOf(b.status) || a.sort_order - b.sort_order);
+  const ideas = jobs.filter((j) => j.status === "evaluate").length;
+  const parked = jobs.filter((j) => j.status === "parked").length;
   return (
     <>
       <tr className="border-t border-slate-200 align-middle transition hover:bg-white/70">
@@ -454,7 +358,7 @@ function ProjectRows({
             <button
               type="button"
               aria-expanded={expanded}
-              aria-label={expanded ? `Hide ${row.name}'s goal` : `Show ${row.name}'s goal`}
+              aria-label={expanded ? `Hide ${row.name}'s jobs` : `Show ${row.name}'s jobs`}
               onClick={onToggle}
               className="rounded p-1 hover:bg-slate-200/60"
             >
@@ -463,13 +367,22 @@ function ProjectRows({
             <button
               type="button"
               onClick={onOpenJobs}
-              title={row.goal ? `${row.goal}\n\nOpen this project's jobs` : "Open this project's jobs"}
+              title={row.goal ? `${row.goal}\n\nOpen this project` : "Open this project"}
               className="truncate text-ui font-medium text-slate-900 transition hover:text-[#0c5290]"
             >
               {row.name}
             </button>
             {!row.saved ? <span className="shrink-0 text-caption text-slate-400">new</span> : null}
           </div>
+        </td>
+        <td className="px-3 py-2.5">
+          <span
+            title={`${c.todo + c.building + c.review + c.ready} to do or under way, ${ideas} ideas, ${parked} parked, ${c.live} live`}
+            className="inline-flex items-center gap-1.5 text-sm tabular-nums text-slate-700"
+          >
+            <JobIcon className="h-4 w-4 text-slate-400" aria-hidden />
+            {openJobs.length}
+          </span>
         </td>
         <td className="px-3 py-2.5">
           <JobCounts c={c} />
@@ -496,128 +409,31 @@ function ProjectRows({
           />
         </td>
       </tr>
+      {expanded
+        ? openJobs.map((j) => (
+            <tr key={j.id} className="align-middle transition hover:bg-white/70">
+              <td colSpan={COLUMNS.length} className="py-1.5 pl-[2.75rem] pr-4">
+                <Link href={`/admin/roadmap/jobs/${j.job_number}`} className="group/job flex min-w-0 items-center gap-2 text-sm">
+                  <StatusIcon status={j.status} />
+                  <span className="w-8 shrink-0 tabular-nums text-slate-400">{j.job_number}</span>
+                  <span className="truncate text-slate-700 group-hover/job:text-[#0c5290]">{j.title}</span>
+                </Link>
+              </td>
+            </tr>
+          ))
+        : null}
       {expanded ? (
-        <tr className="bg-white/60">
-          <td colSpan={COLUMNS.length} className="pb-4 pl-[1.625rem] pr-4 pt-1">
-            <label htmlFor={`goal-${row.name}`} className="text-xs font-medium text-slate-500">
-              Goal: what done looks like, and where it sits
-            </label>
-            <div className="mt-1 flex flex-wrap items-center gap-3">
-              <input
-                id={`goal-${row.name}`}
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                onBlur={() => {
-                  if (goal.trim() !== (row.goal ?? "")) onSave(row.name, { goal: goal.trim() || null });
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                }}
-                placeholder="One line, e.g. BCA writes the whole practice from About You"
-                className={fieldClass("input", "small", "min-w-0 flex-1")}
-              />
-              <MetaDropdown
-                display={
-                  <span className="text-sm text-slate-700">
-                    <span className="text-slate-400">Initiative: </span>
-                    {initiatives.find((i) => i.id === row.initiative_id)?.name ?? "None"}
-                  </span>
-                }
-                options={initiatives.map((i) => ({
-                  key: i.id,
-                  selected: row.initiative_id === i.id,
-                  onSelect: () => onSave(row.name, { initiative_id: i.id }),
-                  node: <span>{i.name}</span>,
-                }))}
-                onClear={row.initiative_id ? () => onSave(row.name, { initiative_id: null }) : undefined}
-              />
-              <button type="button" onClick={onOpenJobs} className="inline-flex items-center gap-1 text-sm font-medium text-[#0c5290] hover:underline">
-                Open its {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-              </button>
-            </div>
+        <tr>
+          <td colSpan={COLUMNS.length} className="pb-2.5 pl-[2.75rem] pr-4 pt-0.5 text-sm text-slate-400">
+            {openJobs.length ? null : "No open jobs. "}
+            {c.live ? `${c.live} live. ` : null}
+            <button type="button" onClick={onOpenJobs} className="font-medium text-[#0c5290] hover:underline">
+              Open the project
+            </button>
           </td>
         </tr>
       ) : null}
     </>
-  );
-}
-
-/** An initiative's group heading: click the name or goal to change it; arrows move it up or down. */
-function InitiativeHeading({
-  initiative,
-  count,
-  open,
-  onToggle,
-  onSave,
-  onMoveUp,
-  onMoveDown,
-}: {
-  initiative: RoadmapInitiative;
-  count: number;
-  open: boolean;
-  onToggle: () => void;
-  onSave: (patch: Partial<RoadmapInitiative>) => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
-}) {
-  const [editing, setEditing] = useState<"name" | "goal" | null>(null);
-  const [draft, setDraft] = useState("");
-  const start = (field: "name" | "goal") => {
-    setDraft((field === "name" ? initiative.name : initiative.goal) ?? "");
-    setEditing(field);
-  };
-  const finish = () => {
-    const v = draft.trim();
-    if (editing === "name" && v && v !== initiative.name) onSave({ name: v });
-    if (editing === "goal" && v !== (initiative.goal ?? "")) onSave({ goal: v || null });
-    setEditing(null);
-  };
-  const input = (cls: string, placeholder: string) => (
-    <input
-      autoFocus
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={finish}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-        if (e.key === "Escape") setEditing(null);
-      }}
-      placeholder={placeholder}
-      className={`rounded-md border border-slate-200 bg-white px-2 py-0.5 focus:border-sky-500 focus:outline-none ${cls}`}
-    />
-  );
-  const arrow = "rounded p-1 text-slate-400 transition hover:bg-slate-200/60 hover:text-slate-700 disabled:invisible";
-  return (
-    <div className="group/ini flex flex-wrap items-center gap-x-2.5 gap-y-1 py-1">
-      <button type="button" aria-expanded={open} aria-label={open ? `Hide ${initiative.name}` : `Show ${initiative.name}`} onClick={onToggle} className="rounded p-0.5">
-        <Caret open={open} />
-      </button>
-      <InitiativeIcon initiative={initiative} size="sm" />
-      {editing === "name" ? (
-        input("text-lg font-medium text-slate-950", "Initiative name")
-      ) : (
-        <button type="button" onClick={() => start("name")} title="Rename" className="text-lg font-medium tracking-[-0.01em] text-slate-950 hover:text-[#0c5290]">
-          {initiative.name}
-        </button>
-      )}
-      <span className="text-sm tabular-nums text-slate-400">{count}</span>
-      {editing === "goal" ? (
-        input("min-w-64 text-xs text-slate-700", "One line: what this initiative is for")
-      ) : (
-        <button type="button" onClick={() => start("goal")} title="Change the goal" className="text-xs text-slate-400 hover:text-slate-700">
-          {initiative.goal || "Add a goal"}
-        </button>
-      )}
-      <span className="flex items-center opacity-0 transition group-hover/ini:opacity-100 group-focus-within/ini:opacity-100">
-        <button type="button" aria-label={`Move ${initiative.name} up`} onClick={onMoveUp} disabled={!onMoveUp} className={arrow}>
-          <ChevronUp className="h-4 w-4" />
-        </button>
-        <button type="button" aria-label={`Move ${initiative.name} down`} onClick={onMoveDown} disabled={!onMoveDown} className={arrow}>
-          <ChevronDown className="h-4 w-4" />
-        </button>
-      </span>
-    </div>
   );
 }
 
@@ -971,7 +787,7 @@ function ProjectGrid({ rows, onOpen }: { rows: Row[]; onOpen: (name: string) => 
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-        {(["now", "next", "later"] as const).map((st) => (
+        {(["now", "next"] as const).map((st) => (
           <span key={st} className="inline-flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-full ${STAGE_TONE[st].dot}`} />
             {PROJECT_STAGE_META[st].label}

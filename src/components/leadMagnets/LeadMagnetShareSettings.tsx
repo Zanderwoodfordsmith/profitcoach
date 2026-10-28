@@ -1,10 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Info } from "lucide-react";
-import { OutlinedTextField } from "@/components/settings/OutlinedFormField";
 import {
   PersonalisedLinkModal,
   type PersonalisedLinkProduct,
@@ -12,7 +11,6 @@ import {
 import { ShareQrCodeModal } from "@/components/settings/ShareQrCodeModal";
 import { cardClass } from "@/components/ui/Card";
 import { badgeClass } from "@/components/ui/Badge";
-import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { buildEmbedSnippet } from "@/lib/embedMode";
 import {
   magnetShareCopyUrl,
@@ -46,31 +44,10 @@ export function LeadMagnetShareSettings({
 }: Props) {
   const slug = coachSlug?.trim() || "";
   const slugReady = slug.length > 0;
-  const [landingEyebrow, setLandingEyebrow] = useState("");
-  const [eyebrowSaving, setEyebrowSaving] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [personaliseProduct, setPersonaliseProduct] =
     useState<PersonalisedLinkProduct | null>(null);
   const [qrOpen, setQrCodeOpen] = useState(false);
-
-  useEffect(() => {
-    if (magnetId !== "boss-score") return;
-    let cancelled = false;
-    void (async () => {
-      const headers = await getCoachAuthHeaders();
-      if (!headers) return;
-      const res = await fetch("/api/coach/profile", { headers });
-      const body = (await res.json().catch(() => ({}))) as {
-        landing_copy_overrides?: { eyebrow?: string } | null;
-      };
-      if (!cancelled && res.ok) {
-        setLandingEyebrow(body.landing_copy_overrides?.eyebrow ?? "");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [magnetId]);
 
   async function copy(key: string, url: string) {
     try {
@@ -80,22 +57,6 @@ export function LeadMagnetShareSettings({
     } catch {
       // ignore
     }
-  }
-
-  async function saveEyebrow() {
-    const headers = await getCoachAuthHeaders();
-    if (!headers) return;
-    setEyebrowSaving(true);
-    await fetch("/api/coach/profile", {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({
-        landing_copy_overrides: landingEyebrow.trim()
-          ? { eyebrow: landingEyebrow.trim() }
-          : {},
-      }),
-    });
-    setEyebrowSaving(false);
   }
 
   const scorePath = slugReady ? `/score/${slug}` : "/score/your-slug";
@@ -133,33 +94,6 @@ export function LeadMagnetShareSettings({
 
       {magnetId === "boss-score" ? (
         <>
-          <div className={cardClass("soft", "p-4")}>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Landing page
-            </p>
-            <div className="mt-3">
-              <OutlinedTextField
-                id="landing_eyebrow"
-                label="Audience line"
-                value={landingEyebrow}
-                onChange={(e) => setLandingEyebrow(e.target.value)}
-                placeholder="e.g. For engineering founders, £500K–£5M"
-                wrapperClassName="w-full"
-              />
-              <p className="mt-1.5 text-xs text-slate-500">
-                Small text above your headline — who the scorecard is for.
-              </p>
-              <button
-                type="button"
-                disabled={eyebrowSaving || !slugReady}
-                onClick={() => void saveEyebrow()}
-                className="mt-2 text-sm font-medium text-[#0c5290] hover:underline disabled:opacity-50"
-              >
-                {eyebrowSaving ? "Saving…" : "Save audience line"}
-              </button>
-            </div>
-          </div>
-
           <LinkRow
             primary
             title="Landing page"

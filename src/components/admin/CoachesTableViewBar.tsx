@@ -16,7 +16,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, LayoutList, Lock, Plus, Users } from "lucide-react";
+import { GripVertical, LayoutList, Lock, Plus, Rocket, Users } from "lucide-react";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
 import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
@@ -36,6 +36,8 @@ type Props = {
   onRenameView: (viewId: string, name: string) => void;
   onDeleteView: (viewId: string) => void;
   onReorderViews: (orderedViewIds: string[]) => void;
+  /** Views built into the page (not saved), after the saved ones, e.g. Getting live. */
+  builtInViews?: { key: string; label: string; active: boolean; onSelect: () => void }[];
 };
 
 function SortableViewTab({
@@ -196,6 +198,7 @@ export function CoachesTableViewBar({
   onRenameView,
   onDeleteView,
   onReorderViews,
+  builtInViews = [],
 }: Props) {
   const [addingView, setAddingView] = useState(false);
   const [newViewName, setNewViewName] = useState("");
@@ -314,6 +317,26 @@ export function CoachesTableViewBar({
           })}
         </SortableContext>
       </DndContext>
+
+      {builtInViews.map((view) => (
+        <div key={view.key} className="flex shrink-0 items-stretch">
+          <span className="mx-1 w-px self-stretch bg-slate-200" aria-hidden />
+          <button
+            type="button"
+            onClick={view.onSelect}
+            aria-pressed={view.active}
+            className={`-mb-px inline-flex items-center gap-1.5 border-b-[3px] px-2 pb-2 text-sm font-medium transition-colors ${
+              view.active
+                ? "border-slate-800 text-slate-900"
+                : "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800"
+            }`}
+            title="Built in: everyone BCA is getting live, from paying to a first client"
+          >
+            <Rocket className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
+            <span className="max-w-[12rem] truncate">{view.label}</span>
+          </button>
+        </div>
+      ))}
 
       <span className="mx-2 w-px self-stretch bg-slate-200" aria-hidden />
 

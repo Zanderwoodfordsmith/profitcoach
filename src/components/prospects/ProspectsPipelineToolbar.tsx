@@ -29,6 +29,10 @@ type Props = {
   onExportAll: (scope: CsvExportScope) => void;
   onImport?: () => void;
   searchPlaceholder?: string;
+  /** What the export asks about, e.g. "coaches". */
+  exportEntityLabel?: string;
+  /** Extra icon buttons after Export, e.g. Certificate on Coaches. */
+  actions?: ReactNode;
   end?: ReactNode;
 };
 
@@ -52,6 +56,8 @@ export function ProspectsPipelineToolbar({
   onExportAll,
   onImport,
   searchPlaceholder = "Search prospects…",
+  exportEntityLabel,
+  actions,
   end,
 }: Props) {
   function toggle(next: Exclude<ProspectsToolbarMenu, null>) {
@@ -149,11 +155,13 @@ export function ProspectsPipelineToolbar({
 
           <TableCsvExportButton
             disabled={exportDisabled}
+            entityLabel={exportEntityLabel}
             selectedCount={exportSelectedCount}
             totalMatchingCount={exportMatchingCount}
             onExportShown={onExportShown}
             onExportAll={onExportAll}
           />
+          {actions}
         </div>
       </div>
 

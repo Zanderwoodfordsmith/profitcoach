@@ -9,11 +9,9 @@ import {
   PROJECT_STAGE_META,
   PROJECT_STAGES,
   type ProjectStage,
-  type RoadmapInitiative,
 } from "@/lib/roadmap/projectTypes";
 import { ROADMAP_IMPACT_LEVELS } from "@/lib/roadmap/types";
-import { InitiativeIcon } from "./InitiativeIcon";
-import { InitiativesIcon, ProjectIcon } from "./roadmapIcons";
+import { ProjectIcon } from "./roadmapIcons";
 import { PropertyPill, ScorePillDropdown } from "./roadmapPills";
 import { STAGE_TONE, StagePill } from "./RoadmapProjectsView";
 import { MetaDropdown } from "./roadmapUi";
@@ -24,11 +22,9 @@ import { projectHref, roadmapAuthHeaders } from "./useRoadmapData";
  * properties as pills, then an open space for the brief.
  */
 export function NewProjectSheet({
-  initiatives,
   defaultInitiativeId = null,
   onClose,
 }: {
-  initiatives: RoadmapInitiative[];
   defaultInitiativeId?: string | null;
   onClose: () => void;
 }) {
@@ -37,12 +33,11 @@ export function NewProjectSheet({
   const [goal, setGoal] = useState("");
   const [brief, setBrief] = useState("");
   const [stage, setStage] = useState<ProjectStage>("next");
-  const [initiativeId, setInitiativeId] = useState<string | null>(defaultInitiativeId);
+  const [initiativeId] = useState<string | null>(defaultInitiativeId);
   const [impact, setImpact] = useState<number | null>(null);
   const [ease, setEase] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const initiative = initiatives.find((i) => i.id === initiativeId) ?? null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -134,27 +129,6 @@ export function NewProjectSheet({
                 onSelect: () => setStage(st),
                 node: <StagePill stage={st} />,
               }))}
-            />
-            <MetaDropdown
-              bare
-              display={
-                <PropertyPill muted={!initiative}>
-                  {initiative ? <InitiativeIcon initiative={initiative} size="sm" /> : <InitiativesIcon className="h-3.5 w-3.5" aria-hidden />}
-                  {initiative?.name ?? "Initiative"}
-                </PropertyPill>
-              }
-              options={initiatives.map((i) => ({
-                key: i.id,
-                selected: initiativeId === i.id,
-                onSelect: () => setInitiativeId(i.id),
-                node: (
-                  <span className="inline-flex items-center gap-2">
-                    <InitiativeIcon initiative={i} size="sm" />
-                    {i.name}
-                  </span>
-                ),
-              }))}
-              onClear={initiativeId ? () => setInitiativeId(null) : undefined}
             />
             <ScorePillDropdown label="Impact" icon={Zap} value={impact} names={ROADMAP_IMPACT_LEVELS} onChange={setImpact} />
             <ScorePillDropdown label="Ease" icon={Gauge} value={ease} names={PROJECT_EASE_LEVELS} onChange={setEase} />
