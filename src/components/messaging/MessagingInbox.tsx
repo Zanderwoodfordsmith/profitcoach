@@ -688,7 +688,7 @@ function DetailRow({
   children: ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-x-3">
+    <div className="grid grid-cols-[5rem_minmax(0,1fr)] items-baseline gap-x-3">
       <dt className="text-ui leading-snug text-slate-700">{label}</dt>
       <dd className="min-w-0 break-words text-ui leading-snug text-slate-900">
         {children}
@@ -4375,6 +4375,22 @@ export function MessagingInbox({
     [lastSyncedAt, syncNowTick]
   );
 
+  const deleteProspectFooter = canDeleteThreadProspect ? (
+    <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-3">
+      <button
+        type="button"
+        onClick={() => {
+          setDeleteProspectError(null);
+          setDeleteProspectOpen(true);
+        }}
+        className={buttonClass("delete", "small", "w-full justify-center")}
+      >
+        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+        Delete prospect
+      </button>
+    </div>
+  ) : null;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -6335,19 +6351,6 @@ export function MessagingInbox({
             ) : (
               <h2 className="text-sm font-semibold text-slate-900">Details</h2>
             )}
-            {selected && canDeleteThreadProspect ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setDeleteProspectError(null);
-                  setDeleteProspectOpen(true);
-                }}
-                className={buttonClass("quiet", "small")}
-              >
-                <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                Delete prospect
-              </button>
-            ) : null}
           </div>
           {deleteProspectOpen && threadProspect ? (
             <DeleteProspectsDialog
@@ -6857,11 +6860,15 @@ export function MessagingInbox({
               </div>
             </div>
           )}
+          {/* Inbox: pinned to the bottom of the details panel. */}
+          {selected && !(prospectMode && journeyPane) ? deleteProspectFooter : null}
         </aside>
 
         {prospectMode && journeyPane ? (
           <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-white max-xl:col-span-full max-xl:max-h-[42vh] xl:order-3 xl:border-l xl:border-t-0 [view-transition-name:inbox-prospect-journey]">
-            {journeyPane}
+            <div className="flex min-h-0 flex-1 flex-col">{journeyPane}</div>
+            {/* Prospect page: pinned to the bottom of the right panel. */}
+            {deleteProspectFooter}
           </aside>
         ) : null}
 

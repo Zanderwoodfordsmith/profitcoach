@@ -57,6 +57,7 @@ export function LeadMagnetsList({ coachSlug, appOrigin }: Props) {
                   fill
                   className="object-cover object-top"
                   sizes="144px"
+                  priority
                 />
               </Link>
               <div className="min-w-0 flex-1">

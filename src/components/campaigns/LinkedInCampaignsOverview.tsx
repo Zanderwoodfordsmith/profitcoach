@@ -64,13 +64,7 @@ const CampaignPoolHub = dynamic(
     })),
   { ssr: false }
 );
-const LeadMagnetsList = dynamic(
-  () =>
-    import("@/components/leadMagnets/LeadMagnetsList").then((m) => ({
-      default: m.LeadMagnetsList,
-    })),
-  { ssr: false }
-);
+import { LeadMagnetsList } from "@/components/leadMagnets/LeadMagnetsList";
 import { PublicSlugEditor } from "@/components/leadMagnets/PublicSlugEditor";
 import {
   CampaignCompactDial,
@@ -654,16 +648,11 @@ export function LinkedInCampaignsOverview() {
   const magnetsTab = tab === "magnets";
   const poolTab = tab === "pool" || tab === "lists";
   const [poolHubMounted, setPoolHubMounted] = useState(poolTab);
-  const [magnetsHubMounted, setMagnetsHubMounted] = useState(magnetsTab);
   const linkedinConnected = searchParams.get("linkedin");
 
   useEffect(() => {
     if (poolTab) setPoolHubMounted(true);
   }, [poolTab]);
-
-  useEffect(() => {
-    if (magnetsTab) setMagnetsHubMounted(true);
-  }, [magnetsTab]);
 
   const sorted = useMemo(
     () =>
@@ -1535,38 +1524,37 @@ export function LinkedInCampaignsOverview() {
         </div>
       ) : null}
 
-      {magnetsHubMounted ? (
-        <div
-          className={
-            magnetsTab
-              ? "min-h-0 flex-1 overflow-y-auto pb-28 pt-4"
-              : "hidden"
-          }
-        >
-          {loading && !preview && !coachSlug ? (
-            <div className="py-16 text-center text-sm text-slate-500">
-              Loading lead magnets…
+      {/* Always built (two rows), so opening the tab never reloads it. */}
+      <div
+        className={
+          magnetsTab
+            ? "min-h-0 flex-1 overflow-y-auto pb-28 pt-4"
+            : "hidden"
+        }
+      >
+        {loading && !preview && !coachSlug ? (
+          <div className="py-16 text-center text-sm text-slate-500">
+            Loading lead magnets…
+          </div>
+        ) : (
+          <div className={cardClass("plain", "overflow-hidden")}>
+            <div className="flex justify-end border-b border-slate-100 px-5 py-3">
+              <PublicSlugEditor
+                slug={coachSlug ?? ""}
+                onSlugChange={(next) => setCoachSlug(next)}
+                framed={false}
+                layout="inline"
+              />
             </div>
-          ) : (
-            <div className={cardClass("plain", "overflow-hidden")}>
-              <div className="flex justify-end border-b border-slate-100 px-5 py-3">
-                <PublicSlugEditor
-                  slug={coachSlug ?? ""}
-                  onSlugChange={(next) => setCoachSlug(next)}
-                  framed={false}
-                  layout="inline"
-                />
-              </div>
-              {!coachSlug ? (
-                <p className="border-b border-slate-100 bg-amber-50 px-5 py-3 text-sm text-amber-900">
-                  Add your public URL slug so shareable links work.
-                </p>
-              ) : null}
-              <LeadMagnetsList coachSlug={coachSlug} appOrigin={appOrigin} />
-            </div>
-          )}
-        </div>
-      ) : null}
+            {!coachSlug ? (
+              <p className="border-b border-slate-100 bg-amber-50 px-5 py-3 text-sm text-amber-900">
+                Add your public URL slug so shareable links work.
+              </p>
+            ) : null}
+            <LeadMagnetsList coachSlug={coachSlug} appOrigin={appOrigin} />
+          </div>
+        )}
+      </div>
 
       {showSampleToggle ? (
         <CampaignDemoPreviewToggle
