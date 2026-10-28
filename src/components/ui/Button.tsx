@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
+import { cx } from "./cx";
+
 /**
  * The app's buttons (proposed, Admin → Brand → Design). Pills, like the BCA
  * site. Main is the one action that matters on a screen; Second sits beside
@@ -25,7 +27,7 @@ const SIZES: Record<ButtonSize, string> = {
 };
 
 export function buttonClass(variant: ButtonVariant = "main", size: ButtonSize = "normal", extra = "") {
-  return `${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${extra}`.trim();
+  return cx(BASE, VARIANTS[variant], SIZES[size], extra);
 }
 
 type Props = {

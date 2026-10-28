@@ -2,6 +2,7 @@
 
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type CoachOption = { id: string; label: string };
 
@@ -97,7 +98,7 @@ export function AddProspectForm({
                   (e.target.value || "") as string
                 )
               }
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("select", "small")}
             >
               <option value="">Select a coach</option>
               {coachOptions.map((c) => (
@@ -121,7 +122,7 @@ export function AddProspectForm({
             required
             value={fullName}
             onChange={(e) => onFullNameChange(e.target.value)}
-            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            className={fieldClass("input", "small")}
           />
         </div>
         <div className="space-y-1">
@@ -136,7 +137,7 @@ export function AddProspectForm({
             type="email"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
-            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            className={fieldClass("input", "small")}
           />
         </div>
         <div className="space-y-1">
@@ -151,7 +152,7 @@ export function AddProspectForm({
             type="text"
             value={businessName}
             onChange={(e) => onBusinessNameChange(e.target.value)}
-            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            className={fieldClass("input", "small")}
           />
         </div>
         <div className="space-y-2 md:col-span-2">

@@ -15,6 +15,7 @@ import {
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
 
 type BrainSectionId =
   | "superpowers"
@@ -131,11 +132,9 @@ function isFilledText(value: string): boolean {
   return value.trim().length >= 3;
 }
 
-const textareaClass =
-  "w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20";
+const textareaClass = fieldClass("textarea", "normal", "resize-y");
 
-const inputClass =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20";
+const inputClass = fieldClass("input");
 
 export function buildInitialBrainForm(
   initialContext: CoachAiContext,
@@ -294,7 +293,7 @@ export function ProfitCoachAiBrainForm({
                 key={i}
                 className={cardClass("plain", "p-4")}
               >
-                <label className="mb-1 block text-xs font-medium text-slate-500">
+                <label className={`${fieldLabelClass} mb-1`}>
                   Title
                 </label>
                 <input
@@ -308,7 +307,7 @@ export function ProfitCoachAiBrainForm({
                   placeholder="e.g. Doubled close rate in 90 days"
                   className={`${inputClass} mb-3`}
                 />
-                <label className="mb-1 block text-xs font-medium text-slate-500">
+                <label className={`${fieldLabelClass} mb-1`}>
                   Outcome / story
                 </label>
                 <textarea

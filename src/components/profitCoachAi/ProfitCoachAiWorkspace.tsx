@@ -25,6 +25,7 @@ import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { studioDisplayTitle } from "@/lib/profitCoachAi/studioHub";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 import { ProfitCoachAiBrainForm } from "./ProfitCoachAiBrainForm";
 
@@ -710,7 +711,7 @@ export function ProfitCoachAiWorkspace({
                               <input
                                 value={renameValue}
                                 onChange={(e) => setRenameValue(e.target.value)}
-                                className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-1 text-xs"
+                                className={fieldClass("input", "small", "min-w-0 flex-1")}
                               />
                               <button
                                 type="submit"

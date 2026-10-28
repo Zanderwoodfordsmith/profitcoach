@@ -11,6 +11,7 @@ import {
   sortPaymentCoachesForAssign,
   type PaymentCoachAssignSort,
 } from "@/lib/paymentCoachAssignSort";
+import { fieldClass } from "@/components/ui/Field";
 
 export type PaymentCoachAssignMenuCoach = {
   id: string;
@@ -208,7 +209,7 @@ export function PaymentCoachAssignMenu({
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search coaches"
                 aria-label="Search coaches"
-                className="mt-2 block w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-[#0c5290] focus:ring-1 focus:ring-[#0c5290]"
+                className={fieldClass("input", "small", "mt-2")}
               />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto py-1">

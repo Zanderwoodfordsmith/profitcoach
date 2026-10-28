@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BarChart2, ChevronDown, Check, Loader2, Share2, UserRound } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 const NEW_PERSON_VALUE = "__new__";
 
@@ -440,9 +441,7 @@ function WorkshopContactCombobox({
     };
   }, [open]);
 
-  const searchInputClassName = compact
-    ? "w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 [color-scheme:light]"
-    : "w-full rounded-md border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 [color-scheme:light]";
+  const searchInputClassName = fieldClass("input", "small", "[color-scheme:light]");
 
   const optionClassName = (active: boolean) =>
     compact
@@ -910,9 +909,7 @@ export function WorkshopSessionPicker({
     ? "mt-0.5 text-caption leading-snug text-slate-600"
     : "mb-3 text-sm text-slate-600";
 
-  const inputClassName = compact
-    ? "mt-1 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500"
-    : "w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500";
+  const inputClassName = fieldClass("input", "normal", compact ? "mt-1" : "");
 
   const fieldLabelClassName = compact
     ? "block text-kicker font-semibold uppercase text-slate-500"
@@ -1007,7 +1004,7 @@ export function WorkshopSessionPicker({
                 required
                 value={newPersonCoachId}
                 onChange={(e) => onNewPersonCoachIdChange?.(e.target.value)}
-                className={inputClassName}
+                className={fieldClass("select", "normal", compact ? "mt-1" : "")}
               >
                 <option value="">Select a coach</option>
                 {coachOptions.map((coach) => (

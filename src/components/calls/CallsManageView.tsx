@@ -8,6 +8,8 @@ import {
   type CalendarFilterItem,
   type CalendarViewType,
 } from "@/lib/calls/calendarView";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 type Props = {
   calendars: CalendarFilterItem[];
@@ -137,7 +139,7 @@ export function CallsManageView({
                 />
                 <span className="min-w-0 flex-1 truncate">{item.name}</span>
                 {item.enabled ? null : (
-                  <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-kicker font-semibold uppercase text-slate-500">
+                  <span className={badgeClass("grey", "shrink-0")}>
                     Off
                   </span>
                 )}
@@ -214,7 +216,7 @@ export function CallsManageView({
           }
         >
           <select
-            className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+            className={fieldClass("select", "small")}
             value={coachFilter ?? "all"}
             onChange={(e) =>
               onCoachFilterChange(

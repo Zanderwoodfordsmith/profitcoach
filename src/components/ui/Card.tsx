@@ -1,5 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 
+import { cx } from "./cx";
+
 /**
  * The app's cards (proposed, Admin → Brand → Design). Plain for most
  * things; Raised only for things you click or that pop up; Soft for a
@@ -15,7 +17,7 @@ const VARIANTS: Record<CardVariant, string> = {
 };
 
 export function cardClass(variant: CardVariant = "plain", extra = "") {
-  return `${VARIANTS[variant]} ${extra}`.trim();
+  return cx(VARIANTS[variant], extra);
 }
 
 export function Card({

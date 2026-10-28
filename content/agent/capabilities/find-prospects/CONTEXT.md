@@ -3,7 +3,7 @@ id: find-prospects
 title: Find prospects
 summary: Work out how they want to find people, then hand over to the right source.
 tools: [get_blueprint_targeting]
-references: [agent/references/list-kpis.md]
+references: [agent/references/list-kpis.md, ai-knowledge/outreach-research.md]
 modes: [admin, coach]
 ---
 
@@ -14,7 +14,7 @@ The front door for "find me prospects" or "build me a list". You choose the sour
 
 ## Inputs
 - Reads: the Blueprint's prospect criteria and avatar (`get_blueprint_targeting`).
-- References: `list-kpis.md`.
+- References: `list-kpis.md`, and `outreach-research.md` for who answers on LinkedIn.
 - From the coach: how they want to find people.
 
 ## The process
@@ -29,7 +29,7 @@ The front door for "find me prospects" or "build me a list". You choose the sour
 | A list they already have | People already imported into the pool or a list | | `lists` |
 | Their own connections (1st degree) | Warm outreach to people they already know | LinkedIn with Sales Navigator | `sales-navigator-import` with degree 1 |
 
-3. Recommend from what they want to do next, using the trade-offs below. Sales Navigator for most coaches who want to message owners on LinkedIn. Google Maps when the market is a physical, local business and they want a phone or email. Their existing list when the people are already in the pool. Google Search only when the businesses show up on Google and not on a map, and say we have not proven that path yet.
+3. Recommend from what they want to do next, using the trade-offs below. Sales Navigator for most coaches who want to message owners on LinkedIn. Google Maps when the market is a physical, local business and they want a phone or email. Their existing list when the people are already in the pool. Google Search only when the businesses show up on Google and not on a map, and say we have not proven that path yet. If their sector scores 4 or under on LinkedIn in `outreach-research.md` (trades, construction, manufacturing, care and similar), say so in a line before they build a LinkedIn list. Founders and people active on LinkedIn answer most.
 4. Once they choose, open that capability and follow its contract. For Sales Navigator, the next step suggests the narrowing from their blueprint (company-name words and variations first) and checks how many people match before anything is imported.
 
 ## When they are not sure

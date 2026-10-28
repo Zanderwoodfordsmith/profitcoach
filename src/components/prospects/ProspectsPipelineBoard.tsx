@@ -57,6 +57,7 @@ import { prospectWorkspacePath } from "@/lib/prospects/workspacePath";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import type { ProspectRow } from "@/lib/prospectRow";
 import { buttonClass } from "@/components/ui/Button";
+import { badgeClass } from "@/components/ui/Badge";
 
 type DropTarget = {
   columnId: string;
@@ -910,7 +911,7 @@ function PipelineCard({
         <div className="flex shrink-0 items-center gap-0.5">
           {showPill ? (
             <span
-              className={`mt-0.5 inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-caption font-medium leading-none ${prospectStatusBadgeClass(row.status.value)}`}
+              className={badgeClass("grey", `mt-0.5 shrink-0 ${prospectStatusBadgeClass(row.status.value)}`)}
             >
               {pill}
             </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -220,7 +221,7 @@ export function ReplySnippetPicker({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search Snippet/Folder"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:bg-white"
+                className={fieldClass("input", "normal", "pl-8")}
               />
             </label>
           </div>

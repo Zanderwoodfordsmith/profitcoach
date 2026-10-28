@@ -35,6 +35,7 @@ import { clientWorkspacePath } from "@/lib/clientCoaching/defaults";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export type CoachClientRosterItem = {
   id: string;
@@ -63,9 +64,6 @@ type Props = {
   authHeaders: () => Promise<Record<string, string> | null>;
   onChanged: () => void;
 };
-
-const INPUT =
-  "block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-sky-400 focus:ring-1 focus:ring-sky-400";
 
 const LABEL = "block text-sm font-medium text-slate-800";
 
@@ -301,7 +299,7 @@ function AddClientComposer({
               }}
               placeholder="https://www.linkedin.com/in/…"
               autoComplete="off"
-              className={`${INPUT} py-2.5 pl-9`}
+              className={fieldClass("input", "normal", "pl-9")}
             />
           </div>
         </div>
@@ -326,7 +324,7 @@ function AddClientComposer({
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <Field label="Business" htmlFor="new-client-business">
@@ -335,7 +333,7 @@ function AddClientComposer({
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
             autoComplete="organization"
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <Field label="Joined" htmlFor="new-client-joined">
@@ -344,7 +342,7 @@ function AddClientComposer({
             type="date"
             value={joinedOn}
             onChange={(e) => setJoinedOn(e.target.value)}
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <Field label="Price / month" htmlFor="new-client-fee" hint="Pounds, what you charge them.">
@@ -354,7 +352,7 @@ function AddClientComposer({
             value={fee}
             onChange={(e) => setFee(e.target.value)}
             placeholder="2000"
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <div className="sm:col-span-2">
@@ -365,7 +363,7 @@ function AddClientComposer({
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="What's going on, or the problem you are working on."
-              className={INPUT}
+              className={fieldClass("textarea")}
             />
           </Field>
         </div>
@@ -479,7 +477,7 @@ function ClientEditor({
             id={`name-${client.id}`}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <Field label="Business" htmlFor={`business-${client.id}`}>
@@ -487,7 +485,7 @@ function ClientEditor({
             id={`business-${client.id}`}
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <Field label="Joined" htmlFor={`joined-${client.id}`}>
@@ -497,7 +495,7 @@ function ClientEditor({
             value={joinedOn}
             autoFocus={autoFocusDate}
             onChange={(e) => setJoinedOn(e.target.value)}
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <Field label="Price / month" htmlFor={`fee-${client.id}`}>
@@ -507,7 +505,7 @@ function ClientEditor({
             value={fee}
             onChange={(e) => setFee(e.target.value)}
             placeholder="2000"
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <div className="sm:col-span-2">
@@ -517,7 +515,7 @@ function ClientEditor({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className={INPUT}
+              className={fieldClass("textarea")}
             />
           </Field>
         </div>
@@ -527,11 +525,11 @@ function ClientEditor({
             value={sector}
             onChange={(e) => setSector(e.target.value)}
             placeholder="e.g. Accountancy"
-            className={INPUT}
+            className={fieldClass("input")}
           />
         </Field>
         <Field label="How they found you" htmlFor={`source-${client.id}`}>
-          <select id={`source-${client.id}`} value={source} onChange={(e) => setSource(e.target.value)} className={INPUT}>
+          <select id={`source-${client.id}`} value={source} onChange={(e) => setSource(e.target.value)} className={fieldClass("select")}>
             <option value="">Not set</option>
             {CLIENT_SOURCES.map((k) => (
               <option key={k} value={k}>
@@ -541,7 +539,7 @@ function ClientEditor({
           </select>
         </Field>
         <Field label="Turnover" htmlFor={`revenue-${client.id}`}>
-          <select id={`revenue-${client.id}`} value={revenueBand} onChange={(e) => setRevenueBand(e.target.value)} className={INPUT}>
+          <select id={`revenue-${client.id}`} value={revenueBand} onChange={(e) => setRevenueBand(e.target.value)} className={fieldClass("select")}>
             <option value="">Not set</option>
             {REVENUE_BANDS.map((k) => (
               <option key={k} value={k}>
@@ -551,7 +549,7 @@ function ClientEditor({
           </select>
         </Field>
         <Field label="Team size" htmlFor={`team-${client.id}`}>
-          <select id={`team-${client.id}`} value={teamSize} onChange={(e) => setTeamSize(e.target.value)} className={INPUT}>
+          <select id={`team-${client.id}`} value={teamSize} onChange={(e) => setTeamSize(e.target.value)} className={fieldClass("select")}>
             <option value="">Not set</option>
             {TEAM_SIZES.map((k) => (
               <option key={k} value={k}>
@@ -567,12 +565,12 @@ function ClientEditor({
               value={result}
               onChange={(e) => setResult(e.target.value)}
               placeholder="e.g. Profit up 40% in a year"
-              className={INPUT}
+              className={fieldClass("input")}
             />
           </Field>
         </div>
         <Field label="More like them? (1 to 5)" htmlFor={`fit-${client.id}`}>
-          <select id={`fit-${client.id}`} value={fit} onChange={(e) => setFit(e.target.value)} className={INPUT}>
+          <select id={`fit-${client.id}`} value={fit} onChange={(e) => setFit(e.target.value)} className={fieldClass("select")}>
             <option value="">Not set</option>
             <option value="5">5: my ideal client</option>
             <option value="4">4: yes please</option>
@@ -593,7 +591,7 @@ function ClientEditor({
               value={linkedinUrl}
               onChange={(e) => setLinkedinUrl(e.target.value)}
               placeholder="https://www.linkedin.com/in/…"
-              className={INPUT}
+              className={fieldClass("input")}
             />
           </Field>
         </div>
@@ -729,7 +727,7 @@ export function CoachClientRoster({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search"
-                className="w-40 rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                className={fieldClass("input", "small", "w-40! pl-8")}
               />
             </label>
           ) : null}

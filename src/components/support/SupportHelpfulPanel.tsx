@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { SupportTicketStatus } from "@/lib/support/tickets";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 export type SupportTicketFeedback = {
   helpful: boolean;
@@ -154,7 +155,7 @@ export function SupportHelpfulPanel({
                     maxLength={2000}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Tell us what still needs doing"
-                    className="w-full resize-none rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                    className={fieldClass("textarea", "normal", "resize-none")}
                   />
                 </label>
                 <button

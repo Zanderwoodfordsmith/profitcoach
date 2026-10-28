@@ -14,6 +14,7 @@ import { computeAreaScores, getTotalScore } from "@/lib/bossScores";
 import type { AnswersMap } from "@/lib/bossScores";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 const BossGridTransposed = dynamic(
   () =>
@@ -508,7 +509,7 @@ export default function ClientDashboardPage() {
                 <select
                   value={wheelColorScheme}
                   onChange={(e) => setWheelColorScheme(e.target.value as "default" | "alt")}
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+                  className={fieldClass("select", "small", "w-auto!")}
                 >
                   <option value="alt">Warm (coral, yellow, green)</option>
                   <option value="default">Default (blue, purple)</option>
@@ -519,7 +520,7 @@ export default function ClientDashboardPage() {
                 <select
                   value={wheelViewMode}
                   onChange={(e) => setWheelViewMode(e.target.value as "areas" | "pillars" | "levels")}
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+                  className={fieldClass("select", "small", "w-auto!")}
                 >
                   <option value="areas">10 areas</option>
                   <option value="pillars">4 pillars</option>

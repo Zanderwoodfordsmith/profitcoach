@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -163,7 +164,7 @@ export default function AdminCoachRevenuePage() {
                 <td className="px-4 py-2 text-center">
                   {row.stale_no_revenue_60d ? (
                     <span
-                      className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900"
+                      className={badgeClass("amber")}
                       title="No income logged in the last 60 days"
                     >
                       60d+

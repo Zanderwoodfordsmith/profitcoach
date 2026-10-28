@@ -10,7 +10,6 @@ import {
   Palette,
   PhoneCall,
   Rocket,
-  Sparkles,
   UserPlus,
   Wallet,
   Wrench,
@@ -69,8 +68,9 @@ function IconAva({ className }: { className?: string }) {
   return <AvaHalo size={20} dark className={className} />;
 }
 
-function IconSparkles({ className }: { className?: string }) {
-  return <Sparkles className={className} />;
+/** AI tools share Ava's Halo. */
+function IconAvaTool({ className }: { className?: string }) {
+  return <AvaHalo size={20} dark className={className} />;
 }
 
 function IconLessonImport({ className }: { className?: string }) {
@@ -197,7 +197,7 @@ export function marketingNavItems(
     items.push({
       href: `${prefix}/message-generator`,
       label: "Create",
-      icon: IconSparkles,
+      icon: IconAvaTool,
     });
   }
   return items;

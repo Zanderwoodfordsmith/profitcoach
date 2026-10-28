@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { CampaignChannelPills } from "@/components/campaigns/CampaignChannelPills";
 import { CampaignLibraryCreateDialog } from "@/components/admin/campaignLibrary/CampaignLibraryCreateDialog";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { campaignLibraryAuthHeaders } from "@/lib/campaignLibrary/authHeaders";
@@ -410,11 +411,11 @@ export function CampaignLibraryList({
                         {item.name}
                       </span>
                       {item.status === "published" ? (
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-caption font-semibold text-emerald-700">
+                        <span className={badgeClass("green")}>
                           Ready
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-semibold text-slate-500">
+                        <span className={badgeClass("grey")}>
                           Draft
                         </span>
                       )}

@@ -9,6 +9,7 @@ import {
   TemplatePickerBackButton,
   usePublishedCampaignTemplates,
 } from "@/components/campaigns/CampaignTemplatePicker";
+import { fieldClass } from "@/components/ui/Field";
 import type { CoachCampaignTemplate } from "@/lib/campaignLibrary/types";
 import type { CampaignChannel } from "@/lib/unipile/campaigns";
 
@@ -83,7 +84,7 @@ export function CampaignCreateModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Untitled campaign"
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none ring-[#0c5290]/30 placeholder:text-slate-400 focus:ring-2"
+                className={fieldClass("input", "normal", "mt-1.5")}
               />
             </label>
 

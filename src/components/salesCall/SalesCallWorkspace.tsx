@@ -20,6 +20,9 @@ import { type SlotKey, type Slots, fillText } from "./slots";
 import { useGaps } from "./useGaps";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { AvaHalo } from "@/components/ava/AvaHalo";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 /**
  * Get Clients → Script. Left: the phases of the call. Middle: what to
@@ -234,7 +237,7 @@ function VersionOption({
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <span className={`text-sm font-semibold ${selected ? "text-sky-800" : "text-slate-900"}`}>{title}</span>
-          {suggested ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-caption font-semibold text-emerald-700">Suggested</span> : null}
+          {suggested ? <span className={badgeClass("green")}>Suggested</span> : null}
         </span>
         <span className="mt-0.5 block text-sm text-slate-600">{line}</span>
       </span>
@@ -697,7 +700,7 @@ export function SalesCallWorkspace() {
                   <span className="flex flex-wrap items-center gap-2">
                     <span className={`text-base font-semibold ${on ? "text-sky-800" : "text-slate-800"}`}>{k.title}</span>
                     {draft.pitchFit === k.id ? (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-caption font-semibold text-emerald-700">Suggested</span>
+                      <span className={badgeClass("green")}>Suggested</span>
                     ) : null}
                   </span>
                   <span className="mt-1 block text-sm text-slate-600">{k.line}</span>
@@ -734,7 +737,7 @@ export function SalesCallWorkspace() {
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${personal ? "bg-sky-600 text-white" : "bg-sky-100 text-sky-700"}`}
                   aria-hidden
                 >
-                  {pitchBusy[kind] ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+                  {pitchBusy[kind] ? <Loader2 className="h-5 w-5 animate-spin" /> : <AvaHalo size={20} dark={personal} className="shrink-0" />}
                 </span>
                 <span className="min-w-0">
                   <span className={`block text-base font-semibold ${personal ? "text-sky-800" : "text-slate-900"}`}>
@@ -766,7 +769,7 @@ export function SalesCallWorkspace() {
                   disabled={pitchBusy[kind] || !draft.notes.trim()}
                   className={buttonClass("main", "normal", "shrink-0")}
                 >
-                  {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
+                  {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <AvaHalo size={18} dark className="shrink-0" />}
                   {kindWritten ? "Update with new notes" : "Personalise"}
                 </button>
               ) : personal && !pitchBusy[kind] ? (
@@ -832,7 +835,7 @@ export function SalesCallWorkspace() {
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${personal ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-500"}`}
                   aria-hidden
                 >
-                  {pitchBusy[kind] ? <Loader2 className="h-5 w-5 animate-spin" /> : personal ? <Sparkles className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+                  {pitchBusy[kind] ? <Loader2 className="h-5 w-5 animate-spin" /> : personal ? <AvaHalo size={20} dark className="shrink-0" /> : <FileText className="h-5 w-5" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-xs font-medium text-slate-500">{personal ? "Written for this owner" : "Ready-made"}</span>
@@ -863,7 +866,7 @@ export function SalesCallWorkspace() {
                   title={draft.notes.trim() ? undefined : "Take notes in Discovery first"}
                   className={buttonClass("main", "normal", "shrink-0")}
                 >
-                  {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
+                  {kindWritten ? <RefreshCw className="h-4 w-4" aria-hidden /> : <AvaHalo size={18} dark className="shrink-0" />}
                   {kindWritten ? "Update with new notes" : "Personalise"}
                 </button>
               ) : personal ? (
@@ -883,7 +886,7 @@ export function SalesCallWorkspace() {
                 <p className="px-3 pb-1 pt-2 text-xs font-medium text-slate-500">Written for this owner</p>
                 <VersionOption
                   selected={personal}
-                  icon={<Sparkles className="h-4 w-4" />}
+                  icon={<AvaHalo size={18} className="shrink-0" />}
                   title={personalTitle}
                   line={
                     kindWritten
@@ -942,7 +945,7 @@ export function SalesCallWorkspace() {
                     }`}
                   >
                     {t === "personal" ? (
-                      pitchBusy[kind] ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden /> : <Sparkles className={`h-4 w-4 shrink-0 ${on ? "" : "text-sky-600"}`} aria-hidden />
+                      pitchBusy[kind] ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden /> : <AvaHalo size={18} dark={on} className="shrink-0" />
                     ) : (
                       <FileText className="h-4 w-4 shrink-0" aria-hidden />
                     )}
@@ -995,7 +998,7 @@ export function SalesCallWorkspace() {
                       disabled={readiness === "low"}
                       className={`mt-4 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed ${READINESS[readiness].button}`}
                     >
-                      <Sparkles className="h-4 w-4" aria-hidden />
+                      <AvaHalo size={18} dark={readiness !== "low"} className="shrink-0" />
                       Personalise
                     </button>
                   </div>
@@ -1321,7 +1324,7 @@ export function SalesCallWorkspace() {
                 setObjection(e.target.value as ObjectionId);
                 setOverview(false);
               }}
-              className="w-full rounded-lg bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.06)] lg:hidden"
+              className={fieldClass("select", "normal", "lg:hidden")}
             >
               {pagesIn(pagedGroup).map((o) => (
                 <option key={o.id} value={o.id}>
@@ -1384,7 +1387,7 @@ export function SalesCallWorkspace() {
             placeholder="Type what they tell you, in their words. Or press Listen."
             aria-label="Call notes"
             rows={10}
-            className="mt-3 w-full resize-y rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-900 outline-none focus:border-sky-300"
+            className={fieldClass("textarea", "normal", "mt-3 resize-y")}
           />
 
           <div className="mt-2 flex items-center justify-between gap-2">
@@ -1434,7 +1437,7 @@ export function SalesCallWorkspace() {
                   value={field.value}
                   onChange={(e) => editDetail(field.key, e.target.value)}
                   placeholder="Not heard yet"
-                  className="mt-0.5 w-full rounded-md bg-white px-2 py-1.5 text-sm text-slate-900 outline-none ring-1 ring-slate-200/70 placeholder:text-slate-400 focus:ring-sky-300"
+                  className={fieldClass("input", "small", "mt-0.5")}
                 />
               </label>
             ))}
@@ -1456,7 +1459,7 @@ export function SalesCallWorkspace() {
                       value={value}
                       onChange={(v) => editDetail(f.key, v)}
                       placeholder={f.key === "number" ? "e.g. £3.2m turnover, 4% profit" : "Not heard yet"}
-                      className="mt-0.5 block w-full rounded-md bg-white px-2 py-1.5 text-sm text-slate-900 outline-none ring-1 ring-slate-200/70 placeholder:text-slate-400 focus:ring-sky-300"
+                      className={fieldClass("textarea", "small", "mt-0.5")}
                     />
                   </label>
                 </li>

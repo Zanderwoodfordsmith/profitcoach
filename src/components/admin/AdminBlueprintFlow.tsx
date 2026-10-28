@@ -6,6 +6,7 @@ import { ArrowUpRight, Check, Copy, Loader2 } from "lucide-react";
 
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { FlowGraph, FlowKind, FlowNode, FlowNodeStatus } from "@/lib/practiceKnowledge/flow";
 
@@ -334,7 +335,7 @@ export function AdminBlueprintFlow() {
               id="flow-coach"
               value={coachId ?? ""}
               onChange={(e) => pickCoach(e.target.value || null)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900"
+              className={fieldClass("select", "small", "w-auto")}
             >
               <option value="">No coach, just the map</option>
               {coaches.map((c) => (

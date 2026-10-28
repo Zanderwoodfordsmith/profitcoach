@@ -57,20 +57,22 @@ import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { Modal } from "@/components/ui/Modal";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
-const DECISION_STYLES: Record<CurriculumDecision, string> = {
-  undecided: "bg-white text-slate-500 ring-slate-300",
-  keep: "bg-emerald-50 text-emerald-800 ring-emerald-200",
-  rename: "bg-sky-50 text-sky-800 ring-sky-200",
-  update: "bg-amber-50 text-amber-900 ring-amber-200",
-  replace: "bg-orange-50 text-orange-900 ring-orange-200",
-  merge: "bg-violet-50 text-violet-800 ring-violet-200",
-  delete: "bg-rose-50 text-rose-800 ring-rose-200",
-  new: "bg-indigo-50 text-indigo-800 ring-indigo-200",
-  later: "bg-slate-100 text-slate-600 ring-slate-200",
-  reference: "bg-slate-50 text-slate-500 ring-slate-200",
+const DECISION_TONES: Record<CurriculumDecision, BadgeTone> = {
+  undecided: "grey",
+  keep: "green",
+  rename: "blue",
+  update: "amber",
+  replace: "amber",
+  merge: "blue",
+  delete: "red",
+  new: "blue",
+  later: "grey",
+  reference: "grey",
 };
 
 const LINK_ICONS: Record<CurriculumLinkKey, typeof FileText> = {
@@ -165,7 +167,7 @@ async function authHeaders(): Promise<Record<string, string>> {
 function DecisionBadge({ decision }: { decision: CurriculumDecision }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-caption font-medium ring-1 ring-inset ${DECISION_STYLES[decision]}`}
+      className={badgeClass(DECISION_TONES[decision], "shrink-0")}
     >
       {CURRICULUM_DECISION_LABELS[decision]}
     </span>
@@ -240,9 +242,6 @@ function ContentIcons({ content }: { content: LessonContentPresence | null }) {
   );
 }
 
-const controlClass =
-  "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100";
-const fieldClass = `w-full ${controlClass}`;
 const labelClass = "text-xs font-medium text-slate-600";
 
 function RowEditor({
@@ -294,7 +293,7 @@ function RowEditor({
       <label className="flex flex-col gap-1.5 lg:col-span-2">
         <span className={labelClass}>{row.lessonId ? "New title (blank keeps the current one)" : "Title"}</span>
         <input
-          className={fieldClass}
+          className={fieldClass("input", "normal")}
           value={title}
           placeholder={row.currentTitle ?? "Lesson title"}
           onChange={(e) => setTitle(e.target.value)}
@@ -305,7 +304,7 @@ function RowEditor({
       <label className="flex flex-col gap-1.5">
         <span className={labelClass}>Decision</span>
         <select
-          className={fieldClass}
+          className={fieldClass("select", "normal")}
           value={decision}
           onChange={(e) => {
             const next = e.target.value as CurriculumDecision;
@@ -329,7 +328,7 @@ function RowEditor({
         <label className="flex flex-col gap-1.5">
           <span className={labelClass}>{decision === "merge" ? "Merges into" : "Replaced by"}</span>
           <select
-            className={fieldClass}
+            className={fieldClass("select", "normal")}
             value={plan?.intoKey ?? ""}
             onChange={(e) => onSave({ intoKey: e.target.value || null })}
           >
@@ -350,7 +349,7 @@ function RowEditor({
         <label className="flex flex-col gap-1.5">
           <span className={labelClass}>Section</span>
           <input
-            className={fieldClass}
+            className={fieldClass("input", "normal")}
             list={`sections-${row.key}`}
             value={section}
             placeholder="Pick a section or type a new one"
@@ -401,7 +400,7 @@ function RowEditor({
         <label key={f.key} className="flex flex-col gap-1.5">
           <span className={labelClass}>{f.label} link</span>
           <input
-            className={fieldClass}
+            className={fieldClass("input", "normal")}
             value={links[f.key]}
             placeholder="https://"
             inputMode="url"
@@ -417,7 +416,7 @@ function RowEditor({
       <label className="flex flex-col gap-1.5 lg:col-span-4">
         <span className={labelClass}>Notes</span>
         <textarea
-          className={`${fieldClass} min-h-24 leading-6`}
+          className={fieldClass("textarea", "normal", "min-h-24")}
           value={note}
           placeholder="What changes, what to reuse, what is still open"
           onChange={(e) => setNote(e.target.value)}
@@ -480,7 +479,7 @@ function LessonCell({
           {row.currentTitle ?? rowDisplayTitle(row)}
         </span>
         {row.isDraft ? (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium text-slate-500">Draft</span>
+          <span className={badgeClass("grey")}>Draft</span>
         ) : null}
       </div>
       {renamed ? <p className="mt-0.5 text-xs text-sky-800">New title: {newTitle}</p> : null}
@@ -562,10 +561,10 @@ function GroupToggle({
       <Caret open={open} />
       <span className={`text-sm font-semibold ${draft ? "text-slate-400" : "text-slate-800"}`}>{label}</span>
       {draft ? (
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium text-slate-500">All draft</span>
+        <span className={badgeClass("grey")}>All draft</span>
       ) : null}
       {isNew ? (
-        <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-caption font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200">
+        <span className={badgeClass("blue")}>
           New section
         </span>
       ) : null}
@@ -927,14 +926,14 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
           <label className="relative w-full sm:w-48">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              className={`${fieldClass} pl-9`}
+              className={fieldClass("input", "small", "pl-9")}
               value={query}
               placeholder="Search lessons"
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
           <select
-            className={controlClass}
+            className={fieldClass("select", "small", "w-auto!")}
             value={decisionFilter}
             onChange={(e) => setDecisionFilter(e.target.value as CurriculumDecision | "all")}
             aria-label="Decision"
@@ -947,7 +946,7 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
             ))}
           </select>
           <select
-            className={controlClass}
+            className={fieldClass("select", "small", "w-auto!")}
             value={missingFilter}
             onChange={(e) => setMissingFilter(e.target.value as keyof LessonContentPresence | "all")}
             aria-label="Missing"
@@ -1182,7 +1181,7 @@ function AddLessonForm({
     >
       <label className="flex flex-col gap-1.5">
         <span className={labelClass}>Course</span>
-        <select className={fieldClass} value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+        <select className={fieldClass("select", "normal")} value={courseId} onChange={(e) => setCourseId(e.target.value)}>
           {courses.map((c) => (
             <option key={c.id} value={c.id}>
               {c.title}
@@ -1193,7 +1192,7 @@ function AddLessonForm({
       <label className="flex flex-col gap-1.5">
         <span className={labelClass}>Section</span>
         <input
-          className={fieldClass}
+          className={fieldClass("input", "normal")}
           list="add-lesson-sections"
           value={section}
           placeholder="Pick or type a new one"
@@ -1208,7 +1207,7 @@ function AddLessonForm({
       <label className="flex flex-col gap-1.5">
         <span className={labelClass}>Title</span>
         <input
-          className={fieldClass}
+          className={fieldClass("input", "normal")}
           value={title}
           placeholder="e.g. Handling the contract objection"
           onChange={(e) => setTitle(e.target.value)}

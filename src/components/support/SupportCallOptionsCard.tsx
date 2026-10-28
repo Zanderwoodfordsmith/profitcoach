@@ -9,6 +9,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   forSlug: string;
@@ -183,7 +184,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
             type="number"
             min={5}
             max={180}
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("input", "normal", "mt-1")}
             value={calendar.meeting_duration_minutes}
             onChange={(e) =>
               patchLocal(
@@ -199,7 +200,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
             type="number"
             min={0}
             max={120}
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("input", "normal", "mt-1")}
             value={calendar.buffer_minutes}
             onChange={(e) =>
               patchLocal("buffer_minutes", Number(e.target.value) || 0)
@@ -214,7 +215,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
             type="number"
             min={0}
             max={168}
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("input", "normal", "mt-1")}
             value={calendar.min_notice_hours}
             onChange={(e) =>
               patchLocal("min_notice_hours", Number(e.target.value) || 0)
@@ -232,7 +233,7 @@ export function SupportCallOptionsCard({ forSlug }: Props) {
             type="number"
             min={1}
             max={90}
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("input", "normal", "mt-1")}
             value={calendar.booking_window_days}
             onChange={(e) =>
               patchLocal(

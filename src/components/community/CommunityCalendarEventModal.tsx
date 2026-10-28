@@ -36,6 +36,7 @@ import {
 import type { CommunityCalendarEventRow } from "@/lib/communityCalendarTypes";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   occurrence: CommunityCalendarOccurrence;
@@ -371,7 +372,7 @@ export function CommunityCalendarEventModal({
                 maxLength={500}
                 rows={3}
                 placeholder="Why was this session cancelled?"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"
+                className={fieldClass("textarea")}
               />
               {cancellationReasonError ? (
                 <p className="text-xs text-rose-700">{cancellationReasonError}</p>
@@ -450,7 +451,7 @@ export function CommunityCalendarEventModal({
                 value={recordingLinkDraft}
                 onChange={(e) => setRecordingLinkDraft(e.target.value)}
                 placeholder="https://zoom.us/rec/..."
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                className={fieldClass("input")}
               />
               {recordingError ? (
                 <p className="text-xs text-rose-700">{recordingError}</p>

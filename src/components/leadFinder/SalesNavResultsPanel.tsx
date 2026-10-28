@@ -27,6 +27,7 @@ import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 const COOKIE_STORAGE_KEY = "lead-finder-sales-nav-cookie";
 const URL_OVERRIDE_STORAGE_KEY = "lead-finder-sales-nav-url-override";
@@ -1098,7 +1099,7 @@ export function SalesNavResultsPanel({
               onChange={(e) => persistPastedUrl(e.target.value)}
               rows={2}
               placeholder="https://www.linkedin.com/sales/search/people?query=…"
-              className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400"
+              className={fieldClass("textarea", "small", "resize-y font-mono")}
               spellCheck={false}
             />
             {pastedUrl.trim() && !isSalesNavSearchUrl(pastedUrl.trim()) ? (
@@ -1120,7 +1121,7 @@ export function SalesNavResultsPanel({
             value={importName}
             onChange={(e) => setImportName(e.target.value)}
             placeholder="e.g. UK owners · 11–50 · &lt;1 yr · posted 30d"
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400"
+            className={fieldClass("input", "normal")}
           />
         </label>
         <label className="mt-2 block max-w-xs">
@@ -1130,7 +1131,7 @@ export function SalesNavResultsPanel({
           <select
             value={takePages}
             onChange={(e) => setTakePages(Number(e.target.value))}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+            className={fieldClass("select", "normal")}
           >
             {IMPORT_SIZE_OPTIONS.map((o) => (
               <option key={o.pages} value={o.pages}>
@@ -1295,7 +1296,7 @@ export function SalesNavResultsPanel({
                     );
                     setResultsPage(1);
                   }}
-                  className="rounded-md border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-900"
+                  className={fieldClass("select", "small", "w-auto")}
                 >
                   {RESULTS_PAGE_SIZES.map((n) => (
                     <option key={n} value={n}>
@@ -1549,7 +1550,7 @@ export function SalesNavResultsPanel({
                 onChange={(e) => persistCookie(e.target.value)}
                 rows={5}
                 placeholder="From the extension: Copy cookies instead"
-                className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400"
+                className={fieldClass("textarea", "small", "resize-y font-mono")}
                 autoComplete="off"
                 spellCheck={false}
               />

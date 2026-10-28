@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 import {
   convertAmountCents,
@@ -753,7 +754,7 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
               <select
                 value={activeCurrency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
+                className={fieldClass("select", "small", "w-auto")}
                 aria-label="Display currency"
               >
                 {currencies.map((c) => (
@@ -766,7 +767,7 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
             <select
               value={range}
               onChange={(e) => setRange(e.target.value as ChartRange)}
-              className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
+              className={fieldClass("select", "small", "w-auto")}
               aria-label="Month range"
             >
               <option value="6">Last 6 months</option>

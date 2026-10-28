@@ -5,13 +5,15 @@ import { Copy, Loader2, Pencil, Send, Trash2, XCircle } from "lucide-react";
 import { formatShortDateTime } from "@/lib/linkedinScheduleTime";
 import {
   postTypeLabel,
-  statusChipClass,
+  statusBadgeTone,
   statusLabel,
   type LinkedInPostItem,
   type LinkedInPostStatus,
 } from "./types";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   items: LinkedInPostItem[];
@@ -208,7 +210,7 @@ export function LinkedInQueueTab({
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="ml-auto rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
+            className={fieldClass("select", "small", "ml-auto w-auto")}
           >
             <option value="">All categories</option>
             {categories.map((c) => (
@@ -252,19 +254,17 @@ export function LinkedInQueueTab({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-caption font-semibold ring-1 ring-inset ${statusChipClass(
-                        item.status
-                      )}`}
+                      className={badgeClass(statusBadgeTone(item.status))}
                     >
                       {statusLabel(item.status)}
                     </span>
                     {overdue ? (
-                      <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-caption font-semibold text-amber-900 ring-1 ring-inset ring-amber-200">
+                      <span className={badgeClass("red")}>
                         Overdue
                       </span>
                     ) : null}
                     {item.category ? (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-semibold text-slate-600">
+                      <span className={badgeClass("grey")}>
                         {item.category}
                       </span>
                     ) : null}

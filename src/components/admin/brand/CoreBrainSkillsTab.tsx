@@ -6,6 +6,7 @@ import { AdminCoachAiPromptEditor } from "@/components/admin/AdminCoachAiPromptE
 import { AdminLinkedInOptimizerPromptEditor } from "@/components/admin/AdminLinkedInOptimizerPromptEditor";
 import { AdminReplyCopilotPromptEditor } from "@/components/admin/AdminReplyCopilotPromptEditor";
 import { BrainExpandableItem } from "@/components/admin/brand/BrainExpandableItem";
+import { badgeClass } from "@/components/ui/Badge";
 import {
   getOutputById,
   PROFIT_COACH_OUTPUTS,
@@ -140,7 +141,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
                   href={`/admin/brand?tab=brain&brainTab=knowledge&open=${encodeURIComponent(file)}`}
                   className="hover:text-sky-700"
                 >
-                  <span className="rounded-full bg-white px-2 py-0.5 font-mono text-caption text-slate-500 ring-1 ring-slate-200">
+                  <span className={badgeClass("grey", "font-mono")}>
                     {file}
                   </span>
                 </a>
@@ -163,7 +164,7 @@ function SkillDetail({ skill }: { skill: ProfitCoachOutputDefinition }) {
                   ? null
                   : `/admin/brand?tab=brain&brainTab=knowledge&open=${encodeURIComponent(file)}`;
               const chip = (
-                <span className="rounded-full bg-white px-2 py-0.5 font-mono text-caption text-slate-500 ring-1 ring-slate-200">
+                <span className={badgeClass("grey", "font-mono")}>
                   {file}
                 </span>
               );
@@ -318,26 +319,26 @@ function ProgrammeSectionRow({
       badges={
         <>
           {card ? (
-            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-caption font-semibold text-indigo-800">
+            <span className={badgeClass("blue")}>
               Create card
             </span>
           ) : (
-            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-caption font-semibold text-slate-700">
+            <span className={badgeClass("grey")}>
               Skill only
             </span>
           )}
           {card?.dedicatedPath ? (
-            <span className="rounded-full bg-white px-2 py-0.5 font-mono text-caption text-slate-600 ring-1 ring-slate-200">
+            <span className={badgeClass("grey", "font-mono")}>
               {card.dedicatedPath}
             </span>
           ) : null}
           {card?.outputId ? (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-caption font-semibold text-emerald-800">
+            <span className={badgeClass("green", "font-mono")}>
               → {card.outputId}
             </span>
           ) : null}
           {section.skillIds.length > 1 ? (
-            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-caption font-semibold text-sky-800">
+            <span className={badgeClass("blue")}>
               {section.skillIds.length} skills
             </span>
           ) : primarySkill ? (
@@ -346,12 +347,12 @@ function ProgrammeSectionRow({
             </span>
           ) : null}
           {card?.adminOnly ? (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-caption font-semibold text-amber-800">
+            <span className={badgeClass("amber")}>
               Admin only
             </span>
           ) : null}
           {primarySkill?.promptEditor ? (
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-caption font-semibold text-violet-700">
+            <span className={badgeClass("blue")}>
               DB prompt
             </span>
           ) : null}

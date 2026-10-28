@@ -41,6 +41,7 @@ import {
 } from "@/lib/messaging/prefetchProspectOpen";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type PaneTab = "activity" | "calls" | "notes";
 
@@ -482,7 +483,7 @@ export function ProspectJourneyPane({
                 }}
                 rows={3}
                 placeholder="Add a private note…"
-                className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400"
+                className={fieldClass("textarea", "normal", "resize-none")}
               />
               <div className="mt-2 flex items-center justify-between gap-3">
                 {noteError ? (

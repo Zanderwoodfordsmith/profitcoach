@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export type CoachForChart = {
   joined_at: string | null;
@@ -421,7 +422,7 @@ export function CoachesMonthlyBarChart({ coaches, loading }: Props) {
           <select
             value={range}
             onChange={(e) => setRange(e.target.value as ChartRange)}
-            className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
+            className={fieldClass("select", "small", "w-auto")}
             aria-label="Month range"
           >
             <option value="6">Last 6 months</option>

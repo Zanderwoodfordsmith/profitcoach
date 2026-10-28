@@ -13,6 +13,7 @@ import {
   CampaignSetupProgress,
   useCampaignProgressRunner,
 } from "@/components/firstCampaign/CampaignSetupProgress";
+import { fieldClass } from "@/components/ui/Field";
 import type { CampaignMessageDraft } from "@/lib/firstCampaign/types";
 import {
   apiPatch,
@@ -283,7 +284,7 @@ export function StepMessages({
                 value={draft.body}
                 onChange={(e) => updateBody(key, e.target.value)}
                 rows={6}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+                className={fieldClass("textarea", "normal")}
               />
               <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-slate-600">
                 <input

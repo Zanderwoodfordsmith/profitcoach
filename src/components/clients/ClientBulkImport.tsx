@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { PASTE_TEMPLATE_HEADERS, parsePastedClients } from "@/lib/clientRoster/paste";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 /** Paste every client at once from a spreadsheet. */
 export function ClientBulkImport({
@@ -80,7 +81,7 @@ export function ClientBulkImport({
         }}
         rows={8}
         placeholder={PASTE_TEMPLATE_HEADERS.join("\t")}
-        className="mt-3 block w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
+        className={fieldClass("textarea", "normal", "mt-3 font-mono")}
       />
       {parsed?.error ? <p className="mt-2 text-amber-800">{parsed.error}</p> : null}
       {parsed && !parsed.error ? (

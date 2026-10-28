@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Arm = { key: string; label: string; body: string };
 type Slot = { key: string; label: string; hint?: string; max?: number };
@@ -111,7 +112,7 @@ export function CampaignGroupTestPanel({
                 setPick(e.target.value);
                 setFills({});
               }}
-              className="mt-1 block w-full rounded border border-slate-300 px-2 py-1 text-sm"
+              className={fieldClass("select", "small", "mt-1")}
             >
               <option value="">Choose a test…</option>
               {tests.map((t) => (
@@ -133,7 +134,7 @@ export function CampaignGroupTestPanel({
                     maxLength={slot.max ?? 120}
                     onChange={(e) => setFills({ ...fills, [slot.key]: e.target.value })}
                     placeholder={slot.hint}
-                    className="mt-1 block w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                    className={fieldClass("input", "small", "mt-1")}
                   />
                 </label>
               ))}

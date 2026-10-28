@@ -14,10 +14,12 @@ import { listTools } from "./lists";
 import { messagingTools } from "./messaging";
 import { onboardingTools } from "./onboarding";
 import { prospectTools } from "./prospects";
+import { searchTools } from "./search";
 
 /** Every agent tool. Capabilities choose which ones they reveal. */
 export const AGENT_TOOLS: AgentToolDef[] = [
   ...coreTools,
+  ...searchTools,
   ...prospectTools,
   ...listTools,
   ...campaignTools,

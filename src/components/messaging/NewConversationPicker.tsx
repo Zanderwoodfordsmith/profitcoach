@@ -1,6 +1,7 @@
 "use client";
 
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Loader2, Plus, Search, UserPlus, X } from "lucide-react";
 
@@ -453,7 +454,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, fullName: e.target.value }))
                     }
-                    className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                    className={fieldClass("input", "small")}
                     placeholder="Full name"
                   />
                 </label>
@@ -467,7 +468,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, email: e.target.value }))
                     }
-                    className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                    className={fieldClass("input", "small")}
                     placeholder="Optional"
                   />
                 </label>
@@ -481,7 +482,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, phone: e.target.value }))
                     }
-                    className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                    className={fieldClass("input", "small")}
                     placeholder="Optional · WhatsApp / SMS"
                   />
                 </label>
@@ -495,7 +496,7 @@ export function NewConversationPicker({ getHeaders, onStarted }: Props) {
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, linkedinUrl: e.target.value }))
                     }
-                    className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                    className={fieldClass("input", "small")}
                     placeholder="Optional · for LinkedIn DMs"
                   />
                 </label>

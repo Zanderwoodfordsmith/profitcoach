@@ -61,6 +61,7 @@ import {
 } from "@/lib/support/tickets";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { badgeClass } from "@/components/ui/Badge";
 
 type TicketWithReplies = SupportTicket & {
   replies: SupportReply[];
@@ -1029,12 +1030,12 @@ function StatusPill({
   size?: "sm" | "md";
 }) {
   const presentation = memberSupportStatusPresentation(status);
-  const toneClass =
+  const tone =
     presentation.tone === "waiting"
-      ? "bg-amber-50 text-amber-900 ring-amber-200/80"
+      ? "amber"
       : presentation.tone === "resolved"
-        ? "bg-emerald-50 text-emerald-800 ring-emerald-200/80"
-        : "bg-sky-50 text-sky-800 ring-sky-200/80";
+        ? "green"
+        : "blue";
   const Icon =
     presentation.tone === "waiting"
       ? Hourglass
@@ -1043,11 +1044,7 @@ function StatusPill({
         : Circle;
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full font-semibold ring-1 ring-inset ${toneClass} ${
-        size === "md"
-          ? "gap-1.5 py-1 pl-3 pr-2.5 text-sm"
-          : "gap-1 px-1.5 py-0.5 text-caption"
-      }`}
+      className={badgeClass(tone, "shrink-0")}
     >
       <Icon
         className={size === "md" ? "h-3.5 w-3.5" : "h-3 w-3"}

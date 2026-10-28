@@ -12,6 +12,7 @@ import type { ProspectRow } from "@/lib/prospectRow";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import { splitFullName } from "@/lib/splitFullName";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   prospect: ProspectRow | null;
@@ -110,7 +111,7 @@ export function ProspectContactEditModal({
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               autoComplete="given-name"
-              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div>
@@ -126,7 +127,7 @@ export function ProspectContactEditModal({
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               autoComplete="family-name"
-              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div className="sm:col-span-2">
@@ -143,7 +144,7 @@ export function ProspectContactEditModal({
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div className="sm:col-span-2">
@@ -160,7 +161,7 @@ export function ProspectContactEditModal({
               onChange={(e) => setPhone(e.target.value)}
               autoComplete="tel"
               placeholder="Phone number"
-              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div>
@@ -176,7 +177,7 @@ export function ProspectContactEditModal({
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
               placeholder="Title"
-              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div>
@@ -192,7 +193,7 @@ export function ProspectContactEditModal({
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
               placeholder="Business"
-              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div>
@@ -208,7 +209,7 @@ export function ProspectContactEditModal({
               value={companyWebsite}
               onChange={(e) => setCompanyWebsite(e.target.value)}
               placeholder="https://example.com"
-              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("input", "normal")}
             />
           </div>
         </div>

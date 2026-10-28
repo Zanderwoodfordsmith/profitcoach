@@ -149,6 +149,8 @@ import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDup
 import { SamePersonMerge } from "@/components/messaging/SamePersonMerge";
 import { DeleteProspectsDialog } from "@/components/prospects/DeleteProspectsDialog";
 import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
@@ -840,7 +842,7 @@ function ChannelPickerRow({
 
 function DraftChip() {
   return (
-    <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-caption font-medium text-amber-900 ring-1 ring-amber-200">
+    <span className={badgeClass("amber", "shrink-0")}>
       Draft
     </span>
   );
@@ -5099,7 +5101,7 @@ export function MessagingInbox({
                                 {personName}
                               </span>
                               {draftsByConversation[c.id] ? (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-caption font-medium text-amber-900 ring-1 ring-amber-200">
+                                <span className={badgeClass("amber", "shrink-0")}>
                                   {draftsByConversation[c.id]?.channel ? (
                                     <ChannelMark
                                       channel={
@@ -6035,7 +6037,7 @@ export function MessagingInbox({
                               onChange={(e) =>
                                 setEmailFromAccountId(e.target.value)
                               }
-                              className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm"
+                              className={fieldClass("select", "small", "min-w-0 flex-1")}
                             >
                               {mailingAccounts.map((account) => (
                                 <option
@@ -6108,7 +6110,7 @@ export function MessagingInbox({
                           <input
                             value={replySubject}
                             onChange={(e) => setReplySubject(e.target.value)}
-                            className="flex-1 rounded-md border border-slate-200 px-2.5 py-1.5 text-sm"
+                            className={fieldClass("input", "small", "flex-1")}
                           />
                         </label>
                       </div>
@@ -6479,13 +6481,15 @@ export function MessagingInbox({
                                 prospect_status: value,
                               });
                             }}
-                            className={`w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200 ${
+                            className={fieldClass(
+                              "select",
+                              "small",
                               threadProspect?.prospect_status
                                 ? prospectStatusBadgeClass(
                                     threadProspect.prospect_status
                                   )
                                 : "text-slate-600"
-                            }`}
+                            )}
                           >
                             <option value="">Auto</option>
                             {PROSPECT_STATUS_OPTIONS.map((option) => (
@@ -6939,7 +6943,7 @@ export function MessagingInbox({
                         prospect_status: value,
                       });
                     }}
-                    className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+                    className={fieldClass("select", "small")}
                   >
                     <option value="">Auto</option>
                     {PROSPECT_STATUS_OPTIONS.map((option) => (

@@ -1,6 +1,6 @@
 # Router
 
-Pick the capability for the task and open it with `open_capability`. Open several for a chained job. The overview tool (`get_account_overview`) is always available for a quick look at the active coach's lists, campaigns and LinkedIn connection.
+Pick the capability for the task and open it with `open_capability`. Open several for a chained job. The overview tool (`get_account_overview`) is always available for a quick look at the active coach's lists, campaigns and LinkedIn connection. `search_everything` and `read_memory` are always available too: use them to find a person, list, campaign, Blueprint line or anything from past chats, calls and posts, before opening a capability to act on it.
 
 | The person wants to | Open | You'll also need |
 |---|---|---|
@@ -16,6 +16,7 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 | Create a campaign, see campaigns, turn one on or off, change volume or priority | `campaigns` | `campaign-messaging` to write it |
 | Add a list or people to a campaign, remove, pause or move people | `campaign-people` | `lists`, `campaigns` |
 | Write or rewrite campaign messages, use the blueprint's messaging | `campaign-messaging` | `campaigns` |
+| Ask what works in outreach: note or no note, acceptance or reply rates, who answers on LinkedIn, "what does the data say" | `campaign-messaging` (it carries our 110,000-request research) | |
 | Write a LinkedIn newsletter, VIP inbox, post, article or InMail about an issue | `linkedin-marketing` | `improve-section` to tighten a written piece |
 | "What's holding me back", "where am I stuck", "what's my constraint", "why am I not getting clients" | `constraint` | The capability it points to for the fix |
 | Practise the Profit System pitch, or tailor the nine steps to this prospect | `personalised-pitch` | Their Blueprint script if they have one |

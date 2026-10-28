@@ -22,6 +22,7 @@ import type { AcademyRecommendedAction } from "@/lib/academy/lessonActions";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 /** Mirrors the reader's tabs — actions sit with the Overview, as coaches see them. */
 type EditTabId = "overview" | "guide";
@@ -278,7 +279,7 @@ export function LessonContentEditForm({
                 value={audioUrl}
                 onChange={(e) => onAudioUrlChange(e.target.value)}
                 placeholder="Or paste an audio URL"
-                className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                className={fieldClass("input", "small", "min-w-0 flex-1")}
               />
             </div>
             <input
@@ -308,7 +309,7 @@ export function LessonContentEditForm({
               value={duration}
               onChange={(e) => onDurationChange(e.target.value)}
               placeholder="e.g. 6m"
-              className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className={fieldClass("input", "normal", "mt-1.5")}
             />
             <p className="mt-1.5 text-xs text-slate-500">
               Shown next to the lesson in the course sidebar. Use minutes like{" "}

@@ -19,6 +19,7 @@ import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export default function AdminPlaybookDetailPage({
   params,
@@ -262,7 +263,7 @@ export default function AdminPlaybookDetailPage({
                   }}
                   placeholder="Paste full playbook content here…"
                   rows={6}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-mono text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  className={fieldClass("textarea", "normal", "font-mono")}
                 />
                 <div className="flex flex-wrap items-center gap-3">
                   <button
@@ -346,7 +347,7 @@ export default function AdminPlaybookDetailPage({
               value={form.whatThisIs}
               onChange={(e) => setForm((f) => f && { ...f, whatThisIs: e.target.value })}
               rows={8}
-              className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("textarea", "normal", "mt-2")}
               placeholder="Paste or type overview text…"
             />
           </section>
@@ -375,7 +376,7 @@ export default function AdminPlaybookDetailPage({
                       )
                     }
                     rows={4}
-                    className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    className={fieldClass("textarea", "normal", "mt-2")}
                   />
                 </div>
               ))}
@@ -399,7 +400,7 @@ export default function AdminPlaybookDetailPage({
                       })
                     }
                     rows={2}
-                    className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    className={fieldClass("textarea", "normal", "flex-1")}
                   />
                   <button
                     type="button"
@@ -444,7 +445,7 @@ export default function AdminPlaybookDetailPage({
                   setForm((f) => (f ? { ...f, actionsIntro: e.target.value } : f))
                 }
                 rows={3}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("textarea", "normal", "mt-1")}
                 placeholder="e.g. This playbook is organised into three sections. When you open it in the Profit System, you will find:"
               />
             </label>
@@ -499,7 +500,7 @@ export default function AdminPlaybookDetailPage({
                             })
                           }
                           placeholder="Section title (e.g. Role Clarity)"
-                          className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium"
+                          className={fieldClass("input", "small", "font-medium")}
                         />
                         <textarea
                           value={sec.description}
@@ -514,7 +515,7 @@ export default function AdminPlaybookDetailPage({
                           }
                           rows={2}
                           placeholder="Short description of this section"
-                          className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+                          className={fieldClass("textarea", "small")}
                         />
                       </div>
                       <button
@@ -556,7 +557,7 @@ export default function AdminPlaybookDetailPage({
                                   return { ...f, actionSections: next };
                                 })
                               }
-                              className="w-14 rounded border border-slate-300 px-2 py-1 text-sm"
+                              className={fieldClass("input", "small", "w-14!")}
                             />
                             <input
                               type="text"
@@ -575,7 +576,7 @@ export default function AdminPlaybookDetailPage({
                                 })
                               }
                               placeholder="Action title"
-                              className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+                              className={fieldClass("input", "small", "min-w-[10rem] flex-1")}
                             />
                             <button
                               type="button"
@@ -613,7 +614,7 @@ export default function AdminPlaybookDetailPage({
                             }
                             rows={2}
                             placeholder="Description"
-                            className="mt-2 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                            className={fieldClass("textarea", "small", "mt-2")}
                           />
                           <details className="mt-3 rounded border border-dashed border-slate-200 bg-slate-50/80 px-2 py-2">
                             <summary className="cursor-pointer text-xs font-medium text-slate-600">
@@ -645,7 +646,7 @@ export default function AdminPlaybookDetailPage({
                                       })
                                     }
                                     placeholder="Heading (e.g. What to Do)"
-                                    className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                                    className={fieldClass("input", "small")}
                                   />
                                   <textarea
                                     value={ds.content}
@@ -667,7 +668,7 @@ export default function AdminPlaybookDetailPage({
                                     }
                                     rows={4}
                                     placeholder="Markdown body"
-                                    className="w-full rounded border border-slate-300 px-2 py-1 text-xs font-mono"
+                                    className={fieldClass("textarea", "small", "font-mono")}
                                   />
                                   <button
                                     type="button"
@@ -784,7 +785,7 @@ export default function AdminPlaybookDetailPage({
                             return { ...f, actions: next };
                           })
                         }
-                        className="w-16 rounded border border-slate-300 px-2 py-1 text-sm"
+                        className={fieldClass("input", "small", "w-16!")}
                       />
                     </label>
                     <label className="flex-1 min-w-[12rem]">
@@ -801,7 +802,7 @@ export default function AdminPlaybookDetailPage({
                             return { ...f, actions: next };
                           })
                         }
-                        className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+                        className={fieldClass("input", "small", "mt-1")}
                       />
                     </label>
                     <button
@@ -831,7 +832,7 @@ export default function AdminPlaybookDetailPage({
                         })
                       }
                       rows={2}
-                      className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+                      className={fieldClass("textarea", "small", "mt-1")}
                     />
                   </label>
                   <details className="mt-3 rounded border border-dashed border-slate-200 bg-slate-50/80 px-2 py-2">
@@ -860,7 +861,7 @@ export default function AdminPlaybookDetailPage({
                               })
                             }
                             placeholder="Heading (e.g. What to Do)"
-                            className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                            className={fieldClass("input", "small")}
                           />
                           <textarea
                             value={ds.content}
@@ -878,7 +879,7 @@ export default function AdminPlaybookDetailPage({
                             }
                             rows={4}
                             placeholder="Markdown body"
-                            className="w-full rounded border border-slate-300 px-2 py-1 text-xs font-mono"
+                            className={fieldClass("textarea", "small", "font-mono")}
                           />
                           <button
                             type="button"
@@ -966,7 +967,7 @@ export default function AdminPlaybookDetailPage({
                       })
                     }
                     rows={1}
-                    className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    className={fieldClass("textarea", "normal", "flex-1")}
                   />
                   <button
                     type="button"
@@ -1018,7 +1019,7 @@ export default function AdminPlaybookDetailPage({
                         })
                       }
                       placeholder="Ref (e.g. 2.9)"
-                      className="w-20 rounded border border-slate-300 px-2 py-1 text-sm"
+                      className={fieldClass("input", "small", "w-20!")}
                     />
                     <button
                       type="button"
@@ -1050,7 +1051,7 @@ export default function AdminPlaybookDetailPage({
                     }
                     rows={2}
                     placeholder="Why this playbook is related (e.g. Clear roles and expectations make hiring much easier...)"
-                    className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                    className={fieldClass("textarea", "small")}
                   />
                 </div>
               ))}

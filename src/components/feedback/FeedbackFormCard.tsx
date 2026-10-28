@@ -8,6 +8,7 @@ import type { SupportTicketType } from "@/lib/support/tickets";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type FeedbackFormCardProps = {
   onSubmitted?: () => void;
@@ -119,7 +120,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
             required
             value={feedbackTitle}
             onChange={(e) => setFeedbackTitle(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className={fieldClass("input")}
             placeholder="Short summary"
           />
         </div>
@@ -131,7 +132,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
             rows={4}
             value={feedbackDetails}
             onChange={(e) => setFeedbackDetails(e.target.value)}
-            className="w-full resize-y rounded-lg border border-slate-300 px-3.5 py-2.5 text-base leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className={fieldClass("textarea", "normal", "resize-y")}
             placeholder={FEEDBACK_DETAILS_PLACEHOLDER}
           />
         </div>

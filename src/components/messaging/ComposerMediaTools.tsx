@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
+import { fieldClass } from "@/components/ui/Field";
 
 const EmojiPicker = dynamic(
   () => import("emoji-picker-react").then((m) => m.default),
@@ -144,7 +145,7 @@ export function ScheduleMessageModal({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-2.5 py-2 text-sm"
+              className={fieldClass("input", "normal", "mt-1")}
             />
           </label>
           <label className="block text-xs font-medium text-slate-600">
@@ -153,7 +154,7 @@ export function ScheduleMessageModal({
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-2.5 py-2 text-sm"
+              className={fieldClass("input", "normal", "mt-1")}
             />
           </label>
           <p className="text-caption text-slate-500">Timezone: {tz}</p>

@@ -38,6 +38,8 @@ import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 const LIST_DROPDOWN =
   "absolute left-0 z-[90] mt-1 w-[min(92vw,20rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg";
@@ -360,7 +362,7 @@ export function CallsHub({
       renderCallStatus={(row) =>
         row.source === "native" ? (
           <select
-            className="rounded border border-slate-200 px-1.5 py-1 text-xs"
+            className={fieldClass("select", "small", "w-auto")}
             disabled={statusBusy}
             value={
               row.status_normalized === "confirmed"
@@ -480,7 +482,7 @@ export function CallsHub({
                                 (e.target.value || "all") as string | "all"
                               )
                             }
-                            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                            className={fieldClass("select", "normal")}
                           >
                             <option value="all">All coaches</option>
                             {listControls.coachFilterOptions?.map((coach) => (
@@ -506,7 +508,7 @@ export function CallsHub({
                               e.target.value as typeof listControls.timingFilter
                             )
                           }
-                          className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                          className={fieldClass("select", "normal")}
                         >
                           <option value="all">All</option>
                           <option value="upcoming">Upcoming</option>
@@ -528,7 +530,7 @@ export function CallsHub({
                               e.target.value as typeof listControls.statusFilter
                             )
                           }
-                          className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                          className={fieldClass("select", "normal")}
                         >
                           <option value="all">All</option>
                           <option value="confirmed">Confirmed</option>
@@ -581,7 +583,7 @@ export function CallsHub({
                             e.target.value as typeof listControls.sortField
                           )
                         }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "normal")}
                       >
                         <option value="start_time">Call time</option>
                         <option value="created_at">Date added</option>
@@ -604,7 +606,7 @@ export function CallsHub({
                             e.target.value as typeof listControls.sortOrder
                           )
                         }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "normal")}
                       >
                         {listControls.sortOrderOptions.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -660,9 +662,7 @@ export function CallsHub({
             </p>
             <p className="mt-2">
               <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${callStatusClass(
-                  detail.status_normalized
-                )}`}
+                className={badgeClass("grey", callStatusClass(detail.status_normalized))}
               >
                 {getCallStatusLabel(detail.status_normalized)}
               </span>

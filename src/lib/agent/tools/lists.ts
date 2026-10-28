@@ -9,14 +9,11 @@ import {
   recountLeadListItems,
 } from "@/lib/leadLists/audienceLists";
 
+import { searchPeople } from "../search/people";
 import type { AgentToolDef } from "../types";
 import { AgentToolError, coachOf, num, personName, str } from "./util";
 
 /** The coach's lists: overview, people on a list, new lists, pasted people. */
-
-function cleanSearch(value: string): string {
-  return value.replace(/[%,()*]/g, " ").trim();
-}
 
 export const listTools: AgentToolDef[] = [
   {
@@ -64,7 +61,7 @@ export const listTools: AgentToolDef[] = [
       type: "object",
       properties: {
         list_id: { type: "string" },
-        search: { type: "string", description: "Name, company or job title" },
+        search: { type: "string", description: "Name, company or job title. Each word counts on its own; short names and near spellings match." },
         limit: { type: "number", description: "Default 20, max 100" },
       },
       required: ["list_id"],
@@ -76,7 +73,11 @@ export const listTools: AgentToolDef[] = [
       const list = await loadOwnedLeadList(coach.id, listId);
       if (!list) throw new AgentToolError("List not found for this coach.");
       const limit = Math.min(100, Math.max(1, num(input, "limit") ?? 20));
-      const search = cleanSearch(str(input, "search"));
+      const search = str(input, "search");
+      // A search ranks matches in Postgres (each word, short names, near spellings); best first.
+      const matchedIds = search
+        ? (await searchPeople(coach.id, search, { listId, limit })).map((row) => row.id)
+        : null;
 
       let query = supabaseAdmin
         .from("coach_lead_list_items")
@@ -85,13 +86,10 @@ export const listTools: AgentToolDef[] = [
         .eq("list_id", listId)
         .order("created_at", { ascending: true })
         .limit(limit);
-      if (search) {
-        query = query.or(
-          `full_name.ilike.%${search}%,company.ilike.%${search}%,job_title.ilike.%${search}%`
-        );
-      }
-      const [{ data, error }, total, withLinkedIn] = await Promise.all([
-        query,
+      if (matchedIds) query = query.in("id", matchedIds);
+      const noMatches = matchedIds !== null && !matchedIds.length;
+      const [{ data: rows, error }, total, withLinkedIn] = await Promise.all([
+        noMatches ? { data: [], error: null } : query,
         supabaseAdmin
           .from("coach_lead_list_items")
           .select("id", { count: "exact", head: true })
@@ -105,6 +103,10 @@ export const listTools: AgentToolDef[] = [
           .not("linkedin_url", "is", null),
       ]);
       if (error) throw new Error(error.message);
+      const order = new Map((matchedIds ?? []).map((id, i) => [id, i]));
+      const data = matchedIds
+        ? [...(rows ?? [])].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+        : rows;
       return {
         list: { id: list.id, name: list.name, kind: list.kind },
         total: total.count ?? 0,

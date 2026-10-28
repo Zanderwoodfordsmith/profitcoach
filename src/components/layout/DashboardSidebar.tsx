@@ -464,7 +464,7 @@ export function DashboardSidebar({
           <ul className="space-y-0.5">
             <SidebarAvaItem
               collapsed={collapsed}
-              isAdmin={profile?.role === "admin"}
+              isAdmin={profile?.role === "admin" && !viewingMemberId}
               href={avaHref}
               active={pathname === avaHref}
               linkClass={navLinkClass}

@@ -44,6 +44,7 @@ import {
 } from "@/lib/communityPostPoll";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export type CreatePostLessonContext = {
   courseId: string;
@@ -587,7 +588,7 @@ export function CreatePostModal({
                     }}
                     aria-label="Where to post"
                     title="Where to post"
-                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                    className={fieldClass("select", "small", "w-auto!")}
                   >
                     <option value="">Where to post</option>
                     {selectableCategories.map((c) => (
@@ -641,7 +642,7 @@ export function CreatePostModal({
                           value={scheduledAtLocal}
                           onChange={(e) => setScheduledAtLocal(e.target.value)}
                           min={toLocalDateTimeInputValue(new Date(Date.now() + 60_000))}
-                          className="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                          className={fieldClass("input", "normal", "mt-2")}
                         />
                         <div className="mt-3 flex items-center justify-between gap-2">
                           <button
@@ -704,7 +705,7 @@ export function CreatePostModal({
                         );
                         if (error) setError(null);
                       }}
-                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                      className={fieldClass("input", "normal", "min-w-0 flex-1")}
                     />
                     {pollOptions.length > COMMUNITY_POLL_MIN_OPTIONS ? (
                       <button
@@ -792,7 +793,7 @@ export function CreatePostModal({
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
                 placeholder="YouTube, Loom, Vimeo, or Wistia link"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                className={fieldClass("input", "normal")}
               />
               <div
                 className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50/70 px-4 py-8 text-center text-sm text-slate-500"

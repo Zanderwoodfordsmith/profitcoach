@@ -119,6 +119,7 @@ import {
   type SupportTicketStatus,
 } from "@/lib/support/tickets";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type ComposerMode = "reply" | "note";
 
@@ -1257,7 +1258,7 @@ export function AdminTicketReplies({
         <select
           value={activeSendAs?.id ?? ""}
           onChange={(e) => setSendAsId(e.target.value)}
-          className="max-w-[10rem] rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-900 [color-scheme:light] focus:border-sky-500 focus:outline-none"
+          className={fieldClass("select", "small", "w-auto! max-w-[10rem] [color-scheme:light]")}
           aria-label="Send as"
         >
           {sendAsPeople.map((person) => (
@@ -1600,7 +1601,7 @@ export function AdminTicketReplies({
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   autoFocus
-                  placeholder="Write a message, or jot notes and tap ✨ to draft it..."
+                  placeholder="Write a message, or jot notes and tap Ava to draft it..."
                   className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 pr-12 pb-10 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
                     composerExpanded ? "min-h-0 flex-1" : ""
                   }`}

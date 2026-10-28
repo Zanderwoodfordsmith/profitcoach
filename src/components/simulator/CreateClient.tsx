@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, Check, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Check, X } from "lucide-react";
 
 import { figtree } from "@/fonts";
 import { PUSHBACK_HELP } from "@/lib/simulator/difficulty";
@@ -12,6 +12,7 @@ import type { SimClient } from "@/lib/simulator/types";
 import { AiWorking } from "./AiWorking";
 import { useSimApi } from "./simApi";
 import "./sim.css";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 type Step = "describe" | "building" | "check" | "changing" | "face";
 
@@ -91,7 +92,7 @@ export function CreateClient({ draft, onClose }: { draft?: SimClient | null; onC
       <div className="sim-room sim-scroll flex h-full flex-col overflow-y-auto">
         <header className="relative z-[3] flex items-center justify-between px-5 pt-5 sm:px-10 sm:pt-8">
           <p className="flex items-center gap-2 text-sm font-medium text-[var(--sim-cream-soft)]">
-            <Sparkles className="h-4 w-4" aria-hidden /> Create your own client
+            <AvaHalo size={18} dark className="shrink-0" /> Create your own client
           </p>
           <button type="button" onClick={() => onClose(null)} className="rounded-full p-2 text-[var(--sim-cream-soft)] hover:bg-[var(--sim-glass)] hover:text-[var(--sim-cream)]" aria-label="Close">
             <X className="h-5 w-5" />
@@ -130,7 +131,7 @@ export function CreateClient({ draft, onClose }: { draft?: SimClient | null; onC
               {error ? <p className="mt-4 text-sm text-[var(--sim-amber)]">{error}</p> : null}
               <div className="mt-8">
                 <button type="button" className="sim-pill sim-pill-solid !px-6 !py-3.5 text-base" disabled={situation.trim().length < 40} onClick={() => void build()}>
-                  <Sparkles className="h-4 w-4" aria-hidden /> Build my client
+                  <AvaHalo size={18} className="shrink-0" /> Build my client
                 </button>
               </div>
             </>

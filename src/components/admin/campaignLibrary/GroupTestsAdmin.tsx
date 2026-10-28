@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 type Arm = { key: string; label: string; body: string };
@@ -98,11 +100,11 @@ export function GroupTestsAdmin() {
         <div className={cardClass("plain", "space-y-3 p-4 text-sm")}>
           <label className="block text-xs text-slate-600">
             Name
-            <input id="gt-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="mt-1 block w-full rounded border border-slate-300 px-2 py-1" />
+            <input id="gt-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={fieldClass("input", "small", "mt-1")} />
           </label>
           <label className="block text-xs text-slate-600">
             What we are testing and why
-            <textarea id="gt-hyp" value={draft.hypothesis ?? ""} onChange={(e) => setDraft({ ...draft, hypothesis: e.target.value })} rows={2} className="mt-1 block w-full rounded border border-slate-300 px-2 py-1" />
+            <textarea id="gt-hyp" value={draft.hypothesis ?? ""} onChange={(e) => setDraft({ ...draft, hypothesis: e.target.value })} rows={2} className={fieldClass("textarea", "small", "mt-1")} />
           </label>
           <label className="block text-xs text-slate-600">
             Step being tested
@@ -110,7 +112,7 @@ export function GroupTestsAdmin() {
               id="gt-step"
               value={draft.step_type}
               onChange={(e) => setDraft({ ...draft, step_type: e.target.value === "invite" ? "invite" : "message" })}
-              className="mt-1 block rounded border border-slate-300 px-2 py-1"
+              className={fieldClass("select", "small", "mt-1 w-auto!")}
             >
               <option value="message">First message after connecting</option>
               <option value="invite">Connection request note</option>
@@ -124,7 +126,7 @@ export function GroupTestsAdmin() {
                   value={arm.label}
                   placeholder={`Version ${arm.key} name, e.g. Tribe callout`}
                   onChange={(e) => setDraft({ ...draft, arms: draft.arms.map((a, j) => (j === i ? { ...a, label: e.target.value } : a)) })}
-                  className="block w-full rounded border border-slate-300 px-2 py-1"
+                  className={fieldClass("input", "small")}
                 />
                 <textarea
                   id={`gt-arm-body-${arm.key}`}
@@ -132,7 +134,7 @@ export function GroupTestsAdmin() {
                   rows={6}
                   placeholder={`Version ${arm.key} wording`}
                   onChange={(e) => setDraft({ ...draft, arms: draft.arms.map((a, j) => (j === i ? { ...a, body: e.target.value } : a)) })}
-                  className="block w-full rounded border border-slate-300 px-2 py-1 font-mono text-xs"
+                  className={fieldClass("textarea", "small", "font-mono")}
                 />
               </div>
             ))}
@@ -146,21 +148,21 @@ export function GroupTestsAdmin() {
                   value={slot.key}
                   placeholder="key, e.g. tribe"
                   onChange={(e) => setDraft({ ...draft, slots: draft.slots.map((s, j) => (j === i ? { ...s, key: e.target.value } : s)) })}
-                  className="w-32 rounded border border-slate-300 px-2 py-1 font-mono text-xs"
+                  className={fieldClass("input", "small", "w-32! font-mono")}
                 />
                 <input
                   id={`gt-slot-label-${i}`}
                   value={slot.label}
                   placeholder="Label coaches see"
                   onChange={(e) => setDraft({ ...draft, slots: draft.slots.map((s, j) => (j === i ? { ...s, label: e.target.value } : s)) })}
-                  className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1"
+                  className={fieldClass("input", "small", "min-w-[10rem] flex-1")}
                 />
                 <input
                   id={`gt-slot-hint-${i}`}
                   value={slot.hint ?? ""}
                   placeholder="Example"
                   onChange={(e) => setDraft({ ...draft, slots: draft.slots.map((s, j) => (j === i ? { ...s, hint: e.target.value } : s)) })}
-                  className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1"
+                  className={fieldClass("input", "small", "min-w-[10rem] flex-1")}
                 />
               </div>
             ))}
@@ -191,7 +193,7 @@ export function GroupTestsAdmin() {
         <article key={t.id} className={cardClass("plain", "p-4 text-sm")}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="font-semibold text-slate-900">
-              {t.name} <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-normal capitalize text-slate-600">{t.status}</span>
+              {t.name} <span className={badgeClass("grey", "ml-1 capitalize")}>{t.status}</span>
             </h3>
             <div className="flex gap-2">
               {t.status === "draft" ? (

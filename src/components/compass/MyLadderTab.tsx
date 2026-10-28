@@ -13,8 +13,10 @@ import {
 } from "lucide-react";
 
 import styles from "@/app/ladder/ladder.module.css";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   deriveCurrentLevelId,
   deriveNextLevelId,
@@ -630,7 +632,7 @@ export function MyLadderTab() {
               />
             ) : null}
             {isNext ? (
-              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-kicker font-semibold uppercase text-rose-700">
+              <span className={badgeClass("blue")}>
                 Next
               </span>
             ) : null}
@@ -875,7 +877,7 @@ export function MyLadderTab() {
                   type="date"
                   value={pickDateValue}
                   onChange={(e) => setPickDateValue(e.target.value)}
-                  className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className={fieldClass("input", "normal", "mt-3")}
                 />
                 <div className="mt-4 flex gap-2">
                   <button

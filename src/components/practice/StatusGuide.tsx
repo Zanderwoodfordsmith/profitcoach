@@ -4,14 +4,15 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { PAGE_STATUS_COPY, PAGE_STATUS_ORDER, type PageStatusId } from "@/lib/practiceKnowledge/pageStatus";
 
-export const PAGE_STATUS_LOOK: Record<PageStatusId, string> = {
-  needs_you: "bg-[#fde8e6] text-[#9b2c2c]",
-  bca: "bg-[#e3eef8] text-[#0c5290]",
-  review: "bg-[#fef3c7] text-[#78350f]",
-  done: "bg-[#d1fae5] text-[#065f46]",
+export const PAGE_STATUS_TONE: Record<PageStatusId, BadgeTone> = {
+  needs_you: "red",
+  bca: "blue",
+  review: "amber",
+  done: "green",
 };
 
 const PAGE_STATUS_DOT: Record<PageStatusId, string> = {
@@ -26,7 +27,7 @@ export function PageStatusPill({ status }: { status: PageStatusId }) {
   return (
     <span
       title={copy.title}
-      className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-px text-caption font-semibold leading-4 ${PAGE_STATUS_LOOK[status]}`}
+      className={badgeClass(PAGE_STATUS_TONE[status])}
     >
       {copy.label}
     </span>

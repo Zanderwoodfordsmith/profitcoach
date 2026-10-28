@@ -26,6 +26,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 import { Check, ChevronRight, GripVertical, Pencil, Plus, X } from "lucide-react";
 
 export type SectionConfirmStatus = "pending" | "confirmed" | "editing";
@@ -297,7 +299,7 @@ export function SectionConfirmCard({
             ) : null}
           </div>
           {confirmed ? (
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-100/90 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200/80">
+            <span className={badgeClass("green", "shrink-0 gap-1.5")}>
               <Check className="h-3.5 w-3.5" strokeWidth={3} />
               Confirmed
             </span>
@@ -581,7 +583,7 @@ export function InteractiveLineList({
             }
           }}
           placeholder={addPlaceholder}
-          className="min-w-0 flex-1 rounded-xl border border-slate-200/80 bg-white/50 px-3.5 py-2.5 text-ui text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-400/20"
+          className={fieldClass("input", "normal", "min-w-0 flex-1")}
         />
         <button
           type="button"
@@ -636,7 +638,7 @@ export function TextArea({
       onChange={(e) => onChange(e.target.value)}
       rows={rows}
       placeholder={placeholder}
-      className="w-full rounded-xl border border-slate-200/80 bg-white/60 px-3.5 py-3 text-read leading-relaxed text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-400/20"
+      className={fieldClass("textarea", "normal")}
     />
   );
 }

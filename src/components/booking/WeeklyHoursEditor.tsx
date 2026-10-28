@@ -8,6 +8,7 @@ import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
 import { Plus, X } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export const WEEKDAYS = [
   { value: 1, label: "Mon" },
@@ -92,9 +93,7 @@ export function WeeklyHoursEditor({
     onRulesChange([...rules, { weekday, start_time: fmt(startMin), end_time: fmt(startMin + 60) }]);
   }
 
-  const timeClass = `w-full min-w-0 rounded border border-slate-200 text-slate-900 ${
-    plain ? "px-2 py-1.5 text-sm" : "px-1.5 py-1 text-xs"
-  }`;
+  const timeClass = fieldClass("input", "small", "min-w-0");
 
   return (
     <div className={plain ? "" : cardClass("plain", "p-4")}>
@@ -107,7 +106,7 @@ export function WeeklyHoursEditor({
         <label className="mt-4 block text-sm">
           <span className="font-medium text-slate-700">Timezone</span>
           <select
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("select", "normal", "mt-1")}
             value={timezone}
             onChange={(e) => onTimezoneChange(e.target.value)}
           >

@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import type { ProspectRow } from "@/lib/prospectRow";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   prospect: ProspectRow | null;
@@ -71,7 +72,7 @@ export function ProspectCrmLinkModal({
           onChange={(e) => setCrmContactId(e.target.value)}
           placeholder="Paste the GHL contact ID"
           autoFocus
-          className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+          className={fieldClass("input", "normal")}
         />
         <p className="mt-2 text-xs text-slate-500">
           Find this in your CRM contact URL or from a GHL workflow payload.

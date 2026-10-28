@@ -4,6 +4,7 @@ import { buttonClass } from "@/components/ui/Button";
 import { useEffect, useId, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { fieldClass } from "@/components/ui/Field";
 import { personIdentityNameDraft } from "@/lib/contacts/personIdentityDraft";
 import type { PersonIdentitySaveInput } from "@/lib/contacts/savePersonIdentity";
 
@@ -26,9 +27,6 @@ function initials(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
 }
-
-const fieldClass =
-  "block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
 
 export function PersonIdentityDialog({
   open,
@@ -191,7 +189,7 @@ export function PersonIdentityDialog({
               onChange={(e) => setFirst(e.target.value)}
               autoComplete="given-name"
               autoFocus
-              className={fieldClass}
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div>
@@ -207,7 +205,7 @@ export function PersonIdentityDialog({
               value={last}
               onChange={(e) => setLast(e.target.value)}
               autoComplete="family-name"
-              className={fieldClass}
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div className="sm:col-span-2">
@@ -224,7 +222,7 @@ export function PersonIdentityDialog({
               onChange={(e) => setBusiness(e.target.value)}
               autoComplete="organization"
               placeholder="Business name"
-              className={fieldClass}
+              className={fieldClass("input", "normal")}
             />
           </div>
         </div>

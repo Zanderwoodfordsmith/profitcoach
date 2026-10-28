@@ -9,6 +9,7 @@ import {
   type ProspectStatusValue,
 } from "@/lib/prospectStatus";
 import type { ProspectRow } from "@/lib/prospectRow";
+import { badgeClass } from "@/components/ui/Badge";
 
 type Props = {
   row: ProspectRow;
@@ -39,7 +40,7 @@ export function ProspectStatusCell({
   function renderBadge(status: ProspectStatusDisplay) {
     return (
       <span
-        className={`inline-flex shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium leading-none ${prospectStatusBadgeClass(status.value)}`}
+        className={badgeClass("grey", `shrink-0 ${prospectStatusBadgeClass(status.value)}`)}
       >
         {status.label}
       </span>
@@ -105,7 +106,7 @@ export function ProspectStatusCell({
               onClick={() => void chooseStatus(option.value)}
             >
               <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-caption font-medium ${prospectStatusBadgeClass(option.value)}`}
+                className={badgeClass("grey", prospectStatusBadgeClass(option.value))}
               >
                 {option.label}
               </span>

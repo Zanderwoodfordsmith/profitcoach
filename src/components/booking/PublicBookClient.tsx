@@ -14,6 +14,7 @@ import { BookingDateTimePicker } from "@/components/booking/BookingDateTimePicke
 import "./native-booking.css";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type BookMeta = {
   slug: string;
@@ -473,7 +474,7 @@ export function PublicBookClient({ slug }: Props) {
             <input
               required
               placeholder="First name"
-              className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+              className={fieldClass("input", "normal")}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               autoComplete="given-name"
@@ -481,7 +482,7 @@ export function PublicBookClient({ slug }: Props) {
             <input
               required
               placeholder="Last name"
-              className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+              className={fieldClass("input", "normal")}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               autoComplete="family-name"
@@ -491,7 +492,7 @@ export function PublicBookClient({ slug }: Props) {
             required
             type="email"
             placeholder="Email"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+            className={fieldClass("input", "normal")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
@@ -499,7 +500,7 @@ export function PublicBookClient({ slug }: Props) {
           <input
             type="tel"
             placeholder="Phone (optional)"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+            className={fieldClass("input", "normal")}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             autoComplete="tel"

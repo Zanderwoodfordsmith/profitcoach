@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
+import { fieldClass } from "@/components/ui/Field";
 
 export type SelectOption = { value: string; label: string };
 
@@ -99,7 +100,7 @@ export function TimeTrackerSelect({
               if (!open) setOpen(true);
             }}
             onFocus={() => setOpen(true)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-9 text-sm text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
+            className={fieldClass("input", "normal", "pr-9")}
             aria-label={ariaLabel}
             aria-expanded={open}
             role="combobox"

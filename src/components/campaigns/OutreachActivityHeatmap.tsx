@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import type {
   ActivityDayCounts,
   ActivityDayRange,
@@ -263,7 +264,7 @@ export function OutreachActivityHeatmap() {
             onChange={(e) =>
               setDays(Number(e.target.value) as ActivityDayRange)
             }
-            className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-caption font-medium text-slate-700 outline-none focus:ring-2 focus:ring-[#0c5290]/30"
+            className={fieldClass("select", "small", "w-auto")}
             aria-label="Activity range"
           >
             {RANGE_OPTIONS.map((opt) => (

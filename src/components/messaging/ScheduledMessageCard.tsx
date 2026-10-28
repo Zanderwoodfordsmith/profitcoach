@@ -1,6 +1,7 @@
 "use client";
 
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import {
   useEffect,
   useRef,
@@ -245,7 +246,7 @@ export function ScheduledMessageCard({
                   void saveEdit();
                 }
               }}
-              className="w-full resize-y rounded-lg border border-amber-300 bg-white px-2.5 py-2 text-sm text-amber-950 placeholder:text-amber-800/40 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60"
+              className={fieldClass("textarea", "normal", "resize-y")}
               placeholder="Message…"
             />
             <div className="flex items-center justify-end gap-2">

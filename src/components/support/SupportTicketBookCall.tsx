@@ -18,6 +18,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type SlotDay = {
   date: string;
@@ -398,7 +399,7 @@ export function SupportTicketBookCall({
             max={180}
             value={duration}
             onChange={(e) => pickDuration(Number(e.target.value))}
-            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
+            className={fieldClass("input", "small")}
           />
         </label>
       </div>
@@ -526,7 +527,7 @@ export function SupportTicketBookCall({
                 setConfirming(false);
                 setError(null);
               }}
-              className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
+              className={fieldClass("input", "small")}
             />
           </label>
         </div>

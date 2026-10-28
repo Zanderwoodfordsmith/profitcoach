@@ -12,6 +12,7 @@ import {
 } from "@/config/programmeIntake";
 import type { RoleIcon } from "@/lib/booking/bookCallQualify";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type StepId = "situation" | "goal" | "time" | "linkedin";
 
@@ -408,7 +409,7 @@ export function WelcomeIntakeSurvey({
             type="url"
             value={linkedinUrl}
             onChange={(e) => onLinkedinUrl(e.target.value)}
-            className="block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#0c5290] focus:ring-2 focus:ring-[#42a1ee]/25"
+            className={fieldClass("input")}
             placeholder="https://www.linkedin.com/in/…"
             disabled={busy}
           />

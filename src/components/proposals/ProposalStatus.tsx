@@ -1,11 +1,12 @@
 import type { Proposal, ProposalStatus } from "@/lib/proposals/types";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 
-const STYLE: Record<ProposalStatus, string> = {
-  draft: "bg-slate-100 text-slate-700",
-  sent: "bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-200",
-  opened: "bg-amber-50 text-amber-900 ring-1 ring-inset ring-amber-200",
-  signed: "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200",
-  archived: "bg-slate-100 text-slate-500",
+const TONE: Record<ProposalStatus, BadgeTone> = {
+  draft: "grey",
+  sent: "blue",
+  opened: "amber",
+  signed: "green",
+  archived: "grey",
 };
 
 const LABEL: Record<ProposalStatus, string> = {
@@ -17,7 +18,7 @@ const LABEL: Record<ProposalStatus, string> = {
 };
 
 export function ProposalStatusPill({ status }: { status: ProposalStatus }) {
-  return <span className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${STYLE[status]}`}>{LABEL[status]}</span>;
+  return <span className={badgeClass(TONE[status], "shrink-0")}>{LABEL[status]}</span>;
 }
 
 function when(iso: string): string {

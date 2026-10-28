@@ -23,6 +23,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 
 type PlanInfo = {
   key: MembershipPlanKey;
@@ -164,14 +165,14 @@ function isSucceededPayment(status: string): boolean {
   return status === "succeeded" || status === "paid";
 }
 
-function paymentStatusClass(status: string): string {
+function paymentStatusTone(status: string): BadgeTone {
   if (status === "succeeded" || status === "paid") {
-    return "bg-emerald-50 text-emerald-700";
+    return "green";
   }
   if (status === "failed" || status === "payment_failed") {
-    return "bg-rose-50 text-rose-700";
+    return "red";
   }
-  return "bg-slate-100 text-slate-600";
+  return "grey";
 }
 
 function BillingSkeleton() {
@@ -386,13 +387,13 @@ export function BillingSettingsTab() {
                   {data.tierLabel}
                 </h2>
                 <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  className={badgeClass(
                     data.subscription.cancelAtPeriodEnd
-                      ? "bg-amber-50 text-amber-700"
+                      ? "amber"
                       : hasSubscription
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-slate-100 text-slate-600"
-                  }`}
+                        ? "green"
+                        : "grey"
+                  )}
                 >
                   {statusLabel(
                     data.subscription.status,
@@ -608,9 +609,7 @@ export function BillingSettingsTab() {
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
                   <span
-                    className={`rounded-full px-2 py-1 text-caption font-semibold capitalize ${paymentStatusClass(
-                      payment.status
-                    )}`}
+                    className={badgeClass(paymentStatusTone(payment.status), "capitalize")}
                   >
                     {payment.status.replaceAll("_", " ")}
                   </span>

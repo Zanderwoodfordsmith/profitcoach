@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type CoachOption = {
   id: string;
@@ -163,7 +164,7 @@ export function GenerateCertificateModal({
               value={coachSearch}
               onChange={(e) => setCoachSearch(e.target.value)}
               placeholder="Search coaches…"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+              className={fieldClass("input")}
             />
             <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200">
               {filteredCoaches.length ? (
@@ -227,7 +228,7 @@ export function GenerateCertificateModal({
                 id="certificate-month"
                 value={month}
                 onChange={(e) => setMonth(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+                className={fieldClass("select")}
               >
                 {MONTH_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -250,7 +251,7 @@ export function GenerateCertificateModal({
                 max={2100}
                 value={year}
                 onChange={(e) => setYear(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+                className={fieldClass("input")}
               />
             </div>
           </div>

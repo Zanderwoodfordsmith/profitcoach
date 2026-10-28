@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   label?: string;
@@ -115,7 +116,7 @@ export function InlineEditableText({
                   void commit();
                 }
               }}
-              className="w-full resize-y rounded-md border border-sky-300 bg-white px-2 py-1 text-sm text-slate-900 outline-none ring-2 ring-sky-100"
+              className={fieldClass("textarea", "small", "resize-y")}
             />
           ) : (
             <input
@@ -141,7 +142,7 @@ export function InlineEditableText({
                   void commit();
                 }
               }}
-              className="w-full rounded-md border border-sky-300 bg-white px-2 py-1 text-sm text-slate-900 outline-none ring-2 ring-sky-100"
+              className={fieldClass("input", "small")}
             />
           )}
           {error ? (

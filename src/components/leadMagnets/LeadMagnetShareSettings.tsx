@@ -11,6 +11,7 @@ import {
 } from "@/components/settings/PersonalisedLinkModal";
 import { ShareQrCodeModal } from "@/components/settings/ShareQrCodeModal";
 import { cardClass } from "@/components/ui/Card";
+import { badgeClass } from "@/components/ui/Badge";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { buildEmbedSnippet } from "@/lib/embedMode";
 import {
@@ -326,7 +327,7 @@ function LinkRow({
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium text-slate-900">{title}</p>
             {primary ? (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-kicker font-semibold uppercase text-sky-800">
+              <span className={badgeClass("blue")}>
                 Main link
               </span>
             ) : null}

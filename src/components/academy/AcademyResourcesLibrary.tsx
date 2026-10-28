@@ -15,6 +15,8 @@ import {
   Video,
 } from "lucide-react";
 
+import { badgeClass } from "@/components/ui/Badge";
+import { fieldClass } from "@/components/ui/Field";
 import {
   ACADEMY_RESOURCE_AREA_LABELS,
   ACADEMY_RESOURCE_KIND_LABELS,
@@ -92,7 +94,7 @@ function topicKey(sectionId: string, topic: string | null): string {
 function ResourceKindBadge({ kind }: { kind: AcademyResourceKind }) {
   const Icon = KIND_ICONS[kind];
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium text-slate-600">
+    <span className={badgeClass("grey")}>
       <Icon className="h-3 w-3" aria-hidden />
       {ACADEMY_RESOURCE_KIND_LABELS[kind]}
     </span>
@@ -689,7 +691,7 @@ export function AcademyResourcesLibrary({ catalog, canManage = false }: Props) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search resources…"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none ring-sky-500/0 transition focus:border-sky-300 focus:ring-2 focus:ring-sky-500/20"
+            className={fieldClass("input", "normal")}
           />
         </label>
       </div>

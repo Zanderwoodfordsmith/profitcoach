@@ -47,6 +47,7 @@ import type {
   ShareHubPayload,
 } from "@/lib/shareLinks/types";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type SocialDraft = Record<SocialNetwork, string>;
 
@@ -70,8 +71,6 @@ const shareClass =
   "shrink-0 text-sm font-semibold text-[#0c5290] transition hover:text-[#051e36] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/30 disabled:text-slate-300";
 const ghostClass =
   "text-sm font-medium text-slate-500 transition hover:text-slate-800";
-const quietInput =
-  "w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400";
 const iconButton =
   "flex h-8 w-8 items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/30 disabled:pointer-events-none disabled:text-slate-300";
 
@@ -662,7 +661,7 @@ export function ShareLinksHub() {
                 }}
                 placeholder={SOCIAL_NETWORK_META[addingSocial].placeholder}
                 aria-label={`${SOCIAL_NETWORK_META[addingSocial].label} URL`}
-                className={`${quietInput} min-w-0 flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 focus:border-sky-500 focus:ring-1 focus:ring-sky-500`}
+                className={fieldClass("input", "small", "min-w-0 flex-1")}
               />
               <button
                 type="button"
@@ -734,21 +733,21 @@ export function ShareLinksHub() {
                       onChange={(e) => setEditTitle(e.target.value)}
                       placeholder="Title"
                       aria-label="Title"
-                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
+                      className={fieldClass("input", "small")}
                     />
                     <input
                       value={editUrl}
                       onChange={(e) => setEditUrl(e.target.value)}
                       placeholder="https://"
                       aria-label="URL"
-                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
+                      className={fieldClass("input", "small")}
                     />
                     <input
                       value={editDescription}
                       onChange={(e) => setEditDescription(e.target.value)}
                       placeholder="Description (optional)"
                       aria-label="Description"
-                      className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
+                      className={fieldClass("input", "small")}
                     />
                   </div>
                   <div className="mt-2 flex gap-3">
@@ -826,21 +825,21 @@ export function ShareLinksHub() {
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Title"
                   aria-label="Title"
-                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
+                  className={fieldClass("input", "small")}
                 />
                 <input
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
                   placeholder="https://"
                   aria-label="URL"
-                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
+                  className={fieldClass("input", "small")}
                 />
                 <input
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="Description (optional)"
                   aria-label="Description"
-                  className={`${quietInput} rounded-lg border border-slate-300 px-2.5 py-1.5`}
+                  className={fieldClass("input", "small")}
                 />
               </div>
               {addError ? (

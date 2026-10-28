@@ -14,6 +14,7 @@ import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export type PersonalisedLinkProduct = "boss-score" | "boss-pro";
 
@@ -500,7 +501,7 @@ export function PersonalisedLinkModal({
               readOnly
               rows={3}
               value={generatedLink}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-800 shadow-sm"
+              className={fieldClass("textarea", "normal", "font-mono")}
             />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <button

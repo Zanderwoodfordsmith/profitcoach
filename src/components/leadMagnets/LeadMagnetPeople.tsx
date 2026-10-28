@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
 import { cardClass } from "@/components/ui/Card";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
+import { fieldClass } from "@/components/ui/Field";
 import { formatShortDate } from "@/lib/formatShortDate";
 import {
   MAGNET_STAGE_LABEL,
@@ -17,10 +19,10 @@ import {
   formatProspectPersonName,
 } from "@/lib/prospectDisplayFormat";
 
-const STAGE_CHIP: Record<MagnetStage, string> = {
-  opted_in: "border border-slate-200 bg-slate-50 text-slate-600",
-  started: "border border-sky-200 bg-sky-50 text-sky-900",
-  completed: "border border-emerald-200 bg-emerald-50 text-emerald-800",
+const STAGE_TONE: Record<MagnetStage, BadgeTone> = {
+  opted_in: "grey",
+  started: "blue",
+  completed: "green",
 };
 
 type StageFilter = MagnetStage | "all";
@@ -160,7 +162,7 @@ export function LeadMagnetPeople({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search name or email"
-            className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-2.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+            className={fieldClass("input", "small", "pl-8")}
           />
         </label>
       </div>
@@ -207,7 +209,7 @@ export function LeadMagnetPeople({
                     </span>
                     <span>
                       <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_CHIP[person.stage]}`}
+                        className={badgeClass(STAGE_TONE[person.stage])}
                       >
                         {MAGNET_STAGE_LABEL[person.stage]}
                       </span>

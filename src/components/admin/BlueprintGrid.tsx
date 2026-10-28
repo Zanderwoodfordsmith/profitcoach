@@ -23,6 +23,7 @@ import {
 import type { SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type Detail = { previews: Record<string, SectionPreview>; comments: SectionComment[] };
 type DetailState = Detail | "loading" | "error";
@@ -929,7 +930,7 @@ export function BlueprintGrid() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
-              className="rounded-full border border-slate-200 bg-white py-1 pl-3 pr-7 text-ui text-slate-800 shadow-sm"
+              className={fieldClass("select", "small", "w-auto")}
             >
               <option value="bca">Needs us first</option>
               <option value="progress">Least done first</option>

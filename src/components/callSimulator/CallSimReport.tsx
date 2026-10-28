@@ -14,6 +14,7 @@ import { AreaList, ScoreRing, Transcript, unquote } from "@/components/simulator
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { formatSimDate, useSimApi, useSimPrefix } from "@/components/simulator/simApi";
+import { badgeClass } from "@/components/ui/Badge";
 import "@/components/simulator/sim.css";
 
 type Loaded = { session: CallSessionRow; coachName: string | null; mine: boolean };
@@ -161,7 +162,7 @@ export function CallSimReport({ id }: { id: string }) {
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 {report.moments.map((m, i) => (
                   <article key={i} className={cardClass("plain", "flex flex-col p-5")}>
-                    <span className={`w-max rounded-full px-2.5 py-1 text-xs font-semibold ${m.kind === "good" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>
+                    <span className={badgeClass(m.kind === "good" ? "green" : "amber", "w-max")}>
                       {m.kind === "good" ? "Worked well" : "Missed chance"}
                     </span>
                     <p className="mt-3 text-read leading-snug text-slate-900">&ldquo;{unquote(m.quote)}&rdquo;</p>

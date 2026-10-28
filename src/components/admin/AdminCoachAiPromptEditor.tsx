@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export function AdminCoachAiPromptEditor() {
@@ -88,7 +89,7 @@ export function AdminCoachAiPromptEditor() {
         onChange={(e) => setPrompt(e.target.value)}
         disabled={!loaded}
         rows={14}
-        className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+        className={fieldClass("textarea", "normal", "mt-2")}
         placeholder="Loading…"
       />
       <div className="mt-4 flex items-center gap-3">

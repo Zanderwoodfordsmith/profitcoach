@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Check, ChevronRight, Copy, LayoutGrid, List, Loader2, Newspaper, RefreshCw, X } from "lucide-react";
 import { Blocks } from "@/components/practice/document/Blocks";
 import "@/components/practice/document/blueprint.css";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
@@ -123,9 +124,7 @@ function IssueRow({
           </span>
         </span>
         <span
-          className={`hidden shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline-flex ${
-            badge ? "bg-amber-50 text-amber-900 ring-1 ring-inset ring-amber-200" : "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200"
-          }`}
+          className={badgeClass(badge ? "amber" : "green", "hidden shrink-0 sm:inline-flex")}
         >
           {badge ?? "Published"}
         </span>

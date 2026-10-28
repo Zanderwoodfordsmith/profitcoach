@@ -20,6 +20,7 @@ import {
   type LandingStatsRangePreset,
 } from "@/lib/landingStatsRange";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   coachSlug: string | null;
@@ -185,7 +186,7 @@ export function LandingStatsCustomRangeFields({
           value={value.customFrom}
           max={value.customTo || undefined}
           onChange={(e) => onChange({ ...value, customFrom: e.target.value })}
-          className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+          className={fieldClass("input", "small", "w-auto")}
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-slate-600">
@@ -195,7 +196,7 @@ export function LandingStatsCustomRangeFields({
           value={value.customTo}
           min={value.customFrom || undefined}
           onChange={(e) => onChange({ ...value, customTo: e.target.value })}
-          className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+          className={fieldClass("input", "small", "w-auto")}
         />
       </label>
       {customInvalid ? (

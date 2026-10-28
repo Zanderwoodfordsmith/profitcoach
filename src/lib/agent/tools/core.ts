@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getOkLinkedInAccount } from "@/lib/unipile/outreachAccounts";
 
 import { loadAgentCoach } from "../coaches";
+import { matchLabel, searchCoaches } from "../search/people";
 import type { AgentToolDef } from "../types";
 import { AgentToolError, coachOf, isUuid, str } from "./util";
 
@@ -134,41 +135,26 @@ export const coreTools: AgentToolDef[] = [
     core: true,
     modes: ["admin"],
     description:
-      "Admin only. Search coaches by name or business name. Returns up to 8 matches with ids. Then use switch_coach.",
+      "Admin only. Search coaches by name or business. Each word is matched on its own, short names count (Pam finds Pamela), and small spelling slips still match. Best match first, up to 8, with ids. Then use switch_coach. If nothing comes back, try the surname or business name alone before saying there is no one.",
     input_schema: {
       type: "object",
-      properties: { query: { type: "string", description: "Part of the coach's name or business" } },
+      properties: { query: { type: "string", description: "The coach's name, part of it, or their business" } },
       required: ["query"],
     },
     run: async (input) => {
-      const query = str(input, "query").replace(/[%,()]/g, " ").trim();
-      if (query.length < 2) throw new AgentToolError("Give at least two letters of the name.");
-      const { data, error } = await supabaseAdmin
-        .from("profiles")
-        .select("id, full_name, coach_business_name, role")
-        .in("role", ["coach", "admin"])
-        .or(`full_name.ilike.%${query}%,coach_business_name.ilike.%${query}%`)
-        .order("full_name", { ascending: true })
-        .limit(8);
-      if (error) throw new Error(error.message);
-      const ids = (data ?? []).map((row) => row.id as string);
-      const { data: coachRows } = ids.length
-        ? await supabaseAdmin
-            .from("coaches")
-            .select("id, membership_status, ai_agent_enabled")
-            .in("id", ids)
-        : { data: [] as Array<{ id: string; membership_status: string | null; ai_agent_enabled: boolean }> };
-      const byId = new Map((coachRows ?? []).map((row) => [row.id as string, row]));
+      const query = str(input, "query");
+      if (query.replace(/[^a-z0-9]/gi, "").length < 2) throw new AgentToolError("Give at least two letters of the name.");
+      const matches = await searchCoaches(query);
       return {
-        matches: (data ?? [])
-          .filter((row) => byId.has(row.id as string))
-          .map((row) => ({
-            id: row.id,
-            name: row.full_name,
-            business: row.coach_business_name,
-            membership: byId.get(row.id as string)?.membership_status ?? null,
-            agent_enabled: byId.get(row.id as string)?.ai_agent_enabled ?? false,
-          })),
+        matches: matches.map((row) => ({
+          id: row.id,
+          name: row.full_name,
+          business: row.business,
+          membership: row.membership_status,
+          agent_enabled: row.agent_enabled,
+          match: matchLabel(row.score),
+        })),
+        ...(matches.length ? {} : { tip: "No coach matched. Try the surname or business name alone." }),
       };
     },
   },

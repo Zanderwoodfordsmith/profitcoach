@@ -1,5 +1,10 @@
 {
   "regions": ["lhr1"],
+  "git": {
+    "deploymentEnabled": {
+      "claude/*": false
+    }
+  },
   "crons": [
     {
       "path": "/api/linkedin/publish-due",
@@ -68,6 +73,10 @@
     {
       "path": "/api/cron/ava-nudges",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/ava-memory",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

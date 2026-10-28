@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Copy, Tag } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { cleanTag, taggedLink, TRAFFIC_CHANNELS } from "@/lib/trafficSource";
 
 /**
@@ -50,7 +51,7 @@ export function TaggedLinkMaker({ links }: { links: { label: string; url: string
               setLinkIndex(Number(e.target.value));
               setCopied(false);
             }}
-            className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+            className={fieldClass("select", "normal", "mt-1")}
           >
             {links.map((l, i) => (
               <option key={l.url} value={i}>
@@ -88,7 +89,7 @@ export function TaggedLinkMaker({ links }: { links: { label: string; url: string
                 setCopied(false);
               }}
               placeholder="e.g. podcast, networking event"
-              className="mt-2 h-10 w-full max-w-sm rounded-lg border border-slate-200 px-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+              className={fieldClass("input", "normal", "mt-2 max-w-sm")}
             />
           ) : null}
         </div>
@@ -103,7 +104,7 @@ export function TaggedLinkMaker({ links }: { links: { label: string; url: string
               setCopied(false);
             }}
             placeholder="e.g. october newsletter"
-            className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+            className={fieldClass("input", "normal", "mt-1")}
           />
         </label>
 

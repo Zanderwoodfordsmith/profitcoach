@@ -1,6 +1,7 @@
 "use client";
 
 import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
+import { fieldClass } from "@/components/ui/Field";
 import { useEffect, useRef, useState } from "react";
 import { formatDueDateLabel } from "@/lib/actionPlans/actionOutlineUtils";
 import type { ProspectNextAction } from "@/lib/actionPlans/prospectFollowUp";
@@ -65,14 +66,14 @@ export function ProspectNextActionCell({
             if (e.key === "Escape") setEditing(false);
           }}
           placeholder="Next action"
-          className="rounded border border-sky-300 bg-white px-2 py-1 text-sm text-slate-700 outline-none focus:ring-1 focus:ring-sky-500"
+          className={fieldClass("input", "small")}
         />
         <input
           type="date"
           value={dueDraft}
           onChange={(e) => setDueDraft(e.target.value)}
           onBlur={() => void commit()}
-          className="rounded border border-sky-300 bg-white px-2 py-1 text-sm text-slate-700 outline-none focus:ring-1 focus:ring-sky-500"
+          className={fieldClass("input", "small")}
         />
       </div>
     );

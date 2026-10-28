@@ -35,6 +35,8 @@ import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
 import type { CampaignAddChoice } from "@/components/campaigns/CampaignAudienceEmpty";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { dispositionFromInterestOutcome } from "@/lib/prospects/replyDispositionInfer";
 import {
   formatBusinessLabel,
@@ -105,12 +107,12 @@ const FILTERS: Array<{ id: ActivityFilterId; label: string }> = [
   { id: "paused", label: "Paused" },
 ];
 
-const TONE_CLASS: Record<LeadStatusTone, string> = {
-  emerald: "border border-emerald-200 bg-emerald-50 text-emerald-800",
-  sky: "border border-sky-200 bg-sky-100 text-sky-900",
-  amber: "border border-amber-200 bg-amber-50 text-amber-950",
-  rose: "border border-rose-200 bg-rose-50 text-rose-800",
-  slate: "border border-slate-200 bg-slate-50 text-slate-600",
+const TONE_BADGE: Record<LeadStatusTone, BadgeTone> = {
+  emerald: "green",
+  sky: "blue",
+  amber: "amber",
+  rose: "red",
+  slate: "grey",
 };
 
 const DROPDOWN =
@@ -462,7 +464,7 @@ export function CampaignProspectsActivityTable({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search contacts"
               aria-label="Search contacts"
-              className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+              className={fieldClass("input", "normal", "pl-9")}
             />
           </label>
           <div className="flex shrink-0 items-center gap-1">
@@ -520,7 +522,7 @@ export function CampaignProspectsActivityTable({
                   <label className="block text-xs font-medium text-slate-600">
                     Sort by
                     <select
-                      className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      className={fieldClass("select", "small", "mt-1")}
                       value={sortField}
                       onChange={(e) => setSortField(e.target.value as SortField)}
                     >
@@ -535,7 +537,7 @@ export function CampaignProspectsActivityTable({
                   <label className="mt-3 block text-xs font-medium text-slate-600">
                     Order
                     <select
-                      className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      className={fieldClass("select", "small", "mt-1")}
                       value={sortDir}
                       onChange={(e) => setSortDir(e.target.value as "asc" | "desc")}
                     >
@@ -796,7 +798,7 @@ export function CampaignProspectsActivityTable({
                           </div>
                           <span className={`${COL_STATUS} shrink-0`}>
                             <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${TONE_CLASS[leadStatusTone(row.lead.status)]}`}
+                              className={badgeClass(TONE_BADGE[leadStatusTone(row.lead.status)], "gap-1.5")}
                             >
                               <StatusIcon kind={leadStatusIcon(row.lead.status)} />
                               {leadStatusLabel(row.lead.status)}
@@ -1037,7 +1039,7 @@ function ContactCell({
             ) : null}
           </div>
           <span
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${TONE_CLASS[leadStatusTone(lead.status)]}`}
+            className={badgeClass(TONE_BADGE[leadStatusTone(lead.status)], "shrink-0 gap-1.5")}
           >
             <StatusIcon kind={leadStatusIcon(lead.status)} />
             {leadStatusLabel(lead.status)}

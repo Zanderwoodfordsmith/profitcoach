@@ -102,6 +102,8 @@ import { startDragAutoScroll } from "@/lib/campaigns/dragAutoScroll";
 import type { InviteFunnelSlice } from "@/lib/unipile/campaignLeadActivity";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 export type SequenceAccount = {
   id: string;
@@ -1581,7 +1583,7 @@ export function StepInlineEditor({
                 });
                 onCommit();
               }}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-normal text-slate-800"
+              className={fieldClass("select", "small", "mt-1")}
             >
               <option value="">Choose a campaign</option>
               {campaigns.map((campaign) => (
@@ -1639,7 +1641,7 @@ export function StepInlineEditor({
             onBlur={onCommit}
             rows={4}
             placeholder="Talking points, what to ask, what a good outcome looks like"
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-normal text-slate-800"
+            className={fieldClass("textarea", "small", "mt-1")}
           />
         </label>
       </div>
@@ -2576,13 +2578,13 @@ export function CampaignSequenceBuilder({
                               {step.step_type === "invite" &&
                               inviteNoConnectFrom(step.config)
                                 .on_no_connect === "other_campaign" ? (
-                                <span className="inline-flex shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-caption font-medium text-rose-800">
+                                <span className={badgeClass("red", "shrink-0")}>
                                   If no connect
                                 </span>
                               ) : null}
                               {step.step_type === "call" ? (
                                 callWaitFrom(step.config) ? (
-                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-caption font-medium text-amber-950">
+                                  <span className={badgeClass("amber", "shrink-0")}>
                                     <PhoneCall
                                       className="h-3 w-3"
                                       aria-hidden
@@ -2590,7 +2592,7 @@ export function CampaignSequenceBuilder({
                                     Waits
                                   </span>
                                 ) : (
-                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium text-slate-600">
+                                  <span className={badgeClass("grey", "shrink-0")}>
                                     <Bell className="h-3 w-3" aria-hidden />
                                     Reminder
                                   </span>
@@ -2603,7 +2605,7 @@ export function CampaignSequenceBuilder({
                                   !campaignFallbackEnabled(
                                     step.fallback_hours
                                   ) ? (
-                                    <span className="inline-flex shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-caption font-medium text-rose-800">
+                                    <span className={badgeClass("red", "shrink-0")}>
                                       No fallback
                                     </span>
                                   ) : null}

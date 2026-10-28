@@ -14,6 +14,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   isDirty: boolean;
@@ -234,7 +235,7 @@ export function CoachesSaveViewButton({
                 value={newViewName}
                 onChange={(e) => setNewViewName(e.target.value)}
                 placeholder="New view name"
-                className="block w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input", "small")}
                 aria-label="New view name"
               />
               <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">

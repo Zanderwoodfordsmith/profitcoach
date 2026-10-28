@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { DEFAULT_ANTHROPIC_MODEL } from "@/lib/anthropicModel";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 const MODEL_OPTIONS: Array<{ id: string; label: string }> = [
   { id: DEFAULT_ANTHROPIC_MODEL, label: "Claude Sonnet 4.6 (recommended)" },
@@ -128,7 +129,7 @@ export function AdminReplyCopilotPromptEditor() {
         onChange={(e) => setPrompt(e.target.value)}
         disabled={!loaded}
         rows={18}
-        className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+        className={fieldClass("textarea", "normal", "mt-2 font-mono")}
         placeholder="Loading…"
       />
       <div className="mt-4">
@@ -143,7 +144,7 @@ export function AdminReplyCopilotPromptEditor() {
           value={model}
           onChange={(e) => setModel(e.target.value)}
           disabled={!loaded}
-          className="mt-1 w-full max-w-sm rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+          className={fieldClass("select", "normal", "mt-1 max-w-sm")}
         >
           {MODEL_OPTIONS.map((opt) => (
             <option key={opt.id} value={opt.id}>

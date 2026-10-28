@@ -7,6 +7,8 @@ import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { SectionInfoTip } from "@/components/settings/IntegrationsSettingsTab";
 import { ProfileSectionCard } from "@/components/settings/ProfileFormLayout";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 type ReplyMode = "off" | "copilot" | "autopilot";
 type Settings = {
@@ -239,7 +241,7 @@ export function AvaReplyAlertsCard() {
                         <SectionInfoTip label={m.label} text={AUTOPILOT_INFO} wide />
                       ) : null}
                       {locked ? (
-                        <span className="rounded bg-slate-50 px-1.5 py-0.5 text-caption text-slate-400 ring-1 ring-inset ring-slate-200">
+                        <span className={badgeClass("grey")}>
                           Coming soon
                         </span>
                       ) : null}
@@ -302,7 +304,7 @@ export function AvaReplyAlertsCard() {
                         placeholder="Your mobile, e.g. +44 7700 900123"
                         value={phoneDraft ?? state.phone}
                         onChange={(e) => setPhoneDraft(e.target.value)}
-                        className="h-8 min-w-0 flex-1 rounded-md border border-slate-200 px-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none"
+                        className={fieldClass("input", "small", "min-w-0 flex-1")}
                       />
                       {phoneDraft != null && phoneDraft !== state.phone ? (
                         <button

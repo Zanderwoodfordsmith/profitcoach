@@ -11,6 +11,7 @@ import {
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   demoPreviewRemindQueue,
   isDemoPreviewId,
@@ -298,7 +299,7 @@ export function LinkedInRemindQueue({
                           }
                           onChange={(e) => setDraft(e.target.value)}
                           rows={4}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                          className={fieldClass("textarea", "normal")}
                         />
                         <div className="flex flex-wrap gap-1.5">
                           <button

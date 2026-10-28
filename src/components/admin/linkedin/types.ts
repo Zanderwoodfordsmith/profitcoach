@@ -1,3 +1,4 @@
+import type { BadgeTone } from "@/components/ui/Badge";
 import type { LinkedInMediaItem, LinkedInPostType } from "@/lib/linkedinPublishing";
 
 export type LinkedInPostStatus =
@@ -73,6 +74,22 @@ export function statusLabel(status: LinkedInPostStatus): string {
       return "Cancelled";
     default:
       return status;
+  }
+}
+
+/** The badge tone for a post's status (the queue list). */
+export function statusBadgeTone(status: LinkedInPostStatus): BadgeTone {
+  switch (status) {
+    case "scheduled":
+      return "blue";
+    case "published":
+      return "green";
+    case "failed":
+      return "red";
+    case "cancelled":
+      return "amber";
+    default:
+      return "grey";
   }
 }
 

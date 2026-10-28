@@ -10,6 +10,8 @@ import type {
 } from "@/lib/clientCoaching/types";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 type Props = {
   plan: CoachingPlanDocument;
@@ -20,8 +22,6 @@ type Props = {
   onSave: () => void;
 };
 
-const FIELD =
-  "mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
 const LABEL = "text-xs font-medium uppercase tracking-wide text-slate-500";
 
 function YearCard({
@@ -39,7 +39,7 @@ function YearCard({
       <label className="mt-3 block">
         <span className={LABEL}>Revenue</span>
         <input
-          className={FIELD}
+          className={fieldClass("input", "normal", "mt-1")}
           value={year.revenue}
           onChange={(e) => onChange({ ...year, revenue: e.target.value })}
           placeholder="e.g. £250k"
@@ -48,7 +48,7 @@ function YearCard({
       <label className="mt-3 block">
         <span className={LABEL}>Profit</span>
         <input
-          className={FIELD}
+          className={fieldClass("input", "normal", "mt-1")}
           value={year.profit}
           onChange={(e) => onChange({ ...year, profit: e.target.value })}
           placeholder="e.g. £80k"
@@ -57,7 +57,7 @@ function YearCard({
       <label className="mt-3 block">
         <span className={LABEL}>Qualitative</span>
         <textarea
-          className={`${FIELD} min-h-[72px] resize-y`}
+          className={fieldClass("textarea", "normal", "mt-1 min-h-[72px] resize-y")}
           value={year.qualitative}
           onChange={(e) => onChange({ ...year, qualitative: e.target.value })}
           placeholder="What does this year feel like?"
@@ -137,7 +137,7 @@ export function ThreeYearPlanPanel({
         <label className="block">
           <span className={LABEL}>North star</span>
           <textarea
-            className={`${FIELD} mt-2 min-h-[88px] resize-y text-base`}
+            className={fieldClass("textarea", "normal", "mt-2 min-h-[88px] resize-y")}
             value={plan.northStar}
             onChange={(e) => onChange({ ...plan, northStar: e.target.value })}
             placeholder="In three years, what is unmistakably true about this business and life?"
@@ -207,7 +207,7 @@ export function ThreeYearPlanPanel({
                 <label className="mt-3 block">
                   <span className={LABEL}>Now</span>
                   <textarea
-                    className={`${FIELD} min-h-[56px] resize-y`}
+                    className={fieldClass("textarea", "normal", "mt-1 min-h-[56px] resize-y")}
                     value={note.now}
                     onChange={(e) =>
                       updateOrbit(meta.id, { now: e.target.value })
@@ -218,7 +218,7 @@ export function ThreeYearPlanPanel({
                 <label className="mt-2 block">
                   <span className={LABEL}>Year 3</span>
                   <textarea
-                    className={`${FIELD} min-h-[56px] resize-y`}
+                    className={fieldClass("textarea", "normal", "mt-1 min-h-[56px] resize-y")}
                     value={note.target}
                     onChange={(e) =>
                       updateOrbit(meta.id, { target: e.target.value })
@@ -247,7 +247,7 @@ export function ThreeYearPlanPanel({
             <label className="flex items-center gap-2 text-xs text-slate-600">
               Current
               <select
-                className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900"
+                className={fieldClass("select", "small", "w-auto!")}
                 value={plan.currentQuarterKey}
                 onChange={(e) =>
                   onChange({
@@ -305,7 +305,7 @@ export function ThreeYearPlanPanel({
                     {meta.label}
                   </p>
                   {isCurrent ? (
-                    <span className="rounded-full bg-sky-600 px-2 py-0.5 text-kicker font-semibold uppercase text-white">
+                    <span className={badgeClass("blue")}>
                       Now
                     </span>
                   ) : null}
@@ -313,7 +313,7 @@ export function ThreeYearPlanPanel({
                 <label className="mt-2 block">
                   <span className={LABEL}>Focus</span>
                   <textarea
-                    className={`${FIELD} min-h-[52px] resize-y`}
+                    className={fieldClass("textarea", "normal", "mt-1 min-h-[52px] resize-y")}
                     value={item.focus}
                     onChange={(e) =>
                       updateQuarter(meta.key, { focus: e.target.value })
@@ -324,7 +324,7 @@ export function ThreeYearPlanPanel({
                 <label className="mt-2 block">
                   <span className={LABEL}>Outcome</span>
                   <input
-                    className={FIELD}
+                    className={fieldClass("input", "normal", "mt-1")}
                     value={item.outcome}
                     onChange={(e) =>
                       updateQuarter(meta.key, { outcome: e.target.value })

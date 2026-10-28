@@ -7,6 +7,7 @@ import { formatShortTime } from "@/lib/formatShortDate";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   contactId: string;
@@ -192,20 +193,20 @@ export function ClientSessionsList({
             value={logTitle}
             onChange={(e) => setLogTitle(e.target.value)}
             placeholder="Session title"
-            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+            className={fieldClass("input", "small")}
           />
           <input
             type="datetime-local"
             value={logWhen}
             onChange={(e) => setLogWhen(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+            className={fieldClass("input", "small")}
           />
           <textarea
             value={logNotes}
             onChange={(e) => setLogNotes(e.target.value)}
             rows={3}
             placeholder="Session notes (optional)"
-            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+            className={fieldClass("textarea", "small")}
           />
           <button
             type="submit"

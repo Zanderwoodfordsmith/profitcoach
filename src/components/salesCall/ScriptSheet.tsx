@@ -12,6 +12,7 @@ import type { Technique } from "@/lib/salesCall/techniques";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
+import { fieldClass } from "@/components/ui/Field";
 import type { PlaybookContent } from "@/lib/playbookContentTypes";
 
 import { useGaps } from "./useGaps";
@@ -291,7 +292,7 @@ function PlaybookHelp({ fill }: { fill: Ctx["fill"] }) {
   const playbook = loaded.ref === ref ? loaded.playbook : null;
   const failed = loaded.ref === ref && !loaded.playbook;
   const choose = (next: Partial<typeof pick>) => writePick({ ...pick, ...next });
-  const select = `rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 ${SMALL}`;
+  const select = fieldClass("select", "normal");
   const [query, setQuery] = useState("");
   const [browsing, setBrowsing] = useState(false);
   const pickPlaybook = (p: BossPlaybook) => {
@@ -321,7 +322,7 @@ function PlaybookHelp({ fill }: { fill: Ctx["fill"] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search playbooks, e.g. cash flow"
-            className={`w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-slate-900 ${SMALL}`}
+            className={fieldClass("input", "normal", "pl-9")}
           />
         </label>
         <button

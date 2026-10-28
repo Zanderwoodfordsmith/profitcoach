@@ -9,6 +9,7 @@ import { AREAS, LEVELS } from "@/lib/bossData";
 import type { PlaybookSummary } from "@/lib/playbookContentTypes";
 
 import { areaHeroGradient, PlaybookCard } from "./PlaybookCard";
+import { badgeClass } from "@/components/ui/Badge";
 import { cardClass } from "@/components/ui/Card";
 
 type ViewMode = "grid" | "list";
@@ -181,7 +182,7 @@ export function PlaybooksLibrary({
                               {s.name}
                             </span>
                             {locked ? (
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-kicker font-semibold uppercase text-slate-600">
+                              <span className={badgeClass("grey")}>
                                 Locked
                               </span>
                             ) : null}

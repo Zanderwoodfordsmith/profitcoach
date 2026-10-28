@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import {
   ConnectGate,
   LINKEDIN_CONNECT_DETAILS,
 } from "@/components/ui/ConnectGate";
+import { fieldClass } from "@/components/ui/Field";
 import { LinkedInComposeTab } from "./linkedin/LinkedInComposeTab";
 import {
   displayName,
@@ -647,7 +649,7 @@ export function LinkedInSchedulerPanel() {
                   {profile.email || "Connected"}
                 </p>
               </div>
-              <span className="ml-auto rounded-full bg-emerald-50 px-2 py-0.5 text-caption font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+              <span className={badgeClass("green", "ml-auto")}>
                 Connected
               </span>
             </div>
@@ -671,7 +673,7 @@ export function LinkedInSchedulerPanel() {
                     }))
                   }
                   placeholder="Helping directors…"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className={fieldClass("input", "normal", "mt-1")}
                 />
               </label>
               <label className="block text-xs font-medium text-slate-600">
@@ -685,7 +687,7 @@ export function LinkedInSchedulerPanel() {
                     }))
                   }
                   placeholder="Visit my website"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className={fieldClass("input", "normal", "mt-1")}
                 />
               </label>
               <label className="block text-xs font-medium text-slate-600">
@@ -699,7 +701,7 @@ export function LinkedInSchedulerPanel() {
                     }))
                   }
                   placeholder="https://"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className={fieldClass("input", "normal", "mt-1")}
                 />
               </label>
               <label className="block text-xs font-medium text-slate-600">
@@ -713,7 +715,7 @@ export function LinkedInSchedulerPanel() {
                     }))
                   }
                   placeholder="Profit Coach"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className={fieldClass("input", "normal", "mt-1")}
                 />
               </label>
               <p className="text-caption text-slate-500">

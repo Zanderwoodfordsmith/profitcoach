@@ -78,6 +78,7 @@ import {
   POOL_IMPORT_OPTIONS,
   type PoolImportMode,
 } from "@/components/campaigns/poolImportOptions";
+import { fieldClass } from "@/components/ui/Field";
 
 export { POOL_IMPORT_OPTIONS, type PoolImportMode };
 
@@ -163,8 +164,7 @@ function emptyPlaceDraft(): PlaceDraft {
   };
 }
 
-const MAPS_SELECT_CLASS =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 [color-scheme:light]";
+const MAPS_SELECT_CLASS = fieldClass("select", "normal", "[color-scheme:light]");
 const MAPS_COUNTRY_STORAGE_KEY = "profit-coach.google-maps-country";
 const MAPS_US_STATE_STORAGE_KEY = "profit-coach.google-maps-us-state";
 const UNIPILE_POLL_MS = 5_000;
@@ -1193,7 +1193,7 @@ export function ImportPoolModal({
                     onChange={(e) => setSearchUrl(e.target.value)}
                     rows={3}
                     placeholder="https://www.linkedin.com/sales/search/people?…"
-                    className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 font-mono text-xs"
+                    className={fieldClass("textarea", "normal", "resize-y font-mono")}
                     spellCheck={false}
                   />
                   {searchUrl.trim() && salesNavPaste.kind === "rejected" ? (
@@ -1278,7 +1278,7 @@ export function ImportPoolModal({
                             Number(v) as (typeof SALES_NAV_POOL_LIMIT_OPTIONS)[number]
                           );
                       }}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
+                      className={fieldClass("select", "small", "w-auto!")}
                     >
                       <option value="all">All available</option>
                       {SALES_NAV_POOL_LIMIT_OPTIONS.map((n) => (
@@ -1327,7 +1327,7 @@ export function ImportPoolModal({
                           MAPS_TERM_PLACEHOLDERS[index] ?? "another trade"
                         }
                         disabled={Boolean(visibleRun)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                        className={fieldClass("input", "normal")}
                       />
                       {visibleDraft.terms.length > 1 ? (
                         <button
@@ -1428,7 +1428,7 @@ export function ImportPoolModal({
                     }
                     placeholder="United Kingdom"
                     disabled={Boolean(visibleRun)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                    className={fieldClass("input", "normal")}
                   />
                 </label>
               ) : null}
@@ -1448,7 +1448,7 @@ export function ImportPoolModal({
                       : "Manchester"
                   }
                   disabled={Boolean(visibleRun)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                  className={fieldClass("input", "normal")}
                 />
                 {"error" in mapsResolvedLocation ? (
                   <p className="mt-1.5 text-xs leading-snug text-slate-500">
@@ -1565,7 +1565,7 @@ export function ImportPoolModal({
                         value={csvNewName}
                         onChange={(event) => setCsvNewName(event.target.value)}
                         placeholder="List name"
-                        className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        className={fieldClass("input", "normal", "mt-1.5")}
                       />
                     ) : null}
                   </span>
@@ -1585,7 +1585,7 @@ export function ImportPoolModal({
                         <select
                           value={csvExistingId}
                           onChange={(event) => setCsvExistingId(event.target.value)}
-                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                          className={fieldClass("select", "normal", "mt-1.5")}
                         >
                           <option value="">Choose a list</option>
                           {audienceLists.map((list) => (
@@ -1656,7 +1656,7 @@ export function ImportPoolModal({
                     value={oneName}
                     onChange={(e) => setOneName(e.target.value)}
                     placeholder="Jane Example"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                    className={fieldClass("input", "normal")}
                   />
                 </label>
                 <label className="block">
@@ -1667,7 +1667,7 @@ export function ImportPoolModal({
                     value={oneCompany}
                     onChange={(e) => setOneCompany(e.target.value)}
                     placeholder="Example Ltd"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                    className={fieldClass("input", "normal")}
                   />
                 </label>
                 <label className="block">
@@ -1678,7 +1678,7 @@ export function ImportPoolModal({
                     value={oneTitle}
                     onChange={(e) => setOneTitle(e.target.value)}
                     placeholder="Founder"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                    className={fieldClass("input", "normal")}
                   />
                 </label>
                 <label className="block">
@@ -1690,7 +1690,7 @@ export function ImportPoolModal({
                     value={oneEmail}
                     onChange={(e) => setOneEmail(e.target.value)}
                     placeholder="jane@example.com"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                    className={fieldClass("input", "normal")}
                   />
                 </label>
                 <label className="block">
@@ -1702,7 +1702,7 @@ export function ImportPoolModal({
                     value={onePhone}
                     onChange={(e) => setOnePhone(e.target.value)}
                     placeholder="+44 7700 900000"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                    className={fieldClass("input", "normal")}
                   />
                 </label>
                 <label className="block sm:col-span-2">
@@ -1713,7 +1713,7 @@ export function ImportPoolModal({
                     value={oneUrl}
                     onChange={(e) => setOneUrl(e.target.value)}
                     placeholder="https://www.linkedin.com/in/…"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                    className={fieldClass("input", "normal")}
                   />
                 </label>
                 <p className="text-xs leading-snug text-slate-600 sm:col-span-2">
@@ -1763,7 +1763,7 @@ export function ImportPoolModal({
                       onChange={(e) => setPasteText(e.target.value)}
                       rows={5}
                       placeholder="One LinkedIn URL per line. Optional: url, first, last, company, title"
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                      className={fieldClass("textarea", "normal")}
                     />
                     <button
                       type="button"

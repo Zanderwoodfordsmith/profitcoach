@@ -37,6 +37,7 @@ import {
 import { broadcastMentionsForQuery } from "@/lib/communityMentionUsers";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export type MentionUser = {
   id: string;
@@ -1178,7 +1179,7 @@ export function MentionTextarea({
             value={linkUrlDraft}
             onChange={(e) => setLinkUrlDraft(e.target.value)}
             placeholder="Paste a link"
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className={fieldClass("input", "small", "mt-1")}
             autoFocus
           />
         </label>
@@ -1189,7 +1190,7 @@ export function MentionTextarea({
             value={linkLabelDraft}
             onChange={(e) => setLinkLabelDraft(e.target.value)}
             placeholder="Link label"
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className={fieldClass("input", "small", "mt-1")}
           />
         </label>
       </div>

@@ -66,6 +66,8 @@ import {
   PROSPECT_LIST_STATUS_OPTIONS,
 } from "@/lib/prospectStatus";
 import type { ProspectRow } from "@/lib/prospectRow";
+import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type CoachFilterOption = {
   id: string;
@@ -465,7 +467,7 @@ export function ProspectsHub({
                 <label className="block text-xs font-medium text-slate-600">
                   Status
                   <select
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className={fieldClass("select", "small", "mt-1")}
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                   >
@@ -480,7 +482,7 @@ export function ProspectsHub({
                 <label className="mt-3 block text-xs font-medium text-slate-600">
                   Tags
                   <select
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className={fieldClass("select", "small", "mt-1")}
                     value={tagFilter}
                     onChange={(e) => setTagFilter(e.target.value)}
                   >
@@ -536,7 +538,7 @@ export function ProspectsHub({
                   <label className="mt-3 block text-xs font-medium text-slate-600">
                     Coach
                     <select
-                      className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      className={fieldClass("select", "small", "mt-1")}
                       value={coachFilter}
                       onChange={(e) => setCoachFilter(e.target.value)}
                     >
@@ -552,7 +554,7 @@ export function ProspectsHub({
                 <label className="mt-3 block text-xs font-medium text-slate-600">
                   Assessment
                   <select
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className={fieldClass("select", "small", "mt-1")}
                     value={assessedFilter}
                     onChange={(e) =>
                       setAssessedFilter(e.target.value as typeof assessedFilter)
@@ -566,7 +568,7 @@ export function ProspectsHub({
                 <label className="mt-3 block text-xs font-medium text-slate-600">
                   Next call
                   <select
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className={fieldClass("select", "small", "mt-1")}
                     value={callFilter}
                     onChange={(e) =>
                       setCallFilter(e.target.value as typeof callFilter)
@@ -585,7 +587,7 @@ export function ProspectsHub({
                 <label className="block text-xs font-medium text-slate-600">
                   Sort by
                   <select
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className={fieldClass("select", "small", "mt-1")}
                     value={sortField}
                     onChange={(e) => setSortField(e.target.value as ProspectListSortField)}
                   >
@@ -600,7 +602,7 @@ export function ProspectsHub({
                 <label className="mt-3 block text-xs font-medium text-slate-600">
                   Order
                   <select
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className={fieldClass("select", "small", "mt-1")}
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as ProspectListSortOrder)}
                   >
@@ -658,7 +660,7 @@ export function ProspectsHub({
                   <label className="block px-3 pb-1 text-xs font-medium text-slate-600">
                     Group order
                     <select
-                      className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      className={fieldClass("select", "small", "mt-1")}
                       value={grouping.order}
                       disabled={!groupField}
                       onChange={(e) =>
@@ -752,9 +754,7 @@ export function ProspectsHub({
                   type="button"
                   onClick={onAddClick}
                   aria-pressed={addActive}
-                  className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-sm font-semibold text-white transition ${
-                    addActive ? "bg-sky-800" : "bg-sky-600 hover:bg-sky-700"
-                  }`}
+                  className={buttonClass("main", "normal", `shrink-0 ${addActive ? "bg-[#0a4578]" : ""}`)}
                 >
                   <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                   Add prospect

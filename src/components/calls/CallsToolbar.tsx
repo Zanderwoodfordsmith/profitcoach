@@ -9,6 +9,7 @@ import {
   type CallsWorkspaceView,
 } from "@/components/calls/CallsViewSwitcher";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 export type CallsToolbarMenu = "filter" | "sort" | null;
 
@@ -61,7 +62,7 @@ export function CallsToolbar({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search calls…"
-            className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+            className={fieldClass("input", "normal", "pl-9")}
           />
         </label>
 

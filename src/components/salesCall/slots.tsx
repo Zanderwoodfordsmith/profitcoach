@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { AREA_ICON_SET } from "@/components/profitSystem/profitSystemData";
+import { fieldClass } from "@/components/ui/Field";
 import { TECHNIQUES, type TechniqueId } from "@/lib/salesCall/techniques";
 
 /**
@@ -157,7 +158,7 @@ function Editable({
             }}
             placeholder={options ? "Type your own, or pick one below" : placeholder}
             aria-label={`Change ${placeholder}`}
-            className="w-full rounded-md bg-slate-50 px-2.5 py-1.5 text-sm font-normal text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-sky-300"
+            className={fieldClass("input", "small")}
           />
           <span className="mt-1 flex items-center justify-between gap-3 px-1 text-xs font-normal text-slate-500">
             Enter to save, Esc to cancel

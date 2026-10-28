@@ -32,6 +32,7 @@ import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export type ShareTarget =
   | {
@@ -496,7 +497,7 @@ export function ShareToProspectModal({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search prospects"
               aria-label="Choose a prospect"
-              className="w-full rounded-xl bg-slate-100 px-3.5 py-2.5 text-ui text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-[#0c5290]/25"
+              className={fieldClass("input", "normal")}
             />
             <div className="mt-2 max-h-44 overflow-y-auto">
               {loading ? (

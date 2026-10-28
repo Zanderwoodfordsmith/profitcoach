@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Lock, Pencil } from "lucide-react";
 
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { DECISION_FIELDS, DECISION_GROUPS, proposedDecision } from "@/lib/practiceKnowledge/decisionDefaults";
 import type { DecisionRecordPayload } from "@/lib/practiceKnowledge/types";
 
@@ -71,9 +73,7 @@ export function DecisionRecordView() {
             <h3 className="text-subhead font-semibold text-[var(--bp-ink)]">{group.label}</h3>
             <div className="bp-no-print flex items-center gap-2">
               <span
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                  locked ? "bg-[#e6f6ec] text-[#17663a]" : anything ? "bg-[#e0f2fe] text-[#075985]" : "bg-[#f1f4f8] text-[#5b6b7f]"
-                }`}
+                className={badgeClass(locked ? "green" : anything ? "blue" : "grey")}
               >
                 {locked ? <Lock className="h-3 w-3" aria-hidden /> : null}
                 {locked ? "Agreed" : anything ? "Proposed by BCA" : "With BCA"}
@@ -109,7 +109,7 @@ export function DecisionRecordView() {
                         placeholder={`e.g. ${field.example}`}
                         rows={Math.max(1, Math.ceil((draft[field.key]?.length ?? 0) / 60))}
                         onChange={(e) => setDraft((d) => (d ? { ...d, [field.key]: e.target.value } : d))}
-                        className="w-full resize-y rounded-xl border border-[#cdd8e4] bg-white px-3.5 py-2.5 text-read text-[var(--bp-ink)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]"
+                        className={fieldClass("textarea", "normal", "resize-y")}
                       />
                     ) : value ? (
                       <p className="bp-tinted rounded-xl bg-[#f3f5f8] px-3.5 py-2.5 text-read text-[var(--bp-ink)]">{value}</p>

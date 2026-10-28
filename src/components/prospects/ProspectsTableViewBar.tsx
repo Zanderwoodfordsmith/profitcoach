@@ -26,6 +26,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Lock, Plus } from "lucide-react";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
+import { fieldClass } from "@/components/ui/Field";
 import {
   DEFAULT_PROSPECT_TABLE_VIEW_NAME,
   isDefaultProspectTableViewName,
@@ -139,7 +140,7 @@ function SortableViewTab({
             onKeyDown={(e) => {
               if (e.key === "Escape") onCancelRename();
             }}
-            className="w-32 rounded border border-slate-300 px-2 py-0.5 text-sm font-medium text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            className={fieldClass("input", "small", "w-32")}
             aria-label="Rename view"
           />
         </form>
@@ -389,7 +390,7 @@ export function ProspectsTableViewBar({
                 }
               }}
               placeholder="View name"
-              className="w-36 rounded border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("input", "small", "w-36")}
               aria-label="New view name"
             />
             <button

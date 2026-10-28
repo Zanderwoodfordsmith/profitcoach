@@ -5,8 +5,10 @@ import Link from "next/link";
 import { ExternalLink, Eye } from "lucide-react";
 
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   ARTICLE_STATUSES,
   staticLiveSlugFor,
@@ -110,7 +112,7 @@ export default function AdminBlogPage() {
           </p>
         </div>
         {staticSlug ? (
-          <span className="shrink-0 rounded-full bg-teal-100 px-2 py-0.5 text-caption font-semibold text-teal-800">
+          <span className={badgeClass("green", "shrink-0")}>
             Static page live
           </span>
         ) : null}
@@ -158,7 +160,7 @@ export default function AdminBlogPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search posts…"
-          className="w-64 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
+          className={fieldClass("input", "small", "w-64")}
         />
         <span className="text-xs font-medium text-slate-400">
           {unpublishedOnly.length} awaiting review · {withStatic.length} with a

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Camera, Pencil } from "lucide-react";
+import { badgeClass } from "@/components/ui/Badge";
 
 export function EditPersonNameButton({
   name,
@@ -28,7 +29,7 @@ export function EditPersonNameButton({
         {name || "Add name"}
       </span>
       {needsName ? (
-        <span className="shrink-0 rounded-full bg-sky-50 px-2 py-0.5 text-caption font-medium text-sky-800 ring-1 ring-inset ring-sky-200">
+        <span className={badgeClass("blue", "shrink-0")}>
           Add name
         </span>
       ) : (

@@ -6,6 +6,7 @@ import {
   type CsvColumnMapping,
   type CsvMatchFieldId,
 } from "@/lib/prospects/csvColumnMatch";
+import { fieldClass } from "@/components/ui/Field";
 
 export function CsvColumnMatch({
   headers,
@@ -57,7 +58,7 @@ export function CsvColumnMatch({
                     onChange={(event) =>
                       setChoice(index, event.target.value as CsvColumnChoice)
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900"
+                    className={fieldClass("select", "small")}
                   >
                     <option value="skip">Skip</option>
                     {CSV_MATCH_FIELDS.filter(

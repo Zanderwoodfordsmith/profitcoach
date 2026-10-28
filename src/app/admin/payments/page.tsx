@@ -20,8 +20,10 @@ import { PaymentAttentionList } from "@/components/admin/PaymentAttentionList";
 import { PaymentCoachAssignMenu } from "@/components/admin/PaymentCoachAssignMenu";
 import { PaymentsMonthlyBarChart } from "@/components/admin/PaymentsMonthlyBarChart";
 import { StickyPageHeader } from "@/components/layout";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
@@ -797,18 +799,16 @@ function statusLabel(status: string): string {
   }
 }
 
-function statusBadgeClass(status: string): string {
+function statusBadgeTone(status: string): BadgeTone {
   switch (status) {
     case "succeeded":
-      return "bg-emerald-100 text-emerald-800";
+      return "green";
     case "failed":
-      return "bg-rose-100 text-rose-800";
+      return "red";
     case "canceled":
-      return "bg-amber-100 text-amber-900";
-    case "refunded":
-      return "bg-slate-200 text-slate-800";
+      return "amber";
     default:
-      return "bg-slate-100 text-slate-700";
+      return "grey";
   }
 }
 
@@ -1490,7 +1490,7 @@ export default function AdminPaymentsPage() {
         return (
           <td key={key} className="px-3 py-2">
             <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass(payment.status)}`}
+              className={badgeClass(statusBadgeTone(payment.status))}
             >
               {statusLabel(payment.status)}
             </span>
@@ -1692,7 +1692,7 @@ export default function AdminPaymentsPage() {
           </div>
           <form onSubmit={handleCreatePayment} className="mt-3 grid gap-3 md:grid-cols-3">
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-slate-700" htmlFor="payment-email">
+              <label className={fieldLabelClass} htmlFor="payment-email">
                 Customer email
               </label>
               <input
@@ -1701,11 +1701,11 @@ export default function AdminPaymentsPage() {
                 required
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input")}
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-slate-700" htmlFor="payment-amount">
+              <label className={fieldLabelClass} htmlFor="payment-amount">
                 Amount
               </label>
               <input
@@ -1716,11 +1716,11 @@ export default function AdminPaymentsPage() {
                 required
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input")}
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-slate-700" htmlFor="payment-currency">
+              <label className={fieldLabelClass} htmlFor="payment-currency">
                 Currency
               </label>
               <input
@@ -1729,11 +1729,11 @@ export default function AdminPaymentsPage() {
                 value={currency}
                 maxLength={3}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input", "normal", "uppercase")}
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-slate-700" htmlFor="payment-date">
+              <label className={fieldLabelClass} htmlFor="payment-date">
                 Paid at (optional)
               </label>
               <input
@@ -1741,18 +1741,18 @@ export default function AdminPaymentsPage() {
                 type="datetime-local"
                 value={paidAt}
                 onChange={(e) => setPaidAt(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input")}
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-slate-700" htmlFor="payment-coach">
+              <label className={fieldLabelClass} htmlFor="payment-coach">
                 Assign coach (optional)
               </label>
               <select
                 id="payment-coach"
                 value={selectedCoachId}
                 onChange={(e) => setSelectedCoachId(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("select")}
               >
                 <option value="">Auto-match by email</option>
                 {coachOptions.map((coach) => (
@@ -1763,7 +1763,7 @@ export default function AdminPaymentsPage() {
               </select>
             </div>
             <div className="space-y-1 md:col-span-3">
-              <label className="block text-xs font-medium text-slate-700" htmlFor="payment-notes">
+              <label className={fieldLabelClass} htmlFor="payment-notes">
                 Notes (optional)
               </label>
               <input
@@ -1771,7 +1771,7 @@ export default function AdminPaymentsPage() {
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input")}
               />
             </div>
             <div className="flex items-center justify-between gap-3 md:col-span-3">
@@ -1898,7 +1898,7 @@ export default function AdminPaymentsPage() {
                     <div>
                       <label
                         htmlFor="filter-status"
-                        className="mb-1 block text-xs font-medium text-slate-600"
+                        className={`${fieldLabelClass} mb-1`}
                       >
                         Status
                       </label>
@@ -1908,7 +1908,7 @@ export default function AdminPaymentsPage() {
                         onChange={(e) =>
                           setStatusFilter(e.target.value as StatusFilter)
                         }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "small")}
                       >
                         <option value="all">All</option>
                         <option value="succeeded">Paid</option>
@@ -1920,7 +1920,7 @@ export default function AdminPaymentsPage() {
                     <div>
                       <label
                         htmlFor="filter-source"
-                        className="mb-1 block text-xs font-medium text-slate-600"
+                        className={`${fieldLabelClass} mb-1`}
                       >
                         Source
                       </label>
@@ -1930,7 +1930,7 @@ export default function AdminPaymentsPage() {
                         onChange={(e) =>
                           setSourceFilter(e.target.value as SourceFilter)
                         }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "small")}
                       >
                         <option value="all">All</option>
                         <option value="stripe">Stripe</option>
@@ -1942,7 +1942,7 @@ export default function AdminPaymentsPage() {
                     <div>
                       <label
                         htmlFor="filter-coach-assignment"
-                        className="mb-1 block text-xs font-medium text-slate-600"
+                        className={`${fieldLabelClass} mb-1`}
                       >
                         Coach
                       </label>
@@ -1954,7 +1954,7 @@ export default function AdminPaymentsPage() {
                             e.target.value as CoachAssignmentFilter
                           )
                         }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "small")}
                       >
                         <option value="all">All</option>
                         <option value="assigned">Assigned</option>
@@ -2003,7 +2003,7 @@ export default function AdminPaymentsPage() {
                 >
                   <label
                     htmlFor="payment-sort"
-                    className="mb-1 block text-xs font-medium text-slate-600"
+                    className={`${fieldLabelClass} mb-1`}
                   >
                     Sort by
                   </label>
@@ -2013,7 +2013,7 @@ export default function AdminPaymentsPage() {
                     onChange={(e) =>
                       setPaymentSort(e.target.value as PaymentSort)
                     }
-                    className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    className={fieldClass("select", "small")}
                   >
                     <option value="recent_first">Date (newest first)</option>
                     <option value="oldest_first">Date (oldest first)</option>
@@ -2050,7 +2050,7 @@ export default function AdminPaymentsPage() {
                 >
                   <label
                     htmlFor="payment-group-by"
-                    className="mb-1 block text-xs font-medium text-slate-600"
+                    className={`${fieldLabelClass} mb-1`}
                   >
                     Group by
                   </label>
@@ -2060,7 +2060,7 @@ export default function AdminPaymentsPage() {
                     onChange={(e) =>
                       setPaymentGroupBy(e.target.value as PaymentGroupBy)
                     }
-                    className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    className={fieldClass("select", "small")}
                   >
                     <option value="none">None</option>
                     <option value="coach">Coach</option>

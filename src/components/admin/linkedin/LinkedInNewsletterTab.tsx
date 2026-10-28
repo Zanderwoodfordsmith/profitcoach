@@ -6,8 +6,6 @@ import {
   ClipboardCopy,
   Loader2,
   Newspaper,
-  Sparkles,
-  Wand2,
 } from "lucide-react";
 import {
   renderNewsletterCoverDataUrl,
@@ -24,7 +22,9 @@ import type {
 import { SHORT_WORD_RANGE, wordCount } from "@/lib/linkedinNewsletter/types";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { LI_BLUE, type LinkedInProfilePreview, displayName } from "./types";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 type Props = {
   getToken: () => Promise<string>;
@@ -683,7 +683,7 @@ export function LinkedInNewsletterTab({
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("input", "normal", "mt-1")}
             placeholder="e.g. Manufacturing Profit Power-Up"
           />
         </label>
@@ -692,7 +692,7 @@ export function LinkedInNewsletterTab({
           <input
             value={tagline}
             onChange={(e) => setTagline(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("input", "normal", "mt-1")}
             placeholder="Have more profit and fun…"
           />
         </label>
@@ -703,7 +703,7 @@ export function LinkedInNewsletterTab({
             onChange={(e) =>
               setCadence(e.target.value as typeof cadence)
             }
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("select", "normal", "mt-1")}
           >
             <option value="weekly">Weekly</option>
             <option value="fortnightly">Every 2 weeks</option>
@@ -717,7 +717,7 @@ export function LinkedInNewsletterTab({
             onClick={() => void suggestNames()}
             className={buttonClass("second")}
           >
-            <Wand2 className="h-4 w-4" />
+            <AvaHalo size={18} className="shrink-0" />
             Suggest names from AI brain
           </button>
           <button
@@ -773,7 +773,7 @@ export function LinkedInNewsletterTab({
             <input
               value={leadTopic}
               onChange={(e) => setLeadTopic(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("input", "normal", "mt-1")}
               placeholder="e.g. Pricing courage when you're scared to raise fees"
             />
           </label>
@@ -789,7 +789,7 @@ export function LinkedInNewsletterTab({
               onClick={() => void suggestTopics()}
               className={buttonClass("second", "small")}
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <AvaHalo size={16} className="shrink-0" />
               Suggest topics
             </button>
             <button
@@ -894,7 +894,7 @@ export function LinkedInNewsletterTab({
                   <select
                     value={targetCount}
                     onChange={(e) => setTargetCount(Number(e.target.value) || 16)}
-                    className="ml-2 rounded-lg border border-slate-200 px-2 py-1 text-sm"
+                    className={fieldClass("select", "small", "ml-2 inline-block w-auto!")}
                   >
                     <option value={16}>16 (overview + 5 + 3 + 7)</option>
                     <option value={26}>26 (+ fillers ≈ year fortnightly)</option>
@@ -955,7 +955,7 @@ export function LinkedInNewsletterTab({
               <select
                 value={format}
                 onChange={(e) => setFormat(e.target.value as NewsletterFormat)}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                className={fieldClass("select", "normal", "mt-1")}
               >
                 {FORMAT_OPTIONS.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -971,7 +971,7 @@ export function LinkedInNewsletterTab({
                 onChange={(e) =>
                   setLengthMode(e.target.value as NewsletterLengthMode)
                 }
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                className={fieldClass("select", "normal", "mt-1")}
               >
                 <option value="short">Short 400–800 (default)</option>
                 <option value="long">Long 2,000+ (guide / case study)</option>
@@ -986,7 +986,7 @@ export function LinkedInNewsletterTab({
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Sparkles className="h-4 w-4" />
+                <AvaHalo size={18} dark className="shrink-0" />
               )}
               {body.trim() ? "Regenerate from brain" : "Write draft from AI brain"}
             </button>
@@ -995,7 +995,7 @@ export function LinkedInNewsletterTab({
               onChange={(e) => setAiNote(e.target.value)}
               rows={4}
               placeholder="Revise instruction: e.g. shorter intro, stronger Yorkshire voice, add a client story…"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("textarea")}
             />
             <button
               type="button"
@@ -1027,13 +1027,13 @@ export function LinkedInNewsletterTab({
               <input
                 value={coverHeadline}
                 onChange={(e) => setCoverHeadline(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                className={fieldClass("input", "small", "mt-2")}
                 placeholder="Cover headline"
               />
               <input
                 value={coverTagline}
                 onChange={(e) => setCoverTagline(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                className={fieldClass("input", "small", "mt-1.5")}
                 placeholder="Cover tagline"
               />
               {coverPreview ? (
@@ -1080,20 +1080,20 @@ export function LinkedInNewsletterTab({
             <input
               value={seoTitle}
               onChange={(e) => setSeoTitle(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold"
+              className={fieldClass("input", "normal", "font-semibold")}
               placeholder="SEO title (set before publishing)"
             />
             <input
               value={seoDesc}
               onChange={(e) => setSeoDesc(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("input")}
               placeholder="SEO description"
             />
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={22}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 font-mono text-ui leading-relaxed text-slate-900"
+              className={fieldClass("textarea", "normal", "font-mono leading-relaxed")}
               placeholder="Edition body appears here — edit live, then copy into LinkedIn."
             />
             <div className="rounded-2xl border border-dashed border-slate-200 p-3">
@@ -1121,7 +1121,7 @@ export function LinkedInNewsletterTab({
                 value={promo}
                 onChange={(e) => setPromo(e.target.value)}
                 rows={5}
-                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                className={fieldClass("textarea", "normal", "mt-2")}
                 placeholder="Promo post for your feed (generated with the edition)."
               />
             </div>

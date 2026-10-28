@@ -13,8 +13,10 @@ import {
   type LessonImportStatusRow,
 } from "@/lib/academy/lessonImportStatusClient";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type UnmatchedRow = NonNullable<AcademyImportSnapshotReport["unmatched"]>[number];
 
@@ -469,13 +471,9 @@ export function AdminAcademyImportUnmatchedTable({
                     <tr key={row.relativePath} className="align-top hover:bg-slate-50/50">
                       <td className="whitespace-nowrap px-3 py-2.5">
                         <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                            row.bestScore >= 0.72
-                              ? "bg-emerald-50 text-emerald-800"
-                              : row.bestScore >= 0.5
-                                ? "bg-amber-50 text-amber-900"
-                                : "bg-slate-100 text-slate-600"
-                          }`}
+                          className={badgeClass(
+                            row.bestScore >= 0.72 ? "green" : row.bestScore >= 0.5 ? "amber" : "grey",
+                          )}
                         >
                           {scorePercent(row.bestScore)}
                         </span>
@@ -557,7 +555,7 @@ export function AdminAcademyImportUnmatchedTable({
                                   [row.relativePath]: e.target.value,
                                 }));
                               }}
-                              className="w-full min-w-0 rounded-lg border border-slate-200 px-2 py-1.5 text-xs disabled:bg-slate-50 disabled:text-slate-700"
+                              className={fieldClass("select", "small", "min-w-0")}
                               disabled={isBusy || usingSuggested}
                               title={pick ? lessonTitles[pick] : "Select lesson"}
                             >
@@ -587,12 +585,12 @@ export function AdminAcademyImportUnmatchedTable({
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
                         {linked ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                          <span className={badgeClass("green")}>
                             <Check className="h-3 w-3" aria-hidden />
                             Linked
                           </span>
                         ) : (
-                          <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
+                          <span className={badgeClass("amber")}>
                             Pending
                           </span>
                         )}

@@ -219,7 +219,7 @@ function LeverRow({
 }
 
 /** A number box that lets the owner's figure be typed freely, and only passes on numbers. */
-function NumberField({
+export function NumberField({
   id,
   value,
   onChange,

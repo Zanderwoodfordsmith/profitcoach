@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import type { PracticeNote } from "@/lib/practiceKnowledge/types";
 
 import { usePractice } from "./PracticeProvider";
@@ -97,7 +98,7 @@ export function PracticeComments({
           onChange={(event) => setBody(event.target.value)}
           placeholder="Write a comment…"
           rows={3}
-          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/25"
+          className={fieldClass("textarea", "normal", "resize-none")}
         />
         <div className="mt-2 flex justify-end">
           <button

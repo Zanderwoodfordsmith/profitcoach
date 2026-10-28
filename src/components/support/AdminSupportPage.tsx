@@ -77,6 +77,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
+import { fieldClass } from "@/components/ui/Field";
 type AdminTicketRow = {
   id: string;
   created_at: string;
@@ -129,12 +131,12 @@ type PersonGroup = {
   latestAt: string;
 };
 
-const TYPE_STYLES: Record<SupportTicketType, string> = {
-  question: "bg-violet-100 text-violet-800 ring-violet-200/80",
-  bug: "bg-rose-100 text-rose-800 ring-rose-200/80",
-  idea: "bg-sky-100 text-sky-800 ring-sky-200/80",
-  billing: "bg-amber-100 text-amber-900 ring-amber-200/80",
-  other: "bg-slate-100 text-slate-700 ring-slate-200/80",
+const TYPE_TONES: Record<SupportTicketType, BadgeTone> = {
+  question: "blue",
+  bug: "red",
+  idea: "green",
+  billing: "amber",
+  other: "grey",
 };
 
 const ASSIGNEE_FILTERS: { id: SupportAssigneeFilter; label: string }[] = [
@@ -162,8 +164,7 @@ const TYPE_FILTER_OPTIONS: { id: "all" | SupportTicketType; label: string }[] =
     { id: "other", label: SUPPORT_TYPE_LABELS.other },
   ];
 
-const filterSelectClass =
-  "w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20";
+const filterSelectClass = fieldClass("select", "small");
 
 function queueSegmentClass(active: boolean) {
   return `flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
@@ -1329,7 +1330,7 @@ export function AdminSupportPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search tickets…"
-                    className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    className={fieldClass("input", "small", "pl-8")}
                   />
                 </div>
               </div>
@@ -1562,7 +1563,7 @@ export function AdminSupportPage() {
                                   {formatSupportRelativeCompact(listAt)}
                                 </span>
                                 <span
-                                  className={`rounded-full px-1.5 py-0.5 text-caption font-semibold ring-1 ring-inset ${TYPE_STYLES[row.type]}`}
+                                  className={badgeClass(TYPE_TONES[row.type])}
                                 >
                                   {SUPPORT_TYPE_LABELS[row.type]}
                                 </span>
@@ -1628,7 +1629,7 @@ export function AdminSupportPage() {
                             assigned_to: e.target.value || null,
                           })
                         }
-                        className="max-w-[7.5rem] rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700"
+                        className={fieldClass("select", "small", "w-auto! max-w-[7.5rem]")}
                         aria-label="Assignee"
                       >
                         <option value="">Anyone</option>
@@ -1648,7 +1649,7 @@ export function AdminSupportPage() {
                             status: e.target.value as SupportTicketStatus,
                           })
                         }
-                        className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700"
+                        className={fieldClass("select", "small", "w-auto!")}
                         aria-label="Status"
                       >
                         {(
@@ -1800,7 +1801,7 @@ export function AdminSupportPage() {
                               assigned_to: e.target.value || null,
                             })
                           }
-                          className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm"
+                          className={fieldClass("select", "small", "min-w-0 flex-1")}
                         >
                           <option value="">Anyone</option>
                           {assigneePickerOptions(
@@ -1826,7 +1827,7 @@ export function AdminSupportPage() {
                               type: e.target.value as SupportTicketType,
                             })
                           }
-                          className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm [color-scheme:light]"
+                          className={fieldClass("select", "small", "min-w-0 flex-1 [color-scheme:light]")}
                         >
                           {(
                             Object.keys(
@@ -1860,7 +1861,7 @@ export function AdminSupportPage() {
                                     : null,
                                 })
                               }
-                              className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm"
+                              className={fieldClass("select", "small")}
                             >
                               <option value="">—</option>
                               {[1, 2, 3, 4, 5].map((n) => (
@@ -1884,7 +1885,7 @@ export function AdminSupportPage() {
                                     : null,
                                 })
                               }
-                              className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm"
+                              className={fieldClass("select", "small")}
                             >
                               <option value="">—</option>
                               {[1, 2, 3, 4, 5].map((n) => (

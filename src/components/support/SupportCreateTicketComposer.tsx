@@ -38,6 +38,7 @@ import {
 } from "@/lib/support/tickets";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type PendingMedia = { key: string; file: File; previewUrl: string };
 
@@ -160,7 +161,7 @@ export function CoachSearchCombobox({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search coaches…"
-              className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30"
+              className={fieldClass("input")}
               aria-label="Filter coaches"
             />
           </div>
@@ -512,7 +513,7 @@ export function SupportCreateTicketComposer({
             <select
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-ui text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className={fieldClass("select", "normal", "mt-1.5")}
             >
               {assigneeOptions!.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -530,7 +531,7 @@ export function SupportCreateTicketComposer({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="A short summary of what's going on…"
-            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-ui text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className={fieldClass("input", "normal", "mt-1.5")}
           />
         </label>
 
@@ -592,7 +593,7 @@ export function SupportCreateTicketComposer({
                     onChange={(e) => setDetails(e.target.value)}
                     placeholder="What happened? Type here, or tap the mic to speak — we’ll fill the text and keep the recording so support can hear your tone."
                     rows={4}
-                    className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 pr-11 pb-10 text-ui text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    className={fieldClass("textarea", "normal", "resize-y pr-11 pb-10")}
                   />
                   <div className="absolute bottom-2 right-2">{micButton}</div>
                 </div>

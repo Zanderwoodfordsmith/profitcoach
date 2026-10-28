@@ -5,6 +5,7 @@ import { AlertTriangle, Check, Copy, Info, Lightbulb, Pencil } from "lucide-reac
 
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 
 function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
@@ -67,7 +68,7 @@ function MessageBlock({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={Math.min(18, Math.max(4, draft.split("\n").length + 1))}
-            className="block w-full resize-y rounded-lg border border-[var(--bp-rule)] px-3 py-2 text-read text-[var(--bp-body)] outline-none focus:border-[var(--bp-sky)] focus:ring-2 focus:ring-[#cfe6f8]"
+            className={fieldClass("textarea", "normal", "resize-y")}
           />
           <div className="mt-2 flex gap-2">
             <button

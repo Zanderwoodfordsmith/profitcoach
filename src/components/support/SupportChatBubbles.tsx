@@ -25,6 +25,7 @@ import {
   type SupportTicketAuthor,
 } from "@/lib/support/tickets";
 import { buttonClass } from "@/components/ui/Button";
+import { badgeClass } from "@/components/ui/Badge";
 
 function calendarDayKey(iso: string): string {
   const d = new Date(iso);
@@ -918,11 +919,7 @@ export function ScheduledSupportBubble({
         )}
         <div className="mt-1.5 flex items-center justify-end gap-1 text-sky-800/55">
           <span
-            className={`rounded px-1 py-px text-caption font-semibold ${
-              failed
-                ? "bg-rose-100 text-rose-800"
-                : "bg-amber-100 text-amber-800"
-            }`}
+            className={badgeClass(failed ? "red" : "amber")}
           >
             {failed ? "Failed" : "Scheduled"}
           </span>

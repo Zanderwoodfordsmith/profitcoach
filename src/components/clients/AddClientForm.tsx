@@ -2,6 +2,7 @@
 
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 type CoachOption = { id: string; label: string };
 
 type Props = {
@@ -24,9 +25,6 @@ type Props = {
   onCoachIdChange?: (id: string) => void;
   allowUnassignedCoach?: boolean;
 };
-
-const INPUT_CLASS =
-  "block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
 
 export function AddClientForm({
   fullName,
@@ -75,7 +73,7 @@ export function AddClientForm({
               id="clientCoach"
               value={selectedCoachId}
               onChange={(e) => onCoachIdChange?.(e.target.value)}
-              className={INPUT_CLASS}
+              className={fieldClass("select", "small")}
             >
               {allowUnassignedCoach ? (
                 <option value="none">None (unassigned)</option>
@@ -102,7 +100,7 @@ export function AddClientForm({
             required
             value={fullName}
             onChange={(e) => onFullNameChange(e.target.value)}
-            className={INPUT_CLASS}
+            className={fieldClass("input", "small")}
           />
         </div>
         <div className="space-y-1">
@@ -117,7 +115,7 @@ export function AddClientForm({
             type="email"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
-            className={INPUT_CLASS}
+            className={fieldClass("input", "small")}
           />
         </div>
         <div className="space-y-1">
@@ -132,7 +130,7 @@ export function AddClientForm({
             type="text"
             value={businessName}
             onChange={(e) => onBusinessNameChange(e.target.value)}
-            className={INPUT_CLASS}
+            className={fieldClass("input", "small")}
           />
         </div>
         <div className="flex flex-col gap-2 md:col-span-2">

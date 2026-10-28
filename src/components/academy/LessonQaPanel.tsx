@@ -36,6 +36,7 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { badgeClass } from "@/components/ui/Badge";
 import { cardClass } from "@/components/ui/Card";
 
 const LESSON_QA_SELECT = `
@@ -338,7 +339,7 @@ export function LessonQaPanel({
             return (
               <li key={post.id} className="relative">
                 {isPrivate ? (
-                  <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-caption font-medium text-amber-800 ring-1 ring-amber-200">
+                  <span className={badgeClass("amber", "absolute right-3 top-3 z-10")}>
                     <Lock className="h-3 w-3" aria-hidden />
                     Private
                   </span>

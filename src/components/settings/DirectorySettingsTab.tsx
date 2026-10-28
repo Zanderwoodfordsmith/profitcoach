@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MapPin, Pencil, Sparkles } from "lucide-react";
+import { MapPin, Pencil } from "lucide-react";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { useRouter } from "next/navigation";
 import { DirectoryLevelBadge } from "@/components/directory/DirectoryLevelBadge";
@@ -13,6 +13,8 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { AvaHalo } from "@/components/ava/AvaHalo";
+import { fieldClass } from "@/components/ui/Field";
 
 type DirectoryProfile = {
   first_name: string | null;
@@ -719,7 +721,7 @@ export function DirectorySettingsTab({
                   value={linkedinUrlDraft}
                   onChange={(e) => setLinkedinUrlDraft(e.target.value)}
                   placeholder="https://www.linkedin.com/in/…"
-                  className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15"
+                  className={fieldClass("input")}
                 />
                 <button
                   type="button"
@@ -760,7 +762,7 @@ export function DirectorySettingsTab({
                 onClick={() => setAiOpen(true)}
                 className={buttonClass("second", "normal", "mt-3 w-full")}
               >
-                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                <AvaHalo size={16} className="shrink-0" />
                 Help me write
               </button>
             ) : (
@@ -774,7 +776,7 @@ export function DirectorySettingsTab({
                   value={aiNotes}
                   onChange={(e) => setAiNotes(e.target.value)}
                   placeholder="e.g. I help UK manufacturers get from stuck growth to a clear profit plan…"
-                  className="w-full resize-y rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15"
+                  className={fieldClass("textarea", "normal", "resize-y")}
                 />
                 <button
                   type="button"
@@ -782,7 +784,7 @@ export function DirectorySettingsTab({
                   onClick={() => void handleAiDraft()}
                   className={buttonClass("main", "normal", "w-full")}
                 >
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                  <AvaHalo size={16} dark className="shrink-0" />
                   {aiBusy ? "Drafting…" : "Draft summary & bio"}
                 </button>
                 <button

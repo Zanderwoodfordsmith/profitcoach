@@ -7,6 +7,7 @@ import {
   resumeCampaignLeads,
 } from "@/lib/unipile/campaigns";
 
+import { searchPeople } from "../search/people";
 import type { AgentToolContext, AgentToolDef, AgentToolInput, GateDecision } from "../types";
 import { loadCampaignRow } from "./campaigns";
 import { AgentToolError, coachOf, num, personName, plural, str, uuidList } from "./util";
@@ -134,7 +135,7 @@ export const campaignPeopleTools: AgentToolDef[] = [
       type: "object",
       properties: {
         campaign_id: { type: "string" },
-        search: { type: "string" },
+        search: { type: "string", description: "Name, company or title. Each word counts on its own; short names and near spellings match." },
         status: { type: "string" },
         limit: { type: "number", description: "Default 25, max 100" },
       },
@@ -143,19 +144,19 @@ export const campaignPeopleTools: AgentToolDef[] = [
     run: async (input, ctx) => {
       const coach = coachOf(ctx);
       const campaign = await loadCampaignRow(coach.id, str(input, "campaign_id"));
-      const search = str(input, "search").toLowerCase();
+      const search = str(input, "search");
       const status = str(input, "status").toLowerCase();
       const limit = Math.min(100, Math.max(1, num(input, "limit") ?? 25));
       const all = await loadLeads(coach.id, campaign.id);
-      const matches = all.filter((row) => {
-        if (status && (row.status ?? "queued") !== status) return false;
-        if (!search) return true;
-        const haystack = [row.first_name, row.last_name, row.company, row.title]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        return search.split(/\s+/).every((word) => haystack.includes(word));
-      });
+      // A search ranks matches in Postgres (each word, short names, near spellings); best first.
+      const rank = search
+        ? new Map(
+            (await searchPeople(coach.id, search, { campaignId: campaign.id, limit: 200 })).map((row, i) => [row.id, i])
+          )
+        : null;
+      const matches = all
+        .filter((row) => (!status || (row.status ?? "queued") === status) && (!rank || rank.has(row.id)))
+        .sort((a, b) => (rank ? (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0) : 0));
       return {
         campaign: campaign.name,
         total_in_campaign: all.length,

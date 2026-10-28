@@ -6,12 +6,11 @@ import type React from "react";
 import { ProfileTimezoneSelect } from "@/components/settings/ProfileTimezoneSelect";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
-const inputClass =
-  "w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
+const inputClass = fieldClass("input", "small");
 
-const textareaClass =
-  "w-full resize-y rounded-md border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15 disabled:cursor-not-allowed disabled:bg-slate-50";
+const textareaClass = fieldClass("textarea", "small", "resize-y");
 
 export function ProfileSectionCard({
   title,
@@ -159,7 +158,7 @@ export function ProfileMinimalSelect({
       value={value}
       disabled={disabled}
       onChange={onChange}
-      className={`${inputClass} cursor-pointer disabled:cursor-not-allowed`}
+      className={fieldClass("select", "small", "cursor-pointer disabled:cursor-not-allowed")}
     >
       {children}
     </select>

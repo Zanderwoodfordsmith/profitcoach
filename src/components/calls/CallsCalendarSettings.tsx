@@ -19,6 +19,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 function CalendarToggle({
   on,
@@ -564,7 +565,7 @@ export function CallsCalendarSettings({
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. Strategy call"
-                  className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-600/20"
+                  className={fieldClass("input", "normal", "min-w-0 flex-1")}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") void createCalendar();
                     if (e.key === "Escape") setShowCreate(false);

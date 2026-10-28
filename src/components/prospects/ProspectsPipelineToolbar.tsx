@@ -5,6 +5,7 @@ import { ArrowUpDown, Columns3, Layers, LayoutGrid, Search, Upload } from "lucid
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableCsvExportButton, type CsvExportScope } from "@/components/table/TableCsvExportButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { fieldClass } from "@/components/ui/Field";
 
 export type ProspectsToolbarMenu = "filter" | "sort" | "group" | "fields" | "export" | null;
 
@@ -71,7 +72,7 @@ export function ProspectsPipelineToolbar({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+            className={fieldClass("input", "normal", "pl-9")}
           />
         </label>
 

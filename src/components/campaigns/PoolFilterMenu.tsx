@@ -12,6 +12,7 @@ import {
   type PoolLinkedInFilter,
 } from "@/lib/pool/poolPeople";
 import { prospectTagTone } from "@/lib/prospects/tagAppearance";
+import { fieldClass } from "@/components/ui/Field";
 
 type CampaignChoice = {
   id: string;
@@ -159,7 +160,7 @@ function TextField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="block w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+        className={fieldClass("input", "small")}
       />
     </label>
   );

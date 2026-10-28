@@ -23,6 +23,7 @@ import {
   TextArea,
   type SectionConfirmStatus,
 } from "@/components/firstCampaign/SectionConfirmCard";
+import { fieldClass } from "@/components/ui/Field";
 import {
   CAMPAIGN_BRAIN_KEYS,
   type AvatarPayload,
@@ -791,7 +792,7 @@ export function StepAvatar({
                   <input
                     value={marketIndustry}
                     onChange={(e) => setMarketIndustry(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
+                    className={fieldClass("input", "normal", "mt-1.5")}
                   />
                 </label>
                 <label className="block text-sm">
@@ -799,7 +800,7 @@ export function StepAvatar({
                   <input
                     value={marketGeo}
                     onChange={(e) => setMarketGeo(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
+                    className={fieldClass("input", "normal", "mt-1.5")}
                   />
                 </label>
                 <label className="block text-sm">
@@ -807,7 +808,7 @@ export function StepAvatar({
                   <input
                     value={marketTeam}
                     onChange={(e) => setMarketTeam(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
+                    className={fieldClass("input", "normal", "mt-1.5")}
                   />
                 </label>
                 <label className="block text-sm">
@@ -815,7 +816,7 @@ export function StepAvatar({
                   <input
                     value={marketRevenue}
                     onChange={(e) => setMarketRevenue(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
+                    className={fieldClass("input", "normal", "mt-1.5")}
                   />
                 </label>
                 <label className="block text-sm sm:col-span-2">
@@ -823,7 +824,7 @@ export function StepAvatar({
                   <input
                     value={roleTitlesText}
                     onChange={(e) => setRoleTitlesText(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-ui"
+                    className={fieldClass("input", "normal", "mt-1.5")}
                   />
                 </label>
               </div>
@@ -1059,13 +1060,13 @@ export function StepAvatar({
                   value={personaName}
                   onChange={(e) => setPersonaName(e.target.value)}
                   placeholder="Name"
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className={fieldClass("input", "normal")}
                 />
                 <input
                   value={personaOcc}
                   onChange={(e) => setPersonaOcc(e.target.value)}
                   placeholder="Occupation"
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className={fieldClass("input", "normal")}
                 />
               </div>
             </div>

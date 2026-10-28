@@ -33,6 +33,7 @@ import {
 } from "./types";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type MediaPreview = LinkedInMediaItem & { signedUrl?: string | null };
 
@@ -933,7 +934,7 @@ export function LinkedInComposeTab({
                     }
                   }}
                   placeholder="https://"
-                  className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/25"
+                  className={fieldClass("input", "small", "min-w-0 flex-1")}
                 />
                 <button
                   type="button"
@@ -956,7 +957,7 @@ export function LinkedInComposeTab({
                 value={articleTitle}
                 onChange={(e) => setArticleTitle(e.target.value)}
                 placeholder="Title shown on the link card"
-                className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/25"
+                className={fieldClass("input", "small", "mt-1")}
               />
               <label className="mt-2 block text-kicker font-semibold uppercase text-slate-500">
                 Description <span className="font-normal normal-case">(optional)</span>
@@ -966,7 +967,7 @@ export function LinkedInComposeTab({
                 onChange={(e) => setArticleDescription(e.target.value)}
                 rows={2}
                 placeholder="Short description under the title"
-                className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/25"
+                className={fieldClass("textarea", "small", "mt-1")}
               />
               {(articleTitle || articleUrl) && (
                 <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -1118,7 +1119,7 @@ export function LinkedInComposeTab({
                       onChange={(e) => setQuoteText(e.target.value)}
                       rows={3}
                       placeholder="The big line that goes on the image…"
-                      className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/25"
+                      className={fieldClass("textarea", "normal", "mt-1.5")}
                     />
                     <p className="mt-1 text-caption text-slate-500">
                       Uses your photo, name, and “
@@ -1342,7 +1343,7 @@ export function LinkedInComposeTab({
                 type="datetime-local"
                 value={scheduledAtLocal}
                 onChange={(e) => setScheduledAtLocal(e.target.value)}
-                className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm"
+                className={fieldClass("input", "normal", "w-auto!")}
               />
               <button
                 type="button"
@@ -1365,7 +1366,7 @@ export function LinkedInComposeTab({
             onChange={(e) => setCategory(e.target.value)}
             placeholder="Category…"
             aria-label="Category"
-            className="w-36 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/20"
+            className={fieldClass("input", "normal", "w-36!")}
           />
           <datalist id="linkedin-categories">
             {categories.map((c) => (

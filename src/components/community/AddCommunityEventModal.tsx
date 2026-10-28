@@ -30,6 +30,7 @@ import {
 } from "@/lib/communityCalendarTimezones";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
 
 const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 4000;
@@ -452,7 +453,7 @@ export function AddCommunityEventModal({
               value={title}
               maxLength={TITLE_MAX}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base font-semibold text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className={fieldClass("input", "normal")}
             />
             <p className="mt-0.5 text-right text-xs text-slate-400">
               {title.length} / {TITLE_MAX}
@@ -461,35 +462,35 @@ export function AddCommunityEventModal({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label className={`${fieldLabelClass} mb-1`}>
                 Date
               </label>
               <input
                 type="date"
                 value={dateStr}
                 onChange={(e) => setDateStr(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                className={fieldClass("input", "normal")}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label className={`${fieldLabelClass} mb-1`}>
                 Time
               </label>
               <input
                 type="time"
                 value={timeStr}
                 onChange={(e) => setTimeStr(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                className={fieldClass("input", "normal")}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label className={`${fieldLabelClass} mb-1`}>
                 Duration
               </label>
               <select
                 value={durationMin}
                 onChange={(e) => setDurationMin(Number(e.target.value))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                className={fieldClass("select", "normal")}
               >
                 {DURATIONS_MIN.map((m) => (
                   <option key={m} value={m}>
@@ -499,13 +500,13 @@ export function AddCommunityEventModal({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label className={`${fieldLabelClass} mb-1`}>
                 Timezone
               </label>
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                className={fieldClass("select", "normal")}
               >
                 {tzOptions.map((z) => (
                   <option key={z} value={z}>
@@ -533,7 +534,7 @@ export function AddCommunityEventModal({
                 <select
                   value={repeatInterval}
                   onChange={(e) => setRepeatInterval(Number(e.target.value))}
-                  className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                  className={fieldClass("select", "small", "w-auto!")}
                 >
                   {[1, 2, 3, 4, 5, 6, 8].map((n) => (
                     <option key={n} value={n}>
@@ -546,7 +547,7 @@ export function AddCommunityEventModal({
                   onChange={(e) =>
                     setRepeatUnit(e.target.value as "week" | "month")
                   }
-                  className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                  className={fieldClass("select", "small", "w-auto!")}
                 >
                   <option value="week">Week</option>
                   <option value="month">Month</option>
@@ -605,7 +606,7 @@ export function AddCommunityEventModal({
                         setRepeatMonthOrdinal(Number(e.target.value) as MonthWeekOrdinal)
                       }
                       disabled={repeatMonthMode !== "ordinal_weekday"}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm disabled:opacity-50"
+                      className={fieldClass("select", "small", "w-auto!")}
                     >
                       {MONTH_ORDINAL_OPTIONS.map((opt) => (
                         <option key={opt.id} value={opt.id}>
@@ -619,7 +620,7 @@ export function AddCommunityEventModal({
                         setRepeatMonthWeekday(Number(e.target.value) as WeekdayMon0Sun6)
                       }
                       disabled={repeatMonthMode !== "ordinal_weekday"}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm disabled:opacity-50"
+                      className={fieldClass("select", "small", "w-auto!")}
                     >
                       {WEEKDAY_LABELS.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -645,7 +646,7 @@ export function AddCommunityEventModal({
                         setRepeatMonthOrdinal(Number(e.target.value) as MonthWeekOrdinal)
                       }
                       disabled={repeatMonthMode !== "day_after_ordinal_tuesday"}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm disabled:opacity-50"
+                      className={fieldClass("select", "small", "w-auto!")}
                     >
                       {MONTH_ORDINAL_OPTIONS.filter((opt) => opt.id >= 1 && opt.id <= 4).map(
                         (opt) => (
@@ -687,7 +688,7 @@ export function AddCommunityEventModal({
                       value={endDateStr}
                       onChange={(e) => setEndDateStr(e.target.value)}
                       disabled={endMode !== "on"}
-                      className="rounded-lg border border-slate-200 px-2 py-1 text-sm disabled:opacity-50"
+                      className={fieldClass("input", "small", "w-auto!")}
                     />
                   </label>
                   <label className="flex flex-wrap items-center gap-2 text-sm text-slate-800">
@@ -707,7 +708,7 @@ export function AddCommunityEventModal({
                         setEndAfterCount(Number(e.target.value) || 1)
                       }
                       disabled={endMode !== "after"}
-                      className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-sm disabled:opacity-50"
+                      className={fieldClass("input", "small", "w-16!")}
                     />
                     occurrences
                   </label>
@@ -755,7 +756,7 @@ export function AddCommunityEventModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label className={`${fieldLabelClass} mb-1`}>
               Location
             </label>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -764,7 +765,7 @@ export function AddCommunityEventModal({
                 onChange={(e) =>
                   setLocationKind(e.target.value as "link" | "in_person")
                 }
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 sm:max-w-[11rem]"
+                className={fieldClass("select", "normal", "sm:max-w-[11rem]")}
               >
                 <option value="link">Custom link</option>
                 <option value="in_person">In person</option>
@@ -775,7 +776,7 @@ export function AddCommunityEventModal({
                   placeholder="https://…"
                   value={locationUrl}
                   onChange={(e) => setLocationUrl(e.target.value)}
-                  className="w-full flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                  className={fieldClass("input", "normal", "flex-1")}
                 />
               ) : (
                 <p className="text-sm text-slate-500">
@@ -786,7 +787,7 @@ export function AddCommunityEventModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label className={`${fieldLabelClass} mb-1`}>
               Description
             </label>
             <textarea
@@ -795,7 +796,7 @@ export function AddCommunityEventModal({
               maxLength={DESCRIPTION_MAX}
               rows={4}
               placeholder="Description"
-              className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className={fieldClass("textarea", "normal", "resize-y")}
             />
             <p className="mt-0.5 text-right text-xs text-slate-400">
               {description.length} / {DESCRIPTION_MAX}
@@ -814,7 +815,7 @@ export function AddCommunityEventModal({
                     value={recordingLinkUrl}
                     onChange={(e) => setRecordingLinkUrl(e.target.value)}
                     placeholder="Recording link (Zoom, Loom, YouTube...)"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    className={fieldClass("input", "normal")}
                   />
                   <div className="rounded-lg border border-dashed border-slate-300 bg-white p-3">
                     <label className="block cursor-pointer text-sm font-medium text-sky-700 hover:text-sky-800">

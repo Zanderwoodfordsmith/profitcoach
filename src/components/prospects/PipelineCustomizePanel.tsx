@@ -16,6 +16,7 @@ import {
 } from "@/lib/pipelineLayout";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   open: boolean;
@@ -108,7 +109,7 @@ export function PipelineCustomizePanel({
                     onChange={(e) =>
                       onChange(renameColumn(layout, col.id, e.target.value))
                     }
-                    className="h-9 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+                    className={fieldClass("input", "small", "min-w-0 flex-1")}
                   />
                   <label className="flex items-center gap-1 text-caption text-slate-500">
                     <input
@@ -208,7 +209,7 @@ export function PipelineCustomizePanel({
                                 )
                               )
                             }
-                            className="h-8 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-sky-400"
+                            className={fieldClass("input", "small", "min-w-0 flex-1")}
                           />
                           <label className="flex items-center gap-1 text-caption text-slate-500">
                             <input

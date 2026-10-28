@@ -61,7 +61,24 @@ Use `Card` or `cardClass()` from `src/components/ui/Card.tsx`. All `rounded-2xl`
 
 Padding is the card's own choice (`p-4` to `p-6`), passed as the extra class.
 
+## Form fields
+
+Use `fieldClass(kind, size, extra)` from `src/components/ui/Field.tsx` for
+inputs, selects and textareas. White, thin slate border, `rounded-xl`, navy
+focus ring. `normal` is 40px tall like a normal button; `small` (32px) for
+tight rows, tables and filters. Labels above a field use `fieldLabelClass`.
+
+Not fields: checkboxes, radios, switches, search bars built into a toolbar,
+inline title editors that look like text, and composer boxes in chat.
+
+## Badges
+
+Use `Badge` or `badgeClass(tone)` from `src/components/ui/Badge.tsx`: a
+small pill, 12px medium text, soft tint. Tones: `grey` (default), `blue`
+(info, type), `green` (done, connected), `amber` (waiting, warning), `red`
+(problem). Count bubbles on icons and avatars are not badges; leave them.
+
 ## Still to decide
 
-Form fields, badges, tables, empty states and pop-up backdrops. Until they
-have a rule here, keep them as they are.
+Tables, empty states and pop-up backdrops. Until they have a rule here,
+keep them as they are.

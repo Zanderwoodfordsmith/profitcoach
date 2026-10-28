@@ -48,7 +48,7 @@ export const ROADMAP_AREA_META: Record<
   { label: string; hint: string; dot: string; chip: string }
 > = {
   "set-up": {
-    label: "Set up",
+    label: "Done for you",
     hint: "Practice install: Blueprint, brand, website, profile, onboarding",
     dot: "bg-violet-500",
     chip: "bg-violet-100 text-violet-800",
@@ -175,4 +175,21 @@ export type RoadmapJob = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  /** Claude working on the card in the cloud: queued, working, done or failed. */
+  agent_status: RoadmapAgentStatus | null;
+  /** The branch Claude pushed, e.g. claude/job-35. */
+  agent_branch: string | null;
+  agent_session_url: string | null;
+  /** Progress lines, oldest first. */
+  agent_log: RoadmapAgentLogLine[];
+  /** Last commit Claude pushed, and the last one 3002 pulled in. */
+  agent_head_sha: string | null;
+  agent_applied_sha: string | null;
+  agent_applied_at: string | null;
+  /** Why 3002 couldn't pull the change in, if it couldn't. */
+  agent_pull_error: string | null;
 };
+
+export type RoadmapAgentStatus = "queued" | "working" | "done" | "failed";
+
+export type RoadmapAgentLogLine = { at: string; text: string; by?: "claude" | "app" };

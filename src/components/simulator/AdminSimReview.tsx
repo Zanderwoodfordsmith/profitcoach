@@ -14,6 +14,8 @@ import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { formatSimDate } from "./simApi";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 type Summary = Omit<SimSessionRow, "transcript" | "live" | "conversation_ids" | "report">;
 type Attempt = SimAssessmentRow & { sessions: Summary[] };
@@ -184,7 +186,7 @@ function AttemptCard({ attempt, coach, onSaved }: { attempt: Attempt; coach?: Co
           </p>
         </div>
         {attempt.average !== null ? (
-          <p className={`rounded-full px-3 py-1 text-sm font-semibold ${attempt.passed ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>
+          <p className={badgeClass(attempt.passed ? "green" : "amber")}>
             Average {attempt.average} · {attempt.passed ? "Pass" : "Below the mark"}
           </p>
         ) : null}
@@ -204,7 +206,7 @@ function AttemptCard({ attempt, coach, onSaved }: { attempt: Attempt; coach?: Co
                   value={scores[s.id] ?? ""}
                   onChange={(e) => setScores((m) => ({ ...m, [s.id]: e.target.value.replace(/[^0-9]/g, "").slice(0, 2) }))}
                   placeholder={String(s.score ?? "")}
-                  className="w-14 rounded-lg border border-slate-300 px-2 py-1 text-right tabular-nums"
+                  className={fieldClass("input", "small", "w-14 text-right tabular-nums")}
                   aria-label={`Your score for ${c?.firstName}`}
                 />
               </label>
@@ -219,7 +221,7 @@ function AttemptCard({ attempt, coach, onSaved }: { attempt: Attempt; coach?: Co
             onChange={(e) => setNote(e.target.value)}
             placeholder="A note for the coach (optional)"
             rows={2}
-            className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className={fieldClass("textarea", "normal", "mt-4")}
           />
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => void save(false)} disabled={saving} className={buttonClass("second")}>

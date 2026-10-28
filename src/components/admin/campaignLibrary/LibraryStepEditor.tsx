@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   StepInlineEditor,
   type SequenceStep,
@@ -231,7 +232,7 @@ export function LibraryStepEditor({ itemId }: { itemId: string }) {
                   setError(err instanceof Error ? err.message : "Could not save.")
                 )
               }
-              className="ml-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-800"
+              className={fieldClass("select", "small", "ml-1.5 inline-block w-auto")}
             >
               {CAMPAIGN_LIBRARY_KINDS.map((kind) => (
                 <option key={kind} value={kind}>
@@ -274,7 +275,7 @@ export function LibraryStepEditor({ itemId }: { itemId: string }) {
           <select
             value={step.step_type}
             onChange={(e) => changeType(e.target.value as CampaignStepType)}
-            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+            className={fieldClass("select", "normal", "mt-1.5")}
           >
             {STEP_TYPES.map((type) => (
               <option key={type} value={type}>

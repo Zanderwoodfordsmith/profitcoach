@@ -15,6 +15,7 @@ import {
   runProgressStage,
   type ProgressStage,
 } from "@/components/firstCampaign/CampaignSetupProgress";
+import { fieldClass } from "@/components/ui/Field";
 import type { IcpProposal } from "@/lib/firstCampaign/types";
 import {
   apiPatch,
@@ -209,7 +210,7 @@ export function StepLinkedIn({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://www.linkedin.com/in/yourname"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              className={fieldClass("input", "normal")}
             />
           </div>
           <PrimaryButton onClick={() => void handleImport()}>

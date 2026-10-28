@@ -16,6 +16,7 @@ import type {
 } from "@/lib/clientCoaching/types";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type ViewMode = "list" | "board" | "timeline";
 
@@ -88,7 +89,7 @@ function ItemCard({
       />
       {!compact ? (
         <textarea
-          className="mt-2 w-full resize-y rounded-md border border-slate-100 bg-slate-50/80 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-sky-300"
+          className={fieldClass("textarea", "small", "mt-2 resize-y")}
           value={item.notes}
           onChange={(e) => onPatch({ notes: e.target.value })}
           placeholder="Notes"
@@ -97,7 +98,7 @@ function ItemCard({
       ) : null}
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <select
-          className="rounded-md border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-700"
+          className={fieldClass("select", "small", "w-auto!")}
           value={item.status}
           onChange={(e) =>
             onPatch({ status: e.target.value as NinetyDayItemStatus })
@@ -110,7 +111,7 @@ function ItemCard({
           ))}
         </select>
         <select
-          className="rounded-md border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-700"
+          className={fieldClass("select", "small", "w-auto!")}
           value={item.week ?? ""}
           onChange={(e) => {
             const v = e.target.value;
@@ -228,7 +229,7 @@ export function NinetyDayPlanPanel({
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <select
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
+                className={fieldClass("select", "normal", "w-auto!")}
                 value={quarterKey}
                 onChange={(e) =>
                   setCurrentQuarter(e.target.value as QuarterKey)

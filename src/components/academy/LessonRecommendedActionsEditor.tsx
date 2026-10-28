@@ -10,6 +10,7 @@ import {
   type AcademyVerifyRuleKey,
 } from "@/lib/academy/lessonActions";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   actions: AcademyRecommendedAction[];
@@ -126,7 +127,7 @@ export function LessonRecommendedActionsEditor({ actions, onChange }: Props) {
                           completion: event.target.value as AcademyActionCompletion,
                         })
                       }
-                      className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700"
+                      className={fieldClass("select", "small")}
                     >
                       <option value="manual">Checklist (coach ticks)</option>
                       <option value="tracked">Tracked (auto-completes)</option>
@@ -143,7 +144,7 @@ export function LessonRecommendedActionsEditor({ actions, onChange }: Props) {
                               .value as AcademyVerifyRuleKey,
                           })
                         }
-                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700"
+                        className={fieldClass("select", "small")}
                       >
                         {ACADEMY_VERIFY_RULE_KEYS.map((key) => (
                           <option key={key} value={key}>

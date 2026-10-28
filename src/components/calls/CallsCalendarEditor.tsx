@@ -7,6 +7,8 @@ import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import type { BookingReminderStep } from "@/lib/booking/reminderSequence";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 type Props = {
   calendar: CoachCalendarRow;
@@ -53,11 +55,7 @@ export function CallsCalendarEditor({
                 {calendar.name}
               </h2>
               <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-kicker font-semibold uppercase ${
-                  calendar.is_enabled
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-slate-100 text-slate-500"
-                }`}
+                className={badgeClass(calendar.is_enabled ? "green" : "grey")}
               >
                 {calendar.is_enabled ? "Active" : "Off"}
               </span>
@@ -92,7 +90,7 @@ export function CallsCalendarEditor({
           <label className="block text-sm sm:col-span-2">
             <span className="font-medium text-slate-700">Name</span>
             <input
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("input", "normal", "mt-1")}
               value={calendar.name}
               onChange={(e) => patch({ name: e.target.value })}
             />
@@ -103,7 +101,7 @@ export function CallsCalendarEditor({
               type="number"
               min={5}
               max={180}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("input", "normal", "mt-1")}
               value={calendar.meeting_duration_minutes}
               onChange={(e) =>
                 patch({
@@ -118,7 +116,7 @@ export function CallsCalendarEditor({
               type="number"
               min={0}
               max={120}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("input", "normal", "mt-1")}
               value={calendar.buffer_minutes}
               onChange={(e) =>
                 patch({ buffer_minutes: Number(e.target.value) || 0 })
@@ -133,7 +131,7 @@ export function CallsCalendarEditor({
               type="number"
               min={0}
               max={168}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("input", "normal", "mt-1")}
               value={calendar.min_notice_hours}
               onChange={(e) =>
                 patch({ min_notice_hours: Number(e.target.value) || 0 })
@@ -148,7 +146,7 @@ export function CallsCalendarEditor({
               type="number"
               min={1}
               max={90}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("input", "normal", "mt-1")}
               value={calendar.booking_window_days}
               onChange={(e) =>
                 patch({
@@ -216,7 +214,7 @@ export function CallsCalendarEditor({
             ) : null}
             {calendar.location_mode === "phone" ? (
               <input
-                className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className={fieldClass("input", "normal", "mt-2")}
                 placeholder="Phone number"
                 value={calendar.location_phone ?? ""}
                 onChange={(e) => patch({ location_phone: e.target.value })}
@@ -224,7 +222,7 @@ export function CallsCalendarEditor({
             ) : null}
             {calendar.location_mode === "custom" ? (
               <input
-                className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className={fieldClass("input", "normal", "mt-2")}
                 placeholder="Custom link or note"
                 value={calendar.location_custom ?? ""}
                 onChange={(e) => patch({ location_custom: e.target.value })}

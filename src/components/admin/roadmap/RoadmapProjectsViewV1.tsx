@@ -10,7 +10,9 @@ import {
   type RoadmapProject,
 } from "@/lib/roadmap/projectTypes";
 import { ROADMAP_IMPACT_LEVELS, type RoadmapJob } from "@/lib/roadmap/types";
+import { badgeClass } from "@/components/ui/Badge";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 /**
  * First version (23 Oct morning), kept to compare. The current view is RoadmapProjectsView.
@@ -98,7 +100,7 @@ export function RoadmapProjectsViewV1({ jobs, authHeaders, onOpenProject }: Prop
       const p = byName.get(name);
       return p
         ? { ...p, saved: true }
-        : { name, stage: "next", goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", saved: false };
+        : { name, stage: "next", goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", initiative_id: null, brief: null, saved: false };
     });
   }, [saved, jobs]);
 
@@ -114,7 +116,7 @@ export function RoadmapProjectsViewV1({ jobs, authHeaders, onOpenProject }: Prop
       const list = prev ?? [];
       return list.some((p) => p.name === name)
         ? list.map((p) => (p.name === name ? { ...p, ...patch } : p))
-        : [...list, { name, stage: "next", goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", ...patch }];
+        : [...list, { name, stage: "next", goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", initiative_id: null, brief: null, ...patch }];
     });
     const headers = await authHeaders();
     if (!headers) return;
@@ -182,8 +184,8 @@ function ProjectRow({
 }) {
   const [goal, setGoal] = useState(row.goal ?? "");
   const s = summarise(jobs);
-  const select = "h-8 rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-700 focus:border-sky-500 focus:outline-none";
-  const dateInput = "h-8 w-[8.5rem] rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-700 focus:border-sky-500 focus:outline-none";
+  const select = fieldClass("select", "small", "w-auto!");
+  const dateInput = fieldClass("input", "small", "w-[8.5rem]!");
   const parts = [
     s.building ? `${s.building} building` : null,
     s.queued ? `${s.queued} to do` : null,
@@ -205,7 +207,7 @@ function ProjectRow({
             <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-[#0c5290]" aria-hidden />
           </button>
           {s.review ? (
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-caption font-semibold text-amber-900 ring-1 ring-inset ring-amber-200">
+            <span className={badgeClass("amber")}>
               {s.review} waiting on you
             </span>
           ) : null}

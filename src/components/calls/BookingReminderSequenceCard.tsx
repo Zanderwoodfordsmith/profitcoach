@@ -9,6 +9,7 @@ import {
 } from "@/lib/booking/reminderSequence";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   sequence: BookingReminderStep[];
@@ -97,7 +98,7 @@ export function BookingReminderSequenceCard({
                     min={0.1}
                     max={336}
                     step={0.5}
-                    className="mt-1 w-full max-w-[10rem] rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    className={fieldClass("input", "normal", "mt-1 max-w-[10rem]")}
                     value={hours}
                     onChange={(e) =>
                       onChange(
@@ -148,7 +149,7 @@ export function BookingReminderSequenceCard({
               <label className="block text-sm">
                 <span className="font-medium text-slate-700">Subject</span>
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className={fieldClass("input", "normal", "mt-1")}
                   value={step.subject}
                   onChange={(e) =>
                     onChange(
@@ -161,7 +162,7 @@ export function BookingReminderSequenceCard({
                 <span className="font-medium text-slate-700">Body</span>
                 <textarea
                   rows={6}
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className={fieldClass("textarea", "normal", "mt-1")}
                   value={step.body}
                   onChange={(e) =>
                     onChange(

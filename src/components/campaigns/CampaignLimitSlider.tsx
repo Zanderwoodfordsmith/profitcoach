@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { fieldClass } from "@/components/ui/Field";
 
 export function CampaignLimitSlider({
   label,
@@ -49,11 +50,13 @@ export function CampaignLimitSlider({
             onChange(Math.min(max, Math.max(min, Math.round(next))));
           }}
           onBlur={() => onCommit(clamped)}
-          className={`w-14 rounded-lg border bg-white px-1.5 py-1 text-right text-sm font-semibold tabular-nums outline-none focus-visible:ring-2 ${
-            warn
-              ? "border-rose-200 text-rose-700 focus-visible:ring-rose-200"
-              : "border-slate-200 text-slate-900 focus-visible:ring-[#0c5290]/30"
-          }`}
+          className={fieldClass(
+            "input",
+            "small",
+            `w-14 px-1.5 text-right tabular-nums ${
+              warn ? "border-rose-400 text-rose-700 focus:border-rose-500 focus:ring-rose-500/15" : ""
+            }`
+          )}
           aria-label={labelText}
         />
       </div>

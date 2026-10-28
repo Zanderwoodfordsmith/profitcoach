@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Loader2, Sparkles, Check } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type {
@@ -10,9 +10,8 @@ import type {
 } from "@/lib/salesNavigator/prospectSearch/types";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
-
-const fieldClass =
-  "w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900";
+import { AvaHalo } from "@/components/ava/AvaHalo";
+import { fieldClass } from "@/components/ui/Field";
 
 function kindLabel(kind: ProspectSearchStrategy["kind"]): string {
   switch (kind) {
@@ -192,7 +191,7 @@ export function SalesNavStrategyPanel({
         className={buttonClass("second", "small")}
         title="Suggest Sales Navigator searches from your avatar"
       >
-        <Sparkles className="h-3.5 w-3.5" />
+        <AvaHalo size={16} className="shrink-0" />
         Suggest
       </button>
 
@@ -219,7 +218,7 @@ export function SalesNavStrategyPanel({
               Ideal avatar / industry
             </span>
             <input
-              className={fieldClass}
+              className={fieldClass("input", "normal")}
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
               placeholder="Leave blank to use AI brain avatar, or type a niche…"
@@ -231,7 +230,7 @@ export function SalesNavStrategyPanel({
               Notes (optional)
             </span>
             <input
-              className={fieldClass}
+              className={fieldClass("input", "normal")}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Already exhausted engineering-in-name…"
@@ -243,7 +242,7 @@ export function SalesNavStrategyPanel({
               Words from 3 good profiles (optional)
             </span>
             <textarea
-              className={`${fieldClass} min-h-[4rem] resize-y`}
+              className={fieldClass("textarea", "normal", "min-h-[4rem] resize-y")}
               value={sampleProfileNotes}
               onChange={(e) => setSampleProfileNotes(e.target.value)}
               placeholder='e.g. "cloud services", specialties: wine & spirits…'
@@ -263,7 +262,7 @@ export function SalesNavStrategyPanel({
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4" />
+                <AvaHalo size={18} dark className="shrink-0" />
                 Generate strategies
               </>
             )}

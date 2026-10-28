@@ -23,6 +23,9 @@ storage, migrations in `supabase/migrations`), Stripe billing, Vercel hosting.
   branch, commit only your own files, additive migrations, no spend, no
   LinkedIn sends. Write `docs/<feature>-morning-review.md` with "Decisions I
   made (overturn any of these)".
+- **Agreed means do it now,** in the same turn. Only put work on the board
+  (roadmap card or a proposal to approve) when it's too large to do now
+  and needs his check first.
 - **Design changes:** add the new version beside the old one until he has
   chosen; once he picks, remove the versions he passed on.
 - **Keep navigation flat:** group by the thing itself, few layers, one

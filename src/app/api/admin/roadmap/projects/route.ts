@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
-import { cleanProjectPatch, listRoadmapProjects, saveRoadmapProject } from "@/lib/roadmap/projects";
+import { cleanProjectPatch, createRoadmapProject, listRoadmapProjects, saveRoadmapProject } from "@/lib/roadmap/projects";
 
 export const runtime = "nodejs";
 
@@ -28,5 +28,19 @@ export async function PATCH(request: Request) {
   } catch (e) {
     console.error("roadmap projects PATCH:", e);
     return NextResponse.json({ error: "Could not save the project." }, { status: 500 });
+  }
+}
+
+/** A new project: { name, stage?, goal?, brief?, initiative_id?, impact?, ease? }. */
+export async function POST(request: Request) {
+  const auth = await requireAdmin(request);
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: 401 });
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+  const name = typeof body?.name === "string" ? body.name : "";
+  try {
+    return NextResponse.json({ project: await createRoadmapProject(name, cleanProjectPatch(body ?? {})) }, { status: 201 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Could not create the project.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

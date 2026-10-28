@@ -18,6 +18,7 @@ import {
   CampaignSetupProgress,
   useCampaignProgressRunner,
 } from "@/components/firstCampaign/CampaignSetupProgress";
+import { fieldClass } from "@/components/ui/Field";
 import {
   LEADROCKS_REVENUE_RANGES,
   LEADROCKS_TEAM_SIZES,
@@ -101,7 +102,7 @@ function TagInput({
           }
         }}
         placeholder="Type a title, press Enter"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+        className={fieldClass("input", "normal")}
       />
     </div>
   );
@@ -198,7 +199,7 @@ function ColdListPanel({
             <input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              className={fieldClass("input", "normal")}
             />
           </div>
           <div>
@@ -206,7 +207,7 @@ function ColdListPanel({
             <select
               value={teamSize}
               onChange={(e) => setTeamSize(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              className={fieldClass("select", "normal")}
             >
               <option value="">Any</option>
               {LEADROCKS_TEAM_SIZES.map((t) => (
@@ -221,7 +222,7 @@ function ColdListPanel({
             <select
               value={revenueRange}
               onChange={(e) => setRevenueRange(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              className={fieldClass("select", "normal")}
             >
               <option value="">Any</option>
               {LEADROCKS_REVENUE_RANGES.map((t) => (

@@ -29,6 +29,7 @@ import {
   OPEN_PROFILE_MESSAGE_TEMPLATE,
 } from "@/lib/unipile/openProfileInvite";
 import { MergeFieldComposer } from "@/components/campaigns/MergeFieldComposer";
+import { fieldClass } from "@/components/ui/Field";
 
 type SequenceCampaignOptionLocal = {
   id: string;
@@ -197,7 +198,7 @@ export function InviteNoConnectBranch({
                     no_connect_wait_hours: branch.no_connect_wait_hours ?? 24 * 7,
                   })
                 }
-                className="mt-1 w-full rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-sm font-normal text-slate-800"
+                className={fieldClass("select", "small", "mt-1")}
               >
                 <option value="">Choose a campaign</option>
                 {campaigns.map((campaign) => (
@@ -226,7 +227,7 @@ export function InviteNoConnectBranch({
                   no_connect_campaign_id: branch.no_connect_campaign_id,
                 });
               }}
-              className="w-14 rounded-md border border-rose-200 bg-white px-2 py-1 text-sm tabular-nums"
+              className={fieldClass("input", "small", "w-14 tabular-nums")}
             />
             <select
               value={inferred.unit}
@@ -239,7 +240,7 @@ export function InviteNoConnectBranch({
                   no_connect_campaign_id: branch.no_connect_campaign_id,
                 });
               }}
-              className="rounded-md border border-rose-200 bg-white px-2 py-1 text-sm"
+              className={fieldClass("select", "small", "w-auto")}
             >
               {WAIT_UNITS.map((unit) => (
                 <option key={unit} value={unit}>

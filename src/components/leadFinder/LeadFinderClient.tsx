@@ -72,6 +72,7 @@ import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type SearchResult = {
   leads: LeadTeaser[];
@@ -107,9 +108,6 @@ type FilterKeyword = {
   term: string;
   mode: "include" | "exclude";
 };
-
-const fieldClass =
-  "w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900";
 
 function keywordSummary(values: FilterKeyword[]): string {
   const included = values.filter((v) => v.mode === "include").length;
@@ -1373,7 +1371,7 @@ export function LeadFinderClient() {
                     {country === "GB" ? "City / county" : "City"}
                   </span>
                   <input
-                    className={fieldClass}
+                    className={fieldClass("input", "normal")}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder={
@@ -1402,7 +1400,7 @@ export function LeadFinderClient() {
                     Location
                   </span>
                   <input
-                    className={fieldClass}
+                    className={fieldClass("input", "normal")}
                     value={salesNavLocation}
                     onChange={(e) => {
                       setSalesNavLocation(e.target.value);
@@ -1611,7 +1609,7 @@ export function LeadFinderClient() {
                 Industry
               </span>
               <input
-                className={fieldClass}
+                className={fieldClass("input", "normal")}
                 value={industry}
                 onChange={(e) => {
                   setIndustry(e.target.value);
@@ -1626,7 +1624,7 @@ export function LeadFinderClient() {
                   Keywords (boolean)
                 </span>
                 <textarea
-                  className={`${fieldClass} min-h-[4rem] resize-y`}
+                  className={fieldClass("textarea", "normal", "min-h-[4rem] resize-y")}
                   value={salesNavKeywordsBoolean}
                   onChange={(e) => {
                     setSalesNavKeywordsBoolean(e.target.value);
@@ -1768,7 +1766,7 @@ export function LeadFinderClient() {
                     void handlePageSizeChange(Number(e.target.value))
                   }
                   disabled={loading || pageLoading}
-                  className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 outline-none hover:border-slate-300 disabled:opacity-50"
+                  className={fieldClass("select", "small", "w-auto!")}
                 >
                   {LEAD_FINDER_PAGE_SIZE_OPTIONS.map((n) => (
                     <option key={n} value={n}>

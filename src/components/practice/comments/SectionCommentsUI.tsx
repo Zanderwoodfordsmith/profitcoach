@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { ArrowUp, Check, ChevronLeft, ChevronRight, Loader2, MessageSquare, Mic, MoreHorizontal, Pencil, Square, Trash2, UserRound } from "lucide-react";
 
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import { sectionByKey, type BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
 import { commentCapabilities, COMMENT_MAX_LENGTH, type CommentPerson, type SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes";
 import type { SectionStatusEvent } from "@/lib/practiceKnowledge/types";
@@ -599,7 +600,7 @@ function CommentCard({
                   onKeyDown={onKey}
                   rows={3}
                   autoFocus
-                  className="bp-input block w-full resize-none rounded-xl border border-[#e3e9f0] bg-[#f4f7fa] px-3 py-2 text-sm leading-relaxed text-[#1e2f44] outline-none focus:border-[#bfdcf2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,143,212,0.12)]"
+                  className={fieldClass("textarea", "normal", "bp-input resize-none")}
                 />
                 {error ? <p className="mt-1.5 text-xs text-[#9b2c2c]">{error}</p> : null}
                 <div className="mt-2 flex items-center gap-2">

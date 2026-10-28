@@ -1,9 +1,9 @@
 "use client";
 
 import type React from "react";
+import { fieldClass } from "@/components/ui/Field";
 
-const controlClass =
-  "block w-full rounded-md border border-slate-300 bg-white px-3 pb-2.5 pt-3.5 text-sm text-slate-900 shadow-sm outline-none transition-[color,box-shadow] focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+const controlClass = fieldClass("input");
 
 const labelClass =
   "absolute left-3 top-0 z-[1] -translate-y-1/2 bg-white px-1 text-caption font-medium leading-tight text-slate-500";
@@ -92,7 +92,7 @@ export function OutlinedTextArea({
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
-        className={`${controlClass} resize-y min-h-[4.5rem]`}
+        className={fieldClass("textarea", "normal", "resize-y min-h-[4.5rem]")}
       />
     </div>
   );
@@ -127,7 +127,7 @@ export function OutlinedSelect({
         value={value}
         disabled={disabled}
         onChange={onChange}
-        className={`${controlClass} cursor-pointer disabled:cursor-not-allowed`}
+        className={fieldClass("select", "normal", "cursor-pointer disabled:cursor-not-allowed")}
       >
         {children}
       </select>

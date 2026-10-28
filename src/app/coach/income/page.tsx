@@ -8,6 +8,7 @@ import { StickyPageHeader } from "@/components/layout";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
 
 type RevenueLine = {
   id: string;
@@ -393,7 +394,7 @@ export default function CoachIncomePage() {
               className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
             >
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-slate-700">
+                <label className={fieldLabelClass}>
                   Amount
                 </label>
                 <input
@@ -403,11 +404,11 @@ export default function CoachIncomePage() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="1500"
-                  className="block w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  className={fieldClass("input", "small")}
                 />
               </div>
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-slate-700">
+                <label className={fieldLabelClass}>
                   Date received
                 </label>
                 <input
@@ -415,17 +416,17 @@ export default function CoachIncomePage() {
                   required
                   value={occurredOn}
                   onChange={(e) => setOccurredOn(e.target.value)}
-                  className="block w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  className={fieldClass("input", "small")}
                 />
               </div>
               <div className="space-y-1 sm:col-span-2 lg:col-span-1">
-                <label className="block text-xs font-medium text-slate-700">
+                <label className={fieldLabelClass}>
                   Client (optional)
                 </label>
                 <select
                   value={contactId}
                   onChange={(e) => setContactId(e.target.value)}
-                  className="block w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  className={fieldClass("select", "small")}
                 >
                   <option value="">Other / unallocated</option>
                   {clients.map((c) => (
@@ -437,7 +438,7 @@ export default function CoachIncomePage() {
                 </select>
               </div>
               <div className="space-y-1 sm:col-span-2 lg:col-span-1">
-                <label className="block text-xs font-medium text-slate-700">
+                <label className={fieldLabelClass}>
                   Note
                 </label>
                 <input
@@ -445,7 +446,7 @@ export default function CoachIncomePage() {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Invoice #12"
-                  className="block w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  className={fieldClass("input", "small")}
                 />
               </div>
               <div className="flex items-end sm:col-span-2 lg:col-span-4">
@@ -498,19 +499,19 @@ export default function CoachIncomePage() {
                                 type="date"
                                 value={editOccurredOn}
                                 onChange={(e) => setEditOccurredOn(e.target.value)}
-                                className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                                className={fieldClass("input", "small", "w-auto")}
                               />
                               <input
                                 type="text"
                                 inputMode="decimal"
                                 value={editAmount}
                                 onChange={(e) => setEditAmount(e.target.value)}
-                                className="w-28 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                                className={fieldClass("input", "small", "w-28")}
                               />
                               <select
                                 value={editContactId}
                                 onChange={(e) => setEditContactId(e.target.value)}
-                                className="max-w-xs rounded-md border border-slate-300 px-2 py-1 text-sm"
+                                className={fieldClass("select", "small", "w-auto max-w-xs")}
                               >
                                 <option value="">Other / unallocated</option>
                                 {clients.map((c) => (
@@ -523,7 +524,7 @@ export default function CoachIncomePage() {
                                 type="text"
                                 value={editNote}
                                 onChange={(e) => setEditNote(e.target.value)}
-                                className="min-w-[8rem] flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                                className={fieldClass("input", "small", "min-w-[8rem] flex-1")}
                               />
                               <button
                                 type="submit"

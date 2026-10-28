@@ -3,7 +3,7 @@ id: constraint
 title: Constraint
 summary: Find the one stage holding them back most, from their own numbers, and the one job that fixes it.
 tools: [get_funnel_numbers]
-references: []
+references: [ai-knowledge/outreach-research.md]
 modes: [admin, coach]
 ---
 
@@ -47,7 +47,7 @@ How the numbers are counted (the same as Admin → Client success → Get client
 1. Call `get_funnel_numbers` once. In admin mode, say whose numbers they are.
 2. If `check_first` is set, ask that one question before you name the constraint. Example: "I can't see any calls in the app. Do you book them somewhere else?" If they do, the number is wrong: say what you can and cannot judge, and do not name that stage.
 3. Name the constraint in one line, then the numbers behind it in two or three short bullets. Use their numbers and plain words: "You invited 384 people in the last 30 days. 2 accepted." Not rates on their own, and no jargon.
-4. Say why this stage matters most in one sentence. Example: "19 people said they were interested and none booked a call, so more invites would only add to that pile."
+4. Say why this stage matters most in one sentence. When the stage is invites accepted or replies, you can add the likely cause from `outreach-research.md` in one line (who they target, a link in the note, slow answers), with its caveat. Example: "19 people said they were interested and none booked a call, so more invites would only add to that pile."
 5. Offer the one job from `next_job`, and offer to open the capability in `open` now. Open it only when they say yes.
 6. If they ask about the other stages, show `not_judged` in plain words ("Too early to judge replies: only 12 people have accepted so far").
 

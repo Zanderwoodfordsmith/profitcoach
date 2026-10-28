@@ -18,7 +18,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, LayoutList, Lock, Plus, Users } from "lucide-react";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import {
   DEFAULT_COACH_TABLE_VIEW_NAME,
   isDefaultCoachTableViewName,
@@ -114,7 +116,7 @@ function SortableViewTab({
             onKeyDown={(e) => {
               if (e.key === "Escape") onCancelRename();
             }}
-            className="w-32 rounded border border-slate-300 px-2 py-0.5 text-sm font-medium text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            className={fieldClass("input", "small", "w-32 font-medium")}
             aria-label="Rename view"
           />
         </form>
@@ -165,7 +167,7 @@ function SortableViewTab({
             {!isAllView &&
             !view.isPrivate &&
             view.createdBy !== currentUserId ? (
-              <span className="rounded bg-slate-100 px-1 py-0.5 text-kicker font-medium uppercase text-slate-500">
+              <span className={badgeClass("grey")}>
                 Shared
               </span>
             ) : null}
@@ -343,7 +345,7 @@ export function CoachesTableViewBar({
               }
             }}
             placeholder="View name"
-            className="w-36 rounded border border-slate-300 px-2 py-0.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            className={fieldClass("input", "small", "w-36")}
             aria-label="New view name"
           />
           <label className="inline-flex items-center gap-1 text-xs text-slate-600">

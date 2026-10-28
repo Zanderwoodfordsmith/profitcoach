@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
+import { fieldClass } from "@/components/ui/Field";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { formatProspectPersonName } from "@/lib/prospectDisplayFormat";
@@ -93,7 +94,7 @@ export function BookCallFromListModal({ open, onClose, onPick }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search prospects…"
             autoFocus
-            className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+            className={fieldClass("input", "normal", "pl-9")}
           />
         </label>
         {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}

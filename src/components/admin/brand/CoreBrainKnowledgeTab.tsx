@@ -4,14 +4,21 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, RotateCcw } from "lucide-react";
 
 import { BrainExpandableItem } from "@/components/admin/brand/BrainExpandableItem";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export type CanonFile = {
   file: string;
   label: string;
   description: string;
-  group: "core" | "skill" | "reply-copilot" | "support-copilot";
+  group:
+    | "core"
+    | "skill"
+    | "reply-copilot"
+    | "support-copilot"
+    | "community-copilot";
   content: string;
   overridden: boolean;
   updated_at: string | null;
@@ -103,7 +110,7 @@ function KnowledgeFileEditor({
         onChange={(e) => setDraft(e.target.value)}
         rows={18}
         spellCheck={false}
-        className="mt-3 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-ui leading-relaxed text-slate-800 focus:border-sky-400 focus:outline-none"
+        className={fieldClass("textarea", "normal", "mt-3 resize-y font-mono leading-relaxed")}
       />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button
@@ -175,16 +182,16 @@ function KnowledgeGroup({
             subtitle={f.description}
             badges={
               <>
-                <span className="rounded-full bg-white px-2 py-0.5 text-caption font-medium text-slate-500 ring-1 ring-slate-200">
+                <span className={badgeClass("grey")}>
                   {wordCount(f.content).toLocaleString()}w
                 </span>
                 {f.overridden ? (
-                  <span className="rounded-full bg-sky-100 px-2 py-0.5 text-caption font-semibold text-sky-700">
+                  <span className={badgeClass("blue")}>
                     Edited
                   </span>
                 ) : null}
                 {f.missing ? (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-caption font-semibold text-amber-800">
+                  <span className={badgeClass("amber")}>
                     Missing in repo
                   </span>
                 ) : null}
@@ -264,6 +271,7 @@ export function CoreBrainKnowledgeTab({
   const skill = files.filter((f) => f.group === "skill");
   const replyCopilot = files.filter((f) => f.group === "reply-copilot");
   const supportCopilot = files.filter((f) => f.group === "support-copilot");
+  const communityCopilot = files.filter((f) => f.group === "community-copilot");
 
   return (
     <div className="flex flex-col gap-8">
@@ -294,6 +302,15 @@ export function CoreBrainKnowledgeTab({
         title="Support copilot"
         hint="Support inbox drafts. The router sets the voice and honesty rules. The playbook holds links, menu paths and known issues."
         files={supportCopilot}
+        openId={openId}
+        setOpenId={setOpenId}
+        authHeaders={authHeaders}
+        onSaved={load}
+      />
+      <KnowledgeGroup
+        title="Community copilot"
+        hint="Community reply drafts. Loads this voice file, the outreach research and the support playbook."
+        files={communityCopilot}
         openId={openId}
         setOpenId={setOpenId}
         authHeaders={authHeaders}

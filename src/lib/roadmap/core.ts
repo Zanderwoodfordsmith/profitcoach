@@ -36,7 +36,7 @@ export {
 export const ROADMAP_IMAGES_BUCKET = "roadmap-images";
 
 const JOB_COLUMNS =
-  "id, job_number, title, notes, done_when, urgent, area, project, status, blocked_by, app_path, visibility, impact, ease, checklist, comments, images, sort_order, created_at, updated_at";
+  "id, job_number, title, notes, done_when, urgent, area, project, status, blocked_by, app_path, visibility, impact, ease, checklist, comments, images, sort_order, created_at, updated_at, agent_status, agent_branch, agent_session_url, agent_log, agent_head_sha, agent_applied_sha, agent_applied_at, agent_pull_error";
 
 function sanitizeChecklist(value: unknown): RoadmapChecklistItem[] {
   if (!Array.isArray(value)) return [];

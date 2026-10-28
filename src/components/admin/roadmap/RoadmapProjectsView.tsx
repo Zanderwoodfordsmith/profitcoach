@@ -1,17 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarRange, Loader2 } from "lucide-react";
+import { ArrowRight, CalendarRange, ChevronDown, ChevronUp, Loader2, Plus } from "lucide-react";
 import {
   PROJECT_EASE_LEVELS,
   PROJECT_STAGE_META,
   PROJECT_STAGES,
   type ProjectStage,
+  healthOf,
+  type RoadmapInitiative,
   type RoadmapProject,
+  type RoadmapProjectUpdate,
 } from "@/lib/roadmap/projectTypes";
 import { ROADMAP_IMPACT_LEVELS, type RoadmapJob } from "@/lib/roadmap/types";
+import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
-import { Caret, MetaDropdown, ScoreDropdown, useDismiss } from "./roadmapUi";
+import { fieldClass } from "@/components/ui/Field";
+import { InitiativeIcon } from "./InitiativeIcon";
+import { HealthChip } from "./roadmapHealth";
+import { ProjectIcon } from "./roadmapIcons";
+import { Caret, MetaDropdown, ScoreBarsPair, ScoreDropdown, StatusIcon, useDismiss } from "./roadmapUi";
 import { RoadmapProjectsViewV1 } from "./RoadmapProjectsViewV1";
 
 /**
@@ -21,7 +29,11 @@ import { RoadmapProjectsViewV1 } from "./RoadmapProjectsViewV1";
  * on impact and ease at the foot. The goal opens under a row, not in it.
  */
 
+/** Which piece the Projects tab shows: the table, the impact and ease grid, or the 12-week timeline. */
+export type ProjectsShow = "list" | "board" | "graph" | "timeline";
+
 type Props = {
+  show: ProjectsShow;
   jobs: RoadmapJob[];
   authHeaders: () => Promise<Record<string, string> | null>;
   onOpenProject: (name: string) => void;
@@ -34,9 +46,15 @@ type Row = RoadmapProject & { saved: boolean };
 const DAY = 86_400_000;
 const WEEKS = 12;
 const LAYOUT_KEY = "roadmap-projects-layout";
+const GROUP_KEY = "roadmap-projects-group";
+
+/** Grouping beside the old one until Zander picks: initiatives (new) or stages. */
+type GroupBy = "initiative" | "stage";
+
+const STAGE_RANK: Record<ProjectStage, number> = { now: 0, next: 1, later: 2, parked: 3 };
 
 /** Now is the brand navy, Next the sky, Later quiet, Parked amber. */
-const STAGE_TONE: Record<ProjectStage, { dot: string; bar: string; pill: string; chip: string }> = {
+export const STAGE_TONE: Record<ProjectStage, { dot: string; bar: string; pill: string; chip: string }> = {
   now: { dot: "bg-[#0c5290]", bar: "bg-[#0c5290]", pill: "bg-[#0c5290] text-white", chip: "bg-[#0c5290] text-white" },
   next: { dot: "bg-sky-500", bar: "bg-sky-500", pill: "bg-sky-100 text-sky-800", chip: "bg-sky-100 text-sky-900" },
   later: { dot: "bg-slate-400", bar: "bg-slate-300", pill: "bg-slate-200/80 text-slate-700", chip: "bg-slate-100 text-slate-700" },
@@ -46,8 +64,9 @@ const STAGE_TONE: Record<ProjectStage, { dot: string; bar: string; pill: string;
 const COLUMNS = [
   { key: "project", label: "Project", width: 300 },
   { key: "jobs", label: "Where it stands", width: 290 },
-  { key: "impact", label: "Impact", width: 150 },
-  { key: "ease", label: "Ease", width: 180 },
+  // Impact and ease sit side by side, each just wide enough for its bars.
+  { key: "impact", label: "Impact", width: 64 },
+  { key: "ease", label: "Ease", width: 64 },
   { key: "dates", label: "When", width: 200 },
   { key: "stage", label: "Stage", width: 110 },
 ] as const;
@@ -67,9 +86,16 @@ function mondayOf(t: number): number {
   return utc - ((new Date(utc).getUTCDay() + 6) % 7) * DAY;
 }
 
-function counts(jobs: RoadmapJob[]) {
+export function counts(jobs: RoadmapJob[]) {
   const n = (statuses: string[]) => jobs.filter((j) => statuses.includes(j.status)).length;
-  return { review: n(["review"]), building: n(["in_progress"]), todo: n(["up_next", "todo"]), shipped: n(["done", "staged", "live"]) };
+  return {
+    todo: n(["up_next", "todo"]),
+    building: n(["in_progress"]),
+    review: n(["review"]),
+    ready: n(["done", "staged"]),
+    live: n(["live"]),
+    shipped: n(["done", "staged", "live"]),
+  };
 }
 
 export function RoadmapProjectsView(props: Props) {
@@ -96,6 +122,7 @@ export function RoadmapProjectsView(props: Props) {
       </button>
     </p>
   );
+  if (props.show !== "list") return <ProjectsTable {...props} />;
   if (layout === "v1") {
     return (
       <>
@@ -112,22 +139,48 @@ export function RoadmapProjectsView(props: Props) {
   );
 }
 
-function ProjectsTable({ jobs, authHeaders, onOpenProject, stickyTop }: Props) {
+function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Props) {
   const [saved, setSaved] = useState<RoadmapProject[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<ProjectStage>>(() => new Set());
+  const [initiatives, setInitiatives] = useState<RoadmapInitiative[]>([]);
+  /** Each project's latest update, for the health chip on board cards. */
+  const [latest, setLatest] = useState<Map<string, RoadmapProjectUpdate>>(() => new Map());
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [openRow, setOpenRow] = useState<string | null>(null);
+  const [groupBy, setGroupBy] = useState<GroupBy>(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(GROUP_KEY) === "stage" ? "stage" : "initiative";
+    } catch {
+      return "initiative";
+    }
+  });
+  const pickGroup = (next: GroupBy) => {
+    setGroupBy(next);
+    try {
+      window.localStorage.setItem(GROUP_KEY, next);
+    } catch {
+      // Remembering the grouping is only a convenience.
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const headers = await authHeaders();
       if (!headers || cancelled) return;
-      const res = await fetch("/api/admin/roadmap/projects", { headers }).catch(() => null);
+      const [res, iniRes, updRes] = await Promise.all([
+        fetch("/api/admin/roadmap/projects", { headers }).catch(() => null),
+        fetch("/api/admin/roadmap/initiatives", { headers }).catch(() => null),
+        fetch("/api/admin/roadmap/projects/updates", { headers }).catch(() => null),
+      ]);
       const body = (await res?.json().catch(() => null)) as { projects?: RoadmapProject[]; error?: string } | null;
+      const iniBody = (await iniRes?.json().catch(() => null)) as { initiatives?: RoadmapInitiative[] } | null;
+      const updBody = (await updRes?.json().catch(() => null)) as { updates?: RoadmapProjectUpdate[] } | null;
       if (cancelled) return;
       if (!res?.ok || !body?.projects) setError(body?.error ?? "Could not load projects.");
       else setSaved(body.projects);
+      setInitiatives(iniBody?.initiatives ?? []);
+      setLatest(new Map((updBody?.updates ?? []).map((u) => [u.project, u])));
     })();
     return () => {
       cancelled = true;
@@ -142,7 +195,7 @@ function ProjectsTable({ jobs, authHeaders, onOpenProject, stickyTop }: Props) {
       const p = byName.get(name);
       return p
         ? { ...p, saved: true }
-        : { name, stage: "next" as const, goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", saved: false };
+        : { name, stage: "next" as const, goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", initiative_id: null, brief: null, saved: false };
     });
   }, [saved, jobs]);
 
@@ -157,13 +210,42 @@ function ProjectsTable({ jobs, authHeaders, onOpenProject, stickyTop }: Props) {
       const list = prev ?? [];
       return list.some((p) => p.name === name)
         ? list.map((p) => (p.name === name ? { ...p, ...patch } : p))
-        : [...list, { name, stage: "next", goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", ...patch }];
+        : [...list, { name, stage: "next", goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", initiative_id: null, brief: null, ...patch }];
     });
     const headers = await authHeaders();
     if (!headers) return;
     const res = await fetch("/api/admin/roadmap/projects", { method: "PATCH", headers, body: JSON.stringify({ name, ...patch }) }).catch(() => null);
     if (!res?.ok) setError("That change didn't save. Refresh and try again.");
   };
+
+  const saveInitiative = async (id: string, patch: Partial<RoadmapInitiative>) => {
+    setInitiatives((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch("/api/admin/roadmap/initiatives", { method: "PATCH", headers, body: JSON.stringify({ id, ...patch }) }).catch(() => null);
+    if (!res?.ok) setError("That change didn't save. Refresh and try again.");
+  };
+
+  const addInitiative = async (name: string) => {
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch("/api/admin/roadmap/initiatives", { method: "POST", headers, body: JSON.stringify({ name }) }).catch(() => null);
+    const body = (await res?.json().catch(() => null)) as { initiative?: RoadmapInitiative } | null;
+    if (!res?.ok || !body?.initiative) setError("Could not add the initiative.");
+    else setInitiatives((prev) => [...prev, body.initiative!]);
+  };
+
+  /** Swap places with the initiative above or below. */
+  const moveInitiative = (index: number, by: -1 | 1) => {
+    const a = orderedInitiatives[index];
+    const b = orderedInitiatives[index + by];
+    if (!a || !b) return;
+    const aOrder = a.sort_order === b.sort_order ? b.sort_order + by : b.sort_order;
+    void saveInitiative(a.id, { sort_order: aOrder });
+    void saveInitiative(b.id, { sort_order: a.sort_order });
+  };
+
+  const orderedInitiatives = [...initiatives].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
 
   if (error && !saved) return <p className="mt-4 text-sm font-medium text-rose-600">{error}</p>;
   if (!saved) {
@@ -176,90 +258,171 @@ function ProjectsTable({ jobs, authHeaders, onOpenProject, stickyTop }: Props) {
 
   const inStage = (stage: ProjectStage) =>
     rows.filter((r) => r.stage === stage).sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+  const byStage = (a: Row, b: Row) =>
+    STAGE_RANK[a.stage] - STAGE_RANK[b.stage] || a.sort_order - b.sort_order || a.name.localeCompare(b.name);
+  const knownInitiatives = new Set(initiatives.map((i) => i.id));
+  const loose = rows.filter((r) => !r.initiative_id || !knownInitiatives.has(r.initiative_id)).sort(byStage);
+
+  type Group = { key: string; rows: Row[]; heading: (open: boolean, toggle: () => void) => React.ReactNode };
+  const groups: Group[] =
+    groupBy === "stage"
+      ? PROJECT_STAGES.map((stage) => ({
+          key: stage,
+          rows: inStage(stage),
+          heading: (open, toggle) => (
+            <button
+              type="button"
+              aria-expanded={open}
+              onClick={toggle}
+              title={PROJECT_STAGE_META[stage].hint}
+              className="inline-flex items-center gap-2.5 py-1 text-left"
+            >
+              <Caret open={open} />
+              <span className={`h-2 w-2 rounded-full ${STAGE_TONE[stage].dot}`} />
+              <span className="text-lg font-medium tracking-[-0.01em] text-slate-950">{PROJECT_STAGE_META[stage].label}</span>
+              <span className="text-sm tabular-nums text-slate-400">{inStage(stage).length}</span>
+              <span className="hidden text-xs text-slate-400 sm:inline">{PROJECT_STAGE_META[stage].hint}</span>
+            </button>
+          ),
+        }))
+      : [
+          ...orderedInitiatives.map((ini, i) => {
+            const list = rows.filter((r) => r.initiative_id === ini.id).sort(byStage);
+            return {
+              key: ini.id,
+              rows: list,
+              heading: (open: boolean, toggle: () => void) => (
+                <InitiativeHeading
+                  initiative={ini}
+                  count={list.length}
+                  open={open}
+                  onToggle={toggle}
+                  onSave={(patch) => void saveInitiative(ini.id, patch)}
+                  onMoveUp={i > 0 ? () => moveInitiative(i, -1) : undefined}
+                  onMoveDown={i < orderedInitiatives.length - 1 ? () => moveInitiative(i, 1) : undefined}
+                />
+              ),
+            };
+          }),
+          ...(loose.length
+            ? [
+                {
+                  key: "none",
+                  rows: loose,
+                  heading: (open: boolean, toggle: () => void) => (
+                    <button type="button" aria-expanded={open} onClick={toggle} className="inline-flex items-center gap-2.5 py-1 text-left">
+                      <Caret open={open} />
+                      <span className="text-lg font-medium tracking-[-0.01em] text-slate-500">No initiative</span>
+                      <span className="text-sm tabular-nums text-slate-400">{loose.length}</span>
+                    </button>
+                  ),
+                },
+              ]
+            : []),
+        ];
 
   return (
     <div className="mt-4 pb-6">
       {error ? <p className="mb-3 text-sm font-medium text-rose-600">{error}</p> : null}
 
-      <Timeline rows={[...inStage("now"), ...inStage("next"), ...inStage("later")]} />
-
-      {/* Sideways scroll only below lg: an overflow box would stop the headings sticking. */}
-      <div className="mt-6 overflow-x-auto lg:overflow-visible">
-        <table className="table-fixed text-left text-sm" style={{ width: TABLE_WIDTH }}>
-          <colgroup>
-            {COLUMNS.map((c) => (
-              <col key={c.key} style={{ width: c.width }} />
-            ))}
-          </colgroup>
-          <thead className="text-xs font-medium text-slate-500">
-            <tr>
-              {COLUMNS.map((c, i) => (
-                <th
-                  key={c.key}
-                  style={{ top: stickyTop }}
-                  className={`sticky z-10 bg-[var(--app-canvas-base)] py-2.5 shadow-[inset_0_-1px_0_rgb(226_232_240)] ${i === 0 ? "pl-[1.625rem] pr-4" : "px-3"}`}
+      {show === "timeline" ? <Timeline rows={[...inStage("now"), ...inStage("next"), ...inStage("later")]} onOpen={onOpenProject} /> : null}
+      {show === "board" ? (
+        <ProjectBoard
+          columns={PROJECT_STAGES.map((stage) => ({ stage, rows: inStage(stage) }))}
+          jobsBy={jobsBy}
+          initiatives={initiatives}
+          latest={latest}
+          onOpen={onOpenProject}
+          onMove={(name, stage) => void save(name, { stage })}
+        />
+      ) : null}
+      {show === "graph" ? <ProjectGrid rows={rows.filter((r) => r.stage !== "parked")} onOpen={onOpenProject} /> : null}
+      {show === "list" ? (
+        <>
+          <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
+            <span>Group by</span>
+            <div className="inline-flex rounded-full bg-slate-200/60 p-0.5">
+              {(["initiative", "stage"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  aria-pressed={groupBy === g}
+                  onClick={() => pickGroup(g)}
+                  className={`rounded-full px-2.5 py-0.5 font-medium transition ${groupBy === g ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
                 >
-                  {c.label}
-                </th>
+                  {g === "initiative" ? "Initiative" : "Stage"}
+                </button>
               ))}
-            </tr>
-          </thead>
-          {PROJECT_STAGES.map((stage, si) => {
-            const list = inStage(stage);
-            const open = !collapsed.has(stage);
-            return (
-              <tbody key={stage}>
-                <tr>
-                  <td colSpan={COLUMNS.length} className={`pb-0.5 ${si === 0 ? "pt-2" : "pt-5"}`}>
-                    <button
-                      type="button"
-                      aria-expanded={open}
-                      onClick={() =>
-                        setCollapsed((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(stage)) next.delete(stage);
-                          else next.add(stage);
-                          return next;
-                        })
-                      }
-                      title={PROJECT_STAGE_META[stage].hint}
-                      className="inline-flex items-center gap-2.5 py-1 text-left"
-                    >
-                      <Caret open={open} />
-                      <span className={`h-2 w-2 rounded-full ${STAGE_TONE[stage].dot}`} />
-                      <span className="text-lg font-medium tracking-[-0.01em] text-slate-950">{PROJECT_STAGE_META[stage].label}</span>
-                      <span className="text-sm tabular-nums text-slate-400">{list.length}</span>
-                      <span className="hidden text-xs text-slate-400 sm:inline">{PROJECT_STAGE_META[stage].hint}</span>
-                    </button>
-                  </td>
-                </tr>
-                {open
-                  ? list.map((row) => (
-                      <ProjectRows
-                        key={row.name}
-                        row={row}
-                        jobs={jobsBy.get(row.name) ?? []}
-                        expanded={openRow === row.name}
-                        onToggle={() => setOpenRow((cur) => (cur === row.name ? null : row.name))}
-                        onSave={save}
-                        onOpenJobs={() => onOpenProject(row.name)}
-                      />
-                    ))
-                  : null}
-                {open && !list.length ? (
-                  <tr className="border-t border-slate-200">
-                    <td colSpan={COLUMNS.length} className="py-3 pl-[1.625rem] text-sm text-slate-400">
-                      Nothing here.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            );
-          })}
-        </table>
-      </div>
+            </div>
+          </div>
 
-      <ProjectGrid rows={rows.filter((r) => r.stage !== "parked")} />
+          {/* Sideways scroll only below lg: an overflow box would stop the headings sticking. */}
+          <div className="mt-2 overflow-x-auto lg:overflow-visible">
+            <table className="table-fixed text-left text-sm" style={{ width: TABLE_WIDTH }}>
+              <colgroup>
+                {COLUMNS.map((c) => (
+                  <col key={c.key} style={{ width: c.width }} />
+                ))}
+              </colgroup>
+              <thead className="text-xs font-medium text-slate-500">
+                <tr>
+                  {COLUMNS.map((c, i) => (
+                    <th
+                      key={c.key}
+                      style={{ top: stickyTop }}
+                      className={`sticky z-10 bg-[var(--app-canvas-base)] py-2.5 shadow-[inset_0_-1px_0_rgb(226_232_240)] ${i === 0 ? "pl-[1.625rem] pr-4" : "px-3"}`}
+                    >
+                      {c.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              {groups.map((group, gi) => {
+                const open = !collapsed.has(group.key);
+                const toggle = () =>
+                  setCollapsed((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(group.key)) next.delete(group.key);
+                    else next.add(group.key);
+                    return next;
+                  });
+                return (
+                  <tbody key={group.key}>
+                    <tr>
+                      <td colSpan={COLUMNS.length} className={`pb-0.5 ${gi === 0 ? "pt-2" : "pt-5"}`}>
+                        {group.heading(open, toggle)}
+                      </td>
+                    </tr>
+                    {open
+                      ? group.rows.map((row) => (
+                          <ProjectRows
+                            key={row.name}
+                            row={row}
+                            jobs={jobsBy.get(row.name) ?? []}
+                            initiatives={orderedInitiatives}
+                            expanded={openRow === row.name}
+                            onToggle={() => setOpenRow((cur) => (cur === row.name ? null : row.name))}
+                            onSave={save}
+                            onOpenJobs={() => onOpenProject(row.name)}
+                          />
+                        ))
+                      : null}
+                    {open && !group.rows.length ? (
+                      <tr className="border-t border-slate-200">
+                        <td colSpan={COLUMNS.length} className="py-3 pl-[1.625rem] text-sm text-slate-400">
+                          {groupBy === "initiative" ? "No projects yet. Open a project and pick this initiative." : "Nothing here."}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                );
+              })}
+            </table>
+          </div>
+
+          {groupBy === "initiative" ? <AddInitiative onAdd={(name) => void addInitiative(name)} /> : null}
+        </>
+      ) : null}
     </div>
   );
 }
@@ -267,6 +430,7 @@ function ProjectsTable({ jobs, authHeaders, onOpenProject, stickyTop }: Props) {
 function ProjectRows({
   row,
   jobs,
+  initiatives,
   expanded,
   onToggle,
   onSave,
@@ -274,6 +438,7 @@ function ProjectRows({
 }: {
   row: Row;
   jobs: RoadmapJob[];
+  initiatives: RoadmapInitiative[];
   expanded: boolean;
   onToggle: () => void;
   onSave: (name: string, patch: Partial<RoadmapProject>) => void;
@@ -310,10 +475,10 @@ function ProjectRows({
           <JobCounts c={c} />
         </td>
         <td className="px-2 py-2">
-          <ScoreDropdown value={row.impact} names={ROADMAP_IMPACT_LEVELS} onChange={(v) => onSave(row.name, { impact: v })} />
+          <ScoreDropdown label="Impact" value={row.impact} names={ROADMAP_IMPACT_LEVELS} onChange={(v) => onSave(row.name, { impact: v })} />
         </td>
         <td className="px-2 py-2">
-          <ScoreDropdown value={row.ease} names={PROJECT_EASE_LEVELS} onChange={(v) => onSave(row.name, { ease: v })} />
+          <ScoreDropdown label="Ease" value={row.ease} names={PROJECT_EASE_LEVELS} onChange={(v) => onSave(row.name, { ease: v })} />
         </td>
         <td className="px-2 py-2">
           <DatesPicker row={row} onSave={onSave} />
@@ -335,7 +500,7 @@ function ProjectRows({
         <tr className="bg-white/60">
           <td colSpan={COLUMNS.length} className="pb-4 pl-[1.625rem] pr-4 pt-1">
             <label htmlFor={`goal-${row.name}`} className="text-xs font-medium text-slate-500">
-              Goal: what done looks like
+              Goal: what done looks like, and where it sits
             </label>
             <div className="mt-1 flex flex-wrap items-center gap-3">
               <input
@@ -349,7 +514,22 @@ function ProjectRows({
                   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                 }}
                 placeholder="One line, e.g. BCA writes the whole practice from About You"
-                className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                className={fieldClass("input", "small", "min-w-0 flex-1")}
+              />
+              <MetaDropdown
+                display={
+                  <span className="text-sm text-slate-700">
+                    <span className="text-slate-400">Initiative: </span>
+                    {initiatives.find((i) => i.id === row.initiative_id)?.name ?? "None"}
+                  </span>
+                }
+                options={initiatives.map((i) => ({
+                  key: i.id,
+                  selected: row.initiative_id === i.id,
+                  onSelect: () => onSave(row.name, { initiative_id: i.id }),
+                  node: <span>{i.name}</span>,
+                }))}
+                onClear={row.initiative_id ? () => onSave(row.name, { initiative_id: null }) : undefined}
               />
               <button type="button" onClick={onOpenJobs} className="inline-flex items-center gap-1 text-sm font-medium text-[#0c5290] hover:underline">
                 Open its {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
@@ -363,28 +543,151 @@ function ProjectRows({
   );
 }
 
-/** Where a project's jobs stand, most urgent first: yours to review, building, to do, shipped. */
-function JobCounts({ c }: { c: ReturnType<typeof counts> }) {
-  const parts = [
-    c.review ? { n: c.review, label: "to review", cls: "bg-amber-100 text-amber-900" } : null,
-    c.building ? { n: c.building, label: "building", cls: "bg-sky-100 text-sky-900" } : null,
-    c.todo ? { n: c.todo, label: "to do", cls: "bg-slate-200/70 text-slate-700" } : null,
-    c.shipped ? { n: c.shipped, label: "live", cls: "bg-emerald-50 text-emerald-800" } : null,
-  ].filter((p): p is { n: number; label: string; cls: string } => Boolean(p));
-  if (!parts.length) return <span className="text-xs text-slate-400">No jobs yet</span>;
+/** An initiative's group heading: click the name or goal to change it; arrows move it up or down. */
+function InitiativeHeading({
+  initiative,
+  count,
+  open,
+  onToggle,
+  onSave,
+  onMoveUp,
+  onMoveDown,
+}: {
+  initiative: RoadmapInitiative;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+  onSave: (patch: Partial<RoadmapInitiative>) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+}) {
+  const [editing, setEditing] = useState<"name" | "goal" | null>(null);
+  const [draft, setDraft] = useState("");
+  const start = (field: "name" | "goal") => {
+    setDraft((field === "name" ? initiative.name : initiative.goal) ?? "");
+    setEditing(field);
+  };
+  const finish = () => {
+    const v = draft.trim();
+    if (editing === "name" && v && v !== initiative.name) onSave({ name: v });
+    if (editing === "goal" && v !== (initiative.goal ?? "")) onSave({ goal: v || null });
+    setEditing(null);
+  };
+  const input = (cls: string, placeholder: string) => (
+    <input
+      autoFocus
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={finish}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        if (e.key === "Escape") setEditing(null);
+      }}
+      placeholder={placeholder}
+      className={`rounded-md border border-slate-200 bg-white px-2 py-0.5 focus:border-sky-500 focus:outline-none ${cls}`}
+    />
+  );
+  const arrow = "rounded p-1 text-slate-400 transition hover:bg-slate-200/60 hover:text-slate-700 disabled:invisible";
   return (
-    <div className="flex flex-wrap gap-1">
-      {parts.map((p) => (
-        <span key={p.label} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${p.cls}`}>
-          <span className="font-semibold tabular-nums">{p.n}</span>
-          {p.label}
-        </span>
-      ))}
+    <div className="group/ini flex flex-wrap items-center gap-x-2.5 gap-y-1 py-1">
+      <button type="button" aria-expanded={open} aria-label={open ? `Hide ${initiative.name}` : `Show ${initiative.name}`} onClick={onToggle} className="rounded p-0.5">
+        <Caret open={open} />
+      </button>
+      <InitiativeIcon initiative={initiative} size="sm" />
+      {editing === "name" ? (
+        input("text-lg font-medium text-slate-950", "Initiative name")
+      ) : (
+        <button type="button" onClick={() => start("name")} title="Rename" className="text-lg font-medium tracking-[-0.01em] text-slate-950 hover:text-[#0c5290]">
+          {initiative.name}
+        </button>
+      )}
+      <span className="text-sm tabular-nums text-slate-400">{count}</span>
+      {editing === "goal" ? (
+        input("min-w-64 text-xs text-slate-700", "One line: what this initiative is for")
+      ) : (
+        <button type="button" onClick={() => start("goal")} title="Change the goal" className="text-xs text-slate-400 hover:text-slate-700">
+          {initiative.goal || "Add a goal"}
+        </button>
+      )}
+      <span className="flex items-center opacity-0 transition group-hover/ini:opacity-100 group-focus-within/ini:opacity-100">
+        <button type="button" aria-label={`Move ${initiative.name} up`} onClick={onMoveUp} disabled={!onMoveUp} className={arrow}>
+          <ChevronUp className="h-4 w-4" />
+        </button>
+        <button type="button" aria-label={`Move ${initiative.name} down`} onClick={onMoveDown} disabled={!onMoveDown} className={arrow}>
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </span>
     </div>
   );
 }
 
-function StagePill({ stage }: { stage: ProjectStage }) {
+export function AddInitiative({ onAdd }: { onAdd: (name: string) => void }) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  if (!adding) {
+    return (
+      <button type="button" onClick={() => setAdding(true)} className="mt-4 inline-flex items-center gap-1.5 pl-[1.625rem] text-sm font-medium text-slate-500 hover:text-slate-900">
+        <Plus className="h-4 w-4" aria-hidden />
+        Add initiative
+      </button>
+    );
+  }
+  return (
+    <form
+      className="mt-4 flex items-center gap-2 pl-[1.625rem]"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (name.trim()) onAdd(name.trim());
+        setName("");
+        setAdding(false);
+      }}
+    >
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setAdding(false);
+        }}
+        placeholder="Initiative name"
+        className={fieldClass("input", "small", "w-72!")}
+      />
+      <button type="submit" className={buttonClass("main", "small")}>
+        Add
+      </button>
+      <button type="button" onClick={() => setAdding(false)} className={buttonClass("quiet", "small")}>
+        Cancel
+      </button>
+    </form>
+  );
+}
+
+/** Where a project's jobs stand, most urgent first: yours to review, building, to do, shipped. */
+/** Where a project's jobs stand: a status icon and a count each, always in workflow order. */
+export function JobCounts({ c }: { c: ReturnType<typeof counts> }) {
+  const parts = (
+    [
+      { n: c.todo, status: "todo", label: "to do" },
+      { n: c.building, status: "in_progress", label: "in progress" },
+      { n: c.review, status: "review", label: "to review" },
+      { n: c.ready, status: "done", label: "ready or on staging" },
+      { n: c.live, status: "live", label: "live" },
+    ] as const
+  ).filter((p) => p.n > 0);
+  if (!parts.length) return <span className="text-xs text-slate-400">No jobs yet</span>;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+      {parts.map((p) => (
+        <span key={p.status} title={`${p.n} ${p.label}`} className="inline-flex items-center gap-1 text-sm tabular-nums text-slate-700">
+          <StatusIcon status={p.status} />
+          {p.n}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+export function StagePill({ stage }: { stage: ProjectStage }) {
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-semibold ${STAGE_TONE[stage].pill}`}>
       {PROJECT_STAGE_META[stage].label}
@@ -393,13 +696,13 @@ function StagePill({ stage }: { stage: ProjectStage }) {
 }
 
 /** "19 Oct → 6 Nov · 3 wks", or Add dates; opens two date boxes. */
-function DatesPicker({ row, onSave }: { row: Row; onSave: (name: string, patch: Partial<RoadmapProject>) => void }) {
+export function DatesPicker({ row, onSave }: { row: RoadmapProject; onSave: (name: string, patch: Partial<RoadmapProject>) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
   const from = parseDay(row.start_on);
   const to = parseDay(row.target_on);
   const weeks = from && to ? Math.max(1, Math.round((to - from) / (7 * DAY))) : null;
-  const box = "h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none";
+  const box = fieldClass("input", "small");
   return (
     <div ref={ref} className="relative inline-flex">
       <button
@@ -454,7 +757,7 @@ function DatesPicker({ row, onSave }: { row: Row; onSave: (name: string, patch: 
 }
 
 /** The next 12 weeks: a bar per dated project, months across the top, a line for today. */
-function Timeline({ rows }: { rows: Row[] }) {
+function Timeline({ rows, onOpen }: { rows: Row[]; onOpen: (name: string) => void }) {
   const [now] = useState(() => Date.now());
   const start = mondayOf(now);
   const end = start + WEEKS * 7 * DAY;
@@ -491,9 +794,9 @@ function Timeline({ rows }: { rows: Row[] }) {
               const width = Math.max(at(to) - left, 1.5);
               return (
                 <div key={r.name} className="grid grid-cols-[11rem_minmax(0,1fr)] items-center">
-                  <span className="truncate pr-3 text-sm text-slate-700" title={r.goal ?? r.name}>
+                  <button type="button" onClick={() => onOpen(r.name)} className="truncate pr-3 text-left text-sm text-slate-700 hover:text-[#0c5290]" title={r.goal ?? r.name}>
                     {r.name}
-                  </span>
+                  </button>
                   <div className="relative h-7">
                     <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }} aria-hidden>
                       {weeks.map((w) => (
@@ -544,13 +847,97 @@ function Timeline({ rows }: { rows: Row[] }) {
   );
 }
 
+/** Projects as a board, like Linear's: a column per stage; drag a card to move it, click to open it. */
+function ProjectBoard({
+  columns,
+  jobsBy,
+  initiatives,
+  latest,
+  onOpen,
+  onMove,
+}: {
+  columns: { stage: ProjectStage; rows: Row[] }[];
+  jobsBy: Map<string, RoadmapJob[]>;
+  initiatives: RoadmapInitiative[];
+  latest: Map<string, RoadmapProjectUpdate>;
+  onOpen: (name: string) => void;
+  onMove: (name: string, stage: ProjectStage) => void;
+}) {
+  const [over, setOver] = useState<ProjectStage | null>(null);
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {columns.map(({ stage, rows }) => (
+        <section
+          key={stage}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setOver(stage);
+          }}
+          onDragLeave={() => setOver((cur) => (cur === stage ? null : cur))}
+          onDrop={(e) => {
+            e.preventDefault();
+            setOver(null);
+            const name = e.dataTransfer.getData("text/plain");
+            if (name) onMove(name, stage);
+          }}
+          className={`flex min-h-40 flex-col rounded-xl p-2 transition ${over === stage ? "bg-sky-50 ring-2 ring-sky-200" : "bg-slate-100/70"}`}
+        >
+          <h2 className="flex items-center gap-2 px-1.5 pb-2 pt-1 text-sm font-medium text-slate-900" title={PROJECT_STAGE_META[stage].hint}>
+            <span className={`h-2 w-2 rounded-full ${STAGE_TONE[stage].dot}`} aria-hidden />
+            {PROJECT_STAGE_META[stage].label}
+            <span className="tabular-nums text-slate-400">{rows.length}</span>
+          </h2>
+          <div className="flex flex-col gap-2">
+            {rows.map((row) => {
+              const initiative = initiatives.find((i) => i.id === row.initiative_id);
+              const c = counts(jobsBy.get(row.name) ?? []);
+              const open = c.review + c.building + c.todo;
+              return (
+                <button
+                  key={row.name}
+                  type="button"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/plain", row.name);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onClick={() => onOpen(row.name)}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-slate-300 hover:shadow-sm active:cursor-grabbing"
+                >
+                  <span className="flex items-start gap-2">
+                    {initiative ? (
+                      <InitiativeIcon initiative={initiative} size="sm" />
+                    ) : (
+                      <ProjectIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                    )}
+                    <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-slate-900">{row.name}</span>
+                  </span>
+                  {row.goal ? <span className="mt-1 line-clamp-2 block text-xs leading-relaxed text-slate-500">{row.goal}</span> : null}
+                  <span className="mt-2.5 flex flex-wrap items-center gap-2">
+                    <ScoreBarsPair impact={row.impact} ease={row.ease} impactNames={ROADMAP_IMPACT_LEVELS} easeNames={PROJECT_EASE_LEVELS} />
+                    {stage === "now" || stage === "next" ? <HealthChip health={healthOf(latest.get(row.name))} /> : null}
+                    <span className="ml-auto text-xs tabular-nums text-slate-400" title={`${open} open, ${c.shipped} shipped`}>
+                      {open} open · {c.shipped} live
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+            {!rows.length ? <p className="px-1.5 py-3 text-xs text-slate-400">Drop a project here.</p> : null}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /** Where each project sits: top right is worth most for the least effort. */
-function ProjectGrid({ rows }: { rows: Row[] }) {
+function ProjectGrid({ rows, onOpen }: { rows: Row[]; onOpen: (name: string) => void }) {
   const scored = rows.filter((r) => r.impact && r.ease);
   const unscored = rows.filter((r) => !(r.impact && r.ease));
   const scores = [1, 2, 3, 4, 5];
   return (
-    <section className={cardClass("plain", "mt-8 px-4 pb-4 pt-3.5")}>
+    <section className={cardClass("plain", "px-4 pb-4 pt-3.5")}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-medium tracking-[-0.01em] text-slate-950">Where each project sits</h2>
         <p className="text-xs text-slate-400">Top right: worth most for the least effort. Parked left out.</p>
@@ -567,9 +954,9 @@ function ProjectGrid({ rows }: { rows: Row[] }) {
                   {scored
                     .filter((r) => r.impact === impact && r.ease === ease)
                     .map((r) => (
-                      <span key={r.name} title={r.goal ?? undefined} className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_TONE[r.stage].chip}`}>
+                      <button key={r.name} type="button" onClick={() => onOpen(r.name)} title={r.goal ?? undefined} className={`rounded-full px-2 py-0.5 text-xs font-medium transition hover:opacity-80 ${STAGE_TONE[r.stage].chip}`}>
                         {r.name}
-                      </span>
+                      </button>
                     ))}
                 </div>
               ))}

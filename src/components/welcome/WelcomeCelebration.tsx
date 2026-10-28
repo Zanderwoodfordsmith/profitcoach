@@ -14,6 +14,7 @@ import { NativeBookingEmbed } from "@/components/booking/NativeBookingEmbed";
 import { WelcomeIntakeSurvey } from "@/components/welcome/WelcomeIntakeSurvey";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
 import type {
   ProgrammeIntakeGoal,
   ProgrammeIntakeSituation,
@@ -114,8 +115,7 @@ function WelcomeVideo() {
   );
 }
 
-const inputClassName =
-  "block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#0c5290] focus:ring-2 focus:ring-[#42a1ee]/25 disabled:bg-slate-50 disabled:text-slate-500";
+const inputClassName = fieldClass("input");
 
 function StepBadge({
   n,
@@ -417,7 +417,7 @@ export function WelcomeCelebration({
                     {guest ? (
                       <div className="grid gap-2.5 sm:grid-cols-2">
                         <label className="block sm:col-span-1">
-                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                          <span className={`${fieldLabelClass} mb-1.5`}>
                             First name
                           </span>
                           <input
@@ -430,7 +430,7 @@ export function WelcomeCelebration({
                           />
                         </label>
                         <label className="block sm:col-span-1">
-                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                          <span className={`${fieldLabelClass} mb-1.5`}>
                             Last name
                           </span>
                           <input
@@ -443,7 +443,7 @@ export function WelcomeCelebration({
                           />
                         </label>
                         <label className="block sm:col-span-2">
-                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                          <span className={`${fieldLabelClass} mb-1.5`}>
                             Email for booking
                           </span>
                           <input
@@ -632,7 +632,7 @@ export function WelcomeCelebration({
                       ) : null}
                       <div className="grid gap-2.5 sm:grid-cols-2">
                         <label className="block">
-                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                          <span className={`${fieldLabelClass} mb-1.5`}>
                             New password
                           </span>
                           <input
@@ -646,7 +646,7 @@ export function WelcomeCelebration({
                           />
                         </label>
                         <label className="block">
-                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                          <span className={`${fieldLabelClass} mb-1.5`}>
                             Confirm password
                           </span>
                           <input

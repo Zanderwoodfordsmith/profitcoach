@@ -18,6 +18,7 @@ import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
 import type { LessonVideoChapter } from "@/lib/academy/lessonVideoChapters";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
 
 const FORM_ID = "legacy-lesson-edit-form";
 const SHELL_TARGET = "__shell__";
@@ -532,7 +533,7 @@ export function AdminClassroomLessonEditor({
       <div>
         <label
           htmlFor={`${FORM_ID}-step`}
-          className="block text-xs font-medium text-slate-700"
+          className={fieldLabelClass}
         >
           Editing step
         </label>
@@ -540,7 +541,7 @@ export function AdminClassroomLessonEditor({
           id={`${FORM_ID}-step`}
           value={editTarget}
           onChange={(e) => switchEditTarget(e.target.value)}
-          className="mt-1.5 w-full max-w-xl rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+          className={fieldClass("select", "normal", "mt-1.5 max-w-xl")}
         >
           <option value={SHELL_TARGET}>
             Lesson shell (title / media

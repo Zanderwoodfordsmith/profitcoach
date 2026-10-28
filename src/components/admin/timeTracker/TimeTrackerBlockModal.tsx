@@ -8,6 +8,7 @@ import type {
   TimeTrackerBlock,
 } from "@/lib/timeTracker/types";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import { formatMinutes } from "@/lib/timeTracker/time";
 import { TimeTrackerSelect } from "./TimeTrackerSelect";
 
@@ -362,7 +363,7 @@ export function TimeTrackerBlockModal({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
                 placeholder="Anything worth remembering about this block…"
-                className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                className={fieldClass("textarea", "normal", "resize-y")}
               />
             )}
           </div>

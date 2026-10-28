@@ -31,6 +31,7 @@ import {
   parseCoachStyle,
   type CoachStyle,
 } from "@/lib/practiceKnowledge/coachStyle";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
@@ -157,7 +158,7 @@ function FieldLabel({
       <span className="text-ui font-medium text-[var(--bp-ink)]">{label}</span>
       {help ? <InfoTip label={label}>{help}</InfoTip> : null}
       {mark ? (
-        <span className="rounded-full bg-[#fff4e0] px-2 py-px text-caption font-semibold text-[#8a5300]">{mark}</span>
+        <span className={badgeClass("amber")}>{mark}</span>
       ) : null}
     </div>
   );
@@ -737,7 +738,7 @@ function EmailConnect({ field }: { field: FieldSpec }) {
                   {email ? <span className="text-[var(--bp-muted)]"> · {email}</span> : null}
                 </p>
                 {connected ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#b6f3cc] px-2.5 py-1 text-xs font-semibold text-[#0e6a36]">
+                  <span className={badgeClass("green")}>
                     <Check className="h-3 w-3" aria-hidden />
                     {justConnected === row.provider ? "Connected now" : "Connected"}
                   </span>
@@ -879,7 +880,7 @@ export function SetupSocials() {
       justConnected === provider ||
       accounts.some((row) => row.provider.toUpperCase() === provider && row.status.toUpperCase() === "OK");
     return connected ? (
-      <span className="inline-flex items-center gap-1 rounded-full bg-[#b6f3cc] px-2.5 py-1 text-xs font-semibold text-[#0e6a36]">
+      <span className={badgeClass("green")}>
         <Check className="h-3 w-3" aria-hidden />
         Connected
       </span>
@@ -1189,7 +1190,7 @@ function CoachStyleSliders({ field, changed }: { field: FieldSpec; changed?: boo
           How to choose
         </button>
         {changed ? (
-          <span className="rounded-full bg-[#fff4e0] px-2 py-px text-caption font-semibold text-[#8a5300]">Changed</span>
+          <span className={badgeClass("amber")}>Changed</span>
         ) : null}
       </div>
       <Modal

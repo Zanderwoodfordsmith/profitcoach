@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
+import { fieldClass } from "@/components/ui/Field";
 
 export function Card({
   title,
@@ -55,17 +57,15 @@ export function Chip({
   children: ReactNode;
   tone?: "slate" | "sky" | "emerald" | "amber" | "rose";
 }) {
-  const toneClass: Record<string, string> = {
-    slate: "border-slate-200 bg-slate-50 text-slate-700",
-    sky: "border-sky-200 bg-sky-50 text-sky-800",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    amber: "border-amber-200 bg-amber-50 text-amber-800",
-    rose: "border-rose-200 bg-rose-50 text-rose-800",
+  const badgeTone: Record<string, BadgeTone> = {
+    slate: "grey",
+    sky: "blue",
+    emerald: "green",
+    amber: "amber",
+    rose: "red",
   };
   return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${toneClass[tone]}`}
-    >
+    <span className={badgeClass(badgeTone[tone])}>
       {children}
     </span>
   );
@@ -183,14 +183,14 @@ export function TextField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+          className={fieldClass("textarea", "normal")}
         />
       ) : (
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+          className={fieldClass("input", "normal")}
         />
       )}
     </label>

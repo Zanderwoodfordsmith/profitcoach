@@ -23,6 +23,7 @@ import type { CampaignAddProspectsMode } from "@/lib/campaigns/addProspectsMode"
 import type { ParsedProspectCsvRow } from "@/lib/prospects/parseProspectsCsv";
 import { CsvUploadDropzone } from "@/components/prospects/CsvUploadDropzone";
 import { PoolFilterMenu } from "@/components/campaigns/PoolFilterMenu";
+import { fieldClass } from "@/components/ui/Field";
 import { isMagnetPlaybookId } from "@/lib/leadMagnets/catalog";
 import {
   poolRowMatchesCityFilter,
@@ -84,9 +85,6 @@ const TAB_ITEMS: Array<{ id: AudienceMode; label: string }> = [
 type ListMenu = "filter" | "sort" | null;
 type ListSortField = "name" | "business" | "status" | "created_at";
 type ListSortOrder = "asc" | "desc";
-
-const fieldClass =
-  "block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
 
 const ADD_COUNT_PRESETS = [100, 250, 500, 1000] as const;
 const MAX_CAMPAIGN_ADD = 2500;
@@ -180,7 +178,7 @@ function AddCountPicker({
           }
           placeholder="How many"
           aria-label="Custom number of people"
-          className="h-8 w-24 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+          className={fieldClass("input", "small", "w-24!")}
         />
       ) : null}
       <span className="text-xs text-slate-500">{summary}</span>
@@ -1276,7 +1274,7 @@ export function CampaignAddProspectsModal({
                             ? "Search the pool…"
                             : "Search this list…"
                         }
-                        className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+                        className={fieldClass("input", "small", "pl-9")}
                       />
                     </label>
                     <div ref={poolFilterRef} className="relative shrink-0">
@@ -1491,7 +1489,7 @@ export function CampaignAddProspectsModal({
                     value={listQuery}
                     onChange={(e) => setListQuery(e.target.value)}
                     placeholder="Search prospects…"
-                    className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+                    className={fieldClass("input", "small", "pl-9")}
                   />
                 </label>
                 <div className="flex shrink-0 items-center">
@@ -1528,7 +1526,7 @@ export function CampaignAddProspectsModal({
                               id="campaign-add-status-filter"
                               value={statusFilter}
                               onChange={(e) => setStatusFilter(e.target.value)}
-                              className={fieldClass}
+                              className={fieldClass("select", "normal")}
                             >
                               <option value="all">All</option>
                               {PROSPECT_STATUS_OPTIONS.map((option) => (
@@ -1636,7 +1634,7 @@ export function CampaignAddProspectsModal({
                                 onChange={(e) =>
                                   setSourceFilter(e.target.value)
                                 }
-                                className={fieldClass}
+                                className={fieldClass("select", "normal")}
                               >
                                 <option value="all">All</option>
                                 {sourceOptions.map((option) => (
@@ -1707,7 +1705,7 @@ export function CampaignAddProspectsModal({
                               onChange={(e) =>
                                 setSortField(e.target.value as ListSortField)
                               }
-                              className={fieldClass}
+                              className={fieldClass("select", "normal")}
                             >
                               <option value="name">Name</option>
                               <option value="business">Company</option>
@@ -1728,7 +1726,7 @@ export function CampaignAddProspectsModal({
                               onChange={(e) =>
                                 setSortOrder(e.target.value as ListSortOrder)
                               }
-                              className={fieldClass}
+                              className={fieldClass("select", "normal")}
                             >
                               {sortField === "created_at" ? (
                                 <>
@@ -1901,13 +1899,13 @@ export function CampaignAddProspectsModal({
                 value={searchUrl}
                 onChange={(e) => setSearchUrl(e.target.value)}
                 placeholder="Sales Nav or LinkedIn search URL"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                className={fieldClass("input", "normal")}
               />
               <input
                 value={searchKeywords}
                 onChange={(e) => setSearchKeywords(e.target.value)}
                 placeholder="Or keywords…"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                className={fieldClass("input", "normal")}
               />
               <div className="flex flex-wrap gap-2">
                 <button
@@ -2041,7 +2039,7 @@ export function CampaignAddProspectsModal({
                 onChange={(e) => setImportText(e.target.value)}
                 rows={6}
                 placeholder="One LinkedIn URL per line"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                className={fieldClass("textarea", "normal")}
               />
               <button
                 type="button"

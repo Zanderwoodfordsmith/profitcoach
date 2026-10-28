@@ -22,6 +22,7 @@ import {
   prospectTagTone,
   sortProspectTagCatalog,
 } from "@/lib/prospects/tagAppearance";
+import { fieldClass } from "@/components/ui/Field";
 
 const PANEL_WIDTH = 272;
 const VIEWPORT_MARGIN = 12;
@@ -252,7 +253,7 @@ export function ProspectTagsPopover({
               maxLength={MAX_PROSPECT_TAG_LENGTH}
               placeholder="Find or create a tag"
               aria-label="Find or create a tag"
-              className="h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:opacity-60"
+              className={fieldClass("input", "small")}
             />
           </form>
         </div>

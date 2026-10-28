@@ -14,6 +14,7 @@ import {
 } from "@/lib/prospectNextCall";
 import { formatProspectPersonName } from "@/lib/prospectDisplayFormat";
 import { cardClass } from "@/components/ui/Card";
+import { badgeClass } from "@/components/ui/Badge";
 
 export type { CallRow };
 
@@ -30,7 +31,7 @@ type Props = {
 function CallStatusBadge({ row }: { row: CallRow }) {
   return (
     <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-caption font-medium leading-none ${callStatusClass(row.status_normalized)}`}
+      className={badgeClass("grey", callStatusClass(row.status_normalized))}
     >
       {getCallStatusLabel(row.status_normalized)}
     </span>

@@ -17,8 +17,10 @@ import { AdminCoachContentHistory } from "@/components/admin/AdminCoachContentHi
 import { CoachProfileBlueprint } from "@/components/admin/CoachProfileBlueprint";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { formatDateDisplay } from "@/lib/formatDateDisplay";
 import {
   lastLoginFreshness,
@@ -154,11 +156,8 @@ function DetailField({
 }
 
 function SetupBadge({ complete, label }: { complete: boolean; label: string }) {
-  const badgeClass = complete
-    ? "inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800"
-    : "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700";
   return (
-    <span className={badgeClass}>
+    <span className={badgeClass(complete ? "green" : "grey")}>
       <span aria-hidden>{complete ? "✓" : "—"}</span>
       {label}
     </span>
@@ -651,7 +650,7 @@ export default function AdminCoachDetailPage({
                                 : d
                             );
                           }}
-                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0c5290] focus:outline-none focus:ring-1 focus:ring-[#0c5290]"
+                          className={fieldClass("select")}
                         >
                           {COACH_ACCESS_TIERS.map((tier) => (
                             <option key={tier} value={tier}>
@@ -678,7 +677,7 @@ export default function AdminCoachDetailPage({
                                 : d
                             )
                           }
-                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0c5290] focus:outline-none focus:ring-1 focus:ring-[#0c5290]"
+                          className={fieldClass("select")}
                         >
                           <option value="">Not set</option>
                           {COACH_RECURRING_PAYMENT_STATUSES.map((status) => (

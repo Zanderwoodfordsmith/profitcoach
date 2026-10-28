@@ -106,7 +106,9 @@ import {
   type CommunityCommentMediaItem,
 } from "@/lib/communityCommentMedia";
 import { buttonClass } from "@/components/ui/Button";
+import { ReplyCopilotButton } from "@/components/messaging/ReplyCopilotButton";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type CommentRow = {
   id: string;
@@ -789,6 +791,7 @@ export function PostDetailModal({
   const [pinBusy, setPinBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [editorRole, setEditorRole] = useState<string | null>(null);
+  const [copilotLoading, setCopilotLoading] = useState(false);
   type EditMediaSlot =
     | { key: string; type: "remote"; item: CommunityPostMediaItem }
     | {
@@ -1463,6 +1466,50 @@ export function PostDetailModal({
     saveEditBusy,
   ]);
 
+  /** Admins: draft a reply with AI. Anything already typed is sent as a hint. */
+  async function suggestCommentReply() {
+    if (copilotLoading || submitting) return;
+    setActionError(null);
+    setCopilotLoading(true);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Sign in again, then retry.");
+      }
+      const res = await fetch(
+        `/api/admin/community/posts/${encodeURIComponent(post.id)}/reply-suggest`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            hint: newComment,
+            sendAsId: coachPersona ?? currentUserId ?? undefined,
+          }),
+        }
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        suggestion?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.suggestion?.trim()) {
+        throw new Error(data.error || "Could not draft a reply.");
+      }
+      setNewComment(data.suggestion.trim());
+      setCommentComposerFocused(true);
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not draft a reply."
+      );
+    } finally {
+      setCopilotLoading(false);
+    }
+  }
+
   const submitTopComment = useCallback(async () => {
     const text = newComment.trim();
     const pendingImages = topCommentPendingImages;
@@ -2025,7 +2072,7 @@ export function PostDetailModal({
                         <select
                           value={editCategoryId}
                           onChange={(e) => setEditCategoryId(e.target.value)}
-                          className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                          className={fieldClass("select", "small", "w-auto!")}
                         >
                           {editableCategories.map((c) => (
                             <option key={c.id} value={c.id}>
@@ -2109,7 +2156,7 @@ export function PostDetailModal({
                                 min={toLocalDateTimeInputValue(
                                   new Date(Date.now() + 60_000)
                                 )}
-                                className="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                className={fieldClass("input", "normal", "mt-2")}
                               />
                               <div className="mt-3 flex items-center justify-between gap-2">
                                 <button
@@ -2876,6 +2923,14 @@ export function PostDetailModal({
                           }
                           size="md"
                         />
+                        {isEditorAdmin ? (
+                          <ReplyCopilotButton
+                            position="relative shrink-0"
+                            loading={copilotLoading}
+                            disabled={submitting}
+                            onClick={() => void suggestCommentReply()}
+                          />
+                        ) : null}
                       </div>
                     </>
                   ) : (
@@ -2888,9 +2943,9 @@ export function PostDetailModal({
                         autoResize
                         maxAutoHeightPx={72}
                         rows={1}
-                        className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent py-2 pl-3.5 pr-12 text-read leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                        className={`min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent py-2 pl-3.5 ${isEditorAdmin ? "pr-20" : "pr-12"} text-read leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0`}
                       />
-                      <div className="pointer-events-none absolute inset-y-0 right-1.5 flex items-center">
+                      <div className="pointer-events-none absolute inset-y-0 right-1.5 flex items-center gap-1">
                         <CommentAttachButton
                           pending={topCommentPendingImages}
                           onChange={setTopCommentPendingImages}
@@ -2902,6 +2957,14 @@ export function PostDetailModal({
                           size="md"
                           className="pointer-events-auto"
                         />
+                        {isEditorAdmin ? (
+                          <ReplyCopilotButton
+                            position="pointer-events-auto relative shrink-0"
+                            loading={copilotLoading}
+                            disabled={submitting}
+                            onClick={() => void suggestCommentReply()}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   )}

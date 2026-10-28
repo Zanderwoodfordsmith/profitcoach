@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarClock, Loader2, Pencil, Send, Trash2 } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { postTypeLabel, type LinkedInPostItem } from "./types";
 
 type Props = {
@@ -187,7 +188,7 @@ export function LinkedInLibraryTab({
                           type="datetime-local"
                           value={scheduledAtLocal}
                           onChange={(e) => setScheduledAtLocal(e.target.value)}
-                          className="w-full rounded-lg border border-sky-200 bg-white px-2 py-1.5 text-xs"
+                          className={fieldClass("input", "small")}
                         />
                         <div className="flex gap-2">
                           <button

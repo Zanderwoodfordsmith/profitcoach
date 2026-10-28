@@ -6,6 +6,7 @@ import { Loader2, Mic, Square, Volume2 } from "lucide-react";
 
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   BRIEF_SECTIONS,
   buildPracticeBrief,
@@ -52,9 +53,6 @@ type Props = {
   approvedSections?: Record<string, string>;
   onApproveSection?: (id: string) => void;
 };
-
-const fieldClass =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-read leading-relaxed text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/25";
 
 export function PracticeBrief({
   payload,
@@ -343,7 +341,7 @@ export function PracticeBrief({
               <div className="mt-3 space-y-2">
                 <textarea
                   ref={replyRef}
-                  className={`${fieldClass} min-h-[72px]`}
+                  className={fieldClass("textarea", "normal", "min-h-[72px]")}
                   value={reply}
                   disabled={busy}
                   placeholder="Say it in a sentence, or use the mic."
@@ -472,7 +470,7 @@ function Editor({
               ];
     return (
       <select
-        className={fieldClass}
+        className={fieldClass("select")}
         value={value}
         autoFocus
         onChange={(e) => onChange(e.target.value)}
@@ -488,7 +486,7 @@ function Editor({
   }
   return (
     <textarea
-      className={`${fieldClass} min-h-[88px]`}
+      className={fieldClass("textarea", "normal", "min-h-[88px]")}
       value={value}
       autoFocus
       onChange={(e) => onChange(e.target.value)}
@@ -551,7 +549,7 @@ function CareerBlock({
                 <label key={key} className="text-xs text-slate-600">
                   {label}
                   <input
-                    className={`${fieldClass} mt-1`}
+                    className={fieldClass("input", "normal", "mt-1")}
                     value={row[key]}
                     onChange={(e) =>
                       setRows((prev) =>
@@ -652,7 +650,7 @@ function Recommendation({
         <label className="block">
           <span className="text-base font-semibold text-slate-950">Your notes</span>
           <textarea
-            className={`${fieldClass} mt-2 min-h-[88px]`}
+            className={fieldClass("textarea", "normal", "mt-2 min-h-[88px]")}
             value={comments}
             disabled={readOnly}
             onChange={(e) => onComments(e.target.value)}

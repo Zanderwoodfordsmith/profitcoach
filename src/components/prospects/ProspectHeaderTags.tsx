@@ -4,6 +4,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "re
 import { createPortal } from "react-dom";
 import { Plus, X } from "lucide-react";
 import { ProspectTagChip } from "@/components/prospects/ProspectTagChip";
+import { fieldClass } from "@/components/ui/Field";
 import {
   MAX_PROSPECT_TAG_LENGTH,
   MAX_PROSPECT_TAGS,
@@ -248,7 +249,7 @@ export function ProspectHeaderTags({
               maxLength={MAX_PROSPECT_TAG_LENGTH}
               placeholder="New tag name"
               aria-label="New tag name"
-              className="h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:opacity-60"
+              className={fieldClass("input", "small")}
             />
           </form>
         ) : (

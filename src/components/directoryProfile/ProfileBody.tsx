@@ -13,7 +13,6 @@ import {
   Move,
   MapPin,
   Plus,
-  Sparkles,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -33,6 +32,7 @@ import {
 import { SOCIAL_NETWORK_META, type SocialNetwork } from "@/lib/shareLinks/socials";
 import { Editable, Paragraphs } from "./Editable";
 import { IntroVideo } from "./IntroVideo";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 export type ProfileFields = Partial<{
   directory_summary: string;
@@ -914,7 +914,7 @@ export function ProfileBody({
                     disabled={actions.drafting}
                     onClick={() => void actions.draftBio()}
                   >
-                    <Sparkles aria-hidden />
+                    <AvaHalo size={16} className="shrink-0" />
                     {actions.drafting ? "Writing a draft…" : view.bio ? "Redraft from my LinkedIn" : "Draft it from my LinkedIn"}
                   </button>
                 </div>

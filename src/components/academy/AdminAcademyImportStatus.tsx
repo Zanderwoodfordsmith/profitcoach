@@ -19,8 +19,10 @@ import {
   type LessonImportStatusReport,
   type LessonImportStatusRow,
 } from "@/lib/academy/lessonImportStatusClient";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
 
 type Props = {
   status: LessonImportStatusReport;
@@ -128,20 +130,20 @@ function overallStatusFromStates(states: {
 function OverallStatusChip({ status }: { status: OverallStatus }) {
   if (status === "ready") {
     return (
-      <span className="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-caption font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+      <span className={badgeClass("green")}>
         Ready
       </span>
     );
   }
   if (status === "gaps") {
     return (
-      <span className="inline-flex rounded-md bg-rose-50 px-2 py-0.5 text-caption font-medium text-rose-800 ring-1 ring-inset ring-rose-200/80">
+      <span className={badgeClass("red")}>
         Gaps
       </span>
     );
   }
   return (
-    <span className="inline-flex rounded-md bg-amber-50 px-2 py-0.5 text-caption font-medium text-amber-900 ring-1 ring-inset ring-amber-200/80">
+    <span className={badgeClass("amber")}>
       Partial
     </span>
   );
@@ -150,13 +152,13 @@ function OverallStatusChip({ status }: { status: OverallStatus }) {
 function PublishBadge({ isDraft }: { isDraft: boolean }) {
   if (isDraft) {
     return (
-      <span className="inline-flex rounded-md bg-amber-50 px-1.5 py-0.5 text-kicker font-semibold uppercase text-amber-900 ring-1 ring-inset ring-amber-200/80">
+      <span className={badgeClass("amber")}>
         Draft
       </span>
     );
   }
   return (
-    <span className="inline-flex rounded-md bg-emerald-50 px-1.5 py-0.5 text-kicker font-semibold uppercase text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+    <span className={badgeClass("green")}>
       Live
     </span>
   );
@@ -283,16 +285,13 @@ function lessonKindLabel(kind: LessonImportKind): string {
   }
 }
 
-function lessonKindBadgeClass(kind: LessonImportKind): string {
+function lessonKindBadgeTone(kind: LessonImportKind): BadgeTone {
   switch (kind) {
     case "chaptered":
-      return "bg-violet-50 text-violet-800 ring-violet-200/80";
     case "chapter":
-      return "bg-sky-50 text-sky-800 ring-sky-200/80";
-    case "satellite":
-      return "bg-slate-100 text-slate-700 ring-slate-200/80";
+      return "blue";
     default:
-      return "bg-white text-slate-600 ring-slate-200/80";
+      return "grey";
   }
 }
 
@@ -309,7 +308,7 @@ function LessonKindBadge({ row }: { row: LessonImportStatusRow }) {
 
   return (
     <span
-      className={`shrink-0 rounded-md px-1.5 py-0.5 text-kicker font-semibold uppercase ring-1 ring-inset ${lessonKindBadgeClass(row.kind)}`}
+      className={badgeClass(lessonKindBadgeTone(row.kind), "shrink-0")}
       title={detail ?? label}
     >
       {label}
@@ -684,14 +683,14 @@ export function AdminAcademyImportStatus({
       <div className={cardClass("plain", "overflow-hidden")}>
         <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
           <div>
-            <label htmlFor="import-filter" className="block text-xs font-medium text-slate-600">
+            <label htmlFor="import-filter" className={fieldLabelClass}>
               Show
             </label>
             <select
               id="import-filter"
               value={filter}
               onChange={(e) => setFilter(e.target.value as LessonImportFilter)}
-              className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("select", "normal", "mt-1")}
             >
               <option value="all">All lessons</option>
               <option value="gaps">Gaps only</option>
@@ -703,14 +702,14 @@ export function AdminAcademyImportStatus({
             </select>
           </div>
           <div>
-            <label htmlFor="course-filter" className="block text-xs font-medium text-slate-600">
+            <label htmlFor="course-filter" className={fieldLabelClass}>
               Course
             </label>
             <select
               id="course-filter"
               value={courseFilter}
               onChange={(e) => setCourseFilter(e.target.value)}
-              className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              className={fieldClass("select", "normal", "mt-1")}
             >
               <option value="all">All courses</option>
               {courses.map(([id, title]) => (
@@ -822,21 +821,21 @@ export function AdminAcademyImportStatus({
           </span>
           <span className="inline-flex items-center gap-2">
             {unmatched.length > 0 ? (
-              <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-rose-800 ring-1 ring-inset ring-rose-200/80">
+              <span className={badgeClass("red", "tabular-nums")}>
                 {unmatched.length} unmatched
               </span>
             ) : (
-              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+              <span className={badgeClass("green")}>
                 Clear
               </span>
             )}
             {ambiguous.length > 0 ? (
-              <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-amber-900 ring-1 ring-inset ring-amber-200/80">
+              <span className={badgeClass("amber", "tabular-nums")}>
                 {ambiguous.length} ambiguous
               </span>
             ) : null}
             {importErrors.length > 0 ? (
-              <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-rose-800 ring-1 ring-inset ring-rose-200/80">
+              <span className={badgeClass("red", "tabular-nums")}>
                 {importErrors.length} errors
               </span>
             ) : null}

@@ -10,6 +10,7 @@ import type { Proposal, ProposalKind } from "@/lib/proposals/types";
 import { ProposalStatusPill, proposalActivity } from "./ProposalStatus";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type ClientOption = { id: string; full_name: string | null; business_name: string | null; email: string | null };
 
@@ -105,8 +106,6 @@ export function ProposalsList({ kind = "proposal" }: { kind?: ProposalKind }) {
     router.push(`${base}/${body.proposal.id}`);
   };
 
-  const input =
-    "h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100";
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
@@ -144,7 +143,7 @@ export function ProposalsList({ kind = "proposal" }: { kind?: ProposalKind }) {
               Pick from your clients
               <select
                 id="proposal-client"
-                className={`${input} mt-1`}
+                className={fieldClass("select", "normal", "mt-1")}
                 value={contactId}
                 onChange={(e) => {
                   const c = clients.find((x) => x.id === e.target.value);
@@ -164,15 +163,15 @@ export function ProposalsList({ kind = "proposal" }: { kind?: ProposalKind }) {
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="text-xs font-medium text-slate-600">
               Their name
-              <input id="proposal-name" className={`${input} mt-1`} value={form.prospect_name} onChange={(e) => setForm({ ...form, prospect_name: e.target.value })} placeholder="e.g. Mike Hartley" autoFocus />
+              <input id="proposal-name" className={fieldClass("input", "normal", "mt-1")} value={form.prospect_name} onChange={(e) => setForm({ ...form, prospect_name: e.target.value })} placeholder="e.g. Mike Hartley" autoFocus />
             </label>
             <label className="text-xs font-medium text-slate-600">
               Their business
-              <input id="proposal-business" className={`${input} mt-1`} value={form.prospect_business} onChange={(e) => setForm({ ...form, prospect_business: e.target.value })} placeholder="e.g. Hartley HVAC Ltd" />
+              <input id="proposal-business" className={fieldClass("input", "normal", "mt-1")} value={form.prospect_business} onChange={(e) => setForm({ ...form, prospect_business: e.target.value })} placeholder="e.g. Hartley HVAC Ltd" />
             </label>
             <label className="text-xs font-medium text-slate-600">
               Their email (to send it)
-              <input id="proposal-email" type="email" className={`${input} mt-1`} value={form.prospect_email} onChange={(e) => setForm({ ...form, prospect_email: e.target.value })} placeholder="mike@hartleyhvac.co.uk" />
+              <input id="proposal-email" type="email" className={fieldClass("input", "normal", "mt-1")} value={form.prospect_email} onChange={(e) => setForm({ ...form, prospect_email: e.target.value })} placeholder="mike@hartleyhvac.co.uk" />
             </label>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">

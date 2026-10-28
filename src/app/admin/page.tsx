@@ -45,6 +45,7 @@ import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton"
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
 import { formatDateDisplay } from "@/lib/formatDateDisplay";
 import {
   lastLoginFreshness,
@@ -2273,7 +2274,7 @@ export default function AdminPage() {
             <div className="space-y-1">
               <label
                 htmlFor="coachFullName"
-                className="block text-xs font-medium text-slate-700"
+                className={fieldLabelClass}
               >
                 Full name
               </label>
@@ -2294,13 +2295,13 @@ export default function AdminPage() {
                     return current;
                   });
                 }}
-                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input", "small")}
               />
             </div>
             <div className="space-y-1">
               <label
                 htmlFor="coachBusinessName"
-                className="block text-xs font-medium text-slate-700"
+                className={fieldLabelClass}
               >
                 Coaching business name
               </label>
@@ -2309,13 +2310,13 @@ export default function AdminPage() {
                 type="text"
                 value={newBusinessName}
                 onChange={(e) => setNewBusinessName(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input", "small")}
               />
             </div>
             <div className="space-y-1">
               <label
                 htmlFor="coachEmail"
-                className="block text-xs font-medium text-slate-700"
+                className={fieldLabelClass}
               >
                 Email
               </label>
@@ -2325,13 +2326,13 @@ export default function AdminPage() {
                 required
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input", "small")}
               />
             </div>
             <div className="space-y-1">
               <label
                 htmlFor="coachSlug"
-                className="block text-xs font-medium text-slate-700"
+                className={fieldLabelClass}
               >
                 Coach link slug{" "}
                 <span className="font-normal text-slate-500">(optional)</span>
@@ -2341,7 +2342,7 @@ export default function AdminPage() {
                 type="text"
                 value={newSlug}
                 onChange={(e) => setNewSlug(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input", "small")}
                 placeholder="Auto from name, e.g. alex-smith"
               />
               <p className="text-caption text-slate-500">
@@ -2423,7 +2424,7 @@ export default function AdminPage() {
                 value={coachSearchTerm}
                 onChange={(e) => setCoachSearchTerm(e.target.value)}
                 placeholder="Search coaches"
-                className="block w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                className={fieldClass("input", "small", "pl-9")}
               />
             </div>
 
@@ -2467,14 +2468,14 @@ export default function AdminPage() {
                 >
                   <div className="space-y-3">
                     <div>
-                      <label htmlFor="last-login-filter" className="mb-1 block text-xs font-medium text-slate-600">
+                      <label htmlFor="last-login-filter" className={`${fieldLabelClass} mb-1`}>
                         Last login filter
                       </label>
                       <select
                         id="last-login-filter"
                         value={lastLoginFilter}
                         onChange={(e) => setLastLoginFilter(e.target.value as LastLoginFilter)}
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "small")}
                       >
                         <option value="all">All</option>
                         <option value="has_login">Has login</option>
@@ -2484,14 +2485,14 @@ export default function AdminPage() {
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="crm-name-filter" className="mb-1 block text-xs font-medium text-slate-600">
+                      <label htmlFor="crm-name-filter" className={`${fieldLabelClass} mb-1`}>
                         CRM name
                       </label>
                       <select
                         id="crm-name-filter"
                         value={crmNameFilter}
                         onChange={(e) => setCrmNameFilter(e.target.value as CrmNameFilter)}
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "small")}
                       >
                         <option value="all">All</option>
                         <option value="has_name">Has CRM name</option>
@@ -2501,7 +2502,7 @@ export default function AdminPage() {
                     <div>
                       <label
                         htmlFor="sales-robot-filter"
-                        className="mb-1 block text-xs font-medium text-slate-600"
+                        className={`${fieldLabelClass} mb-1`}
                       >
                         Sales Robot
                       </label>
@@ -2513,7 +2514,7 @@ export default function AdminPage() {
                             e.target.value as SalesRobotFilter
                           )
                         }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "small")}
                       >
                         <option value="all">All</option>
                         <option value="has_sales_robot">Has account</option>
@@ -2523,7 +2524,7 @@ export default function AdminPage() {
                     <div>
                       <label
                         htmlFor="recurring-billing-filter"
-                        className="mb-1 block text-xs font-medium text-slate-600"
+                        className={`${fieldLabelClass} mb-1`}
                       >
                         Recurring billing
                       </label>
@@ -2535,7 +2536,7 @@ export default function AdminPage() {
                             e.target.value as RecurringBillingFilter
                           )
                         }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "small")}
                       >
                         <option value="all">All</option>
                         <option value="active">Active</option>
@@ -2669,7 +2670,7 @@ export default function AdminPage() {
                                 )
                               );
                             }}
-                            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                            className={fieldClass("select", "small")}
                           >
                             {fieldOptions.map((option) => (
                               <option key={option.value} value={option.value}>
@@ -2687,7 +2688,7 @@ export default function AdminPage() {
                                 )
                               );
                             }}
-                            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                            className={fieldClass("select", "small")}
                           >
                             {orderOptions.map((option) => (
                               <option key={option.value} value={option.value}>
@@ -3026,7 +3027,7 @@ export default function AdminPage() {
             </p>
             <label
               htmlFor="coach-full-name"
-              className="mt-4 block text-xs font-medium text-slate-700"
+              className={`${fieldLabelClass} mt-4`}
             >
               Coach full name
             </label>
@@ -3037,11 +3038,11 @@ export default function AdminPage() {
               onChange={(e) => setCoachFullNameValue(e.target.value)}
               placeholder="Alex Smith"
               disabled={webhookEditSaving}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className={fieldClass("input", "normal", "mt-1")}
             />
             <label
               htmlFor="coach-business-name"
-              className="mt-3 block text-xs font-medium text-slate-700"
+              className={`${fieldLabelClass} mt-3`}
             >
               Coaching business name
             </label>
@@ -3052,11 +3053,11 @@ export default function AdminPage() {
               onChange={(e) => setCoachBusinessNameValue(e.target.value)}
               placeholder="North Star Coaching"
               disabled={webhookEditSaving}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className={fieldClass("input", "normal", "mt-1")}
             />
             <label
               htmlFor="coach-linkedin-url"
-              className="mt-3 block text-xs font-medium text-slate-700"
+              className={`${fieldLabelClass} mt-3`}
             >
               LinkedIn profile URL
             </label>
@@ -3067,11 +3068,11 @@ export default function AdminPage() {
               onChange={(e) => setCoachLinkedinUrlValue(e.target.value)}
               placeholder="https://www.linkedin.com/in/example"
               disabled={webhookEditSaving}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className={fieldClass("input", "normal", "mt-1")}
             />
             <label
               htmlFor="crm-profile-name"
-              className="mt-4 block text-xs font-medium text-slate-700"
+              className={`${fieldLabelClass} mt-4`}
             >
               CRM profile name
             </label>
@@ -3082,11 +3083,11 @@ export default function AdminPage() {
               onChange={(e) => setCrmProfileNameValue(e.target.value)}
               placeholder="AMF Consulting"
               disabled={webhookEditSaving}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className={fieldClass("input", "normal", "mt-1")}
             />
             <label
               htmlFor="crm-location-id"
-              className="mt-3 block text-xs font-medium text-slate-700"
+              className={`${fieldLabelClass} mt-3`}
             >
               CRM location ID
             </label>
@@ -3097,7 +3098,7 @@ export default function AdminPage() {
               onChange={(e) => setCrmLocationIdValue(e.target.value)}
               placeholder="BsRxKtV0lVHcvvZ6qHtu"
               disabled={webhookEditSaving}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className={fieldClass("input", "normal", "mt-1")}
             />
             <p className="mt-2 text-caption text-slate-500">
               Coach CRM link is built as{" "}
@@ -3110,7 +3111,7 @@ export default function AdminPage() {
             />
             <label
               htmlFor="lead-webhook-url"
-              className="mt-4 block text-xs font-medium text-slate-700"
+              className={`${fieldLabelClass} mt-4`}
             >
               Lead webhook URL
             </label>
@@ -3121,7 +3122,7 @@ export default function AdminPage() {
               onChange={(e) => setWebhookEditValue(e.target.value)}
               placeholder="https://hooks.example.com/coach-leads"
               disabled={webhookEditSaving}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className={fieldClass("input", "normal", "mt-1")}
             />
             <p className="mt-2 text-caption text-slate-500">
               Leave blank to disable. Must start with <code>http://</code> or{" "}

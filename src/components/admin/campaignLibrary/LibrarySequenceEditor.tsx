@@ -9,6 +9,7 @@ import {
   type SequenceStep,
 } from "@/components/campaigns/CampaignSequenceBuilder";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import { LibraryTemplateSettingsModal } from "@/components/admin/campaignLibrary/LibraryTemplateSettingsModal";
 import { campaignLibraryAuthHeaders } from "@/lib/campaignLibrary/authHeaders";
 import { defaultLibraryTemplateSettings } from "@/lib/campaignLibrary/sanitize";
@@ -322,7 +323,7 @@ export function LibrarySequenceEditor({
                   setError(err instanceof Error ? err.message : "Could not save.")
                 )
               }
-              className="ml-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-800"
+              className={fieldClass("select", "small", "ml-1.5 inline-block w-auto")}
             >
               {CAMPAIGN_LIBRARY_KINDS.map((kind) => (
                 <option key={kind} value={kind}>

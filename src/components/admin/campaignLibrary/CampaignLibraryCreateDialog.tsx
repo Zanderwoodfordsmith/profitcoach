@@ -4,6 +4,7 @@ import { useEffect, useId } from "react";
 import { X } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   CAMPAIGN_LIBRARY_KIND_LABEL,
   CAMPAIGN_LIBRARY_KINDS,
@@ -89,7 +90,7 @@ export function CampaignLibraryCreateDialog({
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder={`Untitled ${noun}`}
-              className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/30"
+              className={fieldClass("input", "normal", "mt-1.5")}
             />
           </label>
           <label className="block text-sm font-medium text-slate-700">
@@ -99,7 +100,7 @@ export function CampaignLibraryCreateDialog({
               onChange={(e) =>
                 onKindChange(e.target.value as CampaignLibraryKind)
               }
-              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/30"
+              className={fieldClass("select", "normal", "mt-1.5")}
             >
               {CAMPAIGN_LIBRARY_KINDS.map((value) => (
                 <option key={value} value={value}>

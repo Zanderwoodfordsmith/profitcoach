@@ -81,6 +81,8 @@ import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { splitFullName } from "@/lib/splitFullName";
 import { canonicalLinkedInProfileUrl } from "@/lib/salesNavigator/linkedinUrl";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 
 export type { ProspectRow };
 
@@ -254,14 +256,14 @@ const DEFAULT_COLUMN_VISIBILITY = DEFAULT_PROSPECT_COLUMN_VISIBILITY;
 const DEFAULT_COLUMN_ORDER = DEFAULT_PROSPECT_COLUMN_ORDER;
 const ALL_COLUMN_KEYS = ALL_PROSPECT_COLUMN_KEYS;
 
-function nextCallStatusClass(status: string | null | undefined): string {
+function nextCallStatusTone(status: string | null | undefined): BadgeTone {
   switch (status) {
     case "confirmed":
-      return "bg-emerald-50 text-emerald-700";
+      return "green";
     case "booked":
-      return "bg-sky-50 text-sky-700";
+      return "blue";
     default:
-      return "bg-slate-100 text-slate-600";
+      return "grey";
   }
 }
 
@@ -281,7 +283,7 @@ function ProspectNextCallCell({ next }: { next: ProspectNextCall | null | undefi
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <span
-        className={`inline-flex w-fit shrink-0 rounded-full px-1.5 py-0.5 text-caption font-medium leading-none ${nextCallStatusClass(next.status_normalized)}`}
+        className={badgeClass(nextCallStatusTone(next.status_normalized), "w-fit shrink-0")}
       >
         {statusLabel}
       </span>
@@ -1987,7 +1989,7 @@ export function ProspectsTable({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search prospects…"
-              className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+              className={fieldClass("input", "small", "pl-9")}
             />
           </label>
 
@@ -2038,7 +2040,7 @@ export function ProspectsTable({
                             (e.target.value || "all") as string | "all"
                           )
                         }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        className={fieldClass("select", "normal")}
                       >
                         <option value="all">All coaches</option>
                         {coachFilterOptions?.map((coach) => (
@@ -2062,7 +2064,7 @@ export function ProspectsTable({
                       onChange={(e) =>
                         setAssessmentFilter(e.target.value as AssessmentFilter)
                       }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("select", "normal")}
                     >
                       <option value="all">All</option>
                       <option value="assessed">Assessed</option>
@@ -2082,7 +2084,7 @@ export function ProspectsTable({
                       onChange={(e) =>
                         setBossScoreFilter(e.target.value as BossScoreFilter)
                       }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("select", "normal")}
                     >
                       <option value="all">All</option>
                       <option value="completed">Completed</option>
@@ -2102,7 +2104,7 @@ export function ProspectsTable({
                       onChange={(e) =>
                         setBossProFilter(e.target.value as BossProFilter)
                       }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("select", "normal")}
                     >
                       <option value="all">All</option>
                       <option value="completed">Completed</option>
@@ -2122,7 +2124,7 @@ export function ProspectsTable({
                       onChange={(e) =>
                         setNextCallFilter(e.target.value as NextCallFilter)
                       }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("select", "normal")}
                     >
                       <option value="all">All</option>
                       <option value="has_call">Has upcoming call</option>
@@ -2144,7 +2146,7 @@ export function ProspectsTable({
                           e.target.value as NextCallStatusFilter
                         )
                       }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("select", "normal")}
                     >
                       <option value="all">All</option>
                       <option value="booked">Booked</option>
@@ -2165,7 +2167,7 @@ export function ProspectsTable({
                       onChange={(e) =>
                         setStatusFilter(e.target.value as ProspectStatusFilter)
                       }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("select", "normal")}
                     >
                       <option value="all">All</option>
                       {PROSPECT_LIST_STATUS_OPTIONS.map((option) => (
@@ -2216,7 +2218,7 @@ export function ProspectsTable({
                       onChange={(e) =>
                         setSortField(e.target.value as ProspectSortField)
                       }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("select", "normal")}
                     >
                       <option value="name">Name</option>
                       <option value="business">Company</option>
@@ -2242,7 +2244,7 @@ export function ProspectsTable({
                       onChange={(e) =>
                         setSortOrder(e.target.value as ProspectSortOrder)
                       }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("select", "normal")}
                     >
                       {sortOrderOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -2377,7 +2379,7 @@ export function ProspectsTable({
                         setBulkNextActionError(null);
                       }}
                       placeholder="e.g. Follow up on assessment"
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("input", "normal")}
                       autoFocus
                     />
                   </label>
@@ -2389,7 +2391,7 @@ export function ProspectsTable({
                       type="date"
                       value={bulkNextActionDue}
                       onChange={(e) => setBulkNextActionDue(e.target.value)}
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("input", "normal")}
                     />
                   </label>
                   {bulkNextActionError ? (
@@ -2774,7 +2776,7 @@ export function ProspectsTable({
                   Number(e.target.value) as ProspectsPageSize
                 )
               }
-              className="h-8 rounded-lg border border-slate-200 bg-white py-0 pl-2 pr-7 text-sm font-medium text-slate-700 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("select", "small", "w-auto!")}
               aria-label="Prospects per page"
             >
               {PROSPECTS_PAGE_SIZE_OPTIONS.map((n) => (

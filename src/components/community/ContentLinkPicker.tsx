@@ -28,6 +28,7 @@ import type {
 } from "@/app/api/community/mention-content/route";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type CourseArea = MentionTreeCourse["area"];
 
@@ -841,11 +842,11 @@ export function ContentLinkPicker({ onClose, onPick }: Props) {
                 onChange={(e) => setStartAt(e.target.value)}
                 placeholder="0:00"
                 aria-invalid={startInvalid}
-                className={`w-20 rounded-lg border px-2 py-1 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
-                  startInvalid
-                    ? "border-red-300 focus:border-red-400 focus:ring-red-400/20"
-                    : "border-slate-200 focus:border-sky-500 focus:ring-sky-500/20"
-                }`}
+                className={fieldClass(
+                  "input",
+                  "small",
+                  `w-20 ${startInvalid ? "border-red-300 focus:border-red-400 focus:ring-red-400/20" : ""}`
+                )}
               />
               <span className="text-xs text-slate-400">optional</span>
               <button

@@ -10,6 +10,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 const CRM_APP_BASE_URL = "https://app.procoachplatform.com/";
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -208,7 +209,7 @@ export function BookingCalendarProviderCard({
       <label className="block text-sm">
         <span className="font-medium text-slate-700">CRM profile name</span>
         <input
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          className={fieldClass("input", "normal", "mt-1")}
           value={crm.crmProfileName}
           onChange={(e) =>
             setCrm((current) => ({
@@ -222,7 +223,7 @@ export function BookingCalendarProviderCard({
       <label className="block text-sm">
         <span className="font-medium text-slate-700">CRM location ID</span>
         <input
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          className={fieldClass("input", "normal", "mt-1")}
           value={crm.crmLocationId}
           onChange={(e) =>
             setCrm((current) => ({
@@ -240,7 +241,7 @@ export function BookingCalendarProviderCard({
         <span className="font-medium text-slate-700">Booking calendar embed</span>
         <textarea
           rows={5}
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs"
+          className={fieldClass("textarea", "normal", "mt-1 font-mono")}
           value={crm.calendarEmbedCode}
           onChange={(e) =>
             setCrm((current) => ({
@@ -255,7 +256,7 @@ export function BookingCalendarProviderCard({
         <span className="font-medium text-slate-700">Lead webhook URL</span>
         <input
           type="url"
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          className={fieldClass("input", "normal", "mt-1")}
           value={crm.leadWebhookUrl}
           onChange={(e) =>
             setCrm((current) => ({
@@ -288,7 +289,7 @@ export function BookingCalendarProviderCard({
             Calendar provider
           </span>
           <select
-            className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className={fieldClass("select", "normal", "mt-2")}
             value={provider}
             disabled={saving}
             aria-label="Calendar provider"

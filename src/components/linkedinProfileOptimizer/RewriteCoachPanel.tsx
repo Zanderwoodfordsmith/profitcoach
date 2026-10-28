@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { Check, Copy, Loader2, Sparkles, Undo2 } from "lucide-react";
+import { Check, Copy, Loader2, Undo2 } from "lucide-react";
 import { FIELD_LIMITS, type ProfileOptimizerVariant } from "@/lib/linkedinProfileOptimizer/types";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { AvaHalo } from "@/components/ava/AvaHalo";
+import { fieldClass } from "@/components/ui/Field";
 
 export type RewriteChatTurn =
   | { kind: "user"; text: string }
@@ -157,7 +159,7 @@ export function RewriteCoachPanel({
               ? "e.g. more manufacturing, shorter, add a proof line"
               : "Select a section first"
           }
-          className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 disabled:bg-slate-50"
+          className={fieldClass("textarea", "normal", "resize-none")}
         />
         <button
           type="button"
@@ -168,7 +170,7 @@ export function RewriteCoachPanel({
           {rewriting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Sparkles className="h-4 w-4" />
+            <AvaHalo size={18} dark className="shrink-0" />
           )}
           Rewrite {sectionLabel ?? "section"}
         </button>

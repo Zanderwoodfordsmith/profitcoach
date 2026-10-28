@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   AiNote,
   Chip,
@@ -16,6 +16,7 @@ import {
 } from "@/components/firstCampaign/CampaignSetupProgress";
 import type { IcpProposal, SourcingRoute } from "@/lib/firstCampaign/types";
 import { apiPost, type ChosenIcp } from "@/lib/firstCampaign/wizardApi";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 type ProposalsResponse = { proposals?: IcpProposal[]; error?: string };
 type ChooseIcpResponse = { icp?: ChosenIcp; error?: string };
@@ -347,7 +348,7 @@ export function StepIcp({
               loading={loading}
               disabled={!hasLinkedIn}
             >
-              <Sparkles className="h-4 w-4" />
+              <AvaHalo size={18} dark className="shrink-0" />
               Generate ICP proposals
             </PrimaryButton>
           }

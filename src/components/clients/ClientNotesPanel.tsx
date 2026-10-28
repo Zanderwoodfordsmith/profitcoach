@@ -7,6 +7,7 @@ import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { ClientSessionsList } from "@/components/clients/ClientSessionsList";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   contactId: string;
@@ -130,14 +131,14 @@ export function ClientNotesPanel({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+              className={fieldClass("input", "small")}
             />
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={12}
               placeholder="What did you cover? Commitments? Next steps…"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm leading-relaxed outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+              className={fieldClass("textarea")}
             />
             <div className="flex flex-wrap items-center gap-2">
               <button

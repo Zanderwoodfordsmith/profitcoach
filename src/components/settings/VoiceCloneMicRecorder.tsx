@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { recordingBlobToWavFile } from "@/lib/audio/wav";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 const MIC_STORAGE_KEY = "profit-coach:voice-clone:mic-id";
 const MAX_RECORD_MS = 90_000;
@@ -410,7 +411,7 @@ export function VoiceCloneMicRecorder({ disabled, onRecorded, onClear }: Props) 
               value={deviceId}
               onChange={(event) => void changeMic(event.target.value)}
               disabled={disabled || recording}
-              className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15 disabled:bg-slate-50"
+              className={fieldClass("select", "small")}
             >
               {devices.map((device) => (
                 <option key={device.deviceId} value={device.deviceId}>

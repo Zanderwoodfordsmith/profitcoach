@@ -17,13 +17,14 @@ import {
   type LeadStatusIcon,
   type LeadStatusTone,
 } from "@/lib/unipile/campaignLeadActivity";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 
-const TONE_CLASS: Record<LeadStatusTone, string> = {
-  emerald: "bg-emerald-50 text-emerald-800",
-  sky: "bg-sky-50 text-sky-800",
-  amber: "bg-amber-50 text-amber-900",
-  rose: "bg-rose-50 text-rose-800",
-  slate: "bg-slate-100 text-slate-600",
+const TONE_BADGE: Record<LeadStatusTone, BadgeTone> = {
+  emerald: "green",
+  sky: "blue",
+  amber: "amber",
+  rose: "red",
+  slate: "grey",
 };
 
 function StatusGlyph({ kind }: { kind: LeadStatusIcon }) {
@@ -83,7 +84,7 @@ export function PaneStatusChip({
   return (
     <span
       title={label}
-      className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${TONE_CLASS[tone]}`}
+      className={badgeClass(TONE_BADGE[tone], "max-w-full gap-1.5")}
     >
       <StatusGlyph kind={icon} />
       <span className="truncate">{label}</span>

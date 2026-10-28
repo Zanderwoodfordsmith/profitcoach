@@ -10,6 +10,7 @@ import type {
 } from "@/lib/communityCalendarTypes";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 export type CommunityCalendarCancelScope = "occurrence" | "series";
 
@@ -130,7 +131,7 @@ export function CommunityCalendarCancelModal({
               rows={3}
               placeholder="e.g. Coach unavailable — rescheduled to next week"
               disabled={saving}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-50"
+              className={fieldClass("textarea")}
             />
             <p className="text-right text-xs text-slate-400">
               {reason.length} / {REASON_MAX}

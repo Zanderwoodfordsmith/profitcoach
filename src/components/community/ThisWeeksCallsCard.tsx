@@ -26,6 +26,7 @@ import {
 } from "@/lib/communityCalendarDisplay";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 import { cardClass } from "@/components/ui/Card";
+import { badgeClass } from "@/components/ui/Badge";
 
 function formatDayAbbrev(dt: DateTime): string {
   return dt.toFormat("ccc");
@@ -261,7 +262,7 @@ export function ThisWeeksCallsCard() {
                         Live now
                       </span>
                     ) : c.isPast && c.hasRecording ? (
-                      <span className="mt-0.5 inline-flex items-center gap-1 rounded bg-emerald-100 px-1 py-0.5 text-caption font-semibold leading-tight text-emerald-800">
+                      <span className={badgeClass("green", "mt-0.5")}>
                         <Video
                           className="h-2.5 w-2.5 shrink-0"
                           aria-hidden

@@ -7,6 +7,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type CalendarItem = {
   id: string;
@@ -188,7 +189,7 @@ function CalendarPrefsPanel({
           Calendar for new bookings
         </span>
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          className={fieldClass("select", "normal", "mt-1")}
           value={eventCalendarId}
           onChange={(e) => onEventCalendarId(e.target.value)}
           disabled={!writableCalendars.length}

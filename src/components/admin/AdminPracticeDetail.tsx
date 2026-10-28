@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PracticeBrief } from "@/components/practice/PracticeBrief";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { emptyDecision } from "@/lib/practiceKnowledge/decisionDefaults";
 import type {
@@ -183,7 +184,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
             <label className="text-sm text-slate-600">
               Status{" "}
               <select
-                className="ml-2 rounded-lg border border-slate-200 px-2 py-1"
+                className={fieldClass("select", "small", "ml-2 inline-block w-auto")}
                 value={knowledge.status}
                 disabled={busy}
                 onChange={(e) => void patch({ status: e.target.value })}
@@ -278,7 +279,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
                 <label key={key} className="block text-sm">
                   <span className="font-medium text-slate-700">{label}</span>
                   <input
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+                    className={fieldClass("input", "normal", "mt-1")}
                     value={decision[key]}
                     onChange={(e) =>
                       setDecision((prev) => ({ ...prev, [key]: e.target.value }))
@@ -290,7 +291,7 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
             <label className="block text-sm">
               <span className="font-medium text-slate-700">Customer responsibilities</span>
               <textarea
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+                className={fieldClass("textarea", "normal", "mt-1")}
                 value={decision.customer_responsibilities}
                 onChange={(e) =>
                   setDecision((prev) => ({

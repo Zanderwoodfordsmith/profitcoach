@@ -8,6 +8,7 @@ import { ExternalLink } from "lucide-react";
 import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   activeLandingVariants,
   coachDisplayName,
@@ -213,7 +214,7 @@ export function AdminLandingAnalytics() {
                 type="date"
                 value={dateRange.from}
                 onChange={(e) => setDateRange((r) => ({ ...r, from: e.target.value }))}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                className={fieldClass("input", "small", "w-auto")}
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-slate-600">
@@ -222,7 +223,7 @@ export function AdminLandingAnalytics() {
                 type="date"
                 value={dateRange.to}
                 onChange={(e) => setDateRange((r) => ({ ...r, to: e.target.value }))}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                className={fieldClass("input", "small", "w-auto")}
               />
             </label>
           </div>

@@ -12,6 +12,7 @@ import {
   mergeProspectTagCatalog,
 } from "@/lib/prospects/tagAppearance";
 import { buttonClass } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   tags: string[];
@@ -88,7 +89,7 @@ export function ProspectTagsEditor({
           disabled={saving}
           maxLength={MAX_PROSPECT_TAG_LENGTH}
           placeholder={tags.length ? "Add another tag" : "Add a tag"}
-          className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:opacity-60"
+          className={fieldClass("input", "small", "min-w-0 flex-1")}
           aria-label="Add a tag"
         />
         <button

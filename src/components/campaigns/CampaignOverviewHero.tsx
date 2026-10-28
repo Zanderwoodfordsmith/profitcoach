@@ -9,6 +9,7 @@ import {
   CampaignCompactDial,
   CampaignReplyMix,
 } from "@/components/campaigns/CampaignOverviewMetrics";
+import { fieldClass } from "@/components/ui/Field";
 import {
   OVERVIEW_RANGE_LABELS,
   OVERVIEW_RANGES,
@@ -669,7 +670,7 @@ export function CampaignOverviewHero({
                 setRange(event.target.value as OverviewRange);
                 setOffset(0);
               }}
-              className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pr-8 pl-3 text-sm font-semibold text-slate-800 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+              className={fieldClass("select", "small", "appearance-none w-auto")}
             >
               {OVERVIEW_RANGES.map((value) => (
                 <option key={value} value={value}>

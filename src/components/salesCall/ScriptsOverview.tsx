@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ArrowRight, CalendarClock, Gauge, Map, MessageCircleQuestion, PhoneIncoming, Send, type LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarClock, Gauge, Lock, Map, MessageCircleQuestion, PhoneIncoming, Send, type LucideIcon } from "lucide-react";
 
 import { CallSimBanner } from "@/components/callSimulator/CallSimBanner";
 import { cardClass } from "@/components/ui/Card";
@@ -58,6 +58,21 @@ export function ScriptsOverview() {
         ))}
       </ul>
       <CallSimBanner />
+      {prefix === "/admin" ? (
+        <Link
+          href="/admin/script/levers"
+          className={cardClass("raised", "group mt-6 flex items-center justify-between gap-4 px-5 py-4 transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400")}
+        >
+          <span>
+            <span className="flex items-center gap-1.5 text-lg font-semibold tracking-tight text-slate-900">
+              Your levers
+              <Lock className="h-3.5 w-3.5 text-slate-400" aria-label="Admin only" />
+            </span>
+            <span className="mt-0.5 block text-sm text-slate-600">How many messages one client takes, and what each script is worth.</span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-[#0c5290] transition group-hover:translate-x-0.5" aria-hidden />
+        </Link>
+      ) : null}
     </div>
   );
 }

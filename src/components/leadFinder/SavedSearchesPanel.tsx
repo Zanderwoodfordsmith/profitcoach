@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { LEADROCKS_US_STATES } from "@/lib/leadFinder/leadrocksOptions";
 import {
   buildDefaultSearches,
@@ -13,11 +13,10 @@ import {
 } from "@/lib/salesNavigator/defaultSearches";
 import type { ProspectSearchStrategy } from "@/lib/salesNavigator/prospectSearch/types";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { AvaHalo } from "@/components/ava/AvaHalo";
+import { fieldClass } from "@/components/ui/Field";
 
 const MARKET_STORAGE_KEY = "lead-finder-search-market";
-
-const fieldClass =
-  "w-full border-0 border-b border-slate-200 bg-transparent px-0 py-1.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900";
 
 function loadStoredMarket(): SearchMarket | null {
   try {
@@ -280,7 +279,7 @@ export function SavedSearchesPanel({
             {market === "US" ? "City" : "Town"}
           </span>
           <input
-            className={fieldClass}
+            className={fieldClass("input", "normal")}
             value={town}
             maxLength={80}
             onChange={(e) => setTown(e.target.value.slice(0, 80))}
@@ -293,7 +292,7 @@ export function SavedSearchesPanel({
               Postcode
             </span>
             <input
-              className={fieldClass}
+              className={fieldClass("input", "normal")}
               value={postcode}
               maxLength={12}
               onChange={(e) => setPostcode(clampPostcode(e.target.value))}
@@ -307,7 +306,7 @@ export function SavedSearchesPanel({
               State
             </span>
             <select
-              className={`${fieldClass} bg-transparent`}
+              className={fieldClass("select", "normal")}
               value={state}
               onChange={(e) => setState(e.target.value)}
             >
@@ -346,7 +345,7 @@ export function SavedSearchesPanel({
             <span className="text-caption text-slate-400">{strategyError}</span>
           ) : (
             <span className="inline-flex items-center gap-1 text-caption text-slate-400">
-              <Sparkles className="h-3 w-3" />
+              <AvaHalo size={14} className="shrink-0" />
               From your avatar / ICP
             </span>
           )

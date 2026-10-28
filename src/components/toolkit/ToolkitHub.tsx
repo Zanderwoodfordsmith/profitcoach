@@ -18,6 +18,7 @@ import {
 import type { ProgrammeBrochure } from "@/lib/practiceKnowledge/brochure";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import { ProgrammeBrochureCard } from "./ProgrammeBrochure";
 import { TOOLKIT_VIEWS, type ToolkitGraphicsView } from "./ToolkitTabs";
 
@@ -173,7 +174,7 @@ export function ToolkitHub({ view }: { view: ToolkitGraphicsView }) {
                       value={eventName}
                       maxLength={40}
                       onChange={(e) => setEventName(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                      className={fieldClass("input", "normal", "mt-1")}
                     />
                   </label>
                 ) : null}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { ReferralsHub } from "@/components/referrals/ReferralsHub";
+import { fieldClass } from "@/components/ui/Field";
 import type { NetworkCoach } from "@/lib/referrals/network";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
@@ -74,7 +75,7 @@ export default function AdminReferralsPage() {
           value={coachId}
           onChange={(e) => pick(e.target.value)}
           disabled={!coaches}
-          className="min-w-64 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+          className={fieldClass("select", "normal", "w-auto min-w-64")}
         >
           <option value="">{coaches ? "Pick a coach" : "Loading coaches…"}</option>
           {loaded.length ? (

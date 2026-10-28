@@ -8,12 +8,13 @@ import { useRequireAdminRole } from "@/hooks/useRequireAdminRole";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { ClientInsights } from "@/lib/clientRoster/insights";
 import type { CoachHealthRow, HealthLevel } from "@/lib/coachHealth";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { cardClass } from "@/components/ui/Card";
 
-const LEVEL_STYLE: Record<HealthLevel, string> = {
-  red: "bg-rose-100 text-rose-800",
-  amber: "bg-amber-100 text-amber-900",
-  green: "bg-emerald-100 text-emerald-800",
+const LEVEL_TONE: Record<HealthLevel, BadgeTone> = {
+  red: "red",
+  amber: "amber",
+  green: "green",
 };
 const LEVEL_LABEL: Record<HealthLevel, string> = { red: "Stuck", amber: "Needs help", green: "On track" };
 
@@ -178,7 +179,7 @@ export default function AdminGetClientsHealthPage() {
                         </div>
                       </td>
                       <td className="px-3 py-2">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${LEVEL_STYLE[r.level]}`}>{LEVEL_LABEL[r.level]}</span>
+                        <span className={badgeClass(LEVEL_TONE[r.level])}>{LEVEL_LABEL[r.level]}</span>
                       </td>
                       <td className="px-3 py-2">
                         <div className="text-slate-900">{r.stuck_at}</div>

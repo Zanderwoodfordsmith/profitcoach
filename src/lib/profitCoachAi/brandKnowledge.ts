@@ -13,7 +13,8 @@ export type BrandKnowledgeGroup =
   | "core"
   | "skill"
   | "reply-copilot"
-  | "support-copilot";
+  | "support-copilot"
+  | "community-copilot";
 
 export type BrandKnowledgeFileMeta = {
   file: string;
@@ -88,6 +89,14 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     label: "Copywriter knowledge",
     description:
       "Copywriting patterns and rules (from Drive _brand) — loaded for outward-facing copy skills.",
+    group: "skill",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "outreach-research.md",
+    label: "Outreach research (110k requests)",
+    description:
+      "What 110,000 connection requests taught us, with the caveats. Read by Ava and community reply drafts.",
     group: "skill",
     dir: "ai-knowledge",
   },
@@ -212,6 +221,14 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     description:
       "Links, menu paths, known issues and standard answers. Update when a fix ships or a link changes.",
     group: "support-copilot",
+    dir: "ai-knowledge",
+  },
+  {
+    file: "community-copilot/ROUTER.md",
+    label: "Community reply voice",
+    description:
+      "How draft replies to community posts sound. Loaded with the outreach research and the support playbook.",
+    group: "community-copilot",
     dir: "ai-knowledge",
   },
 ];

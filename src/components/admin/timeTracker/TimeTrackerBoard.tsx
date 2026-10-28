@@ -21,6 +21,7 @@ import {
 import { TimeTrackerGrid } from "./TimeTrackerGrid";
 import { TimeTrackerBlockModal, type BlockDraft } from "./TimeTrackerBlockModal";
 import { TimeTrackerSelect } from "./TimeTrackerSelect";
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 
@@ -421,7 +422,7 @@ export function TimeTrackerBoard() {
 
         <div className="flex items-center gap-2">
           {!editable && selectedUserId && (
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+            <span className={badgeClass("grey")}>
               Read-only
             </span>
           )}

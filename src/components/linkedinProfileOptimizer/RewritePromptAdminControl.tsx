@@ -10,6 +10,7 @@ import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 async function authHeaders(): Promise<HeadersInit | null> {
   const {
@@ -175,7 +176,7 @@ export function RewritePromptAdminControl() {
                 onChange={(e) => setPrompt(e.target.value)}
                 disabled={!loaded}
                 rows={16}
-                className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-ui leading-relaxed text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+                className={fieldClass("textarea", "normal", "resize-y font-mono")}
               />
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button

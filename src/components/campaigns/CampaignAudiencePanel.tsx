@@ -6,6 +6,7 @@ import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar"
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   audienceItemSourceLabel,
   displayListPersonName,
@@ -463,7 +464,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. Manufacturing owners"
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#0c5290]/30"
+              className={fieldClass("input", "small", "min-w-0 flex-1")}
               onKeyDown={(e) => {
                 if (e.key === "Enter") void createList();
                 if (e.key === "Escape") setShowCreate(false);
@@ -657,13 +658,13 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                       value={searchUrl}
                       onChange={(e) => setSearchUrl(e.target.value)}
                       placeholder="Sales Nav or LinkedIn search URL"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                      className={fieldClass("input", "normal")}
                     />
                     <input
                       value={searchKeywords}
                       onChange={(e) => setSearchKeywords(e.target.value)}
                       placeholder="Or keywords…"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                      className={fieldClass("input", "normal")}
                     />
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -744,7 +745,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                       onChange={(e) => setPasteText(e.target.value)}
                       rows={5}
                       placeholder="One LinkedIn URL per line. Optional: url, first, last, company, title"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                      className={fieldClass("textarea", "normal")}
                     />
                     <button
                       type="button"
@@ -761,25 +762,25 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                       value={oneUrl}
                       onChange={(e) => setOneUrl(e.target.value)}
                       placeholder="LinkedIn profile URL"
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm sm:col-span-2"
+                      className={fieldClass("input", "normal", "sm:col-span-2")}
                     />
                     <input
                       value={oneName}
                       onChange={(e) => setOneName(e.target.value)}
                       placeholder="Name"
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                      className={fieldClass("input", "normal")}
                     />
                     <input
                       value={oneTitle}
                       onChange={(e) => setOneTitle(e.target.value)}
                       placeholder="Title"
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                      className={fieldClass("input", "normal")}
                     />
                     <input
                       value={oneCompany}
                       onChange={(e) => setOneCompany(e.target.value)}
                       placeholder="Company"
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm sm:col-span-2"
+                      className={fieldClass("input", "normal", "sm:col-span-2")}
                     />
                     <button
                       type="button"
@@ -823,7 +824,7 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search this list…"
-                  className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-500 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+                  className={fieldClass("input", "small", "pl-9")}
                 />
               </label>
             </div>

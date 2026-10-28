@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 import {
   formatProspectLabel,
   formatProspectPersonName,
@@ -658,7 +659,7 @@ export function ProspectsDailyBarChart({ prospects, loading }: Props) {
           <select
             value={range}
             onChange={(e) => setRange(e.target.value as ChartRange)}
-            className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
+            className={fieldClass("select", "small", "w-auto")}
             aria-label="Day range"
           >
             <option value="7">Last 7 days</option>

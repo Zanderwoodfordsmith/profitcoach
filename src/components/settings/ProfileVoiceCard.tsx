@@ -13,6 +13,7 @@ import {
 } from "@/lib/vocallab/cloneScript";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type CoachVoice = {
   id: string;
@@ -262,7 +263,7 @@ export function ProfileVoiceCard({
                 setLanguage(e.target.value as VoiceLanguageCode)
               }
               disabled={busy}
-              className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15 disabled:bg-slate-50"
+              className={fieldClass("select", "small")}
             >
               {VOICE_LANGUAGE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -287,7 +288,7 @@ export function ProfileVoiceCard({
               readOnly
               value={payload?.script ?? ""}
               rows={6}
-              className="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm text-slate-800 outline-none"
+              className={fieldClass("textarea", "small", "resize-y")}
             />
           </ProfileFieldRow>
 

@@ -7,6 +7,7 @@ import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
 import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type Props = {
   videoUrl: string;
@@ -220,7 +221,7 @@ export function LessonFeaturedMedia({
               }
             }}
             placeholder="https://www.youtube.com/watch?v=…"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className={fieldClass("input", "normal", "min-w-0 flex-1")}
             autoFocus
           />
           <button

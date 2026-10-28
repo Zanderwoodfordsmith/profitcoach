@@ -122,6 +122,8 @@ import { paginationItems } from "@/lib/communityPagination";
 import { buttonClass } from "@/components/ui/Button";
 import { isMagnetPlaybookId } from "@/lib/leadMagnets/catalog";
 import type { CsvExportScope } from "@/components/table/TableCsvExportButton";
+import { fieldClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 import {
   prefetchProspectContact,
   seedProspectContactCache,
@@ -2139,7 +2141,7 @@ export function CampaignPoolHub({
               poolSourceLabel(row.source)
             ) : option.key === "campaign" ? (
               row.in_campaign ? (
-                <span className="rounded-full bg-sky-50 px-2 py-0.5 text-caption font-medium text-sky-800">
+                <span className={badgeClass("blue")}>
                   In campaign
                 </span>
               ) : (
@@ -2380,7 +2382,7 @@ export function CampaignPoolHub({
               <label className="block text-xs font-medium text-slate-600">
                 Sort by
                 <select
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className={fieldClass("select", "small", "mt-1")}
                   value={sortField}
                   onChange={(e) =>
                     setSortField(e.target.value as typeof sortField)
@@ -2396,7 +2398,7 @@ export function CampaignPoolHub({
               <label className="mt-3 block text-xs font-medium text-slate-600">
                 Order
                 <select
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className={fieldClass("select", "small", "mt-1")}
                   value={sortOrder}
                   onChange={(e) =>
                     setSortOrder(e.target.value as typeof sortOrder)
@@ -2448,7 +2450,7 @@ export function CampaignPoolHub({
               <label className="block px-3 pb-1 text-xs font-medium text-slate-600">
                 Group order
                 <select
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className={fieldClass("select", "small", "mt-1")}
                   disabled={!groupField}
                   value={grouping.order}
                   onChange={(e) =>
@@ -2629,7 +2631,7 @@ export function CampaignPoolHub({
                                 value={newListName}
                                 onChange={(e) => setNewListName(e.target.value)}
                                 placeholder="New list name"
-                                className="min-w-0 flex-1 rounded-md border border-slate-200 px-2 py-1.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                className={fieldClass("input", "small", "min-w-0 flex-1")}
                                 aria-label="New list name"
                               />
                               <button
@@ -2858,7 +2860,7 @@ export function CampaignPoolHub({
                           onChange={(e) => setMatchListName(e.target.value)}
                           placeholder="New list name"
                           aria-label="New list name"
-                          className="min-w-0 flex-1 rounded-md border border-slate-200 px-2 py-1.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                          className={fieldClass("input", "small", "min-w-0 flex-1")}
                         />
                         <button
                           type="submit"
@@ -3006,7 +3008,7 @@ export function CampaignPoolHub({
                               setRenameImportValue("");
                             }
                           }}
-                          className="w-32 rounded border border-slate-300 px-2 py-0.5 text-sm font-medium text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                          className={fieldClass("input", "small", "w-32!")}
                           aria-label="Rename list"
                         />
                       </form>
@@ -3098,7 +3100,7 @@ export function CampaignPoolHub({
                       }}
                       placeholder="List name"
                       disabled={busy}
-                      className="w-36 rounded border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className={fieldClass("input", "small", "w-36!")}
                       aria-label="New list name"
                     />
                     <button
@@ -3378,7 +3380,7 @@ export function CampaignPoolHub({
             <select
               value={customPageSize ? "custom" : pageSize}
               onChange={(e) => handlePageSizeSelect(e.target.value)}
-              className="h-8 rounded-lg border border-slate-200 bg-white py-0 pl-2 pr-7 text-sm font-medium text-slate-700 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className={fieldClass("select", "small", "w-auto!")}
               aria-label="People per page"
             >
               {POOL_PAGE_SIZE_OPTIONS.map((n) => (
@@ -3404,7 +3406,7 @@ export function CampaignPoolHub({
                     e.currentTarget.blur();
                   }
                 }}
-                className="h-8 w-[4.5rem] rounded-lg border border-slate-200 bg-white px-2 text-sm font-medium tabular-nums text-slate-700 outline-none [appearance:textfield] focus:border-sky-500 focus:ring-1 focus:ring-sky-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className={fieldClass("input", "small", "w-[4.5rem]! tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none")}
                 aria-label="Custom people per page"
               />
             ) : null}

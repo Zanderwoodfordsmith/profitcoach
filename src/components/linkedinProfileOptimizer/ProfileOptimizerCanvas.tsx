@@ -19,6 +19,7 @@ import {
   type ProfileOptimizerDraft,
   type ProfileSectionId,
 } from "@/lib/linkedinProfileOptimizer/types";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 
 const COVER_ASPECT = "aspect-[1584/396]";
 const FEATURED_SLOTS = ["Newsletter", "Proof", "Lead magnet"] as const;
@@ -38,16 +39,10 @@ function statusLabel(status: SectionStatus): string {
 }
 
 function StatusChip({ status }: { status: SectionStatus }) {
-  const tone =
-    status === "draft"
-      ? "border-sky-200 bg-sky-50 text-sky-800"
-      : status === "needs-work"
-        ? "border-amber-200 bg-amber-50 text-amber-800"
-        : "border-slate-200 bg-white/90 text-slate-600";
+  const tone: BadgeTone =
+    status === "draft" ? "blue" : status === "needs-work" ? "amber" : "grey";
   return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-caption font-semibold ${tone}`}
-    >
+    <span className={badgeClass(tone)}>
       {statusLabel(status)}
     </span>
   );

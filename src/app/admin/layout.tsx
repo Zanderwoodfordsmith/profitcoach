@@ -13,6 +13,7 @@ import { useAvaPageHost } from "@/components/ava/avaPageHost";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { AppPresenceHeartbeat } from "@/components/presence/AppPresenceHeartbeat";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
+import { useProductCanvas } from "@/components/admin/roadmap/ProductCanvasToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
@@ -45,6 +46,9 @@ export default function AdminLayout({
   const playbooksReader = isPlaybooksReaderPath(pathname);
   /** Long table: a flat canvas keeps its row lines readable all the way down. */
   const curriculumBoardPage = pathname.startsWith("/admin/lesson-import/curriculum");
+  /** Product's roadmap pages: white or the gradient, side by side until Zander picks. */
+  const productCanvas = useProductCanvas();
+  const productWhitePage = pathname.startsWith("/admin/roadmap") && productCanvas === "white";
   const blueprintPage = pathname.startsWith("/admin/blueprint");
   const coachesBlueprintPage =
     pathname === "/admin/client-success/blueprint" || pathname.startsWith("/admin/client-success/blueprint/");
@@ -153,7 +157,7 @@ export default function AdminLayout({
       className={`group/appshell ${
         fullHeightPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
-        playbooksReader ? "bg-[#fbfbfa]" : curriculumBoardPage ? "bg-[#f7f9fb]" : "app-canvas-bg"
+        playbooksReader ? "bg-[#fbfbfa]" : curriculumBoardPage || productWhitePage ? "bg-[#f7f9fb]" : "app-canvas-bg"
       }`}
     >
       <UsageTracker />

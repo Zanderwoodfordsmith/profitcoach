@@ -17,6 +17,7 @@ import {
 import type { ProspectRow } from "@/lib/prospectRow";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { fieldClass } from "@/components/ui/Field";
 
 type CoachOption = { id: string; label: string };
 
@@ -209,7 +210,7 @@ export function ImportProspectsModal({
           <label className="mt-4 block text-xs font-medium text-slate-600">
             Coach
             <select
-              className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className={fieldClass("select", "small", "mt-1")}
               value={coachId}
               onChange={(e) => setCoachId(e.target.value)}
             >

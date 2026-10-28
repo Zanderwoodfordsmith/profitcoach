@@ -26,6 +26,7 @@ import { ProspectsLandingStats } from "@/components/prospects/ProspectsLandingSt
 import { ShareQrCodeModal } from "@/components/settings/ShareQrCodeModal";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 
 const CRM_APP_BASE_URL = "https://app.procoachplatform.com/";
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -138,7 +139,7 @@ function LinkPreviewRow({
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium text-slate-900">{title}</p>
             {primary ? (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-kicker font-semibold uppercase text-sky-800">
+              <span className={badgeClass("blue")}>
                 Main link
               </span>
             ) : null}
@@ -342,24 +343,15 @@ function EmbedSnippetBlock({
 
 function crmStatusBadge(status: CalendarSyncStatus): {
   label: string;
-  className: string;
+  tone: BadgeTone;
 } {
   if (status.ready) {
-    return {
-      label: "Ready",
-      className: "bg-emerald-100 text-emerald-800 ring-emerald-200",
-    };
+    return { label: "Ready", tone: "green" };
   }
   if (status.tone === "warning") {
-    return {
-      label: "Finish setup",
-      className: "bg-amber-100 text-amber-900 ring-amber-200",
-    };
+    return { label: "Finish setup", tone: "amber" };
   }
-  return {
-    label: "Not set up",
-    className: "bg-slate-100 text-slate-700 ring-slate-200",
-  };
+  return { label: "Not set up", tone: "grey" };
 }
 
 function SidebarVideoCard({
@@ -480,7 +472,7 @@ function CollapsibleCrmSection({
               Calendar & CRM
             </h2>
             <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${badge.className}`}
+              className={badgeClass(badge.tone)}
             >
               {badge.label}
             </span>
