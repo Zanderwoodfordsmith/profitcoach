@@ -20,6 +20,7 @@ const ROUTER_MAX_CHARS = 6_000;
 const BRAND_FILE_MAX_CHARS: Partial<Record<BrandFileName, number>> = {
   "avatar-profile.md": 8_000,
   "copywriter-knowledge.md": 8_000,
+  "copywriting-method.md": 9_000,
 };
 
 export type AssembleProfitCoachPromptArgs = {

@@ -565,18 +565,6 @@ const GROUPS: BlueprintGroup[] = [
             from: ["LinkedIn import", "Your voice", "Your ideal client", "Your offer", "Story and proof"],
             feeds: "The coach's LinkedIn profile",
           },
-          {
-            id: "bio",
-            // Moved from Your Story and Proof so About You holds only the coach's answers; the stored key keeps every bio.
-            key: "story:bio",
-            title: "Your bio",
-            source: "we_build",
-            about: "Written from your Story and Proof: a short bio, a one-line introduction, and a version for partners and events.",
-            from: ["Story and proof"],
-            feeds: "LinkedIn About, introductions, newsletter sign-off, the 90-day brochure in Toolkit",
-            needs: [],
-            uses: { fields: ["proof.career_results", "proof.superpowers", "proof.uniqueness", "proof.proudest", "proof.problems_asked", "market.career", "market.roles_held", "market.industries_worked", "market.industries_credibility", ...VOICE_STYLE_PATHS], sources: ["linkedin", "transcript"] },
-          },
         ],
       },
       {
@@ -948,6 +936,20 @@ const GROUPS: BlueprintGroup[] = [
             feeds: "LinkedIn headline and About, introductions, messages, the 90-day brochure, proposals",
             needs: ["offer:direction"],
             uses: { fields: ["practice.more_of", "practice.less_of", "practice.help_with", "practice.guarantee_terms", "proof.career_results"] },
+          },
+          {
+            id: "bio",
+            // Moved from Your Story and Proof (About You holds only the coach's answers), then off the LinkedIn page; the stored key keeps every bio.
+            key: "story:bio",
+            title: "Your bio",
+            source: "we_build",
+            // Still written for the coach site and campaigns; not shown here, as its facts are already in About You.
+            face: "stored",
+            about: "Written from your Story and Proof: a short bio, and the same bio for partners and events.",
+            from: ["Story and proof"],
+            feeds: "LinkedIn About, introductions, newsletter sign-off, the 90-day brochure in Toolkit",
+            needs: [],
+            uses: { fields: ["proof.career_results", "proof.superpowers", "proof.uniqueness", "proof.proudest", "proof.problems_asked", "market.career", "market.roles_held", "market.industries_worked", "market.industries_credibility", ...VOICE_STYLE_PATHS], sources: ["linkedin", "transcript"] },
           },
         ],
       },

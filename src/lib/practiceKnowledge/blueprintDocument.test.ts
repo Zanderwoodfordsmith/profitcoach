@@ -149,7 +149,8 @@ describe("exports and handoff", () => {
     )!;
     assert.deepEqual(plan.steps.map((step) => step.step_type), ["invite", "wait", "message"]);
     assert.equal(plan.steps[0].body, "Hi {{first_name}}, I see you run...");
-    assert.equal(plan.steps[2].send_mode, "remind");
+    assert.equal(plan.steps[1].wait_hours, 5 / 60);
+    assert.equal(plan.steps[2].send_mode, "auto");
   });
 });
 

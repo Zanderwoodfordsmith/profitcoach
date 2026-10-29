@@ -1,3 +1,4 @@
+import { connectionNoteLength } from "@/lib/campaigns/connectionNote";
 import { dominantSector } from "@/lib/campaigns/sectorTiers";
 import { resolveMergeField } from "@/lib/unipile/mergeFields";
 
@@ -105,8 +106,8 @@ export function checkCampaign(input: { steps: CheckStep[]; leads: CheckLead[]; c
         if (b.re.test(body)) issues.push({ level: "warning", code: b.code, step: label, message: `Step ${label}: ${b.message}` });
       }
       if (step.step_type === "invite") {
-        if (body.length > INVITE_NOTE_MAX) {
-          issues.push({ level: "blocker", code: "note_too_long", step: label, message: `The connection note is ${body.length} characters. LinkedIn allows ${INVITE_NOTE_MAX}.` });
+        if (connectionNoteLength(body) > INVITE_NOTE_MAX) {
+          issues.push({ level: "blocker", code: "note_too_long", step: label, message: `The connection note is ${connectionNoteLength(body)} characters once filled in. LinkedIn allows ${INVITE_NOTE_MAX}.` });
         }
         if (/https?:\/\/|www\.|\.com\//i.test(body)) {
           issues.push({

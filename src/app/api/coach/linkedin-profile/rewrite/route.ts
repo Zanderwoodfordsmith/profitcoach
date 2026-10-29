@@ -29,6 +29,11 @@ export async function POST(request: Request) {
     );
   }
 
+  // Writing the profile from the Blueprint is BCA's job; coaches edit by hand.
+  if (!authCheck.callerIsAdmin) {
+    return NextResponse.json({ error: "Our team writes your profile." }, { status: 403 });
+  }
+
   const coachId = authCheck.userId;
   const body = (await request.json().catch(() => null)) as {
     section?: unknown;

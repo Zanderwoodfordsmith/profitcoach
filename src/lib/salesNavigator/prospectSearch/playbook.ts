@@ -18,7 +18,7 @@ Take the ~600k+ "base search" business owners in a geography and narrow to a hig
 Keep these on every Sales Nav strategy (unless expanding after exhaustion):
 - Connections: 2nd + 3rd (for connector campaigns). Optionally check 1st later for warm outreach — 1st-degree searches have no geography (whole network).
 - Geography: usually country (UK) or US state / nearby states.
-- Company headcount: 1–10, 11–50, 51–200 (sweet spot). Include 1–10 because many real 20–30 person firms are mislisted. Skip "Self-employed". 201–500 only if targeting larger.
+- Company headcount: start with 11–50. Add 51–200 when the ideal client is a bigger firm. 1–10 is the last resort, added only when the list is too small (many real 20–30 person firms are mislisted there, but it also pulls in one-person firms). Skip "Self-employed". 201–500 only if targeting larger.
 - Current titles (include): Owner, co-owner, Founder, co-founder, CEO, Managing director, co-managing director, Managing partner, co-managing partner (+ industry-specific titles e.g. Head Architect).
 - Exclude on BOTH Current Company AND Current Title (unless that IS the niche): coach, coaching, consultant, consulting, consultants, psychologist, recruiter, recruiting, recruitment, recruit.
 - Also exclude Current Company: consultancy.
@@ -49,6 +49,11 @@ Not every industry puts the industry word in the company name.
 - Go WIDER on market (drinks → food / FMCG) but MORE SPECIFIC on naming words that DO appear: cookies, crisps, chips, coffee, wine, wines, spirits, beverage(s), chocolate, beer, gin…
 - Create SEPARATE lists per strong naming word when they produce clean lists (wine alone can be 1000+ and worth saving as its own search).
 - "food" alone often pulls wholesalers / importers / exporters — too broad or wrong.
+
+**Example — sports facilities / gyms (umbrella word is too loose):**
+- "sports" alone pulls clubs, teams, coaches and kit shops, not facility owners.
+- Use the words facilities put in their names: gym, gyms, fitness, leisure, "leisure centre", padel, climbing, "sports centre". Make a separate list per word that comes back clean.
+- Spot-check each word on its own. Some (e.g. golf) pull in the wrong people, so drop them.
 
 **Name-poor industries (e.g. many software / services firms):**
 - Industry word rarely in company name → skip or quickly abandon company-name includes.

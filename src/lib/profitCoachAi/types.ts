@@ -22,12 +22,15 @@ export type BrandFileName =
   | "offer-stack.md"
   | "writing-rules.md"
   | "avatar-profile.md"
-  | "copywriter-knowledge.md";
+  | "copywriter-knowledge.md"
+  | "copywriting-method.md";
 
 export type KnowledgeRef =
   | { type: "playbook"; path: string }
   | { type: "ai-knowledge"; file: string }
-  | { type: "legacy-knowledge"; file: string };
+  | { type: "legacy-knowledge"; file: string }
+  /** A method file under content/practice-skills (shared with the Blueprint and Ava). */
+  | { type: "practice-skill"; file: string };
 
 /** DB-backed prompt editors in Admin → Brand → Core brain → Skills. */
 export type ProfitCoachPromptEditor =

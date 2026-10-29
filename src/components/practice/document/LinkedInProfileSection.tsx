@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy, Download, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Check, Copy, Loader2 } from "lucide-react";
 
 import { ProfileOptimizerCanvas, SECTION_META } from "@/components/linkedinProfileOptimizer/ProfileOptimizerCanvas";
 import {
@@ -11,7 +11,6 @@ import {
   saveOptimizerDraft,
 } from "@/components/linkedinProfileOptimizer/api";
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
-import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
 import {
   emptyDraft,
@@ -23,9 +22,7 @@ import {
   upsertExperienceDraft,
 } from "@/lib/linkedinProfileOptimizer/draft";
 import {
-  BANNER_TEMPLATES,
   REWRITE_COOLDOWN_MS,
-  type BannerTemplateId,
   type LinkedInImportProfile,
   type PartStatus,
   type ProfileOptimizerDraft,
@@ -35,22 +32,24 @@ import {
 import { fieldValue } from "@/lib/practiceKnowledge/blueprint";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 import { GOOGLE_FONTS_HREF } from "@/lib/printPack/brand.js";
-import { downloadPng, imageUrlToDataUri, svgForInline } from "@/lib/printPack/browserExport";
-import { PERSONAL, PLACEHOLDER_COACH } from "@/lib/printPack/catalog.js";
-import { makeCoach } from "@/lib/printPack/coach.js";
+import {
+  MAX_BANNER_OPTIONS,
+  defaultBannerOption,
+  defaultBannerOptions,
+  nextBannerDesign,
+  type BannerField,
+  type BannerOption,
+} from "@/lib/linkedinBanner/designs";
+import { BannerStage, BannerStrip } from "@/components/linkedinBanner/BannerPicker";
 
 import { usePractice } from "../PracticeProvider";
 import { StatusSwitch } from "./StatusMenu";
 import { AvaHalo } from "@/components/ava/AvaHalo";
+import { useShowAdminPreviewTabs } from "@/components/layout/CoachToolsHubTabs";
 
 const SAVE_DEBOUNCE_MS = 700;
 /** The order "Write every part" goes in: the top of the profile first. */
 const WRITE_ORDER: ProfileSectionId[] = ["headline", "about", "featured", "experience"];
-
-type BannerItem = { id: string; title: string; png: number; render: (ctx: { coach?: unknown }) => string };
-const BANNERS = (PERSONAL as BannerItem[]).filter((item) =>
-  (BANNER_TEMPLATES as readonly string[]).includes(item.id)
-);
 
 /** An empty profile, so a coach sees the shape before they import theirs. */
 const EMPTY_SNAPSHOT: LinkedInProfileSnapshot = {
@@ -75,7 +74,7 @@ const EMPTY_SNAPSHOT: LinkedInProfileSnapshot = {
 function hasDraft(section: ProfileSectionId, draft: ProfileOptimizerDraft): boolean {
   if (section === "headline") return Boolean(draft.headline?.trim());
   if (section === "about") return Boolean(draft.about?.trim());
-  if (section === "banner") return Boolean(draft.bannerTemplate || draft.bannerCopy?.trim());
+  if (section === "banner") return Boolean(draft.banners?.length || draft.bannerTemplate || draft.bannerCopy?.trim());
   if (section === "featured") return hasFeaturedPlan(draft) || Boolean(draft.featuredNotes?.trim());
   const row = experienceDraftAt(draft, 0);
   return Boolean(row?.title?.trim() || row?.description?.trim());
@@ -89,34 +88,6 @@ function messageUnder(blocks: BlueprintBlock[], heading: string): string {
   return next?.type === "message" ? next.body.trim() : "";
 }
 
-/** The coach's details for the Toolkit banners: name, business, photo and QR link. */
-function useBannerCoach(coachId: string | null, enabled: boolean) {
-  const [coach, setCoach] = useState<unknown>(PLACEHOLDER_COACH);
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const headers = await getCoachAuthHeaders(coachId);
-        if (!headers) return;
-        const res = await fetch("/api/coach/toolkit", { headers });
-        if (!res.ok) return;
-        const body = (await res.json()) as { name: string | null; business: string | null; avatar_url: string | null; coach_slug: string | null };
-        const avatarDataUri = await imageUrlToDataUri(body.avatar_url);
-        const base = { name: body.name ?? PLACEHOLDER_COACH.name, business: body.business ?? "", avatarDataUri };
-        const next = body.coach_slug ? await makeCoach({ ...base, slug: body.coach_slug }, { link: "score" }) : { ...PLACEHOLDER_COACH, ...base };
-        if (!cancelled) setCoach(next);
-      } catch {
-        // Placeholders stay; the banners still show their layout.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [coachId, enabled]);
-  return coach;
-}
-
 /**
  * The LinkedIn profile, inside the Blueprint. Today shows what owners see now;
  * New is the working copy. Click any part to edit it. Rewrites use the coach's
@@ -124,6 +95,8 @@ function useBannerCoach(coachId: string | null, enabled: boolean) {
  */
 export function LinkedInProfileSection() {
   const { coachId, payload, knowledge, sample } = usePractice();
+  // Writing from the Blueprint is BCA's job: coaches (and "View as coach") edit by hand.
+  const canWrite = useShowAdminPreviewTabs(Boolean(coachId));
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<LinkedInImportProfile | null>(null);
   const [draft, setDraft] = useState<ProfileOptimizerDraft>({});
@@ -132,9 +105,11 @@ export function LinkedInProfileSection() {
   const [importing, setImporting] = useState(false);
   const [mode, setMode] = useState<"new" | "today">("new");
   const [active, setActive] = useState<ProfileSectionId | null>(null);
+  const [activeRole, setActiveRole] = useState(0);
+  /** The part (and role) being written on its own, outside "Write every part". */
+  const [writingOne, setWritingOne] = useState<string | null>(null);
   const [writingAll, setWritingAll] = useState<ProfileSectionId | null>(null);
   const [copied, setCopied] = useState<ProfileSectionId | null>(null);
-  const [downloading, setDownloading] = useState(false);
   const saveTimer = useRef<number | null>(null);
   const draftRef = useRef(draft);
   const lastRewriteAt = useRef(0);
@@ -229,36 +204,75 @@ export function LinkedInProfileSection() {
     };
   }, [knowledge, coachId, sample, loading]);
 
-  const bannerCoach = useBannerCoach(coachId, Boolean(profile));
-  const bannerSvgs = useMemo(() => {
-    const out: Partial<Record<BannerTemplateId, string>> = {};
-    for (const item of BANNERS) out[item.id as BannerTemplateId] = item.render({ coach: bannerCoach });
-    return out;
-  }, [bannerCoach]);
-  const chosenBanner = draft.bannerTemplate ? bannerSvgs[draft.bannerTemplate] : undefined;
+  // The banner options: the coach's own once they change anything, else the first set.
+  const bannerOptions = draft.banners?.length ? draft.banners : defaultBannerOptions();
+  const bannerAt = Math.min(draft.bannerChosen ?? 0, bannerOptions.length - 1);
+  const discreet = payload ? fieldValue(payload, "identity.linkedin_visibility")?.value === "discreet" : false;
+  const setBanners = (banners: BannerOption[], bannerChosen: number) =>
+    updateDraft({ ...draftRef.current, banners, bannerChosen });
+  const currentBanners = () => (draftRef.current.banners?.length ? draftRef.current.banners : defaultBannerOptions());
+  function stepBanner(delta: number) {
+    const n = bannerOptions.length;
+    setBanners(currentBanners(), (bannerAt + delta + n) % n);
+  }
+  function setBannerWords(field: BannerField, value: string) {
+    const options = currentBanners().map((o, i) => (i === bannerAt ? { ...o, words: { ...o.words, [field]: value } } : o));
+    setBanners(options, bannerAt);
+  }
+  function addBanner() {
+    const options = currentBanners();
+    if (options.length >= MAX_BANNER_OPTIONS) return;
+    const next = [...options, defaultBannerOption(nextBannerDesign(options, options[bannerAt]?.design ?? ""))];
+    setBanners(next, next.length - 1);
+  }
+  function removeBanner(index: number) {
+    const options = currentBanners().filter((_, i) => i !== index);
+    setBanners(options, Math.min(bannerAt > index ? bannerAt - 1 : bannerAt, options.length - 1));
+  }
 
-  function applyVariant(variant: ProfileOptimizerVariant, section: ProfileSectionId) {
+  function applyVariant(variant: ProfileOptimizerVariant, section: ProfileSectionId, role: number) {
     const d = draftRef.current;
     if (section === "headline") return updateDraft({ ...d, headline: variant.text });
     if (section === "about") return updateDraft({ ...d, about: variant.text });
     if (section === "featured") return updateDraft({ ...d, featuredNotes: variant.text });
-    if (section === "experience") updateDraft(upsertExperienceDraft(d, { index: 0, ...parseExperienceVariant(variant.text) }));
+    if (section === "experience") {
+      const parsed = parseExperienceVariant(variant.text);
+      // A past role keeps its own title; only the current role's title is rewritten.
+      const title = role === 0 ? parsed.title : experienceDraftAt(d, role)?.title ?? profile?.snapshot.experiences[role]?.title ?? parsed.title;
+      updateDraft(upsertExperienceDraft(d, { index: role, ...parsed, title }));
+    }
   }
 
   /** One rewrite from the Blueprint, waiting out the server's short cooldown between calls. */
-  async function rewrite(section: ProfileSectionId): Promise<boolean> {
+  /** keepHeadline: add new headline options without changing the one in use. */
+  async function rewrite(section: ProfileSectionId, role = 0, keepHeadline = false): Promise<boolean> {
     const wait = lastRewriteAt.current + REWRITE_COOLDOWN_MS + 300 - Date.now();
     if (wait > 0) await new Promise((r) => window.setTimeout(r, wait));
     lastRewriteAt.current = Date.now();
-    const result = await rewriteOptimizerSection({ section, experienceIndex: 0 }, coachId);
+    const result = await rewriteOptimizerSection({ section, experienceIndex: role }, coachId);
     const variants = result.data?.variants ?? [];
     if (!result.ok || !variants.length) {
       setError(result.error ?? "Could not write that part.");
       return false;
     }
     const recommended = variants.find((v) => v.recommended) ?? variants[0];
-    if (recommended) applyVariant(recommended, section);
+    if (section === "headline") {
+      // Keep every option to pick from, the recommended one first.
+      const options = [recommended, ...variants.filter((v) => v !== recommended)].map((v) => v!.text);
+      const d = draftRef.current;
+      updateDraft({ ...d, headline: keepHeadline && d.headline?.trim() ? d.headline : recommended!.text, headlineOptions: options });
+      return true;
+    }
+    if (recommended) applyVariant(recommended, section, role);
     return true;
+  }
+
+  /** One part on its own: the headline options, or one role. */
+  async function writeOne(section: ProfileSectionId, role = 0) {
+    setError(null);
+    setWritingOne(`${section}:${role}`);
+    await rewrite(section, role, true);
+    setWritingOne(null);
   }
 
   async function writeEverything() {
@@ -273,7 +287,7 @@ export function LinkedInProfileSection() {
 
   async function copyPart(section: ProfileSectionId) {
     if (!profile) return;
-    const ok = await copyTextToClipboard(textForSection(section, profile.snapshot, draftRef.current));
+    const ok = await copyTextToClipboard(textForSection(section, profile.snapshot, draftRef.current, section === "experience" ? activeRole : 0));
     if (!ok) {
       setError("Could not copy. Select the text and copy it yourself.");
       return;
@@ -281,20 +295,6 @@ export function LinkedInProfileSection() {
     setCopied(section);
     window.setTimeout(() => setCopied(null), 1600);
     updateDraft({ ...draftRef.current, copiedAt: { ...draftRef.current.copiedAt, [section]: new Date().toISOString() } });
-  }
-
-  async function downloadBanner() {
-    const id = draftRef.current.bannerTemplate;
-    const item = BANNERS.find((b) => b.id === id);
-    const svg = id ? bannerSvgs[id] : undefined;
-    if (!item || !svg) return;
-    setDownloading(true);
-    try {
-      await downloadPng(svg, item.png, `linkedin-banner-${item.id.replace(/^p-li-/, "")}.png`);
-    } catch {
-      setError("Could not make the banner image. Try again.");
-    }
-    setDownloading(false);
   }
 
   async function handleImport() {
@@ -387,7 +387,7 @@ export function LinkedInProfileSection() {
           </div>
           {error ? <p className="text-sm text-[#9b1c1c]">{error}</p> : null}
         </div>
-        <div aria-hidden className="pointer-events-none select-none overflow-hidden rounded-xl bg-[#f4f2ee] p-2 opacity-60 @xl:p-3">
+        <div aria-hidden className="pointer-events-none -mx-5 select-none overflow-hidden bg-[#f4f2ee] px-2 py-2 opacity-60 @xl:py-3 @2xl:-mx-6">
           <ProfileOptimizerCanvas
             snapshot={EMPTY_SNAPSHOT}
             draft={{}}
@@ -428,22 +428,24 @@ export function LinkedInProfileSection() {
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          disabled={Boolean(writingAll)}
-          onClick={() => void writeEverything()}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
-        >
-          <AvaHalo size={16} dark state={writingAll ? "thinking" : "idle"} />
-          {writingAll
-            ? `Writing ${SECTION_META.find((s) => s.id === writingAll)?.label ?? ""}…`
-            : "Write every part from my Blueprint"}
-        </button>
+        {canWrite ? (
+          <button
+            type="button"
+            disabled={Boolean(writingAll)}
+            onClick={() => void writeEverything()}
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
+          >
+            <AvaHalo size={16} dark state={writingAll ? "thinking" : "idle"} />
+            {writingAll
+              ? `Writing ${SECTION_META.find((s) => s.id === writingAll)?.label ?? ""}…`
+              : "Write every part from my Blueprint"}
+          </button>
+        ) : null}
       </div>
 
       {error ? <p className="text-sm text-[#9b1c1c]">{error}</p> : null}
 
-      <div className="overflow-hidden rounded-xl bg-[#f4f2ee] p-2 @xl:p-3">
+      <div className="-mx-5 overflow-hidden bg-[#f4f2ee] px-2 py-2 @xl:py-3 @2xl:-mx-6">
         <ProfileOptimizerCanvas
           snapshot={profile.snapshot}
           draft={today ? {} : draft}
@@ -453,18 +455,54 @@ export function LinkedInProfileSection() {
           onAbout={(about) => updateDraft({ ...draftRef.current, about })}
           onBannerCopy={(bannerCopy) => updateDraft({ ...draftRef.current, bannerCopy })}
           onFeaturedNotes={(featuredNotes) => updateDraft({ ...draftRef.current, featuredNotes })}
-          onExperience={(patch) => updateDraft(upsertExperienceDraft(draftRef.current, { index: 0, ...patch }))}
+          onExperience={(patch, index) => updateDraft(upsertExperienceDraft(draftRef.current, { index, ...patch }))}
+          activeExperience={activeRole}
+          onSelectExperience={today ? undefined : setActiveRole}
+          roleTools={
+            canWrite
+              ? (index) => (
+                  <WriteButton
+                    busy={writingOne === `experience:${index}`}
+                    disabled={Boolean(writingAll || writingOne)}
+                    label="Write this role from my Blueprint"
+                    onClick={() => void writeOne("experience", index)}
+                  />
+                )
+              : undefined
+          }
           statusFor={today ? () => null : partControls}
-          bannerNode={!today && chosenBanner ? <div dangerouslySetInnerHTML={{ __html: svgForInline(chosenBanner) }} /> : null}
+          bannerNode={
+            today ? null : (
+              <BannerStage
+                key={bannerAt}
+                option={bannerOptions[bannerAt]}
+                discreet={discreet}
+                active={active === "banner"}
+                count={bannerOptions.length}
+                onStep={stepBanner}
+                onWords={setBannerWords}
+              />
+            )
+          }
           bannerCopyEditable={false}
           afterTop={
             !today && active === "banner" ? (
-              <BannerChooser
-                svgs={bannerSvgs}
-                chosen={draft.bannerTemplate ?? null}
-                downloading={downloading}
-                onChoose={(id) => updateDraft({ ...draftRef.current, bannerTemplate: id })}
-                onDownload={() => void downloadBanner()}
+              <BannerStrip
+                options={bannerOptions}
+                chosen={bannerAt}
+                discreet={discreet}
+                onChoose={(i) => setBanners(currentBanners(), i)}
+                onAdd={addBanner}
+                onRemove={removeBanner}
+              />
+            ) : !today && active === "headline" && (canWrite || draft.headlineOptions?.length) ? (
+              <HeadlineChooser
+                options={draft.headlineOptions ?? []}
+                chosen={draft.headline ?? ""}
+                busy={writingOne === "headline:0" || writingAll === "headline"}
+                disabled={Boolean(writingAll || writingOne)}
+                onChoose={(headline) => updateDraft({ ...draftRef.current, headline })}
+                onWrite={canWrite ? () => void writeOne("headline") : undefined}
               />
             ) : null
           }
@@ -490,65 +528,79 @@ export function LinkedInProfileSection() {
   );
 }
 
-/** The Toolkit's LinkedIn banners, already personalised, to pick from and download. */
-function BannerChooser({
-  svgs,
+/** The headline options the writer gave, to pick from. */
+function HeadlineChooser({
+  options,
   chosen,
-  downloading,
+  busy,
+  disabled,
   onChoose,
-  onDownload,
+  onWrite,
 }: {
-  svgs: Partial<Record<BannerTemplateId, string>>;
-  chosen: BannerTemplateId | null;
-  downloading: boolean;
-  onChoose: (id: BannerTemplateId | null) => void;
-  onDownload: () => void;
+  options: string[];
+  chosen: string;
+  busy: boolean;
+  disabled: boolean;
+  onChoose: (headline: string) => void;
+  /** Left out for coaches: BCA writes the options. */
+  onWrite?: () => void;
 }) {
   return (
     <div className="bp-no-print space-y-3 rounded-xl border border-[#e3e9f0] bg-white px-4 py-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-[var(--bp-ink)]">Choose a banner</p>
-        {chosen ? (
-          <button
-            type="button"
-            disabled={downloading}
-            onClick={onDownload}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
-          >
-            {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Download className="h-3.5 w-3.5" aria-hidden />}
-            Download for LinkedIn
-          </button>
+        <p className="text-sm font-semibold text-[var(--bp-ink)]">{options.length ? "Pick a headline" : "Headline options"}</p>
+        {onWrite ? (
+          <WriteButton busy={busy} disabled={disabled} label={options.length ? "Write new options" : "Write options from my Blueprint"} onClick={onWrite} />
         ) : null}
       </div>
-      <p className="text-sm text-[var(--bp-muted)]">
-        Your name, photo and scorecard QR are already on them. Pick one, download it, and upload it as your LinkedIn background photo.
-      </p>
-      <div className="grid gap-2.5 @xl:grid-cols-2">
-        {BANNERS.map((item) => {
-          const id = item.id as BannerTemplateId;
-          const selected = chosen === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => onChoose(selected ? null : id)}
-              className={`overflow-hidden rounded-lg text-left ring-2 transition ${
-                selected ? "ring-[var(--bp-sky)]" : "ring-transparent hover:ring-[#c8d9ec]"
-              }`}
-            >
-              <div
-                className="aspect-[1584/396] w-full [&>svg]:h-full [&>svg]:w-full"
-                dangerouslySetInnerHTML={{ __html: svgForInline(svgs[id] ?? "") }}
-              />
-              <p className="flex items-center gap-1.5 bg-[#f4f7fa] px-2.5 py-1.5 text-xs font-medium text-[var(--bp-ink)]">
-                {selected ? <Check className="h-3.5 w-3.5 text-[var(--bp-sky)]" aria-hidden /> : null}
-                {item.title.replace(/^LinkedIn banner - /, "")}
-              </p>
-            </button>
-          );
-        })}
-      </div>
+      {options.length ? (
+        <ul className="space-y-2">
+          {options.map((option, i) => {
+            const selected = option.trim() === chosen.trim();
+            return (
+              <li key={`${i}-${option.slice(0, 20)}`}>
+                <button
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => onChoose(option)}
+                  className={`flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm leading-6 text-[var(--bp-ink)] ring-2 transition ${
+                    selected ? "bg-[#f4f9fd] ring-[var(--bp-sky)]" : "bg-[#f8fafc] ring-transparent hover:ring-[#c8d9ec]"
+                  }`}
+                >
+                  <span
+                    className={`mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                      selected ? "border-[var(--bp-sky)] bg-[var(--bp-sky)] text-white" : "border-[#c8d9ec] bg-white"
+                    }`}
+                    aria-hidden
+                  >
+                    {selected ? <Check className="h-3 w-3" /> : null}
+                  </span>
+                  <span className="min-w-0">
+                    {option}
+                    {i === 0 ? <span className="ml-2 text-xs font-semibold text-[var(--bp-muted)]">Recommended</span> : null}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-sm text-[var(--bp-muted)]">Ava writes a few from your Blueprint. Pick one, then change any words in the headline above.</p>
+      )}
     </div>
+  );
+}
+
+function WriteButton({ busy, disabled, label, onClick }: { busy: boolean; disabled: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bp-navy)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--bp-blue)] disabled:opacity-50"
+    >
+      <AvaHalo size={16} dark state={busy ? "thinking" : "idle"} />
+      {busy ? "Writing…" : label}
+    </button>
   );
 }

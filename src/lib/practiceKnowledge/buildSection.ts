@@ -13,6 +13,7 @@ import { blocksToMarkdown, sanitizeBlocks } from "./blocks";
 import { ensureCoachLinkedIn, type CoachLinkedIn } from "./coachLinkedIn";
 import { fitConnectionNote } from "./connectionNote";
 import { listOnboardingTranscripts, onboardingTranscriptText } from "./ingestOnboarding";
+import { copyCheckPrompt } from "@/lib/copywritingMethod";
 import { SECTION_SKILLS, skillSystemPrompt, skillUserPrompt, writerContract } from "./skills";
 import { listValue } from "./sourced";
 import {
@@ -97,7 +98,16 @@ export async function writeSectionBlocks(
   prompt: { system: string; user: string; maxTokens: number }
 ): Promise<{ blocks: BlueprintBlock[]; error?: string }> {
   const { data, error } = await generateCampaignJson<{ blocks?: unknown }>(prompt);
-  const blocks = sanitizeBlocks(data?.blocks);
+  let blocks = sanitizeBlocks(data?.blocks);
+  // Campaigns reach owners, so they get the check pass. A failed check keeps the first draft.
+  if (blocks.length && key.startsWith("campaigns:")) {
+    const checked = await generateCampaignJson<{ blocks?: unknown }>({
+      ...prompt,
+      user: copyCheckPrompt(prompt.user, blocksToMarkdown(blocks)),
+    });
+    const fixed = sanitizeBlocks(checked.data?.blocks);
+    if (fixed.length) blocks = fixed;
+  }
   return { blocks: blocks.length ? await fitConnectionNote(key, blocks) : blocks, error };
 }
 

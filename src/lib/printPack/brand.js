@@ -37,7 +37,7 @@ export const F_BODY = "Inter, 'Helvetica Neue', Arial, sans-serif";
 export const F_HAND = "'Caveat', 'Bradley Hand', 'Comic Sans MS', cursive";
 export const F_MARKER = "'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive";
 export const GOOGLE_FONTS_HREF =
-  "https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@500;700&family=Permanent+Marker&display=swap";
+  "https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@500;700&family=Permanent+Marker&family=Figtree:wght@300;500;600;700;800&display=swap";
 
 export const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 export const n2 = (n) => (Math.round(n * 100) / 100).toFixed(2);

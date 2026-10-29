@@ -8,6 +8,8 @@ import {
   type ProfileOptimizerDraft,
   type ProfileSectionId,
 } from "./types";
+import { linkedInText } from "./linkedInText";
+import { sanitizeBannerOptions } from "@/lib/linkedinBanner/designs";
 
 function clip(value: string, max: number): string {
   return value.length <= max ? value : value.slice(0, max);
@@ -75,6 +77,14 @@ export function normalizeOptimizerDraft(raw: unknown): ProfileOptimizerDraft {
   if (headline) draft.headline = headline;
   else if (rec.headline === null || rec.headline === "") draft.headline = null;
 
+  if (Array.isArray(rec.headlineOptions)) {
+    const options = rec.headlineOptions
+      .map((o) => asTrimmedString(o, FIELD_LIMITS.headline))
+      .filter((o): o is string => Boolean(o))
+      .slice(0, 6);
+    if (options.length) draft.headlineOptions = options;
+  }
+
   const about = asTrimmedString(rec.about, FIELD_LIMITS.about);
   if (about) draft.about = about;
   else if (rec.about === null || rec.about === "") draft.about = null;
@@ -116,6 +126,13 @@ export function normalizeOptimizerDraft(raw: unknown): ProfileOptimizerDraft {
     draft.bannerTemplate = null;
   }
 
+  const banners = sanitizeBannerOptions(rec.banners);
+  if (banners?.length) {
+    draft.banners = banners;
+    const chosen = rec.bannerChosen;
+    draft.bannerChosen = typeof chosen === "number" && Number.isInteger(chosen) && chosen >= 0 && chosen < banners.length ? chosen : 0;
+  }
+
   if (rec.partStatus && typeof rec.partStatus === "object") {
     const raw = rec.partStatus as Record<string, unknown>;
     const out: NonNullable<ProfileOptimizerDraft["partStatus"]> = {};
@@ -148,6 +165,7 @@ export function emptyDraft(value: unknown): boolean {
     !d.featuredNotes &&
     !hasFeaturedPlan(d) &&
     !d.bannerTemplate &&
+    !d.banners?.length &&
     !(d.experiences && d.experiences.length > 0)
   );
 }
@@ -194,7 +212,7 @@ export function sectionStatus(
     return "current";
   }
   if (section === "banner") {
-    if (draft.bannerTemplate || differs(draft.bannerCopy, null)) return "draft";
+    if (draft.banners?.length || draft.bannerTemplate || differs(draft.bannerCopy, null)) return "draft";
     if (!snapshot.bannerUrl) return "needs-work";
     return "current";
   }
@@ -249,13 +267,15 @@ export function parseExperienceVariant(text: string): {
 export function textForSection(
   section: ProfileSectionId,
   snapshot: LinkedInProfileSnapshot,
-  draft: ProfileOptimizerDraft
+  draft: ProfileOptimizerDraft,
+  /** Which role, for Experience. */
+  role = 0
 ): string {
   if (section === "headline") {
-    return (draft.headline?.trim() || snapshot.headline || "").trim();
+    return linkedInText((draft.headline?.trim() || snapshot.headline || "").trim());
   }
   if (section === "about") {
-    return (draft.about?.trim() || snapshot.about || "").trim();
+    return linkedInText((draft.about?.trim() || snapshot.about || "").trim());
   }
   if (section === "banner") {
     return (draft.bannerCopy ?? "").trim();
@@ -277,9 +297,9 @@ export function textForSection(
       )
       .join("\n");
   }
-  const current = snapshot.experiences[0];
-  const row = experienceDraftAt(draft, 0);
+  const current = snapshot.experiences[role];
+  const row = experienceDraftAt(draft, role);
   const title = row?.title?.trim() || current?.title || "";
   const description = row?.description?.trim() || current?.description || "";
-  return [title, description].filter(Boolean).join("\n\n");
+  return linkedInText([title, description].filter(Boolean).join("\n\n"));
 }

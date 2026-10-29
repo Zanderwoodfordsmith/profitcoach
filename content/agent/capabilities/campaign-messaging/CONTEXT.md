@@ -3,7 +3,7 @@ id: campaign-messaging
 title: Campaign messaging
 summary: Write or rewrite a campaign's sequence, or bring in the messages from the coach's Practice Blueprint.
 tools: [get_campaign, get_coach_brain, use_blueprint_messaging, write_campaign_steps]
-references: [ai-knowledge/writing-rules.md, practice-skills/_shared.md, practice-skills/campaigns.md, practice-skills/nurture.md, ai-knowledge/outreach-research.md]
+references: [ai-knowledge/writing-rules.md, ai-knowledge/copywriting-method.md, practice-skills/_shared.md, practice-skills/connection-campaign.md, practice-skills/connection-campaign/note.md, practice-skills/connection-campaign/follow-ups.md, practice-skills/campaigns.md, practice-skills/nurture.md, ai-knowledge/outreach-research.md]
 modes: [admin, coach]
 ---
 
@@ -14,21 +14,22 @@ The words a campaign sends: the connection request note, then wait and message s
 
 ## Inputs
 - Reads: the campaign (`get_campaign`), and the coach brain with the Blueprint's campaign messaging (`get_coach_brain`).
-- References: `writing-rules.md`, `_shared.md`, `campaigns.md`, `nurture.md`, and `outreach-research.md` (what 110,000 of our coaches' connection requests showed).
+- References: `writing-rules.md`, `copywriting-method.md` (think first, then write), `_shared.md`, the connection campaign skill (`connection-campaign.md`, with `note.md` and `follow-ups.md`: the Classroom lesson, Zander's reviews of real notes and the recommended sequence), `campaigns.md` (messaging and reactivation), `nurture.md`, and `outreach-research.md` (what 110,000 of our coaches' connection requests showed).
 - From the coach: which campaign, and what they want changed.
 
 ## Before you write
 1. `get_campaign` for the current steps and channel.
 2. `get_coach_brain` for the ideal client, pain language, proof and the blueprint's campaign messaging. If the blueprint already has the campaign written, prefer it: `use_blueprint_messaging` puts it into the campaign as it is. Pick the one that matches the campaign: connection (new 2nd and 3rd degree owners), messaging (connections who fit but have never spoken), reactivation (people they already know), nurture (not ready yet) or reply_interested (said yes). Rewrite only when they ask for something different.
 3. If there is no real proof (a client result with a number), say so and leave a clear placeholder in square brackets. Never invent a result, a client or a number.
-4. For the invite, follow `outreach-research.md`: a blank invite or a short note with real proof, never a link. If they ask which, give the trade-off with its caveat: no note gets more accepts, a proof note tends to get more meetings.
+4. For a connection campaign, follow the recommended campaign in `connection-campaign.md`: a proof note (or a tribe note when there is no real number), never a link. If they ask about a blank invite, give the trade-off with its caveat: no note gets more accepts, a proof note tends to get more meetings.
+5. Before you show any copy, run the checks in section 7 of the copywriting method and the 10-step checklist in `note.md`, and fix what fails.
 
 ## Questions about what works
 When they ask what works in outreach (note or no note, acceptance or reply rates, who answers, how fast to reply), answer from `outreach-research.md` in a few short bullets, with the caveat that fits and one thing to try. No tools needed.
 
-## Sequence shape (connector, from the classroom)
-- Step 0 `invite`: the connection note, under 275 characters, following the 10-point checklist in `campaigns.md`. Can be blank for the softer conversation campaign.
-- Then pairs of `wait` and `message`: waits of 1 hour, 1 day, 2 days, 4 days and 2 weeks.
+## Sequence shape (connection campaign)
+- Step 0 `invite`: the connection note, following `note.md`. 300 characters or under, counting first name as 10 and company as 30. Can be blank for the softer conversation campaign.
+- Then pairs of `wait` and `message`, as in `follow-ups.md`: message 1 in the ad shape after 1 hour, then 1 day, 2 days, 4 days and 2 weeks.
 - Follow-up messages go on `remind` (the coach approves each before it sends) unless they ask for auto.
 - Use merge fields exactly: `{{first_name}}`, `{{company}}`, `{{title}}`, `{{location}}`.
 
@@ -43,4 +44,4 @@ Rewriting the steps of a **running** campaign asks for confirmation, because peo
 ## What NOT to do
 - No em dashes. No "transform", "unlock", "game-changer". No "I hope this finds you well".
 - Do not sell coaching in the first message. Ask about their outcome.
-- Do not exceed 275 characters on the invite note. Count.
+- Do not let the invite note pass 300 characters, counting first name as 10 and company as 30. Count.

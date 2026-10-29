@@ -8,12 +8,11 @@ export const GETTING_LIVE_GROUPS = [
 export type GettingLiveGroupKey = (typeof GETTING_LIVE_GROUPS)[number]["key"];
 
 export const GETTING_LIVE_STEPS = [
-  { key: "paid", label: "Paid", group: "ready" },
   { key: "about_you", label: "About You done", group: "ready" },
   { key: "blueprint_call", label: "Blueprint call", group: "ready" },
   { key: "blueprint_written", label: "Blueprint written", group: "build" },
   { key: "linkedin_updated", label: "LinkedIn profile done", group: "build" },
-  { key: "leads_found", label: "1,000-person prospect list", group: "build" },
+  { key: "leads_found", label: "2,500-person prospect list", group: "build" },
   { key: "campaign_set_up", label: "Campaign written", group: "build" },
   { key: "signed_off", label: "Coach agrees", group: "build" },
   { key: "campaign_live", label: "Campaign live", group: "build" },
@@ -24,8 +23,12 @@ export const GETTING_LIVE_STEPS = [
 
 export type GettingLiveStepKey = (typeof GETTING_LIVE_STEPS)[number]["key"];
 
-/** The group a step sits in, e.g. "We build it". */
+/** The launch list: everything up to the campaign going live. Results are tracked beside it, not as steps. */
+export const LAUNCH_STEPS = GETTING_LIVE_STEPS.filter((s) => s.group !== "results");
+export const RESULT_STEPS = GETTING_LIVE_STEPS.filter((s) => s.group === "results");
+
+/** The group a step sits in, e.g. "We build it"; "Live" once the launch list is done. */
 export function stepGroupLabel(key: GettingLiveStepKey | null): string {
   const group = GETTING_LIVE_STEPS.find((s) => s.key === key)?.group;
-  return GETTING_LIVE_GROUPS.find((g) => g.key === group)?.label ?? "Results";
+  return GETTING_LIVE_GROUPS.find((g) => g.key === group)?.label ?? "Live";
 }

@@ -37,7 +37,7 @@ The note on a connection request to a new owner (2nd or 3rd degree). It has 300 
 
 ## Checked in code
 
-- `length`: gate over 300 characters (LinkedIn's limit); penalty over 275 (the classroom target, leaves room for long names).
+- `length`: gate over 300 characters once filled in (LinkedIn's limit), counting first name as 10 characters and company as 30.
 - `greeting`: penalty when it does not open with a greeting and the first name token.
 - `link_in_note`: gate. In our data notes with a link were accepted about 40% less often and got a fifth of the interest.
 - `tokens`: gate on any token other than {first_name}, {company}, {assessment_url} (or the {{...}} forms the campaign builder fills), and on placeholders nothing fills.

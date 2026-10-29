@@ -25,7 +25,6 @@ type Detail = {
   profile: {
     id: string;
     full_name: string | null;
-    slug: string | null;
     coach_business_name: string | null;
   } | null;
 };
@@ -155,20 +154,12 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
         </Link>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-subhead font-semibold text-slate-900">{name}</h2>
-          <button
-            type="button"
-            onClick={() => {
-              try {
-                window.sessionStorage.setItem("blueprint-preview-coach", coachId);
-              } catch {
-                // The picker on the next page still works without it.
-              }
-              window.location.assign("/admin/blueprint/coach/blueprint");
-            }}
+          <Link
+            href={`/admin/blueprint/coach?coach=${encodeURIComponent(detail?.profile?.id ?? coachId)}`}
             className={buttonClass("main", "small")}
           >
             Open their blueprint
-          </button>
+          </Link>
         </div>
         <p className="text-sm text-slate-600">
           The same brief the coach sees. Lock the Decision Record after the call.
@@ -223,9 +214,9 @@ export function AdminPracticeDetail({ coachId }: { coachId: string }) {
             >
               Ready to build
             </button>
-            {detail?.profile?.slug ? (
+            {detail?.profile ? (
               <Link
-                href={`/admin/coaches/${detail.profile.slug}?tab=blueprint`}
+                href={`/admin/coaches/${detail.profile.id}?tab=blueprint`}
                 className="text-sm text-sky-700"
               >
                 Coach record

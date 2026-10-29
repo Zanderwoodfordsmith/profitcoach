@@ -17,9 +17,9 @@ Build a Sales Navigator people search from plain-English criteria (or use a sear
 |---|---|---|
 | Location | The coach's country (usually United Kingdom) | Always confirm. US: ask for the state or states. |
 | Industry or business type | From the blueprint if there is one | Not known |
-| Size of company | 1 to 10, 11 to 50, 51 to 200 (the classroom base search) | They mention bigger or smaller firms |
+| Size of company | 11 to 50 first. Then a second search for 1 to 10 and 51 to 200 to reach 2,500: many owners never link their staff on LinkedIn, so company sizes are often wrong. Never Self-employed | They mention bigger or smaller firms |
 | Connection degree | 2nd and 3rd (for connector campaigns) | They want their own connections (1st) |
-| How many people | 1,000 | Offer 250, 500, 1,000, 2,500 or "all" (2,500 max) |
+| How many people | 2,500 (a bigger list has more open and active profiles) | Offer 1,000, 2,500 or "all" (2,500 max per search; run a second search for more) |
 | List name | "Sales Nav · <industry> · <location>" | Never, just tell them |
 
 If they paste a `linkedin.com/sales/search/people` URL, pass it to `preview_sales_nav_search` instead of building one. Use the cleaned link it returns.

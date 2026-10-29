@@ -25,7 +25,6 @@ import { sendBookingConfirmations } from "@/lib/messaging/bookingConfirmations";
 import {
   isProgrammeOrientationBooking,
   orientationEventTitle,
-  PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE,
   PROGRAMME_ORIENTATION_JOIN_URL,
 } from "@/config/programmeOrientationCalendar";
 import {
@@ -281,9 +280,6 @@ export async function createCalendarBooking(
       }
     }
     descriptionParts.unshift(`Join: ${PROGRAMME_ORIENTATION_JOIN_URL}`);
-    descriptionParts.push(
-      `Invited: ${PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE.name} (${PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE.email})`
-    );
   }
 
   const eventInput = {
@@ -306,14 +302,6 @@ export async function createCalendarBooking(
       : calendar.location_mode === "zoom"
         ? meetingJoinUrl
         : calendar.location_custom,
-    extraAttendees: orientation
-      ? [
-          {
-            email: PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE.email,
-            name: PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE.name,
-          },
-        ]
-      : undefined,
   };
   const googleEvent =
     (await createUnipileBookingEvent(eventInput)) ??

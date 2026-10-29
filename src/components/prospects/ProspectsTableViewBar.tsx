@@ -169,14 +169,14 @@ function SortableViewTab({
               isAllView
                 ? "Built-in list. Everyone in this list."
                 : isProtected
-                  ? "Built-in list. Cannot be renamed or deleted."
-                  : "Drag to reorder. Click to open."
+                  ? `${view.name}. Built-in list. Cannot be renamed or deleted.`
+                  : view.name
             }
           >
             {isProtected ? (
               <Lock className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
             ) : null}
-            <span className="max-w-[12rem] truncate">
+            <span className={active ? "whitespace-nowrap" : "max-w-[12rem] truncate"}>
               {isAllView ? DEFAULT_PROSPECT_TABLE_VIEW_NAME : view.name}
             </span>
           </button>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Clock, Hourglass, Layers, LifeBuoy, Linkedin, Loader2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Hourglass, Layers, LifeBuoy, Linkedin, Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { WorkshopActivityPanel } from "@/components/BossGrid/WorkshopActivityPanel";
 import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
@@ -11,6 +12,8 @@ import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { GettingLiveComment, GettingLiveData, GettingLiveRow, GettingLiveUpdate, WaitsOn } from "@/lib/gettingLive";
 import { GETTING_LIVE_GROUPS, GETTING_LIVE_STEPS, stepGroupLabel } from "@/lib/gettingLiveSteps";
 import type { WorkshopComment } from "@/lib/playbookSessionNotes";
+import { COACH_DRAFTS } from "@/app/admin/plan/drafts";
+import { CoachDrafts } from "@/components/admin/CoachDrafts";
 
 /**
  * A coach's admin page → Getting live tab: their steps from paying to a first
@@ -79,6 +82,10 @@ export function CoachGettingLive({ coachId }: { coachId: string }) {
   const [busy, setBusy] = useState(false);
   const [comments, setComments] = useState<WorkshopComment[]>([]);
   const [commentsCollapsed, setCommentsCollapsed] = useState(false);
+  // Everyone on the list, in list order, for Previous and Next.
+  const [order, setOrder] = useState<{ slug: string; name: string }[]>([]);
+  const draftsRef = useRef<HTMLDivElement>(null);
+  const from = useSearchParams().get("from") ?? "getting-live";
 
   const load = useCallback(async () => {
     const headers = await gettingLiveAdminHeaders();
@@ -97,6 +104,16 @@ export function CoachGettingLive({ coachId }: { coachId: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void (async () => {
+      const headers = await gettingLiveAdminHeaders();
+      if (!headers) return;
+      const res = await fetch("/api/admin/getting-live", { headers });
+      const body = (await res.json().catch(() => null)) as GettingLiveData | null;
+      if (res.ok && body?.rows) setOrder(body.rows.flatMap((r) => (r.slug ? [{ slug: r.slug, name: r.name }] : [])));
+    })();
+  }, []);
 
   const save = async (update: Omit<GettingLiveUpdate, "coach_id">) => {
     const headers = await gettingLiveAdminHeaders();
@@ -144,6 +161,8 @@ export function CoachGettingLive({ coachId }: { coachId: string }) {
     );
   }
 
+  const drafts = row.slug ? COACH_DRAFTS[row.slug] : undefined;
+
   return (
     <div
       className={cardClass(
@@ -153,7 +172,17 @@ export function CoachGettingLive({ coachId }: { coachId: string }) {
     >
       {/* Main */}
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 pb-8 pt-6 md:px-8">
+        <CoachSwitcher order={order} slug={row.slug} from={from} />
         <p className="text-sm text-slate-700">{row.next_action}</p>
+        {drafts ? (
+          <button
+            type="button"
+            onClick={() => draftsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className={buttonClass("main", "small", "mt-3")}
+          >
+            Drafts to check: LinkedIn and messages
+          </button>
+        ) : null}
 
         <dl className="mt-4 grid gap-x-10 gap-y-1 sm:grid-cols-2">
           <PropRow icon={Hourglass} label="Waits on">
@@ -233,6 +262,12 @@ export function CoachGettingLive({ coachId }: { coachId: string }) {
           ))}
         </div>
 
+        {drafts ? (
+          <div ref={draftsRef} className="mt-10 scroll-mt-4 border-t border-slate-200 pt-8">
+            <CoachDrafts d={drafts} />
+          </div>
+        ) : null}
+
         <div className="mt-8">
           <button
             type="button"
@@ -263,5 +298,29 @@ export function CoachGettingLive({ coachId }: { coachId: string }) {
         emptyText="No comments yet."
       />
     </div>
+  );
+}
+
+/** Previous and Next through the Getting live list, so Zander can go coach to coach. */
+function CoachSwitcher({ order, slug, from }: { order: { slug: string; name: string }[]; slug: string | null; from: string }) {
+  const i = slug ? order.findIndex((o) => o.slug === slug) : -1;
+  if (i < 0 || order.length < 2) return null;
+  const prev = order[(i - 1 + order.length) % order.length];
+  const next = order[(i + 1) % order.length];
+  const href = (s: string) => `/admin/coaches/${encodeURIComponent(s)}?tab=getting-live&from=${encodeURIComponent(from)}`;
+  return (
+    <nav aria-label="Other coaches" className="mb-4 flex items-center justify-between gap-3 text-sm">
+      <Link href={href(prev.slug)} className="inline-flex min-w-0 items-center gap-1 text-slate-600 hover:text-slate-900">
+        <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="truncate">{prev.name}</span>
+      </Link>
+      <span className="shrink-0 tabular-nums text-slate-400">
+        {i + 1} of {order.length}
+      </span>
+      <Link href={href(next.slug)} className="inline-flex min-w-0 items-center gap-1 text-slate-600 hover:text-slate-900">
+        <span className="truncate">{next.name}</span>
+        <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+      </Link>
+    </nav>
   );
 }

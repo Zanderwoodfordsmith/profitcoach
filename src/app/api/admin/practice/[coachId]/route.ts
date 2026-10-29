@@ -51,7 +51,7 @@ export async function GET(
       listIntakeAssets(coachId),
       supabaseAdmin
         .from("profiles")
-        .select("id, full_name, slug, avatar_url, coach_business_name, linkedin_url")
+        .select("id, full_name, avatar_url, coach_business_name, linkedin_url")
         .eq("id", coachId)
         .maybeSingle(),
     ]);

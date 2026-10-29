@@ -3,8 +3,8 @@ import type { BlueprintBlock, BuiltSection } from "./types";
 /**
  * Turns a written campaign section into Get Clients campaign steps. The
  * connection campaign opens with an invite; the others are messages only, for
- * people already connected. Messages go out on "remind" so the coach sees each
- * one before it sends.
+ * people already connected. Every step sends automatically: the coach approved
+ * the words in the Blueprint, and a reply stops the sequence.
  */
 
 type Step = {
@@ -13,6 +13,8 @@ type Step = {
   body?: string | null;
   wait_hours?: number | null;
   send_mode?: "auto" | "remind" | null;
+  variants?: { key: string; label: string; body: string }[];
+  config?: Record<string, unknown>;
 };
 
 export type CampaignHandoff = {
@@ -37,8 +39,8 @@ export const CAMPAIGN_HANDOFFS: CampaignHandoff[] = [
     // "connector" and "campaign a" match sections written before the split.
     headings: ["sequence", "connector", "campaign a"],
     invite: "note",
-    // From the classroom connector cadence: 30 minutes, 1 day, 2 days, 4 days, 2 weeks.
-    waits: [1, 24, 48, 96, 336],
+    // 5 minutes (catch them while they are still on LinkedIn), then 1 day, 2 days, 4 days, 2 weeks.
+    waits: [5 / 60, 24, 48, 96, 336],
   },
   { id: "messaging", section: "campaigns:conversation", name: "Blueprint · Messaging campaign", headings: ["sequence"], invite: "none", waits: [72, 96, 120] },
   { id: "reactivation", section: "campaigns:reactivation", name: "Blueprint · Reactivation", headings: ["sequence"], invite: "none", waits: [120, 336] },
@@ -70,6 +72,20 @@ function messagesUnder(blocks: BlueprintBlock[], match: (heading: string) => boo
   return out;
 }
 
+/**
+ * The connection request's other versions, each under its own heading so they
+ * never join the follow-ups: B for an A/B test, and the Open Profile message
+ * (sent as a free InMail instead of a request). The page shows them as tabs.
+ */
+export const NOTE_VERSION_HEADINGS = { b: /connection request b|version b/i, open: /open profile/i } as const;
+
+/** The first message under a heading that matches, if any. */
+export function messageUnderHeading(blocks: BlueprintBlock[], match: RegExp): string | null {
+  const at = blocks.findIndex((b) => b.type === "heading" && match.test(b.text));
+  const next = at < 0 ? undefined : blocks[at + 1];
+  return next?.type === "message" && next.body.trim() ? next.body : null;
+}
+
 /** The written messages for one campaign, in order, untrimmed. */
 export function campaignMessages(handoff: CampaignHandoff, section: BuiltSection): string[] {
   return messagesUnder(section.blocks, (h) => handoff.headings.some((word) => h.includes(word)));
@@ -87,7 +103,17 @@ export function campaignPlan(
   let followUps = messages;
   if (handoff.invite === "note") {
     const [note, ...rest] = messages;
-    steps.push({ position: position++, step_type: "invite", body: toCampaignTokens(note).slice(0, 300), send_mode: "auto" });
+    const a = toCampaignTokens(note).slice(0, 300);
+    const b = messageUnderHeading(section.blocks, NOTE_VERSION_HEADINGS.b);
+    const open = messageUnderHeading(section.blocks, NOTE_VERSION_HEADINGS.open);
+    steps.push({
+      position: position++,
+      step_type: "invite",
+      body: a,
+      send_mode: "auto",
+      ...(b ? { variants: [{ key: "A", label: "A", body: a }, { key: "B", label: "B", body: toCampaignTokens(b).slice(0, 300) }] } : {}),
+      ...(open ? { config: { open_profile_inmail: true, open_profile_message: toCampaignTokens(open) } } : {}),
+    });
     followUps = rest;
   }
   followUps.forEach((body, i) => {
@@ -97,7 +123,7 @@ export function campaignPlan(
       const wait = handoff.invite === "note" ? handoff.waits[i] : handoff.waits[i - 1];
       steps.push({ position: position++, step_type: "wait", wait_hours: wait ?? 96, send_mode: "auto" });
     }
-    steps.push({ position: position++, step_type: "message", body: toCampaignTokens(body), send_mode: "remind" });
+    steps.push({ position: position++, step_type: "message", body: toCampaignTokens(body), send_mode: "auto" });
   });
   return { name: handoff.name, steps };
 }

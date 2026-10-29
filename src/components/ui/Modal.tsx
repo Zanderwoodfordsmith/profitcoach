@@ -1,9 +1,34 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import "./glassModal.css";
+
+/**
+ * Glass: centre over the page content and blur only that, so the sidebar,
+ * title bar and a docked AI panel stay sharp (same as the search overlay).
+ * The overlay needs the glass-modal class.
+ */
+export function useGlassPlacement(overlayRef: RefObject<HTMLElement | null>, active: boolean) {
+  useLayoutEffect(() => {
+    const overlay = overlayRef.current;
+    if (!active || !overlay) return;
+    const place = () => {
+      const main = document.querySelector("main")?.getBoundingClientRect();
+      const header = document.querySelector("main [data-page-header]")?.getBoundingClientRect();
+      overlay.style.setProperty("--glass-inset-left", `${main ? Math.max(0, main.left) : 0}px`);
+      overlay.style.setProperty(
+        "--glass-inset-right",
+        `${main ? Math.max(0, window.innerWidth - main.right) : 0}px`
+      );
+      overlay.style.setProperty("--glass-inset-top", `${header ? Math.max(0, header.bottom) : 0}px`);
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [overlayRef, active]);
+}
 
 type ModalProps = {
   open: boolean;
@@ -39,26 +64,7 @@ export function Modal({
   glass = false,
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-
-  // Glass: centre over the page content and blur only that, so the sidebar,
-  // title bar and a docked AI panel stay sharp (same as the search overlay).
-  useLayoutEffect(() => {
-    const overlay = overlayRef.current;
-    if (!open || !glass || !overlay) return;
-    const place = () => {
-      const main = document.querySelector("main")?.getBoundingClientRect();
-      const header = document.querySelector("main [data-page-header]")?.getBoundingClientRect();
-      overlay.style.setProperty("--glass-inset-left", `${main ? Math.max(0, main.left) : 0}px`);
-      overlay.style.setProperty(
-        "--glass-inset-right",
-        `${main ? Math.max(0, window.innerWidth - main.right) : 0}px`
-      );
-      overlay.style.setProperty("--glass-inset-top", `${header ? Math.max(0, header.bottom) : 0}px`);
-    };
-    place();
-    window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-  }, [open, glass]);
+  useGlassPlacement(overlayRef, open && glass);
 
   useEffect(() => {
     if (!open) return;

@@ -17,6 +17,8 @@
  * React text, never HTML.
  */
 
+import type { BannerOption } from "@/lib/linkedinBanner/designs";
+
 export const PROFILE_SECTIONS = [
   "headline",
   "about",
@@ -59,13 +61,19 @@ export type PartStatus = "todo" | "review" | "done";
 
 export type ProfileOptimizerDraft = {
   headline?: string | null;
+  /** The headline options the writer last gave, to pick from. */
+  headlineOptions?: string[];
   about?: string | null;
+  /** The banner's own words: first line is the heading, the next one or two go under it. */
   bannerCopy?: string | null;
   featuredNotes?: string | null;
   experiences?: ExperienceDraft[];
-  /** Three Featured slots: newsletter, proof, lead magnet. */
+  /** Three Featured slots: their story, how it works, the BOSS Score. */
   featuredPlan?: FeaturedPlanItem[];
   bannerTemplate?: BannerTemplateId | null;
+  /** The banner options on the Blueprint, each a design plus its words, and which one is showing. */
+  banners?: BannerOption[];
+  bannerChosen?: number;
   /** The coach's own status for a part, when they set one. Otherwise it is worked out. */
   partStatus?: Partial<Record<ProfileSectionId, PartStatus>>;
   copiedAt?: Partial<Record<ProfileSectionId, string>>;

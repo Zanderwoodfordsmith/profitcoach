@@ -2,33 +2,25 @@
 
 When a prospect gets a message, they check the profile to see if the claim is real. The profile must carry the proof.
 
+This file is what every part needs. Each part has its own file in `linkedin-profile/` with its rules, examples and mistakes: `headline.md`, `about.md`, `experience.md`, `featured.md`, `banner.md`.
+
 ## Public or discreet
 - Public: the coach can say they are a business coach. Lead with who they help and the result.
 - Discreet: still employed, under a non-compete, or best known as an expert in their industry. Position them as an operator and adviser. Do not say "coach". Lead with expertise and results. No "book a call" anywhere: the call to action is the BOSS Scorecard or subscribing to their newsletter.
 
-## Headline formulas (write options with different angles)
-- Transformation + audience: "Helping {avatar} {outcome}, {method or differentiator}"
-- Outcome + constraint removed: "{Outcome} for {avatar}, without {thing they hate}"
-- Authority + specificity: "{Credibility marker} | {what you do for whom}"
-- Pain-point lead: "{Pain}? I help {avatar} fix that."
-- Method name: "Creator of {method} | Helping {avatar} {outcome}"
-Avoid vague labels (consultant, strategist), generic outcomes (driving growth), and buzzwords (passionate, results-driven).
+## Who it's for
+Write to this coach's own ideal client, from their Blueprint. BCA's market (owner-led firms doing £1M+) is not every coach's: some work with gyms, salons or trades doing a few hundred thousand. No turnover band, staff count or "a real team" anywhere in the profile, even when the Blueprint gives one: that band is a guide for prospect lists, and printed on the profile it turns owners away. Describe the owner by their situation instead ("you run the place and still open up most mornings").
+
+## How the parts fit
+- The headline's result is the same one the About opens with.
+- The About's call to action points to Featured. Links in the About don't work.
+- Use the same one or two proof points across the profile rather than spreading five thin.
 
 ## Write
-1. Headline (under 220 characters): three options using different formulas, then say which you recommend and why. Specific to the core client.
-2. About section, first person, a mini sales page of 1,500 to 2,000 characters in short paragraphs:
-   - A hook in the first two or three lines (the only part seen before "see more") that names the owner's frustration in their words.
-   - What most owners in this market actually want.
-   - Who it is for (four short bullets).
-   - How the coach fixes it (the method in plain words, the five levers where useful).
-   - The kind of coach they are, in their words: how they want to be known (fun, serious, kick up the backside, hugs, a mix). Owners should recognise what working with them will feel like.
-   - Proof: two or three specific results.
-   - A clear call to action (the BOSS Scorecard or the value session).
-   Write the About as this coach, not a generic adviser. Values they named can colour a line. Do not force a hobby, book or film onto the profile. Those belong in newsletters.
-3. Core skills: four skills tied to the problems we message about, each with a one-line description.
-4. Key milestones: three or four specific career milestones.
-5. Banner line: one short line and a proof point for the background image.
-6. Featured section: three items to pin, each with a converting element.
+Follow the copywriting method (copywriting-method.md) for the thinking: who, one belief, the beliefs to build, proof. Then follow the file for the part you are writing.
+
+## Examples
+The examples in each part file are real profiles we rewrote, before and after. Copy their shape, order and tone. Never copy their facts, numbers, industry or wording: use only this coach's proof. Approved rewrites get added as new examples.
 
 ## Checklist
 Headshot recent and smiling. Custom URL. Company page linked. Contact info open to 2nd degree. Job titles from the dropdown for search.

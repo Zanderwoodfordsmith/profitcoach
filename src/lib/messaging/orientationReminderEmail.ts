@@ -1,4 +1,7 @@
-import { PROGRAMME_ORIENTATION_JOIN_URL } from "@/config/programmeOrientationCalendar";
+import {
+  orientationHostName,
+  PROGRAMME_ORIENTATION_JOIN_URL,
+} from "@/config/programmeOrientationCalendar";
 import { START_HERE_WELCOME_PATH } from "@/lib/academy/classroomIds";
 import { getPublicAppBaseUrl } from "@/lib/appBaseUrl";
 import type { BookingReminderStep } from "@/lib/booking/reminderSequence";
@@ -44,6 +47,10 @@ function joinTarget(input: OrientationReminderInput): string {
   return given || PROGRAMME_ORIENTATION_JOIN_URL;
 }
 
+function host(input: OrientationReminderInput): string {
+  return orientationHostName(joinTarget(input));
+}
+
 function googleCalendarUrl(input: OrientationReminderInput): string {
   const fmt = (iso: string) =>
     new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -60,7 +67,7 @@ function googleCalendarUrl(input: OrientationReminderInput): string {
       : `Join: ${join}`;
   const params = new URLSearchParams({
     action: "TEMPLATE",
-    text: "Orientation call with Pam",
+    text: `Orientation call with ${host(input)}`,
     dates: `${fmt(input.startsAtIso)}/${fmt(input.endsAtIso)}`,
     details,
     location: join,
@@ -70,9 +77,9 @@ function googleCalendarUrl(input: OrientationReminderInput): string {
 
 function calendarLine(input: OrientationReminderInput): string {
   if (input.calendarEventCreated) {
-    return "This is on Pam's calendar, and an invite is on its way to yours. If you don't see it yet, add it with the link below.";
+    return `This is on ${host(input)}'s calendar, and an invite is on its way to yours. If you don't see it yet, add it with the link below.`;
   }
-  return "Add it to your calendar with the link below so it doesn't get lost. We've also invited Pam.";
+  return "Add it to your calendar with the link below so it doesn't get lost.";
 }
 
 const PREP = [
@@ -81,21 +88,22 @@ const PREP = [
   "In the portal, open Classroom in the left menu, then Start Here, then Welcome & Program Overview.",
 ] as const;
 
-export function orientationReminderSubject(stepId: string): string {
+export function orientationReminderSubject(stepId: string, hostName = "Zander"): string {
   switch (stepId) {
     case "confirmation":
-      return "You're booked — orientation call with Pam";
+      return `You're booked — orientation call with ${hostName}`;
     case "24h":
-      return "Tomorrow: your orientation call with Pam";
+      return `Tomorrow: your orientation call with ${hostName}`;
     case "1h":
-      return "In an hour: orientation call with Pam";
+      return `In an hour: orientation call with ${hostName}`;
     default:
-      return "Your orientation call with Pam";
+      return `Your orientation call with ${hostName}`;
   }
 }
 
 export function orientationReminderText(input: OrientationReminderInput): string {
   const links = programmeLinks();
+  const who = host(input);
   const name = input.firstName.trim() || "there";
   const join = joinTarget(input);
   const when = `When: ${input.when}`;
@@ -106,13 +114,13 @@ export function orientationReminderText(input: OrientationReminderInput): string
     return [
       `Hi ${name},`,
       "",
-      "Your orientation call with Pam starts in about an hour.",
+      `Your orientation call with ${who} starts in about an hour.`,
       "",
       when,
       where,
       "",
       "See you there,",
-      "Pam",
+      who,
     ].join("\n");
   }
 
@@ -120,7 +128,7 @@ export function orientationReminderText(input: OrientationReminderInput): string
     return [
       `Hi ${name},`,
       "",
-      "Your orientation call with Pam is tomorrow.",
+      `Your orientation call with ${who} is tomorrow.`,
       "",
       when,
       where,
@@ -128,18 +136,18 @@ export function orientationReminderText(input: OrientationReminderInput): string
       calendarLine(input),
       add,
       "",
-      "How are you getting on in the programme? Reply to this email with a sentence or two — what's clicked, and what's still in the way. That's enough for Pam to prepare.",
+      `How are you getting on in the programme? Reply to this email with a sentence or two — what's clicked, and what's still in the way. That's enough for ${who} to prepare.`,
       "",
       "If the time no longer works, say so in that reply and we'll move it.",
       "",
-      "Pam",
+      who,
     ].join("\n");
   }
 
   return [
     `Hi ${name},`,
     "",
-    "You're booked. Pam will use this call to point you at the right first path — not to re-teach the whole programme.",
+    `You're booked. ${who} will use this call to point you at the right first path — not to re-teach the whole programme.`,
     "",
     when,
     where,
@@ -158,7 +166,7 @@ export function orientationReminderText(input: OrientationReminderInput): string
     "",
     "Reply to this email if the time no longer works.",
     "",
-    "Pam",
+    who,
   ].join("\n");
 }
 
@@ -177,6 +185,7 @@ function linkLine(href: string, label: string): string {
 
 export function orientationReminderHtml(input: OrientationReminderInput): string {
   const links = programmeLinks();
+  const who = host(input);
   const name = escapeHtml(input.firstName.trim() || "there");
   const when = escapeHtml(input.when);
   const join = joinTarget(input);
@@ -186,24 +195,24 @@ export function orientationReminderHtml(input: OrientationReminderInput): string
   if (input.stepId === "1h") {
     return `<div style="font-family:Georgia, 'Times New Roman', serif;color:#0f172a;font-size:16px;line-height:1.55;max-width:560px;">
     <p style="margin:0 0 16px;">Hi ${name},</p>
-    <p style="margin:0 0 16px;">Your orientation call with Pam starts in about an hour.</p>
+    <p style="margin:0 0 16px;">Your orientation call with ${who} starts in about an hour.</p>
     <p style="margin:0 0 6px;"><strong>When:</strong> ${when}</p>
     <p style="margin:0 0 16px;"><strong>Join:</strong> ${joinHtml}</p>
-    <p style="margin:20px 0 0;">See you there,<br/>Pam</p>
+    <p style="margin:20px 0 0;">See you there,<br/>${who}</p>
   </div>`;
   }
 
   if (input.stepId === "24h") {
     return `<div style="font-family:Georgia, 'Times New Roman', serif;color:#0f172a;font-size:16px;line-height:1.55;max-width:560px;">
     <p style="margin:0 0 16px;">Hi ${name},</p>
-    <p style="margin:0 0 16px;">Your orientation call with Pam is tomorrow.</p>
+    <p style="margin:0 0 16px;">Your orientation call with ${who} is tomorrow.</p>
     <p style="margin:0 0 6px;"><strong>When:</strong> ${when}</p>
     <p style="margin:0 0 16px;"><strong>Join:</strong> ${joinHtml}</p>
     <p style="margin:0 0 16px;">${escapeHtml(calendarLine(input))}</p>
     <p style="margin:0 0 20px;">${button(addUrl, "Add to my calendar")}</p>
-    <p style="margin:0 0 16px;">How are you getting on in the programme? Reply to this email with a sentence or two — what's clicked, and what's still in the way. That's enough for Pam to prepare.</p>
+    <p style="margin:0 0 16px;">How are you getting on in the programme? Reply to this email with a sentence or two — what's clicked, and what's still in the way. That's enough for ${who} to prepare.</p>
     <p style="margin:0 0 16px;">If the time no longer works, say so in that reply and we'll move it.</p>
-    <p style="margin:20px 0 0;">Pam</p>
+    <p style="margin:20px 0 0;">${who}</p>
   </div>`;
   }
 
@@ -218,14 +227,14 @@ export function orientationReminderHtml(input: OrientationReminderInput): string
 
   return `<div style="font-family:Georgia, 'Times New Roman', serif;color:#0f172a;font-size:16px;line-height:1.55;max-width:560px;">
     <p style="margin:0 0 16px;">Hi ${name},</p>
-    <p style="margin:0 0 16px;">You're booked. Pam will use this call to point you at the right first path — not to re-teach the whole programme.</p>
+    <p style="margin:0 0 16px;">You're booked. ${who} will use this call to point you at the right first path — not to re-teach the whole programme.</p>
     <p style="margin:0 0 6px;"><strong>When:</strong> ${when}</p>
     <p style="margin:0 0 16px;"><strong>Join:</strong> ${joinHtml}</p>
     <p style="margin:0 0 16px;">${escapeHtml(calendarLine(input))}</p>
     <p style="margin:0 0 20px;">${button(addUrl, "Add to my calendar")}</p>
     ${prep}
     <p style="margin:20px 0 0;font-size:14px;color:#475569;">If you're sent to sign in, use the email you paid with. ${linkLine(links.login, "Sign in")}</p>
-    <p style="margin:20px 0 0;">Pam</p>
+    <p style="margin:20px 0 0;">${who}</p>
   </div>`;
 }
 
@@ -234,36 +243,36 @@ export function orientationReminderSequence(): BookingReminderStep[] {
   const confirmationBody = [
     "Hi {{first_name}},",
     "",
-    "You're booked for your orientation call with Pam.",
+    "You're booked for your orientation call with Zander.",
     "",
     "When: {{when}}",
     "Where: {{where}}",
     "",
     "Before the call: welcome video, the short questions on that page, then Classroom → Start Here → Welcome & Program Overview, then Pick Your Path.",
     "",
-    "Pam",
+    "Zander",
   ].join("\n");
   const dayBeforeBody = [
     "Hi {{first_name}},",
     "",
-    "Your orientation call with Pam is tomorrow.",
+    "Your orientation call with Zander is tomorrow.",
     "",
     "When: {{when}}",
     "Where: {{where}}",
     "",
     "How are you getting on in the programme? Reply with a sentence or two.",
     "",
-    "Pam",
+    "Zander",
   ].join("\n");
   const hourBeforeBody = [
     "Hi {{first_name}},",
     "",
-    "Your orientation call with Pam starts in about an hour.",
+    "Your orientation call with Zander starts in about an hour.",
     "",
     "When: {{when}}",
     "Where: {{where}}",
     "",
-    "Pam",
+    "Zander",
   ].join("\n");
   return [
     {

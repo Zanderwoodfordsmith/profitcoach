@@ -1,12 +1,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { peekAgentOverride } from "@/lib/agent/agentOverrides";
+
 import type { KnowledgeRef } from "./types";
 
 const ROOT = process.cwd();
 const PLAYBOOKS_ROOT = path.join(ROOT, "content", "playbooks", "Source");
 const AI_KNOWLEDGE_DIR = path.join(ROOT, "content", "ai-knowledge");
 const LEGACY_KNOWLEDGE_DIR = path.join(ROOT, "src", "knowledge");
+const PRACTICE_SKILLS_DIR = path.join(ROOT, "content", "practice-skills");
 
 const DEFAULT_MAX_CHARS = 90_000;
 const MAX_CSV_CHARS = 120_000;
@@ -40,6 +43,11 @@ function expandRefToFiles(ref: KnowledgeRef): string[] {
     if (!fs.existsSync(full)) return [];
     return [full];
   }
+  if (ref.type === "practice-skill") {
+    const full = path.join(PRACTICE_SKILLS_DIR, ref.file);
+    if (!assertUnderRoot(full, PRACTICE_SKILLS_DIR)) return [];
+    return fs.existsSync(full) ? [full] : [];
+  }
   // playbook
   const full = path.join(PLAYBOOKS_ROOT, ref.path);
   if (!assertUnderRoot(full, PLAYBOOKS_ROOT)) return [];
@@ -71,7 +79,9 @@ export function resolveKnowledgeRefs(
       const override =
         ref.type === "ai-knowledge" || ref.type === "legacy-knowledge"
           ? overrides?.[path.basename(file)]
-          : undefined;
+          : ref.type === "practice-skill"
+            ? peekAgentOverride(`practice-skills/${ref.file}`)
+            : undefined;
       let body = override ?? fs.readFileSync(file, "utf8");
       const rel = path.relative(ROOT, file);
       if (file.endsWith(".csv")) {

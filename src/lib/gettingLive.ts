@@ -1,5 +1,5 @@
 import { isProspectCall } from "@/lib/coachHealth";
-import { GETTING_LIVE_STEPS, type GettingLiveStepKey } from "@/lib/gettingLiveSteps";
+import { GETTING_LIVE_STEPS, LAUNCH_STEPS, type GettingLiveStepKey } from "@/lib/gettingLiveSteps";
 import { gridCells, gridPages } from "@/lib/practiceKnowledge/blueprintGrid";
 import { isBuildableSection } from "@/lib/practiceKnowledge/buildSection";
 import { mapKnowledgeRow } from "@/lib/practiceKnowledge/store";
@@ -34,6 +34,8 @@ export type GettingLiveRow = {
   current: GettingLiveStepKey | null;
   waits_on: WaitsOn | null;
   next_action: string;
+  /** The industries they can credibly serve, from the Blueprint (Your market). */
+  industry: string | null;
   linkedin_connected: boolean;
   open_tickets: number;
   last_active_at: string | null;
@@ -61,7 +63,7 @@ const ALWAYS_ON = ["1f10eb8c-542b-4f47-90ce-30ca02a0e740"]; // Peter Buglass
 
 const PAID_STATUSES = new Set(["active", "past_due", "trialing"]);
 /** Done-for-you builds a prospect list of at least this many people before the campaign. */
-export const LEADS_TARGET = 1000;
+export const LEADS_TARGET = 2500;
 /** The Blueprint section holding the Connection campaign, the messages the coach agrees before launch. */
 const CONNECTION_KEY = "campaigns:messaging";
 const REPLY_STATUSES = ["replied", "interested", "call_offered", "not_interested"];
@@ -172,8 +174,6 @@ function nextFor(
 ): { waits_on: WaitsOn; next_action: string } {
   const connectFirst = !ctx.linkedinConnected;
   switch (step) {
-    case "paid":
-      return { waits_on: "coach", next_action: "Check the payment came in, then tick Paid." };
     case "about_you":
       return {
         waits_on: "coach",
@@ -424,14 +424,6 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
     const leadCount = uniquePeople.get(person.id)?.size ?? 0;
 
     const auto: Record<GettingLiveStepKey, { done: boolean; detail: string | null }> = {
-      paid: {
-        done: PAID_STATUSES.has(coach?.membership_status ?? "") || firstPaid.has(person.id),
-        detail: coach?.membership_started_at
-          ? `Started ${day(coach.membership_started_at)}`
-          : firstPaid.has(person.id)
-            ? `First paid ${new Date(firstPaid.get(person.id)!).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
-            : null,
-      },
       about_you: { done: aboutYou >= 100, detail: knowledgeRow ? `${aboutYou}% done` : "Not started" },
       blueprint_call: {
         done: Boolean(knowledgeRow?.interview_completed_at),
@@ -474,9 +466,11 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
         detail: hand && !app ? `Ticked ${day(ticks[key]?.at)}` : auto[key].detail,
       };
     });
-    const current = steps.find((s) => !s.done)?.key ?? null;
-    const next = current
-      ? nextFor(current, {
+    // Live once the launch list is done; after that the next result drives what to do.
+    const current = steps.find((s) => !s.done && LAUNCH_STEPS.some((l) => l.key === s.key))?.key ?? null;
+    const nextStep = current ?? steps.find((s) => !s.done)?.key ?? null;
+    const found = nextStep
+      ? nextFor(nextStep, {
           aboutYou,
           written,
           total: writtenKeys.length,
@@ -486,6 +480,7 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
           readyCampaign: ready,
         })
       : { waits_on: null, next_action: "Live, with a first client." };
+    const next = current ? found : { waits_on: null, next_action: found.next_action };
 
     return {
       coach_id: person.id,
@@ -497,6 +492,7 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
       current,
       waits_on: next.waits_on,
       next_action: next.next_action,
+      industry: knowledgeRow?.payload.market.industries_credibility?.value?.filter(Boolean).join(", ") || null,
       linkedin_connected: linkedinConnected,
       open_tickets: ticketCount.get(person.id) ?? 0,
       last_active_at: lastActive.get(person.id) ?? null,
@@ -505,7 +501,7 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
   });
 
   // Furthest behind first, then the newest joiners.
-  const order = (r: GettingLiveRow) => (r.current ? GETTING_LIVE_STEPS.findIndex((s) => s.key === r.current) : GETTING_LIVE_STEPS.length);
+  const order = (r: GettingLiveRow) => (r.current ? LAUNCH_STEPS.findIndex((s) => s.key === r.current) : LAUNCH_STEPS.length);
   out.sort((a, b) => order(a) - order(b) || (b.joined_at ?? "").localeCompare(a.joined_at ?? ""));
   // Names for comments written before by_name was stored (e.g. the old notes).
   const nameless = new Set<string>();

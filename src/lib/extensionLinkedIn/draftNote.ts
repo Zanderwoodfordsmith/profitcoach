@@ -32,7 +32,7 @@ Return ONLY valid JSON:
 
 Rules:
 - Exactly 2 variants.
-- kind=connector: connection request note, under ~275 characters when possible. CTA is interest only — never sell coaching.
+- kind=connector: connection request note, 300 characters or under once filled in (first name counted as 10, company as 30). CTA is interest only — never sell coaching.
 - kind=dm: short DM (2–5 short paragraphs max) for someone already connected or messaging.
 - Personalise from the prospect fields (name, title, company, headline, about). Use real details; do not invent employers or results.
 - Use the coach brain / LinkedIn proof when provided; otherwise use editable placeholders in [brackets].

@@ -22,7 +22,7 @@ import {
 import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 
 const COVER_ASPECT = "aspect-[1584/396]";
-const FEATURED_SLOTS = ["Newsletter", "Proof", "Lead magnet"] as const;
+const FEATURED_SLOTS = ["Your story", "How it works", "BOSS Score"] as const;
 
 export const SECTION_META: { id: ProfileSectionId; label: string }[] = [
   { id: "headline", label: "Headline" },
@@ -92,8 +92,10 @@ function ClampedCopy({
   className?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const long = text.length > limit;
-  const shown = long && !expanded ? `${text.slice(0, limit).trimEnd()}…` : text;
+  // By character, so a Unicode bold letter is never cut in half.
+  const chars = Array.from(text);
+  const long = chars.length > limit;
+  const shown = long && !expanded ? `${chars.slice(0, limit).join("").trimEnd()}…` : text;
   return (
     <div className={className}>
       <button
@@ -277,6 +279,9 @@ export function ProfileOptimizerCanvas({
   bannerCopyEditable = true,
   featuredPlan,
   onFeaturedPlan,
+  activeExperience = 0,
+  onSelectExperience,
+  roleTools,
 }: {
   snapshot: LinkedInProfileSnapshot;
   draft: ProfileOptimizerDraft;
@@ -286,7 +291,13 @@ export function ProfileOptimizerCanvas({
   onAbout: (next: string) => void;
   onBannerCopy: (next: string) => void;
   onFeaturedNotes: (next: string) => void;
-  onExperience: (patch: { title?: string; description?: string }) => void;
+  /** Edits a role's title or description. index 0 is the current role. */
+  onExperience: (patch: { title?: string; description?: string }, index: number) => void;
+  /** Which role is open when Experience is active. Without onSelectExperience only the current role can be edited. */
+  activeExperience?: number;
+  onSelectExperience?: (index: number) => void;
+  /** Shown under the role being edited, e.g. a "Write this role" button. */
+  roleTools?: (index: number) => ReactNode;
   /** Replaces the Draft / Live chip, e.g. the Blueprint's To do / Review / Done. Return null to hide it. */
   statusFor?: (id: ProfileSectionId) => ReactNode;
   /** A chosen banner (e.g. from the Toolkit) shown in place of the imported one. */
@@ -317,14 +328,16 @@ export function ProfileOptimizerCanvas({
   const bannerCopy = draft.bannerCopy ?? "";
   const featuredNotes = draft.featuredNotes ?? "";
   const featuredItems = snapshot.featured ?? [];
-  const current = snapshot.experiences[0];
-  const expDraft = experienceDraftAt(draft, 0);
-  const currentTitle = expDraft?.title ?? current?.title ?? "";
-  const currentDescription = expDraft?.description ?? current?.description ?? "";
   const connectionsLabel = formatConnections(snapshot.connectionsCount);
   const currentCompany = snapshot.experiences.find((e) => e.company)?.company;
   const school = snapshot.education[0]?.school;
-  const restExperiences = snapshot.experiences.slice(1);
+  // At least the current role shows, so there is somewhere to start.
+  const roles: (LinkedInExperience | undefined)[] = snapshot.experiences.length ? snapshot.experiences : [undefined];
+  const pastEditable = Boolean(onSelectExperience);
+  const openRole = (i: number) => {
+    onSelectExperience?.(i);
+    onSelect("experience");
+  };
 
   return (
     <div className="space-y-2 bg-[#f4f2ee] sm:space-y-2.5">
@@ -595,77 +608,25 @@ export function ProfileOptimizerCanvas({
             </h3>
             {chipButton("experience")}
           </div>
-          <div className="mt-4 flex gap-3">
-            <LogoMark label={current?.company ?? currentTitle ?? "?"} />
-            <div className="min-w-0 flex-1">
-              {activeSection === "experience" ? (
-                <AutoTextarea
-                  value={currentTitle}
-                  onChange={(next) =>
-                    onExperience({ title: next, description: currentDescription })
-                  }
-                  maxLength={FIELD_LIMITS.experienceTitle}
-                  placeholder="Current role title"
-                  className="text-ui font-semibold leading-snug text-[#191919]"
+          <ul className="mt-4 divide-y divide-[#e0e0e0]">
+            {roles.map((exp, i) => {
+              const row = experienceDraftAt(draft, i);
+              const editable = i === 0 || pastEditable;
+              return (
+                <RoleRow
+                  key={`${exp?.title ?? ""}-${exp?.start ?? ""}-${i}`}
+                  exp={exp}
+                  current={i === 0}
+                  title={row?.title ?? exp?.title ?? ""}
+                  description={row?.description ?? exp?.description ?? ""}
+                  editing={editable && activeSection === "experience" && (pastEditable ? activeExperience === i : i === 0)}
+                  onOpen={editable ? () => openRole(i) : undefined}
+                  onChange={(patch) => onExperience(patch, i)}
+                  tools={roleTools?.(i)}
                 />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onSelect("experience")}
-                  className="text-left text-ui font-semibold leading-snug text-[#191919]"
-                >
-                  {currentTitle.trim() || "Current role"}
-                </button>
-              )}
-              {current?.company ? (
-                <p className="text-ui leading-snug text-[#191919]">
-                  {[current.company, current.employmentType]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              ) : null}
-              {current ? (
-                <p className="mt-0.5 text-caption leading-snug text-[#666666]">
-                  {dateRange(current.start, current.end, current.duration)}
-                </p>
-              ) : null}
-              {activeSection === "experience" ? (
-                <AutoTextarea
-                  value={currentDescription}
-                  onChange={(next) =>
-                    onExperience({ title: currentTitle, description: next })
-                  }
-                  maxLength={FIELD_LIMITS.experienceDescription}
-                  placeholder="Frame this role as client outcomes, not a job history"
-                  className="mt-1.5 whitespace-pre-wrap text-ui leading-snug text-[#191919]"
-                />
-              ) : currentDescription.trim() ? (
-                <ClampedCopy
-                  text={currentDescription}
-                  limit={220}
-                  moreLabel="… more"
-                  lessLabel="show less"
-                  onEdit={() => onSelect("experience")}
-                  className="mt-1.5"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onSelect("experience")}
-                  className="mt-1.5 w-full text-left text-ui leading-snug text-slate-400"
-                >
-                  Rewrite this role around the outcome you help owners get.
-                </button>
-              )}
-            </div>
-          </div>
-          {restExperiences.length > 0 ? (
-            <ul className="mt-4 divide-y divide-[#e0e0e0] border-t border-[#e0e0e0] pt-4">
-              {restExperiences.map((exp, i) => (
-                <PastRole key={`${exp.title ?? ""}-${exp.start ?? ""}-${i}`} exp={exp} />
-              ))}
-            </ul>
-          ) : null}
+              );
+            })}
+          </ul>
         </div>
       </SectionCard>
 
@@ -811,31 +772,65 @@ function FeaturedCard({
   );
 }
 
-function PastRole({ exp }: { exp: LinkedInExperience }) {
-  const dates = dateRange(exp.start, exp.end, exp.duration);
-  const companyLine = [exp.company, exp.employmentType].filter(Boolean).join(" · ");
+function RoleRow({
+  exp,
+  current,
+  title,
+  description,
+  editing,
+  onOpen,
+  onChange,
+  tools,
+}: {
+  exp: LinkedInExperience | undefined;
+  current: boolean;
+  title: string;
+  description: string;
+  editing: boolean;
+  /** Absent when the role can't be edited here. */
+  onOpen?: () => void;
+  onChange: (patch: { title: string; description: string }) => void;
+  tools?: ReactNode;
+}) {
+  const dates = exp ? dateRange(exp.start, exp.end, exp.duration) : null;
+  const companyLine = exp ? [exp.company, exp.employmentType].filter(Boolean).join(" · ") : "";
   return (
     <li className="flex gap-3 py-4 first:pt-0 last:pb-0">
-      <LogoMark label={exp.company ?? exp.title ?? "?"} />
+      <LogoMark label={exp?.company ?? (title || "?")} />
       <div className="min-w-0 flex-1">
-        <p className="text-ui font-semibold leading-snug text-[#191919]">
-          {exp.title ?? "Role"}
-        </p>
-        {companyLine ? (
-          <p className="text-ui leading-snug text-[#191919]">{companyLine}</p>
-        ) : null}
-        {dates ? (
-          <p className="mt-0.5 text-caption leading-snug text-[#666666]">{dates}</p>
-        ) : null}
-        {exp.description ? (
-          <ClampedCopy
-            text={exp.description}
-            limit={220}
-            moreLabel="… more"
-            lessLabel="show less"
-            className="mt-1.5"
+        {editing ? (
+          <AutoTextarea
+            value={title}
+            onChange={(next) => onChange({ title: next, description })}
+            maxLength={FIELD_LIMITS.experienceTitle}
+            placeholder={current ? "Current role title" : "Role title"}
+            className="text-ui font-semibold leading-snug text-[#191919]"
           />
+        ) : onOpen ? (
+          <button type="button" onClick={onOpen} className="text-left text-ui font-semibold leading-snug text-[#191919]">
+            {title.trim() || (current ? "Current role" : "Role")}
+          </button>
+        ) : (
+          <p className="text-ui font-semibold leading-snug text-[#191919]">{title.trim() || "Role"}</p>
+        )}
+        {companyLine ? <p className="text-ui leading-snug text-[#191919]">{companyLine}</p> : null}
+        {dates ? <p className="mt-0.5 text-caption leading-snug text-[#666666]">{dates}</p> : null}
+        {editing ? (
+          <AutoTextarea
+            value={description}
+            onChange={(next) => onChange({ title, description: next })}
+            maxLength={FIELD_LIMITS.experienceDescription}
+            placeholder={current ? "Frame this role as client outcomes, not a job history" : "What you ran here, and a result with a number"}
+            className="mt-1.5 whitespace-pre-wrap text-ui leading-snug text-[#191919]"
+          />
+        ) : description.trim() ? (
+          <ClampedCopy text={description} limit={220} moreLabel="… more" lessLabel="show less" onEdit={onOpen} className="mt-1.5" />
+        ) : onOpen ? (
+          <button type="button" onClick={onOpen} className="mt-1.5 w-full text-left text-ui leading-snug text-slate-400">
+            {current ? "Rewrite this role around the outcome you help owners get." : "Add what you ran here and a result."}
+          </button>
         ) : null}
+        {editing && tools ? <div className="mt-2">{tools}</div> : null}
       </div>
     </li>
   );

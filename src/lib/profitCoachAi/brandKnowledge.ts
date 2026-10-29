@@ -93,6 +93,14 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     dir: "ai-knowledge",
   },
   {
+    file: "copywriting-method.md",
+    label: "Copywriting method",
+    description:
+      "How to think, then write: beliefs, angles, hooks, proof, shapes and checks. Loaded by every writer of owner-facing copy, including the Blueprint and LinkedIn profile writers.",
+    group: "skill",
+    dir: "ai-knowledge",
+  },
+  {
     file: "outreach-research.md",
     label: "Outreach research (110k requests)",
     description:
@@ -101,31 +109,10 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     dir: "ai-knowledge",
   },
   {
-    file: "connection-messages.md",
-    label: "Connection messages playbook",
-    description:
-      "The connector message structure, 10-step checklist and red flags — loaded by the outreach skills.",
-    group: "skill",
-  },
-  {
-    file: "follow-up-campaigns.md",
-    label: "Follow-up campaigns",
-    description:
-      "Follow-up sequences after the connection — loaded by the outreach skills.",
-    group: "skill",
-  },
-  {
-    file: "connector-message-lessons.md",
-    label: "Connector message lessons",
-    description:
-      "What real connector messages and their feedback taught us — loaded by the outreach skills.",
-    group: "skill",
-  },
-  {
     file: "connector-message-feedback.csv",
     label: "Message feedback data (CSV)",
     description:
-      "The raw connector message feedback behind Connector message lessons. Not loaded into prompts.",
+      "Zander's reviews of 38 coach connection notes, behind the Connection campaign skill (Admin → Ava). Not loaded into prompts.",
     group: "skill",
   },
   {

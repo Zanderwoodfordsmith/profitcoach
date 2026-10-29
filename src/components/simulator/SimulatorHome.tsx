@@ -878,6 +878,11 @@ function Certification({
           Review coaches&rsquo; certification
         </Link>
       ) : null}
+      {prefix === "/admin" ? (
+        <Link href="/admin/simulator/retell" className="mt-2 block text-center text-sm font-medium text-[#0c5290] hover:underline">
+          Old Retell calls
+        </Link>
+      ) : null}
     </section>
   );
 }

@@ -65,6 +65,20 @@ Tribes get people talking. A tribe is a group people choose or feel part of: a p
 - Owners in one region ("Midlands business owners"): 32% accepted.
 - Directors ("Being a director is a job in itself. One that nobody prepares you for."): 25.6% accepted.
 
+## Message or list: 38 reviewed notes
+
+Coaches sent Zander 38 connection notes for review (Nov 2024 to Jul 2025); 22 came back with an interest rate the coach reported (4 at 2% or more, 3 at 1.5 to 2%, 6 at 1 to 1.5%, 9 under 1%). Self-reported, on lists of mixed quality, so a guide only.
+
+- **Jargon hooks failed every time.** Every hook in jargon, odd wording or about something other than the owner's main want got under 1%: "improve MRR/ARR", "improve risk management", "supercharging your sales people", "reduce staff turnover". The 2% notes asked for one plain thing: profit, revenue, margins, new listings.
+- **A pain hook did no harm.** "Are you struggling to improve your margins?" got over 2%.
+- **Proof needs a result they can picture.** The two notes with no result at all got under 1%. The one note without a figure that still got over 2% had a vivid before and after: a home-kitchen recipe to market leader.
+- **A good note can't fix a bad list.** Strong notes to electrical contractors and toy distributors got under 1%; the same shape got over 2% from UK construction owners and IT consultancies.
+- **A weak note wastes a good list.** Recruitment, publishing, software and financial services owners are on LinkedIn, and the notes to them that failed all had a jargon hook or no number.
+- **The industry callout beat {company}.** 11 of 16 notes naming the industry got 1% or more, against 2 of 5 using the company name.
+- **The hook must point at what the coach sells.** A hook about getting new listings got over 2%, but most calls thought the coach ran a sales agency.
+
+How to tell which it is: if few accept, look at the list (sector, titles, active profiles). If they accept but don't reply, look at the message.
+
 ## Their LinkedIn profile
 
 - A full About section (1,200+ characters) and 1,000+ connections go with about 4 to 6 points more acceptance. Cheap to fix.

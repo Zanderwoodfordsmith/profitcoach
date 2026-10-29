@@ -1,4 +1,5 @@
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
+import { connectionNoteLength } from "@/lib/campaigns/connectionNote";
 import { checkCampaign, unknownTokens, type CheckStep } from "@/lib/campaigns/launchCheck";
 import { toCampaignTokens } from "@/lib/practiceKnowledge/campaignHandoff";
 
@@ -99,8 +100,11 @@ function banned(text: string, ids?: string[]): CheckResult[] {
   );
 }
 
-function length(text: string, opts: { gateMax?: number; softMax?: number; min?: number; label: string; softPoints?: number }): CheckResult[] {
-  const n = text.length;
+function length(
+  text: string,
+  opts: { gateMax?: number; softMax?: number; min?: number; label: string; softPoints?: number; measure?: (text: string) => number }
+): CheckResult[] {
+  const n = opts.measure ? opts.measure(text) : text.length;
   const out: CheckResult[] = [];
   if (opts.gateMax) {
     out.push(
@@ -171,7 +175,8 @@ function tokens(text: string, ctx: CheckContext): CheckResult[] {
 
 function noteChecks(text: string, ctx: CheckContext): CheckResult[] {
   return [
-    ...length(text, { gateMax: 300, softMax: 275, label: "The connection note", softPoints: 3 }),
+    // Filled-in length: first name counted as 10 characters, company as 30.
+    ...length(text, { gateMax: 300, label: "The connection note", measure: (t) => connectionNoteLength(toCampaignTokens(t)) }),
     /^(hi|hello|hey|dear|morning|afternoon)\b[^\n{]{0,3}\{\{?\s*first_?name/i.test(text.trim())
       ? pass("greeting", "penalty", "Opens with a greeting and their first name.")
       : fail("greeting", "penalty", 'Does not open with "Hi {first_name},".', 5),

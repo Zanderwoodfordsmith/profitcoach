@@ -138,6 +138,9 @@ const PRACTICE_LABELS: Record<string, string> = {
   "prospect-criteria.md": "Prospect criteria",
   "linkedin-profile.md": "LinkedIn profile",
   "campaigns.md": "Campaigns",
+  "connection-campaign.md": "Connection campaign",
+  "connection-campaign/note.md": "Connection campaign: note",
+  "connection-campaign/follow-ups.md": "Connection campaign: follow-ups",
   "offer.md": "Offer",
   "sales.md": "Sales and call script",
   "content.md": "Posts",
@@ -179,7 +182,10 @@ function fileRecord(
 
 function practiceSkillIds(): string[] {
   const names = new Set<string>(["_shared.md"]);
-  for (const skill of Object.values(SECTION_SKILLS)) names.add(skill.file);
+  for (const skill of Object.values(SECTION_SKILLS)) {
+    names.add(skill.file);
+    for (const part of skill.parts ?? []) names.add(part);
+  }
   return [...names].sort().map((name) => `practice-skills/${name}`);
 }
 
@@ -342,7 +348,7 @@ export function buildAvaCatalog(opts: {
   }
 
   for (const id of practiceSkillIds()) {
-    const name = path.basename(id);
+    const name = id.slice("practice-skills/".length);
     files.push(
       fileRecord(
         {

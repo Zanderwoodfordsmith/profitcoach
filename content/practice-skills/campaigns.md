@@ -2,24 +2,10 @@
 
 Three campaigns go out to owners who have not spoken to the coach yet, or not lately. Each is tailored to the core client and the avatar's pains, using the coach's real proof.
 
+Pam's Starbucks rule, for every message: an owner standing in a queue can answer it in a few seconds. Ask a yes or no, or a choice of two. Never an open question that needs thought, such as "What would you like the business to look like in 12 months?"
+
 ## A. Connection campaign (proof-led)
-For new owners from a list, 2nd and 3rd degree. The main way coaches get calls.
-
-Connection request (under 275 characters), 10-step checklist:
-1. Under 275 characters. 2. "Hi {first_name}," 3. Specific callout: "I see you run a UK {industry} company." 4. A hook as a question: "Are you looking to {main desire}?" 5. "I ask because" 6. "a simple system" 7. Specific proof with numbers and a timeframe. 8. The mechanism, tied to the hook. 9. The owner's language. 10. Interest CTA: "Is this of interest?"
-
-Client proof: "I ask because {Company} used a simple system to {result} in under {timeframe} by {mechanism}."
-Career proof: "I ask because during my {X} years at {Company} I used a simple system to {result} in under {timeframe} by {mechanism}."
-
-Write the sequence in their kind of coach (a boot camp coach is more direct than hugs). Do not add hobbies, books or stories here. There is not room.
-
-Follow-ups (every one gives something; none just "checks in"):
-- Message 1 (1 day after connecting): under 300 characters. Thank them, name one problem owners like them describe in their own words, ask if it is true for them. Never write "as I mentioned in my connection message": many invites go out blank.
-- Message 2 (3 days): one specific insight with a number, tied to the proof ("from X to Y in Z"). Ask if they have looked at theirs.
-- Message 3 (5 days): offer one useful thing (a tool, a benchmark, the BOSS Score after they reply). One question.
-- Message 4 (14 days): a polite close that leaves the door open. Then move them into Ongoing nurture.
-
-Never use: "Free Coaching Discovery Call", "still a few calls left this week" (fake scarcity), "jaded by all the other coaches", "just checking if you saw my last message". Never put a link in a connection note: in our data it cut acceptance to 4 to 6%.
+For new owners from a list, 2nd and 3rd degree. The main way coaches get calls. It has its own skill: `connection-campaign.md`, with the note and the follow-ups in `connection-campaign/`.
 
 ## B. Messaging campaign (conversation into the BOSS Scorecard)
 For owners the coach can message without a connection request: connections who fit the avatar but have never spoken to them, and open InMail. Softer than the connection campaign.

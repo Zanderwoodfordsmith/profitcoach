@@ -115,7 +115,7 @@ Return ONLY valid JSON:
   ]
 }
 
-Structure for connectors (under ~275 characters when possible):
+Structure for connectors (300 characters or under once filled in, first name counted as 10 and company as 30):
 Hi {first_name},
 I see you run a {country} {industry} company.
 Are you looking to {main_desire}?

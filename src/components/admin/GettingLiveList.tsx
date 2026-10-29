@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { WAITS_LABEL, WAITS_TONE, daysAgo, gettingLiveAdminHeaders as adminHeaders } from "@/components/admin/CoachGettingLive";
 import type { GettingLiveData, GettingLiveRow, GettingLiveUpdate } from "@/lib/gettingLive";
-import { GETTING_LIVE_STEPS, stepGroupLabel, type GettingLiveStepKey } from "@/lib/gettingLiveSteps";
+import { LAUNCH_STEPS, RESULT_STEPS, stepGroupLabel, type GettingLiveStepKey } from "@/lib/gettingLiveSteps";
 import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
@@ -20,16 +20,14 @@ import { fieldClass } from "@/components/ui/Field";
 
 /** Board columns: the step a coach is on, grouped where steps run together. */
 const BOARD_COLUMNS: { label: string; steps: (GettingLiveStepKey | null)[] }[] = [
-  { label: "Starting", steps: ["paid", "about_you", "blueprint_call"] },
+  { label: "Starting", steps: ["about_you", "blueprint_call"] },
   { label: "Blueprint", steps: ["blueprint_written"] },
   { label: "LinkedIn", steps: ["linkedin_updated"] },
   { label: "Prospect list", steps: ["leads_found"] },
   { label: "Campaign", steps: ["campaign_set_up"] },
   { label: "Coach agrees", steps: ["signed_off"] },
   { label: "Turn on", steps: ["campaign_live"] },
-  { label: "Sending", steps: ["first_reply"] },
-  { label: "First call", steps: ["first_call"] },
-  { label: "First client", steps: ["first_client", null] },
+  { label: "Live", steps: [null] },
 ];
 
 function Board({ rows, onOpen }: { rows: GettingLiveRow[]; onOpen: (row: GettingLiveRow) => void }) {
@@ -72,9 +70,54 @@ function Board({ rows, onOpen }: { rows: GettingLiveRow[]; onOpen: (row: Getting
   );
 }
 
+/** List sections: who has the next move. */
+const LIST_GROUPS: { label: string; waits: GettingLiveRow["waits_on"] }[] = [
+  { label: "Waiting on us", waits: "bca" },
+  { label: "Waiting on the coach", waits: "coach" },
+  { label: "Live", waits: null },
+];
+
+/** One dot per step: green done, filled in the waiting colour for the step they're on, grey still to come. */
+function StepDots({ row }: { row: GettingLiveRow }) {
+  return (
+    <div className="flex items-center gap-1" aria-hidden>
+      {LAUNCH_STEPS.map((s, i) => {
+        const done = row.steps.find((x) => x.key === s.key)?.done;
+        const current = s.key === row.current;
+        const tone = done
+          ? "bg-emerald-500"
+          : current
+            ? row.waits_on === "coach"
+              ? "bg-amber-400"
+              : "bg-sky-600"
+            : "bg-slate-200";
+        const gap = i > 0 && LAUNCH_STEPS[i - 1].group !== s.group ? "ml-1.5" : "";
+        return <span key={s.key} title={s.label} className={`h-2.5 w-2.5 rounded-full ${tone} ${gap}`} />;
+      })}
+    </div>
+  );
+}
+
 function stepNumber(row: GettingLiveRow): number {
-  const i = GETTING_LIVE_STEPS.findIndex((s) => s.key === row.current);
-  return i < 0 ? GETTING_LIVE_STEPS.length : i + 1;
+  const i = LAUNCH_STEPS.findIndex((s) => s.key === row.current);
+  return i < 0 ? LAUNCH_STEPS.length : i + 1;
+}
+
+/** First reply, call and client: what the campaign has brought in, kept apart from the launch list. */
+function Results({ row }: { row: GettingLiveRow }) {
+  if (row.current) return <span className="text-slate-400">–</span>;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {RESULT_STEPS.map((s) => {
+        const done = row.steps.find((x) => x.key === s.key)?.done;
+        return (
+          <span key={s.key} className={badgeClass(done ? "green" : "grey")}>
+            {s.label.replace("First ", "")}
+          </span>
+        );
+      })}
+    </span>
+  );
 }
 
 export function GettingLiveList({
@@ -194,56 +237,67 @@ export function GettingLiveList({
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="px-3 py-2 font-medium">Coach</th>
+              <th className="px-3 py-2 font-medium">Industry</th>
               <th className="px-3 py-2 font-medium">Step</th>
-              <th className="px-3 py-2 font-medium">Waits on</th>
               <th className="px-3 py-2 font-medium">Next</th>
+              <th className="px-3 py-2 font-medium" title="First reply, first call, first client">Results</th>
               <th className="px-3 py-2 font-medium" title="Support tickets not yet resolved">Tickets</th>
               <th className="px-3 py-2 font-medium">Last in app</th>
             </tr>
           </thead>
-          <tbody>
-            {data.rows.map((r) => {
-              const n = stepNumber(r);
-              const step = GETTING_LIVE_STEPS.find((s) => s.key === r.current);
-              return (
-                <tr
-                  key={r.coach_id}
-                  onClick={() => openCoach(r)}
-                  className="cursor-pointer border-b border-slate-100 align-top hover:bg-slate-50"
-                >
-                  <td className="px-3 py-2">
-                    <div className="font-medium text-slate-900">{r.name}</div>
-                    {!r.linkedin_connected ? <div className="text-xs text-rose-700">LinkedIn not connected</div> : null}
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="tabular-nums text-slate-500">
-                        {Math.min(n, GETTING_LIVE_STEPS.length)}/{GETTING_LIVE_STEPS.length}
-                      </span>
-                      <span className="text-slate-900">
-                        {step ? (
-                          <>
-                            {step.label}
-                            <span className="block text-xs text-slate-500">{stepGroupLabel(step.key)}</span>
-                          </>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-emerald-700">
-                            <Check className="h-4 w-4" aria-hidden /> Live
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2">
-                    {r.waits_on ? <span className={badgeClass(WAITS_TONE[r.waits_on])}>{WAITS_LABEL[r.waits_on]}</span> : null}
-                  </td>
-                  <td className="px-3 py-2 text-slate-700">{r.next_action}</td>
-                  <td className="px-3 py-2 tabular-nums">{r.open_tickets || "–"}</td>
-                  <td className="px-3 py-2 text-slate-500">{daysAgo(r.last_active_at)}</td>
+          {LIST_GROUPS.map((g) => {
+            const inGroup = data.rows.filter((r) => r.waits_on === g.waits);
+            if (!inGroup.length) return null;
+            return (
+              <tbody key={g.label}>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th colSpan={7} className="px-3 py-2 text-left text-sm font-medium text-slate-900">
+                    {g.label} <span className="ml-1 tabular-nums font-normal text-slate-500">{inGroup.length}</span>
+                  </th>
                 </tr>
-              );
-            })}
-          </tbody>
+                {inGroup.map((r) => {
+                  const step = LAUNCH_STEPS.find((s) => s.key === r.current);
+                  return (
+                    <tr
+                      key={r.coach_id}
+                      onClick={() => openCoach(r)}
+                      className="cursor-pointer border-b border-slate-100 align-top hover:bg-slate-50"
+                    >
+                      <td className="px-3 py-2">
+                        <div className="font-medium text-slate-900">{r.name}</div>
+                        {!r.linkedin_connected ? <div className="text-xs text-rose-700">LinkedIn not connected</div> : null}
+                      </td>
+                      <td className="max-w-56 px-3 py-2 text-slate-700">
+                        <span className="line-clamp-2" title={r.industry ?? undefined}>
+                          {r.industry ?? <span className="text-slate-400">Not set</span>}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <StepDots row={r} />
+                        <div className="mt-1 text-slate-900">
+                          {step ? (
+                            <>
+                              {stepNumber(r)}/{LAUNCH_STEPS.length} {step.label}
+                            </>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-emerald-700">
+                              <Check className="h-4 w-4" aria-hidden /> Live
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-slate-700">{r.next_action}</td>
+                      <td className="px-3 py-2">
+                        <Results row={r} />
+                      </td>
+                      <td className="px-3 py-2 tabular-nums">{r.open_tickets || "–"}</td>
+                      <td className="px-3 py-2 text-slate-500">{daysAgo(r.last_active_at)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            );
+          })}
         </table>
       </div>
     </div>

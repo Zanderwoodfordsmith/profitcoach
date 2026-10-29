@@ -20,6 +20,8 @@ import {
   UserSearch,
 } from "lucide-react";
 import { ImportPoolModal } from "@/components/campaigns/ImportPoolModal";
+import { PoolEmptyState } from "@/components/campaigns/PoolEmptyState";
+import type { PoolImportPreset } from "@/components/campaigns/PoolImportPicker";
 import { PoolFilterMenu } from "@/components/campaigns/PoolFilterMenu";
 import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
 import { SalesNavImportWaitPanel } from "@/components/campaigns/SalesNavImportWaitPanel";
@@ -431,6 +433,7 @@ export function CampaignPoolHub({
   ]);
   const [menu, setMenu] = useState<ProspectsToolbarMenu>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [importPreset, setImportPreset] = useState<PoolImportPreset>({});
   const [renamingImportListId, setRenamingImportListId] = useState<string | null>(
     null
   );
@@ -2878,12 +2881,13 @@ export function CampaignPoolHub({
                 type="button"
                 onClick={() => {
                   setMatchMenuOpen(false);
+                  setImportPreset({});
                   setImportOpen(true);
                 }}
                 className={buttonClass("main", "normal", "shrink-0")}
               >
                 <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
-                Import
+                Add people
               </button>
             </>
           }
@@ -3023,7 +3027,10 @@ export function CampaignPoolHub({
                       <button
                         type="button"
                         onClick={() => setActiveViewId(list.id)}
-                        className="inline-flex max-w-[14rem] items-center gap-1.5 px-2 py-1.5 pr-6 text-sm font-medium transition-colors"
+                        title={list.name}
+                        className={`inline-flex items-center gap-1.5 px-2 py-1.5 pr-6 text-sm font-medium transition-colors ${
+                          selected ? "" : "max-w-[14rem]"
+                        }`}
                       >
                         {importing ? (
                           <Loader2
@@ -3303,7 +3310,14 @@ export function CampaignPoolHub({
                           }
                           if (people.length === 0) {
                             if (activeViewId === "pool") {
-                              return "The pool is empty. Add a person, upload a CSV, or import from Sales Nav or Google Maps.";
+                              return (
+                                <PoolEmptyState
+                                  onPick={(preset) => {
+                                    setImportPreset(preset);
+                                    setImportOpen(true);
+                                  }}
+                                />
+                              );
                             }
                             return "This list is empty.";
                           }
@@ -3472,6 +3486,9 @@ export function CampaignPoolHub({
       <ImportPoolModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
+        initialMode={importPreset.mode}
+        initialMapsTerms={importPreset.mapsTerms}
+        initialSalesNavSource={importPreset.salesNavSource}
         currentListId={activeViewId === "pool" ? null : activeViewId}
         currentListName={
           activeViewId === "pool"

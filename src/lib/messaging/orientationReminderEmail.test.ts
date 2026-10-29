@@ -11,7 +11,7 @@ const sample = {
   stepId: "confirmation",
   firstName: "Alex",
   when: "Tuesday, 14 October 2026, 10:00 am BST",
-  joinUrl: "https://theprofitcoach.com/zoom-pam",
+  joinUrl: "https://theprofitcoach.com/zoom-zander",
   startsAtIso: "2026-10-14T09:00:00.000Z",
   endsAtIso: "2026-10-14T09:30:00.000Z",
   calendarEventCreated: true,
@@ -24,7 +24,7 @@ describe("orientation reminders", () => {
     assert.match(text, /short questions/i);
     assert.match(text, /Start Here/);
     assert.match(text, /Pick Your Path/);
-    assert.match(text, /theprofitcoach\.com\/zoom-pam/);
+    assert.match(text, /theprofitcoach\.com\/zoom-zander/);
     assert.doesNotMatch(text, /practice setup/i);
     assert.match(html, /\/welcome/);
     assert.match(html, /welcome-questions\.png/);
@@ -33,7 +33,7 @@ describe("orientation reminders", () => {
     assert.match(html, /location=https/);
     assert.equal(
       orientationReminderSubject("confirmation"),
-      "You're booked — orientation call with Pam"
+      "You're booked — orientation call with Zander"
     );
   });
 
@@ -44,20 +44,30 @@ describe("orientation reminders", () => {
     const hourHtml = orientationReminderHtml({ ...sample, stepId: "1h" });
 
     assert.match(day, /How are you getting on/i);
-    assert.match(day, /theprofitcoach\.com\/zoom-pam/);
+    assert.match(day, /theprofitcoach\.com\/zoom-zander/);
     assert.doesNotMatch(day, /Pick Your Path/);
     assert.doesNotMatch(day, /welcome video/i);
     assert.doesNotMatch(dayHtml, /welcome-questions\.png/);
 
     assert.match(hour, /about an hour/);
-    assert.match(hour, /theprofitcoach\.com\/zoom-pam/);
+    assert.match(hour, /theprofitcoach\.com\/zoom-zander/);
     assert.doesNotMatch(hour, /Pick Your Path/);
     assert.doesNotMatch(hour, /How are you getting on/i);
     assert.doesNotMatch(hourHtml, /\.png/);
     assert.equal(
       orientationReminderSubject("1h"),
-      "In an hour: orientation call with Pam"
+      "In an hour: orientation call with Zander"
     );
+  });
+
+  it("names Zander, and Pam on older bookings in her room", () => {
+    assert.match(orientationReminderText(sample), /Zander/);
+    assert.doesNotMatch(orientationReminderText(sample), /Pam/);
+    assert.doesNotMatch(orientationReminderHtml(sample), /Pam/);
+
+    const old = { ...sample, stepId: "24h", joinUrl: "https://theprofitcoach.com/zoom-pam" };
+    assert.match(orientationReminderText(old), /orientation call with Pam is tomorrow/);
+    assert.doesNotMatch(orientationReminderHtml(old), /Zander/);
   });
 
   it("schedules a confirmation, one day, and one hour", () => {

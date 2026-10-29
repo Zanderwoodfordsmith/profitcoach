@@ -2399,7 +2399,12 @@ export default function AdminPage() {
               view={gettingLiveLayout}
               from="getting-live"
               viewSwitcher={
-                <ProspectsViewSwitcher view={gettingLiveLayout} onChange={setGettingLiveLayout} ariaLabel="Getting live view" boardLabel="Board view" />
+                <>
+                  <Link href="/admin/plan" className={buttonClass("second", "small")}>
+                    Plan
+                  </Link>
+                  <ProspectsViewSwitcher view={gettingLiveLayout} onChange={setGettingLiveLayout} ariaLabel="Getting live view" boardLabel="Board view" />
+                </>
               }
             />
           </div>

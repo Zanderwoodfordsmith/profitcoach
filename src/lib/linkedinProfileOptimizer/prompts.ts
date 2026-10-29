@@ -8,7 +8,11 @@ import { experienceDraftAt } from "./draft";
 /** Locked like the JSON contract: the writing rules every variant must follow, whatever the admin voice says. */
 export const PROFILE_REWRITE_HARD_RULES = `Hard rules for every variant:
 - Never use the em dash character. Use a comma, a full stop or a hyphen instead.
-- Never invent a story, an anecdote, a number, a client or a result. Use only facts given below. Anything the coach must add goes in [square brackets].`;
+- Never invent a story, an anecdote, a number, a client or a result. Use only facts given below. Anything the coach must add goes in [square brackets].
+- LinkedIn has no formatting. Never use markdown: no ** for bold, no # headings, no "-" or "*" bullets. Bold is Unicode bold letters (𝗪𝗛𝗔𝗧 𝗜 𝗗𝗢). List lines start with the emoji marker.
+- Who it's for comes from this coach's own Blueprint, not BCA's market. Never print a turnover band, staff count or "a real team", even when the Blueprint gives one: describe the owner by their situation. Many coaches work with smaller firms.
+- The kind of coach they are comes only from how they want to be known, in their own words. "How they sound" describes the tone of their messages: never turn it into a claim about themselves ("I'll notice what you've built").
+- The copywriting method and the LinkedIn method below are the standard. Where the voice above differs, the method wins.`;
 
 export const PROFILE_REWRITE_JSON_CONTRACT = `Return ONE JSON object only, no markdown:
 {"recommendedIndex":0,"variants":[{"label":"Short label","text":"..."}]}
@@ -24,10 +28,10 @@ Rules:
 - How they want to be known, and the kind of coach they are (boot camp, hugs, a mix), should be readable in the About. Owners must recognise what working with them will feel like. Use values they named. Do not invent a hobby, book or film, and do not force those onto the profile.
 - Owner language, not coach-speak. Not “Business Coach | Helping leaders transform”.
 - Headline: who they help + the outcome. Scannable. 3 to 5 variants. LinkedIn max 220 characters.
-- About: written TO the ideal client (you/your), not a CV. Pain in their words → mechanism (BOSS as a system, not therapy) → the kind of coach they are → proof from the Blueprint → clear next step (connect, newsletter, or a call). Short paragraphs. 2 to 3 variants.
+- About: written TO the ideal client (you/your), not a CV. Follow the About order and layout in the method exactly: hook (the group, what they want, and a real result) before "see more", pains, "it wasn't your fault, because", who I work with, results and the kind of coach they are, how it works (the three phases, no five levels), then it all starts with the BOSS Score (in Featured, or a message; discreet coaches: the BOSS Score or the newsletter). Bold short section headers and emoji markers as the method shows. About 2,000 characters, never over 2,300 (each bold letter counts as two). Never put prices, fees or how many clients they take. 2 to 3 variants.
 - Experience: current role framed as client outcomes, not job history. 2 to 3 variants of the description (and title if the current title is generic).
 - Banner: words only (who + result). Do not describe image layouts in detail. 3 short lines they can put on a banner.
-- Featured: what to pin on the profile (newsletter, a proof post, a lead magnet / case). 2 to 3 variants. Each variant.text is a short numbered list of what to feature and why. No image generation.`;
+- Featured: what to pin on the profile, in the method's order: their story post (timeline or 3 lessons), then how it works (or a proof post once they have one), then the BOSS Score link. Discreet coaches: newsletter first. 2 to 3 variants. Each variant.text is a short numbered list of what to feature and why. No image generation.`;
 
 export const PROFILE_REWRITE_SYSTEM = `${PROFILE_REWRITE_DEFAULT_VOICE}
 
@@ -125,11 +129,13 @@ export function buildRewriteUser(opts: {
     headline: "Rewrite the HEADLINE only. Each variant.text is the full headline.",
     about: "Rewrite the ABOUT section only. Each variant.text is the full About.",
     experience:
-      "Rewrite the CURRENT ROLE (title + description). Each variant.text should be the description, optionally starting with a suggested title on the first line then a blank line then the description.",
+      opts.experienceIndex === 0
+        ? "Rewrite the CURRENT ROLE (title + description). Each variant.text should be the description, optionally starting with a suggested title on the first line then a blank line then the description."
+        : "Write the description for this PAST ROLE only, following the past roles rules in the method. Keep its title. Each variant.text is the description alone.",
     banner:
       "Write BANNER COPY only (who they help + the result). Each variant.text is one short line or two.",
     featured:
-      "Write FEATURED pin advice only. Each variant.text is a short numbered list of 2 to 4 items to pin (newsletter, proof, lead magnet) and one line why. Do not invent URLs.",
+      "Write FEATURED pin advice only. Each variant.text is a short numbered list of 3 items to pin (their story, how it works, the BOSS Score) and one line why. Do not invent URLs.",
   };
 
   const extra = opts.instruction

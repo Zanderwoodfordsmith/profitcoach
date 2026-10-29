@@ -1775,7 +1775,7 @@ export function AdminSupportPage() {
                             Their inbox
                           </a>
                           <a
-                            href={`/admin/blueprint/records/${encodeURIComponent(selected.created_by)}`}
+                            href={`/admin/blueprint/coach?coach=${encodeURIComponent(selected.created_by)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Open their Blueprint in admin"

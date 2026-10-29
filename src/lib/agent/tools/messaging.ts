@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { connectionNoteLength } from "@/lib/campaigns/connectionNote";
 import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
 import { blocksToMarkdown, sanitizeBuiltSections } from "@/lib/practiceKnowledge/blocks";
 import {
@@ -61,8 +62,10 @@ export function stepsFromDraft(raw: unknown): { steps: CampaignStepInput[] } | {
     }
     if (draft.step_type === "invite") {
       for (const [label, text] of [["Invite note", body], ["Invite note B", variantB ?? ""]] as const) {
-        if (text.length > INVITE_NOTE_MAX) {
-          return { error: `${label} is ${text.length} characters. LinkedIn allows ${INVITE_NOTE_MAX}; aim for under 275.` };
+        if (connectionNoteLength(text) > INVITE_NOTE_MAX) {
+          return {
+            error: `${label} is ${connectionNoteLength(text)} characters once filled in (first name counted as 10, company as 30). LinkedIn allows ${INVITE_NOTE_MAX}.`,
+          };
         }
       }
     }
@@ -123,10 +126,10 @@ async function blueprintSteps(coachId: string, handoff: CampaignHandoff) {
   // The hand-off cuts long notes mid-word. Never save a cut note: hand the
   // messages back so the agent can shorten the note and use write_campaign_steps.
   const note = handoff.invite === "note" ? toCampaignTokens(messages[0] ?? "") : "";
-  if (note.length > INVITE_NOTE_MAX) {
+  if (connectionNoteLength(note) > INVITE_NOTE_MAX) {
     throw new AgentToolError(
-      `The blueprint's connection note is ${note.length} characters; LinkedIn allows ${INVITE_NOTE_MAX}. ` +
-        `Nothing was saved. Shorten the note to under 275 characters, keep the rest, and save with write_campaign_steps ` +
+      `The blueprint's connection note is ${connectionNoteLength(note)} characters once filled in; LinkedIn allows ${INVITE_NOTE_MAX}. ` +
+        `Nothing was saved. Shorten the note to fit, keep the rest, and save with write_campaign_steps ` +
         `(invite, then waits of 1, 24, 48, 96 and 336 hours before each follow-up, follow-ups on remind). ` +
         `The blueprint messages, in order: ${JSON.stringify(messages.map(toCampaignTokens))}`
     );
@@ -221,7 +224,7 @@ export const messagingTools: AgentToolDef[] = [
     label: "Saving the messages",
     needsCoach: true,
     description:
-      "Replace a campaign's whole sequence. Steps in order: an optional invite first (connection note, under 275 characters, can be blank), then wait (wait_hours) and message steps. Messages default to remind (the coach approves each one); pass send_mode auto to send automatically. variant_b adds an A/B test. Use {{first_name}}, {{company}}, {{title}}, {{location}}. Asks for confirmation when the campaign is running.",
+      "Replace a campaign's whole sequence. Steps in order: an optional invite first (connection note, 300 characters or under with first name counted as 10 and company as 30, can be blank), then wait (wait_hours) and message steps. Messages default to remind (the coach approves each one); pass send_mode auto to send automatically. variant_b adds an A/B test. Use {{first_name}}, {{company}}, {{title}}, {{location}}. Asks for confirmation when the campaign is running.",
     input_schema: {
       type: "object",
       properties: {

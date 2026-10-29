@@ -55,7 +55,7 @@ export function socialSquare(coach, { idp = "sq" } = {}) {
 }
 
 /** 1584 x 396 LinkedIn banner. The left 520px stays quiet: LinkedIn puts the profile photo there. */
-export function linkedinBanner(coach, { idp = "li" } = {}) {
+export function linkedinBanner(coach, { idp = "li", text = null } = {}) {
   const W = 1584, H = 396;
   let s = `<defs><clipPath id="${idp}-clip"><rect width="${W}" height="${H}"/></clipPath>
 <linearGradient id="${idp}-bg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f6f8fb"/><stop offset="1" stop-color="#eef4fa"/></linearGradient></defs>`;
@@ -63,9 +63,13 @@ export function linkedinBanner(coach, { idp = "li" } = {}) {
   s += place(compass({ style: "rings", scores: EXAMPLE_SCORES, idp: `${idp}-c` }), 1170, -64, 520);
   s += `</g>`;
   // No QR here: people see a LinkedIn banner on the device they would scan with. The link does the job.
-  s += `<text x="560" y="132" font-family="${F_DISPLAY}" font-size="52" font-weight="600" letter-spacing="-1.2" fill="${C.ink}">What's your <tspan fill="${C.vision}">BOSS Score?</tspan></text>`;
-  s += `<text x="560" y="184" font-family="${F_BODY}" font-size="24" fill="${C.slate}">Take my free scorecard. Get your BOSS Compass</text>`;
-  s += `<text x="560" y="218" font-family="${F_BODY}" font-size="24" fill="${C.slate}">and your three priority areas.</text>`;
+  const words = bannerWords(text);
+  if (words) s += customWords(words, { x: 560, headingY: 132, size: 52, subYs: [184, 218], subSize: 24, maxW: 540 });
+  else {
+    s += `<text x="560" y="132" font-family="${F_DISPLAY}" font-size="52" font-weight="600" letter-spacing="-1.2" fill="${C.ink}">What's your <tspan fill="${C.vision}">BOSS Score?</tspan></text>`;
+    s += `<text x="560" y="184" font-family="${F_BODY}" font-size="24" fill="${C.slate}">Take my free scorecard. Get your BOSS Compass</text>`;
+    s += `<text x="560" y="218" font-family="${F_BODY}" font-size="24" fill="${C.slate}">and your three priority areas.</text>`;
+  }
   s += `<text x="560" y="282" font-family="${F_BODY}" font-size="26" font-weight="600" fill="${C.vision}">${esc(coach.displayUrl)}</text>`;
   s += logo(560, 318, 200, idp);
   return svgDoc({ w: W, h: H, viewBox: `0 0 ${W} ${H}`, title: `LinkedIn banner for ${coach.name}`, body: s });
@@ -175,48 +179,115 @@ function bannerFrame(idp, bg) {
   return `<defs><clipPath id="${idp}-clip"><rect width="1584" height="396"/></clipPath>${bg}</defs>`;
 }
 
+/** The coach's own banner words: first line is the heading, the next one or two go under it. Null keeps the design's own. */
+function bannerWords(text) {
+  const lines = String(text ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines.length ? { heading: lines[0], sub: lines.slice(1, 3) } : null;
+}
+
+/** Shrinks a line until it fits the width, roughly. Measured off the default banners: headings run about 0.45 em a character, body text 0.48. */
+function fitSize(str, maxW, size, min, perChar) {
+  return Math.max(min, Math.min(size, Math.floor(maxW / (Math.max(1, str.length) * perChar))));
+}
+
+/** Splits a heading into two lines at the space nearest the middle. */
+function splitInTwo(str) {
+  const mid = str.length / 2;
+  let at = -1;
+  for (let i = 0; i < str.length; i++) if (str[i] === " " && (at < 0 || Math.abs(i - mid) < Math.abs(at - mid))) at = i;
+  return at < 0 ? [str] : [str.slice(0, at), str.slice(at + 1)];
+}
+
+/**
+ * The heading at y. Too long for one line at a good size, it takes two lines:
+ * growing down (returns how far, so the lines under it can move) or up into the space above.
+ */
+function headingBlock(str, { x, y, size, maxW, dark = false, grow = "down" }) {
+  const line = (t, ty, fs) =>
+    `<text x="${x}" y="${n2(ty)}" font-family="${F_DISPLAY}" font-size="${fs}" font-weight="600" letter-spacing="-1" fill="${dark ? "#ffffff" : C.ink}">${esc(t)}</text>`;
+  const one = fitSize(str, maxW, size, 30, 0.45);
+  const parts = splitInTwo(str);
+  if (one >= size * 0.8 || parts.length < 2) return { svg: line(str, y, one), extra: 0 };
+  const fs = Math.min(Math.round(size * 0.85), ...parts.map((t) => fitSize(t, maxW, size, 26, 0.45)));
+  const gap = Math.round(fs * 1.15);
+  const [y1, y2] = grow === "up" ? [y - gap, y] : [y, y + gap];
+  return { svg: line(parts[0], y1, fs) + line(parts[1], y2, fs), extra: grow === "up" ? 0 : gap };
+}
+
+function headingLine(str, opts) {
+  return headingBlock(str, opts).svg;
+}
+
+function subLine(str, { x, y, size = 23, maxW, dark = false }) {
+  return `<text x="${x}" y="${y}" font-family="${F_BODY}" font-size="${fitSize(str, maxW, size, 18, 0.48)}" fill="${dark ? "#ffffff" : C.slate}"${dark ? ` fill-opacity="0.85"` : ""}>${esc(str)}</text>`;
+}
+
+/** The heading, then up to one line under it per y given, all at one size. A two-line heading leaves room for one line under it. */
+function customWords(words, { x, headingY, size, subYs, subSize = 23, maxW, dark = false }) {
+  const head = headingBlock(words.heading, { x, y: headingY, size, maxW, dark });
+  let s = head.svg;
+  const ys = head.extra ? subYs.slice(0, 1).map((y) => y + head.extra) : subYs;
+  const lines = words.sub.slice(0, ys.length);
+  const shared = Math.min(subSize, ...lines.map((line) => fitSize(line, maxW, subSize, 18, 0.48)));
+  lines.forEach((line, i) => {
+    s += subLine(line, { x, y: ys[i], size: shared, maxW, dark });
+  });
+  return s;
+}
+
 /** LinkedIn banner, light: the benefit up front. */
-export function linkedinBannerScore(coach, { idp = "li2" } = {}) {
+export function linkedinBannerScore(coach, { idp = "li2", text = null } = {}) {
   let s = bannerFrame(idp, `<linearGradient id="${idp}-bg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f6f8fb"/><stop offset="1" stop-color="#eef4fa"/></linearGradient>`);
   s += `<g clip-path="url(#${idp}-clip)"><rect width="1584" height="396" fill="url(#${idp}-bg)"/>`;
   s += place(compass({ style: "classic", scores: EXAMPLE_SCORES, idp: `${idp}-c` }), 1290, -36, 468);
   s += `</g>`;
-  s += `<text x="560" y="128" font-family="${F_DISPLAY}" font-size="44" font-weight="600" letter-spacing="-1" fill="${C.ink}">What would your <tspan fill="${C.vision}">business score?</tspan></text>`;
-  s += `<text x="560" y="178" font-family="${F_BODY}" font-size="23" fill="${C.slate}">Score it out of 100 in 3 minutes. See your owner</text>`;
-  s += `<text x="560" y="210" font-family="${F_BODY}" font-size="23" fill="${C.slate}">level and the three areas to fix first.</text>`;
+  const words = bannerWords(text);
+  if (words) s += customWords(words, { x: 560, headingY: 128, size: 44, subYs: [178, 210], maxW: 640 });
+  else {
+    s += `<text x="560" y="128" font-family="${F_DISPLAY}" font-size="44" font-weight="600" letter-spacing="-1" fill="${C.ink}">What would your <tspan fill="${C.vision}">business score?</tspan></text>`;
+    s += `<text x="560" y="178" font-family="${F_BODY}" font-size="23" fill="${C.slate}">Score it out of 100 in 3 minutes. See your owner</text>`;
+    s += `<text x="560" y="210" font-family="${F_BODY}" font-size="23" fill="${C.slate}">level and the three areas to fix first.</text>`;
+  }
   s += urlText(coach, 560, 272, 26);
   s += logo(560, 306, 190, idp);
   return svgDoc({ w: 1584, h: 396, viewBox: "0 0 1584 396", title: `LinkedIn banner, score (${coach.name})`, body: s });
 }
 
 /** LinkedIn banner, brand gradient: the landing page's own headline. */
-export function linkedinBannerDark(coach, { idp = "li3" } = {}) {
+export function linkedinBannerDark(coach, { idp = "li3", text = null } = {}) {
   let s = bannerFrame(idp, gradientDef(`${idp}-bg`, { x1: 0, y1: 0.1, x2: 1, y2: 0.9 }));
   s += `<g clip-path="url(#${idp}-clip)"><rect width="1584" height="396" fill="url(#${idp}-bg)"/>`;
   s += `<circle cx="1440" cy="198" r="236" fill="#ffffff"/>`;
   s += place(compass({ style: "classic", scores: EXAMPLE_SCORES, idp: `${idp}-c` }), 1232, -10, 416);
   s += `</g>`;
-  s += `<text x="540" y="116" font-family="${F_DISPLAY}" font-size="42" font-weight="600" letter-spacing="-0.9" fill="#ffffff">Are you running your business,</text>`;
-  s += `<text x="540" y="168" font-family="${F_DISPLAY}" font-size="42" font-weight="600" letter-spacing="-0.9" fill="#ffffff">or is it running you?</text>`;
-  s += `<text x="540" y="220" font-family="${F_BODY}" font-size="22" fill="#ffffff" fill-opacity="0.85">Find out in 3 minutes with my free BOSS Scorecard.</text>`;
+  const words = bannerWords(text);
+  if (words) s += customWords(words, { x: 540, headingY: 136, size: 42, subYs: [186, 220], subSize: 22, maxW: 560, dark: true });
+  else {
+    s += `<text x="540" y="116" font-family="${F_DISPLAY}" font-size="42" font-weight="600" letter-spacing="-0.9" fill="#ffffff">Are you running your business,</text>`;
+    s += `<text x="540" y="168" font-family="${F_DISPLAY}" font-size="42" font-weight="600" letter-spacing="-0.9" fill="#ffffff">or is it running you?</text>`;
+    s += `<text x="540" y="220" font-family="${F_BODY}" font-size="22" fill="#ffffff" fill-opacity="0.85">Find out in 3 minutes with my free BOSS Scorecard.</text>`;
+  }
   s += urlText(coach, 540, 278, 26, "#9fd6fa");
   s += logo(540, 310, 190, idp, "white");
   return svgDoc({ w: 1584, h: 396, viewBox: "0 0 1584 396", title: `LinkedIn banner, dark (${coach.name})`, body: s });
 }
 
 /** LinkedIn banner: the five levels as chips. */
-export function linkedinBannerLevels(coach, { idp = "li4" } = {}) {
+export function linkedinBannerLevels(coach, { idp = "li4", text = null } = {}) {
   let s = bannerFrame(idp, `<linearGradient id="${idp}-bg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef4fa"/></linearGradient>`);
   s += `<g clip-path="url(#${idp}-clip)"><rect width="1584" height="396" fill="url(#${idp}-bg)"/>`;
   s += place(bossWheelBanded({ scores: EXAMPLE_AREA_SCORES, idp: `${idp}-w` }), 1336, -40, 476);
   s += `</g>`;
-  s += `<text x="560" y="118" font-family="${F_DISPLAY}" font-size="44" font-weight="600" letter-spacing="-1" fill="${C.ink}">Which level is your <tspan fill="${C.vision}">business at?</tspan></text>`;
+  const words = bannerWords(text);
+  if (words) s += headingLine(words.heading, { x: 560, y: 118, size: 44, maxW: 680, grow: "up" });
+  else s += `<text x="560" y="118" font-family="${F_DISPLAY}" font-size="44" font-weight="600" letter-spacing="-1" fill="${C.ink}">Which level is your <tspan fill="${C.vision}">business at?</tspan></text>`;
   for (let k = 1; k <= 5; k++) {
     const x = 560 + (k - 1) * 150;
     s += `<rect x="${x}" y="150" width="140" height="54" rx="27" fill="${SAT[k]}"/>`;
     s += `<text x="${x + 70}" y="184" text-anchor="middle" font-family="${F_DISPLAY}" font-size="19" font-weight="600" fill="${C.face}">${LEVEL_NAME[k]}</text>`;
   }
-  s += `<text x="560" y="252" font-family="${F_BODY}" font-size="23" fill="${C.slate}">Find yours in 3 minutes with my free BOSS Scorecard.</text>`;
+  if (words?.sub[0]) s += subLine(words.sub[0], { x: 560, y: 252, maxW: 680 });
+  else s += `<text x="560" y="252" font-family="${F_BODY}" font-size="23" fill="${C.slate}">Find yours in 3 minutes with my free BOSS Scorecard.</text>`;
   s += urlText(coach, 560, 306, 26);
   s += logo(560, 336, 170, idp);
   return svgDoc({ w: 1584, h: 396, viewBox: "0 0 1584 396", title: `LinkedIn banner, levels (${coach.name})`, body: s });

@@ -15,7 +15,10 @@ import {
   type BookingNotifyVars,
   type BookingReminderStep,
 } from "@/lib/booking/reminderSequence";
-import { isProgrammeOrientationBooking } from "@/config/programmeOrientationCalendar";
+import {
+  isProgrammeOrientationBooking,
+  orientationHostName,
+} from "@/config/programmeOrientationCalendar";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import {
   orientationReminderHtml,
@@ -512,7 +515,10 @@ async function sendBookingSequenceStep(args: {
     calendarEventCreated: Boolean(args.input.calendarEventCreated),
   };
   const subject = orientation
-    ? orientationReminderSubject(args.step.id)
+    ? orientationReminderSubject(
+        args.step.id,
+        orientationHostName(orientationInput.joinUrl)
+      )
     : interpolateReminderText(args.step.subject, vars);
   const text = orientation
     ? orientationReminderText(orientationInput)

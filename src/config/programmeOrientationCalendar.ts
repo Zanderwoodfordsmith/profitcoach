@@ -5,14 +5,21 @@ import { supportCallMeetingLocationUrl } from "@/lib/support/supportCallHosts";
  * (same day/time picker as Let’s Talk after Continue), not the GHL iframe.
  *
  * Slots come from Zander’s onboarding calendar (the Google account that can
- * create events). Pam is added as an attendee so the invite lands on her
- * calendar as well as the member’s. The place on the invite is Pam’s standing
- * Zoom room (theprofitcoach.com/zoom-pam), the same room as her support calls.
+ * create events). Zander takes the call in his standing Zoom room
+ * (theprofitcoach.com/zoom-zander), the same room as his support calls.
  */
 
-/** Pam's standing Zoom room. Shown on the calendar invite and in the emails. */
+/** Zander's standing Zoom room. Shown on the calendar invite and in the emails. */
 export const PROGRAMME_ORIENTATION_JOIN_URL =
-  supportCallMeetingLocationUrl("pam") ?? "https://theprofitcoach.com/zoom-pam";
+  supportCallMeetingLocationUrl("zander") ?? "https://theprofitcoach.com/zoom-zander";
+
+/**
+ * Who the member meets, read from the booking's join link. Older bookings sit
+ * in Pam's room and stay with Pam.
+ */
+export function orientationHostName(joinUrl: string | null | undefined): string {
+  return joinUrl?.trim() === supportCallMeetingLocationUrl("pam") ? "Pam" : "Zander";
+}
 export const PROGRAMME_ORIENTATION_BOOK_SLUG =
   process.env.NEXT_PUBLIC_PROGRAMME_ORIENTATION_BOOK_SLUG?.trim().toLowerCase() ||
   "zander";
@@ -20,12 +27,6 @@ export const PROGRAMME_ORIENTATION_BOOK_SLUG =
 export const PROGRAMME_ORIENTATION_CALENDAR_SLUG =
   process.env.NEXT_PUBLIC_PROGRAMME_ORIENTATION_CALENDAR_SLUG?.trim().toLowerCase() ||
   "onboarding";
-
-/** Invited on every orientation event so it shows on Pam’s calendar. */
-export const PROGRAMME_ORIENTATION_CALENDAR_ATTENDEE = {
-  email: "pam@businesscoachacademy.com",
-  name: "Pam",
-} as const;
 
 export function isProgrammeOrientationBooking(input: {
   coachSlug: string | null | undefined;
@@ -39,8 +40,8 @@ export function isProgrammeOrientationBooking(input: {
   );
 }
 
-/** Calendar invite title: "Orientation call: Jane Smith & Pam". */
+/** Calendar invite title: "Orientation call: Jane Smith & Zander". */
 export function orientationEventTitle(guestName: string): string {
   const member = guestName.trim() || "Member";
-  return `Orientation call: ${member} & Pam`;
+  return `Orientation call: ${member} & Zander`;
 }

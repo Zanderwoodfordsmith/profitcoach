@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { peekAgentOverride } from "@/lib/agent/agentOverrides";
+import { readCopywritingMethod } from "@/lib/copywritingMethod";
 import { blocksToMarkdown, BLOCKS_SCHEMA_PROMPT } from "./blocks";
 import { ALWAYS_READS, buildOrder, sectionByKey, type WriterSource } from "./blueprint";
 import { summarizeKnowledgeForPrompt } from "./prompts";
@@ -16,6 +17,8 @@ import type { InterviewTurn, PracticeKnowledgeRow } from "./types";
 export type SectionSkill = {
   /** Method file in content/practice-skills. */
   file: string;
+  /** Part files read after the method, e.g. "connection-campaign/note.md". */
+  parts?: string[];
   /** What to write for this coach, and how to lay it out in blocks. */
   task: string;
   maxTokens?: number;
@@ -24,13 +27,12 @@ export type SectionSkill = {
 export const SECTION_SKILLS: Record<string, SectionSkill> = {
   "story:bio": {
     file: "story.md",
-    task: `Write the coach's short bio, in three versions. How they want to be known and the kind of coach they are (boot camp, hugs, a mix) should be readable in the bio, without naming those labels unless they would. Their results are already on the page above as their own cards, so do not list them again.
+    task: `Write the coach's short bio, in two versions. How they want to be known and the kind of coach they are (boot camp, hugs, a mix) should be readable in the bio, without naming those labels unless they would. Their results are already on the page above as their own cards, so do not list them again.
 Blocks, in this order:
 1. lede: one or two sentences that say who they are, the kind of coach they are, and the most impressive thing they have done.
 2. stats: two to four real numbers from their record (years in business, a result, team size). Only real numbers. Skip the block if there are fewer than two.
 3. heading "Short bio", then a paragraph: first person, 60 to 90 words.
-4. heading "One-line introduction", then a paragraph with one sentence.
-5. heading "For partners and events", then a paragraph: the same bio in the third person.`,
+4. heading "For partners and events", then a paragraph: the same bio in the third person.`,
   },
   "voice:sound": {
     file: "voice.md",
@@ -94,14 +96,16 @@ Blocks, in this order:
 6. callout (tone "tip"): the KPI to watch in the first two weeks.`,
   },
   "campaigns:messaging": {
-    file: "campaigns.md",
+    file: "connection-campaign.md",
+    parts: ["connection-campaign/note.md", "connection-campaign/follow-ups.md"],
     maxTokens: 6000,
-    task: `Write the connection campaign for this coach and avatar, using their best real proof. It goes to new owners from a list, 2nd and 3rd degree. Keep the sequence short and proof-led. Match the kind of coach they are in the word choice only (a boot camp coach is more direct than hugs). Do not add hobbies, books or stories here. There is not room.
+    task: `Write the connection campaign for this coach and avatar, using their best real proof. It goes to new owners from a list, 2nd and 3rd degree. Follow the recommended campaign in the method. Match the kind of coach they are in the word choice only (a boot camp coach is more direct than hugs). Do not add hobbies, books or stories here. There is not room.
 Blocks, in this order:
 1. lede: the angle of the campaign in one sentence.
-2. pairs: Core client, Main desire, Proof used, Proof type (client or career).
-3. heading "The sequence", then message blocks for Connection request (under 275 characters, note the character count), Message 1 (30 minutes), Message 2 (1 day), Message 3 (2 days), Message 4 (4 days), Message 5 (2 weeks). Put the timing in each note.
-4. heading "Check before launch", then a table with columns Check, Pass (the ten connection message checks, each Yes or Fix with a reason).
+2. pairs: Core client, Main desire, Proof used, Proof type (client, career or tribe).
+3. heading "The sequence", then message blocks for Connection request (300 characters or under, counting {first_name} as 10 and {company} as 30; note the count), Message 1 (5 minutes, the ad shape), Message 2 (1 day), Message 3 (2 days), Message 4 (4 days), Message 5 (2 weeks). Put the timing in each note.
+4. heading "Open Profile message", then one message block: Message 1 for owners with an Open Profile, sent without connecting. Same outcomes, proof and ask as Message 1; only the opening changes, to the connection request's opening line, since there is no "thanks for connecting". Note "No connection needed" in its note. Only if the coach direction asks for an A/B test, also a heading "Connection request B" with one message block: the same rules, a different angle.
+5. heading "Check before launch", then a table with columns Check, Pass (the ten connection message checks, each Yes or Fix with a reason).
 If the proof has no number yet, keep the placeholder in square brackets and add a callout (tone "warning") saying the campaign cannot launch until it has one.
 Every story, anecdote, number and result about the coach must come from their record. If a message needs one the record does not have, write a [square-bracket prompt] for the coach to fill instead. Never make one up.
 Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
@@ -302,13 +306,18 @@ function readWritingRules(): string {
   return peekAgentOverride("ai-knowledge/writing-rules.md") ?? readText(WRITING_RULES);
 }
 
+/** Sections an owner reads: these also get the copywriting method. */
+const OUTWARD_COPY_FILES = new Set(["campaigns.md", "connection-campaign.md", "linkedin-newsletter.md", "content.md"]);
+
 export function skillSystemPrompt(key: string): string | null {
   const skill = SECTION_SKILLS[key];
   if (!skill) return null;
   return [
     readSkillFile("_shared.md"),
     readWritingRules(),
+    OUTWARD_COPY_FILES.has(skill.file) ? `# Copywriting method\n\n${readCopywritingMethod()}` : "",
     `# Method for this section\n\n${readSkillFile(skill.file)}`,
+    ...(skill.parts ?? []).map((part) => readSkillFile(part)),
     `# Output format\n\nYou are writing one section of a premium, printed-quality document called the Practice Blueprint. It should read like strategy work a coach would pay £50,000 for: specific, confident, grounded in their facts, and easy to act on. Open every section with a lede. Prefer tables, steps and message blocks over long prose.\n\n${BLOCKS_SCHEMA_PROMPT}`,
   ]
     .filter(Boolean)

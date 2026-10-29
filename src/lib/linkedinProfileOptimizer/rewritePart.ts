@@ -1,4 +1,5 @@
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
+import { copyCheckPrompt } from "@/lib/copywritingMethod";
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
 import { ensureCoachLinkedIn, type CoachLinkedIn } from "@/lib/practiceKnowledge/coachLinkedIn";
 import { loadBlueprintContext } from "@/lib/practiceKnowledge/blueprintContext";
@@ -6,6 +7,7 @@ import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContex
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { normalizeOptimizerDraft, parseExperienceVariant, upsertExperienceDraft } from "./draft";
+import { linkedInText } from "./linkedInText";
 import { loadRewriteSystemPrompt } from "./loadRewriteSystem";
 import { buildRewriteUser } from "./prompts";
 import {
@@ -33,6 +35,33 @@ function clip(value: string, max: number): string {
   return value.length <= max ? value : value.slice(0, max);
 }
 
+/** Over the limit, cut at the last full line rather than mid-word. */
+function clipAtLine(value: string, max: number): string {
+  if (value.length <= max) return value;
+  const cut = value.slice(0, max);
+  const lastLine = cut.lastIndexOf("\n");
+  return (lastLine > max / 2 ? cut.slice(0, lastLine) : cut).trimEnd();
+}
+
+/** The About's own target; LinkedIn's hard limit is a little higher. */
+const ABOUT_TARGET = 2_300;
+
+/** A note for the check pass naming any option that is too long, with its length. */
+function lengthNote(raw: unknown, section: ProfileSectionId): string {
+  const list = (raw as { variants?: unknown } | null)?.variants;
+  if (!Array.isArray(list)) return "";
+  const target = section === "about" ? ABOUT_TARGET : SECTION_TEXT_MAX[section];
+  const over = list
+    .map((item, i) => {
+      const text = (item as { text?: unknown } | null)?.text;
+      const length = typeof text === "string" ? linkedInText(text.trim()).length : 0;
+      return length > target ? `option ${i + 1} is ${length}` : "";
+    })
+    .filter(Boolean);
+  if (!over.length) return "";
+  return `\n\nToo long: ${over.join(", ")} characters. Cut each to under ${target - 100} characters (each Unicode bold letter counts as two). Cut from the pains, results or the way you work. Keep the 📥 call to action as the last line.`;
+}
+
 function parseVariants(raw: unknown, section: ProfileSectionId): ProfileOptimizerVariant[] {
   if (!raw || typeof raw !== "object") return [];
   const rec = raw as Record<string, unknown>;
@@ -47,7 +76,7 @@ function parseVariants(raw: unknown, section: ProfileSectionId): ProfileOptimize
     const item = list[i];
     if (!item || typeof item !== "object") continue;
     const row = item as Record<string, unknown>;
-    const text = typeof row.text === "string" ? clip(row.text.trim(), max) : "";
+    const text = typeof row.text === "string" ? clipAtLine(linkedInText(row.text.trim()), max) : "";
     if (!text) continue;
     const label =
       typeof row.label === "string" && row.label.trim()
@@ -102,23 +131,29 @@ export async function rewriteProfilePart(
   inputs: ProfileWriterInputs & { snapshot: LinkedInProfileSnapshot },
   opts: { section: ProfileSectionId; instruction?: string | null; experienceIndex?: number; draft?: ProfileOptimizerDraft }
 ): Promise<ProfileOptimizerVariant[]> {
-  const system = await loadRewriteSystemPrompt();
-  const { data, error } = await generateCampaignJson<{ recommendedIndex?: number; variants?: unknown }>({
-    system,
-    user: buildRewriteUser({
-      section: opts.section,
-      snapshot: inputs.snapshot,
-      draft: opts.draft ?? inputs.draft,
-      brain: inputs.brain,
-      linkedInSummary: inputs.linkedin.summary,
-      instruction: opts.instruction ? clip(opts.instruction.trim(), FIELD_LIMITS.instruction) : null,
-      experienceIndex: opts.experienceIndex ?? 0,
-      blueprint: inputs.blueprint,
-    }),
-    maxTokens: opts.section === "about" ? 3072 : 1536,
+  const system = await loadRewriteSystemPrompt(opts.section);
+  const user = buildRewriteUser({
+    section: opts.section,
+    snapshot: inputs.snapshot,
+    draft: opts.draft ?? inputs.draft,
+    brain: inputs.brain,
+    linkedInSummary: inputs.linkedin.summary,
+    instruction: opts.instruction ? clip(opts.instruction.trim(), FIELD_LIMITS.instruction) : null,
+    experienceIndex: opts.experienceIndex ?? 0,
+    blueprint: inputs.blueprint,
   });
+  const maxTokens = opts.section === "about" ? 3072 : 1536;
+  const { data, error } = await generateCampaignJson<{ recommendedIndex?: number; variants?: unknown }>({ system, user, maxTokens });
   const variants = parseVariants(data, opts.section);
-  return error ? [] : variants;
+  if (error || !variants.length) return [];
+  // The check pass: the writer edits its own options against the method's checks. A failed check keeps the first draft.
+  const checked = await generateCampaignJson<{ recommendedIndex?: number; variants?: unknown }>({
+    system,
+    user: copyCheckPrompt(user, JSON.stringify(data, null, 2)) + lengthNote(data, opts.section),
+    maxTokens,
+  });
+  const fixed = parseVariants(checked.data, opts.section);
+  return fixed.length ? fixed : variants;
 }
 
 /** The parts "Write every part from my Blueprint" writes, top of the profile first. */

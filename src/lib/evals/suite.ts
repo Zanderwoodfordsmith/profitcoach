@@ -253,9 +253,11 @@ function pickRecommended(data: unknown): { recommended: Variant | null; all: Var
 }
 
 async function runLinkedIn(opts: SuiteOptions, canon: string, coaches: EvalCoach[]): Promise<EvalRow[]> {
-  const system = await loadRewriteSystemPrompt();
+  const systems = new Map<ProfileSectionId, string>();
+  for (const s of PROFILE_SECTIONS) systems.set(s.section, await loadRewriteSystemPrompt(s.section));
   const jobs = coaches.flatMap((c) => PROFILE_SECTIONS.flatMap((s) => reps(opts.reps).map((rep) => ({ c, s, rep }))));
   return mapPool(jobs, opts.concurrency, async ({ c, s, rep }) => {
+    const system = systems.get(s.section) ?? "";
     const caseId = `${c.id}/${s.section}`;
     const user = buildRewriteUser({
       section: s.section,

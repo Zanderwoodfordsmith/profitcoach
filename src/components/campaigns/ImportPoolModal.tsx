@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
-import {
-  ChevronRight,
-  ExternalLink,
-  Link2,
-  Plus,
-  Users,
-  X,
-} from "lucide-react";
+import { ExternalLink, Link2, Plus, X } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { MAX_POOL_ITEMS_PER_REQUEST } from "@/lib/leadLists/audienceListShared";
 import type { ParsedProspectCsvRow } from "@/lib/prospects/parseProspectsCsv";
@@ -72,8 +66,15 @@ import {
   parseGoogleMapsSearchTerms,
 } from "@/lib/googleMaps/searchTerms";
 import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
+import { SalesNavBlueprintSuggest } from "@/components/campaigns/SalesNavBlueprintSuggest";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
+import { useGlassPlacement } from "@/components/ui/Modal";
+import "@/components/ui/glassModal.css";
+import {
+  PoolImportPicker,
+  type PoolImportPreset,
+} from "@/components/campaigns/PoolImportPicker";
 import {
   POOL_IMPORT_OPTIONS,
   type PoolImportMode,
@@ -114,7 +115,7 @@ const SALES_NAV_IMPORT_SOURCES: Array<{
 ];
 
 const MODE_TITLES: Record<Mode, string> = {
-  pick: "Import into pool",
+  pick: "Add people",
   search: "Sales Navigator import",
   maps: "Google Maps",
   google: "Google Search",
@@ -230,6 +231,10 @@ type Props = {
   onImported: (info?: { listId?: string | null }) => void | Promise<void>;
   /** Opens on this step instead of the chooser. */
   initialMode?: Mode;
+  /** Google Maps search terms to fill in when it opens. */
+  initialMapsTerms?: string[];
+  /** Sales Navigator source to pick when it opens. */
+  initialSalesNavSource?: PoolImportPreset["salesNavSource"];
   pickTitle?: string;
   pickSubtitle?: string;
   /** Extra row on the chooser, above the pool import methods. */
@@ -314,6 +319,8 @@ export function ImportPoolModal({
   onImported,
   onImportStarted,
   initialMode = "pick",
+  initialMapsTerms,
+  initialSalesNavSource,
   pickTitle,
   pickSubtitle,
   leadingOption,
@@ -331,15 +338,40 @@ export function ImportPoolModal({
   const onAddedPeopleRef = useRef(onAddedPeople);
   onAddedPeopleRef.current = onAddedPeople;
   const openedRef = useRef(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useGlassPlacement(overlayRef, open);
+
+  /** Go to a step, filling in what the preset carries. */
+  function applyPreset(
+    preset: Omit<PoolImportPreset, "mode"> & { mode?: Mode }
+  ) {
+    setMode(preset.mode ?? "pick");
+    setError(null);
+    setNotice(null);
+    if (preset.mapsTerms?.length) {
+      const terms = preset.mapsTerms;
+      setMapsDraft((draft) => ({ ...draft, terms }));
+    }
+    const source = SALES_NAV_IMPORT_SOURCES.find(
+      (s) => s.id === preset.salesNavSource
+    );
+    if (source) {
+      setSalesNavSource(source.id);
+      setExtraTeamSizes([]);
+      setSearchUrl(source.url ?? "");
+    }
+  }
 
   useEffect(() => {
     if (open && !openedRef.current) {
-      setMode(initialMode);
-      setError(null);
-      setNotice(null);
+      applyPreset({
+        mode: initialMode,
+        mapsTerms: initialMapsTerms,
+        salesNavSource: initialSalesNavSource,
+      });
     }
     openedRef.current = open;
-  }, [open, initialMode]);
+  }, [open, initialMode, initialMapsTerms, initialSalesNavSource]);
   const [mode, setMode] = useState<Mode>("pick");
   const [csvStage, setCsvStage] = useState<"where" | "file" | "match">("where");
   const [csvDest, setCsvDest] = useState<"current" | "new" | "existing">(
@@ -974,14 +1006,23 @@ export function ImportPoolModal({
       })
     );
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 pt-16 sm:pt-24">
+  return createPortal(
+    <div
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="import-pool-title"
+      className="glass-modal fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto p-4 pt-16 sm:pt-20"
+    >
+      <div className="glass-modal-scrim" aria-hidden />
       <div
-        className={`w-full rounded-2xl bg-white shadow-2xl ${
-          mode === "csv" && csvStage === "match" ? "max-w-3xl" : "max-w-xl"
+        className={`glass-modal-panel w-full rounded-[28px] ${
+          mode === "pick" || (mode === "csv" && csvStage === "match")
+            ? "max-w-4xl"
+            : "max-w-2xl"
         }`}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 px-6 pt-7 pb-2 sm:px-10 sm:pt-9">
           <div className="min-w-0">
             {mode !== "pick" ? (
               <button
@@ -1000,32 +1041,35 @@ export function ImportPoolModal({
                   setSalesNavSource(null);
                   setExtraTeamSizes([]);
                 }}
-                className="mb-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
+                className="mb-2 text-sm font-medium text-slate-600 hover:text-slate-900"
               >
-                ← All import options
+                ← All ways to add people
               </button>
             ) : null}
-            <h2 className="text-base font-semibold text-slate-900">
+            <h2
+              id="import-pool-title"
+              className="text-[22px] font-semibold tracking-tight text-slate-900"
+            >
               {mode === "pick" && pickTitle ? pickTitle : MODE_TITLES[mode]}
             </h2>
             {mode === "pick" ? (
-              <p className="mt-0.5 text-xs text-slate-600">
+              <p className="mt-1.5 text-base text-slate-600">
                 {pickSubtitle ??
-                  "People you already have stay one row. Overlap does not grow the pool."}
+                  "Someone already in your pool stays one row, however many times you add them."}
               </p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={close}
-            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
-            aria-label="Close import"
+            className="-mt-1 -mr-2 rounded-lg p-1.5 text-slate-500 hover:bg-white/60 hover:text-slate-900"
+            aria-label="Close"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="space-y-4 px-6 pt-4 pb-8 sm:px-10">
           {error ? (
             <p className="text-sm text-rose-700">
               {supportTicketLink(
@@ -1037,66 +1081,23 @@ export function ImportPoolModal({
           {notice ? <p className="text-sm text-slate-700">{notice}</p> : null}
 
           {mode === "pick" ? (
-            <div className="flex flex-col gap-2">
-              {leadingOption ? (
-                <button
-                  type="button"
-                  onClick={leadingOption.onSelect}
-                  className={cardClass("raised", "flex w-full items-center gap-3.5 px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40")}
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#0c5290]">
-                    <Users className="h-4 w-4" aria-hidden />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-slate-900">
-                      {leadingOption.title}
-                    </span>
-                    <span className="mt-0.5 block text-sm leading-snug text-slate-600">
-                      {leadingOption.body}
-                    </span>
-                  </span>
-                  <ChevronRight
-                    className="h-4 w-4 shrink-0 text-slate-400"
-                    aria-hidden
-                  />
-                </button>
-              ) : null}
-              {POOL_IMPORT_OPTIONS.map((option) => {
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => {
-                      setError(null);
-                      setNotice(null);
-                      setMode(option.id);
-                    }}
-                    className={cardClass("raised", "flex w-full items-center gap-3.5 px-3.5 py-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40")}
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#0c5290]">
-                      <Icon className="h-4 w-4" aria-hidden />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-slate-900">
-                        {option.title}
-                      </span>
-                      <span className="mt-0.5 block text-sm leading-snug text-slate-600">
-                        {option.body}
-                      </span>
-                    </span>
-                    <ChevronRight
-                      className="h-4 w-4 shrink-0 text-slate-400"
-                      aria-hidden
-                    />
-                  </button>
-                );
-              })}
-            </div>
+            <PoolImportPicker
+              onPick={applyPreset}
+              leadingOption={leadingOption}
+            />
           ) : null}
 
           {mode === "search" ? (
             <div className="space-y-3">
+              <SalesNavBlueprintSuggest
+                selectedUrl={salesNavSource === "custom" ? searchUrl : ""}
+                onUse={(url) => {
+                  setError(null);
+                  setSalesNavSource("custom");
+                  setExtraTeamSizes([]);
+                  setSearchUrl(url);
+                }}
+              />
               <div className="flex flex-col gap-2">
                 <a
                   href={SALES_NAV_BASE_SEARCH_URL}
@@ -1780,6 +1781,7 @@ export function ImportPoolModal({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode, type TextareaHTMLAtt
 import { Check, ChevronDown } from "lucide-react";
 
 import { cardClass } from "@/components/ui/Card";
+import { NOTE_VERSION_HEADINGS } from "@/lib/practiceKnowledge/campaignHandoff";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 
 /** Same grey click-in box as the answer fields, so written sections edit the same way. */
@@ -274,6 +275,99 @@ function MessageLine({
   );
 }
 
+type Version = "a" | "b" | "open";
+
+/** Where the connection request and its other versions sit. Each version is the message under its own heading. */
+function noteVersions(blocks: BlueprintBlock[]): { a: number; b: number; open: number } | null {
+  const a = blocks.findIndex((b) => b.type === "message" && /^connection (request|note)(?!\s*b\b)/i.test((b.label ?? "").trim()));
+  if (a < 0) return null;
+  const under = (match: RegExp) => {
+    const at = blocks.findIndex((b) => b.type === "heading" && match.test(b.text));
+    return at >= 0 && blocks[at + 1]?.type === "message" ? at + 1 : -1;
+  };
+  return { a, b: under(NOTE_VERSION_HEADINGS.b), open: under(NOTE_VERSION_HEADINGS.open) };
+}
+
+/** Message 1 with the connection request's opening, for owners messaged without connecting. */
+function openFromMessage1(blocks: BlueprintBlock[], a: number): string {
+  const note = blocks[a];
+  const m1 = blocks.slice(a + 1).find((b) => b.type === "message");
+  if (note?.type !== "message" || m1?.type !== "message") return "";
+  const opener = note.body.split("\n")[0].match(/^.*?[.?!](?=\s|$)/)?.[0] ?? note.body.split("\n")[0];
+  const [first, ...rest] = m1.body.split("\n");
+  return /thanks for connecting/i.test(first) ? [opener, ...rest].join("\n") : m1.body;
+}
+
+/** The connection request with A / B / Open tabs. A missing version is added when its tab is first opened. */
+function NoteVersions({
+  blocks,
+  at,
+  onChange,
+  onAdd,
+}: {
+  blocks: BlueprintBlock[];
+  at: { a: number; b: number; open: number };
+  onChange: (index: number, body: string) => void;
+  onAdd: (version: "b" | "open", body: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<Version>("a");
+  const note = blocks[at.a] as Extract<BlueprintBlock, { type: "message" }>;
+  const index = at[tab];
+  const shown = index >= 0 ? blocks[index] : null;
+  const TABS: { id: Version; label: string; title: string }[] = [
+    { id: "a", label: "A", title: "The connection request" },
+    { id: "b", label: "B", title: "A second version to test against A" },
+    { id: "open", label: "Open", title: "For Open Profiles: sent as a free InMail, no connection needed" },
+  ];
+  const choose = (id: Version) => {
+    setTab(id);
+    setOpen(true);
+    if (id !== "a" && at[id] < 0) onAdd(id, id === "b" ? note.body : openFromMessage1(blocks, at.a));
+  };
+  return (
+    <div className={cardClass("plain", "overflow-hidden")}>
+      <div className="flex items-start gap-2 px-3.5 py-2.5">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="flex min-w-0 flex-1 items-start gap-2 text-left">
+          <ChevronDown className={`mt-0.5 h-4 w-4 shrink-0 text-[#94a3b8] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+          <span className="min-w-0">
+            <span className="block text-ui font-medium text-[var(--bp-ink)]">{note.label || "Connection request"}</span>
+            {shown?.type === "message" && shown.note ? <span className="mt-0.5 block truncate text-sm text-[var(--bp-muted)]">{shown.note}</span> : null}
+          </span>
+        </button>
+        <div role="tablist" aria-label="Which version" className="bp-no-print inline-flex shrink-0 rounded-full bg-[#eef2f6] p-0.5">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={open && tab === t.id}
+              title={t.title}
+              onClick={() => choose(t.id)}
+              className={`rounded-full px-2.5 py-0.5 text-xs ${
+                open && tab === t.id
+                  ? "bg-white font-semibold text-[var(--bp-ink)] shadow-[0_1px_2px_rgba(5,30,54,0.15)]"
+                  : `font-medium hover:text-[var(--bp-ink)] ${at[t.id] < 0 ? "text-[var(--bp-faint)]" : "text-[var(--bp-muted)]"}`
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className={open ? "border-t border-[#e6eaf0] px-3.5 py-3" : "hidden print:block border-t border-[#e6eaf0] px-3.5 py-3"}>
+        {shown?.type === "message" ? (
+          <>
+            {tab === "open" ? <p className="mb-2 text-sm text-[var(--bp-muted)]">For owners with an Open Profile: sent as a free InMail instead of a connection request.</p> : null}
+            {tab === "b" ? <p className="mb-2 text-sm text-[var(--bp-muted)]">Get Clients sends A to half the list and B to the other half.</p> : null}
+            <Area value={shown.body} onChange={(body) => onChange(index, body)} />
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 /** Messages in a run of three or more in a row (a campaign sequence) start closed. */
 function inSequence(blocks: BlueprintBlock[], i: number): boolean {
   const isMessage = (j: number) => blocks[j]?.type === "message";
@@ -312,10 +406,35 @@ export function BlockBoxes({
     }
   }
 
+  const versions = noteVersions(draft);
+  // The B and Open versions show as tabs on the connection request, so their own headings and boxes are hidden.
+  const asTabs = new Set(
+    versions ? [versions.b, versions.open].filter((i) => i >= 0).flatMap((i) => [i - 1, i]) : []
+  );
+
   return (
     <div className="relative space-y-4" onBlur={save}>
       {draft.map((block, i) =>
-        block.type === "message" && inSequence(draft, i) ? (
+        asTabs.has(i) ? null : versions && i === versions.a ? (
+          <NoteVersions
+            key={i}
+            blocks={draft}
+            at={versions}
+            onChange={(index, body) => setDraft((d) => d.map((b, j) => (j === index && b.type === "message" ? { ...b, body } : b)))}
+            onAdd={(version, body) =>
+              setDraft((d) => {
+                // Added just before the checks, each under its own heading so it stays out of the follow-ups.
+                const checks = d.findIndex((b) => b.type === "heading" && /check/i.test(b.text));
+                const at = checks < 0 ? d.length : checks;
+                const added: BlueprintBlock[] =
+                  version === "b"
+                    ? [{ type: "heading", text: "Connection request B" }, { type: "message", label: "Connection request B", body, note: "A second version: Get Clients sends A to half the list and B to the other half." }]
+                    : [{ type: "heading", text: "Open Profile message" }, { type: "message", label: "Open Profile message", body, note: "No connection needed: for owners with an Open Profile." }];
+                return [...d.slice(0, at), ...added, ...d.slice(at)];
+              })
+            }
+          />
+        ) : block.type === "message" && inSequence(draft, i) ? (
           <MessageLine
             key={i}
             block={block}
