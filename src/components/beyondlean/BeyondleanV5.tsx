@@ -1,15 +1,12 @@
 import Image from "next/image";
 import {
   ArrowRight,
-  ArrowUpRight,
   BadgeCheck,
   ChevronDown,
   Clock,
   Factory,
   Gauge,
   Landmark,
-  Mail,
-  Phone,
   Plane,
   Shield,
   TrendingDown,
@@ -18,15 +15,10 @@ import {
   Zap,
 } from "lucide-react";
 import { BossWheel } from "@/components/BossCharts/BossWheel";
-import { figtree, instrumentSerif } from "@/fonts";
-import { BOOK_HREF, EMAIL, EXAMPLE_AREA_SCORES, EXAMPLE_TOTAL, PHONE, SCORE_HREF } from "./BeyondleanSite";
-import { PremiumMotion } from "./PremiumMotion";
-import { Untangle } from "./Untangle";
-import "./beyondleanPremium.css";
-import "./beyondleanBca.css";
-import "./beyondleanV5.css";
-
-const PHONE_HREF = "tel:+447843577771";
+import Link from "next/link";
+import { getPublishedPosts } from "@/lib/beyondlean/content";
+import { BOOK_HREF, EXAMPLE_AREA_SCORES, EXAMPLE_TOTAL, PHONE, SCORE_HREF } from "./BeyondleanSite";
+import { CircleButton, CloseCard, HOME, Heading, V5Shell } from "./v5/parts";
 
 const SECTORS = [
   { icon: Plane, label: "Aerospace" },
@@ -35,6 +27,13 @@ const SECTORS = [
   { icon: Zap, label: "Energy" },
   { icon: Shield, label: "Defence" },
   { icon: Factory, label: "Manufacturing" },
+];
+
+const STATS = [
+  { figure: "25 years", label: "fixing how work gets done" },
+  { figure: "20 years", label: "running his own firm" },
+  { figure: "£306k", label: "a year saved for one client" },
+  { figure: "+160%", label: "productivity for a bank team" },
 ];
 
 const PAINS = [
@@ -82,7 +81,7 @@ const PHASES = [
     title: "Fix it, and make it stick",
     text: "A 90-day plan worked through side by side, measured before and after, until the change holds.",
     photo: "/beyondlean/stock/assembly-line.jpg",
-    href: "#method",
+    href: `${HOME}/how-it-works`,
     cta: "See how it works",
   },
 ];
@@ -133,83 +132,22 @@ const FAQS = [
   },
   {
     q: "What does it cost?",
-    a: "It depends on what we find. The BOSS Score and the value call are free, and you'll know the fee before you commit to anything.",
+    a: "The BOSS Score and the value call are free. If we work together, you'll know the full fee before you commit to anything. We agree it after the call, once we both know what's needed.",
+  },
+  {
+    q: "How soon will I see a difference?",
+    a: "We measure from the start, so you see what's changing as we go. The first fixes go after the biggest leak, so that's where you'll feel it first.",
+  },
+  {
+    q: "What if it doesn't work?",
+    a: "We measure before and after, so you'll know. If something isn't working, we change the plan. And if I can't help in the first place, I'll tell you on the value call.",
   },
 ];
 
-const LIBRARY = [
-  {
-    tag: "Culture",
-    title: "Kaizen Jitsu, the art of improvement",
-    text: "What 40 years of martial arts taught me about making change stick.",
-    href: "https://www.beyondlean.com/kaizen-jitsu.html",
-  },
-  {
-    tag: "Operations",
-    title: "Standardisation gone wrong",
-    text: "Any process can be standardised. Use common sense first.",
-    href: "https://www.beyondlean.com/standardisation.html",
-  },
-  {
-    tag: "Leadership",
-    title: "Effective meetings",
-    text: "I didn't attend, and nobody died. How to win back your week.",
-    href: "https://www.beyondlean.com/effective-meetings.html",
-  },
-];
 
-function Wordmark() {
-  return (
-    <>
-      <span className="v5-wm-a">Beyond</span>
-      <span className="v5-wm-b">lean</span>
-    </>
-  );
-}
 
-function CircleButton({ href, children, tone = "blue" }: { href: string; children: React.ReactNode; tone?: "blue" | "white" }) {
-  return (
-    <a className={`v5-cbtn v5-cbtn-${tone}`} href={href}>
-      <span className="v5-cbtn-ic" aria-hidden>
-        <ArrowUpRight />
-      </span>
-      {children}
-    </a>
-  );
-}
 
-function Heading({ id, light, strong, center = false }: { id: string; light: string; strong: string; center?: boolean }) {
-  return (
-    <h2 id={id} className={`v5-h2${center ? " is-center" : ""}`}>
-      <span>{light}</span> <strong>{strong}</strong>
-    </h2>
-  );
-}
 
-function Nav() {
-  return (
-    <header className="v5-nav" data-motion-nav>
-      <div className="v5-wrap v5-nav-inner">
-        <a className="v5-wordmark" href="#top" aria-label="Beyondlean, back to top">
-          <Wordmark />
-        </a>
-        <nav className="v5-nav-pill" aria-label="Main">
-          <a href="#method">How it works</a>
-          <a href="#results">Results</a>
-          <a href="#about">About Paul</a>
-          <a href="#library">Library</a>
-          <a href="#faq">FAQ</a>
-        </nav>
-        <a className="v5-phone" href={PHONE_HREF}>
-          <span className="v5-phone-ic" aria-hidden>
-            <Phone />
-          </span>
-          <span className="v5-phone-num">{PHONE}</span>
-        </a>
-      </div>
-    </header>
-  );
-}
 
 function Hero() {
   return (
@@ -220,13 +158,11 @@ function Hero() {
       </p>
       <div className="v5-wrap v5-hero-grid">
         <div className="v5-hero-copy">
-          <p className="v5-badge">
-            <BadgeCheck aria-hidden /> Lean Six Sigma Master Black Belt · 25 years
-          </p>
-          <h1 id="v5-hero-title">25 years fixing how big firms work. Now I help owners do the same.</h1>
+          <p className="v5-badge">Busy, but the profit doesn&apos;t show it?</p>
+          <h1 id="v5-hero-title">More profit, less firefighting. 25 years of fixing how work gets done.</h1>
           <p className="v5-hero-lede">
-            A 90-day plan to lift your profit and take you out of the middle of your business. Built by someone who has
-            run one.
+            Start with a free BOSS Score and a free value call. Then a 90-day plan we work through together. If I
+            can&apos;t help, I&apos;ll tell you.
           </p>
           <div className="v5-hero-actions">
             <CircleButton href={BOOK_HREF}>Book a free value call</CircleButton>
@@ -234,14 +170,17 @@ function Hero() {
               Or get your free BOSS Score <ArrowRight aria-hidden />
             </a>
           </div>
-          <div className="v5-hero-proof">
-            <span className="v5-proof-figure">+160%</span>
-            <span className="v5-proof-text">
-              productivity for a UK bank&apos;s
-              <br />
-              mortgage team, offers out in half the time
-            </span>
-          </div>
+          <ul className="v5-hero-ticks">
+            <li>
+              <BadgeCheck aria-hidden /> 25 years in aerospace, banking, energy and food
+            </li>
+            <li>
+              <BadgeCheck aria-hidden /> £306k a year saved for one client
+            </li>
+            <li>
+              <BadgeCheck aria-hidden /> Has run his own small business
+            </li>
+          </ul>
         </div>
         <div className="v5-hero-figure" data-depth="0.06">
           <Image
@@ -254,7 +193,7 @@ function Hero() {
           />
           <div className="v5-glass v5-glass-check">
             <BadgeCheck aria-hidden />
-            <span>Has run his own business</span>
+            <span>Lean Six Sigma Master Black Belt</span>
           </div>
           <div className="v5-glass v5-glass-ring">
             <svg viewBox="0 0 64 64" aria-hidden>
@@ -285,6 +224,16 @@ function Sectors() {
             </li>
           ))}
         </ul>
+      </div>
+      <div className="v5-wrap">
+        <dl className="v5-stats-bar">
+          {STATS.map((st) => (
+            <div key={st.label}>
+              <dt>{st.figure}</dt>
+              <dd>{st.label}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </section>
   );
@@ -335,10 +284,17 @@ function About() {
             I helped grow profit fivefold. Then came Airbus, an airline caterer, and 20 years running Beyondlean for
             banks, energy firms and government teams.
           </p>
-          <p>
-            Big-firm problems show up in growing businesses too. Owners can fix them faster, so that&apos;s who I work
-            with now.
-          </p>
+          <ul className="v5-about-points">
+            <li>
+              <BadgeCheck aria-hidden /> Has run his own small business, so he knows the owner&apos;s chair
+            </li>
+            <li>
+              <BadgeCheck aria-hidden /> Lean Six Sigma Master Black Belt, trained in The Profit System
+            </li>
+            <li>
+              <BadgeCheck aria-hidden /> Measures before and after, so you see what changed
+            </li>
+          </ul>
           <div className="v5-stat-cards">
             <div>
               <span className="v5-stat-num">+500%</span>
@@ -365,7 +321,7 @@ function Phases() {
       </svg>
       <div className="v5-wrap">
         <div className="v5-head is-center" data-reveal>
-          <Heading id="v5-phases-title" light="How we work together." strong="Score it. Talk it through. Fix it." center />
+          <Heading id="v5-phases-title" light="Three steps to" strong="more profit and less firefighting." center />
         </div>
         <ol className="v5-phase-cards">
           {PHASES.map((p) => (
@@ -393,7 +349,12 @@ function Results() {
       <div className="v5-wrap">
         <div className="v5-head v5-head-split" data-reveal>
           <Heading id="v5-results-title" light="Real work." strong="Real numbers." />
-          <p>Client names stay private. Each story says whether the money was saved or found in the review.</p>
+          <div className="v5-head-side">
+            <p>Client names stay private. Each story says whether the money was saved or found in the review.</p>
+            <Link className="v5-text-link" href={`${HOME}/case-studies`}>
+              All case studies <ArrowRight aria-hidden />
+            </Link>
+          </div>
         </div>
         <div className="v5-results">
           {RESULTS.map((r) => (
@@ -412,6 +373,9 @@ function Results() {
               </div>
             </article>
           ))}
+        </div>
+        <div className="v5-section-cta">
+          <CircleButton href={BOOK_HREF}>Find what your business could save: book a free call</CircleButton>
         </div>
       </div>
     </section>
@@ -455,7 +419,9 @@ function Faq() {
       <div className="v5-wrap v5-faq">
         <div className="v5-faq-head">
           <Heading id="v5-faq-title" light="Questions owners" strong="ask first." />
-          <p>Anything else, call me on {PHONE} or book a call.</p>
+          <p>
+            Anything else, call me on <a href="tel:+447843577771">{PHONE}</a> or book a call.
+          </p>
           <CircleButton href={BOOK_HREF}>Book a free value call</CircleButton>
         </div>
         <div className="v5-faq-list">
@@ -475,23 +441,30 @@ function Faq() {
 }
 
 function Library() {
+  const posts = getPublishedPosts().slice(0, 3);
+  if (posts.length === 0) return null;
   return (
     <section className="v5-section v5-soft" id="library" aria-labelledby="v5-library-title">
       <div className="v5-wrap">
         <div className="v5-head v5-head-split" data-reveal>
-          <Heading id="v5-library-title" light="From Paul's" strong="library." />
-          <p>20 years of writing on getting the basics right. A few owners&apos; favourites.</p>
+          <Heading id="v5-library-title" light="From Paul's" strong="blog." />
+          <div className="v5-head-side">
+            <p>20 years of writing on getting the basics right, from the shop floor to the boardroom.</p>
+            <Link className="v5-text-link" href={`${HOME}/blog`}>
+              All articles <ArrowRight aria-hidden />
+            </Link>
+          </div>
         </div>
         <div className="v5-library">
-          {LIBRARY.map((a) => (
-            <a key={a.title} className="v5-article" href={a.href} target="_blank" rel="noreferrer" data-reveal>
-              <span className="v5-article-tag">{a.tag}</span>
+          {posts.map((a) => (
+            <Link key={a.slug} className="v5-article" href={`${HOME}/blog/${a.slug}`} data-reveal>
+              <span className="v5-article-tag">{a.category}</span>
               <h3>{a.title}</h3>
-              <p>{a.text}</p>
+              <p>{a.excerpt}</p>
               <span className="v5-article-more">
-                Read the article <ArrowUpRight aria-hidden />
+                Read the article <ArrowRight aria-hidden />
               </span>
-            </a>
+            </Link>
           ))}
         </div>
       </div>
@@ -499,107 +472,21 @@ function Library() {
   );
 }
 
-function Close() {
-  return (
-    <section className="v5-close-wrap" id="book" aria-labelledby="v5-close-title">
-      <div className="v5-wrap">
-        <div className="v5-close">
-          <div className="v5-close-copy">
-            <h2 id="v5-close-title" className="v5-h2 is-dark">
-              <span>Ready when you are.</span> <strong>Book a free value call.</strong>
-            </h2>
-            <p>
-              Pick a time that suits you. We look at where your business is now, where you want it to be, and what&apos;s
-              in the way. If I can&apos;t help, I&apos;ll tell you.
-            </p>
-            <CircleButton href={BOOK_HREF} tone="white">
-              Book a free value call
-            </CircleButton>
-            <ul className="v5-close-contact">
-              <li>
-                <Phone aria-hidden />
-                <a href={PHONE_HREF}>{PHONE}</a>
-              </li>
-              <li>
-                <Mail aria-hidden />
-                <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
-              </li>
-            </ul>
-          </div>
-          <div className="v5-close-photo" aria-hidden>
-            <Image src="/beyondlean/paul-cutout.png" alt="" width={1050} height={1400} sizes="(max-width: 900px) 70vw, 440px" />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
-function Footer() {
-  return (
-    <footer className="v5-footer">
-      <div className="v5-wrap v5-footer-grid">
-        <div>
-          <span className="v5-wordmark">
-            <Wordmark />
-          </span>
-          <p>
-            Business coaching for owner-led UK businesses. 25 years of making work flow, now helping owners get their
-            time and profit back.
-          </p>
-        </div>
-        <div>
-          <h3>Explore</h3>
-          <a href="#method">How it works</a>
-          <a href="#results">Results</a>
-          <a href="#about">About Paul</a>
-          <a href="#faq">FAQ</a>
-        </div>
-        <div>
-          <h3>Get started</h3>
-          <a href={SCORE_HREF}>Free BOSS Score</a>
-          <a href={BOOK_HREF}>Book a value call</a>
-          <a href="#library">Paul&apos;s library</a>
-        </div>
-        <div>
-          <h3>Contact</h3>
-          <a href={PHONE_HREF}>{PHONE}</a>
-          <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
-          <span>North Wales, working UK-wide</span>
-          <a href="https://www.linkedin.com/in/paul-swift-b360b34" target="_blank" rel="noreferrer">
-            LinkedIn
-          </a>
-        </div>
-      </div>
-      <div className="v5-wrap v5-footer-bottom">
-        <span>© {new Date().getFullYear()} Beyondlean Ltd. Improvement never ends.</span>
-      </div>
-    </footer>
-  );
-}
 
 export function BeyondleanV5({ switcher }: { switcher?: React.ReactNode }) {
   return (
-    <div className={`bp-root bp-bca v5-root ${figtree.variable} ${instrumentSerif.variable}`} id="top" data-motion-root>
-      <Nav />
-      <main>
-        <Hero />
-        <Sectors />
-        <Pains />
-        <About />
-        <div id="method">
-          <Untangle scoreHref={SCORE_HREF} />
-        </div>
-        <Phases />
-        <Results />
-        <Score />
-        <Faq />
-        <Library />
-        <Close />
-      </main>
-      <Footer />
-      <PremiumMotion />
-      {switcher}
-    </div>
+    <V5Shell active="home" switcher={switcher}>
+      <Hero />
+      <Sectors />
+      <Pains />
+      <About />
+      <Phases />
+      <Results />
+      <Score />
+      <Faq />
+      <Library />
+      <CloseCard />
+    </V5Shell>
   );
 }
