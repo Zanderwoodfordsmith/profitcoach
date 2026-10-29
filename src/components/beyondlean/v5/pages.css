@@ -1053,3 +1053,8 @@
     border-left: 0;
   }
 }
+
+.v5-sectors .v5-wrap + .v5-wrap {
+  display: block;
+}
+.v5-result-link { margin-top: 18px; }

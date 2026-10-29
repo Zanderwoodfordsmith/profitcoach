@@ -93,6 +93,7 @@ const RESULTS = [
     label: "a year saved",
     status: "Delivered",
     title: "An airline caterer's business-class meals",
+    slug: "airline-caterer-business-class-meals",
     text: "The tables and flow of work redesigned. The same meals made by 40 people instead of 57, beating the target by £90,000.",
   },
   {
@@ -101,6 +102,7 @@ const RESULTS = [
     label: "a year found",
     status: "Found in the review",
     title: "A UK snack maker's packing lines",
+    slug: "uk-snack-maker-packing-lines",
     text: "13 lines running a third to two-thirds of the day. A plan to lift that to 70% with huddles, boards and faster changeovers.",
   },
   {
@@ -109,6 +111,7 @@ const RESULTS = [
     label: "a year found",
     status: "Found in the review",
     title: "An energy trader's daily reports",
+    slug: "energy-trader-reporting",
     text: "Three teams built the same reports, then met to check them. One owner per report freed the traders to trade.",
   },
 ];
@@ -159,10 +162,10 @@ function Hero() {
       <div className="v5-wrap v5-hero-grid">
         <div className="v5-hero-copy">
           <p className="v5-badge">Busy, but the profit doesn&apos;t show it?</p>
-          <h1 id="v5-hero-title">More profit, less firefighting. 25 years of fixing how work gets done.</h1>
+          <h1 id="v5-hero-title">More profit. Less firefighting.</h1>
           <p className="v5-hero-lede">
-            Start with a free BOSS Score and a free value call. Then a 90-day plan we work through together. If I
-            can&apos;t help, I&apos;ll tell you.
+            25 years fixing how work gets done, now for owners of growing UK businesses. Start with a free BOSS Score and
+            a free value call, then a 90-day plan we work through together. If I can&apos;t help, I&apos;ll tell you.
           </p>
           <div className="v5-hero-actions">
             <CircleButton href={BOOK_HREF}>Book a free value call</CircleButton>
@@ -370,6 +373,9 @@ function Results() {
                 <span className={r.status === "Delivered" ? "v5-status is-done" : "v5-status"}>{r.status}</span>
                 <h3>{r.title}</h3>
                 <p>{r.text}</p>
+                <Link className="v5-text-link v5-result-link" href={`${HOME}/case-studies/${r.slug}`}>
+                  Read the case study <ArrowRight aria-hidden />
+                </Link>
               </div>
             </article>
           ))}
