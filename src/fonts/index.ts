@@ -88,6 +88,25 @@ export const fraunces = localFont({
   fallback: ["Georgia", "serif"],
 });
 
+export const instrumentSerifItalic = localFont({
+  src: "./files/instrument-serif-italic.woff2",
+  weight: "400",
+  style: "italic",
+  variable: "--font-instrument-serif",
+  adjustFontFallback: "Times New Roman",
+  fallback: ["Georgia", "serif"],
+});
+
+export const instrumentSerif = localFont({
+  src: [
+    { path: "./files/instrument-serif-normal.woff2", weight: "400", style: "normal" },
+    { path: "./files/instrument-serif-italic.woff2", weight: "400", style: "italic" },
+  ],
+  variable: "--font-instrument-serif-display",
+  adjustFontFallback: "Times New Roman",
+  fallback: ["Georgia", "serif"],
+});
+
 export const caveat = localFont({
   src: "./files/caveat-normal.woff2",
   // Only the bold face was ever used; pinning it keeps the hand drawn labels bold.

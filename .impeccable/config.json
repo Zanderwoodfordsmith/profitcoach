@@ -190,6 +190,15 @@
         ],
         "createdAt": "2026-10-24T08:16:52.211Z",
         "reason": "Claude: .ava-shimmer is the moving light band on Ava's 'thinking' line (a live state), same as the design board's .ad-shimmer, not decorative gradient text"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/beyondlean/beyondleanBca.css"
+        ],
+        "createdAt": "2026-10-29T18:55:45.729Z",
+        "reason": "Claude: 6px TOP colour bar on cards copies the BCA design system's card bars (bca-website design-tokens.css --ds-blue-bar/sky-bar/teal-bar, used on the approved BCA homepage step cards); not a side tab"
       }
     ]
   }

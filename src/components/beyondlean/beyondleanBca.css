@@ -1,0 +1,565 @@
+/* BCA look for the Beyondlean page (the default). Built on the BCA website's own system
+   (~/Coding/bca-website/app/design-tokens.css): light grounds alternating with the navy daylight
+   band, Figtree in a light line over a bold line, white cards with soft shadows, and the
+   blue, sky and teal colour bars on cards. */
+
+.bp-root.bp-bca {
+  --bp-ink: #ffffff;
+  --bp-ink-2: #f6f8fb;
+  --bp-ink-3: #ffffff;
+  --bp-line: #e3e8ef;
+  --bp-text: #0d1f31;
+  --bp-text-soft: #46566b;
+  --bp-text-mute: #5b6b80;
+  --bp-blue: #0c5290;
+  --bp-blue-soft: #0c5290;
+  --bp-paper: #f6f8fb;
+  --bp-paper-ink: #0d1f31;
+  --bp-paper-soft: #46566b;
+  --bp-paper-line: #e3e8ef;
+  --bp-serif: var(--cs-font, "Figtree"), system-ui, sans-serif;
+  --bp-band: linear-gradient(170deg, #1765ab 0%, #0b4d88 38%, #083764 72%, #05264a 100%);
+  --bp-blue-bar: linear-gradient(120deg, #08396a, #1a6fb8);
+  --bp-sky-bar: linear-gradient(120deg, #1f7bc7, #4eaaf0);
+  --bp-teal-bar: linear-gradient(120deg, #0a7fa6, #17abd6);
+  --bp-shadow-2: 0 1px 2px rgba(11, 27, 43, 0.04), 0 12px 28px -18px rgba(11, 27, 43, 0.22);
+  --bp-shadow-3: 0 30px 50px -30px rgba(11, 27, 43, 0.55);
+  background: #f6f8fb;
+}
+
+.bp-bca ::selection {
+  background: #0c5290;
+}
+
+/* The navy band: hero, untangle, BOSS Score panel, close */
+.bp-bca .bp-hero,
+.bp-bca .bp-untangle,
+.bp-bca .bp-score-grid > div:first-child,
+.bp-bca .bp-close-card {
+  --bp-text: #ffffff;
+  --bp-text-soft: rgba(255, 255, 255, 0.84);
+  --bp-text-mute: rgba(255, 255, 255, 0.7);
+  --bp-line: rgba(255, 255, 255, 0.18);
+  --bp-blue-soft: #9fd2ff;
+  color: #fff;
+  background: var(--bp-band);
+}
+
+/* ---------- Type: light line over bold line ---------- */
+
+.bp-bca .bp-display {
+  font-weight: 300;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.028em;
+  color: var(--bp-text-mute);
+}
+
+.bp-bca .bp-display em,
+.bp-bca .bp-paper .bp-display em,
+.bp-bca .bp-untangle .bp-display em,
+.bp-bca .bp-score .bp-display em {
+  display: block;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--bp-text);
+}
+
+.bp-bca .bp-hero-title {
+  max-width: min(12em, 46vw);
+  font-size: clamp(2.5rem, 4.6vw, 4.25rem);
+}
+
+.bp-bca .bp-ledger-figure,
+.bp-bca .bp-file-number {
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.bp-bca .bp-chip-figure,
+.bp-bca .bp-timeline-year {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.bp-bca .bp-problem-list h3,
+.bp-bca .bp-file-body h3 {
+  font-weight: 650;
+  letter-spacing: -0.018em;
+  font-size: clamp(1.25rem, 2vw, 1.625rem);
+}
+
+.bp-bca .bp-wordmark {
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.bp-bca .bp-wm-a {
+  font-weight: 300;
+}
+
+.bp-bca .bp-wm-b {
+  font-weight: 800;
+  color: var(--bp-blue);
+}
+
+/* ---------- Buttons: navy pills on light, white pills on navy ---------- */
+
+.bp-bca .bp-btn-light {
+  background: #0c5290;
+  color: #fff !important;
+  box-shadow: 0 12px 26px -16px rgba(12, 82, 144, 0.7);
+}
+
+.bp-bca .bp-btn-light:hover {
+  background: #0a467b;
+  box-shadow: 0 16px 30px -16px rgba(12, 82, 144, 0.75);
+}
+
+.bp-bca .bp-btn-ghost {
+  background: #fff;
+  color: #0d1f31 !important;
+  border-color: #cbd4df;
+}
+
+.bp-bca .bp-btn-ghost:hover {
+  background: #fff;
+  border-color: #0c5290;
+}
+
+.bp-bca :is(.bp-hero, .bp-close-card, .bp-score-grid > div:first-child) .bp-btn-light,
+.bp-bca .bp-nav:not(.is-solid) .bp-btn-light {
+  background: #fff;
+  color: #0d1f31 !important;
+  box-shadow: 0 12px 26px -16px rgba(0, 0, 0, 0.5);
+}
+
+.bp-bca :is(.bp-hero, .bp-close-card, .bp-score-grid > div:first-child) .bp-btn-light:hover,
+.bp-bca .bp-nav:not(.is-solid) .bp-btn-light:hover {
+  background: #eef4fa;
+}
+
+.bp-bca :is(.bp-hero, .bp-close-card) .bp-btn-ghost {
+  background: transparent;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.bp-bca :is(.bp-hero, .bp-close-card) .bp-btn-ghost:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Nav: white text over the navy hero, a light bar once you scroll ---------- */
+
+.bp-bca .bp-nav:not(.is-solid) .bp-wordmark {
+  color: #fff !important;
+}
+
+.bp-bca .bp-nav:not(.is-solid) .bp-wm-b {
+  color: #9fd2ff;
+}
+
+.bp-bca .bp-nav:not(.is-solid) .bp-nav-links a {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.bp-bca .bp-nav:not(.is-solid) .bp-nav-links a:hover {
+  color: #fff;
+}
+
+.bp-bca .bp-nav.is-solid {
+  background: rgba(246, 248, 251, 0.9);
+  border-bottom-color: #e3e8ef;
+}
+
+.bp-bca .bp-nav.is-solid .bp-nav-links a {
+  color: #46566b;
+}
+
+.bp-bca .bp-nav.is-solid .bp-nav-links a:hover {
+  color: #0c5290;
+}
+
+/* ---------- Hero: deep navy at the top, fading into the light page ---------- */
+
+.bp-bca .bp-hero {
+  background: linear-gradient(180deg, #05264a 0%, #0b4d88 40%, #1765ab 74%, #cfe0f1 93%, #f6f8fb 100%);
+}
+
+.bp-bca .bp-hero-giant {
+  display: none;
+}
+
+.bp-bca .bp-hero-grid-lines {
+  background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 120px);
+}
+
+.bp-bca .bp-hero-glow {
+  background: radial-gradient(closest-side, rgba(78, 170, 240, 0.38), rgba(78, 170, 240, 0.1) 60%, transparent);
+}
+
+.bp-bca .bp-rings circle {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+
+.bp-bca .bp-rings .bp-ring-strong {
+  stroke: rgba(255, 255, 255, 0.22);
+}
+
+.bp-bca .bp-rings line {
+  stroke: rgba(255, 255, 255, 0.26);
+}
+
+.bp-bca .bp-hero-giant {
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  color: rgba(255, 255, 255, 0.055);
+}
+
+.bp-bca .bp-hero-paul img {
+  filter: none;
+}
+
+.bp-bca .bp-hero::after {
+  height: 14%;
+  background: linear-gradient(to top, #f6f8fb, transparent);
+}
+
+.bp-bca .bp-chip {
+  background: #fff;
+  border-color: #e3e8ef;
+  backdrop-filter: none;
+  box-shadow: var(--bp-shadow-3);
+  color: #46566b;
+}
+
+.bp-bca .bp-chip-figure {
+  font-size: 1.5rem;
+  color: #0c5290;
+}
+
+/* ---------- Record: white cards with colour bars ---------- */
+
+.bp-bca .bp-record {
+  padding-top: 0;
+  background: #f6f8fb;
+}
+
+.bp-bca .bp-sectors {
+  border-top: 0;
+}
+
+.bp-bca .bp-ledger {
+  gap: 16px;
+}
+
+.bp-bca .bp-ledger > div {
+  position: relative;
+  overflow: hidden;
+  padding: 34px 28px 28px;
+  border: 1px solid #e3e8ef;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--bp-shadow-2);
+}
+
+.bp-bca .bp-ledger > div::before,
+.bp-bca .bp-file::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 6px;
+  background: var(--bp-blue-bar);
+}
+
+.bp-bca .bp-ledger > div:nth-child(2)::before,
+.bp-bca .bp-file:nth-child(2)::before {
+  background: var(--bp-sky-bar);
+}
+
+.bp-bca .bp-ledger > div:nth-child(3)::before,
+.bp-bca .bp-file:nth-child(3)::before {
+  background: var(--bp-teal-bar);
+}
+
+.bp-bca .bp-ledger-figure {
+  font-size: clamp(2.75rem, 4.4vw, 3.75rem);
+  color: #0c5290;
+}
+
+.bp-bca .bp-ledger dd span {
+  color: #5b6b80;
+}
+
+/* ---------- Problems: centred head, four soft cards ---------- */
+
+.bp-bca .bp-problems {
+  background: #fff;
+}
+
+.bp-bca .bp-problems-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.bp-bca .bp-problems-head {
+  position: static;
+  max-width: 760px;
+  margin: 0 auto clamp(40px, 5vw, 64px);
+  text-align: center;
+}
+
+.bp-bca .bp-problems-head p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bp-bca .bp-problem-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.bp-bca .bp-problem-list li,
+.bp-bca .bp-problem-list li:last-child {
+  padding: 32px;
+  border: 0;
+  border-radius: 20px;
+  background: #f6f8fb;
+}
+
+/* ---------- Untangle on the navy band ---------- */
+
+.bp-bca .bp-untangle .bp-display {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.bp-bca .bp-lane-flow {
+  stroke: #9fd2ff;
+}
+
+.bp-bca .bp-lane-start,
+.bp-bca .bp-you circle {
+  fill: #0b4d88;
+}
+
+.bp-bca .bp-you circle {
+  stroke: #fff;
+}
+
+.bp-bca .bp-gate line {
+  stroke: rgba(159, 210, 255, 0.5);
+}
+
+.bp-bca .bp-gate text,
+.bp-bca .bp-lane-end {
+  fill: #9fd2ff;
+}
+
+.bp-bca .bp-untangle .bp-link {
+  color: #fff !important;
+}
+
+/* ---------- Steps ---------- */
+
+.bp-bca .bp-steps-section {
+  background: #fff;
+}
+
+.bp-bca .bp-step {
+  background: #fff;
+  border-color: #e3e8ef;
+  box-shadow: var(--bp-shadow-2);
+}
+
+/* ---------- Results ---------- */
+
+.bp-bca .bp-results {
+  background: #f6f8fb;
+}
+
+.bp-bca .bp-file {
+  overflow: hidden;
+  border-radius: 24px;
+  box-shadow: var(--bp-shadow-3);
+}
+
+.bp-bca .bp-file-number {
+  font-size: clamp(3rem, 5.4vw, 4.5rem);
+  color: #0c5290;
+}
+
+/* ---------- About ---------- */
+
+.bp-bca .bp-about {
+  background: #fff;
+}
+
+.bp-bca .bp-portrait {
+  border-radius: 24px;
+  box-shadow: var(--bp-shadow-3);
+}
+
+.bp-bca .bp-portrait img {
+  filter: none;
+}
+
+.bp-bca .bp-portrait::after {
+  background: linear-gradient(to top, rgba(5, 38, 74, 0.78), transparent 42%);
+}
+
+.bp-bca .bp-portrait figcaption {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.bp-bca .bp-portrait figcaption span:first-child {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.bp-bca .bp-quote p {
+  font-style: normal;
+  font-weight: 300;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: #0d1f31;
+}
+
+.bp-bca .bp-timeline::before {
+  background: linear-gradient(to right, #e3e8ef, #0c5290);
+}
+
+.bp-bca .bp-timeline li::before {
+  background: #fff;
+  border-color: #cbd4df;
+}
+
+.bp-bca .bp-timeline li:last-child::before {
+  background: #0c5290;
+  border-color: #0c5290;
+  box-shadow: 0 0 0 6px #eef4fa;
+}
+
+.bp-bca .bp-timeline-year {
+  font-size: 1.5rem;
+  color: #0c5290;
+}
+
+/* ---------- BOSS Score: navy card beside a white card ---------- */
+
+.bp-bca .bp-score {
+  background: #f6f8fb;
+}
+
+.bp-bca .bp-score-grid {
+  align-items: stretch;
+  gap: 20px;
+}
+
+.bp-bca .bp-score-grid > div:first-child {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(32px, 4.4vw, 64px);
+  border-radius: 24px;
+  box-shadow: var(--bp-shadow-3);
+}
+
+.bp-bca .bp-score .bp-display {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.bp-bca .bp-score-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid #e3e8ef;
+  border-radius: 24px;
+  box-shadow: var(--bp-shadow-2);
+}
+
+/* ---------- Close: a rounded navy card with Paul, on the light page ---------- */
+
+.bp-bca .bp-close {
+  padding-top: clamp(56px, 7vw, 104px);
+  background: #f6f8fb;
+  color: #0d1f31;
+}
+
+.bp-bca .bp-close-card {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: end;
+  border-radius: 32px;
+  box-shadow: var(--bp-shadow-3);
+}
+
+.bp-bca .bp-close-inner {
+  align-items: flex-start;
+  padding: clamp(40px, 5.5vw, 88px);
+  text-align: left;
+}
+
+.bp-bca .bp-close .bp-actions,
+.bp-bca .bp-contact {
+  justify-content: flex-start;
+}
+
+.bp-bca .bp-close-paul {
+  display: block;
+  align-self: end;
+  justify-self: center;
+  width: min(100%, 420px);
+}
+
+.bp-bca .bp-close-paul img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+}
+
+.bp-bca .bp-footer {
+  margin-top: clamp(48px, 6vw, 80px);
+  border-top-color: #e3e8ef;
+  color: #5b6b80;
+}
+
+.bp-bca .bp-footer .bp-wordmark {
+  color: #0d1f31 !important;
+}
+
+.bp-bca .bp-footer-right a:hover {
+  color: #0c5290;
+}
+
+.bp-bca .bp-close-glow {
+  background: radial-gradient(closest-side, rgba(78, 170, 240, 0.28), rgba(78, 170, 240, 0.08) 60%, transparent);
+}
+
+.bp-bca .bp-contact svg {
+  color: #9fd2ff;
+}
+
+@media (max-width: 960px) {
+  .bp-bca .bp-hero-title {
+    max-width: none;
+  }
+
+  .bp-bca .bp-problem-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bp-bca .bp-close-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bp-bca .bp-close-paul {
+    width: min(80%, 340px);
+  }
+}
