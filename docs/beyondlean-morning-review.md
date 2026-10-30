@@ -48,8 +48,9 @@ Production returns 404 for every /beyondlean page unless `BEYONDLEAN_SITE_LIVE=1
 ## What I checked
 
 - Typecheck passes.
-- Every page (home, 4 section pages, 14 case studies, 34 articles) loads at 1440, 1024 and 390 wide: see the final check line in the build notes below.
-- No console errors, no broken images, no sideways scroll on the pages I screenshotted and read: home, how it works, about, case studies index and two studies, blog index and two articles, on desktop and phone.
+- All 53 pages (home, 4 section pages, 14 case studies, 34 articles) at 1440, 1024 and 390 wide, scrolled top to bottom so every lazy image loads: all load, no broken images, no sideways scroll, no page errors. 0 problems out of 159.
+- Screenshots read by eye, desktop and phone: home, how it works, about, case studies index and a study, blog index and an article. Copies in Drive: Design library/Coaches/Paul Swift/Website/2026-10-30 round 5 multi-page.
+- Bullet and numbered lists show in articles (the app's base styles had stripped them).
 - The Automatable audit ran on the home page (report: `~/Coding/beyondlean/tools/cro-blueprint/context/pages/localhost-beyondlean/audit.html`). I applied its fixes but did not re-run it.
 
 ## What I couldn't check
