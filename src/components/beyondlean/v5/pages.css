@@ -1058,3 +1058,11 @@
   display: block;
 }
 .v5-result-link { margin-top: 18px; }
+
+.v5-prose ul {
+  list-style: disc;
+}
+
+.v5-prose ol {
+  list-style: decimal;
+}
