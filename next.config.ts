@@ -22,6 +22,22 @@ const nextConfig: NextConfig = {
     ],
     "/api/coach/sales-call/**": ["./content/agent/references/**/*"],
   },
+  // Routes that read files by a runtime path (Ava, practice flow) make tracing pull in the whole
+  // project, videos included, which takes functions over Vercel's 250 MB limit. No server code
+  // reads these folders (only public/theprofitcoach-mirror is read at runtime).
+  outputFileTracingExcludes: {
+    "/**": [
+      "./public/tutorials/**/*",
+      "./public/membership/**/*",
+      "./public/beyondlean/**/*",
+      "./public/academy/**/*",
+      "./public/resources/**/*",
+      "./public/site-v4/**/*",
+      "./scrollcraft/**/*",
+      "./extensions/**/*",
+      "./scripts/**/*",
+    ],
+  },
   async rewrites() {
     return {
       // The homepage is the Scrollcraft build (copied into public/site-v4 at build time).
