@@ -6,33 +6,31 @@ sector: "Financial services"
 status: "Delivered"
 figure: "160%"
 figureLabel: "more productive in the pilot"
-summary: "We led and coached a major UK bank's own improvement team through a pilot in its mortgage operation. In four months productivity rose 160%, and the time to get a mortgage offer out halved."
+summary: "Paul led, coached and mentored a major UK bank's own improvement consultants through a pilot in its mortgage operations. Productivity rose 160%, and the time to get a mortgage offer out fell by 50%."
 timeframe: "4 months"
-photo: ""
-order: "8"
-confirm: "Needs Paul's confirmation: from his old CV only (August to November 2008), no deck. Were these results measured in the pilot, and did the roll-out go ahead? What did 'customer service staff down 50%' mean in people? Is 'a major UK bank' OK to say?"
+photo: "/beyondlean/stock/documents-review.jpg"
+order: "9"
+confirm: "Needs Paul's confirmation: from his old CV only (August to November 2008), no deck. Were these results measured in the pilot, and did the roll-out go ahead? What did 'customer service staff down 50%' mean in people? Was this Beyondlean's own contract or through another consultancy? An old site page says 'productivity increase of 161% within UK bank divisions'; is that this work? Is 'a major UK bank' OK to say?"
 ---
 
 ## At a glance
 
 - **160%** more productive in the pilot
-- **Half the time** to get a mortgage offer out
-- **Half the staff** needed in customer service
-- **4 months** from start to roll-out plan
+- **50%** less time to get a mortgage offer out
+- **50%** fewer customer service staff needed
+- **4 months** from the start of Paul's work to the roll-out proposal
 
 ## The problem
 
-For a mortgage customer, the offer is the moment that matters. Before the pilot, getting one out took twice as long as it did afterwards, and customer service needed twice the staff.
-
-The bank had its own team of improvement staff. Our job was to lead and coach them through a real pilot, then help them make the case to roll it out.
+A major UK bank was running an improvement pilot in its mortgage operations, with its own team of improvement consultants.
 
 ## What we did
 
-We led the bank's improvement team through the work step by step, coaching and mentoring them as they went. That way the bank's own people learned the method by using it on live work. At the end of the pilot, we helped them present a plan to roll the new way out.
+Paul led, coached and mentored the bank's improvement consultants through the pilot. The work ran to the end of the pilot and the presentation of a proposal to roll it out.
 
 ## What changed
 
-In the pilot, productivity rose by 160%. The time to get a mortgage offer out halved. Customer service needed half the staff it had before.
+In the pilot, productivity rose by 160%. The time to get a mortgage offer out fell by 50%. Customer service needed 50% fewer staff.
 
 ## What an owner can take from this
 

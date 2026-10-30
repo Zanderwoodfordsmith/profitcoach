@@ -1,39 +1,37 @@
 ---
-title: "Profits up 500% at a car business"
+title: "£350k of cash freed at a car business"
 slug: "car-business-profit"
 client: "A UK car business"
 sector: "Automotive"
 status: "Delivered"
-figure: "500%"
-figureLabel: "rise in profit"
-summary: "Paul ran production at a car business, with a stock budget of around £800,000. Stock fell by 95%, which freed £350,000 of cash, and profits rose by 500%."
+figure: "£350k"
+figureLabel: "of cash freed"
+summary: "As production director at a UK car business, Paul was in charge of a stock budget of around £800,000. He cut stock by 95%, which improved cash flow by £350,000, and profits rose by 500%."
 timeframe: ""
-photo: ""
-order: "3"
-confirm: "Needs Paul's confirmation: from his old CV and LinkedIn only, no deck. The business name, his job title and the dates differ between the two (see _notes.md). What did the business do, how many people did it have, and was it owner-run? Over what period did profits rise? Does 'up 500%' mean five times or six times the profit?"
+photo: "/beyondlean/stock/car-showroom.jpg"
+order: "4"
+confirm: "Needs Paul's confirmation: from his old CV and LinkedIn only, no deck. The business name, his job title and the dates differ between the two (see _notes.md): the CV says 'Service Manager - Production Director', August 1994 to January 1999; LinkedIn and the Blueprint say Production Director, 1994 to 1998. The page now says only 'production director' and gives no dates. Is 'UK' right? What did the business do, how many people did it have, and was it owner-run? Over what period did profits rise? Does 'up 500%' mean five times or six times the profit?"
 ---
 
 ## At a glance
 
 - **500%** rise in profit
-- **95%** less stock, bought in only when the work needed it
-- **£350,000** of cash freed from the shelves
+- **95%** less stock, after Paul brought in "just in time" stock control
+- **£350,000** better cash flow from holding less stock
 - **Around £800,000** stock budget in Paul's hands
 
 ## The problem
 
-Paul joined the business as service manager and went on to become production director. Before that he had owned and run his own car sales and MOT business, so he knew what it means when the bills are yours to pay.
-
-Here he looked after a stock budget of around £800,000. His job was to keep the value of that stock and the profit of the business in balance. A lot of the firm's cash was sitting on the shelves.
+Paul had owned a car sales and service business with an MOT testing centre. He then became production director at a UK car business, in charge of a stock budget of around £800,000. His job was to keep the value of that stock and the profit of the business in balance at all times.
 
 ## What we did
 
-We ran a string of improvements across the areas Paul managed. The biggest was "just in time" buying: bring stock in when the work needs it, rather than just in case. Alongside the new methods came a change in the culture of the business, in how people worked and improved things day to day.
+Paul made many improvements to the business, leading them as manager of several areas. He brought in "just in time" stock control and worked on changing the culture of the business.
 
 ## What changed
 
-Stock fell by 95%. That put £350,000 of cash back into the business. Profits rose by 500%.
+Stock fell by 95%. Holding less stock improved cash flow by £350,000. Profits rose by 500%, through the improvements and the change in culture.
 
 ## What an owner can take from this
 
-Stock is cash you can't spend. Every part on a shelf is money you paid out before your customer paid you. Buy closer to when the work needs it and the cash comes back into the bank. Profit also follows habits, so change how people work as well as the tools they use. Paul learned this from inside a car business, after running one of his own.
+Stock is cash you can't spend. Every part on a shelf is money you paid out before your customer paid you. "Just in time" means buying stock closer to when the work needs it, so the cash comes back into the bank sooner. Profit also follows habits, so change how people work as well as the tools they use.

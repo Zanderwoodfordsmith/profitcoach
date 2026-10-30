@@ -6,36 +6,36 @@ sector: "Food production"
 status: "Delivered"
 figure: "411 to 267"
 figureLabel: "people for the same output"
-summary: "After a major dispute, a global airline caterer had to return to full service with 90% new staff in one month. We made the work simple and stable, and output held while headcount fell from 411 to 267."
+summary: "As continuous improvement project manager at an airline caterer, Paul brought in basic Lean tools to make the work stable after an industrial dispute, as the business returned to full service with 90% new staff within one month. Headcount fell from 411 to 267, with output kept the same."
 timeframe: ""
-photo: ""
-order: "9"
-confirm: "Needs Paul's confirmation: from his old CV and LinkedIn only, no deck. Please confirm 411 to 267 people, the £2,592,000 saving (read here as 144 people at £18,000 a year), productivity up 30% and walking and carrying down by over 30%. Mentioning the dispute may make the client easy to identify; is that OK? Is the business-class meals saving part of this total?"
+photo: "/beyondlean/stock/commercial-kitchen.jpg"
+order: "11"
+confirm: "Needs Paul's confirmation: from his old CV and LinkedIn only, no deck. Paul was an employee here (2005 to 2006), before Beyondlean. Please confirm 411 to 267 people, the £2,592,000 saving (is it a yearly figure? The page no longer says so), productivity up 30% and movement of people and goods down by over 30%. Mentioning the dispute may make the client easy to identify; is that OK? Is the business-class meals saving part of the £2,592,000? Is 'global airline caterer' OK to say?"
 ---
 
 ## At a glance
 
 - **90%** new staff within one month
 - **411 to 267** people, with output kept the same
-- **About £2.59m** a year saved in staff costs
-- **30%** more productive
-- **Over 30%** less walking and carrying
+- **£2,592,000** saved from the lower headcount
+- **30%** more productive, from a new performance management system
+- **Over 30%** less movement of people and goods, from a new workplace layout
 
 ## The problem
 
-After a major industrial dispute, the caterer had to get back to full service fast. Within a month, 90% of its staff were new to the job. Airlines still needed their meals. Before the work could get better, it had to become stable, run by people who had never done it before.
+From 2005 to 2006, Paul was the continuous improvement project manager for the UK and Ireland at an airline caterer. The business went through an industrial dispute. Then it returned to full service with 90% new staff within one month, and the work needed to be made stable.
 
 ## What we did
 
-Paul first planned and ran the contingency during the dispute. Then we brought in basic, proven tools to steady the work:
+During the dispute, Paul was in charge of the backup plans and of putting them in place. Then he brought in basic Lean tools to make the work stable. These included:
 
-- New layouts for each work area, which cut walking and carrying by more than 30%.
-- A performance management system: a simple way to set, track and review each team's work. We designed it and put it in place.
-- Focused projects in single areas. In business-class meals, for example, the same work went from 57 people to 40.
+- A new workplace layout, which cut the movement of people and goods by more than 30%.
+- A performance management system, a way of setting targets and tracking results, which Paul designed and put in place.
+- A 4-month project in the business-class meals area, which saved £306,000.
 
 ## What changed
 
-Headcount fell from 411 to 267, and output stayed the same. At £18,000 a head, that is about £2.59m a year. Productivity rose by 30%.
+Headcount fell from 411 to 267, and output stayed the same. That saved £2,592,000. The performance management system raised productivity by 30%.
 
 ## What an owner can take from this
 

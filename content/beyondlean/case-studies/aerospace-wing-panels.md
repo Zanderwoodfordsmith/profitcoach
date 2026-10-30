@@ -1,38 +1,38 @@
 ---
-title: "Wing panels made in 7.5 days instead of 11.5"
+title: "About £1.4m a year saved in aerospace machining"
 slug: "aerospace-wing-panels"
 client: "A major aerospace manufacturer"
 sector: "Aerospace"
 status: "Delivered"
 figure: "£1.4m"
 figureLabel: "a year saved in machining"
-summary: "In a major aerospace manufacturer's machining area, we studied every step of making wing panels and cut out the waste. The time to make them fell from 11.5 days to 7.5, saving about £1.4m a year."
+summary: "As an in-house Lean consultant at a major aerospace manufacturer, Paul drew up standard work charts for making wing panels. They brought a benefit of about £1.4m a year."
 timeframe: "6 months"
-photo: ""
-order: "11"
-confirm: "Needs Paul's confirmation: from his old CV and Blueprint, no deck. Is the saving £1.4m (CV) or £1.5m (Blueprint) a year? Are the 11.5 to 7.5 days for wing panels? Which area and years do the 65% quality gain and 100% on-time delivery belong to? Paul worked there in-house (1999 to 2004); is 'a major aerospace manufacturer' OK to say?"
+photo: "/beyondlean/stock/aerospace-hangar.jpg"
+order: "1"
+confirm: "Needs Paul's confirmation: from his old CV and Blueprint, no deck. Is the saving £1.4m (CV) or £1.5m (Blueprint) a year? Is the £1.4m saved in the machining area the same as the £1.4m benefit from the wing panel charts? The 11.5 to 7.5 day cycle time and the 6 months come only from the Blueprint line 'Aerospace Manufacturing': are they from this employer (not the 2004 to 2005 aerospace components role), and from the wing panel work? The page no longer says they were. Which area and years do the 65% quality gain and 100% on-time delivery belong to? Paul worked there in-house (1999 to 2004); is 'a major aerospace manufacturer' OK to say?"
 ---
 
 ## At a glance
 
-- **11.5 to 7.5 days** to make wing panels
 - **About £1.4m** a year saved in the machining area
-- **6 months** from study to new process
-- **60+ machine operators** trained to change over and look after their own machines
+- **11.5 to 7.5 days** cycle time, in 6 months
+- **65%** better quality
+- **60+** machine operators trained to change over and look after their own machines
 
 ## The problem
 
-Paul was one of a small group of in-house improvement experts at a major aerospace manufacturer. In the machining area, making wing panels took 11.5 days, and much of that time went on steps that added nothing to the part.
+From 1999 to 2004, Paul was one of a small number of in-house Lean experts at a major aerospace manufacturer. His job was to lead the use of Lean, based on the Toyota Production System.
 
 ## What we did
 
-We charted every step of the job, for both the people and the machines, to see how the two worked together. That showed which steps added value and which were waste. We redesigned the process around the useful steps, put the new way in place, and added simple visual controls so anyone could see at a glance whether work was on track.
+Paul drew up standard work charts for making wing panels. These set out each step of the job, for both the people and the machines. Across his work, he used Lean tools to reach a planned future way of working.
 
-Paul also trained more than 60 machine operators to change over their machines quickly and to look after them day to day.
+He also trained more than 60 machine operators to change over their machines quickly and to look after them.
 
 ## What changed
 
-The time to make wing panels fell from 11.5 days to 7.5. The machining area saved about £1.4m a year. During Paul's five years there, the areas he supported also improved quality by 65% and hit 100% on-time delivery.
+The wing panel charts brought a benefit of about £1.4m a year. Cycle time, the time the work took from start to finish, fell from 11.5 days to 7.5 in 6 months. In Paul's time there, quality also improved by 65% and deliveries kept to schedule 100% of the time.
 
 ## What an owner can take from this
 

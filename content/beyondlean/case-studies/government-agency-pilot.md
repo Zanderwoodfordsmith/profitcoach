@@ -6,11 +6,11 @@ sector: "Public sector"
 status: "Delivered"
 figure: "50%+"
 figureLabel: "more productive"
-summary: "A UK government agency tested a new way of working with a pilot, then rolled it out. Productivity rose by more than 50%, quality by 42%, and queries passed on to others fell by 70%."
+summary: "Paul led the pilot and roll-out of New Ways of Working at a UK government agency. Productivity rose by more than 50%, quality by 42%, and queries passed on to others fell by 70%."
 timeframe: "6 months"
-photo: ""
-order: "13"
-confirm: "Needs Paul's confirmation: from his old CV only (April to September 2009), no deck. LinkedIn says 'productivity and quality up more than 40%' for what looks like the same agency; which numbers are right? What did 'query referrals' mean here?"
+photo: "/beyondlean/stock/file-stacks.jpg"
+order: "14"
+confirm: "Needs Paul's confirmation: from his old CV only (April to September 2009), no deck. His Blueprint lists a public-sector agency role from 2009 to 2010, and LinkedIn says 'productivity and quality up more than 40%' for what looks like the same agency; which dates and numbers are right? What did 'query referrals' mean here? Was this Beyondlean's own contract or through another consultancy?"
 ---
 
 ## At a glance
@@ -22,15 +22,15 @@ confirm: "Needs Paul's confirmation: from his old CV only (April to September 20
 
 ## The problem
 
-The agency had decided to change how its teams worked, under a programme called New Ways of Working. It wanted to test the change with a pilot first, then roll it out. It also wanted its own staff able to lead this kind of change in future.
+The agency was bringing in New Ways of Working, starting with a pilot and then rolling it out across the agency.
 
 ## What we did
 
-Paul led the workstream for the pilot and the roll-out across the agency. Along the way, we coached and mentored the agency's own improvement consultants up to an accredited level from Cardiff Business School. That meant the skills stayed inside the agency when we left.
+Paul led the work on the pilot and the roll-out. He also coached and mentored the agency's own internal consultants up to an accredited level from Cardiff Business School.
 
 ## What changed
 
-Productivity rose by more than 50%. Quality rose by 42%. Queries passed on to others fell by 70%.
+Productivity rose by more than 50% and quality by 42%. Queries passed on to others fell by 70%.
 
 ## What an owner can take from this
 

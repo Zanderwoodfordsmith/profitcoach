@@ -6,11 +6,11 @@ sector: "Financial services"
 status: "Delivered"
 figure: "420 to 314"
 figureLabel: "people needed after the move"
-summary: "A UK banking group was moving its collections and recoveries teams from three sites into one. We built a better way of working into the new centre, which then needed 314 people instead of 420, with quality up 46%."
+summary: "A UK banking group was bringing its collections and recoveries call centre from three sites into one. Paul led the improvement work for the move, and the teams went from 420 people to 314, with quality up 46%."
 timeframe: "12 months"
-photo: ""
-order: "12"
-confirm: "Needs Paul's confirmation: from his old CV and Blueprint, no deck. Please confirm 420 to 314 people (the CV says 105 roles freed, the Blueprint figures give 106) and quality up 46%. Dates: February 2010 to March 2011? Is 'a UK banking group' OK to say?"
+photo: "/beyondlean/stock/open-office.jpg"
+order: "13"
+confirm: "Needs Paul's confirmation: from his old CV and Blueprint, no deck. Please confirm 420 to 314 people (the CV says 105 roles freed, the Blueprint figures give 106) and quality up 46%. Dates: February 2010 to March 2011 (CV), or 12 months (Blueprint)? LinkedIn suggests this bank work came through another consultancy; is 'Paul led the improvement work' the right way to put it? Is 'a UK banking group' OK to say?"
 ---
 
 ## At a glance
@@ -18,19 +18,19 @@ confirm: "Needs Paul's confirmation: from his old CV and Blueprint, no deck. Ple
 - **3 sites into 1** for collections and recoveries
 - **420 to 314** people needed
 - **46%** better quality
-- **12 months**, coaching the bank's own improvement team along the way
+- **12 months**, with Paul coaching the bank's own improvement consultants
 
 ## The problem
 
-Collections and recoveries teams call customers who have fallen behind on payments, and take their calls too. At this banking group, that work ran across three sites, and the group was bringing them together into one. A move like that can fix how the work is done, or carry old problems into a new building.
+At this banking group, the collections and recoveries call centre made and took calls across three sites. The group was bringing the three sites together into one.
 
 ## What we did
 
-Paul led the improvement work alongside the move. We designed a model for handling incoming and outgoing calls well, and built it into the new centre as it came together. We coached the leaders there, and trained the bank's own improvement consultants in how to improve phone-based work, so they could carry on without us.
+Paul led the improvement work for the move. He designed and set up a centre of excellence for the phone work, and built Lean ways of working into the teams making and taking calls. He coached and mentored the bank's own improvement consultants in Lean skills for phone work, and did a lot of coaching for the leaders.
 
 ## What changed
 
-The merged centre needed 314 people instead of 420. Quality rose by 46%.
+Over 12 months, the teams went from 420 people to 314. Quality rose by 46%.
 
 ## What an owner can take from this
 

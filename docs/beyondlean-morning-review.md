@@ -14,11 +14,11 @@ Production returns 404 for every /beyondlean page unless `BEYONDLEAN_SITE_LIVE=1
 | Blog (34 articles) | http://localhost:3002/beyondlean/blog |
 | An article | http://localhost:3002/beyondlean/blog/standardisation-gone-wrong |
 | About Paul | http://localhost:3002/beyondlean/about |
-| Earlier rounds, for comparison | Look switch, bottom right of the home page: BCA, Dark, Calm, Bold |
+| Earlier rounds | Removed 30 Oct (New picked). The BCA "How we work together" steps are saved, unused, in `src/components/beyondlean/saved/WorkTogether.tsx` |
 
 ## Do these first
 
-1. **Pick the home design.** "New" is the one you said was a lot better. Say the word and I delete BCA, Dark, Calm and Bold.
+1. ~~**Pick the home design.**~~ Done 30 Oct: New kept, the rest deleted.
 2. **Tell Paul about his live site.** His old pages publish course download passwords in plain text (madlty, mcdlty, basdlty, static, leand, blackbeltthanks), and his public Diagnostic PDFs show the snack maker's name and owner and some staff names. Worth fixing now, whatever happens with the new site.
 3. **Send Paul one list** (draft below) so he can confirm numbers, names and photos in one go.
 

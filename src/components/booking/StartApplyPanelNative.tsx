@@ -17,8 +17,9 @@ type Props = {
   /**
    * `discovery` — sales qualify questions (default).
    * `support` — a short form, with an optional notes field.
+   * `owner` — a coach's own page: team size, turnover and goal instead of BCA's questions.
    */
-  intent?: "discovery" | "support";
+  intent?: "discovery" | "support" | "owner";
   title?: string;
   lead?: string;
   showNotes?: boolean;

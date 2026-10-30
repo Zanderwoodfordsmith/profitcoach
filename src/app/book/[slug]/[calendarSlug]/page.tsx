@@ -1,4 +1,5 @@
 import { StartApplyPanelNative } from "@/components/booking/StartApplyPanelNative";
+import { BCA_BOOKING_SLUGS } from "@/lib/booking/bookCallQualify";
 
 export default async function PublicBookCalendarPage({
   params,
@@ -8,13 +9,15 @@ export default async function PublicBookCalendarPage({
   const { slug, calendarSlug } = await params;
   const clean = (slug ?? "").trim().toLowerCase();
   const cal = (calendarSlug ?? "").trim().toLowerCase() || "discovery";
+  const ownerQuestions = cal === "discovery" && !BCA_BOOKING_SLUGS.has(clean);
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-[#061018] px-4 py-10 sm:px-6">
       <div className="mx-auto w-full max-w-[920px]">
         <StartApplyPanelNative
           variant="modal"
-          enableLeadCapture={false}
+          enableLeadCapture
+          intent={ownerQuestions ? "owner" : "discovery"}
           slug={clean || "unknown"}
           calendarSlug={cal}
         />

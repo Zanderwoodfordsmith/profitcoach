@@ -1,37 +1,37 @@
 ---
-title: "25% more calls turned into sales"
+title: "Pilot teams turned 25% more calls into sales"
 slug: "media-company-telesales"
 client: "A major UK media company"
 sector: "Contact centres"
 status: "Delivered"
 figure: "25%"
 figureLabel: "more calls turned into sales in the pilot teams"
-summary: "A media company sold and supported its services from six contact centres. We proved a better way of working in pilot teams, rolled it out to every site, and the client put the savings at over £3m."
+summary: "Paul led a 'Model Office' pilot and roll-out across six contact centre sites at a major UK media company. The pilot teams turned 25% more calls into sales, and the client declared savings of over £3m."
 timeframe: "18 months"
-photo: ""
-order: "7"
-confirm: "Needs Paul's confirmation: from his old CV only (February 2007 to August 2008), no deck. LinkedIn gives different numbers for what looks like the same client (see _notes.md); which are right? Is the missing 'Dudley Telesales case study' this project? Is 'a major UK media company' OK to say?"
+photo: "/beyondlean/stock/headset-team.jpg"
+order: "6"
+confirm: "Needs Paul's confirmation: from his old CV only (February 2007 to August 2008), no deck. LinkedIn gives different numbers for what looks like the same client (see _notes.md), and two old site pages differ again: 'client declared FTE savings of over £1,300,000, January to August 2008', and 'sales conversion up 81%, right first time quality up 120%' in media telesales. Which are right? Which three sites does the 65% order entry figure cover? Was this Beyondlean's own contract or through another consultancy? Is the missing 'Dudley Telesales case study' this project? Is 'a major UK media company' OK to say?"
 ---
 
 ## At a glance
 
 - **25%** more calls turned into sales in the pilot teams
-- **Over 65%** better order accuracy across three telesales sites
+- **65%+** better order entry quality across three sites
 - **35%** more efficient installation support
-- **Over £3m** in savings, as stated by the client
-- **72 managers and coaches** trained to keep it going
+- **Over £3m** in savings, as declared by the client
+- **72** managers and Lean coaches given accredited Lean training
 
 ## The problem
 
-The company sold and supported its services from six sites: three telesales centres, two installation support centres and a service centre. Telesales had no written standard way of working. The client wanted one better way to run all six sites, proved in a few teams before it spread.
+A major UK media company ran a "Model Office" pilot, then rolled it out across six sites: three telesales sites, two installation support sites and one service support site. The work covered both phone work and back-office work.
 
 ## What we did
 
-We started with a "model office": a few pilot teams where we built and tested a better way of working. Then we rolled it out to all six sites. At each site we led and mentored a client team of three or four people, so the site owned the change. We brought in written standard ways of working for telesales. We also wrote and ran Lean training, accredited by Cardiff University, for 72 managers and coaches.
+Paul managed the project and led the work for the pilot and the roll-out. At each site, he led and mentored a client team of 3 or 4 people. Telesales got standard operating procedures: the steps for each job, written down. Paul also wrote and delivered Lean training, accredited by Cardiff University, for 72 managers and Lean coaches across the business.
 
 ## What changed
 
-In the pilot teams, 25% more calls turned into sales. Order accuracy rose by more than 65% across the three telesales sites. Installation support became 35% more efficient. The client stated savings of over £3m.
+In the pilot teams, 25% more calls turned into sales. Order entry quality rose by 65% or more across three sites. Installation support became 35% more efficient. The client declared savings of over £3m.
 
 ## What an owner can take from this
 

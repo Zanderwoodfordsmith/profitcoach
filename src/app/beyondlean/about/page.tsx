@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { BOOK_HREF, CAREER } from "@/components/beyondlean/BeyondleanSite";
-import { CircleButton, CloseCard, Heading, HOME, PageHero, V5Shell } from "@/components/beyondlean/v5/parts";
+import { BOOK_HREF, CAREER } from "@/components/beyondlean/data";
+import { CircleButton, CloseCard, Heading, HOME, PageHero, V5Shell, VersionSwitch } from "@/components/beyondlean/v5/parts";
 import { beyondleanMode } from "@/lib/beyondlean/mode";
 
 export const metadata: Metadata = {
@@ -19,15 +19,17 @@ const CREDENTIALS = [
   "HNC Engineering",
   "NVQ 3 Coaching Award",
   "Trained in The Profit System",
-  "BOSS Score diagnostic",
 ];
 
-export default function AboutPage() {
-  if (!beyondleanMode().enabled) notFound();
+type Props = { searchParams: Promise<{ v?: string }> };
+
+export default async function AboutPage({ searchParams }: Props) {
+  const { enabled, preview } = beyondleanMode();
+  if (!enabled) notFound();
+  const old = preview && (await searchParams).v === "old";
   return (
-    <V5Shell active="about">
+    <V5Shell active="about" switcher={preview ? <VersionSwitch current={old ? "old" : "new"} /> : null}>
       <PageHero
-        crumb={[{ href: `${HOME}/about`, label: "About Paul" }]}
         light="I've run a small business myself."
         strong="So I know where it hurts."
         lede="25 years of making work flow, from the shop floor to the boardroom. Now I help owners of growing UK businesses do the same in their own."
@@ -36,7 +38,14 @@ export default function AboutPage() {
       <section className="v5-section v5-white" aria-labelledby="v5-story-title">
         <div className="v5-wrap v5-about">
           <figure className="v5-about-photo" data-reveal>
-            <Image src="/beyondlean/paul.jpg" alt="Paul Swift" width={1050} height={1400} sizes="(max-width: 900px) 100vw, 480px" priority />
+            <Image
+              src={old ? "/beyondlean/paul.jpg" : "/beyondlean/paul-wales.jpg"}
+              alt="Paul Swift"
+              width={1050}
+              height={1400}
+              sizes="(max-width: 900px) 100vw, 480px"
+              priority
+            />
             <figcaption className="v5-photo-badge">
               <span className="v5-photo-badge-num">20</span>
               <span>years running Beyondlean Ltd</span>
@@ -53,7 +62,7 @@ export default function AboutPage() {
               problem and every bill lands on you.
             </p>
             <p>
-              As a Production Director I helped grow profit fivefold, freed up cash and cut stock right back. At Airbus I
+              As a Production Director I helped grow profit by 500%, freed up cash and cut stock right back. At Airbus I
               learned Lean the Toyota way, and helped design a culture-change programme for 10,000 people. At an airline
               caterer I helped get a business back on its feet after an industrial dispute.
             </p>
@@ -65,7 +74,7 @@ export default function AboutPage() {
               The problems I fixed in big firms show up in growing businesses too. The difference is that an owner can
               move fast. That&apos;s why I now work with owners.
             </p>
-            <CircleButton href={BOOK_HREF}>Book a free value call</CircleButton>
+            <CircleButton href={BOOK_HREF}>Book a Constraint Call</CircleButton>
           </div>
         </div>
       </section>

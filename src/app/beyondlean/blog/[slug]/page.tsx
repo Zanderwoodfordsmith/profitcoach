@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { BOOK_HREF } from "@/components/beyondlean/BeyondleanSite";
+import { BOOK_HREF } from "@/components/beyondlean/data";
 import { CircleButton, CloseCard, HOME, Markdown, PageHero, ScoreCallout, V5Shell } from "@/components/beyondlean/v5/parts";
+import { PostCard } from "@/components/beyondlean/v5/PostCard";
 import { getPost, getPublishedPosts } from "@/lib/beyondlean/content";
 import { beyondleanMode } from "@/lib/beyondlean/mode";
 
@@ -44,10 +45,6 @@ export default async function BlogPostPage({ params }: Props) {
   return (
     <V5Shell active="blog">
       <PageHero
-        crumb={[
-          { href: `${HOME}/blog`, label: "Blog" },
-          { href: `${HOME}/blog/${post.slug}`, label: post.category },
-        ]}
         strong={post.title}
         lede={post.excerpt}
       >
@@ -82,9 +79,9 @@ export default async function BlogPostPage({ params }: Props) {
             </div>
             <div className="v5-side-cta">
               <h3>Talk it through with Paul</h3>
-              <p>A free value call to find the one or two things costing your business most.</p>
+              <p>A Constraint Call finds the one thing holding your business back, and what to fix first.</p>
               <CircleButton href={BOOK_HREF} tone="white">
-                Book a free call
+                Book a Constraint Call
               </CircleButton>
             </div>
           </aside>
@@ -104,16 +101,7 @@ export default async function BlogPostPage({ params }: Props) {
             </div>
             <div className="v5-posts">
               {related.map((p) => (
-                <Link key={p.slug} className="v5-article" href={`${HOME}/blog/${p.slug}`}>
-                  <span className="v5-post-meta">
-                    <span className="v5-article-tag">{p.category}</span>
-                  </span>
-                  <h3>{p.title}</h3>
-                  <p>{p.excerpt}</p>
-                  <span className="v5-article-more">
-                    Read the article <ArrowRight aria-hidden />
-                  </span>
-                </Link>
+                <PostCard key={p.slug} post={p} href={`${HOME}/blog/${p.slug}`} />
               ))}
             </div>
           </div>

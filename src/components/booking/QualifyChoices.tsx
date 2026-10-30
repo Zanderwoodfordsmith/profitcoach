@@ -2,6 +2,19 @@
 
 import type { ReactNode } from "react";
 import {
+  BarChart3,
+  Building2,
+  Clock,
+  Factory,
+  Handshake,
+  PoundSterling,
+  TrendingUp,
+  User,
+  Users,
+  UsersRound,
+  type LucideIcon,
+} from "lucide-react";
+import {
   INVESTMENT_OPTIONS,
   ROLE_OPTIONS,
   TIMING_OPTIONS,
@@ -224,5 +237,81 @@ export function InvestmentPicker({ value, onChange, compact = false }: Investmen
       ariaLabel="This requires an investment. Does that work for you?"
       compact={compact}
     />
+  );
+}
+
+/** Owner questions for a coach's own booking page (intent="owner"), in place of BCA's role, timing and investment. */
+export const OWNER_QUESTIONS: {
+  id: "team" | "turnover" | "goal";
+  label: string;
+  options: { value: string; label: string; icon: LucideIcon }[];
+}[] = [
+  {
+    id: "team",
+    label: "How big is your team?",
+    options: [
+      { value: "Under 10", label: "Under 10", icon: User },
+      { value: "10 to 25", label: "10 to 25", icon: Users },
+      { value: "26 to 50", label: "26 to 50", icon: UsersRound },
+      { value: "Over 50", label: "Over 50", icon: Building2 },
+    ],
+  },
+  {
+    id: "turnover",
+    label: "Roughly what does the business turn over?",
+    options: [
+      { value: "Under £1M", label: "Under £1M", icon: PoundSterling },
+      { value: "£1M to £2M", label: "£1M to £2M", icon: BarChart3 },
+      { value: "£2M to £5M", label: "£2M to £5M", icon: TrendingUp },
+      { value: "Over £5M", label: "Over £5M", icon: Factory },
+    ],
+  },
+  {
+    id: "goal",
+    label: "What matters most right now?",
+    options: [
+      { value: "More profit", label: "More profit", icon: TrendingUp },
+      { value: "My time back", label: "My time back", icon: Clock },
+      { value: "A team that runs without me", label: "Team runs without me", icon: Users },
+      { value: "A business I could sell", label: "A business to sell", icon: Handshake },
+    ],
+  },
+];
+
+type IconChoicePickerProps = {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string; icon: LucideIcon }[];
+  ariaLabel: string;
+  compact?: boolean;
+};
+
+/** The role tiles' look, for any short list of answers with icons. */
+export function IconChoicePicker({ value, onChange, options, ariaLabel, compact = false }: IconChoicePickerProps) {
+  return (
+    <div
+      className={`qualify-roles qualify-roles--four${compact ? " qualify-roles--compact" : ""}`}
+      role="radiogroup"
+      aria-label={ariaLabel}
+    >
+      {options.map(({ value: optionValue, label, icon: Icon }) => {
+        const selected = value === optionValue;
+        return (
+          <button
+            key={optionValue}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            className={`qualify-role${selected ? " is-on" : ""}`}
+            onClick={() => onChange(optionValue)}
+          >
+            <span className="qualify-role__icon">
+              <Icon aria-hidden strokeWidth={1.7} />
+            </span>
+            <span className="qualify-role__label">{label}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

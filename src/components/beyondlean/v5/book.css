@@ -1,0 +1,465 @@
+/* ---------- Constraint Call: the booking band (Blue and Light, on trial beside the old card) ----------
+   Words and proof on the left, one white booking card on the right. The shared booking form
+   (start-panel) is re-skinned here for Paul's page only: BCA blue in place of the green, no
+   locked calendar teaser, one column. */
+
+.v5-bk {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(80px, 10vw, 128px) 0;
+  scroll-margin-top: 72px;
+}
+
+.v5-bk.is-blue {
+  color: #fff;
+  background:
+    radial-gradient(48% 70% at 76% 48%, rgba(120, 190, 255, 0.34) 0%, rgba(120, 190, 255, 0) 70%),
+    radial-gradient(50% 60% at 0% 100%, rgba(47, 128, 228, 0.4) 0%, rgba(47, 128, 228, 0) 70%),
+    linear-gradient(155deg, #04152b 0%, #0a3566 50%, #1460b0 100%);
+}
+
+.v5-bk.is-light {
+  background:
+    radial-gradient(50% 80% at 78% 45%, rgba(75, 151, 240, 0.18) 0%, rgba(75, 151, 240, 0) 70%),
+    linear-gradient(180deg, #f3f7fc 0%, #e8f0fa 100%);
+}
+
+.v5-bk-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 580px);
+  grid-template-areas:
+    "head form"
+    "trust form";
+  column-gap: clamp(40px, 7vw, 104px);
+  row-gap: 36px;
+}
+
+.v5-bk-head {
+  grid-area: head;
+  align-self: end;
+}
+
+.v5-bk-head p {
+  max-width: 34ch;
+  margin: 20px 0 0;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--v5-soft-ink);
+}
+
+.v5-bk-trust {
+  grid-area: trust;
+  align-self: start;
+}
+
+.v5-bk-form {
+  grid-area: form;
+  align-self: center;
+}
+
+/* Heading and words on the blue */
+.v5-bk.is-blue .v5-h2 span {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.v5-bk.is-blue .v5-h2 strong {
+  color: #8cc4ff;
+}
+
+.v5-bk.is-blue .v5-bk-head p {
+  color: rgba(226, 238, 252, 0.82);
+}
+
+/* What they get: a short ruled list, not cards */
+.v5-bk-points {
+  max-width: 400px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v5-bk-points li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid #d6e1ee;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: var(--v5-ink);
+}
+
+.v5-bk-points li:last-child {
+  border-bottom: 1px solid #d6e1ee;
+}
+
+.v5-bk-points svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: #2672cf;
+}
+
+.v5-bk.is-blue .v5-bk-points li {
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.v5-bk.is-blue .v5-bk-points svg {
+  color: #8cc4ff;
+}
+
+.v5-bk-paul {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.v5-bk-paul img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 3px #fff;
+}
+
+.v5-bk-paul span {
+  display: grid;
+  gap: 2px;
+  font-size: 0.9375rem;
+  color: var(--v5-mute);
+}
+
+.v5-bk-paul strong {
+  font-size: 1rem;
+  color: var(--v5-ink);
+}
+
+.v5-bk.is-blue .v5-bk-paul img {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22);
+}
+
+.v5-bk.is-blue .v5-bk-paul span {
+  color: rgba(226, 238, 252, 0.72);
+}
+
+.v5-bk.is-blue .v5-bk-paul strong {
+  color: #fff;
+}
+
+/* ---------- The booking card: the shared form, in Paul's colours ---------- */
+
+.v5-bk .start-panel {
+  font-family: inherit;
+  border-radius: 22px;
+  border: 1px solid rgba(13, 31, 49, 0.07);
+  background: #fff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    0 1px 2px rgba(6, 26, 51, 0.06),
+    0 40px 80px -36px rgba(6, 26, 51, 0.42);
+}
+
+.v5-bk.is-blue .start-panel {
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 2px 6px rgba(0, 8, 20, 0.18),
+    0 50px 100px -40px rgba(0, 8, 20, 0.75);
+}
+
+.v5-bk .start-panel input,
+.v5-bk .start-panel button {
+  font-family: inherit;
+}
+
+.v5-bk .start-panel__steps {
+  justify-content: flex-start;
+  gap: 22px;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--v5-line);
+  border-radius: 21px 21px 0 0;
+  background: #f7f9fc;
+}
+
+/* The first step turns into a back button on the calendar; keep it the same size as the others */
+.v5-bk button.start-panel__step {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.v5-bk .start-panel__step {
+  color: #6b7a8c;
+}
+
+.v5-bk .start-panel__step i {
+  background: #e6edf5;
+  color: #5b6b80;
+}
+
+.v5-bk .start-panel__step.is-on {
+  color: var(--v5-ink);
+}
+
+.v5-bk .start-panel__step.is-on i {
+  background: #2672cf;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(38, 114, 207, 0.18);
+}
+
+.v5-bk .start-panel__step.is-done {
+  color: var(--v5-soft-ink);
+}
+
+.v5-bk .start-panel__step.is-done i {
+  background: #0c5290;
+  color: #fff;
+}
+
+.v5-bk .start-panel__step--back:hover {
+  color: var(--v5-ink);
+}
+
+.v5-bk .start-panel__step--back:focus-visible {
+  outline-color: #2672cf;
+}
+
+/* One column: the locked calendar teaser goes, the steps above already say a time comes next */
+.v5-bk .start-panel__split {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.v5-bk .start-panel__aside {
+  display: none;
+}
+
+.v5-bk .start-panel__form {
+  gap: 12px;
+  padding: 30px 28px 28px;
+  border: 0;
+}
+
+.v5-bk .start-panel__title {
+  font-family: inherit;
+  font-size: clamp(1.5rem, 2.2vw, 1.75rem);
+  letter-spacing: -0.025em;
+  color: var(--v5-ink);
+}
+
+.v5-bk .start-panel__lead {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: var(--v5-soft-ink);
+  text-wrap: pretty;
+}
+
+.v5-bk .start-panel__label {
+  color: #23364a;
+}
+
+.v5-bk .start-panel__req,
+.v5-bk .start-panel__optional {
+  color: #8593a3;
+}
+
+.v5-bk .start-panel__phone,
+.v5-bk .start-panel__input {
+  border: 1px solid #cfd9e5;
+  background: #fff;
+  color: var(--v5-ink);
+  caret-color: #2672cf;
+}
+
+.v5-bk .start-panel__phone-input {
+  border: 0;
+  background: transparent;
+  color: var(--v5-ink);
+  caret-color: #2672cf;
+}
+
+.v5-bk .start-panel__phone-input::placeholder,
+.v5-bk .start-panel__input::placeholder {
+  color: #6b7a8c;
+}
+
+.v5-bk .start-panel__input:focus {
+  border-color: #2672cf;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(38, 114, 207, 0.15);
+}
+
+.v5-bk .start-panel__phone--pulse {
+  animation-name: v5-bk-pulse;
+}
+
+@keyframes v5-bk-pulse {
+  0%,
+  100% {
+    border-color: #cfd9e5;
+    box-shadow: 0 0 0 0 rgba(38, 114, 207, 0);
+  }
+  50% {
+    border-color: rgba(38, 114, 207, 0.75);
+    box-shadow: 0 0 0 3px rgba(38, 114, 207, 0.16);
+  }
+}
+
+.v5-bk .start-panel__phone:focus-within {
+  animation: none;
+  border-color: #2672cf;
+  box-shadow: 0 0 0 3px rgba(38, 114, 207, 0.15);
+}
+
+.v5-bk .start-panel__phone-trigger {
+  color: var(--v5-ink);
+}
+
+.v5-bk .start-panel__phone-caret {
+  border-top-color: #6b7a8c;
+}
+
+.v5-bk .start-panel__phone-divider {
+  background: #dfe6ef;
+}
+
+.v5-bk .start-panel__input:-webkit-autofill,
+.v5-bk .start-panel__input:-webkit-autofill:hover,
+.v5-bk .start-panel__input:-webkit-autofill:focus,
+.v5-bk .start-panel__phone-input:-webkit-autofill,
+.v5-bk .start-panel__phone-input:-webkit-autofill:hover,
+.v5-bk .start-panel__phone-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--v5-ink) !important;
+  caret-color: #2672cf;
+  box-shadow: 0 0 0 1000px #f1f6fc inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #f1f6fc inset !important;
+}
+
+.v5-bk .start-panel__phone:has(.start-panel__phone-input:-webkit-autofill) {
+  background: #f1f6fc;
+}
+
+.v5-bk .start-panel__country-menu {
+  border: 1px solid var(--v5-line);
+  background: #fff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 24px 48px -20px rgba(6, 26, 51, 0.35);
+}
+
+.v5-bk .start-panel__country-option {
+  color: var(--v5-ink);
+}
+
+.v5-bk .start-panel__country-option:hover,
+.v5-bk .start-panel__country-option.is-active {
+  background: #f1f5fa;
+}
+
+.v5-bk .start-panel__country-dial {
+  color: #6b7a8c;
+}
+
+/* The owner questions (team, turnover, what matters) */
+.v5-bk .qualify-role {
+  border: 1px solid #d5dee9;
+  background: #fff;
+  color: var(--v5-ink);
+}
+
+.v5-bk .qualify-role:hover {
+  border-color: #8db8ea;
+  background: #f5f9fe;
+}
+
+.v5-bk .qualify-role.is-on {
+  border-color: #2672cf;
+  background: #edf5ff;
+  box-shadow: 0 0 0 3px rgba(38, 114, 207, 0.14);
+  color: var(--v5-ink);
+}
+
+.v5-bk .qualify-role:focus-visible {
+  outline: 2px solid #2672cf;
+  outline-offset: 2px;
+}
+
+.v5-bk .qualify-role__icon {
+  background: #eef4fb;
+  color: #2672cf;
+}
+
+.v5-bk .qualify-role.is-on .qualify-role__icon {
+  background: #2672cf;
+  color: #fff;
+}
+
+.v5-bk .qualify-roles--compact .qualify-role__label {
+  font-size: 12px;
+}
+
+.v5-bk .start-panel__error {
+  color: #c0392b;
+}
+
+.v5-bk .start-panel__continue {
+  min-height: 52px;
+  border-radius: 10px;
+  background: #2672cf;
+  font-size: 1rem;
+  box-shadow: 0 16px 30px -14px rgba(38, 114, 207, 0.6);
+}
+
+.v5-bk .start-panel__continue:hover:not(:disabled) {
+  background: #1f5fae;
+}
+
+.v5-bk .start-panel__continue:focus-visible {
+  outline: 2px solid #2672cf;
+  outline-offset: 3px;
+}
+
+.v5-bk .start-panel__continue:disabled {
+  opacity: 1;
+  background: #e6edf5;
+  color: #6b7a8c;
+  box-shadow: none;
+}
+
+/* Step 2: the day and time picker sits straight on the white card */
+.v5-bk .start-panel--calendar .start-panel__booking {
+  padding: 8px 10px 14px;
+}
+
+.v5-bk .start-panel--calendar .start-panel__native {
+  padding: 14px 18px 20px;
+  border-radius: 0;
+}
+
+@media (max-width: 900px) {
+  .v5-bk-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "head"
+      "form"
+      "trust";
+    row-gap: 32px;
+  }
+
+  .v5-bk-form {
+    width: 100%;
+    max-width: 580px;
+  }
+}
+
+@media (max-width: 560px) {
+  .v5-bk .start-panel__steps {
+    padding: 14px 18px;
+  }
+
+  .v5-bk .start-panel__form {
+    padding: 24px 18px 22px;
+  }
+}

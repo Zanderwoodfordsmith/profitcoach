@@ -117,3 +117,15 @@ export function sections(body: string): Record<string, string> {
   }
   return out;
 }
+
+/** "- **57 to 40** people for the same output" becomes a figure and its line. */
+export function glance(md: string) {
+  return md
+    .split("\n")
+    .map((l) => l.replace(/^[-*]\s+/, "").trim())
+    .filter(Boolean)
+    .map((l) => {
+      const m = l.match(/^\*\*(.+?)\*\*\s*[:,-]?\s*(.*)$/);
+      return m ? { figure: m[1], text: m[2] } : { figure: "", text: l.replace(/\*\*/g, "") };
+    });
+}

@@ -12,7 +12,7 @@ Owner: Zander Woodford-Smith
 
 ## What BOSS Does
 
-BOSS (Business Owner Strategy System) is a diagnostic-led transformation system. Three core functions:
+BOSS (Business Operating System Score) is a diagnostic-led transformation system. Three core functions:
 
 1. **Diagnose** — score the business across every critical area, show exactly where money and time are being lost
 2. **Sequence** — prioritise what to fix first based on impact and ease, not guesswork

@@ -1,0 +1,591 @@
+/* How it works: hero chips, the sticky step rail, the three chapters and their visuals, proof cards. */
+
+/* ---------- Hero ---------- */
+
+.v5-how-hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.86) !important;
+  text-decoration: none;
+}
+
+.v5-how-hero-link svg {
+  width: 17px;
+  height: 17px;
+  transition: transform 220ms var(--v5-ease);
+}
+
+.v5-how-hero-link:hover {
+  color: #fff !important;
+}
+
+.v5-how-hero-link:hover svg {
+  transform: translateX(3px);
+}
+
+.v5-how-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 44px;
+}
+
+.v5-how-chips a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff !important;
+  text-decoration: none;
+  transition: background-color 180ms;
+}
+
+.v5-how-chips a:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.v5-how-chips a span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- The three steps: sticky rail + chapters ---------- */
+
+.v5-how-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: clamp(32px, 4vw, 64px);
+  align-items: start;
+}
+
+.v5-how-rail-col {
+  position: sticky;
+  top: 120px;
+}
+
+.v5-how-rail {
+  position: relative;
+  padding-left: 22px;
+}
+
+.v5-how-rail-track {
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--v5-line);
+  overflow: hidden;
+}
+
+.v5-how-rail-track span {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--v5-bright), var(--v5-navy));
+  transform-origin: top;
+  transition: transform 120ms linear;
+}
+
+.v5-how-rail ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v5-how-rail a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--v5-mute) !important;
+  text-decoration: none;
+  transition: color 200ms;
+}
+
+.v5-how-rail-num {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--v5-line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition:
+    background-color 240ms,
+    border-color 240ms,
+    color 240ms;
+}
+
+.v5-how-rail-title {
+  font-weight: 600;
+}
+
+.v5-how-rail li.is-done a {
+  color: var(--v5-soft-ink) !important;
+}
+
+.v5-how-rail li.is-done .v5-how-rail-num {
+  border-color: #bcd3ea;
+  color: var(--v5-navy);
+}
+
+.v5-how-rail li.is-active a {
+  color: var(--v5-ink) !important;
+}
+
+.v5-how-rail li.is-active .v5-how-rail-num {
+  border-color: var(--v5-navy);
+  background: var(--v5-navy);
+  color: #fff;
+}
+
+.v5-how-chapters {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 2.4vw, 28px);
+}
+
+.v5-how-chapter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(28px, 4vw, 56px);
+  align-items: center;
+  min-height: min(78vh, 680px);
+  padding: clamp(28px, 3.6vw, 52px);
+  border: 1px solid var(--v5-line);
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: var(--v5-shadow-2);
+  scroll-margin-top: 110px;
+}
+
+.v5-how-step {
+  display: inline-block;
+  margin-bottom: 14px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--v5-sky);
+}
+
+.v5-how-chapter-title {
+  margin: 0 0 14px;
+  font-size: clamp(1.75rem, 2.6vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.v5-how-chapter-text {
+  margin: 0 0 22px;
+  max-width: 46ch;
+  font-size: 1.125rem;
+  color: var(--v5-soft-ink);
+}
+
+.v5-how-points {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 30px;
+  padding: 0;
+  list-style: none;
+}
+
+.v5-how-points li {
+  display: flex;
+  gap: 10px;
+  color: var(--v5-ink);
+}
+
+.v5-how-points svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #e7f5ee;
+  color: #127a53;
+}
+
+/* ---------- Chapter visuals ---------- */
+
+.v5-how-visual {
+  margin: 0;
+  padding: clamp(22px, 2.6vw, 32px);
+  border-radius: 24px;
+  background: var(--v5-canvas);
+  border: 1px solid var(--v5-line);
+}
+
+.v5-how-label {
+  display: block;
+  margin: 0 0 18px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--v5-mute);
+}
+
+.v5-how-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+}
+
+.v5-how-score .v5-how-label {
+  align-self: flex-start;
+}
+
+/* Talk it through: the Constraint Call agenda */
+
+.v5-how-call {
+  background: var(--v5-band);
+  border: 0;
+  color: #fff;
+}
+
+.v5-how-call .v5-how-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.v5-how-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.v5-how-agenda li {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.v5-how-agenda-num {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.v5-how-agenda strong {
+  display: block;
+  font-weight: 650;
+}
+
+.v5-how-agenda li div span {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.v5-how-call-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.v5-how-call-foot img {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  object-fit: cover;
+  object-position: 50% 18%;
+}
+
+.v5-how-call-foot strong {
+  display: block;
+  font-weight: 650;
+}
+
+.v5-how-call-foot span {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* Fix it: Paul's five-step roadmap */
+
+.v5-how-roadmap {
+  background: #fff;
+}
+
+.v5-how-road {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.v5-how-road li {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding: 0 0 18px;
+}
+
+.v5-how-road li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 32px;
+  bottom: 2px;
+  left: 15px;
+  width: 2px;
+  background: var(--v5-line);
+}
+
+.v5-how-road-num {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #bcd3ea;
+  border-radius: 999px;
+  background: #eef4fa;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--v5-navy);
+}
+
+.v5-how-road li.is-done .v5-how-road-num {
+  border-color: #127a53;
+  background: #127a53;
+  color: #fff;
+}
+
+.v5-how-road-num svg {
+  width: 16px;
+  height: 16px;
+}
+
+.v5-how-road strong {
+  display: block;
+  font-weight: 650;
+}
+
+.v5-how-road li div > span {
+  display: block;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--v5-soft-ink);
+}
+
+.v5-how-road em {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e7f5ee;
+  font-size: 0.8125rem;
+  font-style: normal;
+  font-weight: 600;
+  color: #11704c;
+}
+
+.v5-how-road em.is-plan {
+  background: var(--v5-navy);
+  color: #fff;
+}
+
+.v5-how-road-loop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--v5-canvas);
+  font-weight: 600;
+  color: var(--v5-ink);
+}
+
+.v5-how-road-loop svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--v5-sky);
+}
+
+/* ---------- Proof ---------- */
+
+.v5-how-proof {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.v5-how-proof-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--v5-line);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: var(--v5-shadow-2);
+  color: var(--v5-ink) !important;
+  text-decoration: none;
+  transition:
+    transform 260ms var(--v5-ease),
+    box-shadow 260ms var(--v5-ease);
+}
+
+.v5-how-proof-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--v5-shadow-3);
+}
+
+.v5-how-proof-media {
+  position: relative;
+  min-height: 230px;
+  background: var(--v5-band);
+}
+
+.v5-how-proof-media img {
+  object-fit: cover;
+}
+
+.v5-how-proof-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(4, 21, 43, 0.8), rgba(4, 21, 43, 0) 62%);
+}
+
+.v5-how-proof-figure {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  left: 22px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #fff;
+}
+
+.v5-how-proof-figure strong {
+  font-size: 2.75rem;
+  font-weight: 300;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.v5-how-proof-figure span {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.v5-how-proof-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 22px 24px 24px;
+}
+
+.v5-how-proof-client {
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--v5-soft-ink);
+}
+
+.v5-how-proof-body h3 {
+  margin: 4px 0 18px;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.v5-how-proof-body .v5-article-more {
+  margin-top: auto;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1100px) {
+  .v5-how-chapter {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .v5-how-proof {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .v5-how-proof-card {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .v5-how-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .v5-how-rail-col {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .v5-how-chapter {
+    padding: 24px 20px;
+    border-radius: 22px;
+  }
+
+  .v5-how-proof-card {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v5-how-rail-track span,
+  .v5-how-rail-num,
+  .v5-how-proof-card,
+  .v5-how-hero-link svg,
+  .v5-how-chips a {
+    transition: none;
+  }
+
+  .v5-how-proof-card:hover {
+    transform: none;
+  }
+}

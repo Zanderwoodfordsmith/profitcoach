@@ -93,7 +93,7 @@ export function Untangle({ scoreHref }: { scoreHref: string }) {
                 firefighting in the middle.
               </p>
               <a className="bp-link" href={scoreHref} tabIndex={resolved ? 0 : -1}>
-                Get your free BOSS Score
+                Get Your Free BOSS Score
                 <ArrowRight aria-hidden />
               </a>
             </div>

@@ -1,0 +1,75 @@
+/* Saved "How we work together" steps from the old BCA home look. */
+
+.bl-steps-section {
+  background: #fff;
+}
+
+.bl-steps-head {
+  max-width: 760px;
+  margin: 0 auto clamp(48px, 6vw, 72px);
+}
+
+.bl-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bl-step {
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e3e8ef;
+  box-shadow:
+    0 1px 2px rgba(11, 27, 43, 0.04),
+    0 12px 28px -18px rgba(11, 27, 43, 0.22);
+}
+
+.bl-step-bar {
+  padding: 14px 24px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(120deg, #08396a, #1a6fb8);
+}
+
+.bl-step-2 .bl-step-bar {
+  background: linear-gradient(120deg, #1f7bc7, #4eaaf0);
+}
+
+.bl-step-3 .bl-step-bar {
+  background: linear-gradient(120deg, #0a7fa6, #17abd6);
+}
+
+.bl-step-body {
+  padding: 24px 24px 28px;
+}
+
+.bl-step-body h3 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.bl-step-body p {
+  margin: 0;
+  color: #46566b;
+}
+
+.bl-steps-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 48px;
+}
+
+@media (max-width: 900px) {
+  .bl-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

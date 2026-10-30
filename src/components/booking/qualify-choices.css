@@ -23,6 +23,15 @@
   gap: 7px;
 }
 
+.qualify-roles--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.qualify-role__icon svg {
+  width: 60%;
+  height: 60%;
+}
+
 .qualify-role {
   position: relative;
   display: flex;

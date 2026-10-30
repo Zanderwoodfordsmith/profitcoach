@@ -3,7 +3,9 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Script from "next/script";
 import {
+  IconChoicePicker,
   InvestmentPicker,
+  OWNER_QUESTIONS,
   RolePicker,
   TimingPicker,
 } from "@/components/booking/QualifyChoices";
@@ -42,6 +44,8 @@ type LeadPayload = {
   timing?: string;
   investment?: string;
   stage: LeadStage;
+  /** The coach's booking slug, so the lead is saved against the right coach. */
+  slug?: string;
 };
 
 type Country = { code: string; dial: string; label: string };
@@ -249,7 +253,7 @@ type Props = {
    * `discovery` — sales qualify questions (default).
    * `support` — a short form, with an optional notes field.
    */
-  intent?: "discovery" | "support";
+  intent?: "discovery" | "support" | "owner";
   /** Replaces the form heading. */
   title?: string;
   /** Replaces the line under the form heading. */
@@ -275,6 +279,9 @@ export function StartApplyPanel({
   showNotes = true,
 }: Props) {
   const isSupport = intent === "support";
+  const isOwner = intent === "owner";
+  const [owner, setOwner] = useState<Record<string, string>>({});
+  const ownerNotes = OWNER_QUESTIONS.map((q) => `${q.label} ${owner[q.id] ?? "Not answered"}`).join("\n");
   const seeded = seedFromPrefill(prefillProp);
   const [countryCode, setCountryCode] = useState(seeded.countryCode);
   const [phoneValue, setPhoneValue] = useState(seeded.phoneValue);
@@ -305,6 +312,8 @@ export function StartApplyPanel({
   const enableLeadCaptureRef = useRef(enableLeadCapture);
   enableLeadCaptureRef.current = enableLeadCapture;
   const isModal = variant === "modal";
+  /** A coach's own page has no video before the form. */
+  const videoStep = !isModal && !isOwner;
 
   // Resolve session store + URL + prop once (modal / page / any host).
   useEffect(() => {
@@ -512,7 +521,7 @@ export function StartApplyPanel({
   }
 
   function queueLeadSend(payload: LeadPayload, immediate = false) {
-    pendingLeadRef.current = payload;
+    pendingLeadRef.current = { ...payload, slug: nativeSlug || undefined };
     clearLeadTimer();
     const send = () => {
       leadTimerRef.current = null;
@@ -601,7 +610,13 @@ export function StartApplyPanel({
       setError("Enter a valid email address.");
       return;
     }
-    if (!isSupport) {
+    if (isOwner) {
+      const missing = OWNER_QUESTIONS.find((q) => !owner[q.id]);
+      if (missing) {
+        setError(`Choose an answer for: ${missing.label}`);
+        return;
+      }
+    } else if (!isSupport) {
       if (!role) {
         setError("Select which best describes you.");
         return;
@@ -625,9 +640,9 @@ export function StartApplyPanel({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: trimmed,
-        role: isSupport ? undefined : role,
-        timing: isSupport ? undefined : timing,
-        investment: isSupport ? undefined : investment,
+        role: isSupport || isOwner ? undefined : role,
+        timing: isSupport || isOwner ? undefined : timing,
+        investment: isSupport || isOwner ? undefined : investment,
         stage: "email",
       },
       true,
@@ -646,7 +661,7 @@ export function StartApplyPanel({
       id={isModal ? undefined : "apply"}
     >
       <div className="start-panel__steps" aria-label="Application steps">
-        {!isModal ? (
+        {videoStep ? (
           <span className="start-panel__step is-done">
             <i aria-hidden="true">1</i>
             Watch the video
@@ -658,17 +673,17 @@ export function StartApplyPanel({
             className="start-panel__step is-done start-panel__step--back"
             onClick={() => setStage("form")}
           >
-            <i aria-hidden="true">{isModal ? "1" : "2"}</i>
+            <i aria-hidden="true">{videoStep ? "2" : "1"}</i>
             Fill out the form
           </button>
         ) : (
           <span className="start-panel__step is-on">
-            <i aria-hidden="true">{isModal ? "1" : "2"}</i>
+            <i aria-hidden="true">{videoStep ? "2" : "1"}</i>
             Fill out the form
           </span>
         )}
         <span className={`start-panel__step${showCalendar ? " is-on" : ""}`}>
-          <i aria-hidden="true">{isModal ? "2" : "3"}</i>
+          <i aria-hidden="true">{videoStep ? "3" : "2"}</i>
           Book your call
         </span>
       </div>
@@ -819,6 +834,26 @@ export function StartApplyPanel({
                       placeholder="Share as much as you can — context, questions, links — so we can make the most of the time."
                     />
                   </div>
+                ) : isOwner ? (
+                  <>
+                    {OWNER_QUESTIONS.map((q) => (
+                      <div className="start-panel__field" key={q.id}>
+                        <p className="start-panel__label">
+                          {q.label}
+                          <span className="start-panel__req" aria-hidden="true">
+                            *
+                          </span>
+                        </p>
+                        <IconChoicePicker
+                          value={owner[q.id] ?? ""}
+                          onChange={(v) => setOwner((o) => ({ ...o, [q.id]: v }))}
+                          options={q.options}
+                          ariaLabel={q.label}
+                          compact
+                        />
+                      </div>
+                    ))}
+                  </>
                 ) : (
                   <>
                     <div className="start-panel__field">
@@ -898,7 +933,7 @@ export function StartApplyPanel({
                 email: bookingEmail.trim() || email.trim(),
                 phone: phoneE164,
               }}
-              notes={isSupport ? callTopic.trim() : undefined}
+              notes={isSupport ? callTopic.trim() : isOwner ? ownerNotes : undefined}
             />
           </div>
         </div>

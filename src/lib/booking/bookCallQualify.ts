@@ -1,5 +1,8 @@
 /** Shared qualify answers for BookCallFlow + StartApplyPanel → GHL webhook. */
 
+/** BCA's own booking pages keep BCA's questions; every coach's discovery page asks owner questions. */
+export const BCA_BOOKING_SLUGS = new Set(["zander"]);
+
 export const ROLE_OPTIONS = [
   {
     value: "Consultant",

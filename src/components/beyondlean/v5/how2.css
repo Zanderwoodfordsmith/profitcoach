@@ -1,0 +1,1161 @@
+/* ---------- How it works (h7-): the home page's three step cards, opened up into three chapters ---------- */
+
+/* Hero: the home page's photo hero, Paul at the whiteboard mirrored so the words sit over the soft shoulder */
+.h7-hero h1 span {
+  display: block;
+}
+
+.h7-hero .v5-hero-bg img {
+  object-position: 30% 30%;
+  transform: scaleX(-1);
+}
+
+@media (max-width: 900px) {
+  .h7-hero .v5-hero-bg img {
+    object-position: 24% 20%;
+  }
+}
+
+/* A chapter: photo on one side, words on the other */
+.h7-split {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(48px, 7vw, 112px);
+  align-items: center;
+}
+
+.h7-split.is-flip {
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+}
+
+.h7-media {
+  position: relative;
+  margin: 0;
+}
+
+.h7-photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  box-shadow: var(--v5-shadow-3);
+}
+
+.h7-photo img {
+  object-fit: cover;
+}
+
+.h7-photo.is-wide {
+  aspect-ratio: 4 / 3.1;
+}
+
+.h7-photo.is-tall {
+  aspect-ratio: 4 / 5;
+}
+
+.h7-photo.is-band {
+  aspect-ratio: 16 / 7;
+}
+
+.h7-photo.is-band img {
+  object-position: 50% 36%;
+}
+
+.h7-text {
+  max-width: 44ch;
+  margin: 22px 0 30px;
+  font-size: 1.1875rem;
+  line-height: 1.6;
+  color: var(--v5-soft-ink);
+}
+
+/* Step 1: the wheel laid over the photo's corner */
+.h7-wheel-card {
+  position: absolute;
+  right: -40px;
+  bottom: -56px;
+  width: min(290px, 46%);
+  padding: 14px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--v5-shadow-3);
+}
+
+/* Step 1, the signature: the ten areas as big letters. Hover one and it lifts to say what it is */
+.h7-letters-wrap {
+  margin-top: clamp(96px, 10vw, 144px);
+}
+
+.h7-letters-intro {
+  margin: 0 0 clamp(28px, 3vw, 40px);
+  font-size: 1.0625rem;
+  text-align: center;
+  color: var(--v5-mute);
+}
+
+.h7-letters,
+.h7-letter-group ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.h7-letters {
+  justify-content: center;
+}
+
+/* + | ADD | PRO FIT: wide gaps between the foundation and the pillars, PRO and FIT kept close */
+.h7-letter-group.is-gap-lg {
+  margin-left: clamp(28px, 4.5vw, 72px);
+}
+
+.h7-letter-group.is-gap-sm {
+  margin-left: clamp(6px, 1.2vw, 18px);
+}
+
+.h7-pillar {
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid currentColor;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.h7-letter-group.is-foundation .h7-pillar {
+  color: #4c667a;
+}
+
+.h7-letter-group.is-vision .h7-pillar {
+  color: #0c5290;
+}
+
+.h7-letter-group.is-velocity .h7-pillar {
+  color: #2e8ad8;
+}
+
+.h7-letter-group.is-value .h7-pillar {
+  color: #1a91b0;
+}
+
+.h7-letter-group ul {
+  gap: clamp(6px, 1.2vw, 18px);
+}
+
+.h7-letter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: clamp(60px, 6.6vw, 92px);
+  border-radius: 12px;
+  outline: none;
+}
+
+.h7-letter:focus-visible {
+  outline: 2px solid var(--v5-bright);
+  outline-offset: 6px;
+}
+
+.h7-letter-mark {
+  font-size: clamp(3rem, 6.6vw, 5.75rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  transition:
+    translate 300ms var(--v5-ease),
+    opacity 200ms;
+}
+
+.h7-letter.is-foundation .h7-letter-mark {
+  color: #4c667a;
+}
+
+.h7-letter.is-vision .h7-letter-mark {
+  color: #0c5290;
+}
+
+.h7-letter.is-velocity .h7-letter-mark {
+  color: #2e8ad8;
+}
+
+.h7-letter.is-value .h7-letter-mark {
+  color: #1a91b0;
+}
+
+.h7-letter-name {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--v5-mute);
+}
+
+.h7-letter-name > span,
+.h7-grid-area > span {
+  display: block;
+  white-space: nowrap;
+}
+
+.h7-letter-shift {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: 240px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--v5-navy-deep);
+  box-shadow: var(--v5-shadow-3);
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.75);
+  opacity: 0;
+  translate: -50% 8px;
+  pointer-events: none;
+  transition:
+    opacity 200ms,
+    translate 250ms var(--v5-ease);
+}
+
+.h7-letter-shift svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: #8cc4ff;
+}
+
+.h7-letter-shift strong {
+  font-weight: 650;
+  color: #fff;
+}
+
+.h7-letter:hover .h7-letter-mark,
+.h7-letter:focus-visible .h7-letter-mark {
+  translate: 0 -6px;
+}
+
+.h7-letter:hover .h7-letter-shift,
+.h7-letter:focus-visible .h7-letter-shift {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+.h7-letters:has(.h7-letter:hover) .h7-letter:not(:hover) .h7-letter-mark {
+  opacity: 0.3;
+}
+
+/* Step 2: the navy band, the 30 minutes in glass over the photo's corner */
+.h7-call .v5-eyebrow {
+  color: #8cc4ff;
+}
+
+.h7-call .h7-text {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.h7-leave {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.h7-leave li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.h7-leave svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #22a35a;
+  color: #fff;
+  stroke-width: 3;
+}
+
+.h7-note {
+  margin: 0 0 30px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.v5-orbit-btn.is-on-dark {
+  --orbit-edge: linear-gradient(100deg, rgba(140, 196, 255, 0.75) 0%, rgba(255, 255, 255, 0.32) 50%, rgba(255, 255, 255, 0.16) 100%);
+  --orbit-glow: rgba(110, 180, 255, 0.5), #bfe0ff;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff !important;
+}
+
+.v5-orbit-btn.is-on-dark svg {
+  color: #8cc4ff;
+}
+
+.v5-orbit-btn.is-on-dark:hover svg {
+  color: #fff;
+}
+
+.h7-agenda {
+  position: absolute;
+  left: -48px;
+  bottom: 40px;
+  width: min(300px, 72%);
+  padding: 20px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(6, 26, 51, 0.55);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.6);
+}
+
+.h7-agenda p {
+  margin: 0 0 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8cc4ff;
+}
+
+.h7-agenda ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.h7-agenda li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.h7-agenda li span {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(140, 196, 255, 0.18);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #cfe7ff;
+}
+
+/* Step 3: one wide photo, the roadmap on a panel across its foot, three plain promises */
+.h7-wide {
+  position: relative;
+}
+
+.h7-road {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: -88px 48px 0;
+  padding: 30px 24px 26px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--v5-shadow-3);
+  list-style: none;
+}
+
+.h7-road::before {
+  content: "";
+  position: absolute;
+  top: 48px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(90deg, #22a35a 0%, #2f80e4 30%, #d5dee8 100%);
+}
+
+.h7-road li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.h7-road-dot {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #d5dee8;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--v5-mute);
+}
+
+.h7-road-dot svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 3;
+}
+
+.h7-road li.is-done .h7-road-dot {
+  border-color: #22a35a;
+  background: #22a35a;
+  color: #fff;
+}
+
+.h7-road li.is-start .h7-road-dot {
+  border-color: #2f80e4;
+  background: #2f80e4;
+  color: #fff;
+  box-shadow: 0 0 0 6px rgba(47, 128, 228, 0.16);
+}
+
+.h7-road strong {
+  margin-top: 12px;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  color: var(--v5-ink);
+}
+
+.h7-road li > span:not(.h7-road-dot) {
+  margin-top: 4px;
+  font-size: 0.875rem;
+  color: var(--v5-mute);
+}
+
+.h7-road em {
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.h7-road li.is-done em {
+  color: #1c8a4b;
+}
+
+.h7-road li.is-start em {
+  color: #1765ab;
+}
+
+.h7-promises {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: clamp(56px, 6vw, 80px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.h7-promises li {
+  padding: 0 clamp(16px, 2.6vw, 36px);
+  border-left: 1px solid var(--v5-line);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--v5-soft-ink);
+}
+
+.h7-promises li:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.h7-promises strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1.125rem;
+  font-weight: 650;
+  color: var(--v5-ink);
+}
+
+/* The 50 playbooks: light and quiet, a playbook lights in its level's colour */
+.h7-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.h7-books-head {
+  margin-top: clamp(96px, 10vw, 136px);
+}
+
+.h7-grid-scroll {
+  overflow-x: auto;
+}
+
+@media (min-width: 1100px) {
+  .h7-grid-scroll {
+    overflow: visible;
+  }
+}
+
+.h7-grid {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: separate;
+  border-spacing: 6px;
+  table-layout: fixed;
+}
+
+.h7-grid thead th {
+  padding: 4px 2px 10px;
+  font-weight: 400;
+  text-align: center;
+  vertical-align: top;
+}
+
+.h7-grid thead th:first-child {
+  width: 158px;
+}
+
+.h7-grid-code {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 0 auto 8px;
+  border-radius: 9px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.h7-grid-code.is-foundation {
+  background: #4c667a;
+}
+
+.h7-grid-code.is-vision {
+  background: #0c5290;
+}
+
+.h7-grid-code.is-velocity {
+  background: #2e8ad8;
+}
+
+.h7-grid-code.is-value {
+  background: #1a91b0;
+}
+
+.h7-grid-area {
+  display: block;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: var(--v5-mute);
+}
+
+.h7-grid tbody th {
+  padding: 0 8px;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--v5-ink);
+}
+
+.h7-level-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+  border-radius: 9px;
+  background: var(--lv);
+  box-shadow: 0 8px 16px -10px var(--lv);
+  vertical-align: middle;
+}
+
+.h7-level-icon img {
+  width: 18px;
+  height: 18px;
+}
+
+.h7-grid td {
+  position: relative;
+  height: 60px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(11, 27, 43, 0.05);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--v5-soft-ink);
+  transition:
+    background-color 150ms,
+    box-shadow 150ms,
+    color 150ms;
+}
+
+.h7-grid td:hover {
+  background: color-mix(in srgb, var(--lv) 12%, #fff);
+  box-shadow: inset 0 0 0 1.5px var(--lv);
+  color: var(--v5-ink);
+}
+
+/* Hover a playbook: a short note on what it covers, from the playbook itself */
+.h7-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  z-index: 5;
+  width: 260px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--v5-navy-deep);
+  box-shadow: var(--v5-shadow-3);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.78);
+  opacity: 0;
+  translate: -50% 6px;
+  pointer-events: none;
+  transition:
+    opacity 160ms,
+    translate 200ms var(--v5-ease);
+}
+
+.h7-tip strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: #fff;
+}
+
+.h7-tip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  border: 7px solid transparent;
+  border-top-color: var(--v5-navy-deep);
+  translate: -50% 0;
+}
+
+.h7-grid td:hover .h7-tip {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+/* Edge columns: keep the note inside the page */
+.h7-grid td:nth-child(2) .h7-tip,
+.h7-grid td:nth-child(3) .h7-tip {
+  left: 0;
+  translate: 0 6px;
+}
+
+.h7-grid td:nth-child(2):hover .h7-tip,
+.h7-grid td:nth-child(3):hover .h7-tip {
+  translate: 0 0;
+}
+
+.h7-grid td:nth-child(2) .h7-tip::after,
+.h7-grid td:nth-child(3) .h7-tip::after {
+  left: 40px;
+}
+
+.h7-grid td:nth-last-child(-n + 2) .h7-tip {
+  right: 0;
+  left: auto;
+  translate: 0 6px;
+}
+
+.h7-grid td:nth-last-child(-n + 2):hover .h7-tip {
+  translate: 0 0;
+}
+
+.h7-grid td:nth-last-child(-n + 2) .h7-tip::after {
+  right: 40px;
+  left: auto;
+  translate: 0 0;
+}
+
+@media (hover: none) {
+  .h7-tip {
+    display: none;
+  }
+}
+
+/* Five levels of business owner: the BCA staircase (public/site-v4/site.css .stairs) */
+.h7-stairs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(10px, 1vw, 16px);
+  align-items: end;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.h7-stair {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(11.5rem + var(--lvl) * 3.4rem);
+  padding: 20px 19px 22px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--c) 30%, #fff);
+  border-radius: 18px;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--c) 18%, #fff) 0%, #fff 72%);
+  box-shadow: var(--v5-shadow-2);
+}
+
+.h7-stair-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--c);
+  box-shadow: 0 10px 20px -10px var(--c);
+}
+
+.h7-stair-icon img {
+  width: 25px;
+  height: 25px;
+}
+
+.h7-stair-tag {
+  margin: auto 0 0;
+  padding-top: 20px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--v5-mute);
+}
+
+.h7-stair h3 {
+  margin: 4px 0 8px;
+  font-size: clamp(1.3rem, 0.95rem + 0.8vw, 1.625rem);
+  font-weight: 650;
+  line-height: 1.05;
+  letter-spacing: -0.026em;
+  color: var(--v5-ink);
+}
+
+.h7-stair-line {
+  min-height: 4.35em;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--v5-soft-ink);
+  text-wrap: pretty;
+}
+
+/* More about a level: hidden until the card opens */
+.h7-stair-extra {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 450ms var(--v5-ease);
+}
+
+.h7-stair-extra > div {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  translate: 0 8px;
+  transition:
+    opacity 300ms,
+    translate 400ms var(--v5-ease);
+}
+
+.h7-stair-extra p {
+  margin: 14px 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--v5-soft-ink);
+}
+
+.h7-stair-books {
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--c) 28%, transparent);
+}
+
+.h7-stair-books span {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 70%, #0d1f31);
+}
+
+.h7-stair.is-top .h7-stair-extra p {
+  color: #d6e5f3;
+}
+
+.h7-stair.is-top .h7-stair-books {
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+.h7-stair.is-top .h7-stair-books span {
+  color: #bfd6ec;
+}
+
+.h7-stair {
+  transition:
+    min-height 450ms var(--v5-ease),
+    box-shadow 300ms;
+  outline: none;
+}
+
+.h7-stair:focus-visible {
+  outline: 2px solid var(--v5-bright);
+  outline-offset: 3px;
+}
+
+.h7-stair-icon {
+  transform-origin: top left;
+  transition: scale 400ms var(--v5-ease);
+}
+
+.h7-stair:is(:hover, :focus-within) .h7-stair-extra {
+  grid-template-rows: 1fr;
+}
+
+.h7-stair:is(:hover, :focus-within) .h7-stair-extra > div {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* Desktop: the open card widens (the others make room), grows tall enough for the extra, and its icon grows */
+@media (min-width: 901px) {
+  .h7-stairs {
+    transition: grid-template-columns 450ms var(--v5-ease);
+  }
+
+  .h7-stairs:has(.h7-stair:nth-child(1):is(:hover, :focus-within)) {
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  }
+
+  .h7-stairs:has(.h7-stair:nth-child(2):is(:hover, :focus-within)) {
+    grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+  }
+
+  .h7-stairs:has(.h7-stair:nth-child(3):is(:hover, :focus-within)) {
+    grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
+  }
+
+  .h7-stairs:has(.h7-stair:nth-child(4):is(:hover, :focus-within)) {
+    grid-template-columns: 1fr 1fr 1fr 2fr 1fr;
+  }
+
+  .h7-stairs:has(.h7-stair:nth-child(5):is(:hover, :focus-within)) {
+    grid-template-columns: 1fr 1fr 1fr 1fr 2fr;
+  }
+
+  .h7-stair:is(:hover, :focus-within) {
+    min-height: max(calc(11.5rem + var(--lvl) * 3.4rem), 25rem);
+    box-shadow: var(--v5-shadow-3);
+  }
+
+  .h7-stair:is(:hover, :focus-within) .h7-stair-icon {
+    scale: 1.35;
+  }
+
+  .h7-stair:is(:hover, :focus-within) .h7-stair-line {
+    min-height: 0;
+  }
+}
+
+.h7-stair.is-top {
+  border-color: transparent;
+  background: linear-gradient(165deg, #238bf7 0%, #0b5191 62%, #051e36 100%);
+}
+
+.h7-stair.is-top .h7-stair-icon {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+
+.h7-stair.is-top h3 {
+  color: #fff;
+}
+
+.h7-stair.is-top .h7-stair-tag {
+  color: #bfd6ec;
+}
+
+.h7-stair.is-top .h7-stair-line {
+  color: #d6e5f3;
+}
+
+/* Who it's for: the BCA website's fit cards (bca-website components/home/home-advisor.css) */
+.h7-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 24px;
+}
+
+.h7-fit-card {
+  --fit: #10b981;
+  --fit-ink: #047857;
+  padding: clamp(28px, 4vw, 40px);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px var(--v5-line),
+    var(--v5-shadow-2);
+}
+
+.h7-fit-card.is-no {
+  --fit: #ef4444;
+  --fit-ink: #b91c1c;
+}
+
+.h7-fit-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.h7-fit-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fit) 12%, #fff);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--fit) 6%, transparent);
+  color: var(--fit-ink);
+}
+
+.h7-fit-mark svg {
+  width: 24px;
+  height: 24px;
+}
+
+.h7-fit-card h3 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--v5-ink);
+}
+
+.h7-fit-card h3 em {
+  font-style: normal;
+  color: var(--fit-ink);
+}
+
+.h7-fit-card.is-no h3 em {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.h7-fit-card ul {
+  display: grid;
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.h7-fit-card li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.h7-fit-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fit) 10%, #fff);
+  color: var(--fit-ink);
+}
+
+.h7-fit-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.h7-fit-card strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  color: var(--v5-ink);
+}
+
+.h7-fit-card li p {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--v5-soft-ink);
+}
+
+@media (max-width: 900px) {
+  .h7-split,
+  .h7-split.is-flip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .h7-split.is-flip .h7-media {
+    order: -1;
+  }
+
+  .h7-wheel-card {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 240px;
+    margin: -72px 16px 0 auto;
+  }
+
+  .h7-agenda {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    width: auto;
+    margin: -56px 16px 0;
+  }
+
+  .h7-photo.is-band {
+    aspect-ratio: 4 / 3;
+  }
+
+  .h7-road {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    margin: -40px 12px 0;
+    padding: 24px;
+  }
+
+  .h7-road::before {
+    display: none;
+  }
+
+  .h7-road li {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: center;
+    text-align: left;
+  }
+
+  .h7-road-dot {
+    grid-row: span 3;
+  }
+
+  .h7-road strong {
+    margin-top: 0;
+  }
+
+  .h7-promises {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .h7-promises li,
+  .h7-promises li:first-child {
+    padding: 20px 0 0;
+    border-top: 1px solid var(--v5-line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .h7-stairs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .h7-stair {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 14px;
+    width: calc(72% + var(--lvl) * 5.6%);
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .h7-stair-icon {
+    grid-row: 1 / span 3;
+    width: 42px;
+    height: 42px;
+  }
+
+  .h7-stair-tag {
+    margin: 0;
+    padding-top: 0;
+  }
+
+  .h7-stair h3 {
+    margin: 2px 0 4px;
+    font-size: 1.3rem;
+  }
+
+  .h7-stair-line {
+    min-height: 0;
+  }
+
+  .h7-stair-extra {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .h7-letters {
+    flex-wrap: wrap;
+    row-gap: 18px;
+  }
+
+  .h7-letter-group.is-gap-lg,
+  .h7-letter-group.is-gap-sm {
+    margin-left: 16px;
+  }
+
+  .h7-letter {
+    width: 54px;
+  }
+
+  .h7-letter-name {
+    font-size: 0.6875rem;
+  }
+
+  .h7-letter-shift {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .h7-stairs,
+  .h7-stair,
+  .h7-stair-icon,
+  .h7-stair-extra,
+  .h7-stair-extra > div,
+  .h7-letter-mark,
+  .h7-letter-shift,
+  .h7-tip,
+  .h7-grid td {
+    transition: none;
+  }
+}

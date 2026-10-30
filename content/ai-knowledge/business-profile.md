@@ -13,7 +13,7 @@ Note: Early-stage brand. Some details (pricing, offer naming, team roles) may ev
 
 ## What This Brand Is
 
-**Profit Coach** (operating the **BOSS** — Business Owner Strategy System) is a diagnostic-led business transformation platform for owner-led businesses doing £1M+ revenue. It diagnoses what's broken, sequences what to fix first, and tracks whether it's working.
+**Profit Coach** (operating the **BOSS**, the Business Operating System Score) is a diagnostic-led business transformation platform for owner-led businesses doing £1M+ revenue. It diagnoses what's broken, sequences what to fix first, and tracks whether it's working.
 
 - **Stage:** Early / building (Feb 2026). Not yet launched publicly.
 - **Business model:** Diagnostic → paid strategy call → 6-month bounded programme
