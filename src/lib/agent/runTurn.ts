@@ -10,14 +10,18 @@ import {
   type StoredMessage,
 } from "./chatStore";
 import { refreshAgentContextOverrides } from "./agentOverrides";
+import { coachCard } from "./coachCard";
 import { loadAgentCoach } from "./coaches";
-import { blueprintPage } from "@/lib/practiceKnowledge/blueprint";
+import { addUsage, emptyTally, logAiUsage, type UsageTally } from "@/lib/ai/usageLog";
+import { bcaPageWork, blueprintPageFromPath } from "./pageWork";
 
 import {
   capabilitiesForActor,
   capabilityContract,
   loadIdentity,
   loadRouter,
+  parseFrontmatter,
+  resolveReference,
   type Capability,
 } from "./context";
 import {
@@ -56,6 +60,8 @@ export type AgentTurnInput =
 
 type Emit = (event: AgentStreamEvent) => void;
 
+const VOICE_FILE = "agent/VOICE.md";
+
 function systemPrompt(mode: AgentChatRow["mode"], limited: boolean): string {
   const ids = capabilitiesForActor(mode, limited).map((cap) => cap.id);
   const session = [
@@ -63,17 +69,19 @@ function systemPrompt(mode: AgentChatRow["mode"], limited: boolean): string {
     `Mode: ${mode}. Capabilities you can open: ${ids.join(", ")}.`,
     ...(limited
       ? [
-          "This coach has your Blueprint skills only. If they ask for campaigns, lists or imports, say BCA can switch those on for them, and carry on with the Blueprint.",
+          "This coach doesn't have every skill switched on yet. If they ask for something outside the capabilities above (campaigns, lists, imports), say BCA can switch it on for them, and carry on with what you can do.",
         ]
       : []),
   ].join("\n");
-  return [loadIdentity(), loadRouter(), session].join("\n\n---\n\n");
+  // Ava's voice (card 180) sits right after who she is, in every chat. Editable in Admin → Ava.
+  const raw = resolveReference(VOICE_FILE)?.text;
+  const voice = raw ? parseFrontmatter(raw).body : null;
+  return [loadIdentity(), ...(voice ? [voice] : []), loadRouter(), session].join("\n\n---\n\n");
 }
 
 /** "Offer (offer)" when the page open is a Blueprint page, coach or admin view. */
 function blueprintPageOpen(screenPath: string | null): string | null {
-  const match = screenPath?.match(/\/blueprint(?:\/coach)?\/([a-z0-9-]+)\/?$/);
-  const page = match ? blueprintPage(match[1]) : null;
+  const page = blueprintPageFromPath(screenPath);
   return page ? `${page.title} (${page.slug})` : null;
 }
 
@@ -112,8 +120,25 @@ function plainTranscript(messages: StoredMessage[], max = 6_000): string {
   return all.length > max ? all.slice(-max) : all;
 }
 
+/**
+ * A chat title as plain words: its first line, without markdown (bold stars,
+ * backticks, heading or list marks), so the list never shows "**Profile...".
+ */
+function plainTitle(text: string): string {
+  const line = text.split("\n").map((l) => l.trim()).find(Boolean) ?? "";
+  return line
+    .replace(/^(#{1,6}|[-*>]|\d+[.)])\s+/, "")
+    .replace(/[*`]|__/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** A short title naming what the chat covered, or null if the model is unavailable. */
-async function writeTitle(client: Anthropic, messages: StoredMessage[]): Promise<string | null> {
+async function writeTitle(
+  client: Anthropic,
+  messages: StoredMessage[],
+  tally: UsageTally
+): Promise<string | null> {
   const transcript = plainTranscript(messages);
   if (!transcript) return null;
   try {
@@ -123,15 +148,17 @@ async function writeTitle(client: Anthropic, messages: StoredMessage[]): Promise
       // A title needs no reasoning; Haiku thinks by default and would spend the budget on it.
       thinking: { type: "disabled" },
       system:
-        "Write a title for this conversation in 2 to 6 words, naming what it covered, like \"Results and offer\" or \"Connection message rewrite\". Sentence case, UK English. No quotes, no full stop, no em dashes.",
+        "Write a title for this conversation in 2 to 6 words, naming what it covered, like \"Results and offer\" or \"Connection message rewrite\". Sentence case, UK English. Plain text on one line: no markdown, no quotes, no full stop, no em dashes.",
       messages: [{ role: "user", content: transcript }],
     });
-    const text = reply.content
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("")
-      .replace(/["\u201c\u201d.]/g, "")
-      .replace(/\s*\u2014\s*/g, ", ")
-      .trim();
+    addUsage(tally, reply.model || TITLE_MODEL, reply.usage);
+    const text = plainTitle(
+      reply.content
+        .map((b) => (b.type === "text" ? b.text : ""))
+        .join("")
+        .replace(/["\u201c\u201d.]/g, "")
+        .replace(/\s*\u2014\s*/g, ", ")
+    );
     return text ? text.slice(0, 72) : null;
   } catch (err) {
     console.error("agent title failed:", err instanceof Error ? err.message : err);
@@ -144,6 +171,8 @@ function workingState(opts: {
   coach: AgentCoach | null;
   screenPath: string | null;
   opened: string[];
+  /** Admin on a coach's Blueprint page: the page's work for BCA. */
+  pageWork?: string[];
 }): string {
   const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
@@ -158,6 +187,7 @@ function workingState(opts: {
     `Active coach: ${opts.coach ? opts.coach.name : opts.mode === "admin" ? "none chosen yet" : "you (the coach)"}`,
     `Page open: ${opts.screenPath ?? "unknown"}`,
     ...(blueprint ? [`Blueprint page open: ${blueprint}`] : []),
+    ...(opts.pageWork ?? []),
     `Capabilities already open: ${opts.opened.length ? opts.opened.join(", ") : "none"}`,
     `Today: ${today}`,
   ];
@@ -224,19 +254,24 @@ export async function runAgentTurn(opts: {
         ? await loadAgentCoach(chat.coach_id)
         : null;
   const revealed = revealedTools(chat.api_messages);
-  // A capability counts as open only if its tools are still revealed.
+  // A capability counts as open only if it is still allowed (Admin → Ava → Skills) and its tools are still revealed.
   const opened = new Set(
     (chat.opened_capabilities ?? []).filter(
       (id) =>
-        !toolChanges ||
-        (capabilityFor(id)?.tools ?? []).every((name) => {
-          const tool = getAgentTool(name);
-          return !tool || tool.core || !toolAllowedForActor(tool, mode, limited) || revealed.has(name);
-        })
+        capabilityFor(id) !== null &&
+        (!toolChanges ||
+          (capabilityFor(id)?.tools ?? []).every((name) => {
+            const tool = getAgentTool(name);
+            return !tool || tool.core || !toolAllowedForActor(tool, mode, limited) || revealed.has(name);
+          }))
     )
   );
+  // Every non-core tool belongs to a skill. A skill switched off mid-chat takes its tools with it.
+  const skillTools = new Set(capabilitiesForActor(mode, limited).flatMap((cap) => cap.tools));
 
   emit({ type: "chat", chatId: chat.id, coach, mode });
+
+  const pageWork = mode === "admin" && coach ? await bcaPageWork(coach, opts.screenPath) : [];
 
   const messages: StoredMessage[] = [...chat.api_messages];
   messages.push({
@@ -244,7 +279,7 @@ export async function runAgentTurn(opts: {
     content: [
       {
         type: "text",
-        text: workingState({ mode, coach, screenPath: opts.screenPath, opened: [...opened] }),
+        text: workingState({ mode, coach, screenPath: opts.screenPath, opened: [...opened], pageWork }),
       },
       { type: "text", text: turnText(opts.input) },
     ],
@@ -273,6 +308,12 @@ export async function runAgentTurn(opts: {
     ...(modelSupportsDefaultFallback(model) ? [DEFAULT_FALLBACK_BETA] : []),
   ];
   const system = systemPrompt(mode, limited);
+  // What Ava knows about the coach before the first word (card 178): their About You and launch jobs.
+  const card = coach ? await coachCard(coach).catch((err) => {
+    console.error("agent coach card failed:", err instanceof Error ? err.message : err);
+    return null;
+  }) : null;
+  const tally = emptyTally();
   const client = new Anthropic();
 
   async function runTool(block: Anthropic.Beta.Messages.BetaToolUseBlock): Promise<{
@@ -312,6 +353,13 @@ export async function runAgentTurn(opts: {
     const tool = getAgentTool(block.name);
     if (!tool || !toolAllowedForActor(tool, mode, limited)) {
       return { content: `Unknown tool ${block.name}.`, isError: true, additions: [] };
+    }
+    if (!tool.core && !skillTools.has(tool.name)) {
+      return {
+        content: `${tool.name} belongs to a skill that is switched off. Say you can't do that here, and offer hand_to_bca.`,
+        isError: true,
+        additions: [],
+      };
     }
     if (!tool.core && toolChanges && !revealed.has(tool.name)) {
       return {
@@ -393,7 +441,11 @@ export async function runAgentTurn(opts: {
       const params = {
         model,
         max_tokens: 16_000,
-        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+        // Two cached blocks: the shared prompt (same for everyone), then this coach's card.
+        system: [
+          { type: "text", text: system, cache_control: { type: "ephemeral" } },
+          ...(card ? [{ type: "text", text: card, cache_control: { type: "ephemeral" } }] : []),
+        ],
         tools,
         messages,
         ...(betas.length ? { betas } : {}),
@@ -406,6 +458,7 @@ export async function runAgentTurn(opts: {
       );
       stream.on("text", (delta) => emit({ type: "text", delta }));
       const final = await stream.finalMessage();
+      addUsage(tally, final.model || model, final.usage);
       messages.push({ role: "assistant", content: final.content as Anthropic.Beta.Messages.BetaContentBlockParam[] });
 
       if (final.stop_reason === "refusal") {
@@ -471,21 +524,37 @@ export async function runAgentTurn(opts: {
     const kept = messages.slice(0, committed);
     const firstUserText = opts.input.kind === "message" ? opts.input.text : "";
     // Ava names the chat from what it covered, and renames it as it moves on.
+    // A chat the person renamed keeps their name.
     const title =
-      opts.input.kind === "message" && TITLE_AFTER.has(personTurns(kept))
-        ? await writeTitle(client, kept)
+      opts.input.kind === "message" && !chat.renamed_at && TITLE_AFTER.has(personTurns(kept))
+        ? await writeTitle(client, kept, tally)
         : null;
+    const firstLine = plainTitle(firstUserText);
     const fallback =
-      chat.api_messages.length === 0 && firstUserText
-        ? firstUserText.slice(0, 72) + (firstUserText.length > 72 ? "…" : "")
+      chat.api_messages.length === 0 && firstLine
+        ? firstLine.slice(0, 72) + (firstLine.length > 72 ? "…" : "")
         : null;
-    await saveChat(chat.id, {
-      api_messages: kept,
-      opened_capabilities: [...opened],
-      coach_id: mode === "admin" ? (coach?.id ?? null) : actor.actorUserId,
-      model,
-      ...(title || fallback ? { title: (title || fallback)! } : {}),
-    }).catch((err) => console.error("agent saveChat failed:", err));
+    const coachId = mode === "admin" ? (coach?.id ?? null) : actor.actorUserId;
+    await Promise.all([
+      saveChat(chat.id, {
+        api_messages: kept,
+        opened_capabilities: [...opened],
+        coach_id: coachId,
+        model,
+        ...(title || fallback ? { title: (title || fallback)! } : {}),
+      }).catch((err) => console.error("agent saveChat failed:", err)),
+      // What this turn cost (card 177), shown per coach on Coaches → Projects.
+      logAiUsage({
+        surface: "ava",
+        mode,
+        actorUserId: actor.actorUserId,
+        coachId,
+        chatId: chat.id,
+        skills: [...opened],
+        model,
+        tally,
+      }),
+    ]);
     if (title || fallback) emit({ type: "title", title: (title || fallback)! });
     emit({ type: "done" });
   }

@@ -1,8 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
-import { AlertTriangle, ArrowUp, AudioLines, Check, ExternalLink, Loader2, Mic, Square } from "lucide-react";
+import { createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import {
+  AlertTriangle,
+  ArrowUp,
+  ArrowUpRight,
+  AudioLines,
+  BarChart3,
+  Check,
+  ChevronDown,
+  CircleHelp,
+  ExternalLink,
+  ListPlus,
+  Loader2,
+  Map as MapIcon,
+  MapPin,
+  MessageSquare,
+  Mic,
+  Newspaper,
+  PauseCircle,
+  PenLine,
+  Search,
+  Send,
+  Sparkles,
+  Square,
+  UserSearch,
+  type LucideIcon,
+} from "lucide-react";
 
 import type { AgentChatSummary } from "@/components/agent/useAgentConversation";
 import { commentWhen } from "@/components/practice/comments/SectionCommentsUI";
@@ -132,23 +157,39 @@ export function AvaProposalCard({
   const rows = action.details.filter(
     (row) => row.label !== "What changed" && row.label !== "For" && !(copy && row.label === "Section")
   );
+  // Clean like Linear (5 Nov): the title, then the words straight on the card at chat size.
+  // No status line: the buttons (or "In the Blueprint") at the bottom already say it.
+  // A long draft opens to its full length with Show all.
+  const coachChip = showCoach && action.coachName && !action.title.includes(action.coachName) ? action.coachName : null;
+  // A draft's few facts read as one quiet line ("Not written: About"); a decision keeps its table (cost, how many).
+  const meta = copy ? rows.map((row) => `${row.label}: ${row.value}`) : [];
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [long, setLong] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!el || expanded) return;
+    const check = () => setLong(el.scrollHeight > el.clientHeight + 4);
+    check();
+    const watch = new ResizeObserver(check);
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, [expanded, showing, action.preview]);
   return (
     <div className="ava-card overflow-hidden rounded-2xl border border-[var(--ava-card-rule)] bg-[var(--ava-card)] shadow-[var(--ava-card-shadow)]">
-      <div className="px-4 pb-1 pt-3.5">
+      <div className="px-5 pt-4">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-[var(--ava-sky)]">
-            {copy ? (action.before ? "New version" : "Draft") : "Needs your OK"}
-          </p>
-          {showCoach && action.coachName ? (
+          <p className="text-base font-semibold leading-snug text-[var(--ava-ink)]">{action.title}</p>
+          {coachChip ? (
             <span className="shrink-0 rounded-full bg-[var(--ava-tint)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ava-muted)]">
-              {action.coachName}
+              {coachChip}
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 text-[0.9375rem] font-semibold leading-snug text-[var(--ava-ink)]">{action.title}</p>
-        {changed ? <p className="mt-1 text-sm leading-6 text-[var(--ava-muted)]">{changed}</p> : null}
-        {rows.length ? (
-          <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
+        {meta.length ? <p className="mt-1 text-[13px] leading-5 text-[var(--ava-faint)]">{meta.join(" · ")}</p> : null}
+        {changed ? <p className="mt-1.5 text-sm leading-6 text-[var(--ava-muted)]">{changed}</p> : null}
+        {rows.length && !copy ? (
+          <dl className="mt-2.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
             {rows.map((row) => (
               <div key={row.label} className="contents">
                 <dt className="text-[var(--ava-faint)]">{row.label}</dt>
@@ -159,7 +200,7 @@ export function AvaProposalCard({
         ) : null}
       </div>
       {before ? (
-        <div className="mx-4 mt-2.5 flex gap-1" role="tablist" aria-label="Before and after">
+        <div className="mx-5 mt-3 flex gap-1" role="tablist" aria-label="Before and after">
           {(["new", "now"] as const).map((tab) => (
             <button
               key={tab}
@@ -177,20 +218,23 @@ export function AvaProposalCard({
         </div>
       ) : null}
       {action.preview ? (
-        <div className="ava-scroll mx-4 my-2.5 max-h-72 overflow-y-auto rounded-xl bg-[var(--ava-tint)] px-3.5 py-3">
+        <div
+          ref={previewRef}
+          className={`ava-card-preview mx-5 mt-3 overflow-hidden ${expanded ? "" : "max-h-80"} ${long && !expanded ? "is-clipped" : ""}`}
+        >
           <ProfitCoachAiMarkdown
             content={before && showing === "now" ? before : action.preview}
-            className="ava-md text-[13.5px] leading-relaxed text-[var(--ava-body)]"
+            className="ava-md text-[0.9375rem] leading-[1.65] text-[var(--ava-body)]"
           />
         </div>
       ) : null}
       {action.warning && action.status === "pending" ? (
-        <p className="ava-warn mx-4 mb-2.5 flex gap-1.5 rounded-lg px-2.5 py-2 text-[13px]">
+        <p className="ava-warn mx-5 mt-3 flex gap-1.5 rounded-lg px-2.5 py-2 text-[13px]">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           {action.warning}
         </p>
       ) : null}
-      <div className="flex items-center gap-2 px-4 pb-3.5 pt-1">
+      <div className="mt-1 flex items-center gap-2 px-5 pb-4 pt-2">
         {action.status === "pending" ? (
           <>
             <button
@@ -224,6 +268,17 @@ export function AvaProposalCard({
         ) : (
           <span className="text-sm font-medium text-[var(--ava-danger)]">Didn&apos;t work{action.error ? `: ${action.error}` : ""}</span>
         )}
+        {long || expanded ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((open) => !open)}
+            aria-expanded={expanded}
+            className="ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold text-[var(--ava-muted)] hover:bg-[var(--ava-tint)] hover:text-[var(--ava-ink)]"
+          >
+            {expanded ? "Show less" : "Show all"}
+            <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden />
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -328,19 +383,39 @@ export function AvaStarter({ primary = false, onClick, children }: { primary?: b
       </button>
     );
   }
+  // The side panel (5 Nov): a plain row like Linear's menus, not a card. A small icon for the
+  // kind of job, the words, and an arrow that shows on hover.
+  const Icon = ideaIcon(typeof children === "string" ? children : "");
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ava-ring)] ${
-        primary
-          ? "ava-primary"
-          : "ava-starter-row border text-[var(--ava-ink)]"
-      }`}
-    >
-      {children}
+    <button type="button" onClick={onClick} className="ava-idea">
+      <span className="ava-idea-icon" aria-hidden>
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">{children}</span>
+      <ArrowUpRight className="ava-idea-go h-4 w-4 shrink-0" aria-hidden />
     </button>
   );
+}
+
+/** An icon for the kind of job an idea is, from its words. First match wins. */
+const IDEA_ICONS: [RegExp, LucideIcon][] = [
+  [/google maps|near me/i, MapPin],
+  [/sales navigator/i, UserSearch],
+  [/prospect|find /i, Search],
+  [/add .*list|list to/i, ListPlus],
+  [/how .* doing|check my campaigns/i, BarChart3],
+  [/pause/i, PauseCircle],
+  [/newsletter/i, Newspaper],
+  [/post/i, PenLine],
+  [/message|write/i, MessageSquare],
+  [/campaign/i, Send],
+  [/blueprint/i, MapIcon],
+  [/practi[sc]e|pitch/i, Mic],
+  [/how do i|\?$/i, CircleHelp],
+];
+
+function ideaIcon(label: string): LucideIcon {
+  return IDEA_ICONS.find(([re]) => re.test(label))?.[1] ?? Sparkles;
 }
 
 /** Where you write to Ava. Speak turns your voice into text in the box. */
@@ -467,33 +542,83 @@ export function AvaComposer({
   );
 }
 
-/** Every conversation with Ava, newest first, each with the title she gave it. */
-/** Past chats in plain groups: Today, Yesterday, This week, Earlier. */
+/** Past chats in plain groups: Today, Yesterday, Last 7 days, Last 30 days, Older. */
 export function groupByDay(chats: AgentChatSummary[]) {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
+  const today = start.getTime();
   const day = 86_400_000;
   const groups: { label: string; chats: AgentChatSummary[] }[] = [
+    { label: "Pinned", chats: [] },
     { label: "Today", chats: [] },
     { label: "Yesterday", chats: [] },
-    { label: "This week", chats: [] },
-    { label: "Earlier", chats: [] },
+    { label: "Last 7 days", chats: [] },
+    { label: "Last 30 days", chats: [] },
+    { label: "Older", chats: [] },
   ];
   for (const chat of chats) {
     const t = new Date(chat.updated_at).getTime();
-    const g = t >= start.getTime() ? 0 : t >= start.getTime() - day ? 1 : t >= start.getTime() - 6 * day ? 2 : 3;
+    const g = chat.pinned_at ? 0 : t >= today ? 1 : t >= today - day ? 2 : t >= today - 6 * day ? 3 : t >= today - 29 * day ? 4 : 5;
     groups[g].chats.push(chat);
   }
   return groups.filter((g) => g.chats.length);
 }
 
+/**
+ * Every conversation with Ava, newest first, each with the title she gave it.
+ * One list for her page and her side panel: plain rows under a time heading,
+ * no cards and no dates. A chat someone else had says who (the coach or BCA).
+ */
+export function AvaChatList({
+  chats,
+  currentId,
+  coachFirst,
+  onOpen,
+}: {
+  chats: AgentChatSummary[];
+  currentId?: string | null;
+  coachFirst?: string;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <>
+      {groupByDay(chats).map((group) => (
+        <section key={group.label} className="mb-4">
+          <h3 className="px-2 pb-1 text-xs font-semibold text-[var(--ava-faint)]">{group.label}</h3>
+          <ul>
+            {group.chats.map((chat) => (
+              <li key={chat.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(chat.id)}
+                  aria-current={currentId === chat.id ? "true" : undefined}
+                  className="ava-chat-row"
+                >
+                  <span className="min-w-0 flex-1 truncate">{chat.title || "Conversation"}</span>
+                  {chat.by === "coach" || chat.by === "bca" ? (
+                    <span className="shrink-0 text-xs font-normal text-[var(--ava-faint)]">
+                      {chat.by === "coach" ? coachFirst || "Coach" : "BCA"}
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </>
+  );
+}
+
 export function AvaHistoryList({
   chats,
+  currentId,
   coachFirst,
   onOpen,
   extra,
 }: {
   chats: AgentChatSummary[] | null;
+  currentId?: string | null;
   coachFirst?: string;
   onOpen: (id: string) => void;
   /** More history under the chats (the Blueprint's earlier interviews). */
@@ -509,25 +634,9 @@ export function AvaHistoryList({
   if (!chats.length && !extra) {
     return <p className="text-sm leading-6 text-[var(--ava-muted)]">No conversations yet. They will all be here, each with its own title.</p>;
   }
-  // Plain glass rows grouped by day, in the panel and on the stage.
   return (
-    <div className="mx-auto max-w-[40rem] space-y-6 pt-2">
-      {groupByDay(chats).map((group) => (
-        <section key={group.label}>
-          <h3 className="mb-2 text-sm font-semibold text-[var(--ava-ink)]">{group.label}</h3>
-          <div className="flex flex-col gap-1.5">
-            {group.chats.map((chat) => (
-              <button key={chat.id} type="button" onClick={() => onOpen(chat.id)} className="ava-recent-row">
-                <span className="min-w-0 truncate">{chat.title || "Conversation"}</span>
-                <span className="shrink-0 text-xs text-[var(--ava-muted)]">
-                  {commentWhen(chat.updated_at)}
-                  {chat.by === "coach" ? ` · ${coachFirst || "Coach"}` : chat.by === "bca" ? " · BCA" : ""}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ))}
+    <div className="mx-auto max-w-[40rem] pt-1">
+      <AvaChatList chats={chats} currentId={currentId} coachFirst={coachFirst} onOpen={onOpen} />
       {extra}
     </div>
   );
@@ -551,5 +660,14 @@ export function AvaRecent({ chats, onOpen }: { chats: AgentChatSummary[]; onOpen
         </button>
       ))}
     </div>
+  );
+}
+
+/** Her chats, everywhere (5 Nov): three lines, the last one shorter, like Claude's app. */
+export function AvaMenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+      <path d="M4 7h16M4 12h16M4 17h10" />
+    </svg>
   );
 }

@@ -140,5 +140,7 @@ export function adminSectionHref(page: Pick<BlueprintLink, "slug">, key: string,
 
 /** The coach's page in the admin Blueprint, not a single section. */
 export function adminPageHref(slug: string, coachId: string): string {
-  return `/admin/blueprint/coach/${slug}?${new URLSearchParams({ coach: coachId }).toString()}`;
+  const query = new URLSearchParams({ coach: coachId }).toString();
+  // The Overview lives at the Blueprint's own address.
+  return slug === "command" ? `/admin/blueprint/coach?${query}` : `/admin/blueprint/coach/${slug}?${query}`;
 }

@@ -15,6 +15,7 @@ import { linkedInNote } from "@/lib/practiceKnowledge/coachLinkedIn";
 import { BLUEPRINT_OUTPUTS } from "@/lib/practiceKnowledge/outputs";
 import { ensurePracticeKnowledge, saveBuiltSection } from "@/lib/practiceKnowledge/store";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
+import { recordChatDraft } from "@/lib/launch/jobActivity";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import type { AgentToolContext, AgentToolDef, AgentToolInput, GateDecision } from "../types";
@@ -30,6 +31,19 @@ import { AgentToolError, coachOf, optStr, str } from "./util";
  */
 
 const WRITE_TOOL = "write_blueprint_section";
+
+/** BCA saved Ava's draft: count it in "saved as she wrote it" for the page (never blocks the save). */
+async function countForBca(ctx: AgentToolContext, input: AgentToolInput, key: string, title: string, blocks: BlueprintBlock[]) {
+  if (ctx.mode !== "admin" || !ctx.coach) return;
+  await recordChatDraft({
+    coachId: ctx.coach.id,
+    key,
+    title,
+    blocks,
+    edited: Boolean(optStr(input, "changes")),
+    userId: ctx.actorUserId,
+  }).catch((err) => console.error("count chat draft:", err instanceof Error ? err.message : err));
+}
 /** The LinkedIn profile: written part by part by the same writer as "Write every part from my Blueprint". */
 const LINKEDIN_KEY = "linkedin:rewrite";
 const PART_TITLES: Record<ProfileSectionId, string> = {
@@ -140,7 +154,6 @@ async function linkedInDraft(input: AgentToolInput, ctx: AgentToolContext): Prom
     title: `New LinkedIn profile for ${coach.name}`,
     details: [
       { label: "Section", value: sectionTitle(LINKEDIN_KEY) },
-      { label: "Written from", value: `Their Blueprint and ${inputs.linkedin.used ?? "their LinkedIn"}` },
       ...(missed.length ? [{ label: "Not written", value: missed.join(", ") }] : []),
     ],
     preview,
@@ -345,6 +358,7 @@ export const blueprintTools: AgentToolDef[] = [
         const parts = frozenParts(input);
         if (!Object.keys(parts).length) throw new AgentToolError("There is no draft to save. Write it again.");
         await saveLinkedIn(coach.id, parts);
+        await countForBca(ctx, input, key, "LinkedIn profile", []);
         return {
           saved: true,
           section: key,
@@ -355,6 +369,7 @@ export const blueprintTools: AgentToolDef[] = [
       const blocks = sanitizeBlocks(input._draft);
       if (!blocks.length) throw new AgentToolError("There is no draft to save. Write it again.");
       const replaced = await saveSection(coach.id, key, blocks);
+      await countForBca(ctx, input, key, sectionByKey(key)?.section.title ?? key, blocks);
       return { saved: true, section: key, title: sectionTitle(key), can_undo: replaced, _note: `Saved to ${sectionTitle(key)}` };
     },
   },

@@ -18,8 +18,8 @@ export async function downloadBannerSvg(svg: SVGSVGElement, filename: string) {
 }
 
 /**
- * The chosen banner in the banner spot. While it is open, click any words to
- * type over them right there, and flick through the options with the arrows.
+ * The chosen banner in the banner spot. The arrows always show so coaches can
+ * see there are options; while it is open, click any words to type over them.
  */
 export function BannerStage({
   option,
@@ -78,7 +78,7 @@ export function BannerStage({
           onDone={() => setEditing(null)}
         />
       ) : null}
-      {active && count > 1 ? (
+      {count > 1 ? (
         <>
           <StepButton side="left" onClick={() => onStep(-1)} />
           <StepButton side="right" onClick={() => onStep(1)} />

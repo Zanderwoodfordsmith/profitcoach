@@ -2,6 +2,7 @@
 
 import { ChevronDown, FileText, ImagePlus, Video, X } from "lucide-react";
 import { SupportDocumentAttachButton } from "@/components/support/SupportDocumentAttach";
+import { FileDropZone } from "@/components/messaging/FileDropZone";
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -469,7 +470,13 @@ export function SupportCreateTicketComposer({
   }
 
   return (
-    <div className="relative w-full rounded-2xl border border-dashed border-slate-300 bg-white p-5 shadow-sm sm:p-6">
+    <FileDropZone
+      onFiles={(files) => {
+        setError(null);
+        addPendingFiles(files, { allowAudio: true });
+      }}
+      className="w-full rounded-2xl border border-dashed border-slate-300 bg-white p-5 shadow-sm sm:p-6"
+    >
       {isAdminCreate ? (
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-slate-900">
@@ -752,6 +759,6 @@ export function SupportCreateTicketComposer({
           </p>
         ) : null}
       </div>
-    </div>
+    </FileDropZone>
   );
 }

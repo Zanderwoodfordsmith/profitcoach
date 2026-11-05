@@ -3,6 +3,7 @@ import { isCronRequest } from "@/lib/cronAuth";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { processDueSupportReplyEmails } from "@/lib/support/notifyCoachOfReply";
 import { processDueScheduledSupportReplies } from "@/lib/support/scheduledReplies";
+import { processDueScheduledComments } from "@/lib/practiceKnowledge/commentMessaging";
 
 export const maxDuration = 60;
 
@@ -31,11 +32,19 @@ export async function GET(request: Request) {
         err instanceof Error ? err.message : "Scheduled reply cron failed.";
       console.error("support scheduled replies:", err);
     }
+    // Blueprint chat messages BCA scheduled (5 Nov) go out on the same minute.
+    let blueprintScheduled: Awaited<ReturnType<typeof processDueScheduledComments>> | null = null;
+    try {
+      blueprintScheduled = await processDueScheduledComments({ limit: 15, request });
+    } catch (err) {
+      console.error("blueprint scheduled comments:", err);
+    }
     const result = await processDueSupportReplyEmails(25, request);
     return NextResponse.json({
       ok: !scheduledError,
       scheduled,
       scheduledError,
+      blueprintScheduled,
       ...result,
     });
   } catch (err) {

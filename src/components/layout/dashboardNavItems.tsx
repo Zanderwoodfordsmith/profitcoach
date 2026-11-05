@@ -97,10 +97,14 @@ function IconWorkshop({ className }: { className?: string }) {
   return <LayoutGrid className={className} />;
 }
 
-/** Community, Classroom and Calendar share one sidebar item with tabs. */
+/**
+ * Community, Classroom and Calendar share one sidebar item with tabs. The
+ * sidebar sends you back to the last Academy page you were on; this href is
+ * the first-visit default.
+ */
 function academyNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
   return {
-    href: `${prefix}/academy/classroom`,
+    href: `${prefix}/community`,
     label: "Academy",
     description: "Community, Classroom, Calendar and Resources",
     icon: IconAcademy,
@@ -316,7 +320,7 @@ export type CoachClientsTabItem = {
  * Get Clients peer tabs — Classroom Get Calls order:
  * Campaigns generate conversations, conversations book calls. Scripts sit
  * beside Calls, where they're used; Prospects is a list to look things up in.
- * Campaigns → Conversations → Calls → Scripts → Prospects → Content → Toolkit
+ * Campaigns → Conversations → Calls → Scripts → Prospects → Content → Toolkit → Scoreboard
  * Create tools live in Profit Coach AI (fullscreen Create tab).
  *
  * Toolkit holds Links (`/share`, its first sub-tab, so it does not collide
@@ -361,6 +365,12 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
     href: `${prefix}/share`,
     label: "Toolkit",
     description: "Your links, brochure and ready-made graphics",
+  });
+  // Last, not first (Zander, 5 Nov 2026): it's an example to plan with, not their own numbers yet.
+  items.push({
+    href: `${prefix}/scoreboard`,
+    label: "Scoreboard",
+    description: "Plan your numbers against an income target",
   });
   return items;
 }

@@ -17,14 +17,12 @@ import {
   experienceDraftAt,
   hasFeaturedPlan,
   parseExperienceVariant,
-  sectionStatus,
   textForSection,
   upsertExperienceDraft,
 } from "@/lib/linkedinProfileOptimizer/draft";
 import {
   REWRITE_COOLDOWN_MS,
   type LinkedInImportProfile,
-  type PartStatus,
   type ProfileOptimizerDraft,
   type ProfileOptimizerVariant,
   type ProfileSectionId,
@@ -43,7 +41,6 @@ import {
 import { BannerStage, BannerStrip } from "@/components/linkedinBanner/BannerPicker";
 
 import { usePractice } from "../PracticeProvider";
-import { StatusSwitch } from "./StatusMenu";
 import { AvaHalo } from "@/components/ava/AvaHalo";
 import { useShowAdminPreviewTabs } from "@/components/layout/CoachToolsHubTabs";
 
@@ -214,6 +211,7 @@ export function LinkedInProfileSection() {
   function stepBanner(delta: number) {
     const n = bannerOptions.length;
     setBanners(currentBanners(), (bannerAt + delta + n) % n);
+    setActive("banner");
   }
   function setBannerWords(field: BannerField, value: string) {
     const options = currentBanners().map((o, i) => (i === bannerAt ? { ...o, words: { ...o.words, [field]: value } } : o));
@@ -310,16 +308,6 @@ export function LinkedInProfileSection() {
     setUrlInput(result.data.profile.linkedinUrl);
   }
 
-  /** The coach's own choice wins. Otherwise: To do until written, Review until copied, Done once copied. */
-  function partStatus(section: ProfileSectionId): PartStatus {
-    const chosen = draft.partStatus?.[section];
-    if (chosen) return chosen;
-    if (!profile) return "todo";
-    const live = sectionStatus(section, profile.snapshot, draft);
-    if (live === "draft") return draft.copiedAt?.[section] ? "done" : "review";
-    return hasDraft(section, draft) ? "done" : "todo";
-  }
-
   function partControls(section: ProfileSectionId) {
     const label = SECTION_META.find((s) => s.id === section)?.label ?? section;
     const canCopy = section !== "banner" && hasDraft(section, draft);
@@ -336,14 +324,6 @@ export function LinkedInProfileSection() {
             {copied === section ? "Copied" : "Copy"}
           </button>
         ) : null}
-        <StatusSwitch
-          size="sm"
-          label={label}
-          status={partStatus(section)}
-          onChange={(status) =>
-            updateDraft({ ...draftRef.current, partStatus: { ...draftRef.current.partStatus, [section]: status } })
-          }
-        />
       </span>
     );
   }

@@ -6,6 +6,7 @@ import {
   loadBrandKnowledgeOverrides,
   readBrandKnowledgeRepoFile,
 } from "@/lib/profitCoachAi/brandKnowledge";
+import { resetFileWithHistory, saveFileWithHistory } from "@/lib/agent/fileVersions";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -60,14 +61,14 @@ export async function PUT(request: Request) {
       { status: 400 }
     );
   }
-  const { error } = await supabaseAdmin.from("brand_knowledge_files").upsert({
+  const { error } = await saveFileWithHistory({
+    store: "brand",
     file,
     content: body.content,
-    updated_at: new Date().toISOString(),
-    updated_by: auth.userId,
+    userId: auth.userId,
   });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }
@@ -83,12 +84,9 @@ export async function DELETE(request: Request) {
   if (!file || !isBrandKnowledgeFile(file)) {
     return NextResponse.json({ error: "Unknown file." }, { status: 400 });
   }
-  const { error } = await supabaseAdmin
-    .from("brand_knowledge_files")
-    .delete()
-    .eq("file", file);
+  const { error } = await resetFileWithHistory("brand", file);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }

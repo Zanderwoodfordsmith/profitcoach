@@ -258,40 +258,6 @@
   outline-offset: 2px;
 }
 
-/* The handover between the coach's cards and what BCA builds: the cover's gradient, with a soft light. */
-.bp-build-strip {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  background: linear-gradient(110deg, #051e36 0%, #0c5290 55%, #1a8fd4 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 18px 36px -22px rgba(5, 30, 54, 0.7);
-}
-
-.bp-build-strip::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: -60%;
-  left: 50%;
-  width: 70%;
-  aspect-ratio: 2;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: radial-gradient(closest-side, rgba(125, 211, 252, 0.35), rgba(125, 211, 252, 0));
-  pointer-events: none;
-}
-
-/* The BCA mark as a small glass coin on the strip. */
-.bp-build-mark {
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
-    0 6px 16px -8px rgba(5, 30, 54, 0.8);
-}
-
 /*
  * Before the coach has answered their own cards, what BCA builds sits back.
  * Still readable and clickable; a card comes forward when you point at it.
@@ -343,6 +309,11 @@
 }
 
 .bp-table tbody tr + tr td {
+  border-top: 1px solid var(--bp-rule);
+}
+
+/* Objections and answers: a hairline between each question. */
+.bp-faq-item + .bp-faq-item {
   border-top: 1px solid var(--bp-rule);
 }
 
@@ -455,29 +426,6 @@
 /* Answer boxes draw their own focus ring, so skip the generic outline. */
 .bp-doc .bp-input:focus-visible {
   outline: none;
-}
-
-@keyframes bp-status-guide-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-    filter: blur(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-
-.bp-status-guide-dialog {
-  animation: bp-status-guide-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bp-status-guide-dialog {
-    animation: none;
-  }
 }
 
 /* Ava showing a section: a soft sky ring that fades, so the eye lands on it. */

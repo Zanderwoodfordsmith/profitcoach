@@ -39,13 +39,28 @@ export async function GET(request: Request) {
   const a = await auth(request);
   if ("error" in a) return a.error;
   try {
-    const [knowledge, assets, decision, profile, caller] = await Promise.all([
+    const [knowledge, assets, decision, profile, caller, firstPaid, coachRow] = await Promise.all([
       hydratePracticeFromProfile(a.coachId),
       listIntakeAssets(a.coachId),
       getLatestDecisionRecord(a.coachId),
-      supabaseAdmin.from("profiles").select("full_name, avatar_url").eq("id", a.coachId).maybeSingle(),
+      supabaseAdmin.from("profiles").select("full_name, avatar_url, created_at").eq("id", a.coachId).maybeSingle(),
       supabaseAdmin.from("profiles").select("full_name").eq("id", a.callerId).maybeSingle(),
+      supabaseAdmin
+        .from("coach_payments")
+        .select("paid_at")
+        .eq("coach_id", a.coachId)
+        .eq("status", "succeeded")
+        .not("paid_at", "is", null)
+        .order("paid_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin.from("coaches").select("membership_started_at").eq("id", a.coachId).maybeSingle(),
     ]);
+    // When they joined: the earliest we know of (first payment, membership start, account).
+    const coach_joined_at =
+      [firstPaid.data?.paid_at, coachRow.data?.membership_started_at, profile.data?.created_at]
+        .filter((d): d is string => typeof d === "string" && Boolean(d))
+        .sort()[0] ?? null;
     const coach_name = (profile.data?.full_name as string | null)?.trim() || "";
     const coach_avatar_url = (profile.data?.avatar_url as string | null)?.trim() || null;
     const viewer_name = (caller.data?.full_name as string | null)?.trim() || "";
@@ -55,6 +70,7 @@ export async function GET(request: Request) {
       decision,
       coach_name,
       coach_avatar_url,
+      coach_joined_at,
       viewer_id: a.callerId,
       viewer_name,
     });

@@ -1,17 +1,22 @@
 "use client";
 
 import {
+  ArrowDownAZ,
   ArrowLeft,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ChevronUp,
   ClipboardList,
+  Clock,
   ExternalLink,
   Plus,
   Search,
   Trash2,
+  UserPlus,
   UserRound,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,6 +27,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import {
   DashboardPageSection,
@@ -33,11 +39,15 @@ import {
   notifySupportCountsChanged,
 } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
+import { AdminChatLinkPill, AdminChatPanel, adminChatLinkFor, useAdminSupportDock } from "@/components/support/AdminSupportDock";
+import type { SupportThreadLayout } from "@/components/support/SupportChatBubbles";
+import { useMatchesBreakpoint } from "@/hooks/useBreakpoint";
 import { useScreenRecorder } from "@/contexts/ScreenRecorderContext";
 import type { SupportCallContactPrefill } from "@/lib/support/supportCallPrefillQuery";
 import type { SupportCallHostSlug } from "@/lib/support/supportCallHosts";
 import { SupportCallAdminSettings } from "@/components/support/SupportCallAdminSettings";
 import { SupportTicketBookCall } from "@/components/support/SupportTicketBookCall";
+import { SupportChatPagePicker } from "@/components/support/SupportChatPagePicker";
 import { SupportTicketCoachPayments } from "@/components/support/SupportTicketCoachPayments";
 import {
   CoachSearchCombobox,
@@ -59,8 +69,37 @@ import {
 } from "@/lib/support/adminAttention";
 import { supportNotifyDefaultOn } from "@/lib/support/notifyDefaults";
 import {
+  LAUNCH_PHASES,
+  LAUNCH_THREADS,
+  launchThread,
+  type LaunchThread,
+} from "@/lib/launch/threads";
+import {
+  BlueprintCommentsBlock,
+  ChannelCard,
+  ChannelGroupLabel,
+  JobBrief,
+  JobChecklist,
+  JobCircle,
+  MessageStatusCircle,
+  ThreadActivityInline,
+  ThreadWelcome,
+  threadRowClass,
+  useBlueprintComments,
+  useBlueprintPageChats,
+  useChannelActivity,
+  useLaunchProgress,
+  withBlueprintActivity,
+} from "@/components/messages/channelParts";
+import { adminSectionHref } from "@/lib/practiceKnowledge/blueprintGrid";
+import { BLUEPRINT_GROUPS, type BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
+import { ChannelPageChat } from "@/components/messages/ChannelPageChat";
+import { PageIcon } from "@/components/practice/pageIcons";
+import type { LaunchProgress } from "@/lib/launch/progress";
+import {
   SUPPORT_SOURCE_LABELS,
   SUPPORT_STATUS_ADMIN_LABELS,
+  supportChatOpenedByBca,
   SUPPORT_TYPE_LABELS,
   supportTypeOptionLabel,
   authorDisplayName,
@@ -68,6 +107,7 @@ import {
   formatSupportTicketId,
   normalizeSupportTicketType,
   supportTicketScore,
+  type SupportReply,
   type SupportTicketAuthor,
   type SupportTicketSource,
   type SupportTicketStatus,
@@ -88,6 +128,8 @@ type AdminTicketRow = {
   title: string | null;
   details: string;
   page_path: string | null;
+  /** The page the chat is about, for the coach's "Open … page" button (5 Nov). */
+  context_path?: string | null;
   status: SupportTicketStatus;
   source: SupportTicketSource;
   assigned_to: string | null;
@@ -98,7 +140,18 @@ type AdminTicketRow = {
   ease: number | null;
   media?: unknown;
   member_notify_email?: boolean;
+  /** When staff last set the ticket back to Open by hand. */
+  reopened_at?: string | null;
+  created_by_admin?: string | null;
+  opening_seen_at?: string | null;
+  /**
+   * BCA has nothing to answer (5 Nov): it ticked the coach's last message
+   * "Seen", or BCA wrote the chat's first message and nothing has come since.
+   */
+  nothingToAnswer?: boolean;
   author: SupportAssignee | null;
+  /** Who at BCA wrote the first message, when BCA started the chat. */
+  opener: SupportAssignee | null;
   assignee: SupportAssignee | null;
   /**
    * When the member last wrote without a later staff reply.
@@ -109,6 +162,10 @@ type AdminTicketRow = {
   lastActivityAt: string;
   /** Newest reply. Null when the opening message is still the latest. */
   lastMessage: { firstName: string; body: string } | null;
+  /** Replies on the thread; null for resolved tickets (not loaded). */
+  replyCount: number | null;
+  /** Pinned launch thread key (Channels), null for a one-off message. */
+  topic: string | null;
 };
 
 type CoachOption = {
@@ -116,9 +173,38 @@ type CoachOption = {
   full_name: string | null;
   first_name: string | null;
   last_name: string | null;
+  role?: string | null;
+  access_removed_at?: string | null;
 };
 
-type GroupMode = "tickets" | "people";
+/** Join date and whether they're a current member, for the channel list. */
+type CoachMembership = { joinedAt: string | null; current: boolean };
+
+type ChannelSort = "latest" | "az" | "joined";
+
+const CHANNEL_SORT_OPTIONS: { id: ChannelSort; label: string; hint: string; icon: LucideIcon }[] = [
+  { id: "latest", label: "Latest", hint: "Waiting on us first, then latest message", icon: Clock },
+  { id: "az", label: "A to Z", hint: "By name", icon: ArrowDownAZ },
+  { id: "joined", label: "Newest", hint: "Newest coaches first, by join date", icon: UserPlus },
+];
+
+const CHANNEL_SORT_STORAGE_KEY = "admin-support-channel-sort";
+
+type GroupMode = "tickets" | "people" | "channels";
+
+/** A coach's channel: every ticket they have, like a Slack channel per person. */
+type ChannelGroup = {
+  key: string;
+  label: string;
+  profileId: string | null;
+  avatarUrl: string | null;
+  /** Newest first (the feed shows them oldest first, like a chat). */
+  tickets: AdminTicketRow[];
+  needsReply: number;
+  /** Latest activity; null for a coach who hasn't written yet. */
+  latestAt: string | null;
+  joinedAt: string | null;
+};
 
 type PersonGroup = {
   key: string;
@@ -167,7 +253,7 @@ const TYPE_FILTER_OPTIONS: { id: "all" | SupportTicketType; label: string }[] =
 const filterSelectClass = fieldClass("select", "small");
 
 function queueSegmentClass(active: boolean) {
-  return `flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
+  return `flex-1 whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs font-semibold transition-colors ${
     active
       ? "bg-sky-700 text-white shadow-sm"
       : "text-slate-500 hover:bg-white hover:text-slate-800"
@@ -231,7 +317,10 @@ function ticketListPreview(row: AdminTicketRow): { name: string; text: string } 
   if (latest?.body.trim()) {
     return { name: latest.firstName, text: latest.body };
   }
-  return { name: ticketAuthorFirstName(row), text: row.details };
+  return {
+    name: supportChatOpenedByBca(row) ? replyAuthorFirstName(row.opener) : ticketAuthorFirstName(row),
+    text: row.details,
+  };
 }
 
 function ticketPersonKey(row: AdminTicketRow): string {
@@ -355,17 +444,30 @@ const WAITING_ON_REPLY_BAND = "Waiting on member";
  * - Needs our reply → Today / Yesterday / … by last unreplied member message
  * - We've replied (or marked waiting) → "Waiting on member" at the bottom
  */
-function ticketNeedsStaffReply(row: Pick<AdminTicketRow, "status" | "lastUnrepliedMemberAt" | "lastActivityAt">): boolean {
+function ticketNeedsStaffReply(
+  row: Pick<AdminTicketRow, "status" | "lastUnrepliedMemberAt" | "lastActivityAt" | "reopened_at" | "nothingToAnswer">
+): boolean {
   if (row.status === "waiting_reply") return false;
   if (row.status === "resolved") return false;
+  // Set back to Open by hand after the last message: keep it Open.
+  if (row.reopened_at && Date.parse(row.reopened_at) >= Date.parse(row.lastActivityAt)) return true;
+  // Ticked "Seen", or BCA started it and the coach hasn't written since.
+  if (row.nothingToAnswer) return false;
   // Member still has the last word (or no replies yet — times equal ticket open).
   return row.lastActivityAt === row.lastUnrepliedMemberAt;
+}
+
+/** Status as the inbox shows it: Open with our reply last reads as Waiting on member. */
+function shownTicketStatus(
+  row: Pick<AdminTicketRow, "status" | "lastUnrepliedMemberAt" | "lastActivityAt" | "reopened_at" | "nothingToAnswer">
+): SupportTicketStatus {
+  return row.status === "open" && !ticketNeedsStaffReply(row) ? "waiting_reply" : row.status;
 }
 
 function inboxListBand(
   row: Pick<
     AdminTicketRow,
-    "status" | "created_at" | "lastUnrepliedMemberAt" | "lastActivityAt"
+    "status" | "created_at" | "lastUnrepliedMemberAt" | "lastActivityAt" | "reopened_at" | "nothingToAnswer"
   >,
   statusFilter: SupportStatusFilter
 ): string {
@@ -400,12 +502,15 @@ type ReplyActivityRow = {
   report_id: string;
   created_at: string;
   body: string;
+  seen_at?: string | null;
   author: ReplyAuthorBits | ReplyAuthorBits[] | null;
 };
 
 type ReplyActivityItem = {
   created_at: string;
   staff: boolean;
+  /** Ticked "Seen" by the other side. */
+  seen: boolean;
   /** Set on the newest reply only. */
   body: string;
   firstName: string;
@@ -473,6 +578,7 @@ async function loadTicketReplyActivity(
         report_id,
         created_at,
         body,
+        seen_at,
         author:profiles!created_by ( role, first_name, full_name )
       `
       )
@@ -493,6 +599,7 @@ async function loadTicketReplyActivity(
       list.push({
         created_at: raw.created_at,
         staff: author?.role === "admin",
+        seen: Boolean(raw.seen_at),
         body: isLatest ? raw.body ?? "" : "",
         firstName: isLatest ? replyAuthorFirstName(author) : "",
       });
@@ -542,6 +649,45 @@ function WaitingSectionHeader({
   );
 }
 
+/** Support V1 (as it was) or V2 (5 Nov: the chat docked on the right, as coaches see it). Admins pick until one is chosen. */
+type SupportLook = "v1" | "v2";
+const SUPPORT_LOOK_KEY = "admin-support-look";
+
+function useSupportLook(): [SupportLook, (next: SupportLook) => void] {
+  const [look, setLookState] = useState<SupportLook>("v2");
+  useEffect(() => {
+    const saved = window.localStorage.getItem(SUPPORT_LOOK_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read the saved choice once, after hydration
+    if (saved === "v1" || saved === "v2") setLookState(saved);
+  }, []);
+  const setLook = useCallback((next: SupportLook) => {
+    setLookState(next);
+    window.localStorage.setItem(SUPPORT_LOOK_KEY, next);
+  }, []);
+  return [look, setLook];
+}
+
+function SupportLookSwitch({ look, onChange }: { look: SupportLook; onChange: (next: SupportLook) => void }) {
+  return (
+    <div className="hidden rounded-lg border border-slate-200 p-0.5 lg:flex" role="group" aria-label="Support look">
+      {(["v1", "v2"] as const).map((option) => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={look === option}
+          title={option === "v1" ? "As it was" : "Chat on the right, as coaches see it"}
+          onClick={() => onChange(option)}
+          className={`rounded-md px-2 py-0.5 text-xs font-medium ${
+            look === option ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          {option === "v1" ? "V1" : "V2"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function AdminSupportPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -562,8 +708,34 @@ export function AdminSupportPage() {
   const [typeFilter, setTypeFilter] = useState<"all" | SupportTicketType>(
     "all"
   );
-  const [groupMode, setGroupMode] = useState<GroupMode>("tickets");
+  // ?channel=<coach id>[&thread=<key>]: open straight onto a coach's channel (from the launch board).
+  const linkedChannel = searchParams.get("channel");
+  const linkedThread = searchParams.get("thread");
+  const [groupMode, setGroupMode] = useState<GroupMode>(linkedChannel ? "channels" : "tickets");
+  const [look, setLook] = useSupportLook();
+  const desktop = useMatchesBreakpoint("lg");
+  const dock = useAdminSupportDock();
+  // V2 on wide screens, for tickets (Channels keeps its own feed). Phones keep V1.
+  const v2 = look === "v2" && desktop === true && groupMode !== "channels" && Boolean(dock);
+  const [coachMembership, setCoachMembership] = useState<
+    Record<string, CoachMembership>
+  >({});
+  const [channelSort, setChannelSort] = useState<ChannelSort>("latest");
+  useEffect(() => {
+    const saved = window.localStorage.getItem(CHANNEL_SORT_STORAGE_KEY);
+    if (saved === "latest" || saved === "az" || saved === "joined") setChannelSort(saved);
+  }, []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedChannelKey, setSelectedChannelKey] = useState<string | null>(
+    null
+  );
+  /** A pinned thread with nothing in it yet, opened in Channels. */
+  const [pendingThreadKey, setPendingThreadKey] = useState<string | null>(null);
+  /** A Blueprint page chat opened from the channel (job 26): the chat itself lives on the page. */
+  const [pageChatSlug, setPageChatSlug] = useState<string | null>(null);
+  const createdPinnedIdRef = useRef<string | null>(null);
+  // Phones show one pane at a time in Channels: the coach list, or their channel.
+  const [phoneChannelOpen, setPhoneChannelOpen] = useState(false);
   const [selectedPersonKey, setSelectedPersonKey] = useState<string | null>(
     null
   );
@@ -612,13 +784,41 @@ export function AdminSupportPage() {
     );
     setPamAssigneeId(pam?.id ?? null);
 
-    const { data: coachProfiles } = await supabaseClient
-      .from("profiles")
-      .select("id, full_name, first_name, last_name")
-      .in("role", ["coach", "admin"])
-      .order("full_name", { ascending: true })
-      .limit(500);
+    const [{ data: coachProfiles }, { data: coachRows }] = await Promise.all([
+      supabaseClient
+        .from("profiles")
+        .select("id, full_name, first_name, last_name, role, access_removed_at")
+        .in("role", ["coach", "admin"])
+        .order("full_name", { ascending: true })
+        .limit(500),
+      supabaseClient
+        .from("coaches")
+        .select("id, membership_status, record_kind, created_at")
+        .limit(1000),
+    ]);
     setCoaches((coachProfiles ?? []) as CoachOption[]);
+    // Real join dates (first payment etc.) come from the server; created_at is the import date.
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    const joinedRes = session?.access_token
+      ? await fetch("/api/admin/support/coach-joined", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }).catch(() => null)
+      : null;
+    const joined = ((await joinedRes?.json().catch(() => null)) as {
+      joined?: Record<string, string>;
+    } | null)?.joined ?? {};
+    const membership: Record<string, CoachMembership> = {};
+    for (const row of coachRows ?? []) {
+      membership[row.id] = {
+        joinedAt: joined[row.id] ?? row.created_at ?? null,
+        current:
+          ["active", "past_due", "trialing"].includes(row.membership_status ?? "") &&
+          row.record_kind !== "historical",
+      };
+    }
+    setCoachMembership(membership);
   }, []);
 
   const loadAttention = useCallback(async () => {
@@ -661,6 +861,7 @@ export function AdminSupportPage() {
           title,
           details,
           page_path,
+          context_path,
           status,
           source,
           assigned_to,
@@ -671,7 +872,12 @@ export function AdminSupportPage() {
           ease,
           media,
           member_notify_email,
+          reopened_at,
+          topic,
+          created_by_admin,
+          opening_seen_at,
           author:profiles!created_by ( id, full_name, first_name, last_name, avatar_url, role, phone ),
+          opener:profiles!created_by_admin ( id, full_name, first_name, last_name, avatar_url, role ),
           assignee:profiles!assigned_to ( id, full_name, first_name, last_name, avatar_url, role )
         `
         )
@@ -693,6 +899,7 @@ export function AdminSupportPage() {
         AdminTicketRow,
         | "type"
         | "author"
+        | "opener"
         | "assignee"
         | "lastUnrepliedMemberAt"
         | "lastActivityAt"
@@ -700,12 +907,14 @@ export function AdminSupportPage() {
       > & {
         type: string;
         author: SupportAssignee | SupportAssignee[] | null;
+        opener: SupportAssignee | SupportAssignee[] | null;
         assignee: SupportAssignee | SupportAssignee[] | null;
       }
     >).map((row) => ({
       ...row,
       type: normalizeSupportTicketType(row.type),
       author: normalizeProfile(row.author),
+      opener: normalizeProfile(row.opener),
       assignee: normalizeProfile(row.assignee),
       member_notify_email: row.member_notify_email !== false,
     }));
@@ -721,11 +930,17 @@ export function AdminSupportPage() {
         row.created_at,
         replyLists.get(row.id) ?? []
       );
+      const latest = replyLists.get(row.id)?.[0];
       return {
         ...row,
+        nothingToAnswer: latest
+          ? !latest.staff && latest.seen
+          : supportChatOpenedByBca(row) || Boolean(row.opening_seen_at),
         lastUnrepliedMemberAt: activity.lastUnrepliedMemberAt,
         lastActivityAt: activity.lastActivityAt,
         lastMessage: activity.lastMessage,
+        replyCount:
+          row.status === "resolved" ? null : (replyLists.get(row.id)?.length ?? 0),
       };
     });
 
@@ -875,12 +1090,126 @@ export function AdminSupportPage() {
     });
   }, [filteredRows, statusFilter]);
 
+  // Channels ignore the status and category filters: a channel is the whole history.
+  // Current members who haven't written yet get an empty channel too.
+  const channelGroups = useMemo((): ChannelGroup[] => {
+    const q = searchQuery.trim().toLowerCase();
+    const map = new Map<string, ChannelGroup>();
+    for (const row of rows) {
+      const key = ticketPersonKey(row);
+      const at = row.lastActivityAt || row.created_at;
+      const needs = row.status !== "resolved" && ticketNeedsStaffReply(row);
+      const existing = map.get(key);
+      if (existing) {
+        existing.tickets.push(row);
+        if (needs) existing.needsReply += 1;
+        if (!existing.latestAt || at > existing.latestAt) existing.latestAt = at;
+        if (!existing.avatarUrl) existing.avatarUrl = ticketAuthorAvatarUrl(row);
+      } else {
+        map.set(key, {
+          key,
+          label: ticketAuthorLabel(row),
+          profileId: row.created_by,
+          avatarUrl: ticketAuthorAvatarUrl(row),
+          tickets: [row],
+          needsReply: needs ? 1 : 0,
+          latestAt: at,
+          joinedAt: row.created_by ? coachMembership[row.created_by]?.joinedAt ?? null : null,
+        });
+      }
+    }
+    for (const coach of coaches) {
+      const key = `profile:${coach.id}`;
+      if (map.has(key) || coach.role !== "coach" || coach.access_removed_at) continue;
+      if (!coachMembership[coach.id]?.current) continue;
+      map.set(key, {
+        key,
+        label:
+          coach.full_name?.trim() ||
+          [coach.first_name, coach.last_name].filter(Boolean).join(" ").trim() ||
+          "Coach",
+        profileId: coach.id,
+        avatarUrl: null,
+        tickets: [],
+        needsReply: 0,
+        latestAt: null,
+        joinedAt: coachMembership[coach.id]?.joinedAt ?? null,
+      });
+    }
+    const byName = (a: ChannelGroup, b: ChannelGroup) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: "base" });
+    const newestFirst = (a: string | null, b: string | null) =>
+      a === b ? 0 : !a ? 1 : !b ? -1 : a < b ? 1 : -1;
+    return Array.from(map.values())
+      .filter((group) => !q || group.label.toLowerCase().includes(q))
+      .sort((a, b) => {
+        if (channelSort === "az") return byName(a, b);
+        if (channelSort === "joined") return newestFirst(a.joinedAt, b.joinedAt) || byName(a, b);
+        // Latest: anyone waiting on us first, then the most recent conversation.
+        if ((a.needsReply > 0) !== (b.needsReply > 0)) return a.needsReply > 0 ? -1 : 1;
+        return newestFirst(a.latestAt, b.latestAt) || byName(a, b);
+      });
+  }, [rows, coaches, coachMembership, searchQuery, channelSort]);
+
+  const selectedChannel =
+    channelGroups.find((g) => g.key === selectedChannelKey) ?? null;
+
+  const linkHandledRef = useRef(false);
+  useEffect(() => {
+    if (!linkedChannel || linkHandledRef.current || loading) return;
+    const key = `profile:${linkedChannel}`;
+    if (!channelGroups.some((g) => g.key === key)) return;
+    linkHandledRef.current = true;
+    setSelectedChannelKey(key);
+    setPhoneChannelOpen(true);
+    if (!launchThread(linkedThread)) return;
+    // Jobs done on a Blueprint page talk in that page's chat.
+    const linkedPage = launchThread(linkedThread)?.blueprintPage;
+    if (linkedPage) {
+      setPageChatSlug(linkedPage);
+      return;
+    }
+    const row = rows.find((r) => r.created_by === linkedChannel && r.topic === linkedThread);
+    if (row) setSelectedId(row.id);
+    else setPendingThreadKey(linkedThread);
+  }, [linkedChannel, linkedThread, loading, channelGroups, rows]);
+  const blueprintByThread = useBlueprintComments(
+    groupMode === "channels" ? selectedChannel?.profileId ?? null : null,
+    threadRefreshKey,
+    (ref, key, coachId) => adminSectionHref(ref.page, key, coachId, true)
+  );
+  const pageChats = useBlueprintPageChats(
+    groupMode === "channels" ? selectedChannel?.profileId ?? null : null,
+    threadRefreshKey
+  );
+  const launchProgress = useLaunchProgress(
+    groupMode === "channels" ? selectedChannel?.profileId ?? null : null,
+    threadRefreshKey
+  );
+
+
+  useEffect(() => {
+    if (groupMode !== "channels" || loading) return;
+    if (selectedChannelKey && channelGroups.some((g) => g.key === selectedChannelKey)) return;
+    setSelectedChannelKey(channelGroups[0]?.key ?? null);
+  }, [groupMode, loading, channelGroups, selectedChannelKey]);
+
   const listTickets = useMemo(() => {
+    if (groupMode === "channels") {
+      const tickets = selectedChannel?.tickets ?? [];
+      // Open the oldest thread still waiting on us, else the newest.
+      const waiting = tickets
+        .filter((t) => t.status !== "resolved" && ticketNeedsStaffReply(t))
+        .sort((a, b) => (a.lastUnrepliedMemberAt < b.lastUnrepliedMemberAt ? -1 : 1));
+      return waiting.length
+        ? [...waiting, ...tickets.filter((t) => !waiting.includes(t))]
+        : tickets;
+    }
     if (groupMode !== "people" || !selectedPersonKey) return filteredRows;
     return (
       personGroups.find((g) => g.key === selectedPersonKey)?.tickets ?? []
     );
-  }, [groupMode, selectedPersonKey, filteredRows, personGroups]);
+  }, [groupMode, selectedChannel, selectedPersonKey, filteredRows, personGroups]);
 
   const waitingTicketCount = useMemo(() => {
     if (statusFilter !== "open") return 0;
@@ -898,6 +1227,25 @@ export function AdminSupportPage() {
     () => listTickets.find((r) => r.id === selectedId) ?? null,
     [listTickets, selectedId]
   );
+  const adminJobBrief = (thread: LaunchThread | null) =>
+    thread?.phase && selectedChannel?.profileId ? (
+      <JobBrief
+        thread={thread}
+        job={launchProgress[thread.key]}
+        audience="admin"
+        coachFirstName={selectedChannel.label.split(" ")[0]}
+        blueprintHref={
+          thread.blueprintPage
+            ? `/admin/blueprint/coach/${thread.blueprintPage}?coach=${encodeURIComponent(selectedChannel.profileId)}`
+            : null
+        }
+        seenKey={`admin:${selectedChannel.profileId}:${thread.key}`}
+      />
+    ) : null;
+  const openJobThread =
+    groupMode === "channels"
+      ? launchThread(selected?.topic) ?? launchThread(pendingThreadKey)
+      : null;
 
   // Coming back with a screen recording: open the ticket (or new ticket) it's for.
   const recordingKey = useScreenRecorder()?.ready?.target.key ?? null;
@@ -916,7 +1264,19 @@ export function AdminSupportPage() {
   }, [recordingKey, listTickets]);
 
   useEffect(() => {
+    // Channels opens on the coach's thread list; a thread opens only when clicked.
+    if (groupMode === "channels") {
+      if (selectedId && !listTickets.some((r) => r.id === selectedId)) setSelectedId(null);
+      return;
+    }
     if (groupMode === "people" && !selectedPersonKey) {
+      setSelectedId(null);
+      return;
+    }
+    if (groupMode === "people" && listTickets.length === 0) {
+      // This coach has no tickets left (e.g. the last one was deleted):
+      // go back to the By coach list instead of an empty one.
+      setSelectedPersonKey(null);
       setSelectedId(null);
       return;
     }
@@ -979,10 +1339,11 @@ export function AdminSupportPage() {
     patch: Partial<
       Pick<
         AdminTicketRow,
-        "status" | "importance" | "ease" | "assigned_to" | "type" | "created_by"
+        "status" | "importance" | "ease" | "assigned_to" | "type" | "created_by" | "reopened_at"
       >
     >
   ) {
+    if (patch.status === "open") patch = { ...patch, reopened_at: new Date().toISOString() };
     setSavingId(id);
     setError(null);
     const { error: updateError } = await supabaseClient
@@ -1087,21 +1448,552 @@ export function AdminSupportPage() {
     notifySupportCountsChanged();
   }
 
+  /** Make the pinned thread for this coach, then open it to write the first message. */
+  /**
+   * Make the ticket behind a pinned thread the first time someone writes in it
+   * (or asks Ava for a draft). The thread opens properly once the send lands.
+   */
+  async function createPinnedThread(): Promise<string | null> {
+    const thread = launchThread(pendingThreadKey);
+    const coachId = selectedChannel?.profileId;
+    if (!thread || !coachId) return null;
+    const { data, error: insertError } = await supabaseClient
+      .from("community_feedback_reports")
+      .insert({
+        created_by: coachId,
+        created_by_admin: adminUserId,
+        source: "admin_created",
+        assigned_to: DEFAULT_SUPPORT_ASSIGNEE_ID,
+        type: thread.type,
+        title: thread.label,
+        details: thread.hint,
+        status: "waiting_reply",
+        topic: thread.key,
+      })
+      .select("id")
+      .single();
+    // Someone started it a moment ago: use that one instead.
+    const id =
+      data?.id ??
+      (insertError?.code === "23505"
+        ? (
+            await supabaseClient
+              .from("community_feedback_reports")
+              .select("id")
+              .eq("created_by", coachId)
+              .eq("topic", thread.key)
+              .maybeSingle()
+          ).data?.id
+        : null);
+    if (!id) setError(insertError?.message ?? "Could not start the thread.");
+    createdPinnedIdRef.current = id ?? null;
+    return id ?? null;
+  }
+
+  /** After the first send or note in a new pinned thread, open it as a normal thread. */
+  async function openCreatedPinnedThread() {
+    const id = createdPinnedIdRef.current;
+    if (!id) return;
+    createdPinnedIdRef.current = null;
+    await loadTickets();
+    setPendingThreadKey(null);
+    setSelectedId(id);
+  }
+
+
   const showPeopleList = groupMode === "people" && !selectedPersonKey;
   const selectedPerson = selectedPersonKey
     ? personGroups.find((g) => g.key === selectedPersonKey) ?? null
     : null;
   const saving = selected ? savingId === selected.id : false;
   const score = selected ? supportTicketScore(selected) : null;
-  const canEmailNotify = Boolean(
-    selected && (selected.created_by || selected.contact_email?.trim())
-  );
-  const emailNotifyDefault = selected
-    ? supportNotifyDefaultOn(
-        selected.source,
-        selected.member_notify_email
-      )
-    : false;
+  // Back from the coach's page: the chat that went with you opens here again, in the middle.
+  useEffect(() => {
+    const open = dock?.entry?.id;
+    if (!open) return;
+    setSelectedId(open);
+    dock.close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on arrival only
+  }, []);
+
+  /** V2: open the page the chat is about, the chat moving to the right beside it. */
+  function openChatPage(row: AdminTicketRow, to: string) {
+    if (!dock) return;
+    dock.show({
+      id: row.id,
+      title: row.title?.trim() || ticketAuthorLabel(row),
+      status: shownTicketStatus(row),
+      link: adminChatLinkFor(row),
+      onStatus: (status) => updateRow(row.id, { status }),
+      thread: ticketThread(row, "cards"),
+    });
+    dock.go(to);
+  }
+
+  /** The ticket's details: the right column in V1, the middle in V2 (with its status, which V1 keeps in the thread). */
+  const ticketDetails =
+    selected && !showPeopleList ? (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+          {selected.created_by ? (
+            <div className="mb-4">
+              <span className="mb-1 block text-xs font-medium text-slate-600">What it&apos;s about</span>
+              <SupportChatPagePicker key={selected.id} reportId={selected.id} value={selected.context_path ?? null} />
+            </div>
+          ) : null}
+          <div>
+            <span className="mb-1 block text-xs font-medium text-slate-600">
+              Linked coach
+            </span>
+            <CoachSearchCombobox
+              coaches={coaches}
+              value={selected.created_by ?? ""}
+              allowClear
+              placeholder="Link to a coach…"
+              onChange={(id) =>
+                void linkTicketCoach(selected.id, id || null)
+              }
+            />
+            {selected.contact_email ? (
+              <p className="mt-1 truncate text-xs text-slate-500">
+                {selected.contact_email}
+              </p>
+            ) : null}
+            {selected.contact_email && !selected.created_by ? (
+              <p className="mt-1 text-caption text-slate-500">
+                Linking also remembers this email for future inbox
+                mail.
+              </p>
+            ) : null}
+            {selected.created_by ? (
+              <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg border border-sky-200 bg-sky-50">
+                <a
+                  href={`/admin/coaches/${encodeURIComponent(selected.created_by)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open coach profile"
+                  className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap border-r border-sky-200 px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+                >
+                  <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Profile
+                </a>
+                <a
+                  href={`/coach/support?impersonate=${encodeURIComponent(selected.created_by)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open their Support inbox"
+                  className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Their inbox
+                </a>
+                <a
+                  href={`/admin/blueprint/coach?coach=${encodeURIComponent(selected.created_by)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open their Blueprint in admin"
+                  className="col-span-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap border-t border-sky-200 px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+                >
+                  <ClipboardList className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Blueprint
+                </a>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
+            <label className="flex items-center gap-3">
+              <span className="w-16 shrink-0 text-xs font-medium text-slate-600">
+                Assignee
+              </span>
+              <select
+                value={selected.assigned_to ?? ""}
+                disabled={saving}
+                onChange={(e) =>
+                  void updateRow(selected.id, {
+                    assigned_to: e.target.value || null,
+                  })
+                }
+                className={fieldClass("select", "small", "min-w-0 flex-1")}
+              >
+                <option value="">Anyone</option>
+                {assigneePickerOptions(
+                  assignees,
+                  selected.assignee
+                ).map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {assigneeShortName(a)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex items-center gap-3">
+              <span className="w-16 shrink-0 text-xs font-medium text-slate-600">
+                Type
+              </span>
+              <select
+                value={selected.type}
+                disabled={saving}
+                onChange={(e) =>
+                  void updateRow(selected.id, {
+                    type: e.target.value as SupportTicketType,
+                  })
+                }
+                className={fieldClass("select", "small", "min-w-0 flex-1 [color-scheme:light]")}
+              >
+                {(
+                  Object.keys(
+                    SUPPORT_TYPE_LABELS
+                  ) as SupportTicketType[]
+                ).map((t) => (
+                  <option
+                    key={t}
+                    value={t}
+                    className="bg-white text-slate-900"
+                  >
+                    {supportTypeOptionLabel(t)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {selected.type === "idea" ? (
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-slate-600">
+                    Importance
+                  </span>
+                  <select
+                    value={selected.importance ?? ""}
+                    disabled={saving}
+                    onChange={(e) =>
+                      void updateRow(selected.id, {
+                        importance: e.target.value
+                          ? Number(e.target.value)
+                          : null,
+                      })
+                    }
+                    className={fieldClass("select", "small")}
+                  >
+                    <option value="">—</option>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-slate-600">
+                    Ease
+                  </span>
+                  <select
+                    value={selected.ease ?? ""}
+                    disabled={saving}
+                    onChange={(e) =>
+                      void updateRow(selected.id, {
+                        ease: e.target.value
+                          ? Number(e.target.value)
+                          : null,
+                      })
+                    }
+                    className={fieldClass("select", "small")}
+                  >
+                    <option value="">—</option>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="col-span-2 text-xs text-slate-500">
+                  Score: {score ?? "—"}
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          {(() => {
+            const contact =
+              supportCallContact ?? ticketSupportCallContact(selected);
+            const guestLabel =
+              [contact.firstName, contact.lastName]
+                .filter(Boolean)
+                .join(" ")
+                .trim() || ticketAuthorLabel(selected);
+            return (
+              <SupportTicketBookCall
+                key={`${selected.id}:${pamAssigneeId ?? ""}`}
+                ticketId={selected.id}
+                defaultHost={defaultSupportHost(
+                  selected.assigned_to,
+                  pamAssigneeId
+                )}
+                guestLabel={guestLabel}
+                guestEmail={contact.email?.trim() || null}
+                onOpenSettings={() => selectTopTab("settings")}
+                onBooked={() => {
+                  setThreadRefreshKey((n) => n + 1);
+                  void loadAttention();
+                }}
+              />
+            );
+          })()}
+
+          <SupportTicketCoachPayments coachId={selected.created_by} />
+
+          <div className="mt-6 border-t border-slate-200 pt-3">
+            <p className="text-kicker font-semibold uppercase text-slate-400">
+              Source
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-slate-700">
+              {SUPPORT_SOURCE_LABELS[selected.source]}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-4 py-2">
+          <p className="text-caption tabular-nums text-slate-400">
+            {formatSupportTicketId(selected.ticket_number)}
+          </p>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => void deleteRow(selected)}
+            className={buttonClass("delete", "small")}
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+            Delete
+          </button>
+        </div>
+      </div>
+    ) : null;
+
+  /** V2's details: one narrow column, who it's from, then the ticket's settings, Delete at the foot. */
+  function v2Details(row: AdminTicketRow) {
+    const busy = savingId === row.id;
+    const contact = supportCallContact ?? ticketSupportCallContact(row);
+    const guestLabel = [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim() || ticketAuthorLabel(row);
+    const label = "mb-1.5 block text-caption font-medium text-slate-500";
+    const quietLink = "inline-flex items-center gap-1 text-caption font-medium text-[#0c5290] hover:underline";
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+          <div className="flex items-center gap-3">
+            <ListAvatar label={ticketAuthorLabel(row)} avatarUrl={ticketAuthorAvatarUrl(row)} />
+            <div className="min-w-0">
+              <p className="truncate text-ui font-semibold text-slate-900">{ticketAuthorLabel(row)}</p>
+              {row.contact_email ? <p className="truncate text-caption text-slate-500">{row.contact_email}</p> : null}
+            </div>
+          </div>
+          {row.created_by ? (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+              <a href={`/admin/coaches/${encodeURIComponent(row.created_by)}`} target="_blank" rel="noopener noreferrer" className={quietLink}>
+                <UserRound className="h-3.5 w-3.5" aria-hidden />
+                Profile
+              </a>
+              <a href={`/coach/support?impersonate=${encodeURIComponent(row.created_by)}`} target="_blank" rel="noopener noreferrer" className={quietLink}>
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                Their inbox
+              </a>
+              <a href={`/admin/blueprint/coach?coach=${encodeURIComponent(row.created_by)}`} target="_blank" rel="noopener noreferrer" className={quietLink}>
+                <ClipboardList className="h-3.5 w-3.5" aria-hidden />
+                Blueprint
+              </a>
+            </div>
+          ) : null}
+
+          <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
+            <label className="block">
+              <span className={label}>Status</span>
+              <select
+                value={shownTicketStatus(row)}
+                disabled={busy}
+                onChange={(e) => void updateRow(row.id, { status: e.target.value as SupportTicketStatus })}
+                className={fieldClass("select", "small")}
+              >
+                {(Object.keys(SUPPORT_STATUS_ADMIN_LABELS) as SupportTicketStatus[]).map((st) => (
+                  <option key={st} value={st}>
+                    {SUPPORT_STATUS_ADMIN_LABELS[st]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className={label}>Assignee</span>
+              <select
+                value={row.assigned_to ?? ""}
+                disabled={busy}
+                onChange={(e) => void updateRow(row.id, { assigned_to: e.target.value || null })}
+                className={fieldClass("select", "small")}
+              >
+                <option value="">Anyone</option>
+                {assigneePickerOptions(assignees, row.assignee).map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {assigneeShortName(a)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className={label}>Type</span>
+              <select
+                value={row.type}
+                disabled={busy}
+                onChange={(e) => void updateRow(row.id, { type: e.target.value as SupportTicketType })}
+                className={fieldClass("select", "small", "[color-scheme:light]")}
+              >
+                {(Object.keys(SUPPORT_TYPE_LABELS) as SupportTicketType[]).map((t) => (
+                  <option key={t} value={t}>
+                    {supportTypeOptionLabel(t)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {row.type === "idea" ? (
+              <div className="grid grid-cols-2 gap-2">
+                {(["importance", "ease"] as const).map((key) => (
+                  <label key={key} className="block">
+                    <span className={label}>{key === "importance" ? "Importance" : "Ease"}</span>
+                    <select
+                      value={row[key] ?? ""}
+                      disabled={busy}
+                      onChange={(e) => void updateRow(row.id, { [key]: e.target.value ? Number(e.target.value) : null })}
+                      className={fieldClass("select", "small")}
+                    >
+                      <option value="">None</option>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+                <p className="col-span-2 text-caption text-slate-500">Score: {supportTicketScore(row) ?? "none yet"}</p>
+              </div>
+            ) : null}
+            {row.created_by ? (
+              <div>
+                <span className={label}>What it&apos;s about</span>
+                <SupportChatPagePicker key={row.id} reportId={row.id} value={row.context_path ?? null} stacked />
+              </div>
+            ) : null}
+            <div>
+              <span className={label}>Linked coach</span>
+              <CoachSearchCombobox
+                coaches={coaches}
+                value={row.created_by ?? ""}
+                allowClear
+                placeholder="Link to a coach…"
+                onChange={(id) => void linkTicketCoach(row.id, id || null)}
+              />
+              {row.contact_email && !row.created_by ? (
+                <p className="mt-1.5 text-caption text-slate-500">Linking also remembers this email for future mail.</p>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Book a call draws its own rule above it. */}
+          <div className="space-y-2">
+            <SupportTicketBookCall
+              key={`${row.id}:${pamAssigneeId ?? ""}`}
+              ticketId={row.id}
+              defaultHost={defaultSupportHost(row.assigned_to, pamAssigneeId)}
+              guestLabel={guestLabel}
+              guestEmail={contact.email?.trim() || null}
+              onOpenSettings={() => selectTopTab("settings")}
+              onBooked={() => {
+                setThreadRefreshKey((n) => n + 1);
+                void loadAttention();
+              }}
+            />
+            <SupportTicketCoachPayments coachId={row.created_by} />
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-100 px-5 py-3">
+          <div className="min-w-0 text-caption leading-tight text-slate-400">
+            <p className="tabular-nums">{formatSupportTicketId(row.ticket_number)}</p>
+            <p className="truncate">{SUPPORT_SOURCE_LABELS[row.source]}</p>
+          </div>
+          <button type="button" disabled={busy} onClick={() => void deleteRow(row)} className={buttonClass("delete", "small")}>
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+            Delete
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /** A ticket's thread with every admin tool: in the page (V1), or docked on the right (V2). */
+  function ticketThread(row: AdminTicketRow, layout: SupportThreadLayout) {
+    return (
+      <AdminTicketReplies
+        reportId={row.id}
+        reportStatus={shownTicketStatus(row)}
+        variant="inbox"
+        canEmailNotify={Boolean(row.created_by || row.contact_email?.trim())}
+        emailNotifyDefault={supportNotifyDefaultOn(row.source, row.member_notify_email)}
+        emailNotifyLabel={ticketAuthorLabel(row)}
+        sendAsOptions={assignees}
+        supportCallContact={
+          supportCallContact ?? ticketSupportCallContact(row)
+        }
+        statusSaving={savingId === row.id}
+        onStatusChange={(status) =>
+          void updateRow(row.id, { status })
+        }
+        messageLayout={layout}
+        header={groupMode === "channels" ? adminJobBrief(launchThread(row.topic)) ?? undefined : undefined}
+        extraReplies={
+          groupMode === "channels" && launchThread(row.topic)
+            ? blueprintByThread[row.topic!]
+            : undefined
+        }
+        openingMessage={launchThread(row.topic) ? {
+          pinned: true,
+          authorLabel: "BCA",
+          authorAvatarUrl: null,
+          title: launchThread(row.topic)!.label,
+          body: launchThread(row.topic)!.hint,
+          createdAt: row.created_at,
+          typeLabel:
+            LAUNCH_PHASES.find((p) => p.key === launchThread(row.topic)!.phase)?.label ??
+            "Pinned thread",
+          media: null,
+          viaEmail: false,
+        } : {
+          authorLabel: supportChatOpenedByBca(row)
+            ? row.opener
+              ? authorDisplayName(row.opener)
+              : "BCA"
+            : ticketAuthorLabel(row),
+          authorAvatarUrl: supportChatOpenedByBca(row)
+            ? (row.opener?.avatar_url ?? null)
+            : (row.author?.avatar_url ?? null),
+          title: row.title?.trim() || "(No subject)",
+          body: row.details,
+          createdAt: row.created_at,
+          typeLabel: supportTypeOptionLabel(row.type),
+          media: row.media,
+          viaEmail: row.source === "email_inbox",
+          seenAt: row.opening_seen_at ?? null,
+          byBca: supportChatOpenedByBca(row),
+        }}
+        onStatusTouched={() => {
+          void loadTickets();
+          notifySupportCountsChanged();
+        }}
+        onInternalNoteSaved={() => {
+          void loadAttention();
+        }}
+        threadRefreshKey={threadRefreshKey}
+      />
+    );
+  }
 
   return (
     <DashboardPageSection
@@ -1157,6 +2049,7 @@ export function AdminSupportPage() {
                   <Plus className="h-4 w-4" aria-hidden />
                   New ticket
                 </button>
+                <SupportLookSwitch look={look} onChange={setLook} />
               </div>
             ) : null
           }
@@ -1214,6 +2107,7 @@ export function AdminSupportPage() {
                         role: created.author.role,
                       }
                     : null,
+                  opener: assignees.find((a) => a.id === adminUserId) ?? null,
                   assignee: created.assignee
                     ? {
                         id: created.assignee.id,
@@ -1227,6 +2121,9 @@ export function AdminSupportPage() {
                   lastUnrepliedMemberAt: created.created_at,
                   lastActivityAt: created.created_at,
                   lastMessage: null,
+                  replyCount: 0,
+                  nothingToAnswer: true,
+                  topic: null,
                 };
                 setRows((prev) => [row, ...prev]);
                 setSelectedId(row.id);
@@ -1246,9 +2143,26 @@ export function AdminSupportPage() {
 
       <div className="flex min-h-0 flex-1 flex-col max-lg:min-h-[calc(100dvh-8rem)]">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
-          <div className="grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(0,28%)_minmax(0,1fr)] xl:grid-cols-[minmax(0,26%)_minmax(0,1fr)_minmax(0,22%)]">
+          <div
+            className={`grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden ${
+              groupMode === "channels"
+                ? "lg:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)] xl:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)_18rem]"
+                : v2
+                  ? // V2: the list and the details the same width either side, the chat about chat-box width between.
+                    "lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)] xl:grid-cols-[minmax(16rem,28%)_minmax(0,1fr)_minmax(16rem,28%)]"
+                  : "lg:grid-cols-[minmax(0,28%)_minmax(0,1fr)] xl:grid-cols-[minmax(0,26%)_minmax(0,1fr)_minmax(0,22%)]"
+            }`}
+          >
             {/* Left: queue */}
-            <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden border-b border-slate-200 max-lg:max-h-[42vh] lg:border-b-0 lg:border-r">
+            <aside
+              className={`flex min-h-0 min-w-0 flex-col overflow-hidden border-b border-slate-200 lg:border-b-0 lg:border-r ${
+                groupMode !== "channels"
+                  ? "max-lg:max-h-[42vh]"
+                  : phoneChannelOpen
+                    ? "bg-slate-300/70 max-lg:hidden"
+                    : "bg-slate-300/70 max-lg:border-b-0"
+              }`}
+            >
               <div className="shrink-0 space-y-2 border-b border-slate-100 px-3 py-2.5">
                 <div className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5">
                   <button
@@ -1267,8 +2181,18 @@ export function AdminSupportPage() {
                   >
                     By coach
                   </button>
+                  <button
+                    type="button"
+                    aria-pressed={groupMode === "channels"}
+                    onClick={() => setGroupMode("channels")}
+                    className={queueSegmentClass(groupMode === "channels")}
+                  >
+                    Channels
+                  </button>
                 </div>
 
+                {groupMode !== "channels" ? (
+                <>
                 <div
                   className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5"
                   role="group"
@@ -1319,6 +2243,8 @@ export function AdminSupportPage() {
                     ))}
                   </select>
                 </div>
+                </>
+                ) : null}
 
                 <div className="relative">
                   <Search
@@ -1329,10 +2255,42 @@ export function AdminSupportPage() {
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search tickets…"
+                    placeholder={groupMode === "channels" ? "Search coaches…" : "Search tickets…"}
                     className={fieldClass("input", "small", "pl-8")}
                   />
                 </div>
+                {groupMode === "channels" ? (
+                  <div
+                    className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5"
+                    role="group"
+                    aria-label="Sort channels"
+                  >
+                    {CHANNEL_SORT_OPTIONS.map((option) => {
+                      const Icon = option.icon;
+                      const active = channelSort === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          title={option.hint}
+                          aria-pressed={active}
+                          onClick={() => {
+                            setChannelSort(option.id);
+                            window.localStorage.setItem(CHANNEL_SORT_STORAGE_KEY, option.id);
+                          }}
+                          className={`inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs font-semibold transition-colors ${
+                            active
+                              ? "bg-white text-slate-900 shadow-sm"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
 
               {error ? (
@@ -1345,7 +2303,21 @@ export function AdminSupportPage() {
                 </p>
               ) : null}
 
-              {showPeopleList ? (
+              {groupMode === "channels" ? (
+                <ChannelList
+                  groups={channelGroups}
+                  sort={channelSort}
+                  loading={loading}
+                  selectedKey={selectedChannel?.key ?? null}
+                  onSelect={(key) => {
+                    setSelectedChannelKey(key);
+                    setPendingThreadKey(null);
+                    setPageChatSlug(null);
+                    setSelectedId(null);
+                    setPhoneChannelOpen(true);
+                  }}
+                />
+              ) : showPeopleList ? (
                 <ul className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
                   {loading && personGroups.length === 0 ? (
                     <li className="px-4 py-8 text-sm text-slate-500">
@@ -1579,8 +2551,140 @@ export function AdminSupportPage() {
               )}
             </aside>
 
-            {/* Center: thread + pinned reply composer */}
-            <section className="flex min-h-0 min-w-0 flex-col overflow-hidden max-lg:min-h-[min(70dvh,36rem)]">
+            {groupMode === "channels" && !selected && !pendingThreadKey && pageChatSlug && selectedChannel?.profileId ? (
+              <ChannelPageChat
+                key={`${selectedChannel.profileId}:${pageChatSlug}`}
+                coachId={selectedChannel.profileId}
+                slug={pageChatSlug}
+                channelLabel={selectedChannel.label}
+                className={`max-lg:min-h-[min(70dvh,36rem)] ${phoneChannelOpen ? "" : "max-lg:hidden"}`}
+                onBack={() => {
+                  setPageChatSlug(null);
+                  setThreadRefreshKey((n) => n + 1);
+                }}
+              />
+            ) : groupMode === "channels" && !selected && !pendingThreadKey ? (
+              <ChannelFeed
+                channel={selectedChannel}
+                blueprintByThread={blueprintByThread}
+                pageChats={pageChats}
+                onSelectPageChat={(slug) => {
+                  setPendingThreadKey(null);
+                  setSelectedId(null);
+                  setPageChatSlug(slug);
+                }}
+                progress={launchProgress}
+                className={phoneChannelOpen ? "" : "max-lg:hidden"}
+                onPhoneBack={() => setPhoneChannelOpen(false)}
+                attentionByTicket={attentionByTicket}
+                refreshKey={threadRefreshKey}
+                onSelect={(id) => {
+                  setPendingThreadKey(null);
+                  setSelectedId(id);
+                }}
+                onSelectEmptyThread={(key) => {
+                  setPendingThreadKey(key);
+                  setSelectedId(null);
+                }}
+              />
+            ) : v2 ? (
+            // V2: the chat in the middle, drawn as coaches see it. Its page pill moves it to the right beside that page.
+            <section className="bp-doc bp-clean-side bp-chat-side flex min-h-0 min-w-0 flex-col">
+              {showPeopleList ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+                  <Users className="h-8 w-8 text-slate-400" aria-hidden />
+                  <p className="text-sm font-medium text-slate-900">Choose a coach</p>
+                  <p className="max-w-sm text-xs text-slate-600">Open someone to see their tickets.</p>
+                </div>
+              ) : selected ? (
+                (() => {
+                  const link = adminChatLinkFor(selected);
+                  const status = shownTicketStatus(selected);
+                  return (
+                    <AdminChatPanel
+                      key={selected.id}
+                      title={selected.title?.trim() || ticketAuthorLabel(selected)}
+                      status={status}
+                      onToggleDone={() => void updateRow(selected.id, { status: status === "resolved" ? "open" : "resolved" })}
+                      link={link ? <AdminChatLinkPill link={link} onOpen={() => openChatPage(selected, link.to)} /> : null}
+                    >
+                      {ticketThread(selected, "cards")}
+                    </AdminChatPanel>
+                  );
+                })()
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-1 px-6 text-center">
+                  <p className="text-sm font-medium text-slate-900">Nothing open</p>
+                  <p className="text-xs text-slate-500">Pick a ticket on the left.</p>
+                </div>
+              )}
+            </section>
+            ) : (
+            <section
+              className={`flex min-h-0 min-w-0 flex-col overflow-hidden max-lg:min-h-[min(70dvh,36rem)] ${
+                groupMode === "channels" && !phoneChannelOpen ? "max-lg:hidden" : ""
+              }`}
+            >
+              {groupMode === "channels" && selectedChannel ? (
+                <ChannelThreadHeader
+                  channelLabel={selectedChannel.label}
+                  thread={selected ? launchThread(selected.topic) : launchThread(pendingThreadKey)}
+                  title={selected?.title?.trim() || "(No subject)"}
+                  onBack={() => {
+                    setSelectedId(null);
+                    setPendingThreadKey(null);
+                  }}
+                >
+                  {selected ? (
+                    <>
+                      <select
+                        value={selected.assigned_to ?? ""}
+                        disabled={saving}
+                        onChange={(e) =>
+                          void updateRow(selected.id, {
+                            assigned_to: e.target.value || null,
+                          })
+                        }
+                        className={fieldClass("select", "small", "w-auto! max-w-[7.5rem]")}
+                        aria-label="Assignee"
+                      >
+                        <option value="">Anyone</option>
+                        {assigneePickerOptions(assignees, selected.assignee).map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {assigneeShortName(a)}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={shownTicketStatus(selected)}
+                        disabled={saving}
+                        onChange={(e) =>
+                          void updateRow(selected.id, {
+                            status: e.target.value as SupportTicketStatus,
+                          })
+                        }
+                        className={fieldClass("select", "small", "w-auto!")}
+                        aria-label="Status"
+                      >
+                        {(Object.keys(SUPPORT_STATUS_ADMIN_LABELS) as SupportTicketStatus[]).map((s) => (
+                          <option key={s} value={s}>
+                            {SUPPORT_STATUS_ADMIN_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void deleteRow(selected)}
+                        className="rounded-md p-1.5 text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                        aria-label="Delete thread"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : null}
+                </ChannelThreadHeader>
+              ) : null}
               {showPeopleList ? (
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
                   <Users className="h-8 w-8 text-slate-400" aria-hidden />
@@ -1591,9 +2695,50 @@ export function AdminSupportPage() {
                     Open someone to see their tickets, then reply in the thread.
                   </p>
                 </div>
+              ) : groupMode === "channels" && pendingThreadKey && selectedChannel ? (
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <AdminTicketReplies
+                    key={`${selectedChannel.key}:${pendingThreadKey}`}
+                    reportId=""
+                    createReport={createPinnedThread}
+                    reportStatus="waiting_reply"
+                    variant="inbox"
+                    canEmailNotify={Boolean(selectedChannel.profileId)}
+                    emailNotifyDefault={false}
+                    emailNotifyLabel={selectedChannel.label}
+                    sendAsOptions={assignees}
+                    messageLayout="slack"
+                    header={
+                      launchThread(pendingThreadKey)?.phase ? (
+                        <>
+                          {adminJobBrief(launchThread(pendingThreadKey))}
+                          <BlueprintCommentsBlock comments={blueprintByThread[pendingThreadKey] ?? []} audience="admin" />
+                        </>
+                      ) : (
+                        <ThreadWelcome
+                          thread={launchThread(pendingThreadKey)}
+                          comments={blueprintByThread[pendingThreadKey] ?? []}
+                          coachLabel={selectedChannel.label}
+                        />
+                      )
+                    }
+                    onStatusTouched={() => {
+                      void openCreatedPinnedThread();
+                      notifySupportCountsChanged();
+                    }}
+                    onInternalNoteSaved={() => {
+                      void openCreatedPinnedThread();
+                      void loadAttention();
+                    }}
+                  />
+                </div>
               ) : selected ? (
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 xl:hidden">
+                  <div
+                    className={`flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 xl:hidden ${
+                      groupMode === "channels" ? "hidden!" : ""
+                    }`}
+                  >
                     {selected.created_by ? (
                       <span className="inline-flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         <a
@@ -1642,7 +2787,7 @@ export function AdminSupportPage() {
                         )}
                       </select>
                       <select
-                        value={selected.status}
+                        value={shownTicketStatus(selected)}
                         disabled={saving}
                         onChange={(e) =>
                           void updateRow(selected.id, {
@@ -1675,250 +2820,85 @@ export function AdminSupportPage() {
                   </div>
 
                   <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    <AdminTicketReplies
-                      reportId={selected.id}
-                      reportStatus={selected.status}
-                      variant="inbox"
-                      canEmailNotify={canEmailNotify}
-                      emailNotifyDefault={emailNotifyDefault}
-                      emailNotifyLabel={ticketAuthorLabel(selected)}
-                      sendAsOptions={assignees}
-                      supportCallContact={
-                        supportCallContact ?? ticketSupportCallContact(selected)
-                      }
-                      statusSaving={saving}
-                      onStatusChange={(status) =>
-                        void updateRow(selected.id, { status })
-                      }
-                      openingMessage={{
-                        authorLabel: ticketAuthorLabel(selected),
-                        authorAvatarUrl: selected.author?.avatar_url ?? null,
-                        title: selected.title?.trim() || "(No subject)",
-                        body: selected.details,
-                        createdAt: selected.created_at,
-                        typeLabel: supportTypeOptionLabel(selected.type),
-                        media: selected.media,
-                        viaEmail: selected.source === "email_inbox",
-                      }}
-                      onStatusTouched={() => {
-                        void loadTickets();
-                        notifySupportCountsChanged();
-                      }}
-                      onInternalNoteSaved={() => {
-                        void loadAttention();
-                      }}
-                      threadRefreshKey={threadRefreshKey}
-                    />
+                    {ticketThread(selected, groupMode === "channels" ? "slack" : "bubbles")}
                   </div>
                 </div>
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 bg-white px-6 text-center">
                   <p className="text-sm font-medium text-slate-900">
-                    No ticket selected
+                    {groupMode === "channels" ? "No message selected" : "No ticket selected"}
                   </p>
                   <p className="max-w-sm text-xs text-slate-600">
-                    Pick a ticket from the queue to read and reply.
+                    {groupMode === "channels"
+                      ? "Pick a message in the channel to open its thread."
+                      : "Pick a ticket from the queue to read and reply."}
                   </p>
                 </div>
               )}
             </section>
+            )}
 
-            {/* Right: ticket details */}
-            <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-slate-50 xl:flex xl:border-l xl:border-t-0">
-              {selected && !showPeopleList ? (
-                <div className="flex min-h-0 flex-1 flex-col">
-                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+            {groupMode === "channels" && selectedChannel ? (
+              <aside className="hidden min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain border-l border-slate-200 bg-white xl:flex">
+                {openJobThread && openJobThread.phase !== null ? (
+                  <section className="space-y-4 border-b border-slate-200 p-5">
                     <div>
-                      <span className="mb-1 block text-xs font-medium text-slate-600">
-                        Linked coach
-                      </span>
-                      <CoachSearchCombobox
-                        coaches={coaches}
-                        value={selected.created_by ?? ""}
-                        allowClear
-                        placeholder="Link to a coach…"
-                        onChange={(id) =>
-                          void linkTicketCoach(selected.id, id || null)
-                        }
-                      />
-                      {selected.contact_email ? (
-                        <p className="mt-1 truncate text-xs text-slate-500">
-                          {selected.contact_email}
-                        </p>
-                      ) : null}
-                      {selected.contact_email && !selected.created_by ? (
-                        <p className="mt-1 text-caption text-slate-500">
-                          Linking also remembers this email for future inbox
-                          mail.
-                        </p>
-                      ) : null}
-                      {selected.created_by ? (
-                        <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg border border-sky-200 bg-sky-50">
-                          <a
-                            href={`/admin/coaches/${encodeURIComponent(selected.created_by)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Open coach profile"
-                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap border-r border-sky-200 px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
-                          >
-                            <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            Profile
-                          </a>
-                          <a
-                            href={`/coach/support?impersonate=${encodeURIComponent(selected.created_by)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Open their Support inbox"
-                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            Their inbox
-                          </a>
-                          <a
-                            href={`/admin/blueprint/coach?coach=${encodeURIComponent(selected.created_by)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Open their Blueprint in admin"
-                            className="col-span-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap border-t border-sky-200 px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
-                          >
-                            <ClipboardList className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            Blueprint
-                          </a>
-                        </div>
-                      ) : null}
+                      <p className="text-kicker font-semibold uppercase tracking-wide text-slate-400">The job</p>
+                      <h3 className="mt-1 text-base font-semibold text-slate-900">{openJobThread.label}</h3>
                     </div>
-
-                    <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
-                      <label className="flex items-center gap-3">
-                        <span className="w-16 shrink-0 text-xs font-medium text-slate-600">
-                          Assignee
-                        </span>
-                        <select
-                          value={selected.assigned_to ?? ""}
-                          disabled={saving}
-                          onChange={(e) =>
-                            void updateRow(selected.id, {
-                              assigned_to: e.target.value || null,
-                            })
-                          }
-                          className={fieldClass("select", "small", "min-w-0 flex-1")}
-                        >
-                          <option value="">Anyone</option>
-                          {assigneePickerOptions(
-                            assignees,
-                            selected.assignee
-                          ).map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {assigneeShortName(a)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="flex items-center gap-3">
-                        <span className="w-16 shrink-0 text-xs font-medium text-slate-600">
-                          Type
-                        </span>
-                        <select
-                          value={selected.type}
-                          disabled={saving}
-                          onChange={(e) =>
-                            void updateRow(selected.id, {
-                              type: e.target.value as SupportTicketType,
-                            })
-                          }
-                          className={fieldClass("select", "small", "min-w-0 flex-1 [color-scheme:light]")}
-                        >
-                          {(
-                            Object.keys(
-                              SUPPORT_TYPE_LABELS
-                            ) as SupportTicketType[]
-                          ).map((t) => (
-                            <option
-                              key={t}
-                              value={t}
-                              className="bg-white text-slate-900"
-                            >
-                              {supportTypeOptionLabel(t)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      {selected.type === "idea" ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          <label className="block">
-                            <span className="mb-1 block text-xs font-medium text-slate-600">
-                              Importance
-                            </span>
-                            <select
-                              value={selected.importance ?? ""}
-                              disabled={saving}
-                              onChange={(e) =>
-                                void updateRow(selected.id, {
-                                  importance: e.target.value
-                                    ? Number(e.target.value)
-                                    : null,
-                                })
-                              }
-                              className={fieldClass("select", "small")}
-                            >
-                              <option value="">—</option>
-                              {[1, 2, 3, 4, 5].map((n) => (
-                                <option key={n} value={n}>
-                                  {n}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="block">
-                            <span className="mb-1 block text-xs font-medium text-slate-600">
-                              Ease
-                            </span>
-                            <select
-                              value={selected.ease ?? ""}
-                              disabled={saving}
-                              onChange={(e) =>
-                                void updateRow(selected.id, {
-                                  ease: e.target.value
-                                    ? Number(e.target.value)
-                                    : null,
-                                })
-                              }
-                              className={fieldClass("select", "small")}
-                            >
-                              <option value="">—</option>
-                              {[1, 2, 3, 4, 5].map((n) => (
-                                <option key={n} value={n}>
-                                  {n}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <p className="col-span-2 text-xs text-slate-500">
-                            Score: {score ?? "—"}
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-
+                    <JobChecklist job={launchProgress[openJobThread.key]} audience="admin" />
+                  </section>
+                ) : null}
+                {selected ? (
+                  <section className="space-y-3 border-b border-slate-200 p-5">
+                    <h3 className="text-kicker font-semibold uppercase tracking-wide text-slate-400">
+                      This thread
+                    </h3>
+                    <label className="flex items-center gap-3">
+                      <span className="w-16 shrink-0 text-xs font-medium text-slate-600">Assigned</span>
+                      <select
+                        value={selected.assigned_to ?? ""}
+                        disabled={saving}
+                        onChange={(e) => void updateRow(selected.id, { assigned_to: e.target.value || null })}
+                        className={fieldClass("select", "small", "min-w-0 flex-1")}
+                      >
+                        <option value="">Anyone</option>
+                        {assigneePickerOptions(assignees, selected.assignee).map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {assigneeShortName(a)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex items-center gap-3">
+                      <span className="w-16 shrink-0 text-xs font-medium text-slate-600">Status</span>
+                      <select
+                        value={shownTicketStatus(selected)}
+                        disabled={saving}
+                        onChange={(e) => void updateRow(selected.id, { status: e.target.value as SupportTicketStatus })}
+                        className={fieldClass("select", "small", "min-w-0 flex-1")}
+                      >
+                        {(Object.keys(SUPPORT_STATUS_ADMIN_LABELS) as SupportTicketStatus[]).map((st) => (
+                          <option key={st} value={st}>
+                            {SUPPORT_STATUS_ADMIN_LABELS[st]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {selected.created_by ? (
+                      <SupportChatPagePicker key={selected.id} reportId={selected.id} value={selected.context_path ?? null} />
+                    ) : null}
                     {(() => {
-                      const contact =
-                        supportCallContact ?? ticketSupportCallContact(selected);
-                      const guestLabel =
-                        [contact.firstName, contact.lastName]
-                          .filter(Boolean)
-                          .join(" ")
-                          .trim() || ticketAuthorLabel(selected);
+                      const contact = supportCallContact ?? ticketSupportCallContact(selected);
                       return (
                         <SupportTicketBookCall
                           key={`${selected.id}:${pamAssigneeId ?? ""}`}
                           ticketId={selected.id}
-                          defaultHost={defaultSupportHost(
-                            selected.assigned_to,
-                            pamAssigneeId
-                          )}
-                          guestLabel={guestLabel}
+                          defaultHost={defaultSupportHost(selected.assigned_to, pamAssigneeId)}
+                          guestLabel={
+                            [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim() ||
+                            ticketAuthorLabel(selected)
+                          }
                           guestEmail={contact.email?.trim() || null}
                           onOpenSettings={() => selectTopTab("settings")}
                           onBooked={() => {
@@ -1928,40 +2908,74 @@ export function AdminSupportPage() {
                         />
                       );
                     })()}
-
-                    <SupportTicketCoachPayments coachId={selected.created_by} />
-
-                    <div className="mt-6 border-t border-slate-200 pt-3">
-                      <p className="text-kicker font-semibold uppercase text-slate-400">
-                        Source
-                      </p>
-                      <p className="mt-0.5 text-xs font-medium text-slate-700">
-                        {SUPPORT_SOURCE_LABELS[selected.source]}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-4 py-2">
-                    <p className="text-caption tabular-nums text-slate-400">
-                      {formatSupportTicketId(selected.ticket_number)}
-                    </p>
                     <button
                       type="button"
                       disabled={saving}
                       onClick={() => void deleteRow(selected)}
-                      className={buttonClass("delete", "small")}
+                      className="inline-flex items-center gap-1.5 pt-1 text-xs font-medium text-rose-700 hover:underline disabled:opacity-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                      Delete
+                      Delete thread
                     </button>
-                  </div>
-                </div>
-              ) : (
+                  </section>
+                ) : null}
+                <section className="space-y-3 p-5">
+                  <h3 className="text-kicker font-semibold uppercase tracking-wide text-slate-400">
+                    {selectedChannel.label}
+                  </h3>
+                  {selectedChannel.joinedAt ? (
+                    <p className="text-sm text-slate-700">
+                      Joined {formatJoinDay(selectedChannel.joinedAt)}{" "}
+                      {new Date(selectedChannel.joinedAt).getFullYear()}
+                    </p>
+                  ) : null}
+                  {selectedChannel.profileId ? (
+                    <>
+                      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-sky-200 bg-sky-50">
+                        <a
+                          href={`/admin/coaches/${encodeURIComponent(selectedChannel.profileId)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap border-r border-sky-200 px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+                        >
+                          <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          Profile
+                        </a>
+                        <a
+                          href={`/admin/blueprint/coach?coach=${encodeURIComponent(selectedChannel.profileId)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+                        >
+                          <ClipboardList className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          Blueprint
+                        </a>
+                      </div>
+                      <SupportTicketCoachPayments coachId={selectedChannel.profileId} />
+                    </>
+                  ) : null}
+                </section>
+              </aside>
+            ) : null}
+
+            {/* Right: ticket details */}
+            {v2 ? (
+              <aside className="hidden min-h-0 min-w-0 flex-col border-l border-slate-200 bg-white xl:flex">
+                {selected && !showPeopleList ? v2Details(selected) : null}
+              </aside>
+            ) : (
+            <aside
+              className={`hidden min-h-0 min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-slate-50 xl:border-l xl:border-t-0 ${
+                groupMode === "channels" ? "" : "xl:flex"
+              }`}
+            >
+              {ticketDetails ?? (
                 <div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm text-slate-400">
                   Ticket details appear here
                 </div>
               )}
             </aside>
+            )}
           </div>
         </div>
       </div>
@@ -1970,3 +2984,354 @@ export function AdminSupportPage() {
     </DashboardPageSection>
   );
 }
+
+/** Channels: one name per coach, always visible, like Slack's channel list. */
+function ChannelList({
+  groups,
+  sort,
+  loading,
+  selectedKey,
+  onSelect,
+}: {
+  groups: ChannelGroup[];
+  sort: ChannelSort;
+  loading: boolean;
+  selectedKey: string | null;
+  onSelect: (key: string) => void;
+}) {
+  if (loading && groups.length === 0) {
+    return <p className="px-4 py-8 text-sm text-slate-500">Loading channels…</p>;
+  }
+  if (groups.length === 0) {
+    return <p className="px-4 py-8 text-sm text-slate-500">No coaches match.</p>;
+  }
+  const thisYear = new Date().getFullYear();
+  return (
+    <ul className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-2 py-1.5">
+      {groups.map((group, index) => {
+        const active = group.key === selectedKey;
+        const waiting = group.needsReply > 0;
+        // Newest: a small year line where earlier years start; this year has none.
+        const year = sort === "joined" && group.joinedAt ? new Date(group.joinedAt).getFullYear() : null;
+        const prevJoined = index > 0 ? groups[index - 1].joinedAt : null;
+        const prevYear = prevJoined ? new Date(prevJoined).getFullYear() : thisYear;
+        return (
+          <Fragment key={group.key}>
+          {year && year !== thisYear && year !== prevYear ? (
+            <li className="flex items-center gap-2 px-2.5 pb-1 pt-3" aria-hidden>
+              <span className="text-caption font-semibold tabular-nums text-slate-400">{year}</span>
+              <span className="h-px flex-1 bg-slate-200" />
+            </li>
+          ) : null}
+          <li>
+            <button
+              type="button"
+              onClick={() => onSelect(group.key)}
+              aria-current={active ? "true" : undefined}
+              className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm ${
+                active
+                  ? "bg-sky-700 text-white"
+                  : waiting
+                    ? "font-semibold text-slate-900 hover:bg-slate-400/40"
+                    : "text-slate-700 hover:bg-slate-400/40"
+              }`}
+            >
+              <span className="truncate">{group.label}</span>
+              {waiting ? (
+                <span
+                  className={`inline-flex min-w-[1.15rem] shrink-0 ${sort === "joined" ? "" : "ml-auto"} items-center justify-center rounded-full px-1 text-caption font-semibold ${
+                    active ? "bg-white text-sky-800" : "bg-sky-600 text-white"
+                  }`}
+                  title="Messages waiting on us"
+                >
+                  {group.needsReply}
+                </span>
+              ) : null}
+              {sort === "joined" && group.joinedAt ? (
+                <span
+                  className={`ml-auto shrink-0 pl-2 text-caption tabular-nums ${
+                    active ? "text-white/70" : "text-slate-400"
+                  }`}
+                >
+                  {formatJoinDay(group.joinedAt)}
+                </span>
+              ) : null}
+            </button>
+          </li>
+          </Fragment>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** "28 Oct": the year shows as a line above instead. */
+function formatJoinDay(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  // en-GB says "Sept"; keep every month to three letters.
+  return `${d.getDate()} ${d.toLocaleString("en-GB", { month: "short" }).slice(0, 3)}`;
+}
+
+
+
+
+
+
+
+
+
+/**
+ * One coach's channel, like their old Slack channel: Help & support, then the
+ * chat on each Blueprint page (job 26, the same list the coach sees in My
+ * Blueprint → Messages), then one-off messages in date order. Each is one
+ * clean line with reply faces and a count; clicking one opens it in its place.
+ */
+function ChannelFeed({
+  channel,
+  className = "",
+  onPhoneBack,
+  blueprintByThread,
+  pageChats,
+  onSelectPageChat,
+  progress,
+  attentionByTicket,
+  refreshKey,
+  onSelect,
+  onSelectEmptyThread,
+}: {
+  channel: ChannelGroup | null;
+  className?: string;
+  onPhoneBack: () => void;
+  blueprintByThread: Record<string, SupportReply[]>;
+  pageChats: ReturnType<typeof useBlueprintPageChats>;
+  onSelectPageChat: (slug: string) => void;
+  progress: LaunchProgress;
+  attentionByTicket: SupportAttentionMap;
+  refreshKey: number;
+  onSelect: (id: string) => void;
+  onSelectEmptyThread: (key: string) => void;
+}) {
+  const tickets = channel?.tickets ?? [];
+  const activity = useChannelActivity(
+    tickets.map((t) => t.id).sort(),
+    `${refreshKey}:${tickets.map((t) => t.lastActivityAt).join("|")}`
+  );
+
+  if (!channel) {
+    return (
+      <section className={`flex min-h-0 min-w-0 flex-col items-center justify-center gap-2 px-6 text-center ${className}`}>
+        <Users className="h-8 w-8 text-slate-400" aria-hidden />
+        <p className="text-sm font-medium text-slate-900">Choose a coach</p>
+      </section>
+    );
+  }
+
+  const pinnedByKey = new Map<string, AdminTicketRow>();
+  for (const t of tickets) if (launchThread(t.topic)) pinnedByKey.set(t.topic!, t);
+  // Only Help & support is pinned now; any older job thread shows with the one-offs.
+  const oneOffs = tickets
+    .filter((t) => !launchThread(t.topic) || launchThread(t.topic)!.phase !== null)
+    .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+
+  const pinnedRow = (thread: LaunchThread) => {
+    const row = pinnedByKey.get(thread.key);
+    const needsReply = Boolean(row && row.status !== "resolved" && ticketNeedsStaffReply(row));
+    const unread = row ? supportAttentionBadgeCount(attentionByTicket[row.id]) : 0;
+    return (
+      <li key={thread.key}>
+        <button
+          type="button"
+          onClick={() => (row ? onSelect(row.id) : onSelectEmptyThread(thread.key))}
+          className={`${threadRowClass("center")} ${progress[thread.key]?.done ? "bg-slate-50" : ""}`}
+        >
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center text-slate-400">
+            {thread.phase === null ? (
+              <ClipboardList className="h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <JobCircle job={progress[thread.key]} />
+            )}
+          </span>
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span
+              className={`truncate text-sm font-semibold ${
+                progress[thread.key]?.done ? "text-slate-500" : "text-slate-900"
+              }`}
+            >
+              {thread.label}
+            </span>
+            <ThreadFlags unread={unread} needsReply={needsReply} />
+            <ThreadActivityInline
+              activity={withBlueprintActivity(row ? activity[row.id] : undefined, blueprintByThread[thread.key])}
+              started={Boolean(row)}
+            />
+          </span>
+        </button>
+      </li>
+    );
+  };
+
+  const pageRow = (page: BlueprintLink) => {
+    const chat = pageChats[page.slug];
+    return (
+      <li key={page.slug}>
+        <button type="button" onClick={() => onSelectPageChat(page.slug)} className={threadRowClass("center")}>
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center text-slate-400">
+            <PageIcon slug={page.slug} className="h-4 w-4" />
+          </span>
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="truncate text-sm font-semibold text-slate-900">{page.title}</span>
+            <ThreadFlags unread={chat?.unread ?? 0} needsReply={false} />
+            <ThreadActivityInline activity={chat} started />
+          </span>
+        </button>
+      </li>
+    );
+  };
+
+  return (
+    <section
+      className={`flex min-h-0 min-w-0 flex-col overflow-hidden bg-white max-lg:min-h-[min(60dvh,32rem)] ${className}`}
+      aria-label={`${channel.label}'s channel`}
+    >
+      <header className="flex h-12 shrink-0 items-center gap-2.5 border-b border-slate-200 bg-white px-4">
+        <button
+          type="button"
+          onClick={onPhoneBack}
+          className="-ml-2 rounded-md p-1 text-slate-500 hover:bg-slate-100 lg:hidden"
+          aria-label="All coaches"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+        </button>
+        <p className="min-w-0 flex-1 truncate text-base font-semibold text-slate-900">
+          {channel.label}
+        </p>
+        {channel.profileId ? (
+          <a
+            href={`/admin/coaches/${encodeURIComponent(channel.profileId)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:underline"
+          >
+            <UserRound className="h-3 w-3" aria-hidden />
+            Profile
+          </a>
+        ) : null}
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white">
+        <div className="w-full max-w-3xl space-y-6 px-3 py-6 sm:px-6">
+          {channel.profileId ? (
+            <>
+              <ChannelCard>{LAUNCH_THREADS.filter((t) => t.phase === null).map(pinnedRow)}</ChannelCard>
+              {BLUEPRINT_GROUPS.map((group) => {
+                const pages = group.pages.filter((page) => page.slug !== "blueprint");
+                if (!pages.length) return null;
+                return (
+                  <section key={group.label}>
+                    <ChannelGroupLabel label={group.label} />
+                    <ChannelCard>{pages.map(pageRow)}</ChannelCard>
+                  </section>
+                );
+              })}
+            </>
+          ) : null}
+          <section>
+          <ChannelGroupLabel label="Messages" />
+          <ChannelCard>
+          {oneOffs.length === 0 ? (
+            <li className="px-4 py-3 text-sm text-slate-400">No other messages yet.</li>
+          ) : (
+            oneOffs.map((row) => {
+              const needsReply = row.status !== "resolved" && ticketNeedsStaffReply(row);
+              const unread = supportAttentionBadgeCount(attentionByTicket[row.id]);
+              const title = row.title?.trim() || previewText(row.details, 120);
+              return (
+                <li key={row.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(row.id)}
+                    className={`${threadRowClass("center")} ${row.status === "resolved" ? "bg-slate-50" : ""}`}
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                      <MessageStatusCircle status={row.status} audience="admin" />
+                    </span>
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <span
+                        className={`truncate text-sm font-semibold ${
+                          row.status === "resolved" ? "text-slate-500" : "text-slate-900"
+                        }`}
+                      >
+                        {title}
+                      </span>
+                      <ThreadFlags unread={unread} needsReply={needsReply} />
+                      <ThreadActivityInline activity={activity[row.id]} started />
+                    </span>
+                  </button>
+                </li>
+              );
+            })
+          )}
+          </ChannelCard>
+          </section>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ThreadFlags({ unread, needsReply }: { unread: number; needsReply: boolean }) {
+  if (!unread && !needsReply) return null;
+  return (
+    <span className="flex shrink-0 items-center gap-1.5">
+      {needsReply ? <span className={badgeClass("amber")}>Needs reply</span> : null}
+      {unread > 0 ? (
+        <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-caption font-semibold text-white">
+          {unread}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/**
+ * Top of an open thread in Channels, like Linear: back to the coach's channel,
+ * then the thread's name. Admin controls sit on the right.
+ */
+function ChannelThreadHeader({
+  channelLabel,
+  thread,
+  title,
+  onBack,
+  children,
+}: {
+  channelLabel: string;
+  thread: LaunchThread | null;
+  title: string;
+  onBack: () => void;
+  children?: ReactNode;
+}) {
+  const phase = thread?.phase ? LAUNCH_PHASES.find((p) => p.key === thread.phase)?.label : null;
+  return (
+    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-slate-200 px-3 py-1.5">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex min-w-0 shrink items-center gap-1 rounded-md px-1.5 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+      >
+        <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="truncate">{channelLabel}</span>
+      </button>
+      <span className="select-none text-slate-300" aria-hidden>
+        /
+      </span>
+      <span className="min-w-0 truncate text-sm font-semibold text-slate-900">
+        {thread?.label ?? title}
+      </span>
+      {phase ? (
+        <span className="hidden shrink-0 text-xs text-slate-400 sm:inline">{phase}</span>
+      ) : null}
+      <span className="ml-auto flex shrink-0 items-center gap-2 xl:hidden">{children}</span>
+    </header>
+  );
+}
+

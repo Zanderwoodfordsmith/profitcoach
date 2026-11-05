@@ -8,6 +8,19 @@ import { cardClass } from "@/components/ui/Card";
 import { fieldClass } from "@/components/ui/Field";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 
+/** A question-and-answer table (Objection, Answer) reads as a list of questions, each with its answer under it. */
+export function isFaqTable(block: Extract<BlueprintBlock, { type: "table" }>): boolean {
+  return block.columns.length === 2 && /objection|question|they say/i.test(block.columns[0] ?? "");
+}
+
+/**
+ * Tables whose rows are things in their own right (each pain, each objection):
+ * edited as a list of rows that open, can be added to and reordered.
+ */
+export function isRowListTable(block: Extract<BlueprintBlock, { type: "table" }>): boolean {
+  return isFaqTable(block) || /^pains?$/i.test((block.columns[0] ?? "").trim());
+}
+
 function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -197,7 +210,7 @@ export function Blocks({
               <ul key={key} className="max-w-[68ch] space-y-2.5">
                 {block.items.map((item, j) => (
                   <li key={j} className="grid grid-cols-[0.875rem_1fr] gap-2.5 text-read">
-                    <span aria-hidden className="mt-[0.62em] h-1.5 w-1.5 rounded-[1px] bg-[var(--bp-sky)]" />
+                    <span aria-hidden className="ml-1.5 mt-[0.62em] h-1.5 w-1.5 rounded-full bg-[var(--bp-sky)]" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -266,6 +279,18 @@ export function Blocks({
               </dl>
             );
           case "table":
+            if (isFaqTable(block)) {
+              return (
+                <dl key={key} className="bp-faq max-w-[68ch]">
+                  {block.rows.map((row, r) => (
+                    <div key={r} className="bp-keep bp-faq-item py-3.5">
+                      <dt className="text-read font-semibold text-[var(--bp-ink)]">{row[0]}</dt>
+                      <dd className="mt-1 text-read text-[var(--bp-body)]">{row[1]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              );
+            }
             return (
               <div key={key} className="bp-keep bp-scroll -mx-1 overflow-x-auto px-1">
                 <table className="bp-table w-full min-w-[34rem] border-separate border-spacing-0 overflow-hidden rounded-xl border border-[var(--bp-rule)] text-left text-ui">

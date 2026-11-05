@@ -124,6 +124,7 @@ import {
   type PendingVideoNote,
   type PendingVoiceNote,
 } from "@/components/messaging/ComposerMediaTools";
+import { FileDropZone, sortDroppedFiles, voiceNoteFromFile } from "@/components/messaging/FileDropZone";
 import { NewConversationPicker } from "@/components/messaging/NewConversationPicker";
 import { ReplySnippetPicker } from "@/components/messaging/ReplySnippetPicker";
 import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
@@ -2659,7 +2660,7 @@ export function MessagingInbox({
   );
 
   const addPendingFiles = useCallback(
-    (list: FileList | null) => {
+    (list: FileList | File[] | null) => {
       if (!list?.length) return;
       const next: PendingComposerFile[] = [];
       for (const file of Array.from(list)) {
@@ -2676,6 +2677,27 @@ export function MessagingInbox({
     },
     [pendingFiles.length]
   );
+
+  /** Files dropped on the thread open the reply box and go in, as if picked with its buttons. */
+  function dropIntoReply(files: File[]) {
+    const { images, videos, audio, documents } = sortDroppedFiles(files);
+    setComposerOpen(true);
+    if (images.length || documents.length) addPendingFiles([...images, ...documents]);
+    const video = videos[0];
+    if (video) {
+      setPendingVideo((prev) => {
+        if (prev?.url) URL.revokeObjectURL(prev.url);
+        return { file: video, url: URL.createObjectURL(video) };
+      });
+    }
+    const voice = audio[0];
+    if (voice) {
+      setPendingVoice((prev) => {
+        if (prev?.url) URL.revokeObjectURL(prev.url);
+        return voiceNoteFromFile(voice);
+      });
+    }
+  }
 
   const insertEmojiAtCursor = useCallback((emoji: string) => {
     const el = replyTextareaRef.current;
@@ -5187,8 +5209,9 @@ export function MessagingInbox({
         </aside>
           )}
 
-        {/* Center: thread + composer */}
-        <section
+        {/* Center: thread + composer. Files dropped anywhere here go into the reply. */}
+        <FileDropZone
+          onFiles={selected && mediaComposerEnabled ? dropIntoReply : undefined}
           className={`flex min-h-0 min-w-0 flex-col overflow-hidden max-lg:h-[min(70dvh,36rem)] lg:min-h-0 lg:border-b-0 xl:border-b-0 [view-transition-name:inbox-prospect-thread] ${
             prospectMode ? "max-lg:order-1 lg:order-2" : ""
           }`}
@@ -6329,7 +6352,7 @@ export function MessagingInbox({
               )}
             </div>
           ) : null}
-        </section>
+        </FileDropZone>
 
         {/* Contact / prospect details — right in inbox, left on the prospect page */}
         <aside

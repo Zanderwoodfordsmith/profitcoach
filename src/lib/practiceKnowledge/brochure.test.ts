@@ -87,7 +87,7 @@ describe("90-day programme brochure", () => {
       row: null,
     });
     assert.equal(pack.ready, false);
-    assert.ok(pack.gaps.some((gap) => gap.href.includes("/blueprint/story")));
+    assert.ok(pack.gaps.some((gap) => gap.href.includes("/blueprint/about")));
     assert.ok(pack.gaps.some((gap) => gap.href.includes("/blueprint/offer")));
   });
 });

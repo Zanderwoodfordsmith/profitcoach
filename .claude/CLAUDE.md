@@ -27,7 +27,8 @@ storage, migrations in `supabase/migrations`), Stripe billing, Vercel hosting.
   (roadmap card or a proposal to approve) when it's too large to do now
   and needs his check first.
 - **Design changes:** add the new version beside the old one until he has
-  chosen; once he picks, remove the versions he passed on.
+  chosen; once he picks, remove the versions he passed on. Put the switch in
+  the top title bar, just left of search (admin only), not in the page.
 - **Keep navigation flat:** group by the thing itself, few layers, one
   sensible default instead of parallel variants.
 - **Copy:** follow `content/ai-knowledge/writing-rules.md` (binding for all

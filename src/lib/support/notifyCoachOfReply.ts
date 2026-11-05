@@ -283,7 +283,7 @@ export async function processDueSupportReplyEmails(
     const { data: replies, error: repliesError } = await supabaseAdmin
       .from("community_feedback_replies")
       .select(
-        "id, body, media, created_at, created_by, author:profiles!created_by ( role, full_name, first_name )"
+        "id, body, media, created_at, created_by, as_ava, author:profiles!created_by ( role, full_name, first_name )"
       )
       .eq("report_id", ticket.id)
       .gt("created_at", since)
@@ -309,12 +309,15 @@ export async function processDueSupportReplyEmails(
         const author = Array.isArray(r.author) ? r.author[0] : r.author;
         return {
           body: (r.body ?? "").trim(),
-          authorFirstName: firstNameOf(
-            author as {
-              full_name?: string | null;
-              first_name?: string | null;
-            } | null
-          ),
+          // Ava's messages are approved by an admin but signed by her.
+          authorFirstName: (r as { as_ava?: boolean | null }).as_ava
+            ? "Ava"
+            : firstNameOf(
+                author as {
+                  full_name?: string | null;
+                  first_name?: string | null;
+                } | null
+              ),
           media: parseSupportReplyMedia(r.media),
         };
       })

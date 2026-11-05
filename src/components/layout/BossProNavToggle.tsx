@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+/** The round edge button that folds a menu. The Blueprint menu uses the same shape in slate. */
+export const EDGE_TOGGLE_CLASS = "h-6 w-6 items-center justify-center rounded-full text-white shadow-md";
+
 type BossProNavToggleProps = {
   /** Full labels vs icon rail (desktop). */
   expanded: boolean;
@@ -71,7 +74,7 @@ export function BossProNavToggle({ expanded, onToggle, hidden = false }: BossPro
               type="button"
               onClick={onToggle}
               style={{ left: spot.left, top: spot.top }}
-              className="fixed z-[90] hidden h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#0c5290] text-white shadow-md hover:bg-[#1664b6] md:flex"
+              className={`fixed z-[90] hidden -translate-x-1/2 -translate-y-1/2 md:flex ${EDGE_TOGGLE_CLASS} bg-[#0c5290] hover:bg-[#1664b6]`}
               aria-expanded={expanded}
               aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
             >

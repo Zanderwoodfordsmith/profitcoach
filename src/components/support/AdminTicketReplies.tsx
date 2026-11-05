@@ -1,5 +1,6 @@
 "use client";
 
+import { SeenTick } from "@/components/support/SeenTick";
 import {
   Bold,
   Check,
@@ -37,6 +38,8 @@ import {
   SupportChatThread,
   SupportViaEmailMark,
   supportAuthorShortName,
+  SUPPORT_CHAT_ROW_CLASS,
+  type SupportThreadLayout,
 } from "@/components/support/SupportChatBubbles";
 import { SupportOpeningBody } from "@/components/support/SeeMoreText";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
@@ -69,6 +72,7 @@ import {
   takeSupportDocuments,
   type PendingSupportDocument,
 } from "@/components/support/SupportDocumentAttach";
+import { FileDropZone, sortDroppedFiles, voiceNoteFromFile } from "@/components/messaging/FileDropZone";
 import {
   parseSupportReplyMedia,
   parseSupportTicketMedia,
@@ -119,6 +123,7 @@ import {
   type SupportTicketStatus,
 } from "@/lib/support/tickets";
 import { cardClass } from "@/components/ui/Card";
+import { commentWhen, firstName } from "@/components/practice/comments/SectionCommentsUI";
 import { fieldClass } from "@/components/ui/Field";
 
 type ComposerMode = "reply" | "note";
@@ -188,6 +193,12 @@ export type AdminTicketOpening = {
   media?: unknown;
   /** Original ticket arrived through the support mailbox. */
   viaEmail?: boolean;
+  /** A pinned channel thread: no author, just a line on what it's for. */
+  pinned?: boolean;
+  /** The "Seen" tick on this first message (5 Nov). */
+  seenAt?: string | null;
+  /** BCA wrote it (New ticket), so the tick is the coach's to give, not ours. */
+  byBca?: boolean;
 };
 
 type AdminTicketRepliesProps = {
@@ -214,6 +225,16 @@ type AdminTicketRepliesProps = {
   onInternalNoteSaved?: () => void;
   /** Bump to reload the thread after a support call is booked. */
   threadRefreshKey?: number;
+  /**
+   * "slack" in Channels: left-aligned messages; status lives in the page header.
+   * "cards" in Support V2: the coach's chat look; status lives in the chat's header.
+   */
+  messageLayout?: SupportThreadLayout;
+  /** Messages written elsewhere (Blueprint comments) shown in time order with these. */
+  extraReplies?: SupportReply[];  /** No ticket yet (reportId ""): called on first send, draft, schedule or note. */
+  createReport?: () => Promise<string | null>;
+  /** Shown at the top of the thread in place of the opening message. */
+  header?: ReactNode;
 };
 
 export function AdminTicketReplies({
@@ -230,6 +251,10 @@ export function AdminTicketReplies({
   sendAsOptions = [],
   supportCallContact = null,
   onInternalNoteSaved,
+  messageLayout = "bubbles",
+  extraReplies,
+  createReport,
+  header,
   threadRefreshKey = 0,
 }: AdminTicketRepliesProps) {
   const [replies, setReplies] = useState<SupportReply[]>([]);
@@ -292,6 +317,20 @@ export function AdminTicketReplies({
   reportIdRef.current = reportId;
   const inbox = variant === "inbox";
 
+  // A pinned thread nobody has written in yet has no ticket: make it on first use.
+  const createdReportIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (reportId) createdReportIdRef.current = null;
+  }, [reportId]);
+  async function ensureReportId(): Promise<string | null> {
+    if (reportId) return reportId;
+    if (createdReportIdRef.current) return createdReportIdRef.current;
+    const id = (await createReport?.()) ?? null;
+    if (!id) setError("Could not start the thread.");
+    createdReportIdRef.current = id;
+    return id;
+  }
+
   const sendAsPeople = useMemo(() => {
     const preferred = ["zander", "pam"];
     const ranked = [...sendAsOptions]
@@ -320,6 +359,49 @@ export function AdminTicketReplies({
     setNotifyNote(null);
   }, [reportId, emailNotifyDefault]);
 
+  // The first message's tick, as changed here; otherwise as loaded.
+  const [openingSeen, setOpeningSeen] = useState<{ id: string; at: string | null } | null>(null);
+  const openingSeenAt = openingSeen?.id === reportId ? openingSeen.at : (openingMessage?.seenAt ?? null);
+  const [seenError, setSeenError] = useState<string | null>(null);
+
+  /** Tick a coach's message "Seen" (null = the first message): it stops needing a reply. */
+  async function markSeen(replyId: string | null, seen: boolean) {
+    if (!reportId) return;
+    setSeenError(null);
+    const { error: seenFailed } = await supabaseClient.rpc("set_support_message_seen", {
+      p_report_id: reportId,
+      p_reply_id: replyId,
+      p_seen: seen,
+    });
+    if (seenFailed) {
+      setSeenError("Couldn't tick it. Try again.");
+      return;
+    }
+    const at = seen ? new Date().toISOString() : null;
+    if (replyId) {
+      setReplies((current) =>
+        current.map((r) => (r.id === replyId ? { ...r, seen_at: at, seen_name: seen ? "you" : null } : r))
+      );
+    } else {
+      setOpeningSeen({ id: reportId, at });
+    }
+    onStatusTouched?.();
+  }
+
+  const openingTick =
+    reportId && openingMessage && !openingMessage.pinned ? (
+      <div className="group/msg">
+        <SeenTick
+          seenAt={openingSeenAt}
+          seenName={null}
+          canTick={!openingMessage.byBca}
+          latest={replies.length === 0}
+          onTick={(seen) => void markSeen(null, seen)}
+        />
+        {seenError ? <p className="mt-1 text-caption text-rose-600">{seenError}</p> : null}
+      </div>
+    ) : null;
+
   // A draft requested on another ticket must not land in this one.
   const copilotTicketRef = useRef<string | null>(null);
   useEffect(() => {
@@ -330,6 +412,10 @@ export function AdminTicketReplies({
 
   const loadReplies = useCallback(async (opts?: { silent?: boolean }) => {
     const generation = ++loadGenerationRef.current;
+    if (!reportId) {
+      setLoading(false);
+      return;
+    }
     if (!opts?.silent) {
       setLoading(true);
       setError(null);
@@ -545,6 +631,7 @@ export function AdminTicketReplies({
     setPendingVideo(null);
     setPendingFiles([]);
 
+    if (!reportId && createReport) setComposerOpen(true);
     void loadAdminReplyDraft(reportId).then((restored) => {
       if (generation !== draftLoadGenerationRef.current) return;
       setDraft((current) => {
@@ -717,7 +804,9 @@ export function AdminTicketReplies({
   /** Draft a reply with AI. Anything already typed is sent as a hint. */
   async function suggestReply() {
     if (copilotLoading || busy) return;
-    const requestedFor = reportId;
+    const targetId = await ensureReportId();
+    if (!targetId) return;
+    const requestedFor = targetId;
     copilotTicketRef.current = requestedFor;
     setCopilotError(null);
     setCopilotLoading(true);
@@ -729,7 +818,7 @@ export function AdminTicketReplies({
         throw new Error("Sign in again, then retry.");
       }
       const res = await fetch(
-        `/api/admin/support/tickets/${encodeURIComponent(reportId)}/reply-suggest`,
+        `/api/admin/support/tickets/${encodeURIComponent(targetId)}/reply-suggest`,
         {
           method: "POST",
           headers: {
@@ -774,7 +863,7 @@ export function AdminTicketReplies({
     setTemplatesOpen(false);
   }
 
-  function addPendingImages(files: FileList | null) {
+  function addPendingImages(files: FileList | File[] | null) {
     if (!files?.length) return;
     const room = COMMUNITY_COMMENT_MEDIA_MAX - pendingImages.length;
     if (room <= 0) return;
@@ -831,7 +920,7 @@ export function AdminTicketReplies({
     );
   }
 
-  function addPendingDocuments(files: FileList | null) {
+  function addPendingDocuments(files: FileList | File[] | null) {
     const room = COMMUNITY_POST_MEDIA_MAX - attachmentSlotsUsed();
     const { accepted, error: fileError } = takeSupportDocuments(files, room);
     if (fileError) setError(fileError);
@@ -839,6 +928,24 @@ export function AdminTicketReplies({
     if (accepted.length > 0) {
       setPendingFiles((current) => [...current, ...accepted]);
     }
+  }
+
+  /** Files dropped anywhere on the conversation go into a reply, sorted as if picked with each button. */
+  function addDroppedFiles(files: File[]) {
+    const { images, videos, audio, documents } = sortDroppedFiles(files);
+    setError(null);
+    setComposerMode("reply");
+    setComposerOpen(true);
+    if (images.length) addPendingImages(images);
+    if (videos[0]) addPendingVideo(videos[0]);
+    const voice = audio[0];
+    if (voice) {
+      setPendingVoice((prev) => {
+        if (prev?.url) URL.revokeObjectURL(prev.url);
+        return voiceNoteFromFile(voice);
+      });
+    }
+    if (documents.length) addPendingDocuments(documents);
   }
 
   async function sendReply() {
@@ -850,6 +957,8 @@ export function AdminTicketReplies({
       Boolean(pendingVoice) ||
       Boolean(pendingVideo);
     if ((!body && !hasMedia) || busy || !authorId) return;
+    const targetId = await ensureReportId();
+    if (!targetId) return;
     setBusyKind("send");
     setError(null);
 
@@ -890,7 +999,7 @@ export function AdminTicketReplies({
       const { data, error: insertError } = await supabaseClient
         .from("community_feedback_replies")
         .insert({
-          report_id: reportId,
+          report_id: targetId,
           created_by: authorId,
           body: replyBody,
           media: uploaded.length > 0 ? uploaded : null,
@@ -904,7 +1013,7 @@ export function AdminTicketReplies({
       const reply = mapSupportReplyRow(data);
       setReplies((current) => [...current, reply]);
       setDraft("");
-      void clearAdminReplyDraft(reportId);
+      void clearAdminReplyDraft(targetId);
       clearPendingCommentImages(pendingImages);
       setPendingImages([]);
       setPendingFiles([]);
@@ -921,7 +1030,7 @@ export function AdminTicketReplies({
         const { error: statusError } = await supabaseClient
           .from("community_feedback_reports")
           .update({ status: nextStatus })
-          .eq("id", reportId);
+          .eq("id", targetId);
         if (statusError) {
           setError(statusError.message);
         }
@@ -935,7 +1044,7 @@ export function AdminTicketReplies({
         } = await supabaseClient.auth.getSession();
         if (session?.access_token) {
           const notifyRes = await fetch(
-            `/api/admin/support/tickets/${reportId}/notify-reply`,
+            `/api/admin/support/tickets/${targetId}/notify-reply`,
             {
               method: "POST",
               headers: {
@@ -977,7 +1086,7 @@ export function AdminTicketReplies({
               .from("community_feedback_replies")
               .update({ via_email: false })
               .eq("id", reply.id)
-              .eq("report_id", reportId);
+              .eq("report_id", targetId);
             setReplies((current) =>
               current.map((row) =>
                 row.id === reply.id ? { ...row, via_email: false } : row
@@ -1002,6 +1111,8 @@ export function AdminTicketReplies({
       Boolean(pendingVoice) ||
       Boolean(pendingVideo);
     if ((!body && !hasMedia) || busy || !authorId) return;
+    const targetId = await ensureReportId();
+    if (!targetId) return;
 
     let when: Date;
     try {
@@ -1053,7 +1164,7 @@ export function AdminTicketReplies({
       const { data, error: insertError } = await supabaseClient
         .from("support_scheduled_replies")
         .insert({
-          report_id: reportId,
+          report_id: targetId,
           created_by: authorId,
           body: replyBody,
           media: uploaded.length > 0 ? uploaded : null,
@@ -1072,7 +1183,7 @@ export function AdminTicketReplies({
         )
       );
       setDraft("");
-      void clearAdminReplyDraft(reportId);
+      void clearAdminReplyDraft(targetId);
       clearPendingCommentImages(pendingImages);
       setPendingImages([]);
       setPendingFiles([]);
@@ -1171,11 +1282,13 @@ export function AdminTicketReplies({
   async function sendInternalNote() {
     const body = noteDraft.trim();
     if (!body || busy || !userId) return;
+    const targetId = await ensureReportId();
+    if (!targetId) return;
     setBusyKind("note");
     setError(null);
     try {
       const { note, error: insertError } = await insertSupportInternalNote({
-        reportId,
+        reportId: targetId,
         createdBy: userId,
         body,
       });
@@ -1367,9 +1480,13 @@ export function AdminTicketReplies({
 
   const composer = inbox ? (
     <div
-      className={`relative flex flex-col border-t border-slate-200 bg-white ${
-        composerOpen && composerExpanded ? "min-h-0 flex-1" : "shrink-0"
-      }`}
+      className={`relative flex flex-col ${
+        messageLayout === "slack"
+          ? "bg-white [&>*]:w-full [&>*]:max-w-2xl"
+          : messageLayout === "cards"
+            ? "bp-chat-foot"
+            : "border-t border-slate-200 bg-white"
+      } ${composerOpen && composerExpanded ? "min-h-0 flex-1" : "shrink-0"}`}
     >
       {reportStatus === "resolved" && composerOpen && composerMode === "reply" ? (
         <p className="border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
@@ -1383,7 +1500,13 @@ export function AdminTicketReplies({
       ) : null}
       {!composerOpen ? (
         <div className="px-3 py-2.5">
-          <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div
+            className={`flex overflow-hidden rounded-xl bg-white ${
+              messageLayout === "cards"
+                ? "shadow-[0_1px_2px_rgba(5,30,54,0.06),0_6px_18px_-8px_rgba(5,30,54,0.18)]"
+                : "border border-slate-200"
+            }`}
+          >
             {sendAsPeople.length > 0 ? (
               <div className="relative shrink-0" ref={sendAsMenuRef}>
                 <button
@@ -1600,6 +1723,13 @@ export function AdminTicketReplies({
                   rows={composerExpanded ? undefined : 4}
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
+                  // Return is a new line; ⌘ or Ctrl + Return sends, as in the coach's chat.
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      void sendReply();
+                    }
+                  }}
                   autoFocus
                   placeholder="Write a message, or jot notes and tap Ava to draft it..."
                   className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 pr-12 pb-10 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
@@ -2094,9 +2224,108 @@ export function AdminTicketReplies({
       : [];
     const openingBody = openingMessage?.body.trim() ?? "";
 
+    const slack = messageLayout === "slack";
+    const cards = messageLayout === "cards";
+    // Cards: the opening message is the first card, as the coach's chat shows it.
+    const cardsOpening = cards && openingMessage ? (
+      openingMessage.pinned ? (
+        <p className="px-2 pb-2 pt-3 text-sm text-slate-500">{openingMessage.body}</p>
+      ) : (
+        <div className="group/msg mb-1">
+          <article className={SUPPORT_CHAT_ROW_CLASS}>
+            <div className="flex items-start gap-3">
+              <SupportChatAvatar
+                name={openingMessage.authorLabel}
+                avatarUrl={openingMessage.authorAvatarUrl}
+                size="sm"
+                tone={openingMessage.byBca ? "sky" : "slate"}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-baseline gap-x-2">
+                  <span className="bp-chat-name min-w-0 truncate">
+                    {firstName(openingMessage.authorLabel) || openingMessage.authorLabel}
+                  </span>
+                  <time
+                    dateTime={openingMessage.createdAt}
+                    title={new Date(openingMessage.createdAt).toLocaleString("en-GB")}
+                    className="shrink-0 text-xs text-[#8595a8]"
+                  >
+                    {commentWhen(openingMessage.createdAt)}
+                  </time>
+                  {openingMessage.viaEmail ? (
+                    <SupportViaEmailMark className="text-[#8595a8]" label="Received by email" />
+                  ) : null}
+                  {reportId && !openingMessage.pinned ? (
+                    <span className="ml-auto flex shrink-0 self-center">
+                      <SeenTick
+                        inline
+                        seenAt={openingSeenAt}
+                        seenName={null}
+                        canTick={!openingMessage.byBca}
+                        latest={replies.length === 0}
+                        onTick={(seen) => void markSeen(null, seen)}
+                      />
+                    </span>
+                  ) : null}
+                </div>
+                <div className="bp-chat-body [&_p]:text-[length:inherit] [&_p]:leading-[inherit] [&_p]:text-[color:inherit]">
+                  <SupportOpeningBody key={reportId} text={openingMessage.body}>
+                    {openingMedia.length > 0 ? (
+                      <div className={openingBody ? "mt-2" : undefined}>
+                        <CommunityPostMediaGallery items={openingMedia} variant="compact" />
+                      </div>
+                    ) : null}
+                  </SupportOpeningBody>
+                </div>
+                {seenError ? <p className="mt-1 text-caption text-rose-600">{seenError}</p> : null}
+              </div>
+            </div>
+          </article>
+        </div>
+      )
+    ) : null;
+    const slackOpening = slack && openingMessage ? (
+      openingMessage.pinned ? (
+        <p className="px-2 pb-1 pt-4 text-sm text-slate-500">{openingMessage.body}</p>
+      ) : (
+        <div className="flex gap-3 px-2 pb-1 pt-4">
+          <SupportChatAvatar
+            name={openingMessage.authorLabel}
+            avatarUrl={openingMessage.authorAvatarUrl}
+          />
+          <div className="min-w-0 flex-1 text-sm text-slate-900">
+            <div className="flex items-baseline gap-2">
+              <span className="truncate text-[15px] font-bold text-slate-900">{openingMessage.authorLabel}</span>
+              <span className="shrink-0 text-caption tabular-nums text-slate-400">
+                {formatCommunityPostTimestamp(openingMessage.createdAt)}
+              </span>
+              {openingMessage.viaEmail ? (
+                <SupportViaEmailMark className="text-slate-400" label="Received by email" />
+              ) : null}
+            </div>
+            <p className="font-semibold">{openingMessage.title}</p>
+            <div className="[&_p]:text-[15px] [&_p]:leading-normal [&_p]:text-slate-700">
+            <SupportOpeningBody key={reportId} text={openingMessage.body}>
+              {openingMedia.length > 0 ? (
+                <div className={openingBody ? "mt-3" : undefined}>
+                  <CommunityPostMediaGallery items={openingMedia} variant="compact" />
+                </div>
+              ) : null}
+            </SupportOpeningBody>
+            </div>
+            {openingTick}
+          </div>
+        </div>
+      )
+    ) : null;
+
     return (
-      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white">
-        {openingMessage ? (
+      <FileDropZone
+        onFiles={addDroppedFiles}
+        // Cards: the coach chat's grey shows through, here and docked beside a page.
+        className={`flex h-full min-h-0 flex-1 flex-col overflow-hidden ${cards ? "bp-chat-panel" : "bg-white"}`}
+      >
+        {openingMessage && !slack && !cards ? (
           <div className="shrink-0 border-b border-slate-200/80 bg-white px-4 py-4 sm:px-6">
             <div className="flex items-start gap-3">
               <SupportChatAvatar
@@ -2140,21 +2369,36 @@ export function AdminTicketReplies({
                 </div>
               ) : null}
             </SupportOpeningBody>
+            {openingTick}
           </div>
         ) : null}
 
         <div
           ref={threadScrollRef}
-          className={`min-h-0 overflow-y-auto overscroll-contain bg-[#f7f8fa] ${
+          className={`min-h-0 overflow-y-auto overscroll-contain ${
+            slack ? "bg-white" : cards ? "bp-chat-feed" : "bg-[#f7f8fa]"
+          } ${
             composerOpen && composerExpanded ? "max-h-[45%] shrink-0" : "flex-1"
           }`}
         >
-          <div className="px-4 py-4 sm:px-6">
+          <div
+            className={
+              slack
+                ? "w-full max-w-2xl px-3 py-2 sm:px-4"
+                : cards
+                  ? "px-1 py-1"
+                  : "px-4 py-4 sm:px-6"
+            }
+          >
+            <div>
+            {header ?? slackOpening ?? cardsOpening}
             {loading ? (
               <p className="text-sm text-slate-500">Loading conversation…</p>
             ) : (
               <SupportChatThread
-                replies={replies}
+                layout={messageLayout}
+                openedAt={slack && openingMessage && !openingMessage.pinned ? openingMessage.createdAt : undefined}
+                replies={extraReplies?.length ? [...replies, ...extraReplies] : replies}
                 notes={internalNotes}
                 viewerId={userId}
                 perspective="admin"
@@ -2162,20 +2406,22 @@ export function AdminTicketReplies({
                 onDeleteReply={deleteReply}
                 onUpdateNoteBody={updateNoteBody}
                 onDeleteNote={deleteNote}
+                onSeen={reportId ? (id, seen) => void markSeen(id, seen) : undefined}
               />
             )}
             {scheduledBubbles}
+            </div>
             <div ref={bottomRef} aria-hidden className="h-px w-full shrink-0" />
           </div>
         </div>
         {composer}
         {scheduleModal}
-      </div>
+      </FileDropZone>
     );
   }
 
   return (
-    <div className={cardClass("soft", "mt-3 p-3")}>
+    <FileDropZone onFiles={addDroppedFiles} className={cardClass("soft", "mt-3 p-3")}>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Conversation
       </p>
@@ -2193,6 +2439,7 @@ export function AdminTicketReplies({
             onDeleteReply={deleteReply}
             onUpdateNoteBody={updateNoteBody}
             onDeleteNote={deleteNote}
+            onSeen={reportId ? (id, seen) => void markSeen(id, seen) : undefined}
           />
         </div>
       )}
@@ -2200,6 +2447,6 @@ export function AdminTicketReplies({
       {composer}
       {scheduleModal}
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
-    </div>
+    </FileDropZone>
   );
 }

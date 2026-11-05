@@ -173,6 +173,8 @@ export type PracticeKnowledgePayload = {
     /** Their LinkedIn headline and About today, imported so the rewrite has a before. */
     linkedin_headline: Sourced<string> | null;
     linkedin_about: Sourced<string> | null;
+    /** Day and month, so BCA can send a card (4 Nov). Never sent to the AI writers. */
+    birthday?: Sourced<string> | null;
   };
   working_times: {
     hours_per_week: Sourced<string> | null;
@@ -210,6 +212,10 @@ export type PracticeKnowledgePayload = {
     voice_never: Sourced<string> | null;
     /** Your Voice: anything else about how they come across. */
     voice_notes: Sourced<string> | null;
+    /** About You (4 Nov): clients, income and hours they want in the next 12 months. */
+    goal_12_months?: Sourced<string> | null;
+    /** About You (4 Nov): anything else BCA should know. BCA and Ava read it, not the writers. */
+    anything_else?: Sourced<string> | null;
     /** Your Voice: how they want to be perceived and what they want to be known for. */
     voice_known_for: Sourced<string> | null;
     /** Your Voice: fun, serious, boot camp, hugs, or a mix. */

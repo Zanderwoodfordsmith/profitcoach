@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowDown, ArrowUp, ArrowUpRight, Briefcase, Building2, Camera, Check, ChevronDown, ChevronUp, GripVertical, Handshake, History, Lightbulb, Loader2, MoreHorizontal, Plus, X } from "lucide-react";
 
 import {
@@ -12,7 +12,7 @@ import {
   type FieldSpec,
   type SectionRef,
 } from "@/lib/practiceKnowledge/blueprint";
-import { sectionWorkflow, todoOwner, type SectionWorkflow } from "@/lib/practiceKnowledge/sectionWorkflow";
+import { sectionWorkflow } from "@/lib/practiceKnowledge/sectionWorkflow";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
 import { handoffForSection } from "@/lib/practiceKnowledge/campaignHandoff";
@@ -23,12 +23,10 @@ import type { CareerResult, CareerRole } from "@/lib/practiceKnowledge/types";
 import { getOptimizer } from "@/components/linkedinProfileOptimizer/api";
 
 import { useSectionComments } from "../comments/SectionCommentsContext";
-import { CommentButton } from "../comments/SectionCommentsUI";
 import { usePractice } from "../PracticeProvider";
 import { BlockBoxes } from "./BlockEditor";
 import { Blocks } from "./Blocks";
 import { LinkedInProfileSection } from "./LinkedInProfileSection";
-import { StatusSwitch } from "./StatusMenu";
 import { InfoTip } from "./InfoTip";
 import { SetupBusinessName, SetupSocials, SetupWidget } from "./SetupPanels";
 import { randomUuid } from "@/lib/randomUuid";
@@ -182,6 +180,7 @@ function AnswerBox({ field }: { field: FieldSpec }) {
           }
         }}
         className={`${INPUT_BOX} block resize-none overflow-y-auto`}
+        style={field.rows ? { minHeight: `calc(${field.rows}lh + 1.5rem)` } : undefined}
       />
       <ResizeGrip onResize={setHeight} />
       <span
@@ -448,7 +447,7 @@ function ResultCards({ field }: { field: FieldSpec }) {
         const line = stories ? card.cells.title?.trim() : resultLine(card.cells as unknown as CareerResult);
         const kindLabel = RESULT_KINDS.find((option) => option.value === kind)?.label;
         return (
-          <div key={card.id} className="rounded-2xl border border-[#e3e9f0] bg-white">
+          <div key={card.id} className="bp-form-card rounded-2xl border border-[#e3e9f0] bg-white">
             <div className="flex items-center gap-2 px-3.5 py-2.5 @lg:px-4">
               <button
                 type="button"
@@ -744,6 +743,11 @@ function newLine(): LineDraft {
   return { id: randomUuid(), text: "" };
 }
 
+/** A list line starts with a capital, like a written list. */
+function capitalise(text: string): string {
+  return text.replace(/^(\s*)([a-z])/, (_, space: string, letter: string) => space + letter.toUpperCase());
+}
+
 function asLineList(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
   const text = String(value ?? "").trim();
@@ -756,22 +760,60 @@ function LineListEditor({ field }: { field: FieldSpec }) {
   const stored = asLineList(payload ? fieldValue(payload, field.path)?.value : null);
   const storedKey = JSON.stringify(stored);
   const [items, setItems] = useState<LineDraft[]>(() =>
-    stored.length ? stored.map((text) => ({ id: randomUuid(), text })) : [newLine()]
+    stored.length ? stored.map((text) => ({ id: randomUuid(), text: capitalise(text) })) : [newLine()]
   );
   const [seen, setSeen] = useState(storedKey);
   const [focus, setFocus] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
+  // The line to put the cursor in, after Enter adds one or Backspace removes one.
+  const [focusLine, setFocusLine] = useState<{ id: string; at: "start" | "end" } | null>(null);
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
+  useLayoutEffect(() => {
+    if (!focusLine) return;
+    const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-line="${focusLine.id}"]`);
+    if (el) {
+      el.focus();
+      const pos = focusLine.at === "start" ? 0 : el.value.length;
+      el.setSelectionRange(pos, pos);
+    }
+    setFocusLine(null);
+  }, [focusLine]);
+
+  /** Enter starts a new line (splitting this one at the cursor); Backspace on an empty line removes it. */
+  function onLineKey(event: ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number) {
+    const el = event.currentTarget;
+    const current = itemsRef.current;
+    if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      const before = el.value.slice(0, el.selectionStart ?? el.value.length);
+      const after = el.value.slice(el.selectionEnd ?? el.value.length);
+      if (!before.trim() && !after.trim()) return;
+      const line = { ...newLine(), text: capitalise(after.trimStart()) };
+      const next = current.slice();
+      next[index] = { ...next[index], text: capitalise(before.trimEnd()) };
+      next.splice(index + 1, 0, line);
+      setItems(next);
+      setFocusLine({ id: line.id, at: "start" });
+      return;
+    }
+    if (event.key === "Backspace" && !el.value && current.length > 1) {
+      event.preventDefault();
+      const target = current[index - 1] ?? current[index + 1];
+      setItems(current.filter((_, i) => i !== index));
+      setFocusLine({ id: target.id, at: index > 0 ? "end" : "start" });
+    }
+  }
+
   if (storedKey !== seen && !focus) {
     setSeen(storedKey);
-    setItems(stored.length ? stored.map((text) => ({ id: randomUuid(), text })) : [newLine()]);
+    setItems(stored.length ? stored.map((text) => ({ id: randomUuid(), text: capitalise(text) })) : [newLine()]);
   }
 
   function persist(next: LineDraft[]) {
-    const lines = next.map((item) => item.text.trim()).filter(Boolean);
+    const lines = next.map((item) => capitalise(item.text.trim())).filter(Boolean);
     setItems(next.length ? next : [newLine()]);
     if (JSON.stringify(lines) === storedKey) return;
     setSeen(JSON.stringify(lines));
@@ -794,11 +836,11 @@ function LineListEditor({ field }: { field: FieldSpec }) {
     .map((line) => line.trim())
     .filter(Boolean);
   // About You lists: lines wrap to fit a sentence, and the controls sit in a row, shown on hover.
-  const wrap = Boolean(field.lines);
+  const wrap = !field.pair;
 
   return (
     <div className="relative">
-      <ul className="flex flex-col gap-1.5">
+      <ul className={`flex flex-col ${wrap ? "gap-0" : "gap-1.5"}`}>
         {items.map((item, index) => (
           <li
             key={item.id}
@@ -812,13 +854,13 @@ function LineListEditor({ field }: { field: FieldSpec }) {
               next.splice(index, 0, row);
               setItems(next);
             }}
-            className={`group flex gap-1 ${wrap ? "items-start" : "items-center"} ${dragId === item.id ? "opacity-50" : ""}`}
+            className={`bp-list-row group flex gap-1 ${wrap ? "items-start" : "items-center"} ${dragId === item.id ? "opacity-50" : ""}`}
           >
             <button
               type="button"
               draggable
               aria-label="Drag to reorder"
-              className={`${NUDGE} cursor-grab active:cursor-grabbing ${wrap ? "mt-2.5" : ""}`}
+              className={`bp-list-grip ${NUDGE} cursor-grab active:cursor-grabbing ${wrap ? "mt-2.5" : ""}`}
               onDragStart={(event) => {
                 setDragId(item.id);
                 event.dataTransfer.effectAllowed = "move";
@@ -831,14 +873,17 @@ function LineListEditor({ field }: { field: FieldSpec }) {
             >
               <GripVertical className="h-3.5 w-3.5" aria-hidden />
             </button>
+            {/* A bullet on every line, so it reads as a list, not a stack of boxes. */}
+            <span aria-hidden className={`bp-list-bullet ml-1.5 mr-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--bp-sky)] ${wrap ? "mt-3" : ""}`} />
             {wrap ? (
               <textarea
                 rows={1}
                 id={index === 0 ? `f-${field.path}` : undefined}
                 value={item.text}
                 placeholder={examples[index] ? `e.g. ${examples[index]}` : (index === 0 && field.placeholder) || "Type here"}
+                data-line={item.id}
                 onChange={(event) => {
-                  const text = event.target.value;
+                  const text = capitalise(event.target.value);
                   setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, text } : row)));
                 }}
                 onFocus={() => setFocus(true)}
@@ -846,13 +891,7 @@ function LineListEditor({ field }: { field: FieldSpec }) {
                   setFocus(false);
                   persist(itemsRef.current.map((row) => (row.id === item.id ? { ...row, text: event.target.value } : row)));
                 }}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter") return;
-                  event.preventDefault();
-                  const next = itemsRef.current.slice();
-                  next.splice(index + 1, 0, newLine());
-                  setItems(next);
-                }}
+                onKeyDown={(event) => onLineKey(event, index)}
                 className={`${INPUT_BOX} resize-none py-2 [field-sizing:content]`}
               />
             ) : (
@@ -860,8 +899,9 @@ function LineListEditor({ field }: { field: FieldSpec }) {
                 id={index === 0 ? `f-${field.path}` : undefined}
                 value={item.text}
                 placeholder={examples[index] ? `e.g. ${examples[index]}` : (index === 0 && field.placeholder) || "Type here"}
+                data-line={item.id}
                 onChange={(event) => {
-                  const text = event.target.value;
+                  const text = capitalise(event.target.value);
                   setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, text } : row)));
                 }}
                 onFocus={() => setFocus(true)}
@@ -869,18 +909,12 @@ function LineListEditor({ field }: { field: FieldSpec }) {
                   setFocus(false);
                   persist(itemsRef.current.map((row) => (row.id === item.id ? { ...row, text: event.target.value } : row)));
                 }}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter") return;
-                  event.preventDefault();
-                  const next = itemsRef.current.slice();
-                  next.splice(index + 1, 0, newLine());
-                  setItems(next);
-                }}
+                onKeyDown={(event) => onLineKey(event, index)}
                 className={`${INPUT_BOX} py-2`}
               />
             )}
             <div
-              className={`flex shrink-0 items-center ${
+              className={`bp-list-tools flex shrink-0 items-center ${
                 wrap ? "mt-2 gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100" : "flex-col"
               }`}
             >
@@ -1021,7 +1055,9 @@ function ChipsField({ field }: { field: FieldSpec }) {
       </div>
       {field.max ? (
         <p className="mt-2 px-0.5 text-xs text-[var(--bp-faint)]">
-          {picked.length} of {field.max} picked{full ? ". Untick one to pick another." : ""}
+          {picked.length > field.max
+            ? `${picked.length} picked, from when you could pick more. Untick some to pick others.`
+            : `${picked.length} of ${field.max} picked${full ? ". Untick one to pick another." : ""}`}
         </p>
       ) : null}
     </div>
@@ -1087,9 +1123,9 @@ function CareerEditor({ field }: { field: FieldSpec }) {
 
   const change = (id: string, patch: Partial<CareerRole>) => shown.map((r) => (r.id === id ? { ...r, ...patch } : r));
 
-  function add(kind: CareerRole["kind"]) {
-    const role = blankRole(kind);
-    setRows(kind === "own" ? [role, ...shown] : [...shown, role]);
+  function add() {
+    const role = blankRole("job");
+    setRows([...shown, role]);
     setOpen((prev) => [...prev, role.id]);
   }
 
@@ -1126,7 +1162,7 @@ function CareerEditor({ field }: { field: FieldSpec }) {
           const own = role.kind === "own";
           const sub = [role.company, role.industry].filter(Boolean).join(" · ");
           return (
-            <li key={role.id} className="rounded-2xl border border-[#e3e9f0] bg-white">
+            <li key={role.id} className="bp-form-card rounded-2xl border border-[#e3e9f0] bg-white">
               <div className="flex items-center gap-3 px-3.5 py-2.5">
                 <button
                   type="button"
@@ -1166,6 +1202,16 @@ function CareerEditor({ field }: { field: FieldSpec }) {
               </div>
               {isOpen ? (
                 <div className="space-y-2.5 border-t border-[#eef1f5] px-3.5 pb-4 pt-3">
+                  {/* One "Add a role" (4 Nov): your own business is a role with this ticked. */}
+                  <label className="inline-flex cursor-pointer items-center gap-2 px-0.5 text-sm font-medium text-[var(--bp-ink)]">
+                    <input
+                      type="checkbox"
+                      checked={own}
+                      onChange={(event) => persist(change(role.id, { kind: event.target.checked ? "own" : "job" }))}
+                      className="h-4 w-4 rounded border-[#c8d4e0] accent-[var(--bp-blue)]"
+                    />
+                    This is my own business
+                  </label>
                   <div className="grid gap-2.5 @lg:grid-cols-2">
                     {input(role, "title", own ? "Your role" : "Role", own ? "e.g. Founder" : "e.g. Finance Director")}
                     {input(role, "company", own ? "Business name" : "Company", own ? "e.g. Pike Electrical Ltd" : "e.g. Harlow & Pike")}
@@ -1205,13 +1251,9 @@ function CareerEditor({ field }: { field: FieldSpec }) {
         })}
       </ul>
       <div className="bp-no-print mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 px-0.5">
-        <button type="button" onClick={() => add("job")} className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline">
+        <button type="button" onClick={add} className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline">
           <Plus className="h-4 w-4" aria-hidden />
           Add a role
-        </button>
-        <button type="button" onClick={() => add("own")} className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline">
-          <Plus className="h-4 w-4" aria-hidden />
-          Add your own business
         </button>
       </div>
     </div>
@@ -1224,7 +1266,7 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
   if (!payload) return null;
   const structured = field.kind === "results" || field.kind === "stories";
   const paired = Boolean(field.pair);
-  const lines = field.kind === "list" && (paired || Boolean(field.lines));
+  const lines = field.kind === "list";
   const list = field.kind === "list" && !lines;
   const showHelp = Boolean(field.help) && !lineHintOnly(field.help);
   // No "Needed" badge: the section's To do already says so.
@@ -1239,9 +1281,9 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
     ) : null;
 
   return (
-    <div className="min-w-0">
+    <div className="bp-field min-w-0">
       <div className={solo ? undefined : "mb-1.5 flex items-center gap-1.5 px-0.5"}>
-        <label htmlFor={`f-${field.path}`} className={solo ? "sr-only" : "inline-flex items-center gap-1 text-[0.875rem] font-semibold text-[var(--bp-ink)]"}>
+        <label htmlFor={`f-${field.path}`} className={solo ? "sr-only" : "bp-field-label inline-flex items-center gap-1 text-[0.875rem] font-semibold text-[var(--bp-ink)]"}>
           {cue}
           {field.label}
         </label>
@@ -1269,7 +1311,7 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
       )}
       {list || (solo && changed) ? (
         <div className="mt-1.5 flex items-center gap-2 px-0.5">
-          {list ? <span className="text-xs text-[var(--bp-faint)]">One per line</span> : null}
+          {list ? <span className="bp-line-hint text-xs text-[var(--bp-faint)]">One per line</span> : null}
           {solo && changed ? <span className="ml-auto">{mark}</span> : null}
         </div>
       ) : null}
@@ -1333,7 +1375,8 @@ function Fields({ section, changedFields, bcaFills }: { section: BlueprintSectio
                   key={field.path}
                   field={field}
                   changed={changedFields.includes(field.path)}
-                  solo={fields.length === 1 && !inline}
+                  // One box, or a box named the same as its section (Superpowers under Superpowers): no label of its own.
+                  solo={!inline && (fields.length === 1 || field.label.trim().toLowerCase() === section.title.trim().toLowerCase())}
                 />
               )
             )}
@@ -1342,7 +1385,8 @@ function Fields({ section, changedFields, bcaFills }: { section: BlueprintSectio
       ))}
       {showSocials ? <SetupSocials /> : null}
       {section.link ? (
-        <p className="bp-no-print border-t border-[#e1e6ec] pt-3 text-sm @xl:col-span-2">
+        // Inline sections are one column; a col-span here would add a second column and pair the fields up.
+        <p className={`bp-no-print border-t border-[#e1e6ec] pt-3 text-sm ${inline ? "" : "@xl:col-span-2"}`}>
           <Link href={href(section.link.href)} className="inline-flex items-center gap-1 font-semibold text-[var(--bp-blue)] hover:underline">
             {section.link.label}
             <ArrowUpRight className="h-4 w-4" aria-hidden />
@@ -1382,7 +1426,7 @@ function SendToCampaigns({ sectionKey, name }: { sectionKey: string; name: strin
   }
 
   return (
-    <div className="bp-no-print mt-6 rounded-xl border border-[var(--bp-rule)] bg-white px-5 py-4">
+    <div className="bp-handoff bp-no-print mt-6 rounded-xl border border-[var(--bp-rule)] bg-white px-5 py-4">
       <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">Happy with it? Send it to Get Clients</p>
       <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">
         Creates a draft campaign with these messages and timings. From then on, change it in Get Clients, not here.
@@ -1484,6 +1528,7 @@ function OutputBody({
   const blocks = built
     ? (isNewsletterOverviewKey(refKey) ? stripStandingFacts(dropPlannedIssues(refKey, built.blocks)) : dropPlannedIssues(refKey, built.blocks))
     : [];
+  const hidden = hiddenForCoach(refKey, blocks);
   const writing = building.active.includes(refKey);
   const queued = building.queue.includes(refKey);
   const panel = "bp-output rounded-xl border border-[#e6eaf0] bg-white px-5 py-5 @2xl:px-6";
@@ -1543,10 +1588,10 @@ function OutputBody({
     <div className="bp-output">
       {/* key: a rewrite brings fresh text into the boxes. */}
       <div className="bp-no-print">
-        <BlockBoxes key={built.generated_at} blocks={blocks} onSave={(next) => saveBlocks(refKey, next)} />
+        <BlockBoxes key={built.generated_at} blocks={blocks} hidden={hidden} onSave={(next) => saveBlocks(refKey, next)} />
       </div>
       <div className="hidden print:block">
-        <Blocks blocks={blocks} />
+        <Blocks blocks={blocks.filter((_, i) => !hidden.has(i))} />
       </div>
       {handoffForSection(refKey) ? <SendToCampaigns sectionKey={refKey} name={section.title} /> : null}
       {section.link ? (
@@ -1588,6 +1633,34 @@ function TipToggle({ tip }: { tip: string }) {
   );
 }
 
+/**
+ * What a coach never needs to see in a written section (Zander, 2 Nov):
+ * the "Core client, Main desire, Proof" box (a copy of answers kept on other
+ * pages), and in campaigns the Open InMail and Open Profile messages, an old
+ * Campaign B, "Who gets it" (BCA builds the lists) and Ava's launch checks.
+ * Only hidden: the blocks stay saved, since Get Clients finds a sequence by
+ * its heading, and the writers no longer write them.
+ */
+const CAMPAIGN_HIDDEN_GROUP = /open (inmail|profile)|^campaign b\b|check before launch|who gets it/i;
+const CAMPAIGN_HIDDEN_HEADING = /^campaign a\b|^the sequence$/i;
+
+function hiddenForCoach(refKey: string, blocks: BlueprintBlock[]): Set<number> {
+  const hidden = new Set<number>();
+  const campaign = refKey.startsWith("campaigns:");
+  let inGroup = false;
+  blocks.forEach((block, i) => {
+    if (block.type === "heading") {
+      inGroup = campaign && CAMPAIGN_HIDDEN_GROUP.test(block.text.trim());
+      if (inGroup || (campaign && CAMPAIGN_HIDDEN_HEADING.test(block.text.trim()))) hidden.add(i);
+      return;
+    }
+    if (inGroup) hidden.add(i);
+    else if (block.type === "pairs" && block.items.some((item) => item.label.trim().toLowerCase() === "core client")) hidden.add(i);
+  });
+  return hidden;
+}
+
+
 export function SectionView({
   sectionRef,
   asLine = false,
@@ -1619,7 +1692,7 @@ export function SectionView({
   /** Taller writing boxes. Used for the newsletter issue itself. */
   roomy?: boolean;
 }) {
-  const { knowledge, payload, setSectionStatus, addNote, building, build, href, viewer } = usePractice();
+  const { knowledge, payload, addNote, building, build, href, viewer } = usePractice();
   const focusKey = useSectionComments()?.openKey ?? null;
   const discussing = focusKey === sectionRef.key;
   // While one section is being discussed, the rest step back. Hover brings one forward to read.
@@ -1650,18 +1723,12 @@ export function SectionView({
   const requests = (payload.review.notes?.value ?? []).filter((n) => n.section === key);
   const lastRequest = requests[requests.length - 1];
   const changeAsked = work.status === "todo" && work.owner === "bca" && Boolean(lastRequest);
-  const selected = work.tracked ? work.status : "todo";
   // After About You, answers are BCA's to fill. The coach sees the same boxes, with a hint that BCA fills them.
   const bcaFills =
     !isOutput &&
     viewer === "coach" &&
     !sectionRef.group.yours &&
     !(section.fields ?? []).some((field) => fieldFilled(payload, field));
-
-  function chooseStatus(status: SectionWorkflow["status"]) {
-    setSectionStatus(key, status);
-    setAsking(status === "todo" && isOutput && Boolean(built));
-  }
 
   const menu: MenuItem[] = built
     ? [
@@ -1753,14 +1820,7 @@ export function SectionView({
               note={built ? `Written ${formatDate(built.generated_at)}${built.edited_at ? `, edited ${formatDate(built.edited_at)}` : ""}` : undefined}
             />
           ) : null}
-          <CommentButton sectionKey={key} title={section.title} />
-          <StatusSwitch
-            label={section.title}
-            status={selected}
-            onChange={chooseStatus}
-            todoOwner={todoOwner(sectionRef)}
-            bcaReview={work.status === "review" && work.owner === "bca"}
-          />
+          {/* No comments on a section any more: each page has one chat (3 Nov). */}
         </div>
       </header>
 

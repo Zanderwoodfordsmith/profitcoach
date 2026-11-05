@@ -180,6 +180,9 @@ export function DashboardSidebar({
   const [keepClientsHref, setKeepClientsHref] = useState(() =>
     toolsHubHomeHref("keep-clients", prefix)
   );
+  const [academyHref, setAcademyHref] = useState(() =>
+    toolsHubHomeHref("academy", prefix)
+  );
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const showAdminSection = variant === "admin";
 
@@ -212,6 +215,8 @@ export function DashboardSidebar({
     setBlueprintHref(readToolsHubPageHref("blueprint", prefix));
     rememberToolsHubPage("keep-clients", pathname ?? "");
     setKeepClientsHref(readToolsHubPageHref("keep-clients", prefix));
+    rememberToolsHubPage("academy", pathname ?? "");
+    setAcademyHref(readToolsHubPageHref("academy", prefix));
   }, [pathname, prefix]);
 
   const toggleAdminNav = () => {
@@ -372,7 +377,7 @@ export function DashboardSidebar({
     const active = item.toolsHub
       ? isToolsNavActive(item)
       : isAcademyPath(pathname, prefix);
-    const href = resolveToolsHref(item);
+    const href = item.toolsHub ? resolveToolsHref(item) : academyHref;
     const Icon = item.icon;
     const short = mobileNavShortLabel(item.label);
     const locked = navItemLocked(item.requiredFeature);
@@ -420,7 +425,8 @@ export function DashboardSidebar({
     <>
       <aside
         ref={railRef}
-        className={`fixed bottom-0 left-0 top-0 z-40 hidden border-r border-white/10 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] text-white transition-[width] duration-200 md:flex md:flex-col ${
+        data-app-sidebar
+        className={`fixed bottom-0 left-0 top-0 z-40 hidden border-r border-white/10 bg-[linear-gradient(165deg,#051e36_0%,#062649_22%,#0c5290_62%,#1a8fd4_100%)] text-white transition-[width] duration-200 md:flex md:flex-col ${
           collapsed ? "w-14" : "w-56"
         }`}
       >
@@ -464,7 +470,6 @@ export function DashboardSidebar({
           <ul className="space-y-0.5">
             <SidebarAvaItem
               collapsed={collapsed}
-              isAdmin={profile?.role === "admin" && !viewingMemberId}
               href={avaHref}
               active={pathname === avaHref}
               linkClass={navLinkClass}
@@ -476,10 +481,10 @@ export function DashboardSidebar({
               return (
                 <li key={item.href}>
                   <Link
-                    href={item.href}
+                    href={academyHref}
                     data-hint-label={item.label}
                     data-hint-description={item.description}
-                    onClick={() => markPending(item.href)}
+                    onClick={() => markPending(academyHref)}
                     className={navLinkClass(active)}
                   >
                     <span className="relative shrink-0">

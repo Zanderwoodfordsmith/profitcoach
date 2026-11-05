@@ -53,8 +53,8 @@ const OVERVIEWS: Partial<Record<ObjectionPage["group"], { video: { title: string
 };
 
 /** The open objection in the rail: light blue, navy text. */
-const OBJECTION_OPEN = "bg-sky-100 font-semibold text-[#0c5290]";
-const OBJECTION_IDLE = "text-slate-600 hover:bg-white/80 hover:text-slate-900";
+const OBJECTION_OPEN = "bg-white font-semibold text-[#0c5290] shadow-[0_1px_2px_rgba(15,23,42,0.08)]";
+const OBJECTION_IDLE = "text-slate-600 hover:bg-white/55 hover:text-slate-900";
 
 const FACTS_DELAY = 2500;
 /** A pitch paragraph is a line to say, so it matches the script's: 17px, bold. The editable one matches too. */
@@ -1158,14 +1158,14 @@ export function SalesCallWorkspace() {
       {/* The call, phase by phase */}
       <nav
         aria-label="Call phases"
-        className="min-w-0 shrink-0 border-b border-slate-200 bg-[#f3f6fa] px-3 py-3 lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:w-60 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-5"
+        className="min-w-0 shrink-0 border-b border-[var(--app-subnav-rule)] bg-[var(--app-subnav-bg)] px-3 py-3 lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:w-60 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-5"
       >
         <Link href={scriptsHref} className="mb-3 inline-flex items-center gap-1.5 px-3 text-sm font-medium text-slate-500 hover:text-slate-900">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           All scripts
         </Link>
         <p className="mb-2 hidden px-3 text-sm font-semibold text-slate-900 lg:block">Profit Roadmap call</p>
-        <Link href={`${scriptsHref}/roadmap`} className="mb-1.5 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-white/80">
+        <Link href={`${scriptsHref}/roadmap`} className="mb-1.5 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-white/55">
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-slate-500 ring-1 ring-slate-200">
             <LayoutList className="h-3.5 w-3.5" aria-hidden />
           </span>
@@ -1182,19 +1182,19 @@ export function SalesCallWorkspace() {
                   aria-current={active ? "step" : undefined}
                   onClick={() => goPhase(p.id)}
                   className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
-                    active ? "bg-[#06223d] text-white" : "text-slate-700 hover:bg-white/80"
+                    active ? "bg-white font-semibold text-[#0f172a] shadow-[0_1px_2px_rgba(15,23,42,0.08)]" : "text-slate-700 hover:bg-white/55"
                   }`}
                 >
                   <span
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                      active ? "bg-white/15 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
+                      active ? "bg-[#06223d] text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
                     }`}
                   >
                     {i + 1}
                   </span>
                   <span className="flex-1 whitespace-nowrap font-medium">{p.title}</span>
                   {badge ? (
-                    <span className={`text-caption font-semibold ${active ? "text-sky-200" : "text-sky-700"}`}>{badge}</span>
+                    <span className="text-caption font-semibold text-sky-700">{badge}</span>
                   ) : null}
                 </button>
                 {PAGED[p.id] && active ? (

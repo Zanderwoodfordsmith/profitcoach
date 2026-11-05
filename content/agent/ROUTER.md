@@ -18,11 +18,12 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 | Write or rewrite campaign messages, use the blueprint's messaging | `campaign-messaging` | `campaigns` |
 | Ask what works in outreach: note or no note, acceptance or reply rates, who answers on LinkedIn, "what does the data say" | `campaign-messaging` (it carries our 110,000-request research) | |
 | Write a LinkedIn newsletter, VIP inbox, post, article or InMail about an issue | `linkedin-marketing` | `improve-section` to tighten a written piece |
-| "What's holding me back", "where am I stuck", "what's my constraint", "why am I not getting clients" | `constraint` | The capability it points to for the fix |
+| "What's holding me back", "why am I not getting clients", their income goal or a plan to reach it, "am I on track", how many clients or calls they need, pricing or how long clients stay, what to do more of | `constraint` | The capability it points to for the fix |
 | Practise the Profit System pitch, or tailor the nine steps to this prospect | `personalised-pitch` | Their Blueprint script if they have one |
 | Admin only: research the avatar or pain points, rewrite the LinkedIn profile or headlines, write a blueprint section | `blueprint-writing` | `campaign-messaging` to use the result |
 | "How do I…", "where is…", "show me", a walkthrough | `guide` | |
 | Admin only: give a coach access to this agent | `coach-access` | |
+| Admin only, on a coach's Blueprint page: change the draft waiting at the top, read it, or leave a message for BCA to send the coach | `page-activity` | `blueprint-writing` to write a section from scratch |
 | Stuck, wants a human, wants out | `escalate-to-bca` | Book Zander only when it is extreme |
 
 ## Chained jobs
@@ -31,4 +32,4 @@ Pick the capability for the task and open it with `open_capability`. Open severa
 
 ## Capability ids
 
-`fill-the-gaps`, `check-blueprint`, `improve-section`, `practice-ready`, `find-prospects`, `sales-navigator-import`, `google-maps-import`, `google-search-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `linkedin-marketing`, `personalised-pitch`, `constraint`, `blueprint-writing`, `guide`, `coach-access`, `escalate-to-bca`.
+`fill-the-gaps`, `check-blueprint`, `improve-section`, `practice-ready`, `find-prospects`, `sales-navigator-import`, `google-maps-import`, `google-search-import`, `lists`, `campaigns`, `campaign-people`, `campaign-messaging`, `linkedin-marketing`, `personalised-pitch`, `constraint`, `blueprint-writing`, `guide`, `coach-access`, `page-activity`, `escalate-to-bca`.

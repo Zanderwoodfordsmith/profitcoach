@@ -43,7 +43,7 @@ export const BLUEPRINT_OUTPUTS: BlueprintOutput[] = [
     goesTo: "LinkedIn",
   },
   { id: "campaigns:messaging", title: "Connection campaign", section: "campaigns:messaging", signOff: "BCA", goesTo: "Get Clients, as a draft campaign" },
-  { id: "campaigns:conversation", title: "Messaging campaign", section: "campaigns:conversation", signOff: "BCA", goesTo: "Get Clients, as a draft campaign" },
+  { id: "campaigns:conversation", title: "Existing connections", section: "campaigns:conversation", signOff: "BCA", goesTo: "Get Clients, as a draft campaign" },
   { id: "campaigns:reactivation", title: "Reactivation campaign", section: "campaigns:reactivation", signOff: "BCA", goesTo: "Get Clients, as a draft campaign" },
   { id: "content:newsletter", title: "LinkedIn newsletter", section: "content:newsletter", signOff: "The coach", goesTo: "The Newsletter tab in Get Clients, Content, then LinkedIn" },
   { id: "content:cover", title: "Newsletter cover", section: "content:cover", signOff: "The coach", goesTo: "The newsletter header image" },

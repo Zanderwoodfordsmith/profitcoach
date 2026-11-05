@@ -1633,3 +1633,43 @@
     display: none;
   }
 }
+
+/* Scoreboard: its target chips are buttons, not links. */
+button.tgt-chip {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Scoreboard: room for £5k, £10k and £20k on one line over the month bars. */
+.tgt-grid-table .tgt-bar-col.sb-month-bar {
+  min-width: 210px;
+}
+
+/* Scoreboard: how much of each income target you reach, beside its label on the meter. */
+.sb-tick-share {
+  margin-left: 2px;
+  color: var(--dash-muted);
+  font-weight: 600;
+}
+
+/* Scoreboard: Interested to client says it in words where the month bar would be. */
+.sb-per-client {
+  display: block;
+  color: var(--dash-muted);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.sb-per-client strong {
+  color: var(--dash-ink);
+  font-weight: 700;
+}
+
+.sb-per-client.is-whatif strong {
+  color: var(--dash-stage-mid-text);
+}
+
+/* A typed what-if value, in what-if blue. */
+.pl-input.is-whatif input {
+  color: var(--dash-stage-mid-text);
+}

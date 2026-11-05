@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { BarChart2, ChevronDown, Check, Loader2, Share2, UserRound } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
@@ -121,6 +128,9 @@ type WorkshopSessionPickerProps = {
 function formatSessionSubtitle(summary: WorkshopSessionSummary): string {
   return [summary.jobTitle, summary.businessName].filter(Boolean).join(" · ");
 }
+
+/** Most people drawn in the list at once; typing narrows the rest. */
+const MAX_SHOWN_CONTACTS = 50;
 
 function contactSearchText(c: ContactOption): string {
   return [c.full_name, c.business_name, c.type, c.coach_name]
@@ -371,24 +381,36 @@ function WorkshopContactCombobox({
   const inputRef = useRef<HTMLInputElement>(null);
   const didAutoOpenRef = useRef(false);
 
+  // Admins can have thousands of contacts: build the search text once, let the
+  // box keep up with typing, and only draw the first matches.
+  const searchIndex = useMemo(
+    () => contacts.map((c) => ({ c, text: contactSearchText(c) })),
+    [contacts]
+  );
+  const deferredQuery = useDeferredValue(query);
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     if (!q) return contacts;
-    return contacts.filter((c) => contactSearchText(c).includes(q));
-  }, [contacts, query]);
+    return searchIndex.filter((e) => e.text.includes(q)).map((e) => e.c);
+  }, [contacts, searchIndex, deferredQuery]);
 
   const hasClientsInList = contacts.some(isClientContact);
   const hasProspectsInList = contacts.some((c) => !isClientContact(c));
   const useSectionHeaders = hasClientsInList && hasProspectsInList;
 
-  const filteredClients = useMemo(
-    () => filtered.filter(isClientContact),
-    [filtered]
-  );
-  const filteredProspects = useMemo(
-    () => filtered.filter((c) => !isClientContact(c)),
-    [filtered]
-  );
+  const { filteredClients, filteredProspects, shownFiltered } = useMemo(() => {
+    const clients = filtered.filter(isClientContact).slice(0, MAX_SHOWN_CONTACTS);
+    const prospects = filtered
+      .filter((c) => !isClientContact(c))
+      .slice(0, MAX_SHOWN_CONTACTS - clients.length);
+    return {
+      filteredClients: clients,
+      filteredProspects: prospects,
+      shownFiltered: filtered.slice(0, MAX_SHOWN_CONTACTS),
+    };
+  }, [filtered]);
+  const hiddenCount = filtered.length - shownFiltered.length;
 
   const selectedContact = contacts.find((c) => c.id === selectedId);
 
@@ -549,13 +571,24 @@ function WorkshopContactCombobox({
               </>
             ) : (
               <ContactOptionList
-                contacts={filtered}
+                contacts={shownFiltered}
                 selectedId={selectedId}
                 compact={compact}
                 onSelect={handleSelect}
                 optionClassName={optionClassName}
               />
             )}
+            {hiddenCount > 0 ? (
+              <p
+                className={
+                  compact
+                    ? "px-2 py-2 text-xs text-slate-500"
+                    : "px-2.5 py-2 text-sm text-slate-500"
+                }
+              >
+                {hiddenCount.toLocaleString()} more. Type a name to find them.
+              </p>
+            ) : null}
           </div>
         </div>
       ) : null}

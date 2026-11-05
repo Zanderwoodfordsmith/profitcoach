@@ -13,6 +13,7 @@ import { guideTools } from "./guide";
 import { listTools } from "./lists";
 import { messagingTools } from "./messaging";
 import { onboardingTools } from "./onboarding";
+import { pageActivityTools } from "./pageActivity";
 import { prospectTools } from "./prospects";
 import { searchTools } from "./search";
 
@@ -29,6 +30,7 @@ export const AGENT_TOOLS: AgentToolDef[] = [
   ...blueprintTools,
   ...blueprintAvaTools,
   ...onboardingTools,
+  ...pageActivityTools,
   ...escalateTools,
   ...guideTools,
 ];

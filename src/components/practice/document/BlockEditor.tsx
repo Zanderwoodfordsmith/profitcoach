@@ -1,11 +1,16 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type ReactNode, type TextareaHTMLAttributes } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Check, ChevronDown, GripVertical, Plus, Trash2 } from "lucide-react";
 
 import { cardClass } from "@/components/ui/Card";
 import { NOTE_VERSION_HEADINGS } from "@/lib/practiceKnowledge/campaignHandoff";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
+
+import { isRowListTable } from "./Blocks";
 
 /** Same grey click-in box as the answer fields, so written sections edit the same way. */
 const FIELD =
@@ -84,7 +89,303 @@ function Caption({ children }: { children: ReactNode }) {
   return <p className="mb-1.5 text-ui font-medium text-[var(--bp-ink)]">{children}</p>;
 }
 
-function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, underHeading = false): ReactNode {
+/** A list line starts with a capital, like a written list. */
+function capitalise(text: string): string {
+  return text.replace(/^(\s*)([a-z])/, (_, space: string, letter: string) => space + letter.toUpperCase());
+}
+
+let lineSeq = 0;
+const newLineId = () => `line-${++lineSeq}`;
+
+/**
+ * A written list (bullets or numbers), edited as a list: Enter starts a new
+ * line, splitting at the cursor; Backspace on an empty line removes it.
+ * Lines start with a capital. Saves with the rest of the section.
+ */
+function BlockLines({ items, numbered, onChange }: { items: string[]; numbered: boolean; onChange: (items: string[]) => void }) {
+  const lines = items.length ? items : [""];
+  const [ids, setIds] = useState<string[]>(() => lines.map(newLineId));
+  const [focusLine, setFocusLine] = useState<{ id: string; at: "start" | "end" } | null>(null);
+  const lineIds = lines.map((_, i) => ids[i] ?? `line-at-${i}`);
+
+  useLayoutEffect(() => {
+    if (!focusLine) return;
+    const el = document.querySelector<HTMLTextAreaElement>(`[data-block-line="${focusLine.id}"]`);
+    if (el) {
+      el.focus();
+      const pos = focusLine.at === "start" ? 0 : el.value.length;
+      el.setSelectionRange(pos, pos);
+    }
+    setFocusLine(null);
+  }, [focusLine]);
+
+  function onKey(event: ReactKeyboardEvent<HTMLTextAreaElement>, index: number) {
+    const el = event.currentTarget;
+    if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      const before = el.value.slice(0, el.selectionStart ?? el.value.length);
+      const after = el.value.slice(el.selectionEnd ?? el.value.length);
+      if (!before.trim() && !after.trim()) return;
+      const id = newLineId();
+      const next = lines.slice();
+      next[index] = capitalise(before.trimEnd());
+      next.splice(index + 1, 0, capitalise(after.trimStart()));
+      const nextIds = lineIds.slice();
+      nextIds.splice(index + 1, 0, id);
+      setIds(nextIds);
+      onChange(next);
+      setFocusLine({ id, at: "start" });
+      return;
+    }
+    if (event.key === "Backspace" && !el.value && lines.length > 1) {
+      event.preventDefault();
+      const target = lineIds[index - 1] ?? lineIds[index + 1];
+      setIds(lineIds.filter((_, i) => i !== index));
+      onChange(lines.filter((_, i) => i !== index));
+      setFocusLine({ id: target, at: index > 0 ? "end" : "start" });
+    }
+  }
+
+  const List = numbered ? "ol" : "ul";
+  return (
+    <div>
+      <List className="max-w-[68ch]">
+        {lines.map((line, i) => (
+          <li key={lineIds[i]} className="bp-list-row flex items-start">
+            {numbered ? (
+              <span aria-hidden className="bp-num w-7 shrink-0 pt-[3px] text-read font-semibold text-[var(--bp-blue)]">
+                {i + 1}.
+              </span>
+            ) : (
+              <span aria-hidden className="ml-1.5 mr-2 mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--bp-sky)]" />
+            )}
+            <FitTextarea
+              value={line}
+              rows={1}
+              data-block-line={lineIds[i]}
+              aria-label={`Line ${i + 1}`}
+              placeholder="Type here"
+              onChange={(e) => onChange(lines.map((l, j) => (j === i ? capitalise(e.target.value.replace(/\n/g, " ")) : l)))}
+              onKeyDown={(e) => onKey(e, i)}
+              className={`${FIELD} min-w-0 flex-1 resize-none`}
+            />
+          </li>
+        ))}
+      </List>
+      <button
+        type="button"
+        onClick={() => {
+          const id = newLineId();
+          setIds([...lineIds, id]);
+          onChange([...lines, ""]);
+          setFocusLine({ id, at: "start" });
+        }}
+        className="mt-1.5 inline-flex items-center gap-1 px-0.5 text-xs font-semibold text-[var(--bp-blue)] hover:underline"
+      >
+        <Plus className="h-3.5 w-3.5" aria-hidden />
+        Add
+      </button>
+    </div>
+  );
+}
+
+let rowSeq = 0;
+const newRowId = () => `row-${++rowSeq}`;
+
+/** One row: its first column is the title, the rest open under it. */
+function RowItem({
+  id,
+  columns,
+  row,
+  open,
+  autoFocus,
+  onToggle,
+  onCell,
+  onRemove,
+}: {
+  id: string;
+  columns: string[];
+  row: string[];
+  open: boolean;
+  autoFocus: boolean;
+  onToggle: () => void;
+  onCell: (c: number, value: string) => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  // Remove takes two clicks: the bin, then "Remove" in red, so one slip can't lose a row.
+  const [confirming, setConfirming] = useState(false);
+  const noun = (columns[0] ?? "row").toLowerCase();
+  const bodyId = `${id}-body`;
+  const rest = columns.slice(1);
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : undefined }}
+      className={`bp-row group relative bg-white ${isDragging ? "shadow-lg ring-1 ring-[#bfdcf2]" : ""}`}
+    >
+      <div className="flex items-start gap-1.5 py-2.5 pl-1.5 pr-2">
+        <button
+          type="button"
+          aria-label="Drag to reorder"
+          className="mt-0.5 shrink-0 cursor-grab touch-none rounded-md p-1 text-[var(--bp-faint)] opacity-40 transition-opacity hover:bg-[#f0f4f8] hover:text-[var(--bp-muted)] focus-visible:opacity-100 active:cursor-grabbing group-hover:opacity-100"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" aria-hidden />
+        </button>
+        <FitTextarea
+          value={row[0] ?? ""}
+          rows={1}
+          autoFocus={autoFocus}
+          aria-label={columns[0]}
+          placeholder={columns[0]}
+          onChange={(e) => onCell(0, e.target.value)}
+          className={`${FIELD} min-w-0 flex-1 resize-none font-semibold`}
+        />
+        <button
+          type="button"
+          aria-label={confirming ? `Confirm: remove this ${noun}` : `Remove this ${noun}`}
+          onClick={() => (confirming ? onRemove() : setConfirming(true))}
+          onBlur={() => setConfirming(false)}
+          onMouseLeave={() => setConfirming(false)}
+          className={
+            confirming
+              ? "mt-px h-7 shrink-0 rounded-md bg-[#fdecec] px-2 text-ui font-semibold text-[#b42318] hover:bg-[#fbdcdc]"
+              : "mt-px flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--bp-faint)] opacity-0 transition-opacity hover:bg-[#fdecec] hover:text-[#b42318] focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+          }
+        >
+          {confirming ? "Remove" : <Trash2 className="h-4 w-4" aria-hidden />}
+        </button>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          aria-label={open ? "Hide details" : "Show details"}
+          onClick={onToggle}
+          className="mt-px flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--bp-muted)] transition-colors hover:bg-[#f0f4f8] hover:text-[var(--bp-ink)]"
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+        </button>
+      </div>
+      {open ? (
+        <div
+          id={bodyId}
+          className={`grid gap-x-5 gap-y-3 pb-4 pl-9 pr-10 ${rest.length > 1 ? "@md:grid-cols-2 @xl:grid-cols-4" : ""}`}
+        >
+          {rest.map((col, k) => (
+            <div key={col} className="min-w-0">
+              {rest.length > 1 ? (
+                <p className="mb-1 text-kicker font-semibold uppercase text-[var(--bp-blue)]">{col}</p>
+              ) : null}
+              <FitTextarea
+                value={row[k + 1] ?? ""}
+                rows={Math.max(1, Math.ceil((row[k + 1] ?? "").length / (rest.length > 1 ? 22 : 70)))}
+                aria-label={col}
+                placeholder={col}
+                onChange={(e) => onCell(k + 1, e.target.value)}
+                className={`${FIELD} resize-none ${rest.length > 1 ? "text-ui" : ""} text-[var(--bp-body)]`}
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+/**
+ * A table whose rows are things in their own right (pains, objections): each
+ * row is its first column, closed, with a chevron that opens the rest. Rows
+ * can be added and dragged into a new order; both save straight away.
+ */
+function RowList({
+  block,
+  set,
+  commit,
+}: {
+  block: Extract<BlueprintBlock, { type: "table" }>;
+  set: (next: BlueprintBlock) => void;
+  commit: (next: BlueprintBlock) => void;
+}) {
+  const [ids, setIds] = useState<string[]>(() => block.rows.map(newRowId));
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const rowIds = block.rows.map((_, i) => ids[i] ?? `row-at-${i}`);
+  const noun = (block.columns[0] ?? "row").toLowerCase();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function onDragEnd(event: DragEndEvent) {
+    const from = rowIds.indexOf(String(event.active.id));
+    const to = event.over ? rowIds.indexOf(String(event.over.id)) : -1;
+    if (from < 0 || to < 0 || from === to) return;
+    setIds(arrayMove(rowIds, from, to));
+    commit({ ...block, rows: arrayMove(block.rows, from, to) });
+  }
+
+  function add() {
+    const id = newRowId();
+    setIds([...rowIds, id]);
+    setOpen((s) => new Set(s).add(id));
+    setFocusId(id);
+    commit({ ...block, rows: [...block.rows, block.columns.map(() => "")] });
+  }
+
+  function remove(r: number) {
+    setIds(rowIds.filter((_, i) => i !== r));
+    commit({ ...block, rows: block.rows.filter((_, i) => i !== r) });
+  }
+
+  return (
+    <div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
+          <ul className={`bp-rows overflow-hidden rounded-xl border border-[var(--bp-rule)] ${block.rows.length ? "" : "hidden"}`}>
+            {block.rows.map((row, r) => (
+              <RowItem
+                key={rowIds[r]}
+                id={rowIds[r]}
+                columns={block.columns}
+                row={row}
+                open={open.has(rowIds[r])}
+                autoFocus={focusId === rowIds[r]}
+                onToggle={() =>
+                  setOpen((s) => {
+                    const next = new Set(s);
+                    if (!next.delete(rowIds[r])) next.add(rowIds[r]);
+                    return next;
+                  })
+                }
+                onCell={(c, value) =>
+                  set({ ...block, rows: block.rows.map((rw, i) => (i === r ? rw.map((cl, j) => (j === c ? value : cl)) : rw)) })
+                }
+                onRemove={() => remove(r)}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
+      <button
+        type="button"
+        onClick={add}
+        className="mt-2 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-ui font-medium text-[var(--bp-sky)] hover:bg-[#f2f7fc] hover:text-[var(--bp-blue)]"
+      >
+        <Plus className="h-4 w-4" aria-hidden />
+        Add {noun}
+      </button>
+    </div>
+  );
+}
+
+function editorFor(
+  block: BlueprintBlock,
+  set: (next: BlueprintBlock) => void,
+  underHeading = false,
+  commit: (next: BlueprintBlock) => void = set
+): ReactNode {
   switch (block.type) {
     case "lede":
       return <Area value={block.text} onChange={(text) => set({ ...block, text })} className="bp-display text-subhead" />;
@@ -92,14 +393,14 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
       return <Area value={block.text} onChange={(text) => set({ ...block, text })} />;
     case "heading":
       // A heading inside a written section is the label for the boxes under it.
-      return <h4 className="pt-3 text-base font-semibold tracking-[-0.01em] text-[var(--bp-ink)]">{block.text}</h4>;
+      return <h4 className="bp-block-heading pt-3 text-base font-semibold tracking-[-0.01em] text-[var(--bp-ink)]">{block.text}</h4>;
     case "bullets":
     case "numbered":
       return (
-        <Area
-          value={block.items.join("\n")}
-          onChange={(text) => set({ ...block, items: text.split("\n") })}
-          hint="One per line"
+        <BlockLines
+          items={block.items}
+          numbered={block.type === "numbered"}
+          onChange={(items) => set({ ...block, items })}
         />
       );
     case "quote":
@@ -141,10 +442,16 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
           ))}
         </div>
       );
-    case "table":
+    case "table": {
+      const setCell = (r: number, c: number, value: string) =>
+        set({
+          ...block,
+          rows: block.rows.map((rw, i) => (i === r ? rw.map((cl, j) => (j === c ? value : cl)) : rw)),
+        });
+      if (isRowListTable(block)) return <RowList block={block} set={set} commit={commit} />;
       return (
         <div className="bp-scroll -mx-1 overflow-x-auto px-1">
-          <table className="w-full min-w-[34rem] border-separate border-spacing-1 text-left text-ui">
+          <table className="bp-edit-table w-full min-w-[34rem] border-separate border-spacing-1 text-left text-ui">
             <thead>
               <tr>
                 {block.columns.map((col) => (
@@ -162,12 +469,7 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
                       <FitTextarea
                         value={cell}
                         rows={Math.max(1, Math.ceil(cell.length / 32))}
-                        onChange={(e) =>
-                          set({
-                            ...block,
-                            rows: block.rows.map((rw, i) => (i === r ? rw.map((cl, j) => (j === c ? e.target.value : cl)) : rw)),
-                          })
-                        }
+                        onChange={(e) => setCell(r, c, e.target.value)}
                         className={`${FIELD} resize-y px-2 py-1.5 text-ui`}
                       />
                     </td>
@@ -178,6 +480,7 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
           </table>
         </div>
       );
+    }
     case "message":
       return (
         <div>
@@ -238,7 +541,11 @@ function editorFor(block: BlueprintBlock, set: (next: BlueprintBlock) => void, u
 /** Drop the empty lines people leave while typing lists. */
 function tidy(blocks: BlueprintBlock[]): BlueprintBlock[] {
   return blocks.map((b) =>
-    b.type === "bullets" || b.type === "numbered" ? { ...b, items: b.items.map((i) => i.trim()).filter(Boolean) } : b
+    b.type === "bullets" || b.type === "numbered"
+      ? { ...b, items: b.items.map((i) => i.trim()).filter(Boolean) }
+      : b.type === "table"
+        ? { ...b, rows: b.rows.filter((row) => row.some((cell) => cell.trim())) }
+        : b
   );
 }
 
@@ -252,7 +559,7 @@ function MessageLine({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={cardClass("plain", "overflow-hidden")}>
+    <div className={cardClass("plain", "bp-msg overflow-hidden")}>
       <button
         type="button"
         aria-expanded={open}
@@ -298,7 +605,7 @@ function openFromMessage1(blocks: BlueprintBlock[], a: number): string {
   return /thanks for connecting/i.test(first) ? [opener, ...rest].join("\n") : m1.body;
 }
 
-/** The connection request with A / B / Open tabs. A missing version is added when its tab is first opened. */
+/** The connection request with A / B tabs. A missing version is added when its tab is first opened. */
 function NoteVersions({
   blocks,
   at,
@@ -318,7 +625,7 @@ function NoteVersions({
   const TABS: { id: Version; label: string; title: string }[] = [
     { id: "a", label: "A", title: "The connection request" },
     { id: "b", label: "B", title: "A second version to test against A" },
-    { id: "open", label: "Open", title: "For Open Profiles: sent as a free InMail, no connection needed" },
+    // The Open Profile InMail tab was dropped on 2 Nov (Zander: not needed).
   ];
   const choose = (id: Version) => {
     setTab(id);
@@ -326,7 +633,7 @@ function NoteVersions({
     if (id !== "a" && at[id] < 0) onAdd(id, id === "b" ? note.body : openFromMessage1(blocks, at.a));
   };
   return (
-    <div className={cardClass("plain", "overflow-hidden")}>
+    <div className={cardClass("plain", "bp-msg overflow-hidden")}>
       <div className="flex items-start gap-2 px-3.5 py-2.5">
         <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="flex min-w-0 flex-1 items-start gap-2 text-left">
           <ChevronDown className={`mt-0.5 h-4 w-4 shrink-0 text-[#94a3b8] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
@@ -386,9 +693,12 @@ function inSequence(blocks: BlueprintBlock[], i: number): boolean {
  */
 export function BlockBoxes({
   blocks,
+  hidden,
   onSave,
 }: {
   blocks: BlueprintBlock[];
+  /** Blocks kept and saved but not shown (by index). */
+  hidden?: Set<number>;
   onSave: (blocks: BlueprintBlock[]) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState<BlueprintBlock[]>(blocks);
@@ -406,6 +716,14 @@ export function BlockBoxes({
     }
   }
 
+  // Adding or moving a row saves straight away, not on leaving the section.
+  const saveNow = useRef(false);
+  useEffect(() => {
+    if (!saveNow.current) return;
+    saveNow.current = false;
+    void save();
+  });
+
   const versions = noteVersions(draft);
   // The B and Open versions show as tabs on the connection request, so their own headings and boxes are hidden.
   const asTabs = new Set(
@@ -415,7 +733,7 @@ export function BlockBoxes({
   return (
     <div className="relative space-y-4" onBlur={save}>
       {draft.map((block, i) =>
-        asTabs.has(i) ? null : versions && i === versions.a ? (
+        asTabs.has(i) || hidden?.has(i) ? null : versions && i === versions.a ? (
           <NoteVersions
             key={i}
             blocks={draft}
@@ -442,7 +760,15 @@ export function BlockBoxes({
           />
         ) : (
           <div key={i}>
-            {editorFor(block, (next) => setDraft((d) => d.map((b, j) => (j === i ? next : b))), draft[i - 1]?.type === "heading")}
+            {editorFor(
+              block,
+              (next) => setDraft((d) => d.map((b, j) => (j === i ? next : b))),
+              draft[i - 1]?.type === "heading",
+              (next) => {
+                saveNow.current = true;
+                setDraft((d) => d.map((b, j) => (j === i ? next : b)));
+              }
+            )}
           </div>
         )
       )}

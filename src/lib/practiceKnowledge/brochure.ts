@@ -63,13 +63,13 @@ export function programmeBrochureFromBlueprint(input: {
 
   const gaps: BrochureGap[] = [];
   if (!site.bio && !site.intro) {
-    gaps.push({ label: "Short bio", href: "/coach/blueprint/story" });
+    gaps.push({ label: "Short bio", href: "/coach/blueprint/about" });
   }
   if (!headline) {
     gaps.push({ label: "Your offer in three lengths", href: "/coach/blueprint/offer" });
   }
   if (!site.ownerWords.length) {
-    gaps.push({ label: "Problems owners ask you to solve", href: "/coach/blueprint/story" });
+    gaps.push({ label: "Problems owners ask you to solve", href: "/coach/blueprint/about" });
   }
   if (!helpWith.length) {
     gaps.push({ label: "What you help with", href: "/coach/blueprint/offer" });

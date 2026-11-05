@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { diagnose } from "../coachHealth";
 import { NUDGE_SECTION, NUDGE_TEMPLATES, draftNudge, isStuck, nudgeHold } from "./nudges";
+import { readFileSync } from "node:fs";
+import { NUDGE_RULES } from "./nudgeRules";
 import { inQuietHours, snoozeUntil } from "./settings";
 
 const row = { name: "Sarah Chen", stuck_at: "", next_step: "Do the thing.", invites_7d: 12, accept_rate: 0.18, interested_30d: 4 };
@@ -61,6 +63,14 @@ describe("Ava nudges", () => {
 
   it("every template has a Blueprint thread", () => {
     for (const key of Object.keys(NUDGE_TEMPLATES)) assert.ok(NUDGE_SECTION[key], key);
+  });
+
+  it("the rules shown to BCA match coach health: same reasons, same order, same level", () => {
+    // Read straight from diagnose(), so a new or reordered check fails here until NUDGE_RULES says it too.
+    const source = readFileSync(new URL("../coachHealth.ts", import.meta.url), "utf8");
+    const checks = [...source.matchAll(/level: "(red|amber)", stuck_at: "([^"]+)"/g)].map((m) => `${m[1]} ${m[2]}`);
+    assert.deepEqual(NUDGE_RULES.map((r) => `${r.level} ${r.reason}`), checks);
+    assert.deepEqual(NUDGE_RULES.map((r) => r.reason).sort(), Object.keys(NUDGE_TEMPLATES).sort());
   });
 
   it("only red and amber coaches are stuck", () => {

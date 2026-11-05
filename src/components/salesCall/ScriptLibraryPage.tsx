@@ -78,18 +78,18 @@ function ScriptLibraryPage({ script, asked }: { script: ScriptCard; asked: strin
 
   const railItem = (active: boolean) =>
     `flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
-      active ? "bg-[#06223d] text-white" : "text-slate-700 hover:bg-white/80"
+      active ? "bg-white font-semibold text-[#0f172a] shadow-[0_1px_2px_rgba(15,23,42,0.08)]" : "text-slate-700 hover:bg-white/55"
     }`;
   const railBadge = (active: boolean) =>
     `flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-      active ? "bg-white/15 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
+      active ? "bg-[#06223d] text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
     }`;
 
   return (
     <div className="-mx-4 -mb-6 flex min-h-[calc(100dvh-57px)] flex-col md:-mx-[60px] lg:flex-row lg:items-stretch">
       <nav
         aria-label={`${script.title} parts`}
-        className="min-w-0 shrink-0 border-b border-slate-200 bg-[#f3f6fa] px-3 py-3 lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:w-64 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-5"
+        className="min-w-0 shrink-0 border-b border-[var(--app-subnav-rule)] bg-[var(--app-subnav-bg)] px-3 py-3 lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:w-64 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-5"
       >
         <Link href={`${prefix}/script`} className="mb-3 inline-flex items-center gap-1.5 px-3 text-sm font-medium text-slate-500 hover:text-slate-900">
           <ArrowLeft className="h-4 w-4" aria-hidden />

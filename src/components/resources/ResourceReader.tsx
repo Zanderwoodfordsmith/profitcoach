@@ -238,7 +238,7 @@ function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded
 
       <nav aria-label="Previous and next" className="rs-no-print mt-14 grid gap-3 border-t border-[var(--bp-rule)] pt-6 sm:grid-cols-2">
         {prev ? (
-          <Link href={hrefFor(prev)} className="rounded-xl px-4 py-3 transition-colors hover:bg-white/70">
+          <Link href={hrefFor(prev)} className="rounded-xl px-4 py-3 transition-colors hover:bg-slate-50">
             <span className="block text-xs font-medium text-[var(--bp-faint)]">Previous</span>
             <span className="mt-0.5 block font-medium text-[var(--bp-ink)]">{prev.title}</span>
           </Link>
@@ -246,7 +246,7 @@ function ResourceReaderPage({ slug, found, docs }: { slug: string; found: Loaded
           <span />
         )}
         {next ? (
-          <Link href={hrefFor(next)} className="rounded-xl px-4 py-3 text-right transition-colors hover:bg-white/70">
+          <Link href={hrefFor(next)} className="rounded-xl px-4 py-3 text-right transition-colors hover:bg-slate-50">
             <span className="block text-xs font-medium text-[var(--bp-faint)]">Next</span>
             <span className="mt-0.5 block font-medium text-[var(--bp-ink)]">{next.title}</span>
           </Link>

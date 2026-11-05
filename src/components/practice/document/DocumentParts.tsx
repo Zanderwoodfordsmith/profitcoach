@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Download, FileText, GraduationCap, Loader2, MessageCircle, Play, Printer, Square } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { ArrowRight, ArrowUpRight, Check, Download, FileText, GraduationCap, Loader2, MessageCircle, Play, Printer, Square } from "lucide-react";
 
 import {
   BLUEPRINT_GROUPS,
@@ -15,7 +15,7 @@ import {
   sectionKey,
 } from "@/lib/practiceKnowledge/blueprint";
 import { blueprintFileName, blueprintMarkdown } from "@/lib/practiceKnowledge/exportMarkdown";
-import { workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
+import { sectionWorkflow, workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { DecisionRecordView } from "../DecisionRecord";
 import { usePractice } from "../PracticeProvider";
@@ -116,6 +116,49 @@ function sectionRefFor(page: BlueprintLink, section: BlueprintSection) {
   };
 }
 
+function partAnchor(page: BlueprintLink, part: string): string {
+  return `part-${page.slug}-${part.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
+
+/**
+ * A page made of parts (About You) opens with a link to each part, ticked
+ * once it has nothing left for the coach to answer.
+ */
+function PartLinks({ page }: { page: BlueprintLink }) {
+  const { knowledge, payload } = usePractice();
+  const visible = page.sections.filter((section) => section.face !== "stored");
+  const parts: { title: string; sections: BlueprintSection[] }[] = [];
+  for (const section of visible) {
+    if (section.part) parts.push({ title: section.part, sections: [] });
+    parts[parts.length - 1]?.sections.push(section);
+  }
+  if (parts.length < 2 || !knowledge || !payload) return null;
+  const row = { ...knowledge, payload };
+  return (
+    <nav aria-label="Parts of this page" className="bp-no-print flex flex-wrap gap-2">
+      {parts.map((part) => {
+        const done = part.sections.every((section) => {
+          const work = sectionWorkflow(sectionRefFor(page, section), row);
+          return !(work.tracked && work.status === "todo" && work.owner === "coach");
+        });
+        return (
+          <button
+            key={part.title}
+            type="button"
+            onClick={() =>
+              document.getElementById(partAnchor(page, part.title))?.scrollIntoView({ block: "start", behavior: "smooth" })
+            }
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-slate-300 hover:text-slate-900"
+          >
+            {done ? <Check className="h-3.5 w-3.5 text-emerald-600" aria-label="Done" /> : null}
+            {part.title}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function PageView({ page, showTitle = true }: { page: BlueprintLink; showTitle?: boolean }) {
   return (
     <div id={`p-${page.slug}`} className="scroll-mt-20">
@@ -131,10 +174,21 @@ export function PageView({ page, showTitle = true }: { page: BlueprintLink; show
         <DecisionRecordView />
       ) : (
         <div className="space-y-5">
+          <PartLinks page={page} />
           {page.sections
             .filter((section) => section.face !== "stored")
-            .map((section) => (
-              <SectionView key={section.id} sectionRef={sectionRefFor(page, section)} />
+            .map((section, index) => (
+              <Fragment key={section.id}>
+                {section.part ? (
+                  <h3
+                    id={partAnchor(page, section.part)}
+                    className={`bp-part scroll-mt-20 border-b border-[var(--bp-rule)] pb-3 ${index === 0 ? "pt-4" : "pt-10"} text-[1.625rem] font-semibold leading-tight tracking-[-0.025em] text-[var(--bp-navy)]`}
+                  >
+                    {section.part}
+                  </h3>
+                ) : null}
+                <SectionView sectionRef={sectionRefFor(page, section)} />
+              </Fragment>
             ))}
           <ClassroomLinks page={page} />
         </div>
@@ -360,7 +414,10 @@ const COVER_POSTER = "/tutorials/blueprint-welcome-poster.jpg";
 const COVER_VIDEO_SEEN_KEY = "bp-welcome-video-seen";
 
 // First visits get the full thumbnail. Once played, the cover keeps a slim play button instead.
-function CoverVideo() {
+/** The welcome video. "light" sits on a white card (the clean Overview); the default sits on the navy cover. */
+/** `poster` always shows the picture, even once watched (the overview's How it works). */
+export function CoverVideo({ tone = "dark", poster = false }: { tone?: "dark" | "light"; poster?: boolean }) {
+  const light = tone === "light";
   const [seen, setSeen] = useState(false);
   const [playing, setPlaying] = useState(false);
 
@@ -382,26 +439,36 @@ function CoverVideo() {
     }
   }
 
-  if (seen && !playing) {
+  if (seen && !playing && !poster) {
     return (
       <button
         type="button"
         onClick={play}
-        className="bp-no-print group inline-flex shrink-0 items-center gap-3 self-start rounded-full bg-white/10 py-2 pl-2 pr-5 text-left ring-1 ring-white/20 backdrop-blur-md transition-colors hover:bg-white/16 @3xl:self-center"
+        className={
+          light
+            ? "bp-no-print group flex w-full items-center gap-3 rounded-xl bg-slate-50 py-2 pl-2 pr-4 text-left ring-1 ring-inset ring-slate-200 transition-colors hover:bg-slate-100"
+            : "bp-no-print group inline-flex shrink-0 items-center gap-3 self-start rounded-full bg-white/10 py-2 pl-2 pr-5 text-left ring-1 ring-white/20 backdrop-blur-md transition-colors hover:bg-white/16 @3xl:self-center"
+        }
       >
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#0c5290] shadow-[0_6px_16px_rgba(2,12,27,0.3)] transition-transform group-hover:scale-105">
           <Play className="ml-0.5 h-4 w-4 fill-current" aria-hidden />
         </span>
         <span className="leading-tight">
-          <span className="block text-sm font-semibold text-white">Why we build it for you</span>
-          <span className="block text-xs text-white/65">A welcome from Zander · 1 min 30</span>
+          <span className={`block text-sm font-semibold ${light ? "text-slate-900" : "text-white"}`}>Why we build it for you</span>
+          <span className={`block text-xs ${light ? "text-slate-500" : "text-white/65"}`}>A welcome from Zander · 1 min 30</span>
         </span>
       </button>
     );
   }
 
   return (
-    <div className="bp-no-print w-full max-w-[28rem] shrink-0 overflow-hidden rounded-2xl bg-[#051e36] shadow-[0_18px_40px_rgba(2,12,27,0.35)] ring-1 ring-white/15 @3xl:w-[22rem] @5xl:w-[26rem]">
+    <div
+      className={
+        light
+          ? "bp-no-print w-full overflow-hidden rounded-xl bg-[#051e36]"
+          : "bp-no-print w-full max-w-[28rem] shrink-0 overflow-hidden rounded-2xl bg-[#051e36] shadow-[0_18px_40px_rgba(2,12,27,0.35)] ring-1 ring-white/15 @3xl:w-[22rem] @5xl:w-[26rem]"
+      }
+    >
       {playing ? (
         <video
           className="block aspect-video w-full"

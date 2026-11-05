@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import { fieldClass } from "@/components/ui/Field";
+import { sortDroppedFiles, useFileDrop } from "./FileDropZone";
 
 const EmojiPicker = dynamic(
   () => import("emoji-picker-react").then((m) => m.default),
@@ -351,12 +352,13 @@ export function ChatComposerTools({
   canSend,
   showSchedule,
   leadingTools,
+  trailing,
 }: {
   enabled: boolean;
   pendingFiles: PendingComposerFile[];
   pendingVoice: PendingVoiceNote | null;
   pendingVideo: PendingVideoNote | null;
-  onAddFiles: (files: FileList | null, kind: "image" | "file") => void;
+  onAddFiles: (files: FileList | File[] | null, kind: "image" | "file") => void;
   onRemoveFile: (id: string) => void;
   onVoiceChange: (note: PendingVoiceNote | null) => void;
   onVideoChange: (note: PendingVideoNote | null) => void;
@@ -369,6 +371,8 @@ export function ChatComposerTools({
   showSchedule: boolean;
   /** Extra controls before media tools (e.g. reply templates). */
   leadingTools?: ReactNode;
+  /** Replaces Discard and Send on the right (the Blueprint chat has its own send button). */
+  trailing?: ReactNode;
 }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -590,7 +594,7 @@ export function ChatComposerTools({
     }
   }
 
-  function onPickAudioFile(list: FileList | null) {
+  function onPickAudioFile(list: FileList | File[] | null) {
     const file = list?.[0];
     if (!file) return;
     const mime = file.type || "audio/mpeg";
@@ -608,6 +612,22 @@ export function ChatComposerTools({
       url,
     });
   }
+
+  // Files dropped anywhere on the panel (see FileDropZone) land here as if picked.
+  useFileDrop(
+    enabled
+      ? (dropped) => {
+          const { images, videos, audio, documents } = sortDroppedFiles(dropped);
+          if (images.length || documents.length) onAddFiles([...images, ...documents], "file");
+          const video = videos[0];
+          if (video) {
+            if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
+            onVideoChange({ file: video, url: URL.createObjectURL(video) });
+          }
+          if (audio.length) onPickAudioFile(audio);
+        }
+      : null
+  );
 
   const recording = micState === "recording";
   const requesting = micState === "requesting";
@@ -923,6 +943,7 @@ export function ChatComposerTools({
           </div>
         </div>
 
+        {trailing ?? (
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -988,6 +1009,7 @@ export function ChatComposerTools({
             </button>
           )}
         </div>
+        )}
       </div>
     </div>
   );

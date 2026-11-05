@@ -85,12 +85,12 @@ export function ResourcesShell({ children }: { children: ReactNode }) {
     <SearchTextProvider value={searchText}>
       <div className="bp-doc app-canvas-bg -mx-4 -mb-6 -mt-6 flex min-h-[calc(100dvh-57px)] flex-col md:-mx-[60px] lg:flex-row lg:items-stretch print:m-0 print:bg-white">
         <aside
-          className={`rs-no-print relative shrink-0 border-b border-slate-200 bg-white lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:self-start lg:border-b-0 lg:border-r ${
+          className={`rs-no-print relative shrink-0 border-b border-[var(--app-subnav-rule)] bg-[var(--app-subnav-bg)] lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:self-start lg:border-b-0 lg:border-r ${
             navOpen ? "lg:w-[17.3rem]" : "lg:w-14"
           }`}
         >
           <div className="lg:h-full lg:overflow-y-auto lg:overscroll-y-none">
-            <div className={`flex items-center gap-2 border-b border-slate-200/70 px-3 py-3 ${navOpen ? "justify-between" : "lg:justify-center"}`}>
+            <div className={`flex items-center gap-2 border-b border-[var(--app-subnav-rule)] px-3 py-3 ${navOpen ? "justify-between" : "lg:justify-center"}`}>
               <Link
                 href={base}
                 className={`text-ui font-semibold text-[#0f172a] hover:text-[#0c5290] ${navOpen ? "" : "lg:hidden"}`}
@@ -101,7 +101,7 @@ export function ResourcesShell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => setMobileOpen((open) => !open)}
                 aria-expanded={mobileOpen}
-                className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-ui font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+                className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-ui font-medium text-slate-600 hover:bg-white/55 hover:text-slate-900 lg:hidden"
               >
                 Contents
                 <ChevronDown className={`h-4 w-4 transition-transform ${mobileOpen ? "rotate-180" : ""}`} aria-hidden />
@@ -111,7 +111,7 @@ export function ResourcesShell({ children }: { children: ReactNode }) {
                 onClick={toggleNav}
                 aria-expanded={navOpen}
                 aria-label={navOpen ? "Collapse contents" : "Expand contents"}
-                className="hidden rounded-md p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:inline-flex"
+                className="hidden rounded-md p-1.5 text-slate-600 hover:bg-white/55 hover:text-slate-900 lg:inline-flex"
               >
                 {navOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
               </button>
@@ -135,15 +135,15 @@ export function ResourcesShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <section className="rs-print-root @container flex min-w-0 flex-1 flex-col">{children}</section>
+        <section className={`rs-print-root @container flex min-w-0 flex-1 flex-col ${here ? "bg-white" : ""}`}>{children}</section>
       </div>
     </SearchTextProvider>
   );
 }
 
 const ROW = "flex min-w-0 flex-1 items-start gap-2 rounded-[7px] px-2.5 py-1.5 text-sm leading-snug";
-const ROW_IDLE = "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0f172a]";
-const ROW_CURRENT = "bg-[#e0f2fe] font-medium text-[#075985]";
+const ROW_IDLE = "text-[#475569] hover:bg-white/55 hover:text-[#0f172a]";
+const ROW_CURRENT = "bg-white font-semibold text-[#0f172a] shadow-[0_1px_2px_rgba(15,23,42,0.08)]";
 const COUNT = "text-xs font-medium tabular-nums text-[#94a3b8]";
 
 function Contents({
@@ -185,14 +185,14 @@ function Contents({
           type="button"
           onClick={() => onToggle(key, !open)}
           aria-expanded={open}
-          className="flex w-full items-center gap-1.5 rounded-[7px] px-2 py-1.5 text-left text-sm font-medium text-[#1e293b] hover:bg-[#f1f5f9]"
+          className="flex w-full items-center gap-1.5 rounded-[7px] px-2 py-1.5 text-left text-sm font-medium text-[#1e293b] hover:bg-white/55"
         >
           <ChevronRight className={`h-3.5 w-3.5 shrink-0 text-[#94a3b8] transition-transform ${open ? "rotate-90" : ""}`} aria-hidden />
           <span className="min-w-0 flex-1">{group.title}</span>
           <span className={COUNT}>{group.pages.length}</span>
         </button>
         {open ? (
-          <ul className="mb-1 ml-[0.85rem] border-l border-slate-200 pl-1.5">
+          <ul className="mb-1 ml-[0.85rem] border-l border-[var(--app-subnav-rule)] pl-1.5">
             {group.pages.map((p) => (
               <li key={p.slug} className="flex">
                 {row(p)}
@@ -214,7 +214,7 @@ function Contents({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search inside resources"
-          className="w-full rounded-[7px] border border-slate-200 bg-[#f8fafc] py-1.5 pl-8 pr-2.5 text-sm text-[#0f172a] outline-none placeholder:text-[#64748b] focus:border-[#7cc0ef] focus:bg-white focus:ring-2 focus:ring-[#1a8fd4]/20"
+          className="w-full rounded-[7px] border border-[var(--app-subnav-rule)] bg-white py-1.5 pl-8 pr-2.5 text-sm text-[#0f172a] outline-none placeholder:text-[#64748b] focus:border-[#7cc0ef] focus:bg-white focus:ring-2 focus:ring-[#1a8fd4]/20"
         />
       </label>
 
@@ -242,7 +242,7 @@ function Contents({
             <LayoutGrid className="mt-0.5 h-4 w-4 shrink-0 text-[#0c5290]" aria-hidden />
             <span>Overview</span>
           </Link>
-          <div className="mt-3 space-y-1 border-t border-slate-100 pt-3">
+          <div className="mt-3 space-y-1 border-t border-[var(--app-subnav-rule)] pt-3">
             {SECTIONS.map((section) => {
               const groups = groupsIn(section.title);
               if (groups.length === 0) return null;
@@ -255,7 +255,7 @@ function Contents({
                     type="button"
                     onClick={() => onToggle(key, !open)}
                     aria-expanded={open}
-                    className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-sm font-semibold text-[#0f172a] hover:bg-[#f1f5f9]"
+                    className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-sm font-semibold text-[#0f172a] hover:bg-white/55"
                   >
                     <section.icon className="h-4 w-4 shrink-0 text-[#0c5290]" aria-hidden />
                     <span className="min-w-0 flex-1">{section.title}</span>
@@ -263,7 +263,7 @@ function Contents({
                     <ChevronDown className={`h-4 w-4 shrink-0 text-[#94a3b8] transition-transform ${open ? "" : "-rotate-90"}`} aria-hidden />
                   </button>
                   {open ? (
-                    <div className="mb-2 ml-[1.15rem] border-l border-slate-200 pl-1.5">
+                    <div className="mb-2 ml-[1.15rem] border-l border-[var(--app-subnav-rule)] pl-1.5">
                       {section.title === "Profit System"
                         ? PILLARS.map((pillar) => {
                             const inPillar = groups.filter((g) => g.pillar === pillar);

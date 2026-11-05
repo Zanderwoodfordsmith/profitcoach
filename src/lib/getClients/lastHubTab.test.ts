@@ -164,4 +164,21 @@ describe("Blueprint and Keep Clients last page", () => {
       }
     }
   });
+  it("remembers the last Academy page, down to the lesson", () => {
+    const storage = memoryStorage();
+    assert.equal(readToolsHubPageHref("academy", "/coach", storage), "/coach/community");
+    rememberToolsHubPage("academy", "/coach/academy/course-1/lesson-2", storage);
+    assert.equal(
+      readToolsHubPageHref("academy", "/coach", storage),
+      "/coach/academy/course-1/lesson-2"
+    );
+    rememberToolsHubPage("academy", "/coach/community/calendar", storage);
+    assert.equal(readToolsHubPageHref("academy", "/coach", storage), "/coach/community/calendar");
+    rememberToolsHubPage("academy", "/coach/blueprint", storage);
+    assert.equal(readToolsHubPageHref("academy", "/coach", storage), "/coach/community/calendar");
+    rememberToolsHubPage("academy", "/admin/academy/archive", storage);
+    assert.equal(readToolsHubPageHref("academy", "/admin", storage), "/admin/community");
+    const bad = memoryStorage({ "pc-academy-last-page:/coach": "/coach/academy/../../evil" });
+    assert.equal(readToolsHubPageHref("academy", "/coach", bad), "/coach/community");
+  });
 });

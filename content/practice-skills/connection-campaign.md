@@ -74,8 +74,8 @@ Use {first_name} and {company} exactly. Anything the coach fills in by hand goes
 
 One coach's test can't settle these: at about 1 interested reply per 100 requests, a clear answer needs thousands of people per side. BCA runs the big tests.
 
-## Open Profile message
+## Other versions
 
-Owners with an Open Profile can be messaged without connecting. Send them Message 1 (the ad shape), very nearly word for word: the same two outcomes, the same proof and the same ask. Only the opening changes, because there is no "thanks for connecting": use the connection request's opening line instead ("Hi {first_name}, I see you run a ..."). It sits under its own heading, not in the sequence; the page shows it as the Open tab on the connection request.
+No Open Profile message: not written for now (Zander, 2 Nov 2026).
 
 A B version of the connection request is written only when asked for, under its own heading "Connection request B": the same rules, a different angle. Get Clients sends A and B to half the list each.

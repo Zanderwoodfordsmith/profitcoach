@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2, Maximize2, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 
@@ -10,13 +10,16 @@ import { AvaChat } from "./AvaChat";
 import { AvaAction, AvaRoomProvider } from "./AvaKit";
 import { AvaHalo } from "./AvaHalo";
 import { AvaStage } from "./AvaStage";
+import { morphAva } from "./avaMorph";
+import { setAvaWorkSlot } from "./avaPageLink";
 import { useAvaSession } from "./useAvaSession";
 
 /**
- * Ava everywhere outside the Blueprint. Opened from the top bar, she floats
- * over the right of the page (the page never moves), in the same blue room
- * as her own page. The conversation is the app's one Ava conversation, so
- * "Open full page" carries it across to her page.
+ * Ava everywhere, the Blueprint included (4 Nov). Opened from the top bar, she
+ * floats over the right of the page (the page never moves), in the same blue
+ * room as her own page. The conversation is the app's one Ava conversation,
+ * so "Open full page" carries it across to her page. BCA on a coach's
+ * Blueprint page gets a pinned strip under the header with what's waiting.
  */
 
 export function AvaDock({
@@ -33,6 +36,8 @@ export function AvaDock({
     convo,
     chats,
     loadChats,
+    updateChat,
+    deleteChat,
     transcribe,
     starters,
     moreIdeas,
@@ -44,17 +49,23 @@ export function AvaDock({
     placeholder,
     draft,
     setDraft,
+    bcaWork,
   } = useAvaSession();
   const router = useRouter();
   const pathname = usePathname();
   const { profile } = useDashboardProfile();
   const [slot, setSlot] = useState<HTMLElement | null>(null);
-  // Admins have Ava's own page; everyone else keeps the full-screen view until it opens to coaches.
-  const pageHref = profile?.role === "admin" ? (pathname.startsWith("/admin") ? "/admin/ava/chat" : "/coach/ava") : null;
+  // Her own page, for everyone (5 Nov: opened to coaches): the admin one under /admin.
+  const pageHref = profile ? (pathname.startsWith("/admin") ? "/admin/ava/chat" : "/coach/ava") : null;
+  useEffect(() => {
+    if (pageHref) router.prefetch(pageHref);
+  }, [router, pageHref]);
   const openFull = () => {
     if (!pageHref) return onToggleFullscreen();
-    onClose();
-    router.push(pageHref);
+    morphAva("open", () => {
+      onClose();
+      router.push(pageHref);
+    });
   };
 
   // Escape: full screen docks (the stage handles that), docked closes.
@@ -66,6 +77,12 @@ export function AvaDock({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [fullscreen, onClose]);
+
+  // The Blueprint draws BCA's waiting work into this strip (a portal, so it keeps its data).
+  const work = bcaWork ? (
+    <div ref={setAvaWorkSlot} className="relative z-[2] shrink-0 px-3 pb-2" />
+  ) : null;
+  useEffect(() => () => setAvaWorkSlot(null), []);
 
   const chat = (headerSlot: HTMLElement | null) => (
     <AvaChat
@@ -86,13 +103,23 @@ export function AvaDock({
       compact={!fullscreen}
       first={first}
       moreIdeas={moreIdeas}
+      updateChat={updateChat}
+      deleteChat={deleteChat}
+      onFullPage={fullscreen ? undefined : openFull}
     />
   );
 
   if (fullscreen) {
     return (
       <AvaStage subtitle={subtitle} onDock={onToggleFullscreen} onClose={onClose}>
-        {(slot) => (agent ? chat(slot) : null)}
+        {(slot) =>
+          agent ? (
+            <div className="flex h-full min-h-0 flex-col">
+              {work ? <div className="mx-auto w-full max-w-[46rem]">{work}</div> : null}
+              <div className="min-h-0 flex-1">{chat(slot)}</div>
+            </div>
+          ) : null
+        }
       </AvaStage>
     );
   }
@@ -102,19 +129,21 @@ export function AvaDock({
       <button type="button" aria-label="Close Ava" onClick={onClose} className="fixed inset-0 z-[94] bg-[#051e36]/35 md:hidden" />
       <aside
         aria-label="Ava"
-        className="ava-ui ava-dark ava-dock ava-dock-room fixed z-[95] flex flex-col overflow-hidden max-md:inset-x-0 max-md:bottom-0 max-md:h-[88dvh] max-md:rounded-t-3xl md:bottom-3 md:right-3 md:top-[4.25rem] md:w-[26rem] md:rounded-[24px]"
+        className="ava-ui ava-dark ava-dock ava-dock-room fixed z-[95] flex flex-col overflow-hidden max-md:inset-x-0 max-md:bottom-0 max-md:h-[88dvh] max-md:rounded-t-3xl md:bottom-2 md:right-2 md:top-[calc(3.5rem+8px)] md:w-[calc(28rem-8px)] md:rounded-[18px]"
       >
         <span className="ava-glass-glow" aria-hidden />
-        {/* One header: her mark, her name, the chat's title, then Chats, New chat, Open full page and Close. */}
-        <div className="relative z-[1] flex shrink-0 items-center gap-2 px-4 pb-2 pt-3.5">
-          <AvaHalo size={26} dark />
-          <p className="shrink-0 text-[0.9375rem] font-semibold text-[var(--ava-ink)]">Ava</p>
-          <div ref={setSlot} className="flex min-w-0 flex-1 items-center justify-end" />
-          <span className="max-md:hidden">
-            <AvaAction icon={<Maximize2 className="h-3.5 w-3.5" aria-hidden />} label="Full page" onClick={openFull} />
-          </span>
+        {/* One header (5 Nov, like Claude's app): her chats on the left, her mark and name in the middle,
+            then New chat on an open chat, ⋯ (Full page; Pin, Rename, Delete) and Close. Its left and right edges line up
+            with the Support and Blueprint chat column (28rem) behind it. */}
+        <div className="relative z-[3] flex shrink-0 items-center gap-1 px-3 py-2.5">
+          <div ref={setSlot} className="flex min-w-0 flex-1 items-center" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2">
+            <AvaHalo size={24} dark className="ava-dock-halo" />
+            <p className="text-[0.9375rem] font-semibold text-[var(--ava-ink)]">Ava</p>
+          </div>
           <AvaAction iconOnly icon={<X className="h-4 w-4" aria-hidden />} label="Close Ava" onClick={onClose} />
         </div>
+        {agent ? work : null}
         <div className="relative z-[1] min-h-0 flex-1">
           {agent ? (
             chat(slot)

@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronLeft, History, Info, Plus } from "lucide-react";
+import { ChevronDown, ChevronLeft, History, Info, SquarePen } from "lucide-react";
 
 import type { AgentChatSummary, useAgentConversation } from "@/components/agent/useAgentConversation";
 import { useAutoGrow, useHalfHeight, useVoiceInput } from "@/components/practice/composer";
 import { useQueuedAiPrompt } from "@/lib/profitCoachAi/queuedPrompt";
 
-import { AvaAction, AvaComposer, AvaFeed, AvaHistoryList, AvaRecent, AvaStarter, useAvaDark, useAvaRoom } from "./AvaKit";
+import { AvaAction, AvaComposer, AvaFeed, AvaHistoryList, AvaMenuIcon, AvaRecent, AvaStarter, useAvaDark, useAvaRoom } from "./AvaKit";
+import { AvaChatMenu } from "./AvaChatMenu";
 import { AvaHalo } from "./AvaHalo";
 
 /**
@@ -48,6 +49,9 @@ export function AvaChat({
   first,
   heroStyle = "simple",
   moreIdeas = [],
+  updateChat,
+  deleteChat,
+  onFullPage,
 }: {
   convo: AvaConversation;
   transcribe: (blob: Blob) => Promise<string | null>;
@@ -80,10 +84,15 @@ export function AvaChat({
   compact?: boolean;
   /** First name, for the greeting on a new chat. */
   first?: string;
-  /** Ava's page, new chat: the simple centred screen, or her face on the right (Zander is choosing, 24 Oct). */
+  /** New chat: her face on the right on her own page (picked 5 Nov); the simple centred screen in the coaches' full-screen view. */
   heroStyle?: "simple" | "face";
   /** The side panel's "More ideas": a longer list of jobs, grouped by area. */
   moreIdeas?: { group: string; starters: AvaStarterSpec[] }[];
+  /** The side panel's ⋯ on an open chat: pin or rename it. */
+  updateChat?: (id: string, change: { title?: string; pinned?: boolean }) => Promise<boolean>;
+  deleteChat?: (id: string) => Promise<boolean>;
+  /** The side panel's ⋯: open her full page. */
+  onFullPage?: () => void;
 }) {
   const room = useAvaRoom();
   const dark = useAvaDark();
@@ -107,9 +116,10 @@ export function AvaChat({
     requestAnimationFrame(() => boxRef.current?.focus());
   }, !convo.readOnly);
 
+  // The conversation opens at its newest message; her chats open at the top, where Pinned is.
   useEffect(() => {
     const el = feedRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTop = view === "chat" ? el.scrollHeight : 0;
   }, [convo.items, convo.streaming, view]);
 
   useEffect(() => {
@@ -141,7 +151,49 @@ export function AvaChat({
   const back = detail ? detail.onBack : view === "history" ? () => setView("chat") : null;
   const onChat = view === "chat" && !detail;
 
-  const bar = (
+  // The side panel (5 Nov, like Claude's app): her chats behind the menu on the left (New chat at
+  // their top). On the right, a new chat has the Full page icon; an open chat has New chat and
+  // ⋯ (Full page, Pin, Rename, Delete).
+  // Her name sits in the middle of the panel.
+  const chatId = convo.chatId;
+  // Pin, Rename and Delete for the open chat: the same ⋯ in the side panel and on her page.
+  const menuChat =
+    chatId && !convo.readOnly && updateChat && deleteChat
+      ? {
+          title: convo.title ?? "",
+          pinned: Boolean(chats?.find((c) => c.id === chatId)?.pinned_at),
+          onPin: (pinned: boolean) => updateChat(chatId, { pinned }),
+          onRename: (title: string) => updateChat(chatId, { title }),
+          onDelete: () => deleteChat(chatId),
+        }
+      : null;
+  const bar = compact ? (
+    <div className="flex min-w-0 flex-1 items-center gap-1">
+      {detail ? (
+        <AvaAction iconOnly icon={<ChevronLeft className="h-4 w-4" aria-hidden />} label="Back" onClick={detail.onBack} />
+      ) : (
+        <AvaAction
+          iconOnly
+          active={view === "history"}
+          icon={<AvaMenuIcon />}
+          label={view === "history" ? "Back to the chat" : "Your chats"}
+          onClick={() => {
+            if (view === "history") return setView("chat");
+            setView("history");
+            onHistory?.();
+          }}
+        />
+      )}
+      <span className="flex-1" />
+      {onChat ? actions : null}
+      {onChat && !empty ? (
+        <AvaAction iconOnly icon={<SquarePen className="h-4 w-4" aria-hidden />} label="New chat" onClick={fresh} />
+      ) : null}
+      {onChat ? (
+        <AvaChatMenu key={chatId ?? "new"} onFullPage={onFullPage} chat={menuChat} />
+      ) : null}
+    </div>
+  ) : (
     <div
       className={
         stage || compact ? "flex min-w-0 flex-1 items-center gap-1.5" : "flex items-center gap-1 border-b border-[var(--ava-rule)] px-3 py-2"
@@ -182,12 +234,13 @@ export function AvaChat({
       {/* On Ava's page an empty chat already is a new chat, so the button waits until there is one. */}
       {labelled && empty && onChat ? null : (
         <AvaAction
-          icon={<Plus className={stage || compact ? "h-4 w-4" : "h-3.5 w-3.5"} aria-hidden />}
+          icon={<SquarePen className={stage || compact ? "h-4 w-4" : "h-3.5 w-3.5"} aria-hidden />}
           label={labelled || compact ? "New chat" : "New"}
           showLabel={labelled}
           onClick={fresh}
         />
       )}
+      {labelled && onChat && menuChat ? <AvaChatMenu key={chatId ?? "new"} chat={menuChat} /> : null}
     </div>
   );
 
@@ -219,7 +272,17 @@ export function AvaChat({
   const body = detail ? (
     detail.body
   ) : view === "history" ? (
-    <AvaHistoryList chats={chats} coachFirst={coachFirst} onOpen={(id) => void open(id)} extra={historyExtra} />
+    compact ? (
+      // New chat sits at the top of her chats too, where people look for it.
+      <div className="mx-auto max-w-[40rem]">
+        <button type="button" onClick={fresh} className="ava-glass-btn is-labelled mb-4 w-full justify-start">
+          <SquarePen className="h-4 w-4" aria-hidden /> New chat
+        </button>
+        <AvaHistoryList chats={chats} currentId={convo.chatId} coachFirst={coachFirst} onOpen={(id) => void open(id)} extra={historyExtra} />
+      </div>
+    ) : (
+      <AvaHistoryList chats={chats} currentId={convo.chatId} coachFirst={coachFirst} onOpen={(id) => void open(id)} extra={historyExtra} />
+    )
   ) : !empty ? (
     <AvaFeed
       items={convo.items}
@@ -234,7 +297,7 @@ export function AvaChat({
     // With her face: her portrait in the room behind (AvaRoomBackground), the words, the box and the jobs on the left.
     <div className="ava-hero-e ava-hero-face flex min-h-full flex-col pb-10 pt-2 [justify-content:safe_center]">
       <div className="ava-hero-hello flex items-center gap-3">
-        <AvaHalo size={34} dark />
+        <AvaHalo size={34} dark className="ava-morph-halo" />
         <span className="text-[0.9375rem] font-semibold text-[var(--ava-ink)]">Ava</span>
         <span className="text-sm text-[var(--ava-muted)]">ready when you are</span>
       </div>
@@ -307,7 +370,7 @@ export function AvaChat({
     // The side panel: a big Halo, a hello and one question, centred, with the box below.
     // What she can help with opens on request, so the first view stays simple.
     <div className="flex min-h-full flex-col items-center pb-4 text-center [justify-content:safe_center]">
-      <AvaHalo size={112} dark={dark} />
+      <AvaHalo size={112} dark={dark} className="ava-morph-halo" />
       <p className="mt-7 text-[1.125rem] text-[var(--ava-muted)]">Hello{first ? ` ${first}` : ""}</p>
       <h2 className="mt-2 max-w-[18rem] text-balance text-[2.25rem] font-medium leading-[1.1] tracking-[-0.03em] text-[var(--ava-ink)]">
         What shall we get done?
@@ -322,7 +385,7 @@ export function AvaChat({
         <ChevronDown className={`h-4 w-4 transition-transform ${showIntro ? "rotate-180" : ""}`} aria-hidden />
       </button>
       {showIntro ? (
-        <div className="ava-arrive-soft mt-3 flex w-full flex-col gap-2 text-left">
+        <div className="ava-arrive-soft mt-3 flex w-full flex-col gap-0.5 text-left">
           {/* The short list of the most common jobs; the longer list replaces it, so nothing shows twice. */}
           {(showMore ? [] : starters.slice(0, 3)).map((starter) => (
             <AvaStarter key={starter.key} primary={starter.primary} onClick={starter.onPick}>
@@ -335,7 +398,7 @@ export function AvaChat({
                 {moreIdeas.map((group) => (
                   <section key={group.group}>
                     <h3 className="mb-1.5 px-1 text-xs font-semibold text-[var(--ava-muted)]">{group.group}</h3>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-0.5">
                       {group.starters.map((starter) => (
                         <AvaStarter key={starter.key} onClick={starter.onPick}>
                           {starter.label}

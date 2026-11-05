@@ -1,9 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { AvaNudgeQueue } from "@/components/admin/ava/AvaNudgeQueue";
-import { useRequireAdminRole } from "@/hooks/useRequireAdminRole";
-
+/** Nudges moved into Ava's top bar (5 Nov); old links land on the tab. */
 export default function AdminAvaNudgesPage() {
-  useRequireAdminRole("/coach");
-  return <AvaNudgeQueue />;
+  redirect("/admin/ava?tab=nudges");
 }

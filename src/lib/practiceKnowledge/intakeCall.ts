@@ -32,6 +32,13 @@ export const PRACTICE_STEPS: { id: PracticeStepId; label: string }[] = [
   { id: "build", label: "BCA builds it" },
 ];
 
+/**
+ * Members who joined longer ago than this had their first call before the
+ * Blueprint Call was booked here (or never need one), so it counts as done:
+ * nobody from before then is sent to book it (5 Nov).
+ */
+export const BLUEPRINT_CALL_NEW_MEMBER_DAYS = 30;
+
 /** The first unfinished step is the current one. A tick means that step is finished. */
 export function practiceStepStates(input: {
   interviewCompletedAt: string | null | undefined;
@@ -39,14 +46,19 @@ export function practiceStepStates(input: {
   decisionLockedAt?: string | null | undefined;
   /** When the booked Blueprint Call starts. Once that time has passed, the call is done. */
   callAt?: string | null | undefined;
+  /** When the coach joined. Joined more than BLUEPRINT_CALL_NEW_MEMBER_DAYS ago: the call counts as done. */
+  joinedAt?: string | null | undefined;
   builtSections: Record<string, unknown> | null | undefined;
   now?: number;
 }): Record<PracticeStepId, PracticeStepState> {
   const built = input.builtSections ?? {};
+  const now = input.now ?? Date.now();
   const callAt = input.callAt ? Date.parse(input.callAt) : NaN;
+  const joinedAt = input.joinedAt ? Date.parse(input.joinedAt) : NaN;
+  const longStanding = joinedAt < now - BLUEPRINT_CALL_NEW_MEMBER_DAYS * 86_400_000;
   const done: Record<PracticeStepId, boolean> = {
     ava: Boolean(input.interviewCompletedAt),
-    pam: Boolean(input.decisionLockedAt) || callAt < (input.now ?? Date.now()),
+    pam: Boolean(input.decisionLockedAt) || callAt < now || longStanding,
     build: BUILD_READY_SECTIONS.every((key) => Boolean(built[key])),
   };
   const firstOpen = PRACTICE_STEPS.find((step) => !done[step.id])?.id;

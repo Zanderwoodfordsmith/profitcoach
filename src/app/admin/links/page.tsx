@@ -28,6 +28,11 @@ const parkedProjectLinks = [
     label: "Digital explainer",
     hint: "Before the BOSS Score Review or the Profit Roadmap call (?call=roadmap)",
   },
+  {
+    href: "/coach/blueprint/jobs",
+    label: "Blueprint as jobs",
+    hint: "The Linear-style jobs list we tried for the Blueprint (job 176), parked 4 Nov",
+  },
 ] as const;
 
 const siteToolsLinks = [

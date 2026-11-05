@@ -49,6 +49,8 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       voice_sounds_like: null,
       voice_never: null,
       voice_notes: null,
+      goal_12_months: null,
+      anything_else: null,
       voice_known_for: null,
       voice_coaching_style: null,
       voice_values: null,

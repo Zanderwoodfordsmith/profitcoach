@@ -12,8 +12,9 @@ import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { AvaDock } from "@/components/ava/AvaDock";
+import { SupportDockProvider } from "@/components/support/SupportDock";
 import { AvaSessionProvider } from "@/components/ava/useAvaSession";
-import { useAvaPageHost } from "@/components/ava/avaPageHost";
+import { rememberAvaReturn, useAvaOpenRequests } from "@/components/ava/avaPageLink";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
@@ -188,22 +189,18 @@ export default function CoachLayout({
    * never moves) and can expand to full screen.
    */
   const { profile: viewerProfile, profileLoading } = useDashboardProfile();
-  /** Admin-only docked panel — hidden while impersonating so "View as coach" matches members. */
-  const adminAiPanel = viewerProfile?.role === "admin" && !impersonatingCoachId;
-  /** Coaches don't get the panel until Ava's new look opens to them. */
-  const aiPanelAvailable = adminAiPanel;
-  const showAiSparkles = aiPanelAvailable;
+  /**
+   * Everyone signed in, coaches too (4 Nov: one Ava, from the top bar, the
+   * Blueprint included). Each gets the skills they have: coaches without Ava
+   * switched on, the Blueprint ones. "View as coach" has her as members do.
+   */
+  const aiPanelAvailable = Boolean(viewerProfile);
+  const showAiSparkles = profileLoading || aiPanelAvailable;
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiPanelFullscreen, setAiPanelFullscreen] = useState(false);
   useEffect(() => {
     setAiPanelOpen(window.localStorage.getItem("coach-ai-panel-open") === "1");
   }, []);
-  useEffect(() => {
-    if (impersonatingCoachId && aiPanelOpen) {
-      setAiPanelOpen(false);
-      setAiPanelFullscreen(false);
-    }
-  }, [aiPanelOpen, impersonatingCoachId]);
   const setAiOpen = (open: boolean) => {
     setAiPanelOpen(open);
     if (!open) setAiPanelFullscreen(false);
@@ -213,8 +210,16 @@ export default function CoachLayout({
       /* noop */
     }
   };
-  /** The Blueprint has Ava built in: the top-bar button opens that one instead. */
-  const avaPageHost = useAvaPageHost();
+  /** A page's own "Ask Ava" (the Blueprint) opens this one Ava (4 Nov: no second Ava in the page). */
+  // Ava's page sends her back into the side panel on the page you were on.
+  useEffect(() => {
+    if (!avaChatPage) rememberAvaReturn(pathname);
+  }, [avaChatPage, pathname]);
+  const avaAsked = useAvaOpenRequests();
+  useEffect(() => {
+    if (!avaAsked) return;
+    setAiPanelOpen(true);
+  }, [avaAsked]);
 
   const shellPadClass = `${
     playbooksReader ? "pl-0" : sidebarExpanded ? "md:pl-56" : "md:pl-14"
@@ -253,7 +258,7 @@ export default function CoachLayout({
 
   return (
     <div
-      className={`group/appshell ${
+      className={`group/appshell coach-app-shell ${
         fullHeightPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
         membershipPage ? "bg-[#f5f8fc]" : playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
@@ -267,22 +272,19 @@ export default function CoachLayout({
         signingOut={signingOut}
         onSignOut={handleSignOut}
         avatarOverride={avatarOverride}
-        showAi={showAiSparkles || Boolean(avaPageHost)}
-        aiPanelOpen={avaPageHost ? avaPageHost.open : aiPanelOpen}
+        showAi={showAiSparkles}
+        aiPanelOpen={aiPanelOpen}
         profileLoading={profileLoading}
-        onToggleAi={avaPageHost ? avaPageHost.toggle : () => setAiOpen(!aiPanelOpen)}
-        onOpenAiFull={
-          avaPageHost
-            ? avaPageHost.toggle
-            : () => {
-                setAiOpen(true);
-                setAiPanelFullscreen(true);
-              }
-        }
+        onToggleAi={() => setAiOpen(!aiPanelOpen)}
+        onOpenAiFull={() => {
+          setAiOpen(true);
+          setAiPanelFullscreen(true);
+        }}
         avaInMobileNav={showAiSparkles}
         chromeEnabled={chromeEnabled}
       >
       <AvaSessionProvider>
+      <SupportDockProvider>
       <SearchOverlay />
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {!playbooksReader && isMinimalWorkshopChrome && workshopTopRightSlot ? (
@@ -356,13 +358,14 @@ export default function CoachLayout({
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>
-      {aiPanelAvailable && aiPanelOpen && !avaPageHost && !avaChatPage ? (
+      {aiPanelAvailable && aiPanelOpen && !avaChatPage ? (
         <AvaDock
           onClose={() => setAiOpen(false)}
           fullscreen={aiPanelFullscreen}
           onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
         />
       ) : null}
+      </SupportDockProvider>
       </AvaSessionProvider>
       </DashboardChromeProvider>
       <SalesNavImportToast />

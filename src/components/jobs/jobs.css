@@ -1,0 +1,144 @@
+/*
+ * Blueprint sections inside a job (job 176): the same boxes and fields, so
+ * Ava reads the same structured answers, drawn like a clean document. No
+ * card round each part, a heading and a hairline instead; answers read as
+ * text until you hover or click to edit; hints only while typing.
+ */
+.bp-jobs .bp-section {
+  border: 0;
+  border-top: 1px solid var(--bp-rule);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.bp-jobs .bp-head {
+  background: transparent;
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+  --bp-ink: #0b1b2e;
+  --bp-muted: #55657a;
+  --bp-faint: #8595a8;
+  --bp-tint: #f2f7fc;
+}
+
+.bp-jobs .bp-head :focus-visible {
+  outline-color: var(--bp-sky);
+}
+
+/* The section's body lines up with its title. */
+.bp-jobs .bp-section > header + div,
+.bp-jobs .bp-section > div {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Answers read as text; the box appears on hover and while editing. */
+.bp-jobs .bp-input {
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  margin-left: -0.5rem;
+  width: calc(100% + 1rem);
+}
+
+.bp-jobs .bp-input:hover {
+  background: #f6f8fb;
+  border-color: #e6ecf2;
+}
+
+.bp-jobs .bp-input:focus {
+  background: #ffffff;
+  border-color: #bfdcf2;
+}
+
+.bp-jobs .bp-field:not(:focus-within) .bp-line-hint {
+  display: none;
+}
+
+/*
+ * The grey look (2 Nov, beside the white one until Zander picks): a pale
+ * grey page where each part sits on its own white panel, fields show as
+ * boxes so it's clear where to write, and the chat is a shade deeper.
+ * Ava's blue stays hers alone.
+ */
+.job-grey .bp-jobs {
+  background: #f3f5f8;
+}
+
+.job-grey .job-chat {
+  background: #eceff3;
+}
+
+.job-grey .bp-jobs .bp-section,
+.job-grey .bp-quiet-part,
+.job-grey .job-panel {
+  margin-top: 0.75rem;
+  border: 1px solid #e1e7ee;
+  border-radius: 0.875rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.04);
+}
+
+.job-grey .bp-jobs .bp-head,
+.job-grey .bp-quiet-part {
+  padding: 0.875rem 1.25rem;
+}
+
+.job-grey .bp-jobs .bp-section > header + div,
+.job-grey .bp-jobs .bp-section > div {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+.job-grey .job-panel {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.job-grey .job-soft {
+  background: #ffffff;
+}
+
+/* The chat's own white layers let the grey through; the writing box stays white. */
+.job-grey .job-chat > .bg-white,
+.job-grey .job-chat form.bg-white {
+  background: transparent;
+}
+
+/*
+ * Messages in a campaign, inside a job: flat rows split by hairlines, not a
+ * box inside a box (Zander, 2 Nov: Linear, clean).
+ */
+.bp-jobs .bp-msg {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #edf1f5;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.bp-jobs .bp-msg > button,
+.bp-jobs .bp-msg > div:first-child {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.bp-jobs .bp-msg > div:last-child {
+  border-top: 0;
+  padding-left: 1.5rem;
+  padding-right: 0;
+}
+
+/* "Send it to Get Clients" inside a job: a plain row under a hairline, not a box in a box. */
+.bp-jobs .bp-handoff {
+  border: 0;
+  border-top: 1px solid #edf1f5;
+  border-radius: 0;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}

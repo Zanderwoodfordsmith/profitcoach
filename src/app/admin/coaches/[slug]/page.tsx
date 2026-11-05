@@ -4,9 +4,12 @@ import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  ArrowLeft,
   ArrowRight,
+  Check,
   ExternalLink,
   Loader2,
+  Minus,
 } from "lucide-react";
 
 import {
@@ -145,11 +148,9 @@ function DetailField({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        {label}
-      </dt>
-      <dd className="text-sm text-slate-900">
+    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] items-baseline gap-x-4 py-1.5">
+      <dt className="text-sm text-slate-500">{label}</dt>
+      <dd className="min-w-0 break-words text-sm text-slate-900">
         {children ?? (value?.trim() ? value : <span className="text-slate-400">—</span>)}
       </dd>
     </div>
@@ -159,7 +160,7 @@ function DetailField({
 function SetupBadge({ complete, label }: { complete: boolean; label: string }) {
   return (
     <span className={badgeClass(complete ? "green" : "grey")}>
-      <span aria-hidden>{complete ? "✓" : "—"}</span>
+      {complete ? <Check className="h-3 w-3" aria-hidden /> : <Minus className="h-3 w-3" aria-hidden />}
       {label}
     </span>
   );
@@ -175,8 +176,8 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cardClass("plain", "p-6 md:p-8")}>
-      <div className="mb-5">
+    <section className={cardClass("plain", "p-5 md:p-6")}>
+      <div className="mb-3">
         <h2 className="text-subhead font-semibold text-slate-900">
           {title}
         </h2>
@@ -426,12 +427,14 @@ export default function AdminCoachDetailPage({
     coach?.slug ||
     "Coach";
 
-  // Back goes where the coach was opened from: the Getting live view on Coaches, or all coaches.
+  // Back goes where the coach was opened from: Launches, the Getting live view on Coaches, or all coaches.
   const from = searchParams.get("from");
   const back =
-    from === "getting-live"
-      ? { href: "/admin?view=getting-live", label: "Getting live" }
-      : { href: "/admin", label: "All coaches" };
+    from === "launches"
+      ? { href: "/admin/client-success/blueprint", label: "Launches" }
+      : from === "getting-live"
+        ? { href: "/admin?view=getting-live", label: "Getting live" }
+        : { href: "/admin", label: "All coaches" };
 
   const tabButton = (id: TabId, label: string) => (
     <button
@@ -472,61 +475,70 @@ export default function AdminCoachDetailPage({
 
       {!loading && coach ? (
         <div className="space-y-4">
-          <header className="space-y-3">
+          <header className="space-y-2">
             <Link
               href={back.href}
-              className="inline-flex text-sm font-medium text-sky-600 hover:text-sky-700"
+              className="inline-flex items-center gap-1 text-sm font-medium text-[#0c5290] hover:underline"
             >
-              ← {back.label}
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+              {back.label}
             </Link>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-                  {displayName}
-                </h1>
-                {coach.coach_business_name?.trim() &&
-                coach.coach_business_name.trim() !== coach.full_name?.trim() ? (
-                  <p className="mt-0.5 text-sm text-slate-600">{coach.coach_business_name}</p>
-                ) : null}
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
-                  <span>@{coach.slug}</span>
-                  {coach.email ? <span>{coach.email}</span> : null}
-                  {coach.joined_at ? (
-                    <span>Joined {formatIsoDate(coach.joined_at)}</span>
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+              <div className="flex min-w-0 items-center gap-3">
+                {coach.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={coach.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <span
+                    aria-hidden
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600"
+                  >
+                    {displayName
+                      .split(/\s+/)
+                      .slice(0, 2)
+                      .map((w) => w[0]?.toUpperCase())
+                      .join("")}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <h1 className="truncate text-title font-semibold tracking-tight text-slate-900">{displayName}</h1>
+                  {coach.coach_business_name?.trim() &&
+                  coach.coach_business_name.trim() !== coach.full_name?.trim() ? (
+                    <p className="truncate text-sm text-slate-500">{coach.coach_business_name}</p>
                   ) : null}
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 sm:shrink-0">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setImpersonatingCoachId(coach.id);
                     router.push("/coach");
                   }}
-                  className={buttonClass("second")}
+                  className={buttonClass("second", "small")}
                 >
                   View as coach
-                  <ArrowRight className="h-4 w-4" aria-hidden />
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                 </button>
                 <Link
                   href={`/landing/a?coach=${encodeURIComponent(coach.slug)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={buttonClass("second")}
+                  className={buttonClass("second", "small")}
                 >
                   Landing page
-                  <ExternalLink className="h-4 w-4" aria-hidden />
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                 </Link>
                 {coach.crm_location_id ? (
                   <a
                     href={`${CRM_LOCATION_BASE_URL}/${coach.crm_location_id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={buttonClass("second")}
+                    className={buttonClass("second", "small")}
                   >
                     Open CRM
-                    <ExternalLink className="h-4 w-4" aria-hidden />
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                   </a>
                 ) : null}
               </div>
@@ -536,7 +548,7 @@ export default function AdminCoachDetailPage({
           <div className="border-b border-slate-200/80">
             <nav className="-mb-px flex flex-wrap gap-x-8 gap-y-1" aria-label="Coach sections">
               {tabButton("overview", "Overview")}
-              {tabButton("getting-live", "Getting live")}
+              {tabButton("getting-live", "Launch")}
               {tabButton("linkedin", "LinkedIn")}
               {tabButton("blueprint", "Blueprint")}
               {tabButton("payments", `Payments (${paymentSummary.succeededCount})`)}
@@ -544,9 +556,12 @@ export default function AdminCoachDetailPage({
           </div>
 
           {activeTab === "overview" ? (
-            <div className="space-y-6">
-              <SectionCard title="Member" description="Core membership details.">
-                <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
+              <SectionCard title="Member">
+                <dl className="grid gap-x-10 lg:grid-cols-2">
+                  <DetailField label="Email" value={coach.email} />
+                  <DetailField label="Joined" value={coach.joined_at ? formatIsoDate(coach.joined_at) : null} />
+                  <DetailField label="Handle" value={`@${coach.slug}`} />
                   <DetailField label="Clients" value={String(coach.client_count)} />
                   <DetailField label="Last login">
                     {coach.last_login_at ? (
@@ -586,62 +601,48 @@ export default function AdminCoachDetailPage({
                       </span>
                     )}
                   </DetailField>
-                  <DetailField
-                    label="LinkedIn"
-                    value={coach.linkedin_url ? undefined : null}
-                  >
+                  <DetailField label="LinkedIn" value={coach.linkedin_url ? undefined : null}>
                     {coach.linkedin_url ? (
-                      <a
-                        href={coach.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#0c5290] hover:underline"
-                      >
-                        Profile
-                      </a>
+                      <span>
+                        <a
+                          href={coach.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#0c5290] hover:underline"
+                        >
+                          Profile
+                        </a>
+                        <span className="text-slate-500">
+                          {coach.linkedin_profile?.scraped_at
+                            ? ` · read ${formatIsoDate(coach.linkedin_profile.scraped_at)}`
+                            : " · not read yet"}
+                        </span>
+                      </span>
                     ) : null}
                   </DetailField>
-                  <DetailField
-                    label="LinkedIn scrape"
-                    value={
-                      coach.linkedin_profile?.scraped_at
-                        ? formatIsoDate(coach.linkedin_profile.scraped_at)
-                        : coach.linkedin_url
-                          ? "Not scraped"
-                          : null
-                    }
-                  />
-                </dl>
-              </SectionCard>
-
-              <SectionCard title="Ladder & goals">
-                <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  <DetailField
-                    label="Current level"
-                    value={ladderLevelDisplay(coach.ladder_level)}
-                  />
-                  <DetailField
-                    label="Goal level"
-                    value={ladderLevelDisplay(coach.ladder_goal_level)}
-                  />
-                  <DetailField
-                    label="Goal by"
-                    value={formatIsoDate(coach.ladder_goal_target_date)}
-                  />
+                  {coach.ladder_level || coach.ladder_goal_level || coach.ladder_goal_target_date ? (
+                    <>
+                      <DetailField label="Level now" value={ladderLevelDisplay(coach.ladder_level)} />
+                      <DetailField
+                        label="Goal"
+                        value={`${ladderLevelDisplay(coach.ladder_goal_level)}${
+                          coach.ladder_goal_target_date ? ` by ${formatIsoDate(coach.ladder_goal_target_date)}` : ""
+                        }`}
+                      />
+                    </>
+                  ) : null}
                 </dl>
               </SectionCard>
 
               <SectionCard
-                title="Billing & access"
-                description="Access tier and billing status are independent. Tiers only restrict features when tier enforcement is enabled; lock a tier to stop Stripe from changing it (use for complimentary or manually granted access)."
+                title="Billing and access"
+                description="Tier and billing status are separate. Lock the tier to stop Stripe changing it, for free or hand-given access."
               >
                 {accessDraft ? (
-                  <div className={cardClass("soft", "mb-6 p-4 sm:p-5")}>
+                  <div className="mb-4 border-b border-slate-100 pb-5">
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <label className="space-y-1.5">
-                        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                          Access tier
-                        </span>
+                        <span className="text-sm text-slate-500">Access tier</span>
                         <select
                           value={accessDraft.access_tier}
                           onChange={(e) => {
@@ -670,9 +671,7 @@ export default function AdminCoachDetailPage({
                       </label>
 
                       <label className="space-y-1.5">
-                        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                          Billing status
-                        </span>
+                        <span className="text-sm text-slate-500">Billing status</span>
                         <select
                           value={accessDraft.recurring_payment_status}
                           onChange={(e) =>
@@ -729,7 +728,7 @@ export default function AdminCoachDetailPage({
                             type="button"
                             onClick={() => void saveAccessBilling()}
                             disabled={!dirty || savingAccess}
-                            className={buttonClass("main")}
+                            className={buttonClass("main", "small")}
                           >
                             {savingAccess ? (
                               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -751,98 +750,60 @@ export default function AdminCoachDetailPage({
                   </div>
                 ) : null}
 
-                <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  <DetailField
-                    label="Recurring active"
-                    value={coach.recurring_billing_active ? "Yes" : "No"}
-                  />
-                  <DetailField
-                    label="Membership status"
-                    value={coach.membership_status ?? "Not set"}
-                  />
-                  <DetailField
-                    label="Billing interval"
-                    value={coach.membership_interval ?? "—"}
-                  />
+                <dl className="grid gap-x-10 lg:grid-cols-2">
+                  <DetailField label="Recurring active" value={coach.recurring_billing_active ? "Yes" : "No"} />
+                  <DetailField label="Membership" value={coach.membership_status ?? "Not set"} />
+                  <DetailField label="Billing interval" value={coach.membership_interval ?? "—"} />
                   <DetailField
                     label="Period end"
-                    value={
-                      coach.membership_current_period_end
-                        ? formatIsoDate(coach.membership_current_period_end)
-                        : "—"
-                    }
+                    value={coach.membership_current_period_end ? formatIsoDate(coach.membership_current_period_end) : "—"}
                   />
-                  <DetailField
-                    label="Stripe subscription"
-                    value={coach.stripe_subscription_id ?? "—"}
-                  />
-                  <DetailField
-                    label="Sales Robot"
-                    value={coach.has_sales_robot_account ? "Yes" : "No"}
-                  />
-                  <DetailField
-                    label="PC email account"
-                    value={coach.has_profit_coach_email_account ? "Yes" : "No"}
-                  />
+                  <DetailField label="Stripe subscription" value={coach.stripe_subscription_id ?? "—"} />
+                  <DetailField label="Sales Robot" value={coach.has_sales_robot_account ? "Yes" : "No"} />
+                  <DetailField label="PC email account" value={coach.has_profit_coach_email_account ? "Yes" : "No"} />
                 </dl>
               </SectionCard>
 
-              <SectionCard title="Integrations & setup">
-                <div className="flex flex-wrap gap-2">
+              <SectionCard title="Setup and directory">
+                <div className="mb-3 flex flex-wrap gap-2">
                   <SetupBadge complete={coach.calendar_sync_ready} label="Calendar sync" />
                   <SetupBadge complete={coach.has_lead_webhook} label="Lead webhook" />
                   <SetupBadge complete={coach.has_community_bio} label="Community bio" />
                   <SetupBadge complete={coach.has_directory_summary} label="Directory summary" />
                   <SetupBadge complete={coach.has_directory_bio} label="Directory bio" />
                 </div>
-                <dl className="mt-5 grid gap-5 sm:grid-cols-2">
+                <dl className="grid gap-x-10 lg:grid-cols-2">
                   <DetailField
                     label="Booking calendars"
-                    value={
-                      coach.booking_calendar_provider === "native"
-                        ? "Profit Coach (native)"
-                        : "CRM (GHL)"
-                    }
+                    value={coach.booking_calendar_provider === "native" ? "Profit Coach (native)" : "CRM (GHL)"}
                   />
+                  <DetailField label="In the directory" value={coach.directory_listed ? "Yes" : "No"} />
                   <DetailField label="CRM profile" value={coach.crm_profile_name} />
+                  <DetailField label="Directory level" value={coach.directory_level} />
                   <DetailField label="CRM location ID" value={coach.crm_location_id} />
                 </dl>
-              </SectionCard>
-
-              <SectionCard title="Directory">
-                <dl className="grid gap-5 sm:grid-cols-2">
-                  <DetailField
-                    label="Listed"
-                    value={coach.directory_listed ? "Yes" : "No"}
-                  />
-                  <DetailField label="Directory level" value={coach.directory_level} />
-                </dl>
                 {coach.directory_summary?.trim() ? (
-                  <div className="mt-5 space-y-1">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      Summary
-                    </p>
-                    <p className="text-sm leading-relaxed text-slate-700">
-                      {coach.directory_summary}
-                    </p>
+                  <div className="mt-4 border-t border-slate-100 pt-4">
+                    <p className="text-sm text-slate-500">Directory summary</p>
+                    <p className="mt-1 max-w-[70ch] text-sm leading-relaxed text-slate-700">{coach.directory_summary}</p>
                   </div>
                 ) : null}
                 {coach.directory_bio?.trim() ? (
-                  <div className="mt-5 space-y-1">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      Bio
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                      {coach.directory_bio}
-                    </p>
+                  <div className="mt-4 border-t border-slate-100 pt-4">
+                    <p className="text-sm text-slate-500">Directory bio</p>
+                    <p className="mt-1 max-w-[70ch] whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{coach.directory_bio}</p>
                   </div>
                 ) : null}
               </SectionCard>
 
-              <SectionCard
-                title="Remove access"
-                description="For someone who has left. Their name and avatar stay on their posts and comments so the community still makes sense. Everything that lets them back in or reaches them is removed."
-              >
+              <section className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-t border-slate-200 px-1 pt-5">
+                <div className="max-w-[60ch]">
+                  <h2 className="text-sm font-semibold text-slate-900">Remove access</h2>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    For someone who has left. Their name and face stay on their posts so the community still makes sense.
+                  </p>
+                </div>
+                <div className="w-full sm:w-auto">
                 {coach.access_removed_at ? (
                   <p className="text-sm text-slate-700">
                     Access removed on{" "}
@@ -905,12 +866,13 @@ export default function AdminCoachDetailPage({
                   <button
                     type="button"
                     onClick={() => setConfirmingRemoveAccess(true)}
-                    className={buttonClass("delete")}
+                    className={buttonClass("delete", "small")}
                   >
                     Remove access
                   </button>
                 )}
-              </SectionCard>
+                </div>
+              </section>
             </div>
           ) : null}
 

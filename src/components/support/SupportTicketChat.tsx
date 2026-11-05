@@ -7,6 +7,7 @@ import {
   takeSupportDocuments,
   type PendingSupportDocument,
 } from "@/components/support/SupportDocumentAttach";
+import { FileDropZone, sortDroppedFiles, voiceNoteFromFile } from "@/components/messaging/FileDropZone";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   CommentImagePreviews,
@@ -14,7 +15,10 @@ import {
   type PendingCommentImage,
 } from "@/components/community/CommentImageComposer";
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
-import { SupportChatThread } from "@/components/support/SupportChatBubbles";
+import {
+  SupportChatThread,
+  type SupportThreadLayout,
+} from "@/components/support/SupportChatBubbles";
 import {
   ScreenRecordButton,
   useScreenRecordingFor,
@@ -58,6 +62,10 @@ type Props = {
   onTicketChange: (next: TicketWithReplies) => void;
   /** Opening message, rendered above replies inside the scroll area. */
   preamble?: ReactNode;
+  /** "slack": left-aligned messages on white, as in My Blueprint → Messages. */
+  layout?: SupportThreadLayout;
+  /** Messages written elsewhere (Blueprint comments) shown in time order with these. */
+  extraReplies?: SupportReply[];
 };
 
 export function SupportTicketChat({
@@ -66,7 +74,10 @@ export function SupportTicketChat({
   viewerId,
   onTicketChange,
   preamble = null,
+  layout = "bubbles",
+  extraReplies,
 }: Props) {
+  const slack = layout === "slack";
   const [draft, setDraft] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingCommentImage[]>([]);
   const [pendingVoice, setPendingVoice] = useState<PendingSupportVoice | null>(
@@ -177,7 +188,7 @@ export function SupportTicketChat({
     setNotifyBusy(false);
   }
 
-  function addPendingImages(files: FileList | null) {
+  function addPendingImages(files: FileList | File[] | null) {
     if (!files?.length) return;
     const room = COMMUNITY_COMMENT_MEDIA_MAX - pendingImages.length;
     if (room <= 0) return;
@@ -223,7 +234,7 @@ export function SupportTicketChat({
     setComposerOpen(true);
   });
 
-  function addPendingDocuments(files: FileList | null) {
+  function addPendingDocuments(files: FileList | File[] | null) {
     const room =
       COMMUNITY_POST_MEDIA_MAX -
       (pendingImages.length +
@@ -236,6 +247,23 @@ export function SupportTicketChat({
     if (accepted.length > 0) {
       setPendingFiles((current) => [...current, ...accepted]);
     }
+  }
+
+  /** Files dropped anywhere on the chat, sorted as if picked with each button. */
+  function addDroppedFiles(files: File[]) {
+    const { images, videos, audio, documents } = sortDroppedFiles(files);
+    setError(null);
+    setComposerOpen(true);
+    if (images.length) addPendingImages(images);
+    if (videos[0]) addPendingVideo(videos[0]);
+    const voice = audio[0];
+    if (voice) {
+      setPendingVoice((prev) => {
+        if (prev?.url) URL.revokeObjectURL(prev.url);
+        return voiceNoteFromFile(voice);
+      });
+    }
+    if (documents.length) addPendingDocuments(documents);
   }
 
   async function sendReply(e?: FormEvent) {
@@ -322,20 +350,31 @@ export function SupportTicketChat({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#f7f8fa]">
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4 sm:px-6">
+    <FileDropZone onFiles={addDroppedFiles} className={`flex min-h-0 flex-1 flex-col ${slack ? "bg-white" : "bg-[#f7f8fa]"}`}>
+      <div
+        className={
+          slack
+            ? "min-h-0 flex-1 overflow-y-auto px-3 py-2 sm:px-4"
+            : "min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4 sm:px-6"
+        }
+      >
+        <div className={slack ? "w-full max-w-2xl" : "space-y-3"}>
         {preamble}
         <SupportChatThread
-          replies={ticket.replies}
+          layout={layout}
+          replies={extraReplies?.length ? [...ticket.replies, ...extraReplies] : ticket.replies}
           viewerId={viewerId}
           perspective="member"
           emptyLabel={preamble ? undefined : "We'll reply here."}
         />
+        </div>
         <div ref={bottomRef} />
       </div>
 
       <form
-        className="shrink-0 border-t border-slate-200 bg-white"
+        className={`shrink-0 bg-white ${
+          slack ? "[&>*]:w-full [&>*]:max-w-2xl" : "border-t border-slate-200"
+        }`}
         onSubmit={(e) => void sendReply(e)}
       >
         {resolved && composerOpen ? (
@@ -436,7 +475,8 @@ export function SupportTicketChat({
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  // Return is a new line (Peter, 5 Nov: paragraphs kept sending); ⌘ or Ctrl + Return sends.
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                     e.preventDefault();
                     void sendReply();
                   }
@@ -590,6 +630,6 @@ export function SupportTicketChat({
           </div>
         )}
       </form>
-    </div>
+    </FileDropZone>
   );
 }

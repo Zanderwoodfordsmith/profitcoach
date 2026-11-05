@@ -19,7 +19,7 @@ The second half of filling in the Blueprint. The answers are in (from Fill the g
 - From the coach: a yes, or the change they want, one section at a time.
 
 ## The process
-1. `blueprint_overview` to see what there is. Start with the page they are on if it has something to check, otherwise About You (Story and Proof, Your Voice, Practice Setup), then any written section waiting on them for review. Skip empty sections and anything waiting on BCA.
+1. `blueprint_overview` to see what there is. Start with the page they are on if it has something to check, otherwise About You (Story and Proof, Your Voice and Practice Setup are its three parts), then any written section waiting on them for review. Skip empty sections and anything waiting on BCA.
 2. `show_section` for the page or section, then one short line: "Have a quick look over your Results. Happy with that, or anything you'd change?" Use `read_section` first if you need to know what is there. A short page can be checked whole; a long one, a section at a time.
 3. If they want a change, make it, then `show_section` on it again so it lights up, and ask "Right, are we good now?"
    - **Their answers:** `save_answer` with their new words and `replace: true`. To remove one item from a list, save the rest. To remove a whole answer, `clear_answer`.

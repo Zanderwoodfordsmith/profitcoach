@@ -1,27 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, PanelLeft, Plus } from "lucide-react";
+import { useEffect, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Loader2, PanelRight, SquarePen } from "lucide-react";
 
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
 
 import { AvaChat } from "./AvaChat";
-import { AvaRoomProvider, groupByDay } from "./AvaKit";
+import { AvaAction, AvaChatList, AvaMenuIcon, AvaRoomProvider } from "./AvaKit";
+import { morphAva } from "./avaMorph";
+import { avaReturnPath, requestAvaOpen } from "./avaPageLink";
 import { AvaRoomBackground } from "./AvaStage";
 import { useAvaSession } from "./useAvaSession";
 
 const PANEL_KEY = "ava-chats-panel";
-/** Temporary: Zander is choosing between the two new-chat screens (24 Oct). Remove the switch once he picks. */
-const STYLE_KEY = "ava-start-style";
+const WIDTH_KEY = "ava-chats-width";
+// The chats panel's width in pixels: drag its right edge, double-click to reset.
+const PANEL_W = 264;
+const PANEL_MIN = 224;
+const PANEL_MAX = 400;
+const clampWidth = (w: number) => Math.round(Math.min(PANEL_MAX, Math.max(PANEL_MIN, w)));
 
 /**
  * Ava's own page, inside the app: the sidebar stays, the room fills the
  * rest. No top bar here; her chats sit in a panel on the left, like every
- * other AI app. Admin-only until she opens to coaches (roadmap job 137).
+ * other AI app. Open to coaches too since 5 Nov (the same Ava as the top-right panel).
  */
 export function AvaPage() {
-  const { profile, profileLoading } = useDashboardProfile();
+  const { profileLoading } = useDashboardProfile();
   const chrome = useDashboardChrome();
   const claimChromeHost = chrome?.claimChromeHost;
   const [slot, setSlot] = useState<HTMLElement | null>(null);
@@ -37,22 +44,18 @@ export function AvaPage() {
     }
     return saved ? saved === "1" : window.innerWidth >= 1280;
   });
-  const [startStyle, setStartStyle] = useState<"simple" | "face">(() => {
-    if (typeof window === "undefined") return "simple";
+  const [panelWidth, setPanelWidth] = useState(() => {
+    if (typeof window === "undefined") return PANEL_W;
+    let saved = NaN;
     try {
-      return window.localStorage.getItem(STYLE_KEY) === "face" ? "face" : "simple";
-    } catch {
-      return "simple";
-    }
-  });
-  const chooseStyle = (next: "simple" | "face") => {
-    setStartStyle(next);
-    try {
-      window.localStorage.setItem(STYLE_KEY, next);
+      saved = Number(window.localStorage.getItem(WIDTH_KEY));
     } catch {
       /* private window */
     }
-  };
+    return saved ? clampWidth(saved) : PANEL_W;
+  });
+  const router = useRouter();
+  const pathname = usePathname();
   const session = useAvaSession();
   const { convo, chats, setDraft } = session;
 
@@ -65,6 +68,51 @@ export function AvaPage() {
       window.localStorage.setItem(PANEL_KEY, open ? "1" : "0");
     } catch {
       /* private window */
+    }
+  };
+
+  const saveWidth = (w: number) => {
+    const next = clampWidth(w);
+    setPanelWidth(next);
+    try {
+      window.localStorage.setItem(WIDTH_KEY, String(next));
+    } catch {
+      /* private window */
+    }
+  };
+
+  // Drag the panel's right edge; the width is kept once you let go.
+  const startResize = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = panelWidth;
+    let latest = startW;
+    const body = document.body.style;
+    const previous = { cursor: body.cursor, userSelect: body.userSelect };
+    body.cursor = "col-resize";
+    body.userSelect = "none";
+    const move = (ev: globalThis.PointerEvent) => {
+      latest = clampWidth(startW + ev.clientX - startX);
+      setPanelWidth(latest);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      body.cursor = previous.cursor;
+      body.userSelect = previous.userSelect;
+      saveWidth(latest);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  };
+
+  const resizeByKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      saveWidth(panelWidth + (e.key === "ArrowRight" ? 16 : -16));
     }
   };
 
@@ -84,10 +132,16 @@ export function AvaPage() {
     closeIfNarrow();
   };
 
+  // Same chat, now in the side panel, back on the page you came from (or Home).
+  const back = avaReturnPath() ?? (pathname.startsWith("/admin") ? "/admin" : "/coach");
+  useEffect(() => router.prefetch(back), [router, back]);
+  const moveToSide = () =>
+    morphAva("dock", () => {
+      requestAvaOpen();
+      router.push(back);
+    });
+
   if (profileLoading) return null;
-  if (profile?.role !== "admin") {
-    return <p className="px-6 py-10 text-sm text-slate-600">Ava&apos;s page is coming soon.</p>;
-  }
 
   return (
     <AvaRoomProvider room="stage">
@@ -96,16 +150,20 @@ export function AvaPage() {
           {panelOpen ? (
             <>
               <button type="button" aria-label="Close your chats" onClick={() => setPanel(false)} className="ava-chats-backdrop md:hidden" />
-              <aside className="ava-chats-panel" aria-label="Your chats">
+              <aside
+                className="ava-chats-panel"
+                aria-label="Your chats"
+                style={{ "--ava-chats-w": `${panelWidth}px` } as CSSProperties}
+              >
                 <div className="flex items-center gap-2 px-3 pb-3 pt-4">
                   <button type="button" onClick={() => setPanel(false)} className="ava-glass-btn" aria-label="Hide your chats" title="Hide your chats">
-                    <PanelLeft className="h-4 w-4" aria-hidden />
+                    <AvaMenuIcon />
                   </button>
                   <span className="text-[0.9375rem] font-semibold text-[var(--ava-ink)]">Chats</span>
                 </div>
                 <div className="px-3 pb-3">
                   <button type="button" onClick={newChat} className="ava-glass-btn is-labelled w-full justify-start">
-                    <Plus className="h-4 w-4" aria-hidden /> New chat
+                    <SquarePen className="h-4 w-4" aria-hidden /> New chat
                   </button>
                 </div>
                 <nav className="ava-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-6" aria-label="Past chats">
@@ -116,50 +174,38 @@ export function AvaPage() {
                   ) : chats.length === 0 ? (
                     <p className="whitespace-normal px-2 text-sm leading-6 text-[var(--ava-muted)]">Your chats with Ava will be here, each with its own title.</p>
                   ) : (
-                    groupByDay(chats).map((group) => (
-                      <section key={group.label} className="mb-4">
-                        <h3 className="px-2 pb-1 text-xs font-semibold text-[var(--ava-faint)]">{group.label}</h3>
-                        <ul>
-                          {group.chats.map((chat) => (
-                            <li key={chat.id}>
-                              <button
-                                type="button"
-                                onClick={() => openChat(chat.id)}
-                                aria-current={convo.chatId === chat.id ? "true" : undefined}
-                                className="ava-chat-row"
-                              >
-                                {chat.title || "Conversation"}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </section>
-                    ))
+                    <AvaChatList chats={chats} currentId={convo.chatId} onOpen={openChat} />
                   )}
                 </nav>
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Chats panel width"
+                  aria-valuemin={PANEL_MIN}
+                  aria-valuemax={PANEL_MAX}
+                  aria-valuenow={panelWidth}
+                  tabIndex={0}
+                  title="Drag to resize. Double-click to reset."
+                  onPointerDown={startResize}
+                  onDoubleClick={() => saveWidth(PANEL_W)}
+                  onKeyDown={resizeByKey}
+                  className="ava-chats-resize"
+                />
               </aside>
             </>
           ) : null}
 
           {/* Her face belongs to the chat area, so opening the panel never pushes the words over it. */}
           <div className="ava-room-column flex min-w-0 flex-1 flex-col">
-            <AvaRoomBackground face={startStyle === "face"} />
+            <AvaRoomBackground face />
             <header className="relative z-[2] flex shrink-0 items-center gap-2 px-4 pb-1 pt-4 sm:px-8">
               {panelOpen ? null : (
                 <button type="button" onClick={() => setPanel(true)} className="ava-glass-btn is-labelled" aria-label="Show your chats">
-                  <PanelLeft className="h-4 w-4" aria-hidden /> Chats
+                  <AvaMenuIcon /> Chats
                 </button>
               )}
               <div ref={setSlot} className="flex min-w-0 flex-1 items-center justify-end gap-2" />
-              {convo.items.length === 0 ? (
-                <div className="ava-style-switch" role="group" aria-label="New chat screen (choosing)">
-                  {(["simple", "face"] as const).map((id) => (
-                    <button key={id} type="button" aria-pressed={startStyle === id} onClick={() => chooseStyle(id)}>
-                      {id === "simple" ? "Simple" : "With her face"}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+              <AvaAction showLabel icon={<PanelRight className="h-4 w-4" aria-hidden />} label="Side panel" onClick={moveToSide} />
             </header>
             <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
               {session.agent ? (
@@ -178,8 +224,10 @@ export function AvaPage() {
                   setDraft={setDraft}
                   headerSlot={slot}
                   onHistory={session.loadChats}
+                  updateChat={session.updateChat}
+                  deleteChat={session.deleteChat}
                   labelled
-                  heroStyle={startStyle}
+                  heroStyle="face"
                 />
               ) : (
                 <p className="flex items-center gap-2 px-8 py-10 text-sm text-[var(--ava-muted)]">

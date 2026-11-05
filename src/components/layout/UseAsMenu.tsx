@@ -115,8 +115,13 @@ export function UseAsMenu({
   const pathname = usePathname();
   const router = useRouter();
   const { profile } = useDashboardProfile();
-  const { impersonatingCoachId, setImpersonatingCoachId, clearImpersonation } =
-    useImpersonation();
+  const {
+    impersonatingCoachId: storedCoachId,
+    setImpersonatingCoachId,
+    clearImpersonation,
+  } = useImpersonation();
+  /** Admin pages are you as Admin, so the tick follows the page you are on. */
+  const impersonatingCoachId = pathname?.startsWith("/admin") ? null : storedCoachId;
   const [emailReady, setEmailReady] = useState(false);
   const [demos, setDemos] = useState<DemoCoachToggleUser[]>([]);
   const [idsBySlug, setIdsBySlug] = useState<Record<string, string | null>>({});

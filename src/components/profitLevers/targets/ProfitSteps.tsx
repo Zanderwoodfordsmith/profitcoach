@@ -106,11 +106,26 @@ function Diff({ value, target, keyName }: { value: number; target: number; keyNa
 }
 
 /** A number box for their figure. Rates are typed as whole percents (50 for 50%). */
-function NowInput({ label, value, unit, onChange, suffix }: { label: string; value: number; unit: "percent" | "pounds" | "times" | "count"; onChange: (value: number) => void; suffix?: string }) {
+export function NowInput({
+  label,
+  value,
+  unit,
+  onChange,
+  suffix,
+  whatif = false,
+}: {
+  label: string;
+  value: number;
+  unit: "percent" | "pounds" | "times" | "count";
+  onChange: (value: number) => void;
+  suffix?: string;
+  /** A what-if value: shown in what-if blue. */
+  whatif?: boolean;
+}) {
   const shown = unit === "percent" ? Math.round(value * 1000) / 10 : Math.round(value * 100) / 100;
   const [draft, setDraft] = useState<string | null>(null);
   return (
-    <span className="pl-input">
+    <span className={whatif ? "pl-input is-whatif" : "pl-input"}>
       {unit === "pounds" ? <span className="pl-input__unit">£</span> : null}
       <input
         inputMode="decimal"

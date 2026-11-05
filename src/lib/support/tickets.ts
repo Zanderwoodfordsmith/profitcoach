@@ -45,6 +45,9 @@ export type SupportTicket = {
   author?: SupportTicketAuthor | null;
   assignee?: SupportTicketAuthor | null;
   media?: unknown;
+  /** The "Seen" tick on the chat's first message (5 Nov). */
+  opening_seen_at?: string | null;
+  opening_seen_name?: string | null;
 };
 
 export type SupportReply = {
@@ -60,7 +63,24 @@ export type SupportReply = {
   edited_at?: string | null;
   /** Arrived via email, or was included in an email to the member. */
   via_email?: boolean;
+  /** Came in or went out on WhatsApp. */
+  via_whatsapp?: boolean;
+  /** Written somewhere else (a Blueprint section) and shown in this thread. Read-only here. */
+  origin?: { label: string; href: string | null };
+  /** Ava wrote it and BCA approved it (created_by is the admin who sent it). Shown as Ava. */
+  as_ava?: boolean;
+  /** The other side ticked it "Seen" (5 Nov): when, and their first name. */
+  seen_at?: string | null;
+  seen_name?: string | null;
 };
+
+/** Who ticked a message, as the select returns it. */
+type SeenAuthorRaw = { first_name: string | null; full_name: string | null } | { first_name: string | null; full_name: string | null }[] | null;
+
+function seenName(raw: SeenAuthorRaw | undefined): string | null {
+  const one = Array.isArray(raw) ? raw[0] : raw;
+  return one?.first_name?.trim() || one?.full_name?.trim().split(" ")[0] || null;
+}
 
 export const SUPPORT_AUTHOR_SELECT =
   "id, full_name, first_name, last_name, avatar_url, role";
@@ -75,8 +95,15 @@ export const SUPPORT_REPLY_LIST_SELECT = `
   media,
   community_comment_id,
   via_email,
+  via_whatsapp,
+  as_ava,
+  seen_at,
+  seen_author:profiles!seen_by (first_name, full_name),
   author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
 `;
+
+/** Add to a chat's select for the first message's "Seen" tick. */
+export const SUPPORT_OPENING_SEEN_SELECT = "opening_seen_at, opening_seen_author:profiles!opening_seen_by (first_name, full_name)";
 
 export function mapSupportReplyRow(
   raw: {
@@ -89,6 +116,10 @@ export function mapSupportReplyRow(
     media?: unknown;
     community_comment_id?: string | null;
     via_email?: boolean | null;
+    via_whatsapp?: boolean | null;
+    as_ava?: boolean | null;
+    seen_at?: string | null;
+    seen_author?: SeenAuthorRaw;
     author?: SupportTicketAuthor | SupportTicketAuthor[] | null;
   },
   options?: { fallbackAuthor?: SupportTicketAuthor | null }
@@ -103,6 +134,10 @@ export function mapSupportReplyRow(
     media: raw.media,
     community_comment_id: raw.community_comment_id ?? null,
     via_email: Boolean(raw.via_email),
+    via_whatsapp: Boolean(raw.via_whatsapp),
+    as_ava: Boolean(raw.as_ava),
+    seen_at: raw.seen_at ?? null,
+    seen_name: raw.seen_at ? seenName(raw.seen_author) : null,
     author:
       normalizeSupportAuthor(raw.author) ?? options?.fallbackAuthor ?? null,
   };
@@ -139,6 +174,8 @@ export type SupportTicketRow = {
   ease?: number | null;
   author?: SupportTicketAuthor | SupportTicketAuthor[] | null;
   assignee?: SupportTicketAuthor | SupportTicketAuthor[] | null;
+  opening_seen_at?: string | null;
+  opening_seen_author?: SeenAuthorRaw;
 };
 
 export function mapSupportTicketRow(
@@ -169,7 +206,33 @@ export function mapSupportTicketRow(
     author:
       normalizeSupportAuthor(row.author) ?? options?.fallbackAuthor ?? null,
     assignee: normalizeSupportAuthor(row.assignee),
+    opening_seen_at: row.opening_seen_at ?? null,
+    opening_seen_name: row.opening_seen_at ? seenName(row.opening_seen_author) : null,
   };
+}
+
+/** BCA started the chat (New ticket in admin Support), so its first message is BCA's. */
+export function supportChatOpenedByBca(ticket: { source: SupportTicketSource; created_by_admin?: string | null }): boolean {
+  return ticket.source === "admin_created" || Boolean(ticket.created_by_admin);
+}
+
+/**
+ * Whose turn it is in a chat (5 Nov): whoever didn't write the last message,
+ * until they reply or tick it "Seen". Null once it's done or ticked.
+ * Statuses are only Open or Done now; an old "Waiting on member" counts as Open.
+ */
+export function supportChatWaitingOn(
+  ticket: Pick<SupportTicket, "status" | "source" | "created_by_admin" | "opening_seen_at">,
+  replies: Pick<SupportReply, "author" | "as_ava" | "seen_at">[]
+): "coach" | "bca" | null {
+  if (ticket.status === "resolved") return null;
+  const last = replies[replies.length - 1];
+  if (last) {
+    if (last.seen_at) return null;
+    return last.as_ava || isSupportStaffAuthor(last.author) ? "coach" : "bca";
+  }
+  if (ticket.opening_seen_at) return null;
+  return supportChatOpenedByBca(ticket) ? "coach" : "bca";
 }
 
 export function supportAuthorAsProfile(

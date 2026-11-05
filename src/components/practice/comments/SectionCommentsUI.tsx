@@ -3,16 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUp, Check, ChevronLeft, ChevronRight, Loader2, MessageSquare, Mic, MoreHorizontal, Pencil, Square, Trash2, UserRound } from "lucide-react";
+import { Check, ChevronLeft, Loader2, MessageSquare, MoreHorizontal, Pencil, Trash2, UserRound } from "lucide-react";
 
+import { AvaHalo } from "@/components/ava/AvaHalo";
 import { buttonClass } from "@/components/ui/Button";
 import { fieldClass } from "@/components/ui/Field";
-import { sectionByKey, type BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
+import { blueprintPage, sectionByKey, type BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
+import { chatKeyPage, commentPage } from "@/lib/practiceKnowledge/pageChat";
+import type { PageMove } from "@/lib/practiceKnowledge/pageMoves";
+import { PAGE_STATUS_COPY, type PageStatusId } from "@/lib/practiceKnowledge/pageStatus";
 import { commentCapabilities, COMMENT_MAX_LENGTH, type CommentPerson, type SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes";
-import type { SectionStatusEvent } from "@/lib/practiceKnowledge/types";
-import { STATUS_LABEL, type StatusId } from "../document/statusLook";
 
-import { useAutoGrow, useHalfHeight, useVoiceInput } from "../composer";
+import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
+
+import { useHalfHeight } from "../composer";
+import { ChatComposer } from "./ChatComposer";
+import { FileDropZone } from "@/components/messaging/FileDropZone";
 import { usePractice } from "../PracticeProvider";
 import { useSectionComments } from "./SectionCommentsContext";
 
@@ -44,11 +50,7 @@ function initials(name: string) {
 export function CommentAvatar({ comment, size = "md" }: { comment: SectionComment; size?: "sm" | "md" }) {
   const box = size === "sm" ? "h-6 w-6 text-[9px]" : "h-7 w-7 text-[10px]";
   if (comment.author_side === "ava") {
-    return (
-      <span aria-hidden className={`inline-flex ${box} shrink-0 items-center justify-center rounded-full bg-[#1a8fd4] font-bold text-white`}>
-        Ava
-      </span>
-    );
+    return <AvaHalo size={size === "sm" ? 24 : 28} className="shrink-0" />;
   }
   if (comment.author_avatar_url) {
     return (
@@ -68,12 +70,16 @@ export function CommentAvatar({ comment, size = "md" }: { comment: SectionCommen
   );
 }
 
+/** First names only in chats (5 Nov): "Zander", not "Zander Woodford-Smith". */
+export function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? "";
+}
+
+/** Only Ava is tagged (AI), so coaches know when it isn't a person. BCA people are just their names (5 Nov). */
 function SideTag({ comment }: { comment: SectionComment }) {
-  if (comment.author_side === "coach") return null;
+  if (comment.author_side !== "ava") return null;
   return (
-    <span className="rounded bg-[#e3eef8] px-1 text-caption font-semibold tracking-[0.04em] text-[#0c5290]">
-      {comment.author_side === "ava" ? "AI" : "BCA"}
-    </span>
+    <span className="rounded bg-[#e3eef8] px-1 text-caption font-semibold tracking-[0.04em] text-[#0c5290]">AI</span>
   );
 }
 
@@ -84,7 +90,7 @@ export function CommentItem({ comment, mine, compact = false }: { comment: Secti
       <CommentAvatar comment={comment} size={compact ? "sm" : "md"} />
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-baseline gap-x-1.5 text-ui leading-5">
-          <span className="font-medium text-[#0b1b2e]">{mine ? "You" : comment.author_name}</span>
+          <span className="font-medium text-[#0b1b2e]">{mine ? "You" : firstName(comment.author_name)}</span>
           <SideTag comment={comment} />
           <time dateTime={comment.created_at} title={new Date(comment.created_at).toLocaleString("en-GB")} className="text-xs text-[#8595a8]">
             {commentWhen(comment.created_at)}
@@ -121,10 +127,10 @@ export function CommentButton({ sectionKey, title }: { sectionKey: string; title
   const total = thread?.total ?? 0;
   const open = comments.openKey === sectionKey;
   const label = unread
-    ? `${title}: ${unread} new comment${unread === 1 ? "" : "s"}`
+    ? `${title}: ${unread} new message${unread === 1 ? "" : "s"}`
     : total
-      ? `${title}: ${total} comment${total === 1 ? "" : "s"}`
-      : `Comment on ${title}`;
+      ? `${title}: ${total} message${total === 1 ? "" : "s"}`
+      : `Chat about ${title}`;
 
   return (
     <button
@@ -149,19 +155,25 @@ export function CommentButton({ sectionKey, title }: { sectionKey: string; title
   );
 }
 
-/** "Comments" beside "Talk it through" at the top of a page: opens the list of every conversation. */
-export function CommentsButton() {
+/**
+ * Beside "Ask Ava" at the top of a page. On a page: "Chat", the page's one
+ * chat. On the full document: "Chats", the list of every conversation (5 Nov: one word, Chat, everywhere).
+ */
+export function CommentsButton({ pageSlug = null }: { pageSlug?: string | null }) {
   const comments = useSectionComments();
   if (!comments?.side) return null;
-  const unread = Object.values(comments.threads).reduce((n, t) => n + t.unread, 0);
+  const unread = Object.entries(comments.threads).reduce(
+    (n, [key, t]) => n + (!pageSlug || commentPage(key) === pageSlug ? t.unread : 0),
+    0
+  );
   return (
     <button
       type="button"
-      onClick={comments.openList}
+      onClick={() => (pageSlug ? comments.openChat(pageSlug) : comments.openList())}
       className={buttonClass("second", "small", "bp-no-print relative shrink-0")}
     >
       <MessageSquare className="h-4 w-4" aria-hidden />
-      Comments
+      {pageSlug ? "Chat" : "Chats"}
       {unread ? (
         <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white">
           {unread}
@@ -177,12 +189,12 @@ export function PageCommentBadge({ pageSlug }: { pageSlug: string }) {
   if (!comments?.side) return null;
   let unread = 0;
   for (const [key, thread] of Object.entries(comments.threads)) {
-    if (thread.unread && sectionByKey(key)?.page.slug === pageSlug) unread += thread.unread;
+    if (thread.unread && commentPage(key) === pageSlug) unread += thread.unread;
   }
   if (!unread) return null;
   return (
     <span
-      title={`${unread} new comment${unread === 1 ? "" : "s"}`}
+      title={`${unread} new message${unread === 1 ? "" : "s"}`}
       className="mt-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white"
     >
       {unread}
@@ -190,90 +202,47 @@ export function PageCommentBadge({ pageSlug }: { pageSlug: string }) {
   );
 }
 
+/**
+ * Messages, plus one quiet line when the whole page moves status (5 Nov).
+ * Section status moves no longer show here, but are still logged.
+ */
 type Entry =
   | { kind: "comment"; at: string; comment: SectionComment }
   | { kind: "ask"; at: string; id: string; body: string }
-  | { kind: "status"; at: string; event: SectionStatusEvent };
+  | { kind: "move"; at: string; id: string; to: PageStatusId };
 
-const STATUS_DOT: Record<StatusId, string> = {
-  todo: "bg-rose-500",
+const PAGE_DOT: Record<PageStatusId, string> = {
+  needs_you: "bg-rose-500",
+  bca: "bg-slate-400",
+  in_progress: "bg-sky-500",
   review: "bg-amber-400",
   done: "bg-emerald-500",
 };
 
-function StatusWord({ status }: { status: StatusId }) {
-  return (
-    <span className="inline-flex items-center gap-1 font-medium text-[#3d4f63]">
-      <span className={`inline-block h-2 w-2 rounded-[2px] ${STATUS_DOT[status]}`} aria-hidden />
-      {STATUS_LABEL[status]}
-    </span>
-  );
-}
-
-function StatusLine({ event, you }: { event: SectionStatusEvent; you: boolean }) {
-  return (
-    <div className="flex items-start gap-2 px-0.5">
-      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#c5d0dc]" aria-hidden />
-      <p className="min-w-0 flex-1 text-xs leading-5 text-[#55657a]">
-        <span className="font-medium text-[#3d4f63]">{you ? "You" : event.actor_name || "Someone"}</span>
-        {" moved this from "}
-        <StatusWord status={event.from} />
-        {" to "}
-        <StatusWord status={event.to} />
-      </p>
-      <time dateTime={event.at} className="shrink-0 pt-0.5 text-caption text-[#8595a8]">
-        {commentWhen(event.at)}
-      </time>
-    </div>
-  );
-}
-
-/** A run of status lines. The latest stays visible; the earlier ones fold away. */
-function StatusRun({ events, viewerId }: { events: SectionStatusEvent[]; viewerId: string | null }) {
-  const [open, setOpen] = useState(false);
-  const latest = events[events.length - 1];
-  const earlier = events.slice(0, -1);
-  const you = (event: SectionStatusEvent) => Boolean(viewerId) && event.actor_id === viewerId;
-  if (!latest) return null;
-  return (
-    <li className="space-y-1.5">
-      {earlier.length && open
-        ? earlier.map((event) => <StatusLine key={event.id} event={event} you={you(event)} />)
-        : null}
-      {earlier.length ? (
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="inline-flex items-center gap-1 px-0.5 text-xs font-medium text-[#8595a8] hover:text-[#3d4f63]"
-        >
-          <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} aria-hidden />
-          {open ? "Show less" : earlier.length === 1 ? "Show more" : `Show more (${earlier.length})`}
-        </button>
-      ) : null}
-      <StatusLine event={latest} you={you(latest)} />
-    </li>
-  );
-}
-
-function feedRows(entries: Entry[]): Array<{ kind: "entry"; entry: Entry } | { kind: "statuses"; events: SectionStatusEvent[] }> {
-  const rows: Array<{ kind: "entry"; entry: Entry } | { kind: "statuses"; events: SectionStatusEvent[] }> = [];
-  let run: SectionStatusEvent[] = [];
+/** Moves with nothing said in between become one line; a page that ends where it started shows none. */
+function foldMoves(entries: Entry[], moves: PageMove[]): Entry[] {
+  const all: Array<Entry | { kind: "raw"; at: string; move: PageMove }> = [
+    ...entries,
+    ...moves.map((move) => ({ kind: "raw" as const, at: move.at, move })),
+  ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  const out: Entry[] = [];
+  let run: PageMove[] = [];
   const flush = () => {
-    if (!run.length) return;
-    rows.push({ kind: "statuses", events: run });
+    const first = run[0];
+    const last = run[run.length - 1];
+    if (first && last && first.from !== last.to) out.push({ kind: "move", at: last.at, id: last.id, to: last.to });
     run = [];
   };
-  for (const entry of entries) {
-    if (entry.kind === "status") {
-      run.push(entry.event);
+  for (const item of all) {
+    if (item.kind === "raw") {
+      run.push(item.move);
       continue;
     }
     flush();
-    rows.push({ kind: "entry", entry });
+    out.push(item);
   }
   flush();
-  return rows;
+  return out;
 }
 
 function PersonMark({ person, size = "sm" }: { person: Pick<CommentPerson, "name" | "avatar_url" | "side">; size?: "sm" | "xs" }) {
@@ -533,7 +502,8 @@ function CommentCard({
 }) {
   const comments = useSectionComments();
   const viewerId = comments?.viewerId ?? null;
-  const mine = Boolean(viewerId && comment.author_id === viewerId);
+  // Ava's messages carry the admin who approved them, but they are hers.
+  const mine = Boolean(viewerId && comment.author_id === viewerId && comment.author_side !== "ava");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(comment.body);
   const [saving, setSaving] = useState(false);
@@ -574,14 +544,15 @@ function CommentCard({
   return (
     <li>
       <article
-        className={`group/card rounded-xl border bg-white p-3.5 shadow-[0_1px_2px_rgba(5,30,54,0.05)] ${mine ? "border-[#cfe3f5]" : "border-[#e3e8ef]"}`}
+        className={`bp-chat-msg group/card rounded-xl border bg-white p-3.5 shadow-[0_1px_2px_rgba(5,30,54,0.05)] ${mine ? "border-[#cfe3f5]" : "border-[#e3e8ef]"}`}
       >
         <div className="flex items-start gap-2.5">
           <CommentAvatar comment={comment} />
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1">
               <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-                <span className="text-sm font-medium text-[#0b1b2e]">{mine ? "You" : comment.author_name}</span>
+                {/* Your own name, like Slack and ClickUp (5 Nov): "You" read oddly as a message author. */}
+                <span className="bp-chat-name text-sm font-medium text-[#0b1b2e]">{firstName(comment.author_name) || "You"}</span>
                 <SideTag comment={comment} />
                 <time dateTime={comment.created_at} title={new Date(comment.created_at).toLocaleString("en-GB")} className="text-xs text-[#8595a8]">
                   {commentWhen(comment.created_at)}
@@ -627,7 +598,17 @@ function CommentCard({
                 </div>
               </div>
             ) : (
-              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1e2f44]">{comment.body}</p>
+              <>
+                {/* "Sent a voice note" and the like only stand in for an empty box: the file says it. */}
+                {comment.media.length && /^Sent (a voice note|a video|an image|images|a document|documents)$/.test(comment.body) ? null : (
+                  <p className="bp-chat-body mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1e2f44]">{comment.body}</p>
+                )}
+                {comment.media.length ? (
+                  <div className="mt-1.5 max-w-[20rem]">
+                    <CommunityPostMediaGallery items={comment.media} variant="compact" />
+                  </div>
+                ) : null}
+              </>
             )}
             {comment.assignee_id && !editing ? (
               <p className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#f2f7fc] py-0.5 pl-0.5 pr-2 text-xs font-medium text-[#0c5290]">
@@ -653,112 +634,90 @@ function CommentCard({
  * The right-hand panel for one section's conversation: comments above, the box
  * pinned at the bottom. The box starts one line high and grows as you write.
  */
-export function CommentsPanel() {
+/** `framed`: the Blueprint's right-hand column already has a header, so a page chat needs no second one. */
+export function CommentsPanel({ framed = false }: { framed?: boolean } = {}) {
   const comments = useSectionComments();
-  const { payload, coachName, transcribe } = usePractice();
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { payload, coachName } = usePractice();
   const [menuId, setMenuId] = useState<string | null>(null);
   const { ref: panelRef, half } = useHalfHeight<HTMLDivElement>();
   const feedRef = useRef<HTMLDivElement>(null);
-  // The box grows with the comment, up to half the panel, then scrolls.
-  const boxRef = useAutoGrow(draft, half);
-  const voice = useVoiceInput(transcribe, (said) => {
-    setDraft((prev) => (prev ? `${prev} ${said}` : said).slice(0, COMMENT_MAX_LENGTH));
-    boxRef.current?.focus();
-  });
-  const { recording, transcribing } = voice;
 
   const key = comments?.openKey ?? null;
   const ref = key ? sectionByKey(key) : null;
+  // A page's chat holds every conversation on the page, old section ones too.
+  const chatSlug = key ? chatKeyPage(key) : null;
+  const chatPage = chatSlug ? blueprintPage(chatSlug) : null;
+  const inThread = (k: string | null | undefined) => Boolean(k) && (chatSlug ? commentPage(k!) === chatSlug : k === key);
   const side = comments?.side ?? null;
-  const count = key ? comments?.threads[key]?.total ?? 0 : 0;
-  const statusCount = key ? (payload?.review.status_log?.value ?? []).filter((event) => event.section === key).length : 0;
-
-  useEffect(() => {
-    boxRef.current?.focus();
-  }, [boxRef]);
+  const count = comments ? comments.comments.filter((c) => inThread(c.section_key)).length : 0;
 
   useEffect(() => {
     const el = feedRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [count, side, statusCount]);
+  }, [count, side]);
 
-  if (!comments || !key || !ref) return null;
+  if (!comments || !key || (!ref && !chatPage)) return null;
 
   const entries: Entry[] = [
     ...comments.comments
-      .filter((c) => c.section_key === key)
+      .filter((c) => inThread(c.section_key))
       .map((comment): Entry => ({ kind: "comment", at: comment.created_at, comment })),
     // Change requests from "Ask for a change" sit in the same conversation.
     ...(payload?.review.notes?.value ?? [])
-      .filter((note) => note.section === key)
+      .filter((note) => inThread(note.section))
       .map((note): Entry => ({ kind: "ask", at: note.at, id: note.id, body: note.body })),
-    ...(payload?.review.status_log?.value ?? [])
-      .filter((event) => event.section === key)
-      .map((event): Entry => ({ kind: "status", at: event.at, event })),
   ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-
-  const rows = feedRows(entries);
+  const feed = chatSlug ? foldMoves(entries, comments.pageMoves.filter((move) => move.page_slug === chatSlug)) : entries;
 
   const other = side === "bca" ? coachName || "the coach" : "BCA";
   // The whole panel is the conversation, so writing in the box is the reply.
   const replying = entries.some((e) => e.kind === "ask" || (e.kind === "comment" && e.comment.author_side !== side));
 
-  async function send() {
-    const body = draft.trim();
-    if (!body || sending || !comments || !key) return;
-    setSending(true);
-    setError(null);
-    const failed = await comments.post(key, body);
-    setSending(false);
-    if (failed) {
-      setError(failed);
-      return;
-    }
-    setDraft("");
-    boxRef.current?.focus();
-  }
-
-  function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      void send();
-    }
-    if (e.key === "Escape" && !draft.trim()) comments?.close();
-  }
-
   return (
-    <div ref={panelRef} className="flex h-full min-h-0 flex-col bg-white">
-      <header className="flex items-start gap-2 border-b border-[var(--bp-rule)] px-3 py-3">
-        <button
-          type="button"
-          onClick={comments.openList}
-          aria-label="All comments"
-          title="All comments"
-          className="mt-0.5 rounded-md p-1 text-[var(--bp-muted)] hover:bg-[var(--bp-tint)] hover:text-[var(--bp-ink)]"
-        >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
-        </button>
-        <div className="min-w-0">
-          <p className="text-kicker font-semibold uppercase text-[var(--bp-faint)]">{ref.page.title}</p>
-          <h2 className="mt-0.5 text-ui font-semibold leading-snug text-[var(--bp-ink)]">{ref.section.title}</h2>
+    <FileDropZone ref={panelRef} className="bp-chat-panel flex h-full min-h-0 flex-col bg-white">
+      {framed && chatPage ? null : (
+      <header className="bp-chat-head flex items-start gap-2 border-b border-[var(--bp-rule)] px-3 py-3">
+        {chatPage ? null : (
+          <button
+            type="button"
+            onClick={comments.openList}
+            aria-label="All chats"
+            title="All chats"
+            className="mt-0.5 rounded-md p-1 text-[var(--bp-muted)] hover:bg-[var(--bp-tint)] hover:text-[var(--bp-ink)]"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
+        )}
+        <div className={`min-w-0 ${chatPage ? "px-1" : ""}`}>
+          <p className="bp-chat-kicker text-kicker font-semibold uppercase text-[var(--bp-faint)]">{(chatPage ?? ref!.page).title}</p>
+          <h2 className="mt-0.5 text-ui font-semibold leading-snug text-[var(--bp-ink)]">
+            {chatPage ? `Chat with ${other}` : ref!.section.title}
+          </h2>
         </div>
       </header>
+      )}
 
-      <div ref={feedRef} className="bp-scroll min-h-0 flex-1 overflow-y-auto bg-[#f5f8fb] px-4 py-4">
+      <div ref={feedRef} className="bp-scroll bp-chat-feed min-h-0 flex-1 overflow-y-auto bg-[#f5f8fb] px-4 py-4">
         {!side ? (
           <p className="flex items-center gap-2 text-sm text-[var(--bp-muted)]">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading comments
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading the chat
           </p>
-        ) : entries.length ? (
-          <ol className="space-y-3">
-            {rows.map((row) => {
-              if (row.kind === "statuses") {
-                return <StatusRun key={row.events[0]?.id} events={row.events} viewerId={comments.viewerId} />;
+        ) : feed.length ? (
+          <ol className="bp-chat-list space-y-3">
+            {feed.map((entry) => {
+              if (entry.kind === "move") {
+                return (
+                  <li key={entry.id} className="flex items-center gap-2 px-2 py-0.5 text-xs text-[#55657a]">
+                    <span className={`h-2 w-2 shrink-0 rounded-[2px] ${PAGE_DOT[entry.to]}`} aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      This page moved to <span className="font-medium text-[#3d4f63]">{PAGE_STATUS_COPY[entry.to].label}</span>
+                    </span>
+                    <time dateTime={entry.at} className="shrink-0 text-caption text-[#8595a8]">
+                      {commentWhen(entry.at)}
+                    </time>
+                  </li>
+                );
               }
-              const entry = row.entry;
               if (entry.kind === "comment") {
                 return (
                   <CommentCard
@@ -787,62 +746,20 @@ export function CommentsPanel() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#1a8fd4] shadow-[0_1px_2px_rgba(5,30,54,0.08)]">
               <MessageSquare className="h-5 w-5" aria-hidden />
             </span>
-            <p className="mt-3 text-sm font-semibold text-[var(--bp-ink)]">No comments yet</p>
+            <p className="mt-3 text-sm font-semibold text-[var(--bp-ink)]">No messages yet</p>
             <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">
-              Ask a question or leave a note about this section. {other} sees it here.
+              {chatPage?.slug === "command"
+                ? `Ask ${other} anything that isn't about one page. ${other} sees it here.`
+                : chatPage
+                ? `Ask ${other} anything about this page. ${other} sees it here.`
+                : `Ask a question or leave a note about this section. ${other} sees it here.`}
             </p>
           </div>
         )}
       </div>
 
-      <footer className="border-t border-[var(--bp-rule)] px-4 py-3.5">
-        {error || voice.failed ? <p className="mb-2 text-sm text-[#9b2c2c]">{error || voice.failed}</p> : null}
-        <div className="rounded-2xl border border-[var(--bp-rule)] bg-white focus-within:border-[var(--bp-sky)] focus-within:ring-2 focus-within:ring-[#cfe6f8]">
-          <textarea
-            ref={boxRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value.slice(0, COMMENT_MAX_LENGTH))}
-            onKeyDown={onKey}
-            rows={1}
-            disabled={!side}
-            placeholder={transcribing ? "Turning your voice into text…" : replying ? `Reply to ${other}` : `Write to ${other}`}
-            className="bp-input block w-full resize-none bg-transparent px-4 pb-1 pt-3 text-ui leading-6 text-[var(--bp-ink)] outline-none placeholder:text-[var(--bp-faint)]"
-          />
-          <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5 pt-1">
-            <button
-              type="button"
-              onClick={() => void voice.toggle()}
-              aria-pressed={recording}
-              disabled={transcribing}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                recording ? "bg-[#fdeeee] text-[#9b1c1c]" : "text-[var(--bp-muted)] hover:bg-[var(--bp-tint)] hover:text-[var(--bp-ink)]"
-              }`}
-            >
-              {transcribing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : recording ? (
-                <Square className="h-3.5 w-3.5" aria-hidden />
-              ) : (
-                <Mic className="h-3.5 w-3.5" aria-hidden />
-              )}
-              {recording ? "Stop" : "Speak"}
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-caption text-[var(--bp-faint)]">⌘ Enter</span>
-              <button
-                type="button"
-                onClick={() => void send()}
-                disabled={!draft.trim() || sending || !side}
-                aria-label="Send"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bp-navy)] text-white transition-colors hover:bg-[var(--bp-blue)] disabled:opacity-35"
-              >
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ArrowUp className="h-4 w-4" aria-hidden />}
-              </button>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <ChatComposer key={key} chatKey={key} other={other} replying={replying} maxHeight={half} onEscape={() => comments.close()} />
+    </FileDropZone>
   );
 }
 
@@ -869,12 +786,19 @@ export function CommentsList({ page }: { page: BlueprintLink | null }) {
     if (note.section) consider({ key: note.section, at: note.at, who: "Change asked", body: note.body });
   }
   const rows = [...latest.values()]
-    .filter((row) => sectionByKey(row.key)?.page.slug === page?.slug)
+    .filter((row) => Boolean(page) && commentPage(row.key) === page?.slug)
     .map((row) => ({ ...row, unread: comments.threads[row.key]?.unread ?? 0 }))
     .sort((a, b) => b.unread - a.unread || Date.parse(b.at) - Date.parse(a.at));
 
   function go(key: string) {
     const ref = sectionByKey(key);
+    const chatSlug = chatKeyPage(key);
+    if (chatSlug && comments) {
+      const chatPage = blueprintPage(chatSlug);
+      comments.openChat(chatSlug);
+      if (chatPage && page?.slug !== chatSlug) router.push(href(chatPage.href));
+      return;
+    }
     if (!ref || !comments) return;
     const onPage = document.getElementById(`s-${key.replace(":", "-")}`);
     comments.open(key);
@@ -882,19 +806,19 @@ export function CommentsList({ page }: { page: BlueprintLink | null }) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white">
+    <div className="bp-chat-panel flex h-full min-h-0 flex-col bg-white">
       <p className="border-b border-[var(--bp-rule)] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--bp-faint)]">
         {page?.title ?? "This page"}
       </p>
-      <div className="bp-scroll min-h-0 flex-1 overflow-y-auto bg-[#f5f8fb] p-3">
+      <div className="bp-scroll bp-list-feed min-h-0 flex-1 overflow-y-auto bg-[#f5f8fb] p-3">
         {!side ? (
           <p className="flex items-center gap-2 px-2 py-1 text-sm text-[var(--bp-muted)]">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading comments
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading the chat
           </p>
         ) : rows.length ? (
           <ul className="space-y-2">
             {rows.map((row) => {
-              const ref = sectionByKey(row.key)!;
+              const title = sectionByKey(row.key)?.section.title ?? "Chat";
               return (
                 <li key={row.key}>
                   <button
@@ -905,7 +829,7 @@ export function CommentsList({ page }: { page: BlueprintLink | null }) {
                     }`}
                   >
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="min-w-0 truncate text-sm font-medium text-[#0b1b2e]">{ref.section.title}</span>
+                      <span className="min-w-0 truncate text-sm font-medium text-[#0b1b2e]">{title}</span>
                       <time dateTime={row.at} className="shrink-0 text-xs text-[#8595a8]">
                         {commentWhen(row.at)}
                       </time>

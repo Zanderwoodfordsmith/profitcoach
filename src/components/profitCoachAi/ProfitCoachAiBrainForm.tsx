@@ -446,8 +446,8 @@ export function ProfitCoachAiBrainForm({
                     aria-current={isActive ? "page" : undefined}
                     className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
                       isActive
-                        ? "bg-sky-50 font-semibold text-sky-900"
-                        : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        ? "bg-white font-semibold text-[#0f172a] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
+                        : "font-medium text-slate-600 hover:bg-white/55 hover:text-slate-900"
                     }`}
                   >
                     <Icon
@@ -570,7 +570,7 @@ export function ProfitCoachAiBrainForm({
       onSubmit={handleSubmit}
       className="flex min-h-0 flex-1 flex-col md:flex-row"
     >
-      <aside className="flex w-full shrink-0 flex-col border-b border-slate-200/90 bg-white/80 md:w-56 md:border-b-0 md:border-r lg:w-60">
+      <aside className="flex w-full shrink-0 flex-col border-b border-[var(--app-subnav-rule)] bg-[var(--app-subnav-bg)] md:w-56 md:border-b-0 md:border-r lg:w-60">
         <div className="hidden min-h-0 flex-1 overflow-y-auto px-2.5 py-4 md:flex md:flex-col">
           {nav}
         </div>
@@ -599,7 +599,7 @@ export function ProfitCoachAiBrainForm({
         </div>
       </aside>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-white/60">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-white">
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
           {editorHeader}
           <div className="flex min-h-0 flex-1 flex-col">{renderEditor()}</div>

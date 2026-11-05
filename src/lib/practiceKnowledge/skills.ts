@@ -102,10 +102,9 @@ Blocks, in this order:
     task: `Write the connection campaign for this coach and avatar, using their best real proof. It goes to new owners from a list, 2nd and 3rd degree. Follow the recommended campaign in the method. Match the kind of coach they are in the word choice only (a boot camp coach is more direct than hugs). Do not add hobbies, books or stories here. There is not room.
 Blocks, in this order:
 1. lede: the angle of the campaign in one sentence.
-2. pairs: Core client, Main desire, Proof used, Proof type (client, career or tribe).
-3. heading "The sequence", then message blocks for Connection request (300 characters or under, counting {first_name} as 10 and {company} as 30; note the count), Message 1 (5 minutes, the ad shape), Message 2 (1 day), Message 3 (2 days), Message 4 (4 days), Message 5 (2 weeks). Put the timing in each note.
-4. heading "Open Profile message", then one message block: Message 1 for owners with an Open Profile, sent without connecting. Same outcomes, proof and ask as Message 1; only the opening changes, to the connection request's opening line, since there is no "thanks for connecting". Note "No connection needed" in its note. Only if the coach direction asks for an A/B test, also a heading "Connection request B" with one message block: the same rules, a different angle.
-5. heading "Check before launch", then a table with columns Check, Pass (the ten connection message checks, each Yes or Fix with a reason).
+2. heading "The sequence", then message blocks for Connection request (300 characters or under, counting {first_name} as 10 and {company} as 30; note the count), Message 1 (5 minutes, the ad shape), Message 2 (1 day), Message 3 (2 days), Message 4 (4 days), Message 5 (2 weeks). Put the timing in each note.
+3. Only if the coach direction asks for an A/B test: a heading "Connection request B" with one message block: the same rules, a different angle.
+Before you finish, run the ten connection message checks yourself and fix anything that fails. Do not write the checks out: the coach sees only the messages.
 If the proof has no number yet, keep the placeholder in square brackets and add a callout (tone "warning") saying the campaign cannot launch until it has one.
 Every story, anecdote, number and result about the coach must come from their record. If a message needs one the record does not have, write a [square-bracket prompt] for the coach to fill instead. Never make one up.
 Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
@@ -116,9 +115,7 @@ Use only these tokens in curly brackets: {first_name}, {company}, {assessment_ur
     task: `Write the messaging campaign: for owners this coach can message without a connection request, meaning connections who fit the avatar but they have never spoken to, and open InMail. A short conversation that leads to the BOSS Scorecard. Match the kind of coach they are in the word choice. Do not add hobbies, books or stories here.
 Blocks, in this order:
 1. lede: the angle in one sentence.
-2. heading "Who gets it", then bullets: which existing connections to pick, and when to use InMail instead.
-3. heading "The sequence", then four message blocks: "First message" (a question about their focus, no pitch), "Insight" (3 days), "Scorecard offer" (4 days), "Leave the link" (5 days). Put the timing in each note.
-4. heading "Open InMail", then one message block (label "InMail") with the subject line on the first line.
+2. heading "The sequence", then four message blocks: "First message" (a question about their focus, no pitch), "Insight" (3 days), "Scorecard offer" (4 days), "Leave the link" (5 days). Put the timing in each note.
 Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
   },
   "campaigns:reactivation": {
@@ -127,9 +124,8 @@ Use only these tokens in curly brackets: {first_name}, {company}, {assessment_ur
     task: `Write the reactivation campaign: for people the coach already knows, meaning past colleagues, old contacts, and connections who replied before and went quiet. It restarts the relationship. It does not pitch. There is more room than a connection note: "What I do now" should sound like the kind of coach they are, and may use one hobby or story they named if it fits naturally. Never invent one.
 Blocks, in this order:
 1. lede: why their existing network is worth restarting, in one sentence, tied to their career.
-2. heading "Who gets it", then bullets: the groups to pick from their connections, named from their roles and industries (former colleagues at a named company, suppliers, clients from past roles), then who to leave out.
-3. heading "The sequence", then three message blocks: "Reconnect" (personal, one line about shared history in square brackets for the coach to fill, no pitch, ends with a question about them), "What I do now" (5 days: who they help now, the kind of coach they are in plain words, and one real proof point), "Soft ask" (2 weeks: do they know an owner who would want this, or would they like the BOSS Scorecard). Put the timing in each note. Keep each under 500 characters.
-4. callout (tone "tip"): personalise the first line for every person, and start with the warmest 50.
+2. heading "The sequence", then three message blocks: "Reconnect" (personal, one line about shared history in square brackets for the coach to fill, no pitch, ends with a question about them), "What I do now" (5 days: who they help now, the kind of coach they are in plain words, and one real proof point), "Soft ask" (2 weeks: do they know an owner who would want this, or would they like the BOSS Scorecard). Put the timing in each note. Keep each under 500 characters.
+3. callout (tone "tip"): personalise the first line for every person, and start with the warmest 50.
 Use only these tokens in curly brackets: {first_name}, {company}, {assessment_url}. Anything the coach fills in by hand goes in square brackets.`,
   },
   "offer:direction": {
@@ -384,7 +380,7 @@ export function skillUserPrompt(opts: {
   const contract = writerContract(opts.key);
   const reads = (source: WriterSource) => contract.sources.has(source);
   const report = opts.row.report_payload;
-  // Not asked any more (19 Oct): blank means public.
+  // Asked again on About You (4 Nov). Blank means public.
   const visibility = opts.row.payload.identity.linkedin_visibility?.value ?? "public";
   // Tenure is the number models most like to invent. Only LinkedIn durations count.
   const tenureKnown = /\b\d+\s*(yrs?|years?)\b/i.test(opts.linkedinSummary);

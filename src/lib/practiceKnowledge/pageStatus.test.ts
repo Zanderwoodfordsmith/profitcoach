@@ -36,7 +36,7 @@ const SALES_KEYS = ["sales:value", "sales:script", "offer:payment"] as const;
 
 describe("page status", () => {
   it("asks for the coach when this page still has empty answers", () => {
-    assert.equal(pageStatusBySlug("story", row()), "needs_you");
+    assert.equal(pageStatusBySlug("about", row()), "needs_you");
   });
 
   it("never marks the coach's own pages as BCA to do", () => {
@@ -53,16 +53,18 @@ describe("page status", () => {
       "practice.voice_sounds_like",
       "practice.voice_known_for",
       "practice.voice_coaching_style",
+      "identity.phone",
+      "working_times.prospect_call_hours",
     ]) {
       fill(payload, path);
     }
     // Answers in, short bio and "How you sound" not written yet. Imported facts wait for the coach to check.
-    assert.equal(pageStatusBySlug("story", row({ payload })), "review");
-    assert.equal(pageStatusBySlug("voice", row({ payload })), "done");
+    assert.equal(pageStatusBySlug("about", row({ payload })), "review");
   });
 
   it("marks later pages as BCA to do while they are still unwritten", () => {
     assert.equal(pageStatusBySlug("campaigns", row()), "bca");
+    assert.equal(pageStatusBySlug("linkedin", row()), "bca");
     assert.equal(pageStatusBySlug("sales", row()), "bca");
     // Empty answers after About You are BCA's to fill, not the coach's.
     assert.equal(pageStatusBySlug("market", row()), "bca");

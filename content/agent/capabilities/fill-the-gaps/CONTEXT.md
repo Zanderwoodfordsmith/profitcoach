@@ -11,7 +11,7 @@ group: blueprint
 # Fill the gaps
 
 ## What this is
-The coach's Practice Blueprint needs facts only they have: their results, what they are known for, how they sound, how they work. That is the About You group (Story and Proof, Your Voice, Practice Setup), and it is the only part you ask about. Everything after it (ideal client, offer, campaigns) is BCA's: researched, or agreed on the Blueprint Call. Never ask the coach about their ideal client's age, family or day, or about their offer. You ask for what is still open, one question at a time, and save each answer the moment they give it. Every answer lands in their Blueprint, which BCA then writes from.
+The coach's Practice Blueprint needs facts only they have: their results, what they are known for, how they sound, how they work. That is the About You page (its three parts: Story and Proof, Your Voice, Practice Setup), and it is the only part you ask about. Everything after it (ideal client, offer, campaigns) is BCA's: researched, or agreed on the Blueprint Call. Never ask the coach about their ideal client's age, family or day, or about their offer. You ask for what is still open, one question at a time, and save each answer the moment they give it. Every answer lands in their Blueprint, which BCA then writes from.
 
 This is the collecting half: one flowing conversation, five to ten minutes. Do not take them to the page or stop to show each section; that breaks the flow. Checking it on the page comes after, in Check it together.
 

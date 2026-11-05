@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { COMMUNITY_ONLINE_WINDOW_MS, isCommunityOnline } from "@/lib/communityPresence";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -51,10 +51,33 @@ export function useIsOnline(userId: string | null | undefined): boolean {
   );
 }
 
-/** Green dot with a white ring, for the corner of a member's avatar. Place it inside a `relative` box. */
+/** The signed-in user's id, looked up once per page load. Used to keep the green dot off your own photo. */
+let myUserIdPromise: Promise<string | null> | null = null;
+
+export function useMyUserId(): string | null {
+  const [myId, setMyId] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    myUserIdPromise ??= supabaseClient.auth
+      .getSession()
+      .then(({ data }) => data.session?.user.id ?? null)
+      .catch(() => null);
+    void myUserIdPromise.then((id) => {
+      if (alive) setMyId(id);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return myId;
+}
+
+/** Green dot with a white ring, for the corner of a member's avatar. Place it inside a `relative` box.
+ *  Never shown on your own photo: you know you're online. */
 export function OnlineDot({ userId, className = "bottom-0 right-0 h-3 w-3" }: { userId: string | null | undefined; className?: string }) {
   const online = useIsOnline(userId);
-  if (!online) return null;
+  const myId = useMyUserId();
+  if (!online || !myId || userId === myId) return null;
   return (
     <span
       className={`absolute rounded-full border-2 border-white bg-emerald-500 ${className}`}

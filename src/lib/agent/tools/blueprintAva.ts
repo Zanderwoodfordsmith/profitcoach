@@ -28,8 +28,8 @@ import { AgentToolError, bool, coachOf, num, str } from "./util";
  * presses Save, and can be put back afterwards.
  */
 
-/** About You pages, in the order coaches are asked: proof first, practical setup last. */
-const ASK_ORDER = ["story", "voice", "setup"];
+/** About You is one page (4 Nov), already in the order coaches are asked: proof first, practical setup last. */
+const ASK_ORDER = ["about"];
 
 function where(ref: SectionRef): string {
   return `${ref.page.title} · ${ref.section.title}`;

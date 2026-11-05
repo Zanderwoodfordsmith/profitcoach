@@ -40,7 +40,7 @@ export function CoachesHubTabs() {
         {
           kind: "link",
           href: "/admin/client-success/blueprint",
-          label: "Blueprint",
+          label: "Launches",
           active: onBlueprint,
         },
         {

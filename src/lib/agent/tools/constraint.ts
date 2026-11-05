@@ -1,21 +1,24 @@
 import { ACCEPTED, INTERESTED, isProspectCall } from "@/lib/coachHealth";
+import { adminPreviewCoachRouteForPath } from "@/lib/coachAccess/adminPreviewRoutes";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { DEFAULT_TARGETS } from "@/lib/scoreboard";
 import { getOkLinkedInAccount } from "@/lib/unipile/outreachAccounts";
 
 import type { AgentToolDef } from "../types";
+import { checkRate, DEFAULT_MONTHS_KEPT, moneyIn, practiceModel, type RateId, workBack } from "./practiceModel";
 import { coachOf } from "./util";
 
 /**
  * The constraint skill: the coach's client journey in numbers, and the one
  * stage holding them back most. Read-only. Counting follows coachHealth.ts
  * (Admin → Client success → Get clients) so both show the same numbers.
- * The rules are in pickConstraint and stated in
- * content/agent/capabilities/constraint/CONTEXT.md: change both together.
+ * The rules are in pickConstraint (thresholds in CONSTRAINT_RULES); the
+ * order Ava walks is in content/agent/capabilities/constraint/CONTEXT.md.
  */
 
 const DAY = 86_400_000;
 
-/** Tune these here and in the capability's CONTEXT.md. */
+/** Tune these here. The capability's CONTEXT.md explains the order, not the numbers. */
 export const CONSTRAINT_RULES = {
   /** People still waiting for an invite across running campaigns: about two weeks at 100 a week. */
   minWaiting: 200,
@@ -57,6 +60,12 @@ export type FunnelNumbers = {
   active_clients: number;
   /** From the Blueprint (Offer → capacity). Null when it is not filled in. */
   capacity: number | null;
+  clients_won_180d: number;
+  /** How many months ago each client with a start date joined. */
+  client_join_months_ago: number[];
+  /** Price and terms, and the 12-month goal, as the coach wrote them in the Blueprint. */
+  blueprint_fee_text: string | null;
+  blueprint_goal_text: string | null;
 };
 
 export type ConstraintStage = "delivery" | "people" | "accepts" | "replies" | "calls" | "clients" | "on_track";
@@ -248,6 +257,18 @@ function firstNumber(text: unknown): number | null {
   return m ? Number(m[0]) : null;
 }
 
+const cardCache = new Map<string, { at: number; numbers: FunnelNumbers }>();
+const CARD_TTL = 10 * 60_000;
+
+/** The same numbers for the coach card, cached 10 minutes per coach so Ava does not wait 1 to 3 seconds every turn. */
+export async function cachedFunnelNumbers(coachId: string): Promise<FunnelNumbers> {
+  const hit = cardCache.get(coachId);
+  if (hit && Date.now() - hit.at < CARD_TTL) return hit.numbers;
+  const numbers = await loadFunnelNumbers(coachId);
+  cardCache.set(coachId, { at: Date.now(), numbers });
+  return numbers;
+}
+
 /** The active coach's journey in numbers. Read-only. */
 export async function loadFunnelNumbers(coachId: string): Promise<FunnelNumbers> {
   const now = Date.now();
@@ -360,7 +381,12 @@ export async function loadFunnelNumbers(coachId: string): Promise<FunnelNumbers>
   const joined = clients.map((c) => (c.client_joined_on ? Date.parse(c.client_joined_on) : NaN));
   const clientsSince = (iso: string) => joined.filter((t) => Number.isFinite(t) && t >= Date.parse(iso)).length;
 
-  const payload = (practice.data?.payload ?? {}) as { practice?: { capacity?: { value?: unknown } | null } };
+  type Field = { value?: unknown } | null | undefined;
+  const payload = (practice.data?.payload ?? {}) as {
+    practice?: { capacity?: Field; min_fee?: Field; goal_12_months?: Field };
+  };
+  const text = (f: Field) => (typeof f?.value === "string" && f.value.trim() ? f.value.trim() : null);
+  const since180 = new Date(now - 180 * DAY).toISOString();
 
   return {
     linkedin_connected: Boolean(linkedIn),
@@ -380,7 +406,113 @@ export async function loadFunnelNumbers(coachId: string): Promise<FunnelNumbers>
     clients_won_90d: clientsSince(since90),
     active_clients: clients.length,
     capacity: firstNumber(payload.practice?.capacity?.value),
+    clients_won_180d: clientsSince(since180),
+    client_join_months_ago: joined.filter(Number.isFinite).map((t) => Math.floor((now - t) / (30.44 * DAY))),
+    blueprint_fee_text: text(payload.practice?.min_fee),
+    blueprint_goal_text: text(payload.practice?.goal_12_months),
   };
+}
+
+/** Marketing or sales, volume (not enough people) or rate (not enough of them turning), for each stage. */
+export const STAGE_KIND: Record<ConstraintStage, { side: "marketing" | "sales" | "delivery"; kind: "volume" | "rate" | "capacity" }> = {
+  delivery: { side: "delivery", kind: "capacity" },
+  clients: { side: "sales", kind: "rate" },
+  calls: { side: "sales", kind: "rate" },
+  replies: { side: "marketing", kind: "rate" },
+  accepts: { side: "marketing", kind: "rate" },
+  people: { side: "marketing", kind: "volume" },
+  on_track: { side: "marketing", kind: "volume" },
+};
+
+const RATE_WORDS: Record<RateId, string> = {
+  outbound_to_interested: "outbound to interested",
+  inbound_to_interested: "inbound to interested",
+  interested_to_booked: "interested to booked",
+  calls_to_client: "calls to clients",
+};
+const pc = (n: number) => `${Math.round(n * 1000) / 10}%`;
+
+/**
+ * The short version for the coach card, so Ava always has the constraint in view, not only when asked
+ * (Zander, 5 Nov 2026). Inbound, months kept and the goal are unknown here, so it says what it assumed.
+ */
+export function constraintCardLines(n: FunnelNumbers): string[] {
+  const d = diagnose(n);
+  const m = d.model;
+  const k = STAGE_KIND[d.constraint.stage];
+  const every = m.signing_pace;
+  const below = d.rates.filter((r) => r.band === "below_good" && r.actual != null);
+  return [
+    `## Their numbers and constraint`,
+    `Keep this in view in every answer, not only when they ask what is holding them back. When what they ask for will not move this constraint, say so in a line and offer what would. Open \`constraint\` to go through it properly; it also has the lead sources they could do more of.`,
+    `- Last 30 days: ${n.invites_30d} invites, ${n.interested_30d} interested, ${n.calls_booked_30d} calls booked. Clients signed in 180 days: ${n.clients_won_180d} (${every}).`,
+    m.signed_per_month > 0
+      ? `- At this pace they top out at about ${m.ceiling_clients} clients, £${(m.ceiling_income ?? 0).toLocaleString("en-GB")} a month (£${m.fee_month} fee${n.blueprint_fee_text ? "" : ", assumed"}; ${m.months_kept} months kept, assumed). About ${m.clients_now} clients now.`
+      : `- No client signed in 180 days, so there is no pace to work from yet: getting the first clients is the job.`,
+    `- Likely constraint: ${d.constraint.label} (${k.side}, ${k.kind}). ${d.constraint.why}`,
+    ...(below.length
+      ? [`- Below Good on the Scoreboard: ${below.map((r) => `${RATE_WORDS[r.rate]} ${pc(r.actual!)} (Good ${pc(r.good)})`).join("; ")}.`]
+      : []),
+    `- Not in the app: inbound (referrals, posts, website), calls booked elsewhere, how long clients stay. Ask before treating these as fact.`,
+  ];
+}
+
+/** What the coach can tell Ava that the app cannot see. All optional. */
+export type CoachSays = {
+  goal_income_month?: number | null;
+  fee_month?: number | null;
+  months_kept?: number | null;
+  inbound_month?: number | null;
+  inbound_interested_month?: number | null;
+};
+
+/**
+ * The whole picture: the one constraint, every rate against the Scoreboard's Good and Great, the income model
+ * (ceiling and how long to the goal) and the work-back from the goal. Used by the tool and the coach card.
+ */
+export function diagnose(n: FunnelNumbers, says: CoachSays = {}) {
+  const rates = [
+    checkRate("outbound_to_interested", n.interested_30d, n.invites_30d),
+    ...(says.inbound_month != null && says.inbound_interested_month != null
+      ? [checkRate("inbound_to_interested", says.inbound_interested_month, says.inbound_month)]
+      : []),
+    checkRate("interested_to_booked", n.calls_booked_30d, n.interested_30d),
+    checkRate("calls_to_client", n.clients_won_90d, n.calls_booked_90d),
+  ];
+  const judged = (id: RateId) => {
+    const r = rates.find((x) => x.rate === id);
+    return r && r.band !== "too_early" ? r.actual : null;
+  };
+  const book = judged("interested_to_booked");
+  const close = judged("calls_to_client");
+  const blueprintFee = moneyIn(n.blueprint_fee_text);
+  const fee = says.fee_month ?? blueprintFee ?? DEFAULT_TARGETS.fee;
+  const model = practiceModel({
+    signed_180d: n.clients_won_180d,
+    client_join_months_ago: n.client_join_months_ago,
+    fee_month: fee,
+    months_kept: says.months_kept ?? DEFAULT_MONTHS_KEPT,
+    goal_income_month: says.goal_income_month ?? null,
+  });
+  const work_back = workBack({
+    goal_clients: model.goal_clients,
+    months_kept: model.months_kept,
+    outbound_month: n.invites_30d,
+    inbound_interested_month: says.inbound_interested_month ?? null,
+    their_outbound_to_interested: judged("outbound_to_interested"),
+    their_interested_to_client: book != null && close != null ? book * close : null,
+  });
+  const assumed = [
+    ...(says.months_kept == null ? [`Clients stay ${DEFAULT_MONTHS_KEPT} months (not asked yet).`] : []),
+    ...(says.fee_month == null && blueprintFee != null ? [`Fee £${fee} a month, from their Blueprint price.`] : []),
+    ...(says.fee_month == null && blueprintFee == null
+      ? [`Fee £${fee} a month, the Scoreboard's starting fee: no price in their Blueprint, so ask.`]
+      : []),
+    ...(says.goal_income_month == null ? ["No income goal given: read their 12-month goal or ask."] : []),
+    ...(says.inbound_month == null ? ["Inbound (referrals, posts, website) not counted: ask."] : []),
+  ];
+  const constraint = pickConstraint(n);
+  return { constraint: { ...constraint, ...STAGE_KIND[constraint.stage] }, rates, model, work_back, assumed };
 }
 
 export const constraintTools: AgentToolDef[] = [
@@ -389,12 +521,36 @@ export const constraintTools: AgentToolDef[] = [
     label: "Reading their numbers",
     needsCoach: true,
     description:
-      "The active coach's client journey in numbers (people in campaigns, invites, accepts, replies, calls booked, clients, capacity) for the last 30 days, with 90-day and all-time counts for calls and clients. Also returns the stage the rules pick as their biggest constraint, the capability to open next, what could not be judged, and what data is missing. Read-only.",
-    input_schema: { type: "object", properties: {} },
-    run: async (_input, ctx) => {
+      "The active coach's practice in numbers: their client journey (people in campaigns, invites, accepts, replies, interested, calls booked, clients) for the last 30 days with 90- and 180-day counts; each rate against the Scoreboard's Good and Great with whether it is marketing or sales; the income model (clients signed a month × months kept × fee = the ceiling they top out at, and how long to their goal); and the work-back from their goal (people a month needed at their rates, at Good and at Great). Also the one stage the rules pick as the constraint and the capability to open next. Pass what the coach has told you that the app cannot see. Returns scoreboard_link when the coach can open their Scoreboard. Read-only.",
+    input_schema: {
+      type: "object",
+      properties: {
+        goal_income_month: { type: "number", description: "Income they want a month, in pounds." },
+        fee_month: { type: "number", description: "What a client pays a month, in pounds, if different from the Blueprint." },
+        months_kept: { type: "number", description: "How many months a client stays on average." },
+        inbound_month: { type: "number", description: "People who come to them a month: referrals, posts, website." },
+        inbound_interested_month: { type: "number", description: "Of those, how many are interested in a call a month." },
+      },
+    },
+    run: async (input, ctx) => {
       const coach = coachOf(ctx);
       const numbers = await loadFunnelNumbers(coach.id);
-      return { coach: coach.name, numbers, constraint: pickConstraint(numbers) };
+      const num = (k: string) => (typeof input[k] === "number" && Number.isFinite(input[k]) ? (input[k] as number) : null);
+      const says: CoachSays = {
+        goal_income_month: num("goal_income_month"),
+        fee_month: num("fee_month"),
+        months_kept: num("months_kept"),
+        inbound_month: num("inbound_month"),
+        inbound_interested_month: num("inbound_interested_month"),
+      };
+      // The per-client ages only feed the model; Ava gets the counts.
+      const shown: Partial<FunnelNumbers> = { ...numbers };
+      delete shown.client_join_months_ago;
+      // "Can I show you?": the Scoreboard, which starts from the example and takes their own numbers typed in.
+      // Coaches only once it's released (no admin gate).
+      const released = !adminPreviewCoachRouteForPath("/coach/scoreboard");
+      const scoreboard_link = ctx.mode === "admin" ? "/admin/scoreboard" : released ? "/coach/scoreboard" : null;
+      return { coach: coach.name, numbers: shown, ...diagnose(numbers, says), scoreboard_link };
     },
   },
 ];

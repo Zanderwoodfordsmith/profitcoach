@@ -1,3 +1,4 @@
+import { parseStoredCommunityPostMedia, type CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import type {
@@ -16,6 +17,7 @@ type CommentRow = {
   author_side: CommentAuthorSide;
   assignee_id: string | null;
   body: string;
+  media: unknown;
   created_at: string;
   updated_at: string | null;
 };
@@ -28,7 +30,7 @@ type ProfileBits = {
   avatar_url?: string | null;
 };
 
-const COLUMNS = "id, coach_id, section_key, author_id, author_side, assignee_id, body, created_at, updated_at";
+const COLUMNS = "id, coach_id, section_key, author_id, author_side, assignee_id, body, media, created_at, updated_at";
 
 function profileName(rec: ProfileBits, fallback: string): string {
   return rec.full_name?.trim() || [rec.first_name, rec.last_name].filter(Boolean).join(" ").trim() || fallback;
@@ -64,6 +66,7 @@ async function withAuthors(rows: CommentRow[]): Promise<SectionComment[]> {
       assignee_name: assignee?.name || (row.assignee_id ? "Assigned" : null),
       assignee_avatar_url: assignee?.avatar ?? null,
       body: row.body,
+      media: parseStoredCommunityPostMedia(row.media) ?? [],
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
@@ -107,6 +110,7 @@ export async function addSectionComment(opts: {
   authorId: string | null;
   side: CommentAuthorSide;
   body: string;
+  media?: CommunityPostMediaItem[];
 }): Promise<SectionComment> {
   const { data, error } = await supabaseAdmin
     .from("practice_section_comments")
@@ -116,6 +120,7 @@ export async function addSectionComment(opts: {
       author_id: opts.authorId,
       author_side: opts.side,
       body: opts.body,
+      media: opts.media?.length ? opts.media : null,
     })
     .select(COLUMNS)
     .single();

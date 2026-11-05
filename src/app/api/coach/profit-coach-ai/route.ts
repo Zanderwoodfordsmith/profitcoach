@@ -12,6 +12,7 @@ import {
   loadCoachAiContextRow,
   loadLadderSummaryForUser,
 } from "@/lib/profitCoachAi/loadCoachPromptContext";
+import { addUsage, emptyTally, logAiUsage } from "@/lib/ai/usageLog";
 import { resolveAnthropicModel } from "@/lib/anthropicModel";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -256,6 +257,8 @@ export async function POST(request: Request) {
         // continue the conversation until it stops or we hit the turn cap.
         const convo: Anthropic.Messages.MessageParam[] =
           toAnthropicMessages(messages);
+        // What this turn cost (card 177), shown per coach on Coaches → Projects.
+        const tally = emptyTally();
 
         for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
           const stream = anthropic.messages.stream({
@@ -269,6 +272,7 @@ export async function POST(request: Request) {
           stream.on("text", (delta) => emit(delta));
 
           const finalMessage = await stream.finalMessage();
+          addUsage(tally, finalMessage.model || model, finalMessage.usage);
 
           if (!toolsEnabled || finalMessage.stop_reason !== "tool_use") {
             break;
@@ -325,6 +329,16 @@ export async function POST(request: Request) {
             created_at: now,
           },
         ]);
+
+        await logAiUsage({
+          surface: "create_hub",
+          mode: auth.viewerIsAdmin ? "admin" : "coach",
+          coachId,
+          chatId: chatId!,
+          skills: [outputId],
+          model,
+          tally,
+        });
 
         finish();
       } catch (err) {

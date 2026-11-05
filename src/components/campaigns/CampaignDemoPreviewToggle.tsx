@@ -39,6 +39,7 @@ export function CampaignDemoPreviewToggle({
 
   return (
     <div
+      data-floats-right
       className="fixed z-[80] right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:right-6 md:bottom-6"
     >
       <button

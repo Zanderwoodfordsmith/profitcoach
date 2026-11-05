@@ -316,6 +316,7 @@ export function sanitizePayloadPatch(
       ),
       linkedin_headline: asSourced(identity.linkedin_headline, (v) => clip(v, 400) || null, fallback),
       linkedin_about: asSourced(identity.linkedin_about, (v) => clip(v, 3000) || null, fallback),
+      birthday: asSourced(identity.birthday, (v) => clip(v, 40) || null, fallback),
     };
   }
   if (working) {
@@ -374,6 +375,8 @@ export function sanitizePayloadPatch(
       voice_sounds_like: asSourced(practice.voice_sounds_like, (v) => clip(v, TEXT) || null, fallback),
       voice_never: asSourced(practice.voice_never, (v) => clip(v, TEXT) || null, fallback),
       voice_notes: asSourced(practice.voice_notes, (v) => clip(v, TEXT) || null, fallback),
+      goal_12_months: asSourced(practice.goal_12_months, (v) => clip(v, TEXT) || null, fallback),
+      anything_else: asSourced(practice.anything_else, (v) => clip(v, TEXT) || null, fallback),
       voice_known_for: asSourced(practice.voice_known_for, (v) => clip(v, TEXT) || null, fallback),
       voice_coaching_style: asSourced(practice.voice_coaching_style, (v) => clip(v, TEXT) || null, fallback),
       voice_values: asSourced(practice.voice_values, asStringList, fallback),

@@ -3,7 +3,7 @@ import * as path from "node:path";
 
 import { BLOCKS_SCHEMA_PROMPT } from "@/lib/practiceKnowledge/blocks";
 import { PROSPECT_SEARCH_PLAYBOOK } from "@/lib/salesNavigator/prospectSearch/playbook";
-import { peekAgentOverride } from "./agentOverrides";
+import { peekAgentOverride, peekSkillAccess, type SkillAccess } from "./agentOverrides";
 import type { AgentMode } from "./types";
 
 /**
@@ -138,9 +138,35 @@ export function capabilitiesForMode(mode: AgentMode): Capability[] {
   return loadCapabilities().filter((cap) => cap.modes.includes(mode));
 }
 
-/** What this person may open: a limited coach gets the Blueprint group only. */
+/**
+ * Who may open a skill when Admin → Ava → Skills has no setting for it, from
+ * its frontmatter: admin-only modes mean admin only, the blueprint group means
+ * every coach, the rest need Ava switched on.
+ */
+export function defaultSkillAccess(cap: Pick<Capability, "modes" | "group">): SkillAccess {
+  if (!cap.modes.includes("coach")) return "admin";
+  if (cap.group === "blueprint") return "everyone";
+  return "agent";
+}
+
+export function skillAccessFor(cap: Capability): SkillAccess {
+  return peekSkillAccess(cap.id) ?? defaultSkillAccess(cap);
+}
+
+/**
+ * What this person may open. The frontmatter modes stay a hard limit (a skill
+ * written for admin mode never reaches a coach); the Skills setting decides
+ * the rest. A limited coach is one without Ava switched on.
+ */
 export function capabilitiesForActor(mode: AgentMode, limited: boolean): Capability[] {
-  return capabilitiesForMode(mode).filter((cap) => !limited || cap.group === "blueprint");
+  return capabilitiesForMode(mode).filter((cap) => {
+    const access = skillAccessFor(cap);
+    if (access === "off") return false;
+    if (mode === "admin") return true;
+    if (access === "admin") return false;
+    if (access === "agent") return !limited;
+    return true;
+  });
 }
 
 export function loadIdentity(): string {

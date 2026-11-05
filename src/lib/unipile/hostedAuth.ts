@@ -36,16 +36,14 @@ export function parseUnipileConnectReturnTo(
   return "settings";
 }
 
-/** Send a Gmail or Outlook connect back to Practice Setup, including an admin blueprint tab. */
+/** Send a Gmail or Outlook connect back to About You (where Practice Setup is), including an admin blueprint tab. */
 function practiceSetupReturn(request: Request, flag: string): string {
   const referer = request.headers.get("referer") || "";
   try {
     const url = new URL(referer);
-    const onCoachSetup =
-      url.pathname.startsWith("/coach/blueprint/setup") ||
-      url.pathname.startsWith("/coach/practice/setup");
+    const onCoachSetup = /^\/coach\/(blueprint|practice)\/(about|setup)(\/|$)/.test(url.pathname);
     const onAdminSetup =
-      url.pathname.startsWith("/admin/coaches/") && url.searchParams.get("doc") === "setup";
+      url.pathname.startsWith("/admin/coaches/") && ["about", "setup"].includes(url.searchParams.get("doc") ?? "");
     if (onCoachSetup || onAdminSetup) {
       url.searchParams.set("connected", flag);
       const query = url.searchParams.toString();
@@ -55,7 +53,7 @@ function practiceSetupReturn(request: Request, flag: string): string {
     /* use the coach setup path */
   }
   const prefix = settingsReturnPrefix(request);
-  if (prefix === "/coach") return `/coach/blueprint/setup?connected=${flag}`;
+  if (prefix === "/coach") return `/coach/blueprint/about?connected=${flag}`;
   return `${prefix}/account?tab=profile&connected=${flag}`;
 }
 

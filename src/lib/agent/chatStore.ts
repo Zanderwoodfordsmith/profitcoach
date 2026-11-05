@@ -27,10 +27,12 @@ export type AgentChatRow = {
   opened_capabilities: string[];
   model: string | null;
   updated_at: string;
+  /** Set when the person renamed the chat: Ava keeps their name. */
+  renamed_at: string | null;
 };
 
 const CHAT_SELECT =
-  "id, actor_user_id, mode, coach_id, title, api_messages, opened_capabilities, model, updated_at";
+  "id, actor_user_id, mode, coach_id, title, api_messages, opened_capabilities, model, updated_at, renamed_at";
 
 export const WORKING_STATE_TAG = "working_state";
 export const APP_EVENT_TAG = "app_event";
@@ -55,6 +57,7 @@ export async function loadChat(chatId: string, actorUserId: string): Promise<Age
     .select(CHAT_SELECT)
     .eq("id", chatId)
     .eq("actor_user_id", actorUserId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as AgentChatRow | null) ?? null;
@@ -71,6 +74,45 @@ export async function saveChat(
   if (error) throw new Error(error.message);
 }
 
+/** The person pins or renames their own chat. Leaves updated_at alone, so it keeps its place in time. */
+export async function updateOwnChat(
+  chatId: string,
+  actorUserId: string,
+  change: { title?: string; pinned?: boolean }
+): Promise<boolean> {
+  const now = new Date().toISOString();
+  const patch: Record<string, string | null> = {};
+  if (change.title !== undefined) {
+    patch.title = change.title;
+    patch.renamed_at = now;
+  }
+  if (change.pinned !== undefined) patch.pinned_at = change.pinned ? now : null;
+  const { data, error } = await supabaseAdmin
+    .from("ai_agent_chats")
+    .update(patch)
+    .eq("id", chatId)
+    .eq("actor_user_id", actorUserId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(data);
+}
+
+/** The person deletes their own chat: hidden everywhere, kept so its costs still add up. */
+export async function deleteOwnChat(chatId: string, actorUserId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("ai_agent_chats")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", chatId)
+    .eq("actor_user_id", actorUserId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(data);
+}
+
 /**
  * Every chat about one coach, newest first: the coach's own and BCA's.
  * For the admin Blueprint, so BCA can read what the coach worked through.
@@ -80,6 +122,7 @@ export async function listCoachChats(coachId: string, limit = 40) {
     .from("ai_agent_chats")
     .select("id, title, coach_id, actor_user_id, mode, updated_at")
     .eq("coach_id", coachId)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
@@ -88,7 +131,12 @@ export async function listCoachChats(coachId: string, limit = 40) {
 
 /** Admin only: any chat, to read. Writing still needs the chat's own actor. */
 export async function loadChatForAdmin(chatId: string): Promise<AgentChatRow | null> {
-  const { data, error } = await supabaseAdmin.from("ai_agent_chats").select(CHAT_SELECT).eq("id", chatId).maybeSingle();
+  const { data, error } = await supabaseAdmin
+    .from("ai_agent_chats")
+    .select(CHAT_SELECT)
+    .eq("id", chatId)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as AgentChatRow | null) ?? null;
 }
@@ -96,9 +144,12 @@ export async function loadChatForAdmin(chatId: string): Promise<AgentChatRow | n
 export async function listChats(actorUserId: string, mode: AgentMode, limit = 30) {
   const { data, error } = await supabaseAdmin
     .from("ai_agent_chats")
-    .select("id, title, coach_id, updated_at")
+    .select("id, title, coach_id, updated_at, pinned_at")
     .eq("actor_user_id", actorUserId)
+    .is("deleted_at", null)
     .eq("mode", mode)
+    // Pinned chats first, so they are always in the list.
+    .order("pinned_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);

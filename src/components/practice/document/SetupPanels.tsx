@@ -490,6 +490,97 @@ function TimezoneRow({ field }: { field: FieldSpec }) {
   );
 }
 
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** Reads a typed birthday ("14 March", "14th Mar 1975", "14/03/1975", "March 14") into day, month (1-12) and year. */
+function parseBirthday(text: string): { day: number; month: number; year: number } {
+  const none = { day: 0, month: 0, year: 0 };
+  const t = text.trim().toLowerCase();
+  if (!t) return none;
+  const year = Number(t.match(/\b(19|20)\d{2}\b/)?.[0] ?? 0);
+  const rest = t.replace(/\b(19|20)\d{2}\b/, " ");
+  const named = MONTHS.findIndex((m) => new RegExp(`\\b${m.slice(0, 3).toLowerCase()}`).test(rest));
+  const numbers = (rest.match(/\d{1,2}/g) ?? []).map(Number);
+  if (named >= 0) {
+    const day = numbers.find((n) => n >= 1 && n <= 31) ?? 0;
+    return { day, month: named + 1, year };
+  }
+  // Numbers only: UK order, day then month.
+  const [day = 0, month = 0] = numbers;
+  return day >= 1 && day <= 31 && month >= 1 && month <= 12 ? { day, month, year } : { ...none, year };
+}
+
+function daysIn(month: number, year: number): number {
+  return month ? new Date(year || 2000, month, 0).getDate() : 31;
+}
+
+/**
+ * Birthday as three dropdowns: day, month and year. Saved as plain text
+ * ("14 March 1975", or "14 March" without a year) like the typed answers before it.
+ */
+function BirthdayRow({ field, changed }: { field: FieldSpec; changed?: boolean }) {
+  const { payload, saveField, sample } = usePractice();
+  const stored = payload ? textAt(payload, field.path) : "";
+  const parsed = parseBirthday(stored);
+  const [draft, setDraft] = useState(parsed);
+  const [seen, setSeen] = useState(stored);
+  if (stored !== seen) {
+    setSeen(stored);
+    setDraft(parsed);
+  }
+  const thisYear = new Date().getFullYear();
+  const years = Array.from({ length: 80 }, (_, i) => thisYear - 18 - i);
+
+  function choose(next: { day: number; month: number; year: number }) {
+    const day = Math.min(next.day, daysIn(next.month, next.year));
+    const fixed = { ...next, day };
+    setDraft(fixed);
+    if (!fixed.day || !fixed.month) return;
+    const text = `${fixed.day} ${MONTHS[fixed.month - 1]}${fixed.year ? ` ${fixed.year}` : ""}`;
+    if (text !== stored) saveField(field, text);
+  }
+
+  const select = (label: string, value: number, options: { value: number; label: string }[], onPick: (n: number) => void, width: string) => (
+    <div className={`relative ${width}`}>
+      <select
+        aria-label={label}
+        value={value || ""}
+        disabled={sample}
+        onChange={(e) => onPick(Number(e.target.value))}
+        className={`${INPUT} cursor-pointer appearance-none pr-9 ${value ? "" : "text-[#9aa8b8]"}`}
+      >
+        <option value="">{label}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--bp-faint)]" aria-hidden />
+    </div>
+  );
+
+  return (
+    <div>
+      <FieldLabel label={field.label} help={field.help} mark={changed ? "Changed" : undefined} />
+      <div id={`f-${field.path}`} className="bp-form-card flex flex-wrap gap-2">
+        {select(
+          "Day",
+          draft.day,
+          Array.from({ length: daysIn(draft.month, draft.year) }, (_, i) => ({ value: i + 1, label: String(i + 1) })),
+          (day) => choose({ ...draft, day }),
+          "w-24"
+        )}
+        {select("Month", draft.month, MONTHS.map((m, i) => ({ value: i + 1, label: m })), (month) => choose({ ...draft, month }), "w-36")}
+        {select("Year", draft.year, years.map((y) => ({ value: y, label: String(y) })), (year) => choose({ ...draft, year }), "w-28")}
+      </div>
+      {stored && !parsed.month ? (
+        <p className="mt-1.5 text-xs text-[var(--bp-muted)]">You wrote &ldquo;{stored}&rdquo;. Pick the day and month to save it properly.</p>
+      ) : null}
+    </div>
+  );
+}
+
 function CallHours({ field, changed }: { field: FieldSpec; changed?: boolean }) {
   const { payload, saveField, sample, authHeaders } = usePractice();
   const storedTz = payload ? textAt(payload, "identity.timezone") : "";
@@ -593,12 +684,11 @@ function CallHours({ field, changed }: { field: FieldSpec; changed?: boolean }) 
     window.setTimeout(() => setSaved(false), 1800);
   }
 
-  const mark = changed ? "Changed" : undefined;
-
   return (
     <div>
-      <FieldLabel label="Hours" help={field.help} mark={mark} />
+      {/* The section title already says what this is, so no "Hours" label over it. */}
       <p className="mb-3 px-0.5 text-sm leading-6 text-[var(--bp-muted)]">
+        {changed ? <span className={badgeClass("amber", "mr-2 align-[1px]")}>Changed</span> : null}
         Tick the days you take calls, then set the times. Saving here updates Calls, so you only do this once.
       </p>
       {loading ? (
@@ -1180,8 +1270,8 @@ function CoachStyleSliders({ field, changed }: { field: FieldSpec; changed?: boo
 
   return (
     <div>
+      {/* The section's title is the question (4 Nov), so no label here. */}
       <div className="mb-1.5 flex items-center gap-2 px-0.5">
-        <span className="text-ui font-medium text-[var(--bp-ink)]">{field.label}</span>
         <button
           type="button"
           onClick={() => setExplain(true)}
@@ -1256,6 +1346,7 @@ export function SetupWidget({ field, changed }: { field: FieldSpec; changed?: bo
   if (field.widget === "tone") return <ToneSliders field={field} changed={changed} />;
   if (field.widget === "style") return <CoachStyleSliders field={field} changed={changed} />;
   if (field.widget === "switch") return <SwitchRow field={field} changed={changed} />;
+  if (field.widget === "birthday") return <BirthdayRow field={field} changed={changed} />;
   return null;
 }
 

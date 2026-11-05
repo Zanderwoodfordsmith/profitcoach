@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -89,6 +89,27 @@ export type BossDashboardSettingsProps = {
   embed?: { activeTab: BossDashboardSettingsTabId };
 };
 
+/** The profile fields that save on their own, in the shape the API takes. */
+function profileFieldPayload(f: {
+  firstName: string;
+  lastName: string;
+  businessName: string;
+  linkedinUrl: string;
+  communityBio: string;
+  location: string;
+  replyCopilotNotes: string;
+}): Record<string, string | null> {
+  return {
+    first_name: f.firstName.trim() || null,
+    last_name: f.lastName.trim() || null,
+    coach_business_name: f.businessName.trim() || null,
+    linkedin_url: f.linkedinUrl.trim() || null,
+    community_bio: f.communityBio.trim() || null,
+    location: f.location.trim() || null,
+    reply_copilot_notes: f.replyCopilotNotes.trim() || null,
+  };
+}
+
 export function BossDashboardSettings({
   variant,
   embed,
@@ -110,6 +131,8 @@ export function BossDashboardSettings({
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<"success" | "error" | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // What the server last holds for the auto-saved fields, so we only send changes.
+  const savedFieldsRef = useRef<Record<string, string | null> | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [removingAvatar, setRemovingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -125,6 +148,15 @@ export function BossDashboardSettings({
   const [internalTab, setInternalTab] =
     useState<BossDashboardSettingsTabId>("profile");
   const activeTab = embed?.activeTab ?? internalTab;
+  // A link to #integrations (a Support chat's "Open Integrations") scrolls to that card.
+  useEffect(() => {
+    if (embed || activeTab !== "profile" || window.location.hash !== "#integrations") return;
+    const timer = window.setTimeout(
+      () => document.getElementById("integrations")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      250
+    );
+    return () => window.clearTimeout(timer);
+  }, [embed, activeTab, searchParams]);
   const [mapModalOpen, setMapModalOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
@@ -186,6 +218,15 @@ export function BossDashboardSettings({
     setCommunityBio(data.community_bio ?? data.bio ?? "");
     setLocation(data.location ?? "");
     setReplyCopilotNotes(data.reply_copilot_notes ?? "");
+    savedFieldsRef.current = profileFieldPayload({
+      firstName: data.first_name ?? "",
+      lastName: data.last_name ?? "",
+      businessName: data.coach_business_name ?? "",
+      linkedinUrl: data.linkedin_url ?? "",
+      communityBio: data.community_bio ?? data.bio ?? "",
+      location: data.location ?? "",
+      replyCopilotNotes: data.reply_copilot_notes ?? "",
+    });
 
     setLoading(false);
     try {
@@ -230,7 +271,8 @@ export function BossDashboardSettings({
       if (connected) qs.set("connected", connected);
       const base =
         variant === "admin" ? "/admin/account" : "/coach/settings";
-      router.replace(`${base}?${qs.toString()}`);
+      // Lands on the Integrations card (a Support chat's "Open Integrations" comes here).
+      router.replace(`${base}?${qs.toString()}#integrations`);
       return;
     }
     const parsed = parseSettingsTab(tab, variant);
@@ -257,48 +299,77 @@ export function BossDashboardSettings({
     void loadProfile();
   }, [loadProfile]);
 
-  async function handleProfileSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaveMessage(null);
-    setSaveError(null);
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return;
+  const saveProfileFields = useCallback(
+    async (changes: Record<string, string | null>) => {
+      setSaveMessage(null);
+      setSaveError(null);
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return;
 
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    };
-    if (impersonatingCoachId) {
-      headers["x-impersonate-coach-id"] = impersonatingCoachId;
-    }
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      };
+      if (impersonatingCoachId) {
+        headers["x-impersonate-coach-id"] = impersonatingCoachId;
+      }
 
-    setSaving(true);
-    const res = await fetch("/api/coach/profile", {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({
-        first_name: firstName.trim() || null,
-        last_name: lastName.trim() || null,
-        coach_business_name: businessName.trim() || null,
-        linkedin_url: linkedinUrl.trim() || null,
-        community_bio: communityBio.trim() || null,
-        location: location.trim() || null,
-        reply_copilot_notes: replyCopilotNotes.trim() || null,
-      }),
+      setSaving(true);
+      const res = await fetch("/api/coach/profile", {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(changes),
+      }).catch(() => null);
+      const body = (await res?.json().catch(() => ({}))) as
+        | { error?: string }
+        | undefined;
+      setSaving(false);
+      if (res?.ok) {
+        savedFieldsRef.current = { ...savedFieldsRef.current, ...changes };
+        setSaveMessage("success");
+        notifyAcademyTrackedActionsChanged();
+      } else {
+        setSaveMessage("error");
+        setSaveError(body?.error ?? "Could not save. Check your connection.");
+      }
+    },
+    [impersonatingCoachId]
+  );
+
+  // Save on its own a moment after typing stops. Only changed fields are sent.
+  useEffect(() => {
+    const saved = savedFieldsRef.current;
+    if (!saved) return;
+    const current = profileFieldPayload({
+      firstName,
+      lastName,
+      businessName,
+      linkedinUrl,
+      communityBio,
+      location,
+      replyCopilotNotes,
     });
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    setSaving(false);
-    if (res.ok) {
-      setSaveMessage("success");
-      notifyAcademyTrackedActionsChanged();
-      void loadProfile();
-    } else {
-      setSaveMessage("error");
-      setSaveError(body.error ?? "Save failed.");
+    const changes: Record<string, string | null> = {};
+    for (const [key, value] of Object.entries(current)) {
+      if (saved[key] !== value) changes[key] = value;
     }
-  }
+    if (Object.keys(changes).length === 0) return;
+    const timer = window.setTimeout(() => {
+      void saveProfileFields(changes);
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [
+    firstName,
+    lastName,
+    businessName,
+    linkedinUrl,
+    communityBio,
+    location,
+    replyCopilotNotes,
+    saveProfileFields,
+  ]);
 
   async function handleLinkedInImport() {
     setLinkedinImportError(null);
@@ -500,10 +571,20 @@ export function BossDashboardSettings({
 
   const directorySlug = profile.coach_slug?.trim() || null;
 
+  const saveStatus =
+    activeTab !== "profile" ? null : saving ? (
+      <span className="text-sm text-slate-500">Saving…</span>
+    ) : saveMessage === "success" ? (
+      <span className="text-sm text-green-700">Saved</span>
+    ) : saveMessage === "error" && saveError ? (
+      <span className="text-sm text-rose-600">{saveError}</span>
+    ) : null;
+
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
       description="Profile, billing, and ladder."
+      actions={saveStatus}
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -530,7 +611,7 @@ export function BossDashboardSettings({
           }
         >
           <form
-            onSubmit={handleProfileSave}
+            onSubmit={(e) => e.preventDefault()}
             className={
               variant === "coach"
                 ? "mx-auto flex w-full min-w-0 max-w-[40.8rem] flex-col gap-4 pt-3 lg:mx-0 lg:pt-3.5"
@@ -732,26 +813,14 @@ export function BossDashboardSettings({
           />
         </ProfileSectionCard>
 
-        <div className="flex items-center gap-4 pt-1">
-          <button
-            type="submit"
-            disabled={saving}
-            className={buttonClass("main")}
-          >
-            {saving ? "Saving…" : "Save profile"}
-          </button>
-          {saveMessage === "success" ? (
-            <span className="text-sm text-green-700">Saved.</span>
-          ) : null}
-          {saveMessage === "error" && saveError ? (
-            <span className="text-sm text-rose-600">{saveError}</span>
-          ) : null}
-        </div>
+        {embed ? saveStatus : null}
           </form>
           {variant === "coach" ? (
             <aside className="w-full shrink-0 space-y-4 pt-3 lg:w-[22rem] lg:sticky lg:top-4 lg:self-start lg:pt-3.5">
               <AddToPhoneCard />
-              <IntegrationsSettingsTab />
+              <div id="integrations" className="scroll-mt-24">
+                <IntegrationsSettingsTab />
+              </div>
               <AvaReplyAlertsCard />
             </aside>
           ) : null}

@@ -765,6 +765,15 @@
               "duration": "114m",
               "hasVideo": true,
               "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
+            },
+            {
+              "id": "coach-clients-certification-client-simulator",
+              "title": "Client Simulator",
+              "duration": "",
+              "hasVideo": false,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview",
+              "bodyMarkdown": "### What is this?\n\nThe Client simulator lets you coach an AI client out loud. When you finish, you get a score and a report on how you did. It sits in Keep Clients, next to your real clients.\n\n**[Open the Client simulator](/coach/simulator)**\n\n### How it works\n\n1. **Pick a client.** Each one runs a different kind of business and brings a real problem. You can also make your own client from a situation you've met.\n2. **Pick the session and the level.** Run a normal coaching session, one of the four onboarding sessions, or a tricky moment, like a client who didn't do the work. Easy, Medium or Hard sets how much they push back.\n3. **Coach out loud.** The call uses your microphone. Turn on tips if you want help during the call, and pause whenever you need to think.\n4. **Read your report.** You get a score out of 50 across the COACH Method and POWER questions, plus what to work on next. Replay any moment and try it again.\n\n### Get certified\n\nWhen your practice scores feel steady, press **Start certification** on the simulator page. You coach three different clients, with at least one on Hard. There are no tips in these calls, and a BCA coach checks every one.",
+              "draft": false
             }
           ]
         },
@@ -1299,61 +1308,6 @@
                   "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
                 }
               ]
-            }
-          ]
-        },
-        {
-          "id": "coach-clients-certification-simulators",
-          "title": "Client Simulators",
-          "lessons": [
-            {
-              "id": "coach-clients-certification-client-simulators-client-simulator-coach-practice-1",
-              "title": "Client Simulator: Coach Practice 1",
-              "duration": "7m",
-              "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
-            },
-            {
-              "id": "coach-clients-certification-client-simulators-revenue-optmisation-thai-restaurant",
-              "title": "Revenue Optimisation - Thai Restaurant",
-              "duration": "",
-              "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
-            },
-            {
-              "id": "coach-clients-certification-client-simulators-client-simulator-profitability-issues-management-consultant",
-              "title": "Client Simulator: Profitability Issues - Management Consultant",
-              "duration": "2m",
-              "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
-            },
-            {
-              "id": "coach-clients-certification-client-simulators-multi-location-operaitons-issues-chiropractor",
-              "title": "Multi-Location Operations Issues - Chiropractor",
-              "duration": "",
-              "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
-            },
-            {
-              "id": "coach-clients-certification-client-simulators-business-pressure-manufacturing-engineering",
-              "title": "Business pressure - Manufacturing/Engineering",
-              "duration": "",
-              "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
-            },
-            {
-              "id": "coach-clients-certification-client-simulators-diverse-business-units-legal-saas",
-              "title": "Diverse Business Units - Legal SaaS",
-              "duration": "",
-              "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
-            },
-            {
-              "id": "coach-clients-certification-client-simulators-business-coach-certificaiton-assessment",
-              "title": "Business Coach Certification Assessment",
-              "duration": "8m",
-              "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             }
           ]
         }

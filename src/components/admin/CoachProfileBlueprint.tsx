@@ -7,7 +7,7 @@ import { BlueprintTopic } from "@/components/practice/BlueprintTopic";
 import { BlueprintHome } from "@/components/practice/BlueprintHome";
 import { PRACTICE_BASE, PracticeProvider } from "@/components/practice/PracticeProvider";
 import { PracticeShell } from "@/components/practice/PracticeShell";
-import { blueprintPage } from "@/lib/practiceKnowledge/blueprint";
+import { MOVED_PAGES, blueprintPage } from "@/lib/practiceKnowledge/blueprint";
 
 /** Practice links stay on this coach's profile, on the Blueprint tab. */
 export function coachProfileBlueprintHref(slug: string, practicePath: string): string {
@@ -43,7 +43,8 @@ export function CoachProfileBlueprint({
   coachId: string;
   coachSlug: string;
 }) {
-  const doc = useSearchParams().get("doc");
+  const asked = useSearchParams().get("doc");
+  const doc = asked ? (MOVED_PAGES[asked] ?? asked) : asked;
   const path = practicePathForDoc(doc);
 
   return (

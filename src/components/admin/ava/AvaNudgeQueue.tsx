@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowUpRight, Check, Loader2, Pause, X } from "lucide-react";
+
+import { buttonClass } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { NUDGE_RULES, NUDGE_SECTION, NUDGE_TEMPLATES, nudgeSection } from "@/lib/ava/nudgeRules";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 
 type View = "queued" | "approved" | "rejected";
 type Action = "approve" | "reject" | "save" | "snooze";
@@ -25,18 +31,18 @@ type Nudge = {
 
 const VIEW_LABEL: Record<View, string> = { queued: "To approve", approved: "Approved", rejected: "Rejected" };
 
-const LEVEL_STYLE: Record<Nudge["level"], string> = {
-  red: "bg-rose-100 text-rose-800",
-  amber: "bg-amber-100 text-amber-900",
-  green: "bg-emerald-100 text-emerald-800",
+const LEVEL_DOT: Record<Nudge["level"], string> = {
+  red: "bg-rose-500",
+  amber: "bg-amber-400",
+  green: "bg-emerald-500",
 };
 
 const STATUS_LABEL: Record<Nudge["status"], string> = {
   queued: "Waiting",
-  approved: "Approved, not posted yet",
+  approved: "Approved, posts within the hour",
   rejected: "Rejected",
   posted: "Posted",
-  skipped: "Dropped: no longer stuck there",
+  skipped: "Dropped",
 };
 
 async function adminHeaders(): Promise<Record<string, string> | null> {
@@ -50,6 +56,22 @@ function day(ymd: string) {
   return new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
+/** Where a nudge lands: the chat on one of the coach's Blueprint pages, and the admin link to that page. */
+function destination(row: Nudge) {
+  const ref = sectionByKey(nudgeSection(row.stuck_at));
+  if (!ref) return null;
+  return {
+    label: ref.page.title,
+    section: ref.section.title,
+    href: `/admin/blueprint/coach/${ref.page.slug}?coach=${encodeURIComponent(row.coach_id)}`,
+  };
+}
+
+/**
+ * Admin → Ava → Nudges: each morning Ava drafts a nudge for every stuck coach.
+ * BCA edits, approves or rejects; nothing reaches a coach until approved. One
+ * compact row per nudge (5 Nov), with where it will post.
+ */
 export function AvaNudgeQueue() {
   const [view, setView] = useState<View>("queued");
   const [rows, setRows] = useState<Nudge[]>([]);
@@ -58,6 +80,7 @@ export function AvaNudgeQueue() {
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [scanNote, setScanNote] = useState<string | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const [reload, setReload] = useState(0);
 
@@ -123,30 +146,14 @@ export function AvaNudgeQueue() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <Link href="/admin/ava" className="text-sm text-slate-500 hover:text-slate-800">
-        ← Ava
-      </Link>
-      <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Nudges</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Every morning Ava checks coach health and drafts a nudge for each coach who is stuck. Edit any of them, then
-            approve or reject. Nothing reaches a coach until you approve it.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void scan()}
-          disabled={scanning}
-          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-        >
-          {scanning ? "Checking coaches…" : "Check coaches now"}
-        </button>
-      </div>
-      {scanNote ? <p className="mt-3 text-sm text-slate-600">{scanNote}</p> : null}
+    <div className="w-full max-w-[90rem] px-4 pb-16 pt-6 md:px-6">
+      <p className="max-w-3xl text-sm leading-6 text-slate-600">
+        Every morning Ava drafts a nudge for each coach who is stuck. Edit it, then approve or reject. Nothing reaches a
+        coach until you approve it. Approved nudges post in the chat on the Blueprint page shown, signed as Ava. They
+        aren&apos;t emailed, so the coach sees them next time they open the app.
+      </p>
 
-      <div className="mt-6 flex gap-2">
+      <div className="mt-5 flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
         {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
           <button
             key={v}
@@ -156,32 +163,93 @@ export function AvaNudgeQueue() {
               setLoading(true);
               setView(v);
             }}
-            className={`rounded-md border px-3 py-1.5 text-sm ${view === v ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"}`}
+            aria-pressed={view === v}
+            className={`rounded-full px-3 py-1 text-sm ${view === v ? "bg-slate-900 font-medium text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}
           >
             {VIEW_LABEL[v]}
             {counts[v] != null ? <span className="ml-1.5 tabular-nums opacity-70">{counts[v]}</span> : null}
           </button>
         ))}
+        <button type="button" onClick={() => setRulesOpen(true)} className={buttonClass("quiet", "small", "ml-auto")}>
+          How nudges work
+        </button>
+        <button type="button" onClick={() => void scan()} disabled={scanning} className={buttonClass("second", "small")}>
+          {scanning ? "Checking coaches…" : "Check coaches now"}
+        </button>
       </div>
-
-      {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
-      {loading ? <p className="mt-6 text-sm text-slate-500">Loading nudges…</p> : null}
+      {scanNote ? <p className="mt-3 text-sm text-slate-600">{scanNote}</p> : null}
+      {error ? <p className="mt-3 text-sm text-rose-700">{error}</p> : null}
+      {loading ? <p className="mt-5 text-sm text-slate-500">Loading nudges…</p> : null}
       {!loading && rows.length === 0 ? (
-        <p className="mt-6 text-sm text-slate-500">
+        <p className="mt-5 text-sm text-slate-500">
           {view === "queued" ? "Nothing waiting. New nudges arrive each morning." : "None yet."}
         </p>
       ) : null}
 
-      <div className="mt-4 space-y-4">
-        {rows.map((row) => (
-          <NudgeCard key={row.id} row={row} onDecide={decide} />
-        ))}
-      </div>
+      <Modal
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        title="How nudges work"
+        subtitle="The rules Ava follows. They come from the code, so this is what actually happens."
+        maxWidthClassName="max-w-6xl"
+        overlayClassName="z-[100]"
+      >
+        <div className="max-h-[calc(100dvh-9rem)] overflow-y-auto px-5 pb-6 pt-4">
+          <NudgeRules />
+        </div>
+      </Modal>
+
+      {rows.length ? (
+        <div className="mt-4 overflow-clip rounded-xl border border-slate-200 bg-white">
+          <table className="w-full table-fixed border-collapse text-sm">
+            <colgroup>
+              <col className="w-[13rem]" />
+              <col />
+              <col className="w-[10.5rem]" />
+              <col className="w-[7.5rem]" />
+              <col className="w-[8rem]" />
+            </colgroup>
+            <thead className="sticky top-0 z-10 bg-white">
+              <tr className="border-b border-slate-200 text-left text-xs font-medium text-slate-500">
+                <th scope="col" className="px-4 py-2.5 font-medium">Coach</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Message from Ava</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Posts in</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Drafted</th>
+                <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                  {view === "queued" ? "Approve" : "Status"}
+                </th>
+              </tr>
+            </thead>
+            {groupByReason(rows).map((group) => (
+              <tbody key={group.reason}>
+                <tr>
+                  <th scope="colgroup" colSpan={5} className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-left">
+                    <span className="text-[0.8125rem] font-semibold text-slate-800">{group.reason}</span>
+                    <span className="ml-2 text-xs font-normal tabular-nums text-slate-500">{group.rows.length}</span>
+                  </th>
+                </tr>
+                {group.rows.map((row) => (
+                  <NudgeRow key={row.id} row={row} onDecide={decide} />
+                ))}
+              </tbody>
+            ))}
+          </table>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function NudgeCard({
+/** Rows grouped by why the coach is stuck, in the order a coach moves through them. */
+function groupByReason(rows: Nudge[]) {
+  const order = Object.keys(NUDGE_SECTION);
+  const groups = new Map<string, Nudge[]>();
+  for (const row of rows) groups.set(row.stuck_at, [...(groups.get(row.stuck_at) ?? []), row]);
+  const rank = (reason: string) => (order.includes(reason) ? order.indexOf(reason) : order.length);
+  return [...groups.entries()].sort(([a], [b]) => rank(a) - rank(b)).map(([reason, list]) => ({ reason, rows: list }));
+}
+
+function NudgeRow({
   row,
   onDecide,
 }: {
@@ -192,6 +260,8 @@ function NudgeCard({
   const [saving, setSaving] = useState<null | Action>(null);
   const editable = row.status === "queued" || row.status === "approved";
   const changed = text.trim() !== row.body.trim();
+  const goes = destination(row);
+  const name = row.coach_name || row.coach_slug || "Coach";
 
   const run = async (action: Action, days?: number) => {
     setSaving(action);
@@ -199,84 +269,204 @@ function NudgeCard({
     setSaving(null);
   };
 
+  const cell = "border-b border-slate-100 px-4 py-2.5 align-top";
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/admin/coaches/${row.coach_slug}`} className="font-medium text-slate-900 hover:underline">
-            {row.coach_name || row.coach_slug || "Coach"}
+    <tr className="group/row hover:bg-slate-50/60">
+      <td className={cell}>
+        <div className="flex items-center gap-2 pt-1">
+          <span
+            className={`h-2 w-2 shrink-0 rounded-full ${LEVEL_DOT[row.level]}`}
+            title={row.level === "red" ? "Red: stuck" : row.level === "amber" ? "Amber: slowing down" : "Green"}
+            aria-hidden
+          />
+          <Link href={`/admin/coaches/${row.coach_slug}`} className="truncate font-medium text-slate-900 hover:underline" title={row.next_step ? `Coach health says: ${row.next_step}` : undefined}>
+            {name}
           </Link>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${LEVEL_STYLE[row.level]}`}>{row.stuck_at}</span>
         </div>
-        <span className="text-xs text-slate-500">
-          {day(row.scan_date)}
-          {row.status !== "queued" ? ` · ${STATUS_LABEL[row.status]}` : ""}
-        </span>
-      </div>
-      {row.next_step ? <p className="mt-1 text-xs text-slate-500">Coach health says: {row.next_step}</p> : null}
-
-      {editable ? (
-        <textarea
-          id={`nudge-${row.id}`}
-          aria-label={`Nudge for ${row.coach_name}`}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={3}
-          className="mt-3 block w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm leading-relaxed text-slate-900 focus:border-slate-500 focus:outline-none"
-        />
-      ) : (
-        <p className="mt-3 whitespace-pre-wrap rounded-md bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-800">{row.body}</p>
-      )}
-
-      {row.status === "queued" ? (
-        <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-          <label className="mr-auto flex items-center gap-1.5 text-xs text-slate-500">
-            Pause this coach&apos;s nudges
-            <select
-              id={`snooze-${row.id}`}
-              value=""
+      </td>
+      <td className={cell}>
+        {editable ? (
+          <textarea
+            id={`nudge-${row.id}`}
+            aria-label={`Nudge for ${name}`}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={2}
+            className="-mx-2 block w-[calc(100%+1rem)] resize-none rounded-md border border-transparent bg-transparent px-2 py-1 text-sm leading-6 text-slate-800 [field-sizing:content] hover:border-slate-200 focus:border-slate-300 focus:bg-white focus:outline-none"
+          />
+        ) : (
+          <p className="whitespace-pre-wrap py-1 text-sm leading-6 text-slate-700">{row.body}</p>
+        )}
+      </td>
+      <td className={cell}>
+        {goes ? (
+          <Link
+            href={goes.href}
+            title={`${goes.label}, beside ${goes.section}`}
+            className="inline-flex max-w-full items-center gap-1 pt-1 text-slate-600 hover:text-slate-900"
+          >
+            <span className="truncate">{goes.label}</span>
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+          </Link>
+        ) : null}
+      </td>
+      <td className={`${cell} whitespace-nowrap pt-3.5 tabular-nums text-slate-500`}>{day(row.scan_date)}</td>
+      <td className={`${cell} text-right`}>
+        {row.status === "queued" ? (
+          <div className="flex items-center justify-end gap-0.5">
+            <PauseMenu name={name} disabled={saving != null} onPause={(days) => void run("snooze", days)} />
+            <button
+              type="button"
               disabled={saving != null}
-              onChange={(e) => {
-                const days = Number(e.target.value);
-                if (days) void run("snooze", days);
-              }}
-              className="rounded border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700"
+              onClick={() => void run("reject")}
+              aria-label={`Reject nudge for ${name}`}
+              title="Reject"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-rose-600 hover:bg-rose-50 disabled:opacity-40"
             >
-              <option value="">Choose…</option>
-              <option value="7">1 week</option>
-              <option value="14">2 weeks</option>
-              <option value="30">1 month</option>
-            </select>
-          </label>
-          <button
-            type="button"
-            disabled={saving != null}
-            onClick={() => void run("reject")}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            {saving === "reject" ? "Rejecting…" : "Reject"}
-          </button>
-          <button
-            type="button"
-            disabled={saving != null || !text.trim()}
-            onClick={() => void run("approve")}
-            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {saving === "approve" ? "Approving…" : changed ? "Approve with my edits" : "Approve"}
-          </button>
-        </div>
-      ) : row.status === "approved" && changed ? (
-        <div className="mt-3 flex justify-end">
-          <button
-            type="button"
-            disabled={saving != null}
-            onClick={() => void run("save")}
-            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-          >
+              {saving === "reject" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <X className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />}
+            </button>
+            <button
+              type="button"
+              disabled={saving != null || !text.trim()}
+              onClick={() => void run("approve")}
+              aria-label={changed ? `Approve nudge for ${name} with your edits` : `Approve nudge for ${name}`}
+              title={changed ? "Approve with your edits" : "Approve"}
+              className={`flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-40 ${
+                changed ? "bg-emerald-600 text-white hover:bg-emerald-700" : "text-emerald-600 hover:bg-emerald-50"
+              }`}
+            >
+              {saving === "approve" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-[18px] w-[18px]" strokeWidth={2.5} aria-hidden />}
+            </button>
+          </div>
+        ) : row.status === "approved" && changed ? (
+          <button type="button" disabled={saving != null} onClick={() => void run("save")} className={buttonClass("main", "small")}>
             {saving === "save" ? "Saving…" : "Save edits"}
           </button>
+        ) : (
+          <span className="inline-block pt-1 text-xs text-slate-500" title={row.status === "skipped" && row.note ? row.note : undefined}>
+            {STATUS_LABEL[row.status]}
+          </span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+/** Pause one coach's nudges for a week, two weeks or a month. */
+function PauseMenu({ name, disabled, onPause }: { name: string; disabled: boolean; onPause: (days: number) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className="relative"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={`Pause ${name}'s nudges`}
+        title="Pause this coach's nudges"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"
+      >
+        <Pause className="h-4 w-4" aria-hidden />
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-9 z-20 w-40 rounded-lg border border-slate-200 bg-white p-1 text-left shadow-lg">
+          <p className="px-2.5 pb-1 pt-1.5 text-xs text-slate-500">Pause nudges for</p>
+          {[
+            [7, "1 week"],
+            [14, "2 weeks"],
+            [30, "1 month"],
+          ].map(([days, label]) => (
+            <button
+              key={days}
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onPause(days as number);
+              }}
+              className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-100"
+            >
+              {label}
+            </button>
+          ))}
         </div>
       ) : null}
-    </article>
+    </div>
+  );
+}
+
+/** "How nudges work": who counts as stuck, what Ava says, where it posts, and the limits. */
+function NudgeRules() {
+  const example = { first: "Sam", invites_7d: 12, accept: "8%", interested: 4 };
+  const h = "text-sm font-semibold text-slate-900";
+  const li = "text-sm leading-6 text-slate-700";
+  return (
+    <div className="space-y-6">
+      <section>
+        <h3 className={h}>When Ava drafts one</h3>
+        <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
+          <li className={li}>Every morning at 6am, Ava checks every coach&apos;s health.</li>
+          <li className={li}>A coach marked red or amber gets one draft. Green coaches, and coaches whose nudges are paused, get none.</li>
+          <li className={li}>Nothing reaches a coach until someone at BCA approves it here.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3 className={h}>Who counts as stuck</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Checked in this order. A coach gets the first one that fits, so each coach only ever has one reason.
+        </p>
+        <div className="mt-2 overflow-x-auto rounded-lg border border-slate-200">
+          <table className="w-full min-w-[48rem] text-left text-sm">
+            <thead className="bg-slate-50 text-xs text-slate-500">
+              <tr>
+                <th scope="col" className="w-[13rem] px-3 py-2 font-medium">Reason</th>
+                <th scope="col" className="px-3 py-2 font-medium">When</th>
+                <th scope="col" className="w-[9rem] px-3 py-2 font-medium">Posts in</th>
+                <th scope="col" className="w-[22rem] px-3 py-2 font-medium">Ava says (for a coach called Sam)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {NUDGE_RULES.map((rule) => (
+                <tr key={rule.reason} className="border-t border-slate-100 align-top">
+                  <td className="px-3 py-2">
+                    <span className="flex items-center gap-2 font-medium text-slate-900">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${LEVEL_DOT[rule.level]}`} aria-hidden />
+                      {rule.reason}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-slate-700">{rule.when}</td>
+                  <td className="px-3 py-2 text-slate-700">{sectionByKey(nudgeSection(rule.reason))?.page.title ?? "About You"}</td>
+                  <td className="px-3 py-2 text-slate-600">{NUDGE_TEMPLATES[rule.reason]?.(example)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <section>
+          <h3 className={h}>While a draft waits</h3>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
+            <li className={li}>Still stuck on the same thing: the same draft keeps waiting. No new one each day.</li>
+            <li className={li}>Moved on, or now stuck on something else: the old draft is dropped, and a new one is drafted if needed.</li>
+            <li className={li}>Nudges paused for that coach: the draft is dropped.</li>
+          </ul>
+        </section>
+        <section>
+          <h3 className={h}>Once you approve it</h3>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
+            <li className={li}>Ava checks every hour and posts it in the chat on the page shown, signed as Ava.</li>
+            <li className={li}>She holds it for later if the coach has paused nudges, it&apos;s their quiet hours, or they had one in the last 24 hours.</li>
+            <li className={li}>It isn&apos;t emailed. The coach sees it next time they open the app, in that page&apos;s chat and their Inbox.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
   );
 }

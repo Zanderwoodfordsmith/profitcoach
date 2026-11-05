@@ -8,20 +8,38 @@ import {
 } from "@/lib/profitCoachAi/brandKnowledge";
 import { ARTIFACT_LABELS, RUBRIC_FILES } from "@/lib/evals/types";
 import { SECTION_SKILLS } from "@/lib/practiceKnowledge/skills";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-import { CODE_REFERENCES, loadCapabilities, parseFrontmatter } from "./context";
+import type { SkillAccess } from "./agentOverrides";
+import {
+  AVA_ALWAYS_FILES,
+  createHubSkills,
+  isRepoOnlyKnowledge,
+  knowledgeFileIds,
+  knowledgeUsers,
+  repoFileDate,
+  type AvaCreateSkill,
+  type AvaKnowledgeRow,
+} from "./avaKnowledge";
+import { CODE_REFERENCES, defaultSkillAccess, loadCapabilities, parseFrontmatter } from "./context";
 import { getAgentTool } from "./tools";
+
+export type { SkillAccess } from "./agentOverrides";
+export type { AvaCreateSkill, AvaFileUser, AvaKnowledgeGroup, AvaKnowledgeRow } from "./avaKnowledge";
 
 const CONTENT_ROOT = path.join(process.cwd(), "content");
 
 export type AvaFileKind =
   | "identity"
   | "router"
+  | "voice"
   | "capability"
   | "reference"
   | "practice-skill"
   | "brand"
-  | "code";
+  | "code"
+  /** Knowledge files only the Knowledge tab lists (the old views leave them out). */
+  | "knowledge";
 
 export type AvaFileRecord = {
   id: string;
@@ -46,6 +64,11 @@ export type AvaCapabilityRecord = {
   group: string;
   fileId: string;
   practiceSkillIds: string[];
+  /** Who may open it now (Admin → Ava → Skills), and the default from its frontmatter. */
+  access: SkillAccess;
+  defaultAccess: SkillAccess;
+  /** False when its frontmatter modes are admin only: coaches can never get it. */
+  coachAllowed: boolean;
 };
 
 export type AvaLayerRecord = {
@@ -69,6 +92,10 @@ export type AvaCatalog = {
   groups: AvaSkillGroup[];
   files: AvaFileRecord[];
   capabilities: AvaCapabilityRecord[];
+  /** The Knowledge tab: every knowledge file, by when it is read. */
+  knowledge: AvaKnowledgeRow[];
+  /** Create hub skills, read-only here; edited in Brand → Core brain. */
+  createHub: AvaCreateSkill[];
 };
 
 const SKILL_GROUPS: AvaSkillGroup[] = [
@@ -99,7 +126,7 @@ const SKILL_GROUPS: AvaSkillGroup[] = [
   {
     id: "numbers",
     title: "Numbers",
-    hint: "Find the one stage holding them back most, from their own numbers.",
+    hint: "Their plan to an income goal, and the one constraint in their numbers, with what to do more of.",
     capabilityIds: ["constraint"],
   },
   {
@@ -148,7 +175,28 @@ const PRACTICE_LABELS: Record<string, string> = {
   "nurture.md": "Nurture",
   "replies.md": "Replies",
   "ninety-days.md": "90-day plan",
+  "linkedin-profile/about.md": "LinkedIn profile: About",
+  "linkedin-profile/banner.md": "LinkedIn profile: banner",
+  "linkedin-profile/experience.md": "LinkedIn profile: experience",
+  "linkedin-profile/featured.md": "LinkedIn profile: featured",
+  "linkedin-profile/headline.md": "LinkedIn profile: headline",
 };
+
+const REFERENCE_LABELS: Record<string, string> = {
+  "phased-pitch.md": "Phased pitch",
+};
+
+/** A readable name for a knowledge file that has no label of its own. */
+function fallbackLabel(id: string): string {
+  const name = id.split("/").pop()?.replace(/\.md$/, "") ?? id;
+  const words = name.replace(/[-_]+/g, " ").trim();
+  return words ? words[0].toUpperCase() + words.slice(1) : id;
+}
+
+/** Old brand descriptions use em dashes; the new view keeps to the writing rules. */
+function plain(text: string): string {
+  return text.replace(/\s*\u2014\s*/g, ", ");
+}
 
 const AVA_BRAND_FILES = ["writing-rules.md", "brand-voice.md"] as const;
 
@@ -216,15 +264,18 @@ export function brandFileFromAvaId(id: string): string | null {
 export function buildAvaCatalog(opts: {
   overrides: Record<string, string>;
   updatedAt: Record<string, string>;
+  /** Saved Skills settings. A skill with none uses its frontmatter default. */
+  skillAccess?: Record<string, SkillAccess>;
 }): AvaCatalog {
   const { overrides, updatedAt } = opts;
+  const skillAccess = opts.skillAccess ?? {};
   const files: AvaFileRecord[] = [];
 
   files.push(
     fileRecord(
       {
         id: "agent/AGENT.md",
-        label: "Identity",
+        label: "Who Ava is",
         description: "Who she is, how she talks, whose facts she may use. Always loaded.",
         kind: "identity",
         editable: true,
@@ -243,6 +294,19 @@ export function buildAvaCatalog(opts: {
         editable: true,
         sharedWithBrand: false,
         repo: readRepo("agent/ROUTER.md"),
+      },
+      overrides,
+      updatedAt
+    ),
+    fileRecord(
+      {
+        id: "agent/VOICE.md",
+        label: "Voice",
+        description: "How Ava sounds in every chat. Always loaded.",
+        kind: "voice",
+        editable: true,
+        sharedWithBrand: false,
+        repo: readRepo("agent/VOICE.md"),
       },
       overrides,
       updatedAt
@@ -283,6 +347,9 @@ export function buildAvaCatalog(opts: {
       modes: cap.modes,
       group: groupForCapability(cap.id, cap.group),
       fileId,
+      access: skillAccess[cap.id] ?? defaultSkillAccess(cap),
+      defaultAccess: defaultSkillAccess(cap),
+      coachAllowed: cap.modes.includes("coach"),
       practiceSkillIds:
         cap.id === "blueprint-writing"
           ? practiceSkillIds().filter((id) => id !== "practice-skills/_shared.md")
@@ -376,7 +443,7 @@ export function buildAvaCatalog(opts: {
         {
           id: `ai-knowledge/${name}`,
           label: meta?.label ?? name,
-          description: `${meta?.description ?? "Brand canon."} Shared with Brand → Core brain.`,
+          description: `${plain(meta?.description ?? "Brand canon.")} Shared with Brand, Core brain.`,
           kind: "brand",
           editable: true,
           sharedWithBrand: true,
@@ -391,7 +458,8 @@ export function buildAvaCatalog(opts: {
   for (const [codeId, entry] of Object.entries(CODE_REFERENCES)) {
     files.push({
       id: `code:${codeId}`,
-      label: entry.name,
+      // The name carries a note for Ava in brackets; admin only needs the name.
+      label: entry.name.replace(/\s*\(.*\)\s*$/, ""),
       description: "Lives in code, not a Markdown file. Read-only here.",
       kind: "code",
       editable: false,
@@ -402,6 +470,67 @@ export function buildAvaCatalog(opts: {
       missing: false,
     });
   }
+
+  // Knowledge files the old views never listed, so the Knowledge tab can open every one.
+  const known = new Set(files.map((f) => f.id));
+  for (const id of knowledgeFileIds()) {
+    if (known.has(id)) continue;
+    const brandFile = brandFileFromAvaId(id);
+    const brandMeta = brandFile ? BRAND_KNOWLEDGE_FILES.find((f) => f.file === brandFile) : undefined;
+    const name = id.split("/").slice(id.startsWith("agent/references/") ? 2 : 1).join("/");
+    const repoOnly = isRepoOnlyKnowledge(id);
+    files.push(
+      fileRecord(
+        {
+          id,
+          label:
+            brandMeta?.label ??
+            (id.startsWith("practice-skills/") ? PRACTICE_LABELS[name] : undefined) ??
+            (id.startsWith("agent/references/") ? REFERENCE_LABELS[name] : undefined) ??
+            fallbackLabel(id),
+          description: repoOnly
+            ? "Read straight from the repo file, so an edit here would not reach it. Change it in code."
+            : brandMeta
+              ? plain(brandMeta.description)
+              : "",
+          kind: "knowledge",
+          editable: isAvaEditableFile(id) && !repoOnly,
+          sharedWithBrand: Boolean(brandMeta),
+          repo: brandFile ? readBrandKnowledgeRepoFile(brandFile) : readRepo(id),
+        },
+        overrides,
+        updatedAt
+      )
+    );
+  }
+
+  const users = knowledgeUsers(capabilities);
+  const byId = new Map(files.map((f) => [f.id, f]));
+  const knowledgeIds = [
+    ...AVA_ALWAYS_FILES,
+    ...knowledgeFileIds(),
+    ...Object.keys(CODE_REFERENCES).map((id) => `code:${id}`),
+  ];
+  const knowledge: AvaKnowledgeRow[] = [...new Set(knowledgeIds)].flatMap((id) => {
+    const file = byId.get(id);
+    if (!file) return [];
+    const usedBy = users.get(id) ?? [];
+    const always = (AVA_ALWAYS_FILES as readonly string[]).includes(id);
+    return [
+      {
+        id,
+        label: file.label,
+        group: always ? "every" : usedBy.length ? "skill" : "unused",
+        chars: file.content.length,
+        tokens: Math.round(file.content.length / 4),
+        editedAt: file.overridden ? file.updated_at : null,
+        repoAt: repoFileDate(id),
+        usedBy,
+        editable: file.editable,
+        missing: file.missing,
+      } satisfies AvaKnowledgeRow,
+    ];
+  });
 
   const layers: AvaLayerRecord[] = [
     {
@@ -448,6 +577,37 @@ export function buildAvaCatalog(opts: {
     },
   ];
 
-  return { layers, groups: SKILL_GROUPS, files, capabilities };
+  return { layers, groups: SKILL_GROUPS, files, capabilities, knowledge, createHub: createHubSkills() };
+}
+
+/** The catalog with every admin edit and Skills setting read from the database. */
+export async function loadAvaCatalog(): Promise<AvaCatalog> {
+  const overrides: Record<string, string> = {};
+  const updatedAt: Record<string, string> = {};
+  const skillAccess: Record<string, SkillAccess> = {};
+
+  const [{ data: agentRows }, { data: brandRows }, { data: accessRows }] = await Promise.all([
+    supabaseAdmin.from("agent_context_files").select("file, content, updated_at"),
+    supabaseAdmin.from("brand_knowledge_files").select("file, content, updated_at"),
+    supabaseAdmin.from("ava_skill_settings").select("skill_id, access"),
+  ]);
+  for (const row of agentRows ?? []) {
+    if (typeof row.file !== "string" || typeof row.content !== "string") continue;
+    overrides[row.file] = row.content;
+    if (typeof row.updated_at === "string") updatedAt[row.file] = row.updated_at;
+  }
+  for (const row of brandRows ?? []) {
+    if (typeof row.file !== "string" || typeof row.content !== "string") continue;
+    const id = `ai-knowledge/${row.file}`;
+    overrides[id] = row.content;
+    if (typeof row.updated_at === "string") updatedAt[id] = row.updated_at;
+  }
+  for (const row of accessRows ?? []) {
+    if (typeof row.skill_id === "string" && typeof row.access === "string") {
+      skillAccess[row.skill_id] = row.access as SkillAccess;
+    }
+  }
+
+  return buildAvaCatalog({ overrides, updatedAt, skillAccess });
 }
 

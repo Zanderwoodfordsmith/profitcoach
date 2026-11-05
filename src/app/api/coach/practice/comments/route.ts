@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
-import { sectionByKey } from "@/lib/practiceKnowledge/blueprint";
+import { isCommentKey } from "@/lib/practiceKnowledge/pageChat";
 import { COMMENT_MAX_LENGTH } from "@/lib/practiceKnowledge/sectionCommentTypes";
 import {
   addSectionComment,
@@ -13,6 +13,8 @@ import {
   listCommentReads,
   listSectionComments,
 } from "@/lib/practiceKnowledge/sectionComments";
+import { commentMediaFromRequest, emailCoachAboutComment } from "@/lib/practiceKnowledge/commentMessaging";
+import { listPageMoves } from "@/lib/practiceKnowledge/pageMoves";
 
 const COMMENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -36,12 +38,24 @@ export async function GET(request: Request) {
   const a = await auth(request);
   if ("error" in a) return a.error;
   try {
-    const [comments, reads, people] = await Promise.all([
+    const [comments, reads, coachReads, people, pageMoves] = await Promise.all([
       listSectionComments(a.coachId),
       listCommentReads(a.coachId, a.side),
+      // BCA viewing as the coach also gets the coach's reads, so Support can show what's waiting for them.
+      a.side === "bca" ? listCommentReads(a.coachId, "coach") : Promise.resolve(null),
       listCommentPeople(a.coachId),
+      // A quiet line in each page's chat when the page moves (5 Nov).
+      listPageMoves(a.coachId).catch(() => []),
     ]);
-    return NextResponse.json({ side: a.side, viewer_id: a.callerId, comments, reads, people });
+    return NextResponse.json({
+      side: a.side,
+      viewer_id: a.callerId,
+      comments,
+      reads,
+      coach_reads: coachReads,
+      people,
+      page_moves: pageMoves,
+    });
   } catch (err) {
     console.error("practice comments GET:", err instanceof Error ? err.message : "failed");
     return NextResponse.json({ error: "Could not load comments." }, { status: 500 });
@@ -55,9 +69,12 @@ export async function POST(request: Request) {
   const rec = ((await request.json().catch(() => null)) ?? {}) as Record<string, unknown>;
   const sectionKey = typeof rec.section_key === "string" ? rec.section_key.trim() : "";
   const body = typeof rec.body === "string" ? rec.body.trim() : "";
-  if (!sectionByKey(sectionKey)) {
+  if (!isCommentKey(sectionKey)) {
     return NextResponse.json({ error: "Unknown section." }, { status: 400 });
   }
+  // Images, files, voice notes and video, uploaded by the composer first.
+  const media = commentMediaFromRequest(rec.media);
+  if ("error" in media) return NextResponse.json({ error: media.error }, { status: 400 });
   if (!body) return NextResponse.json({ error: "Write something first." }, { status: 400 });
   if (body.length > COMMENT_MAX_LENGTH) {
     return NextResponse.json({ error: "That comment is too long." }, { status: 400 });
@@ -70,7 +87,20 @@ export async function POST(request: Request) {
       authorId: a.callerId,
       side: a.side,
       body,
+      media,
     });
+    // BCA can also email the coach about it (5 Nov). The message is saved either way.
+    if (a.side === "bca" && rec.email === true) {
+      const mail = await emailCoachAboutComment({
+        coachId: a.coachId,
+        sectionKey,
+        authorId: a.callerId,
+        body,
+        media,
+        request,
+      }).catch((err: unknown) => ({ ok: false as const, error: err instanceof Error ? err.message : "failed" }));
+      return NextResponse.json(mail.ok ? { comment, emailed: mail.emailed } : { comment, email_error: mail.error });
+    }
     return NextResponse.json({ comment });
   } catch (err) {
     console.error("practice comments POST:", err instanceof Error ? err.message : "failed");

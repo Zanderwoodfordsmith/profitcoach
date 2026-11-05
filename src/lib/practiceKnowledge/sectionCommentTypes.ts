@@ -3,6 +3,8 @@
  * One thread per section ("page:id"). The coach is one side; BCA and Ava are the other.
  */
 
+import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
+
 export type CommentAuthorSide = "coach" | "bca" | "ava";
 export type CommentReaderSide = "coach" | "bca";
 
@@ -17,9 +19,23 @@ export type SectionComment = {
   assignee_name: string | null;
   assignee_avatar_url: string | null;
   body: string;
+  /** Images, files, voice notes and video, as on support replies (5 Nov). */
+  media: CommunityPostMediaItem[];
   created_at: string;
   /** Set when the author edits the wording. */
   updated_at: string | null;
+};
+
+/** A message BCA has written to send later. Only BCA sees these. */
+export type ScheduledComment = {
+  id: string;
+  section_key: string;
+  body: string;
+  media: CommunityPostMediaItem[];
+  email_notify: boolean;
+  scheduled_for: string;
+  status: "scheduled" | "failed";
+  last_error: string | null;
 };
 
 /** Someone a comment can be handed to: the coach on this blueprint, Pam, or Zander. */

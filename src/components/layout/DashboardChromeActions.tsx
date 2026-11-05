@@ -1,12 +1,14 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+
+import { Suspense } from "react";
 
 import { AvaHalo } from "@/components/ava/AvaHalo";
 import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { DashboardTopActions } from "./DashboardTopActions";
 import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
+import { ScoreboardVersionSwitch } from "@/components/scoreboard/ScoreboardVersionSwitch";
 import { useDashboardProfile } from "./useDashboardProfile";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 
@@ -33,6 +35,12 @@ export function DashboardChromeActions({
     <div
       className={`flex max-w-full items-center justify-end gap-1 sm:gap-2 ${className}`}
     >
+      {/* Admins only, and not while viewing as a coach: the Scoreboard is released to coaches. */}
+      {profile?.role === "admin" && !(chrome.variant === "coach" && impersonatingCoachId) ? (
+        <Suspense fallback={null}>
+          <ScoreboardVersionSwitch />
+        </Suspense>
+      ) : null}
       <SearchTopBarTrigger className="shrink-0" />
       <DashboardTopActions
         variant={chrome.variant}
@@ -58,12 +66,8 @@ export function DashboardChromeActions({
               : "bg-transparent text-slate-700 hover:bg-slate-50"
           }`}
         >
-          {/* The Halo is admin-only until Ava's new look opens to coaches. */}
-          {profile?.role === "admin" && !(chrome.variant === "coach" && impersonatingCoachId) ? (
-            <AvaHalo size={24} state={chrome.aiPanelOpen ? "listening" : "idle"} />
-          ) : (
-            <Sparkles className="h-6 w-6" />
-          )}
+          {/* Her Halo for everyone (4 Nov: Ava opens from here for coaches too). */}
+          <AvaHalo size={24} state={chrome.aiPanelOpen ? "listening" : "idle"} />
         </button>
       ) : null}
       <button

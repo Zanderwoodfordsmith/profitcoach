@@ -6,22 +6,19 @@ import { AvaHalo } from "@/components/ava/AvaHalo";
 
 /**
  * Ava at the top of the sidebar, opening her own page. The same item in the
- * coach and admin sidebars. Admin-only until she opens to coaches.
+ * coach and admin sidebars, for everyone since 5 Nov.
  */
 export function SidebarAvaItem({
   collapsed,
-  isAdmin,
   href,
   active,
   linkClass,
 }: {
   collapsed: boolean;
-  isAdmin: boolean;
   href: string;
   active: boolean;
   linkClass: (active: boolean) => string;
 }) {
-  if (!isAdmin) return null;
   return (
     <li>
       <Link

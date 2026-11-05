@@ -1,3 +1,4 @@
+import { recordPageMoves } from "./pageMoves";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { loadCoachAiContextRow } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import { sanitizeBuiltSections } from "./blocks";
@@ -170,6 +171,7 @@ export async function patchPracticeKnowledge(opts: {
   if (error || !data) {
     throw new Error(error?.message ?? "Could not update practice knowledge.");
   }
+  await recordPageMoves(opts.coachId, current, mapKnowledgeRow(data as Record<string, unknown>));
 
   const prevUrl = textValue(current.payload.identity.linkedin_url);
   const nextUrl = textValue(payload.identity.linkedin_url);
@@ -267,7 +269,9 @@ export async function saveBuiltSection(opts: {
   if (error || !data) {
     throw new Error(error?.message ?? "Could not save the section.");
   }
-  return mapKnowledgeRow(data as Record<string, unknown>);
+  const saved = mapKnowledgeRow(data as Record<string, unknown>);
+  await recordPageMoves(opts.coachId, current, saved);
+  return saved;
 }
 
 export async function syncPracticeToBrain(coachId: string): Promise<void> {

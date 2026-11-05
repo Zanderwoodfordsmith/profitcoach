@@ -94,7 +94,7 @@ import { communityPostPath } from "@/lib/communityPostSlug";
 import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
 import {
   CommentAttachButton,
-  CommentImageComposer,
+  CommentFileDrop,
   CommentImagePreviews,
   clearPendingCommentImages,
   type PendingCommentImage,
@@ -102,7 +102,7 @@ import {
 import { CommentMediaDisplay } from "@/components/community/CommentMediaDisplay";
 import {
   parseStoredCommunityCommentMedia,
-  uploadCommunityCommentImageFile,
+  uploadCommunityCommentFile,
   type CommunityCommentMediaItem,
 } from "@/lib/communityCommentMedia";
 import { buttonClass } from "@/components/ui/Button";
@@ -168,7 +168,7 @@ async function uploadPendingCommentImages(
 ): Promise<CommunityCommentMediaItem[] | { error: string }> {
   const uploaded: CommunityCommentMediaItem[] = [];
   for (const p of pending) {
-    const up = await uploadCommunityCommentImageFile(p.file);
+    const up = await uploadCommunityCommentFile(p.file);
     if ("error" in up) return up;
     uploaded.push(up.media);
   }
@@ -2462,7 +2462,18 @@ export function PostDetailModal({
                           </div>
 
                           {replyOpenFor === c.id ? (
-                            <div className="mt-2 space-y-2">
+                            <CommentFileDrop
+                              pending={replyPendingImages[c.id] ?? []}
+                              onChange={(next) =>
+                                setReplyPendingImages((prev) => ({
+                                  ...prev,
+                                  [c.id]: next,
+                                }))
+                              }
+                              disabled={submitting}
+                              onError={setActionError}
+                              className="mt-2 space-y-2"
+                            >
                               <MentionTextarea
                                 inlineFormatting
                                 formatRef={replyEditorRef}
@@ -2488,7 +2499,7 @@ export function PostDetailModal({
                                   body: replyDrafts[c.id] ?? "",
                                 }}
                               />
-                              <CommentImageComposer
+                              <CommentImagePreviews
                                 pending={replyPendingImages[c.id] ?? []}
                                 onChange={(next) =>
                                   setReplyPendingImages((prev) => ({
@@ -2497,7 +2508,6 @@ export function PostDetailModal({
                                   }))
                                 }
                                 disabled={submitting}
-                                onError={setActionError}
                               />
                               <div className="flex items-center gap-2">
                                 <button
@@ -2530,13 +2540,27 @@ export function PostDetailModal({
                                 >
                                   Cancel
                                 </button>
-                                <CommentFormatButtons
-                                  editorRef={replyEditorRef}
-                                  size="sm"
-                                  className="ml-auto"
-                                />
+                                <div className="ml-auto flex items-center">
+                                  <CommentFormatButtons
+                                    editorRef={replyEditorRef}
+                                    size="sm"
+                                  />
+                                  <CommentAttachButton
+                                    anyFile
+                                    pending={replyPendingImages[c.id] ?? []}
+                                    onChange={(next) =>
+                                      setReplyPendingImages((prev) => ({
+                                        ...prev,
+                                        [c.id]: next,
+                                      }))
+                                    }
+                                    disabled={submitting}
+                                    onError={setActionError}
+                                    size="sm"
+                                  />
+                                </div>
                               </div>
-                            </div>
+                            </CommentFileDrop>
                           ) : null}
 
                           {replies.length > 0 ? (
@@ -2735,7 +2759,18 @@ export function PostDetailModal({
                                         </div>
 
                                         {replyOpenFor === r.id ? (
-                                          <div className="mt-2 space-y-2">
+                                          <CommentFileDrop
+                                            pending={replyPendingImages[r.id] ?? []}
+                                            onChange={(next) =>
+                                              setReplyPendingImages((prev) => ({
+                                                ...prev,
+                                                [r.id]: next,
+                                              }))
+                                            }
+                                            disabled={submitting}
+                                            onError={setActionError}
+                                            className="mt-2 space-y-2"
+                                          >
                                             <MentionTextarea
                                               inlineFormatting
                                               formatRef={replyEditorRef}
@@ -2761,7 +2796,7 @@ export function PostDetailModal({
                                                 body: replyDrafts[r.id] ?? "",
                                               }}
                                             />
-                                            <CommentImageComposer
+                                            <CommentImagePreviews
                                               pending={replyPendingImages[r.id] ?? []}
                                               onChange={(next) =>
                                                 setReplyPendingImages((prev) => ({
@@ -2770,7 +2805,6 @@ export function PostDetailModal({
                                                 }))
                                               }
                                               disabled={submitting}
-                                              onError={setActionError}
                                             />
                                             <div className="flex items-center gap-2">
                                               <button
@@ -2805,13 +2839,27 @@ export function PostDetailModal({
                                               >
                                                 Cancel
                                               </button>
-                                              <CommentFormatButtons
-                                                editorRef={replyEditorRef}
-                                                size="sm"
-                                                className="ml-auto"
-                                              />
+                                              <div className="ml-auto flex items-center">
+                                                <CommentFormatButtons
+                                                  editorRef={replyEditorRef}
+                                                  size="sm"
+                                                />
+                                                <CommentAttachButton
+                                                  anyFile
+                                                  pending={replyPendingImages[r.id] ?? []}
+                                                  onChange={(next) =>
+                                                    setReplyPendingImages((prev) => ({
+                                                      ...prev,
+                                                      [r.id]: next,
+                                                    }))
+                                                  }
+                                                  disabled={submitting}
+                                                  onError={setActionError}
+                                                  size="sm"
+                                                />
+                                              </div>
                                             </div>
-                                          </div>
+                                          </CommentFileDrop>
                                         ) : null}
                                       </div>
                                     </div>
@@ -2830,7 +2878,13 @@ export function PostDetailModal({
           </div>
         </div>
         {!editing ? (
-          <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 sm:px-8">
+          <CommentFileDrop
+            pending={topCommentPendingImages}
+            onChange={setTopCommentPendingImages}
+            disabled={submitting}
+            onError={setActionError}
+            className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 sm:px-8"
+          >
             <div className="flex items-end gap-3">
               {composerProfile?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -2879,10 +2933,20 @@ export function PostDetailModal({
                         className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent px-3.5 py-2 text-read leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
                       />
                       <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-2 py-1.5">
-                        <CommentFormatButtons
-                          editorRef={topCommentEditorRef}
-                          className="mr-auto"
-                        />
+                        <div className="mr-auto flex items-center">
+                          <CommentFormatButtons editorRef={topCommentEditorRef} />
+                          <CommentAttachButton
+                            anyFile
+                            pending={topCommentPendingImages}
+                            onChange={setTopCommentPendingImages}
+                            disabled={submitting}
+                            onError={setActionError}
+                            onAttachInteract={() =>
+                              setCommentComposerFocused(true)
+                            }
+                            size="md"
+                          />
+                        </div>
                         {showCommentComposerActions ? (
                           <>
                             <button
@@ -2913,16 +2977,6 @@ export function PostDetailModal({
                             </button>
                           </>
                         ) : null}
-                        <CommentAttachButton
-                          pending={topCommentPendingImages}
-                          onChange={setTopCommentPendingImages}
-                          disabled={submitting}
-                          onError={setActionError}
-                          onAttachInteract={() =>
-                            setCommentComposerFocused(true)
-                          }
-                          size="md"
-                        />
                         {isEditorAdmin ? (
                           <ReplyCopilotButton
                             position="relative shrink-0"
@@ -2947,6 +3001,7 @@ export function PostDetailModal({
                       />
                       <div className="pointer-events-none absolute inset-y-0 right-1.5 flex items-center gap-1">
                         <CommentAttachButton
+                          anyFile
                           pending={topCommentPendingImages}
                           onChange={setTopCommentPendingImages}
                           disabled={submitting}
@@ -2985,7 +3040,7 @@ export function PostDetailModal({
                 ) : null}
               </div>
             </div>
-          </div>
+          </CommentFileDrop>
         ) : null}
         </div>
       </div>

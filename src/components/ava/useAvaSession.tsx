@@ -1,22 +1,25 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useAgentConversation, type AgentChatSummary } from "@/components/agent/useAgentConversation";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import type { AgentCoach, AgentMode } from "@/lib/agent/types";
+import type { AgentCoach, AgentMode, AgentShow } from "@/lib/agent/types";
 import { deriveAiScreenContext } from "@/lib/profitCoachAi/screenContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 import type { AvaStarterSpec } from "./AvaChat";
+import { avaPageHandlers, bumpAvaTurns, useAvaPageContext } from "./avaPageLink";
 
 /**
- * One Ava conversation outside the Blueprint: who she is working for, the
- * chat itself, past chats, voice, and what she offers here. The layout holds
- * one for the whole app, so the side panel and Ava's own page share it: open
- * her full page mid-chat and the chat carries on.
+ * The app's one Ava conversation (4 Nov: the Blueprint too): who she is
+ * working for, the chat itself, past chats, voice, and what she offers here.
+ * The layout holds one for the whole app, so the panel and Ava's own page
+ * share it: open her full page mid-chat, or follow a link from the Blueprint
+ * to Campaigns, and the chat carries on. A page that registers itself
+ * (avaPage) tells her where she is and whose Blueprint it is.
  */
 
 /**
@@ -90,6 +93,7 @@ function useAvaSessionState(active: boolean) {
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
   const { profile } = useDashboardProfile();
+  const page = useAvaPageContext();
   const screen = useMemo(() => deriveAiScreenContext(pathname), [pathname]);
   const [agent, setAgent] = useState<{
     mode: AgentMode;
@@ -107,17 +111,43 @@ function useAvaSessionState(active: boolean) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${session.access_token}`,
     };
-    if (impersonatingCoachId) headers["x-impersonate-coach-id"] = impersonatingCoachId;
+    // BCA on a coach's Blueprint: Ava works on that coach (only admins' header is read).
+    const coachId = page?.coach?.id ?? impersonatingCoachId;
+    if (coachId) headers["x-impersonate-coach-id"] = coachId;
     return headers;
-  }, [impersonatingCoachId]);
+  }, [impersonatingCoachId, page?.coach?.id]);
 
-  const refresh = useCallback(() => router.refresh(), [router]);
+  const refresh = useCallback(() => {
+    router.refresh();
+    avaPageHandlers().onWrote?.();
+  }, [router]);
+  const showOnPage = useCallback((show: AgentShow) => avaPageHandlers().onShow?.(show), []);
   const convo = useAgentConversation({
     authHeaders,
-    screenPath: pathname,
+    screenPath: page?.screenPath ?? pathname,
     defaultCoach: agent?.coach ?? null,
     onWrote: refresh,
+    // On the Blueprint she moves the document; elsewhere she leaves a link.
+    onShow: page ? showOnPage : undefined,
   });
+
+  // Each finished turn: BCA's waiting work on the page loads again.
+  const wasStreaming = useRef(false);
+  useEffect(() => {
+    if (wasStreaming.current && !convo.streaming) bumpAvaTurns();
+    wasStreaming.current = convo.streaming;
+  }, [convo.streaming]);
+
+  // BCA opened another coach's Blueprint: a chat about the last coach stays in History, a new one starts.
+  // Only on moving to another coach, so an older chat opened from History stays open.
+  const { chatId, coach: chatCoach, newChat } = convo;
+  const pageCoachId = page?.coach?.id ?? null;
+  const lastPageCoach = useRef(pageCoachId);
+  useEffect(() => {
+    if (lastPageCoach.current === pageCoachId) return;
+    lastPageCoach.current = pageCoachId;
+    if (agent?.mode === "admin" && pageCoachId && chatId && chatCoach && chatCoach.id !== pageCoachId) newChat();
+  }, [agent?.mode, pageCoachId, chatId, chatCoach, newChat]);
 
   useEffect(() => {
     if (!active) return;
@@ -140,12 +170,15 @@ function useAvaSessionState(active: boolean) {
     };
   }, [active, authHeaders]);
 
+  const historyCoachId = agent?.mode === "admin" ? (page?.coach?.id ?? null) : null;
   const loadChats = useCallback(() => {
     let live = true;
     void (async () => {
       const headers = await authHeaders();
       if (!headers) return;
-      const res = await fetch("/api/agent/chats", { headers }).catch(() => null);
+      // BCA on a coach's Blueprint: every chat about that coach, theirs marked Coach.
+      const forCoach = historyCoachId ? `?coach=${encodeURIComponent(historyCoachId)}` : "";
+      const res = await fetch(`/api/agent/chats${forCoach}`, { headers }).catch(() => null);
       const body = res?.ok
         ? ((await res.json().catch(() => null)) as {
             chats?: AgentChatSummary[];
@@ -156,7 +189,39 @@ function useAvaSessionState(active: boolean) {
     return () => {
       live = false;
     };
-  }, [authHeaders]);
+  }, [authHeaders, historyCoachId]);
+
+  /** Pin, unpin or rename one of your chats, then refresh the list. */
+  const updateChat = useCallback(
+    async (id: string, change: { title?: string; pinned?: boolean }) => {
+      const headers = await authHeaders();
+      if (!headers) return false;
+      const res = await fetch(`/api/agent/chats/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(change),
+      }).catch(() => null);
+      if (!res?.ok) return false;
+      if (change.title && convo.chatId === id) convo.setTitle(change.title);
+      loadChats();
+      return true;
+    },
+    [authHeaders, convo, loadChats],
+  );
+
+  /** Delete one of your chats; if it is the open one, start a new chat. */
+  const deleteChat = useCallback(
+    async (id: string) => {
+      const headers = await authHeaders();
+      if (!headers) return false;
+      const res = await fetch(`/api/agent/chats/${encodeURIComponent(id)}`, { method: "DELETE", headers }).catch(() => null);
+      if (!res?.ok) return false;
+      if (convo.chatId === id) convo.newChat();
+      loadChats();
+      return true;
+    },
+    [authHeaders, convo, loadChats],
+  );
 
   // Fetched again whenever a conversation starts or gets its title.
   useEffect(() => (active ? loadChats() : undefined), [active, loadChats, convo.chatId, convo.title]);
@@ -187,6 +252,14 @@ function useAvaSessionState(active: boolean) {
 
   const send = convo.send;
   const starters = useMemo<AvaStarterSpec[]>(() => {
+    if (page?.starters.length) {
+      return page.starters.map((starter) => ({
+        key: starter.key,
+        label: starter.label,
+        primary: starter.primary,
+        onPick: () => (starter.call ? avaPageHandlers().onCall?.() : starter.prompt ? void send(starter.prompt) : undefined),
+      }));
+    }
     const here = pageStarter(pathname);
     const prompts = [...(here ? [here] : []), ...STARTERS.filter((prompt) => prompt !== here)].slice(0, 4);
     return prompts.map((prompt, i) => ({
@@ -195,7 +268,7 @@ function useAvaSessionState(active: boolean) {
       primary: i === 0,
       onPick: () => void send(prompt),
     }));
-  }, [send, pathname]);
+  }, [send, pathname, page]);
 
   const moreIdeas = useMemo(
     () =>
@@ -212,14 +285,19 @@ function useAvaSessionState(active: boolean) {
     convo,
     chats,
     loadChats,
+    updateChat,
+    deleteChat,
     transcribe,
     starters,
     subtitle,
     admin,
     first,
-    greeting: first ? `Hi ${first}, I'm Ava` : "Hi, I'm Ava",
+    greeting: page?.greeting ?? (first ? `Hi ${first}, I'm Ava` : "Hi, I'm Ava"),
     intro:
+      page?.intro ??
       "I find prospects, build lists, set up campaigns and write your messages from your Blueprint. Anything that sends, spends money or removes people waits for your OK.",
+    /** BCA on a coach's Blueprint page: her panel offers the slot for waiting work. */
+    bcaWork: Boolean(page?.bcaWork),
     placeholder: "Ask Ava, or tell her what to do",
     draft,
     setDraft,

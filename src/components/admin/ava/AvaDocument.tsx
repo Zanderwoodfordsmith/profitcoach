@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { History, Loader2, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -90,6 +90,157 @@ async function authHeaders(): Promise<Record<string, string> | null> {
   return headers;
 }
 
+type Version = {
+  id: number;
+  content: string;
+  saved_at: string;
+  saved_by: string | null;
+  saved_by_name: string | null;
+};
+
+type HistoryData = {
+  live: { saved_at: string; saved_by_name: string } | null;
+  versions: Version[];
+};
+
+function when(iso: string): string {
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function versionName(v: Version): string {
+  return v.saved_by_name ? `${v.saved_by_name}, ${when(v.saved_at)}` : "The repo file, before the first edit";
+}
+
+/** The last saves of a file, newest first, each with Restore. Restoring saves it back, so it goes into the history too. */
+function FileHistory({
+  file,
+  reloadKey,
+  onCatalog,
+  onStatus,
+}: {
+  file: AvaFileRecord;
+  reloadKey: number;
+  onCatalog: (catalog: AvaCatalog) => void;
+  onStatus: (status: string) => void;
+}) {
+  const [data, setData] = useState<HistoryData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<number | null>(null);
+  const [restoring, setRestoring] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch(`/api/admin/ava/history?file=${encodeURIComponent(file.id)}`, { headers });
+    const body = (await res.json().catch(() => null)) as (HistoryData & { error?: string }) | null;
+    if (!res.ok || !body?.versions) {
+      setError(body?.error ?? "Could not load the history.");
+      return;
+    }
+    setError(null);
+    setData(body);
+  }, [file.id]);
+
+  useEffect(() => {
+    void load();
+  }, [load, reloadKey]);
+
+  async function restore(v: Version) {
+    if (restoring !== null) return;
+    if (!window.confirm(`Restore the version from ${versionName(v)}? What is live now is kept in the history.`)) return;
+    setRestoring(v.id);
+    try {
+      const headers = await authHeaders();
+      if (!headers) return;
+      const res = await fetch("/api/admin/ava/history", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ file: file.id, version: v.id }),
+      });
+      const body = (await res.json().catch(() => null)) as { catalog?: AvaCatalog; error?: string } | null;
+      if (!res.ok || !body?.catalog) {
+        onStatus(body?.error || "Restore failed.");
+        return;
+      }
+      onCatalog(body.catalog);
+      onStatus("Restored. Live on Ava's next turn.");
+      setViewing(null);
+      await load();
+    } finally {
+      setRestoring(null);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-xl border border-slate-200 bg-[#f8fafc] px-4 py-3.5" aria-label="History">
+      <p className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#94a3b8]">History</p>
+      {error ? <p className="mt-2 text-sm text-rose-700">{error}</p> : null}
+      {!data && !error ? (
+        <p className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          Loading…
+        </p>
+      ) : null}
+      {data ? (
+        <ul className="mt-2 divide-y divide-slate-200/80 text-sm">
+          <li className="flex flex-wrap items-center justify-between gap-2 py-2">
+            <span className="text-slate-800">
+              <span className="font-semibold">Live now</span>
+              <span className="text-slate-500">
+                {data.live ? ` · saved by ${data.live.saved_by_name}, ${when(data.live.saved_at)}` : " · the repo file"}
+              </span>
+            </span>
+          </li>
+          {data.versions.map((v) => (
+            <li key={v.id} className="py-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-slate-700">
+                  {versionName(v)}
+                  <span className="text-slate-400"> · {v.content.length.toLocaleString()} characters</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setViewing(viewing === v.id ? null : v.id)}
+                    className="rounded-full px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200/70"
+                  >
+                    {viewing === v.id ? "Hide" : "View"}
+                  </button>
+                  {file.editable ? (
+                    <button
+                      type="button"
+                      onClick={() => void restore(v)}
+                      disabled={restoring !== null}
+                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-[#0c5290] hover:bg-[#e0f2fe] disabled:opacity-40"
+                    >
+                      {restoring === v.id ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
+                      Restore
+                    </button>
+                  ) : null}
+                </span>
+              </div>
+              {viewing === v.id ? (
+                <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-[12px] leading-relaxed text-slate-700">
+                  {v.content}
+                </pre>
+              ) : null}
+            </li>
+          ))}
+          {!data.versions.length ? (
+            <li className="py-2 text-slate-500">No earlier saves yet. Every save from now on is kept here.</li>
+          ) : null}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
 export function AvaDocument({
   file,
   title,
@@ -107,12 +258,19 @@ export function AvaDocument({
   const [draft, setDraft] = useState(file.content);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
 
   useEffect(() => {
     setDraft(file.content);
+  }, [file.content]);
+
+  // A new file starts closed. A save or restore changes the content only, so its message stays.
+  useEffect(() => {
     setStatus(null);
     setEditing(false);
-  }, [file.id, file.content]);
+    setHistoryOpen(false);
+  }, [file.id]);
 
   const dirty = draft !== file.content;
   const body = stripLeadingTitle(stripFrontmatter(editing ? draft : file.content), title);
@@ -136,6 +294,7 @@ export function AvaDocument({
       }
       onCatalog(data.catalog);
       setEditing(false);
+      setHistoryKey((k) => k + 1);
       setStatus("Saved. Live on Ava's next turn.");
     } finally {
       setSaving(false);
@@ -160,6 +319,7 @@ export function AvaDocument({
       }
       onCatalog(data.catalog);
       setEditing(false);
+      setHistoryKey((k) => k + 1);
       setStatus("Reset to the repo version.");
     } finally {
       setSaving(false);
@@ -174,6 +334,19 @@ export function AvaDocument({
             {title}
           </h1>
           <div className="flex shrink-0 items-center gap-2">
+            {file.editable ? (
+              <button
+                type="button"
+                aria-expanded={historyOpen}
+                onClick={() => setHistoryOpen((v) => !v)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold hover:bg-[#e0f2fe] ${
+                  historyOpen ? "bg-[#e0f2fe] text-[#075985]" : "text-[#0c5290]"
+                }`}
+              >
+                <History className="h-3.5 w-3.5" aria-hidden />
+                History
+              </button>
+            ) : null}
             {file.editable ? (
               <button
                 type="button"
@@ -199,6 +372,9 @@ export function AvaDocument({
           {file.sharedWithBrand ? " · also in Brand" : ""}
         </p>
       </header>
+      {historyOpen ? (
+        <FileHistory file={file} reloadKey={historyKey} onCatalog={onCatalog} onStatus={setStatus} />
+      ) : null}
       <hr className="mt-6 border-[#e2e8f0]" />
 
       {editing ? (

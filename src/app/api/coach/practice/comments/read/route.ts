@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
-import { sectionByKey } from "@/lib/practiceKnowledge/blueprint";
+import { isCommentKey } from "@/lib/practiceKnowledge/pageChat";
 import { markSectionRead } from "@/lib/practiceKnowledge/sectionComments";
 
 /** Mark one section's thread as read, for the coach or for BCA. */
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   }
   const rec = ((await request.json().catch(() => null)) ?? {}) as Record<string, unknown>;
   const sectionKey = typeof rec.section_key === "string" ? rec.section_key.trim() : "";
-  if (!sectionByKey(sectionKey)) {
+  if (!isCommentKey(sectionKey)) {
     return NextResponse.json({ error: "Unknown section." }, { status: 400 });
   }
   try {

@@ -83,6 +83,17 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
+        // 4 Nov: Story & Proof, Your Voice and Practice Setup are one About You page.
+        source: "/coach/blueprint/:page(story|voice|setup)",
+        destination: "/coach/blueprint/about",
+        permanent: false,
+      },
+      {
+        source: "/admin/blueprint/coach/:page(story|voice|setup)",
+        destination: "/admin/blueprint/coach/about",
+        permanent: false,
+      },
+      {
         source: "/coach/practice",
         destination: "/coach/blueprint",
         permanent: false,

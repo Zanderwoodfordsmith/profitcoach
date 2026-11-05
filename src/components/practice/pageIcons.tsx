@@ -1,7 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Award,
-  AudioLines,
   CalendarRange,
   FileText,
   Gem,
@@ -11,16 +9,14 @@ import {
   Newspaper,
   PenLine,
   Send,
-  Settings2,
   Target,
+  UserRound,
 } from "lucide-react";
 
 /** One icon per blueprint page, shared by the sidebar and the Overview contents. */
 const PAGE_ICONS: Record<string, LucideIcon> = {
   command: LayoutGrid,
-  story: Award,
-  voice: AudioLines,
-  setup: Settings2,
+  about: UserRound,
   market: Target,
   linkedin: Linkedin,
   campaigns: Send,

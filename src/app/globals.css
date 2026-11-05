@@ -29,6 +29,11 @@
       transparent 42%
     );
 
+  /* Second menus (Blueprint, Scripts, Resources…): one step darker than the
+     white page beside them. The selected item is a white pill. */
+  --app-subnav-bg: #e3e9f1;
+  --app-subnav-rule: #d1dae6;
+
   /* Profit Coach app colors */
   --boss-foundation: #4c667a;
   --boss-vision: #0c5290;

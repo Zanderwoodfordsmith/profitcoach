@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { buildOrder, sectionByKey, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
+import { BLUEPRINT_SECTIONS, buildOrder, sectionByKey, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
 import { isNewsletterLibraryKey } from "@/lib/practiceKnowledge/newsletters";
 import { sectionWorkflow, type WorkflowStatus } from "@/lib/practiceKnowledge/sectionWorkflow";
 import type { BuildJob } from "@/lib/practiceKnowledge/buildJobs";
@@ -44,6 +44,8 @@ import type {
   PracticeKnowledgeRow,
 } from "@/lib/practiceKnowledge/types";
 
+import { requestAvaOpen } from "@/components/ava/avaPageLink";
+
 import { SectionCommentsProvider } from "./comments/SectionCommentsContext";
 import { playSpeech, primeCallAudio } from "./ava/callAudio";
 import { randomUuid } from "@/lib/randomUuid";
@@ -75,9 +77,17 @@ type PracticeContextValue = {
   markSectionDone: (key: string) => void;
   /** Set the section's To do / Review / Done switch. */
   setSectionStatus: (key: string, status: WorkflowStatus) => void;
+  /** BCA sets a whole page to To do, Review or Done (4 Nov: one status per page). */
+  setPageStatus: (slug: string, status: WorkflowStatus) => void;
+  /** The coach signs off every part of the page waiting on their review. */
+  signOffPage: (slug: string) => void;
+  /** BCA's check before a signed-off LinkedIn profile or campaign is sent. */
+  approvePageToSend: (slug: string) => void;
   /** Admin blueprint preview. The tab counts are BCA's queue. */
   viewer: "coach" | "bca";
   coachAvatarUrl: string | null;
+  /** When the coach joined: long-standing members have the Blueprint Call counted as done. */
+  coachJoinedAt: string | null;
   addNote: (body: string, page: string, section?: string) => void;
   /** Maps a /coach/blueprint href onto wherever these pages are mounted. */
   href: (path: string) => string;
@@ -112,13 +122,20 @@ type PracticeContextValue = {
   authHeaders: () => Promise<Record<string, string> | null>;
   /** Fetch the blueprint again, after Ava (or anyone) changed it on the server. */
   reload: () => void;
-  /** Right-hand assistant panel. */
-  assistantOpen: boolean;
+  /** Open Ava (the top-bar Ava, the same everywhere since 4 Nov). False does nothing: she has her own close. */
   setAssistantOpen: (open: boolean) => void;
-  /** Bumps when the overview asks Ava's panel to open on the call. */
+  /** Bumps when the overview asks for the voice call with Ava (it opens in the right-hand column). */
   callNonce: number;
+  /** The call has opened, so opening something else never restarts it. */
+  takeCall: () => void;
   openAvaCall: () => void;
 };
+
+
+/** The parts of one Blueprint page that carry a status. */
+function pageSections(slug: string) {
+  return BLUEPRINT_SECTIONS.filter((ref) => ref.page.slug === slug && ref.section.face !== "stored");
+}
 
 export type BuildState = {
   active: string[];
@@ -151,7 +168,6 @@ function buildStateFromJob(job: BuildJob): BuildState {
     failed,
   };
 }
-const ASSISTANT_KEY = "practice-assistant-open";
 
 export const PRACTICE_BASE = "/coach/blueprint";
 
@@ -228,6 +244,7 @@ export function PracticeProvider({
   const [loading, setLoading] = useState(true);
   const [coachName, setCoachName] = useState("");
   const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(null);
+  const [coachJoinedAt, setCoachJoinedAt] = useState<string | null>(null);
   const [viewerId, setViewerId] = useState("");
   const [viewerName, setViewerName] = useState("");
   const [decision, setDecision] = useState<DecisionRecordRow | null>(null);
@@ -235,7 +252,6 @@ export function PracticeProvider({
   /** The server job this page is following, while it is open. */
   const [jobId, setJobId] = useState<string | null>(null);
   const seenDone = useRef(0);
-  const [assistantOpen, setAssistantOpenState] = useState(false);
   const [callNonce, setCallNonce] = useState(0);
   const reportAttempted = useRef(false);
   const draftRef = useRef<PracticeKnowledgePayload | null>(null);
@@ -266,6 +282,7 @@ export function PracticeProvider({
     setAssets(res.data.assets);
     setCoachName(res.data.coach_name ?? "");
     setCoachAvatarUrl(res.data.coach_avatar_url ?? null);
+    setCoachJoinedAt(res.data.coach_joined_at ?? null);
     setViewerId(res.data.viewer_id ?? "");
     setViewerName(res.data.viewer_name ?? "");
     setDecision(res.data.decision ?? null);
@@ -279,29 +296,13 @@ export function PracticeProvider({
     if (!sample) void ttsAvailable(coachId).then(setTtsOn);
   }, [load, coachId, sample]);
 
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(ASSISTANT_KEY);
-      // Open by default on wide screens the first time.
-      setAssistantOpenState(stored ? stored === "1" : window.innerWidth >= 1280);
-    } catch {
-      setAssistantOpenState(false);
-    }
-  }, []);
-
   function setAssistantOpen(open: boolean) {
-    setAssistantOpenState(open);
-    try {
-      window.localStorage.setItem(ASSISTANT_KEY, open ? "1" : "0");
-    } catch {
-      // Remembering the panel is a convenience only.
-    }
+    if (open) requestAvaOpen();
   }
 
   function openAvaCall() {
     if (sample) return;
     primeCallAudio();
-    setAssistantOpen(true);
     setCallNonce((n) => n + 1);
   }
 
@@ -604,6 +605,85 @@ export function PracticeProvider({
       setDraft(next);
       void persist(next);
     },
+    setPageStatus: (slug, status) => {
+      const base = draftRef.current;
+      if (!base || !knowledge) return;
+      const row = { ...knowledge, payload: base };
+      const at = new Date().toISOString();
+      const current = { ...(base.review.section_status?.value ?? {}) };
+      const log = [...(base.review.status_log?.value ?? [])];
+      const stamps = { ...(base.review.approved_sections?.value ?? {}) };
+      for (const ref of pageSections(slug)) {
+        const work = sectionWorkflow(ref, row);
+        if (!work.tracked || work.status === status) continue;
+        current[ref.key] = `${status}|${at}`;
+        log.push({
+          id: randomUuid(),
+          section: ref.key,
+          from: work.status,
+          to: status,
+          at,
+          actor_id: viewerId,
+          actor_name: viewerName || (coachId ? "BCA" : coachName || "Coach"),
+          actor_side: coachId && !sample ? "bca" : "coach",
+        });
+        if (status === "done") stamps[ref.key] = at;
+      }
+      const side = coachId ? "admin" : "coach_edit";
+      const next = mergePracticePayload(base, {
+        review: {
+          ...base.review,
+          section_status: sourced(current, side),
+          status_log: sourced(log, side),
+          approved_sections: sourced(stamps, "coach_edit"),
+        },
+      });
+      draftRef.current = next;
+      setDraft(next);
+      void persist(next);
+    },
+    signOffPage: (slug) => {
+      const base = draftRef.current;
+      if (!base || !knowledge) return;
+      const row = { ...knowledge, payload: base };
+      const now = new Date().toISOString();
+      const stamps = { ...(base.review.approved_sections?.value ?? {}) };
+      let changed = false;
+      for (const ref of pageSections(slug)) {
+        const work = sectionWorkflow(ref, row);
+        if (work.status !== "review" || work.owner !== "coach") continue;
+        stamps[ref.key] = work.revision && work.revision > now ? work.revision : now;
+        changed = true;
+      }
+      if (!changed) return;
+      const next = mergePracticePayload(base, {
+        review: { ...base.review, approved_sections: sourced(stamps, "coach_edit") },
+      });
+      draftRef.current = next;
+      setDraft(next);
+      void persist(next);
+    },
+    approvePageToSend: (slug) => {
+      const base = draftRef.current;
+      if (!base || !knowledge || !coachId) return;
+      const row = { ...knowledge, payload: base };
+      const now = new Date().toISOString();
+      const stamps = { ...(base.review.bca_approved_sections?.value ?? {}) };
+      let changed = false;
+      for (const ref of pageSections(slug)) {
+        const work = sectionWorkflow(ref, row);
+        if (work.status !== "review" || work.owner !== "bca") continue;
+        stamps[ref.key] = work.revision && work.revision > now ? work.revision : now;
+        changed = true;
+      }
+      if (!changed) return;
+      const next = mergePracticePayload(base, {
+        review: { ...base.review, bca_approved_sections: sourced(stamps, "admin") },
+      });
+      draftRef.current = next;
+      setDraft(next);
+      void persist(next);
+    },
     markSectionDone: (key) => {
       const base = draftRef.current;
       const ref = sectionByKey(key);
@@ -670,6 +750,7 @@ export function PracticeProvider({
     transcribe,
     coachName,
     coachAvatarUrl,
+    coachJoinedAt,
     viewer: coachId && !sample ? "bca" : "coach",
     coachId: coachId ?? null,
     building,
@@ -739,9 +820,9 @@ export function PracticeProvider({
       const res = await sendBlueprintCampaign(section, coachId);
       return res.ok && res.data ? { campaignId: res.data.campaign_id } : { error: res.error || "Could not create the campaign." };
     },
-    assistantOpen,
     setAssistantOpen,
     callNonce,
+    takeCall: () => setCallNonce(0),
     openAvaCall,
     stayOnPage,
     href: (path) => {

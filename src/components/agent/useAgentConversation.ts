@@ -9,7 +9,14 @@ import type { AgentActionView, AgentCoach, AgentDisplayItem, AgentShow, AgentStr
  * opening a past chat. Shared by the app-wide AI panel and the Blueprint.
  */
 
-export type AgentChatSummary = { id: string; title: string; updated_at: string; by?: "you" | "coach" | "bca" };
+export type AgentChatSummary = {
+  id: string;
+  title: string;
+  updated_at: string;
+  by?: "you" | "coach" | "bca";
+  /** Set when the person pinned it: it sits under Pinned at the top of the list. */
+  pinned_at?: string | null;
+};
 
 export function useAgentConversation({
   authHeaders,
@@ -233,5 +240,5 @@ export function useAgentConversation({
 
   // Before the first reply, the chat is about the default coach.
   const shownCoach = chatId ? coach : defaultCoach;
-  return { items, chatId, coach: shownCoach, title, readOnly, streaming, deciding, error, send, decide, openChat, newChat };
+  return { items, chatId, coach: shownCoach, title, setTitle, readOnly, streaming, deciding, error, send, decide, openChat, newChat };
 }

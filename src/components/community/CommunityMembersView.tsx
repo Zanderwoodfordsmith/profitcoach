@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { isCommunityOnline } from "@/lib/communityPresence";
+import { useMyUserId } from "@/components/presence/OnlineDot";
 import { ladderOrdinal } from "@/lib/ladder";
 import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
@@ -223,6 +224,7 @@ export function CommunityMembersView() {
     clock,
     counts,
   } = useCommunityMemberDirectory();
+  const myUserId = useMyUserId();
 
   const filtered = useMemo(() => {
     let list = [...roster];
@@ -441,6 +443,7 @@ export function CommunityMembersView() {
               ? m.coach_business_name.trim()
               : null;
           const online = isCommunityOnline(lastSeenByUserId[m.id], clock);
+          const showDot = online && m.id !== myUserId;
           const profileHref =
             m.directory_listed && m.slug ? `/directory/${m.slug}` : null;
           const joined = formatJoined(
@@ -479,7 +482,7 @@ export function CommunityMembersView() {
                       {initials}
                     </div>
                   )}
-                  {online && !presenceUnavailable ? (
+                  {showDot && !presenceUnavailable ? (
                     <span
                       className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500"
                       title="Online now"

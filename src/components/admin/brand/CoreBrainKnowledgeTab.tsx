@@ -281,8 +281,8 @@ export function CoreBrainKnowledgeTab({
         brain are separate.
       </p>
       <KnowledgeGroup
-        title="Always loaded — core"
-        hint="Every AI prompt gets these before the coach's personal brain."
+        title="Core canon"
+        hint="Each skill loads only the files it lists. Only the AI router loads with every Create hub skill."
         files={core}
         openId={openId}
         setOpenId={setOpenId}

@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 
 import { isCommunityOnline } from "@/lib/communityPresence";
+import { useMyUserId } from "@/components/presence/OnlineDot";
 import { useCommunityMemberDirectory } from "@/components/community/useCommunityMemberDirectory";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { ThisWeeksCallsCard } from "@/components/community/ThisWeeksCallsCard";
@@ -61,6 +62,7 @@ export function CommunitySidebar({
     counts,
     rosterLoaded,
   } = useCommunityMemberDirectory();
+  const myUserId = useMyUserId();
 
   const recentTwelve = useMemo(() => {
     const presenceRows = Object.entries(lastSeenByUserId).map(
@@ -180,10 +182,9 @@ export function CommunitySidebar({
             ) : (
               <div className="flex flex-wrap gap-2">
                 {recentTwelve.map((m) => {
-                  const online = isCommunityOnline(
-                    lastSeenByUserId[m.id],
-                    clock
-                  );
+                  const online =
+                    m.id !== myUserId &&
+                    isCommunityOnline(lastSeenByUserId[m.id], clock);
                   const name = displayNameShort(m);
                   const initials = profileInitialsFromName(name);
                   const subline =

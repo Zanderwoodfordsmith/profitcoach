@@ -17,6 +17,13 @@ describe("Ava call protocol", () => {
     assert.equal(practiceStepStates({ ...base, callAt: "2026-10-19T09:00:00.000Z" }).pam, "done");
   });
 
+  it("counts the Blueprint Call as done for members who joined more than 30 days ago", () => {
+    const base = { interviewCompletedAt: "2026-10-17T12:00:00.000Z", builtSections: {}, now: Date.parse("2026-11-05T12:00:00.000Z") };
+    assert.equal(practiceStepStates({ ...base, joinedAt: "2026-09-01T09:00:00.000Z" }).pam, "done");
+    assert.equal(practiceStepStates({ ...base, joinedAt: "2026-10-20T09:00:00.000Z" }).pam, "current");
+    assert.equal(practiceStepStates({ ...base, joinedAt: null }).pam, "current");
+  });
+
   it("ticks a step only once that part is finished", () => {
     const open = practiceStepStates({ interviewCompletedAt: null, decisionLockedAt: null, builtSections: {} });
     assert.deepEqual(open, { ava: "current", pam: "waiting", build: "waiting" });

@@ -58,7 +58,7 @@ export type FieldSpec = {
    * following the phone number, a detected time zone, a connected inbox, or an
    * on/off switch for a two-option answer (on is the first option).
    */
-  widget?: "phone" | "whatsapp" | "timezone" | "hours" | "email" | "tone" | "style" | "switch";
+  widget?: "phone" | "whatsapp" | "timezone" | "hours" | "email" | "tone" | "style" | "switch" | "birthday";
   /** Only shown when another answer is one of these values, e.g. guarantee terms once there is a guarantee. */
   showIf?: { path: FieldSpec["path"]; in: string[] };
   /** Columns for a rows field. Each row stores these keys, plus an id. */
@@ -69,6 +69,8 @@ export type FieldSpec = {
   cue?: "more" | "less";
   /** A list as one box per line, with Add, instead of one box. */
   lines?: boolean;
+  /** How many lines tall the box is at least, for answers we want people to write at length. */
+  rows?: number;
   /** Chips: how many the coach can pick. */
   max?: number;
   /** Chips saved as lines in a text answer, for answers that were written as text. */
@@ -123,6 +125,14 @@ export type BlueprintSection = {
    * stored: written for the tools, not shown on the page.
    */
   face?: "page" | "closed" | "stored";
+  /**
+   * Boxes we no longer ask (4 Nov). Stored with the section hidden, so nobody
+   * is asked for them, but earlier answers still reach every writer that reads
+   * them. Not shown on the page (5 Nov: the "boxes we no longer ask" toggle went).
+   */
+  retired?: boolean;
+  /** Starts a part of a page, under this heading (About You: Story & Proof, Your Voice, Practice Setup). */
+  part?: string;
 };
 
 /** Chip options where the label is the stored answer. */
@@ -163,6 +173,8 @@ export type BlueprintLink = {
   href: string;
   heading: string;
   summary: string;
+  /** One line for the Overview list and Board. The full summary sits at the top of the page. */
+  short?: string;
   sections: BlueprintSection[];
   /** The how-to for this page, in the Classroom. Linked, not copied. */
   learn?: ClassroomLink[];
@@ -170,13 +182,18 @@ export type BlueprintLink = {
 
 const CLASSROOM = "/coach/academy/classroom";
 
+/** Pages that became part of another (4 Nov), so old links still land. */
+export const MOVED_PAGES: Record<string, string> = { story: "about", voice: "about", setup: "about" };
+
 /** Pages with their own view instead of sections. */
 export const SPECIAL_PAGES = ["command", "decisions", "blueprint"] as const;
 
 const GROUPS: BlueprintGroup[] = [
   {
+    // 4 Nov: About You is one page, so it sits here under the Overview instead of in a group of its own.
     label: "Start Here",
-    intro: "Where you are, what we agreed, and what happens next.",
+    yours: true,
+    intro: "Where you are, and the one page you fill in: who you are, what you have done, and how you sound.",
     pages: [
       {
         slug: "command",
@@ -186,22 +203,21 @@ const GROUPS: BlueprintGroup[] = [
         summary: "Where you are, what BCA is building, and the one thing that needs you.",
         sections: [],
       },
-    ],
-  },
-  {
-    label: "About You",
-    yours: true,
-    intro: "Who you are, what you have done, and how you sound.",
-    pages: [
       {
-        slug: "story",
-        title: "Your Story and Proof",
-        href: "/coach/blueprint/story",
-        heading: "Turn your experience into commercial credibility",
-        summary: "The evidence we use to position you: results, client stories, superpowers, the problems people already ask you to solve, and where all that lands best.",
+        // 4 Nov: Story & Proof, Your Voice and Practice Setup became one page, so the
+        // coach has one thing to fill in. Each section keeps its old stored key, so
+        // answers, sign-offs and comments follow it.
+        slug: "about",
+        title: "About You",
+        href: "/coach/blueprint/about",
+        heading: "The one page you fill in",
+        summary: "Your best results, how you sound, and how owners reach you. BCA writes everything else from it.",
+        short: "Your results, how you sound, and how owners reach you.",
         sections: [
           {
             id: "experience",
+            key: "story:experience",
+            part: "Story & Proof",
             title: "Your career",
             source: "imported",
             about: "The roles on your LinkedIn, and any business of your own. Untick anything you do not want us to use. Open a role to say what you did there.",
@@ -216,6 +232,7 @@ const GROUPS: BlueprintGroup[] = [
           },
           {
             id: "results",
+            key: "story:results",
             title: "Commercial achievements",
             source: "from_you",
             about: "Your strongest results with numbers. The single most useful thing you can give us: every message we write leads with one.",
@@ -227,19 +244,32 @@ const GROUPS: BlueprintGroup[] = [
           },
           {
             id: "superpowers",
-            title: "Superpowers",
+            key: "story:superpowers",
+            title: "What owners come to you for",
             source: "from_you",
             about: "What people come to you for. It shapes your offer and how we describe you.",
-            from: ["Conversation: superpowers", "Conversation: what makes you different"],
+            from: ["Conversation: superpowers"],
             feeds: "Your offer, LinkedIn rewrite",
             fields: [
-              { path: "proof.superpowers", label: "Superpowers", kind: "longtext", required: true, example: "Finding the cash a business already has but cannot see", help: "The thing people ask you for that others cannot do as well.", ask: "What do people come to you for that others cannot do as well?" },
-              { path: "proof.uniqueness", label: "What makes you different", kind: "longtext", example: "I have sat in the owner's chair, so I coach from the P&L, not a workbook", help: "Why an owner would pick you over another adviser.", ask: "What makes the way you work different from other advisers?" },
-              { path: "proof.proudest", label: "Proudest moments", kind: "list", lines: true, example: "Rebuilt the finance team after a failed ERP rollout\nTook my first business past £1M", help: "These often become your best stories." },
+              { path: "proof.superpowers", label: "What owners come to you for", kind: "longtext", required: true, example: "Finding the cash a business already has but cannot see. I have sat in the owner's chair, so I coach from the P&L, not a workbook.", help: "The thing people ask you for that others cannot do as well. Your career is already above, so no need to repeat it.", ask: "What do people come to you for that others cannot do as well?" },
+            ],
+          },
+          {
+            // 5 Nov: back as its own box (it had joined What owners come to you for on 4 Nov).
+            id: "different",
+            key: "story:different",
+            title: "What makes you different",
+            source: "from_you",
+            about: "Why an owner would pick you over another adviser. It shapes how we describe you.",
+            from: ["Conversation: what makes you different"],
+            feeds: "Your offer, LinkedIn rewrite, campaign messaging",
+            fields: [
+              { path: "proof.uniqueness", label: "What makes you different", kind: "longtext", example: "I ran a £20m contractor myself, so I have sat where they sit. Most advisers have only read about it.", help: "Why an owner would pick you over another adviser.", ask: "Why would an owner pick you over another adviser? What makes you different?" },
             ],
           },
           {
             id: "problems",
+            key: "story:problems",
             title: "Problems repeatedly solved",
             source: "from_you",
             about: "The problems owners and colleagues keep bringing you. These become the pain points in your messages.",
@@ -255,48 +285,78 @@ const GROUPS: BlueprintGroup[] = [
             key: "market:credibility",
             title: "Where you have credibility",
             source: "from_you",
-            about: "Where your results will impress owners, who signs off, and who you will not take. We use this to recommend your market and build your prospect list.",
-            from: ["LinkedIn: industries worked", "Conversation: industries you understand and can reach", "Conversation: clients to avoid"],
+            about: "Industries where owners would be impressed by your results, where you know the language, or where you already have contacts. We use this to recommend your market and build your prospect list.",
+            from: ["LinkedIn: industries worked", "Conversation: industries you understand and can reach"],
             feeds: "Market options, prospect list",
             fields: [
               { path: "market.industries_credibility", label: "Where you have credibility", kind: "list", lines: true, required: true, example: "Building services\nM&E contractors\nYorkshire contractors through the local CIOB branch", help: "Industries where owners would be impressed by your results, where you know the language, or where you already have contacts.", ask: "Which industries would be most impressed by your results, and where do you already know people?" },
-              { path: "market.buyer_roles", label: "Who signs off", kind: "list", lines: true, example: "Owner-MD\nFinance Director", help: "The person who says yes to hiring you.", ask: "In those businesses, who would decide to hire you? The owner, the managing director, or someone else?" },
+            ],
+          },
+          {
+            // 4 Nov: its own box, so every question on About You has a full-size title.
+            id: "avoid",
+            key: "story:avoid",
+            title: "Who you will not take",
+            source: "from_you",
+            about: "Owners you will not work with, whatever they pay. We leave them off your prospect lists.",
+            from: ["Conversation: clients to avoid"],
+            feeds: "Prospect list",
+            fields: [
               { path: "market.avoid", label: "Who you will not take", kind: "list", lines: true, required: true, example: "Start-ups with no revenue\nAnyone looking for a quick fix", help: "Left off your prospect lists.", ask: "Who will you not work with, whatever they pay?" },
             ],
           },
-        ],
-      },
-      {
-        slug: "voice",
-        title: "Your Voice",
-        href: "/coach/blueprint/voice",
-        heading: "Sound like you in everything we write",
-        summary: "How you talk, the kind of coach you are, and the colour that makes marketing sound like you, not a template.",
-        sections: [
+          {
+            // 4 Nov: these repeated other boxes. Proudest moments are results or stories, and
+            // nearly every coach is hired by the owner or MD. Earlier answers still reach the writers.
+            id: "story-earlier",
+            key: "story:earlier",
+            title: "Earlier answers",
+            source: "from_you",
+            face: "stored",
+            retired: true,
+            fields: [
+              { path: "proof.proudest", label: "Proudest moments", kind: "list", lines: true, help: "These often become your best stories." },
+              { path: "market.buyer_roles", label: "Who signs off", kind: "list", lines: true, help: "The person who says yes to hiring you. Blank means the owner or MD." },
+            ],
+          },
           {
             id: "known",
+            key: "voice:known",
+            part: "Your Voice",
             title: "How you want to be known",
             source: "from_you",
-            about: "How you want owners to see you, and the kind of coach you are. Prospects need to recognise you, so you attract people you will work with for a long time.",
+            about: "How you want owners to see you. Prospects need to recognise you, so you attract people you will work with for a long time.",
             feeds: "LinkedIn rewrite, campaign messaging, newsletters",
             fields: [
-              { path: "practice.voice_known_for", label: "How you want to be known", kind: "chips", joined: true, max: 5, required: true, options: chips(["Straight talking", "Practical", "Been in your shoes", "Good with numbers", "Calm under pressure", "Gets things done", "Honest, even when it stings", "On the owner's side", "Big-picture thinker", "Eye for detail", "Warm and easy to talk to", "Challenges you"]), help: "Pick up to five, or add your own. This is how we set you apart.", ask: "How do you want to be perceived, and what do you want to be known for?" },
+              { path: "practice.voice_known_for", label: "How you want to be known", kind: "chips", joined: true, max: 3, required: true, options: chips(["Straight talking", "Practical", "Been in your shoes", "Good with numbers", "Calm under pressure", "Gets things done", "Honest, even when it stings", "On the owner's side", "Big-picture thinker", "Eye for detail", "Warm and easy to talk to", "Challenges you"]), help: "Pick up to three, or add your own. This is how we set you apart.", ask: "How do you want to be perceived, and what do you want to be known for?" },
+            ],
+          },
+          {
+            // 4 Nov: its own box, so every question on About You has a full-size title.
+            id: "style",
+            key: "voice:style",
+            title: "The kind of coach you are",
+            source: "from_you",
+            about: "Where you sit on three scales: mentor or coach, growth or lifestyle, tough love or nurturing. None is better than another.",
+            feeds: "LinkedIn rewrite, campaign messaging, newsletters",
+            fields: [
               { path: "practice.voice_coaching_style", label: "The kind of coach you are", kind: "text", widget: "style", required: true, help: "The three scales from the Classroom lesson on your coaching style. None is better than another. Pick where you really sit, not where you think you should.", ask: "These might seem a bit odd, but they help us write things that sound like you. Do you lean more mentor, telling owners what worked for you, or more coach, asking questions? More about growth, or about the owner's life? More tough love, or more nurturing?" },
             ],
           },
           {
-            id: "tone",
-            title: "Your tone",
+            id: "notes",
+            key: "voice:notes",
+            title: "Phrases you use, and anything else",
             source: "from_you",
-            about: "Five sliders for how you come across. BCA sets them from how you talk on your call. Move any that feel off.",
-            from: ["Conversation transcript"],
+            about: "The sayings you use, where you are from, and anything we should know about how you come across. The writers get more of your voice from this than from any picker.",
             feeds: "Every message BCA writes for you",
             fields: [
-              { path: "practice.tone", label: "Tone", kind: "text", widget: "tone", required: true, help: "Each slider becomes a plain instruction for the writers, so small moves matter." },
+              { path: "practice.voice_notes", label: "Phrases you use, and anything else", kind: "longtext", example: "Yorkshire, so plain and direct. I say \"right then\" a lot. Football analogies are fine, but don't overdo them.", help: "Optional, and the best place for your own words: sayings, where you are from, what to go easy on.", ask: "Are there sayings you use a lot, or anything about where you are from or how you talk that we should know?" },
             ],
           },
           {
             id: "sounds",
+            key: "voice:sounds",
             title: "Sounds like you",
             source: "from_you",
             about: "A short message you would actually send. The writers copy its rhythm and words.",
@@ -306,19 +366,65 @@ const GROUPS: BlueprintGroup[] = [
             ],
           },
           {
+            id: "colour",
+            key: "voice:colour",
+            title: "Hobbies and sports",
+            source: "from_you",
+            about: "What you do outside work. We use it for comparisons in newsletters and lessons, so the writing has your colour, not ours.",
+            feeds: "Newsletters, posts, lessons",
+            fields: [
+              { path: "practice.voice_hobbies", label: "Hobbies and sports", kind: "chips", options: chips(["Golf", "Football", "Rugby", "Cricket", "Running", "Cycling", "Walking", "The gym", "Swimming", "Sailing", "Fishing", "Cooking", "Travel", "Music", "Reading", "Gardening", "Motorsport", "Family time"]), help: "Newsletter comparisons come from these.", ask: "What hobbies and sports are you interested in?" },
+            ],
+          },
+          {
+            // 4 Nov: its own box, so every question on About You has a full-size title.
+            id: "stories",
+            key: "voice:stories",
+            title: "A story you would share",
+            source: "from_you",
+            about: "Anything interesting that has happened to you, that we can put in a newsletter or a lesson.",
+            feeds: "Newsletters, posts, lessons",
+            fields: [
+              { path: "practice.voice_stories", label: "A story you would share", kind: "longtext", example: "The Friday I found we had two weeks of cash left. I still use that when an owner says they are a bit tight.", help: "Optional. Anything interesting that has happened, that we can put in a newsletter or a lesson.", ask: "Is there a story you would like us to use in a newsletter or a lesson?" },
+            ],
+          },
+          // 4 Nov: BCA sets the sliders from the call, so the coach is not asked. Writers still read them.
+          {
+            id: "tone",
+            key: "voice:tone",
+            title: "Your tone",
+            source: "from_you",
+            face: "stored",
+            retired: true,
+            about: "Five sliders for how you come across. BCA sets them from how you talk on your call. Move any that feel off.",
+            from: ["Conversation transcript"],
+            feeds: "Every message BCA writes for you",
+            fields: [
+              { path: "practice.tone", label: "Tone", kind: "text", widget: "tone", required: true, help: "Each slider becomes a plain instruction for the writers, so small moves matter." },
+            ],
+          },
+          // 4 Nov: most coaches ticked the same few, and BCA's writing rules already ban them. Earlier answers still reach the writers.
+          {
             id: "never",
+            key: "voice:never",
             title: "Never sounds like you",
             source: "from_you",
+            face: "stored",
+            retired: true,
             about: "Phrases, styles or habits you never want in your name.",
             feeds: "Every message BCA writes for you",
             fields: [
               { path: "practice.voice_never", label: "Never sounds like you", kind: "chips", joined: true, options: chips(["Hype and big promises", "Jargon", "Pushy selling", "Exclamation marks", "Emojis", "\"I hope this finds you well\"", "Guru talk", "Too formal", "Too chatty", "Long messages"]), help: "Tap anything that would make you wince if it went out with your name on it, or add your own.", ask: "Is there anything you never want to sound like?" },
             ],
           },
+          // 4 Nov: most coaches picked the same values, and they repeated How you want to be known. Earlier answers still reach the writers.
           {
             id: "stand",
+            key: "voice:stand",
             title: "What you stand for",
             source: "from_you",
+            face: "stored",
+            retired: true,
             about: "Your values, and the people you click with. We use this so copy takes your side, not a generic coach's.",
             feeds: "Every message BCA writes for you",
             fields: [
@@ -329,35 +435,26 @@ const GROUPS: BlueprintGroup[] = [
             ],
           },
           {
-            id: "colour",
-            title: "What you love",
+            // 5 Nov: asked again (retired on 4 Nov). The stored key keeps earlier answers and sign-off.
+            id: "voice-earlier",
+            key: "voice:earlier",
+            title: "Favourite book and film",
             source: "from_you",
-            about: "A favourite book, a film, hobbies, a story. We use them as comparisons in newsletters and lessons, so the writing has your colour, not ours.",
+            about: "We use these for comparisons in newsletters and posts, so the writing has your colour.",
             feeds: "Newsletters, posts, lessons",
             fields: [
-              { path: "practice.voice_hobbies", label: "Hobbies and sports", kind: "chips", options: chips(["Golf", "Football", "Rugby", "Cricket", "Running", "Cycling", "Walking", "The gym", "Swimming", "Sailing", "Fishing", "Cooking", "Travel", "Music", "Reading", "Gardening", "Motorsport", "Family time"]), help: "Newsletter comparisons come from these.", ask: "What hobbies and sports are you interested in?" },
-              { path: "practice.voice_favourite_book", label: "Favourite book", kind: "text", example: "The Very Hungry Caterpillar", help: "Any book. Childhood, recent, does not matter. We use it for comparisons, not as a reading list.", ask: "What is your favourite book? It can be one from when you were six, or one you have just finished. Any favourite book." },
-              { path: "practice.voice_favourite_film", label: "Favourite film", kind: "text", example: "The Shawshank Redemption", help: "Used for comparisons in newsletters.", ask: "What is your favourite film?" },
-              { path: "practice.voice_stories", label: "A story you would share", kind: "longtext", example: "The Friday I found we had two weeks of cash left. I still use that when an owner says they are a bit tight.", help: "Optional. Anything interesting that has happened, that we can put in a newsletter or a lesson.", ask: "Is there a story you would like us to use in a newsletter or a lesson?" },
-            ],
-          },
-          {
-            id: "notes",
-            title: "Anything else",
-            source: "from_you",
-            about: "Optional. Anything else about how you come across, such as phrases you use or a regional flavour.",
-            feeds: "Every message BCA writes for you",
-            fields: [
-              { path: "practice.voice_notes", label: "Anything else", kind: "longtext", example: "Yorkshire, so plain and direct. I say \"right then\" a lot. Football analogies are fine.", help: "Optional." },
+              { path: "practice.voice_favourite_book", label: "Favourite book", kind: "text", example: "The Very Hungry Caterpillar", help: "Any book. Childhood, recent, does not matter. We use it for comparisons, not as a reading list.", ask: "What is your favourite book? Any book, from any time." },
+              { path: "practice.voice_favourite_film", label: "Favourite film", kind: "text", example: "The Shawshank Redemption", help: "Used for comparisons in newsletters.", ask: "And your favourite film?" },
             ],
           },
           {
             id: "sound",
+            key: "voice:sound",
             title: "How you sound",
             source: "we_build",
             // About You holds only the coach's answers. The guide is written for the tools.
             face: "stored",
-            about: "Your voice guide, written from your answers on Your Voice. Every message we write follows it.",
+            about: "Your voice guide, written from your answers under Your Voice. Every message we write follows it.",
             from: ["Your tone", "Sounds like you", "How you want to be known", "What you stand for", "What you love", "Conversation transcript", "LinkedIn About and posts"],
             feeds: "LinkedIn rewrite, campaign messaging, newsletters",
             needs: [],
@@ -380,17 +477,45 @@ const GROUPS: BlueprintGroup[] = [
               sources: ["linkedin", "transcript"],
             },
           },
-        ],
-      },
-      {
-        slug: "setup",
-        title: "Practice Setup",
-        href: "/coach/blueprint/setup",
-        heading: "The basics we need to set you up",
-        summary: "How clients reach you, when you take calls, and the website and profiles where owners find your practice.",
-        sections: [
+          {
+            // 4 Nov: what they want from the practice, so campaigns and targets fit it.
+            id: "goal",
+            key: "setup:goal",
+            part: "Practice Setup",
+            title: "Your goal for the next 12 months",
+            source: "from_you",
+            about: "How many clients you want, what you want to earn, and how much you want to work. We plan your campaigns and targets around it.",
+            feeds: "Your targets, how hard we run your campaigns",
+            fields: [
+              { path: "practice.goal_12_months", label: "Your goal for the next 12 months", kind: "longtext", example: "8 clients at £1,500 a month by next November, working four days a week", help: "Clients, income and hours. A rough number is fine.", ask: "What do you want from your practice in the next 12 months? How many clients, what you want to earn, and how much you want to work?" },
+            ],
+          },
+          {
+            // 4 Nov: asked again. Every writer reads it (ALWAYS_READS).
+            id: "visibility",
+            key: "setup:visibility",
+            title: "Can you market yourself openly?",
+            source: "from_you",
+            about: "Some coaches still have a job or a non-compete. If you need to keep it quiet, we present you as an expert adviser: we never say \"coach\" and never add a \"book a call\" link.",
+            feeds: "Every message BCA writes for you, LinkedIn profile",
+            fields: [
+              {
+                path: "identity.linkedin_visibility",
+                label: "Can you market yourself openly?",
+                kind: "enum",
+                assume: "public",
+                options: [
+                  { value: "public", label: "Yes, I can say I'm a coach" },
+                  { value: "discreet", label: "Not yet, keep it quiet" },
+                ],
+                help: "Choose Not yet if you still have a job or a non-compete.",
+                ask: "Can you market yourself openly as a coach, or do you need to keep it quiet for now, say because of a job or a non-compete?",
+              },
+            ],
+          },
           {
             id: "contact",
+            key: "setup:contact",
             title: "Business and contact",
             source: "imported",
             layout: "inline",
@@ -407,10 +532,12 @@ const GROUPS: BlueprintGroup[] = [
               { path: "identity.location", label: "Town or city", kind: "text", example: "Leeds", help: "Also used to target owners near you if you want local clients." },
               { path: "identity.postcode", label: "Postcode", kind: "text", example: "LS1 4AP" },
               { path: "identity.country", label: "Country", kind: "text", example: "United Kingdom" },
+              { path: "identity.birthday", label: "Birthday", kind: "text", widget: "birthday", example: "14 March 1975", help: "So we can send you a card. The year is optional. Never used in your marketing." },
             ],
           },
           {
             id: "online",
+            key: "setup:online",
             title: "Website and socials",
             source: "from_you",
             layout: "inline",
@@ -424,6 +551,7 @@ const GROUPS: BlueprintGroup[] = [
           },
           {
             id: "calls",
+            key: "setup:calls",
             title: "When you take calls",
             source: "from_you",
             about: "The hours on your booking page. This is the same calendar as Calls, so you set it once.",
@@ -431,6 +559,18 @@ const GROUPS: BlueprintGroup[] = [
             feeds: "Booking page calendar",
             fields: [
               { path: "working_times.prospect_call_hours", label: "Hours", kind: "text", required: true, widget: "hours", help: "Tick the days and set the times. Saving here updates Calls." },
+            ],
+          },
+          {
+            // 4 Nov: one place for whatever the other boxes miss. BCA and Ava read it, not the writers.
+            id: "else",
+            key: "setup:else",
+            title: "Anything else we should know",
+            source: "from_you",
+            about: "Anything the other boxes missed: time away, a market you have your heart set on, a client you are already talking to. BCA and Ava read it. The writers don't, so none of it goes into your marketing.",
+            feeds: "BCA and Ava",
+            fields: [
+              { path: "practice.anything_else", label: "Anything else we should know", kind: "longtext", rows: 7, example: "Away 10 to 24 December. I'd love to work with care homes if there's a market.", help: "Optional." },
             ],
           },
         ],
@@ -447,6 +587,7 @@ const GROUPS: BlueprintGroup[] = [
         href: "/coach/blueprint/market",
         heading: "Know exactly who you are built to help",
         summary: "The one person every message is written to: who they are, what they are going through, and how they talk. We fill it in from your Blueprint Call, then you check it.",
+        short: "The one owner every message is written to.",
         sections: [
           {
             id: "options",
@@ -541,6 +682,7 @@ const GROUPS: BlueprintGroup[] = [
         href: "/coach/blueprint/linkedin",
         heading: "Look credible before someone replies",
         summary: "Your LinkedIn as owners see it today, and the new version written from your Blueprint, ready to copy across.",
+        short: "Your profile today, and the new one to copy across.",
         sections: [
           {
             id: "profile",
@@ -573,6 +715,7 @@ const GROUPS: BlueprintGroup[] = [
         href: "/coach/blueprint/campaigns",
         heading: "Create a repeatable flow of conversations",
         summary: "What to say to your avatar, from the first message to the booked call. Approve it here, then it runs in Get Clients.",
+        short: "The messages that take owners to a booked call.",
         sections: [
           {
             id: "connection",
@@ -588,9 +731,9 @@ const GROUPS: BlueprintGroup[] = [
           },
           {
             id: "conversation",
-            title: "Messaging campaign",
+            title: "Existing connections",
             source: "we_build",
-            about: "For owners you can message without a connection request: connections who fit but you have never spoken to, and open InMail. A short conversation that leads to the BOSS Scorecard. Cold email can come later as an option.",
+            about: "For people you're already connected with on LinkedIn but have never spoken to. Four short messages that start a chat and offer the free BOSS Score.",
             from: ["Pain points", "Commercial achievements", "Your voice"],
             feeds: "Get Clients message campaign",
             needs: ["market:pains", "voice:sound"],
@@ -616,6 +759,7 @@ const GROUPS: BlueprintGroup[] = [
         href: "/coach/blueprint/content",
         heading: "Stay in front of your network between campaigns",
         summary: "What your newsletter is called, who it is for and where it sends people, then your post pillars. The issues themselves live in Get Clients, under Content.",
+        short: "Your newsletter, and what you post about.",
         sections: [
           {
             id: "info",
@@ -824,6 +968,7 @@ const GROUPS: BlueprintGroup[] = [
         href: "/coach/blueprint/offer",
         heading: "Make the destination clear, then make it easy to buy",
         summary: "What you sell, who it is for and the price. We agree it with you on your Blueprint Call, write it up, and you check it here.",
+        short: "What you sell, who it is for and the price.",
         learn: [
           { label: "Set up a new client", href: `${CLASSROOM}/coach-clients/coach-clients-client-onboarding-how-to-setup-a-new-client` },
           { label: "Session 1: Profit system and dashboard", href: `${CLASSROOM}/coach-clients/coach-clients-client-onboarding-session-1-profit-systems-dashboard` },
@@ -955,10 +1100,11 @@ const GROUPS: BlueprintGroup[] = [
       },
       {
         slug: "sales",
-        title: "Your Personalised Pitch",
+        title: "Personalised Pitch",
         href: "/coach/blueprint/sales",
         heading: "Know exactly what to say when a prospect is interested",
         summary: "The Profit System pitch in your words: learn it once, then tailor it to each owner's number-one problem.",
+        short: "Your pitch in your words, tailored to each owner.",
         learn: [
           { label: "What is a value session", href: `${CLASSROOM}/win-clients/win-clients-getting-paid-clients-using-value-sessions-what-is-a-value-session` },
           { label: "How to deliver a value session", href: `${CLASSROOM}/win-clients/win-clients-getting-paid-clients-using-value-sessions-how-to-deliver-a-value-session` },
@@ -991,6 +1137,7 @@ const GROUPS: BlueprintGroup[] = [
         href: "/coach/blueprint/ninety",
         heading: "Know exactly what happens next",
         summary: "The objective, the weekly numbers, and this week.",
+        short: "Your goal, your weekly numbers and this week.",
         sections: [
           {
             id: "quarter",
@@ -1186,12 +1333,12 @@ export function commandCenter(row: PracticeKnowledgeRow): CommandCenterModel {
   if (proofOpen) {
     lead = "You are capturing the proof behind your practice.";
     detail = "Your next step is your best result for a business: the number before, the number after, and how long it took.";
-    action = { label: "Add the result in your blueprint", href: "/coach/blueprint/story#s-story-results" };
+    action = { label: "Add the result in your blueprint", href: "/coach/blueprint/about#s-story-results" };
     milestone = "One precise result";
   } else if (askedOpen) {
     lead = "You are turning experience into a position.";
     detail = "Your next step is the problems people already ask you to solve.";
-    action = { label: "Continue the blueprint", href: "/coach/blueprint/story#s-story-results" };
+    action = { label: "Continue the blueprint", href: "/coach/blueprint/about#s-story-results" };
     milestone = "Problems you already solve";
   } else if (!report) {
     lead = "You have enough for a first recommendation.";

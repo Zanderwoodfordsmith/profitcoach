@@ -484,6 +484,15 @@ export async function handleSupportMailReceived(
     return "reaction_ignored";
   }
 
+  // Gmail bounces for mail Crisp's mirror address refused. Not support requests.
+  if (
+    /delivery status notification/i.test(subject) &&
+    details.includes(".on.crisp.email")
+  ) {
+    await tidySupportMailboxEmail({ emailId, accountId }).catch(() => null);
+    return "crisp_bounce_ignored";
+  }
+
   const ingested = await ingestSupportEmailAttachments({
     emailId,
     accountId,

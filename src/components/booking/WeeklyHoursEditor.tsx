@@ -93,7 +93,8 @@ export function WeeklyHoursEditor({
     onRulesChange([...rules, { weekday, start_time: fmt(startMin), end_time: fmt(startMin + 60) }]);
   }
 
-  const timeClass = fieldClass("input", "small", "min-w-0");
+  // On the Blueprint (plain) the times sit at their own width, not stretched across the row.
+  const timeClass = fieldClass("input", "small", plain ? "w-32 shrink-0" : "min-w-0");
 
   return (
     <div className={plain ? "" : cardClass("plain", "p-4")}>

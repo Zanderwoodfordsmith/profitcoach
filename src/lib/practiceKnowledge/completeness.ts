@@ -9,7 +9,6 @@ export const MISSING_FIELD_LABELS: Record<string, string> = {
   "market.avoid": "Who they will not work with",
   "proof.career_results": "A career or client result with a number",
   "proof.superpowers": "Superpowers",
-  "proof.uniqueness": "What makes them unique",
   "proof.problems_asked": "Problems people ask them to solve",
 };
 
@@ -24,7 +23,6 @@ export const COMPLETENESS_FIELDS = [
   "market.avoid",
   "proof.career_results",
   "proof.superpowers",
-  "proof.uniqueness",
   "proof.problems_asked",
 ] as const;
 
@@ -56,9 +54,6 @@ export function computeCompleteness(payload: PracticeKnowledgePayload): {
   if (!isFilledSourced(payload.proof.superpowers)) {
     missing.push("proof.superpowers");
   }
-  if (!isFilledSourced(payload.proof.uniqueness)) {
-    missing.push("proof.uniqueness");
-  }
   if (listValue(payload.proof.problems_asked).length === 0) {
     missing.push("proof.problems_asked");
   }
@@ -83,9 +78,8 @@ export function sectionCompleteness(payload: PracticeKnowledgePayload): {
     career: !computeCompleteness(payload).missing_fields.includes(
       "proof.career_results"
     ),
-    uniqueness:
-      isFilledSourced(payload.proof.superpowers) &&
-      isFilledSourced(payload.proof.uniqueness),
+    // 5 Nov: What makes you different is its own box again; earlier Superpowers answers still count.
+    uniqueness: isFilledSourced(payload.proof.uniqueness) || isFilledSourced(payload.proof.superpowers),
     market:
       listValue(payload.market.industries_worked).length > 0 ||
       listValue(payload.market.industries_understand).length > 0 ||

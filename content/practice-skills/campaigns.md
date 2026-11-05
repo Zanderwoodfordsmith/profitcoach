@@ -8,13 +8,11 @@ Pam's Starbucks rule, for every message: an owner standing in a queue can answer
 For new owners from a list, 2nd and 3rd degree. The main way coaches get calls. It has its own skill: `connection-campaign.md`, with the note and the follow-ups in `connection-campaign/`.
 
 ## B. Messaging campaign (conversation into the BOSS Scorecard)
-For owners the coach can message without a connection request: connections who fit the avatar but have never spoken to them, and open InMail. Softer than the connection campaign.
+For owners the coach can message without a connection request: connections who fit the avatar but have never spoken to them. Softer than the connection campaign.
 - First message: "Hi {first_name}, are you focused on growing the business at the moment, or more on protecting what you have built?"
 - Then an insight tied to their industry: every business has a weakest link and most owners guess which one it is.
 - Then offer the 3-minute BOSS Scorecard, which finds the root constraint, not the symptoms.
 - Final: leave the link with no pressure.
-
-Open InMail: subject line, greeting, industry and location, two or three emoji-numbered hooks, proof, "I've combined that system with other methods to create The {Industry} PROFIT System", the big problem, the common industry struggle, the crossroads, the result recap, "Interested?"
 
 Cold email can follow the same shape later. It is optional and not written yet.
 

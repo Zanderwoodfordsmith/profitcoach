@@ -110,12 +110,13 @@
     0 18px 60px -36px rgba(26, 143, 212, 0.7);
 }
 
-/* The bright light at the foot of her room, mostly under the box, like dawn on the horizon. */
+/* The light at the foot of her room, mostly under the box, like dawn on the horizon.
+   Softened 5 Nov (blue, no white) so the panel sits quietly beside a white page. */
 .ava-dark .ava-glass-glow {
-  height: 34%;
+  height: 30%;
   background:
-    radial-gradient(75% 55% at 50% 112%, rgba(190, 228, 255, 0.75), rgba(124, 195, 242, 0.35) 45%, rgba(124, 195, 242, 0) 75%),
-    radial-gradient(110% 90% at 50% 120%, rgba(79, 179, 238, 0.45), rgba(79, 179, 238, 0) 70%);
+    radial-gradient(75% 55% at 50% 112%, rgba(124, 195, 242, 0.3), rgba(124, 195, 242, 0.12) 45%, rgba(124, 195, 242, 0) 75%),
+    radial-gradient(110% 90% at 50% 120%, rgba(79, 179, 238, 0.2), rgba(79, 179, 238, 0) 70%);
 }
 
 /* The panel's header buttons: words as well as icons, clearly visible on the blue. */
@@ -150,18 +151,6 @@
 .ava-dark .ava-starter-row:hover {
   border-color: rgba(140, 205, 245, 0.45);
   background: rgba(255, 255, 255, 0.13);
-}
-
-/* Glass rows in the panel (past chats, recent chats). */
-.ava-ui:not(.ava-dark) .ava-recent-row {
-  border-color: rgba(12, 82, 144, 0.12);
-  background: rgba(255, 255, 255, 0.62);
-  color: var(--ava-ink);
-}
-
-.ava-ui:not(.ava-dark) .ava-recent-row:hover {
-  border-color: rgba(26, 143, 212, 0.35);
-  background: rgba(255, 255, 255, 0.92);
 }
 
 /* The step she is on: a band of light runs across the words. */
@@ -233,8 +222,9 @@
   --ava-danger: #fda4af;
   --ava-danger-tint: rgba(225, 80, 95, 0.14);
   color: var(--ava-body);
-  /* The sidebar's gradient, made radial: sky at the bottom middle, brand blue, then navy at the edges. */
-  background: radial-gradient(140% 58% at 50% 112%, #4fb3ee 0%, #1a8fd4 20%, #0c5290 46%, #062a4d 72%, #051e36 100%);
+  /* The sidebar's gradient, made radial: sky at the bottom middle, brand blue, then navy at the edges.
+     5 Nov: a touch softer, a wider, lower arc so the dark comes further down. */
+  background: radial-gradient(150% 52% at 50% 116%, #3ea4e2 0%, #1683c6 20%, #0c5290 46%, #062a4d 72%, #051e36 100%);
 }
 
 .ava-stage {
@@ -365,7 +355,7 @@
   position: absolute;
   inset: auto 0 0 0;
   height: 38%;
-  background: radial-gradient(70% 100% at 50% 120%, rgba(124, 195, 242, 0.3), rgba(124, 195, 242, 0) 70%);
+  background: radial-gradient(70% 100% at 50% 120%, rgba(124, 195, 242, 0.22), rgba(124, 195, 242, 0) 70%);
 }
 
 .ava-room-dust {
@@ -456,16 +446,50 @@
   z-index: 3;
   display: flex;
   flex-direction: column;
-  width: 16.5rem;
+  width: var(--ava-chats-w, 16.5rem);
   flex-shrink: 0;
   min-height: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(180deg, rgba(4, 22, 44, 0.42) 0%, rgba(4, 22, 44, 0.3) 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  /* The dark edge of her room, flat navy: the room's light stays hers, so the panel
+     never reads as a second app sidebar beside the blue one (5 Nov). */
+  background: rgba(7, 32, 60, 0.8);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
   backdrop-filter: blur(24px) saturate(140%);
   overflow: hidden;
   white-space: nowrap;
   animation: avaPanelIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The panel's right edge: drag to resize, double-click to reset. Computers only. */
+.ava-chats-resize {
+  position: absolute;
+  inset: 0 -1px 0 auto;
+  width: 7px;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.ava-chats-resize::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 2px;
+  background: rgba(140, 205, 245, 0.55);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.ava-chats-resize:hover::after,
+.ava-chats-resize:active::after,
+.ava-chats-resize:focus-visible::after {
+  opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .ava-chats-resize {
+    display: none;
+  }
 }
 
 .ava-chats-backdrop {
@@ -484,11 +508,11 @@
 }
 
 .ava-chat-row {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
   width: 100%;
-  overflow: hidden;
   white-space: nowrap;
-  text-overflow: ellipsis;
   padding: 0.5rem 0.625rem;
   border-radius: 10px;
   font-size: 0.875rem;
@@ -520,7 +544,7 @@
     width: 0;
   }
   to {
-    width: 16.5rem;
+    width: var(--ava-chats-w, 16.5rem);
   }
 }
 
@@ -538,57 +562,6 @@
 /* The side panel's "See what I can help with": the list rises in. */
 .ava-arrive-soft {
   animation: avaRise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* Temporary switch on her page while Zander picks a new-chat screen. */
-.ava-style-switch {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.ava-style-switch button {
-  padding: 0.3rem 0.8rem;
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--ava-muted);
-}
-
-.ava-style-switch button[aria-pressed="true"] {
-  background: rgba(255, 255, 255, 0.16);
-  color: var(--ava-ink);
-}
-
-/* "Pick up where you left off" on her start screen. */
-.ava-recent-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.7rem 1rem;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  backdrop-filter: blur(16px) saturate(150%);
-  color: var(--ava-ink);
-  font-size: 0.9375rem;
-  text-align: left;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.ava-recent-row:hover {
-  background: rgba(255, 255, 255, 0.11);
-  border-color: rgba(140, 205, 245, 0.4);
-}
-
-.ava-recent-row:focus-visible {
-  outline: 2px solid rgba(150, 210, 250, 0.7);
-  outline-offset: 2px;
 }
 
 .ava-glass-btn.is-active {
@@ -754,3 +727,360 @@
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Ava moving between her page and the side panel (avaMorph.ts).       */
+/* The room shrinks into the panel (or grows out of it) with a glowing */
+/* edge, her halo and the box fly across, the page behind fades in.    */
+/* ------------------------------------------------------------------ */
+
+html.ava-morph .ava-room-column,
+html.ava-morph .ava-dock {
+  view-transition-name: ava-room;
+}
+
+html.ava-morph .ava-room-column .ava-composer,
+html.ava-morph .ava-dock .ava-composer {
+  view-transition-name: ava-box;
+}
+
+/* Her halo: the one on her page flies to the big one in an empty panel, or to the one in its header. */
+html.ava-morph .ava-room-column .ava-morph-halo,
+html.ava-morph .ava-dock .ava-morph-halo,
+html.ava-morph .ava-dock:not(:has(.ava-morph-halo)) .ava-dock-halo {
+  view-transition-name: ava-halo;
+}
+
+/* The sidebar stays put; only the page beside it changes. */
+html.ava-morph [data-app-sidebar] {
+  view-transition-name: app-sidebar;
+}
+
+html.ava-morph::view-transition-group(app-sidebar) {
+  animation: none;
+}
+
+/* The panel arrives where it lands: no slide of its own on top of the morph. */
+html.ava-morph .ava-dock {
+  animation: none;
+}
+
+html.ava-morph::view-transition-group(ava-room),
+html.ava-morph::view-transition-group(ava-box),
+html.ava-morph::view-transition-group(ava-halo) {
+  animation-duration: 680ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* The room itself: solid blue all the way, so nothing shows through mid-flight, with a bright edge that glows as it moves. */
+html.ava-morph::view-transition-image-pair(ava-room) {
+  overflow: hidden;
+  background: radial-gradient(150% 52% at 50% 116%, #3ea4e2 0%, #1683c6 20%, #0c5290 46%, #062a4d 72%, #051e36 100%);
+  animation: 680ms cubic-bezier(0.32, 0.72, 0, 1) both ava-morph-frame;
+}
+
+html.ava-morph-open::view-transition-image-pair(ava-room) {
+  animation-direction: reverse;
+}
+
+@keyframes ava-morph-frame {
+  0% {
+    border-radius: 0;
+    box-shadow:
+      inset 0 0 0 1px rgba(170, 220, 255, 0),
+      0 0 0 0 rgba(79, 179, 238, 0);
+  }
+  45% {
+    box-shadow:
+      inset 0 0 0 1px rgba(190, 230, 255, 0.7),
+      0 0 70px 4px rgba(79, 179, 238, 0.55);
+  }
+  100% {
+    border-radius: 18px;
+    box-shadow:
+      inset 0 0 0 1px rgba(140, 205, 245, 0.28),
+      0 18px 60px -36px rgba(26, 143, 212, 0.7);
+  }
+}
+
+/* What's inside dissolves through a soft blur: the old view goes quickly, the new one settles in late. Cropped, never stretched. */
+html.ava-morph::view-transition-old(ava-room),
+html.ava-morph::view-transition-new(ava-room) {
+  height: 100%;
+  object-fit: cover;
+}
+
+html.ava-morph::view-transition-old(ava-room) {
+  object-position: 70% 40%;
+  animation: 340ms cubic-bezier(0.4, 0, 1, 1) both ava-morph-out;
+}
+
+html.ava-morph::view-transition-new(ava-room) {
+  animation: 460ms 240ms cubic-bezier(0, 0, 0.2, 1) both ava-morph-in;
+}
+
+/* The panel's own view keeps its real size, pinned to its corner, so its words never zoom. */
+html.ava-morph-dock::view-transition-new(ava-room),
+html.ava-morph-open::view-transition-old(ava-room) {
+  object-fit: none;
+  object-position: right top;
+}
+
+html.ava-morph-open::view-transition-new(ava-room) {
+  object-position: 70% 40%;
+}
+
+/* Growing out of the panel: the panel's view lets go quickly, before the room gets much bigger than it. */
+html.ava-morph-open::view-transition-old(ava-room) {
+  animation-duration: 220ms;
+}
+
+@keyframes ava-morph-out {
+  to {
+    opacity: 0;
+    filter: blur(14px);
+  }
+}
+
+@keyframes ava-morph-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+
+/* The box slides to its new place and width, its words held still rather than squashed. */
+html.ava-morph::view-transition-image-pair(ava-box) {
+  overflow: hidden;
+  border-radius: 28px;
+}
+
+html.ava-morph::view-transition-old(ava-box),
+html.ava-morph::view-transition-new(ava-box) {
+  height: 100%;
+  object-fit: none;
+  object-position: left center;
+  animation-duration: 680ms;
+}
+
+/* The page behind: the new one rises in over the old one (no wash through white), just behind the room. */
+html.ava-morph::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html.ava-morph::view-transition-new(root) {
+  animation: 280ms cubic-bezier(0, 0, 0.2, 1) both ava-morph-rise;
+  mix-blend-mode: normal;
+}
+
+@keyframes ava-morph-rise {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+/* The ⋯ menu on an open chat in her side panel: dark glass under the button. */
+.ava-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 12rem;
+  padding: 0.3rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(6, 30, 58, 0.94);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 18px 44px -16px rgba(1, 8, 22, 0.75);
+  animation: avaMenuIn 140ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes avaMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.ava-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ava-ink);
+  text-align: left;
+  outline: none;
+}
+
+.ava-menu-item:hover,
+.ava-menu-item:focus-visible {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.ava-menu-item:disabled {
+  opacity: 0.6;
+}
+
+.ava-menu-item.is-danger {
+  color: #ff9aa5;
+}
+
+.ava-menu-item.is-danger:hover,
+.ava-menu-item.is-danger:focus-visible {
+  background: rgba(225, 80, 95, 0.16);
+}
+
+.ava-menu-rule {
+  margin: 0.25rem 0.5rem;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ava-menu-input {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.875rem;
+  color: #fff;
+  outline: none;
+}
+
+.ava-menu-input:focus {
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(150, 210, 250, 0.2);
+}
+
+.ava-menu-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ava-muted);
+}
+
+.ava-menu-btn:hover {
+  color: var(--ava-ink);
+}
+
+.ava-menu-btn.is-primary {
+  background: rgba(26, 143, 212, 0.35);
+  color: var(--ava-ink);
+}
+
+.ava-menu-btn.is-primary:hover {
+  background: rgba(26, 143, 212, 0.5);
+}
+
+.ava-menu-btn.is-danger {
+  background: rgba(225, 80, 95, 0.32);
+  color: #fff;
+}
+
+.ava-menu-btn.is-danger:hover {
+  background: rgba(225, 80, 95, 0.48);
+}
+
+.ava-menu-btn:disabled {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ava-menu {
+    animation: none;
+  }
+}
+
+/* Ideas in her side panel (5 Nov): plain rows, not cards. A quiet icon tile,
+   the words, an arrow on hover. Like Linear's menus. */
+.ava-idea {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--ava-body);
+  outline: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ava-idea:hover,
+.ava-idea:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ava-ink);
+}
+
+.ava-idea:focus-visible {
+  box-shadow: 0 0 0 2px var(--ava-ring);
+}
+
+.ava-idea-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #8fd0f7;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ava-idea:hover .ava-idea-icon {
+  border-color: rgba(140, 205, 245, 0.35);
+  background: rgba(26, 143, 212, 0.18);
+}
+
+.ava-idea-go {
+  color: var(--ava-faint);
+  opacity: 0;
+  transform: translate(-2px, 2px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.ava-idea:hover .ava-idea-go,
+.ava-idea:focus-visible .ava-idea-go {
+  opacity: 1;
+  transform: none;
+}
+
+/* A long draft on her card: the words fade out at the bottom until Show all. */
+.ava-card-preview.is-clipped {
+  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+}
+
+/* The parts of a draft (Headline, About): a small blue label with room above, so each part reads on its own. */
+.ava-card-preview :is(h3, h4) {
+  margin: 1.5rem 0 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.25rem;
+  color: var(--ava-sky);
+}
+
+.ava-dark .ava-card-preview :is(h3, h4) {
+  color: #8fd0f7;
+}
+
+.ava-card-preview :is(h3, h4):first-child {
+  margin-top: 0;
+}
+

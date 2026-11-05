@@ -1,0 +1,510 @@
+/*
+ * The clean Blueprint page (4 Nov, beside the classic look until Zander
+ * picks): Linear-like. A white page, each section a heading over a hairline
+ * instead of a navy strip in a card, and every answer and every piece BCA
+ * wrote reads as text and edits in place, the same for both. Empty boxes keep
+ * a light fill so it's clear where to write.
+ */
+.bp-clean .bp-section {
+  border: 0;
+  border-top: 1px solid var(--bp-rule);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-top: 1.75rem;
+}
+
+/* More air between sections, so each heading starts a clear new part. */
+.bp-clean .bp-section + .bp-section {
+  border-top: 0;
+  margin-top: 2.5rem;
+  padding-top: 0;
+}
+
+.bp-clean .bp-head {
+  background: transparent;
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+  --bp-ink: #0b1b2e;
+  --bp-muted: #55657a;
+  --bp-faint: #8595a8;
+  --bp-tint: #f2f7fc;
+}
+
+.bp-clean .bp-head :focus-visible {
+  outline-color: var(--bp-sky);
+}
+
+/* Section titles as in the Scripts: bigger, lighter weight. */
+.bp-clean .bp-head {
+  padding-top: 0;
+  padding-bottom: 0.25rem;
+}
+
+.bp-clean .bp-head h3,
+.bp-clean .bp-head button[aria-expanded] > span > span:first-child {
+  font-size: 1.375rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+/* Field labels inside a section step back so the section title leads. */
+.bp-clean .bp-field-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #55657a;
+}
+
+/*
+ * A part of a written section (At 3am, Buying triggers): a real heading, one
+ * step under the section title, so it doesn't read as a form label.
+ */
+.bp-clean .bp-block-heading {
+  padding-top: 1.25rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--bp-ink);
+}
+
+/*
+ * A written table: a light frame, a tinted header and hairlines between
+ * cells, so rows and columns are easy to follow. Each cell still edits in
+ * place; hovering a cell tints it, typing in one rings it.
+ */
+.bp-clean .bp-edit-table {
+  border-spacing: 0;
+  border: 1px solid var(--bp-rule);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.bp-clean .bp-edit-table th {
+  background: var(--bp-tint-strong);
+  color: var(--bp-blue);
+  padding: 0.625rem 0.875rem;
+}
+
+.bp-clean .bp-edit-table td {
+  padding: 0.5rem 0.875rem;
+  vertical-align: top;
+  border-top: 1px solid var(--bp-rule);
+  transition: background-color 120ms ease;
+}
+
+.bp-clean .bp-edit-table th + th,
+.bp-clean .bp-edit-table td + td {
+  border-left: 1px solid var(--bp-rule);
+}
+
+.bp-clean .bp-edit-table td:hover {
+  background: #f8fafc;
+}
+
+.bp-clean .bp-edit-table td:focus-within {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px #bfdcf2;
+}
+
+.bp-clean .bp-edit-table .bp-input,
+.bp-clean .bp-edit-table .bp-input:hover,
+.bp-clean .bp-edit-table .bp-input:focus,
+.bp-clean .bp-edit-table .bp-input:placeholder-shown {
+  padding: 0.25rem 0;
+  border-color: transparent;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+}
+
+/* The body lines up with its title. */
+.bp-clean .bp-section > header + div,
+.bp-clean .bp-section > div {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* The answer sits close under its title (4 Nov): less space between them. */
+.bp-clean .bp-section > header + div {
+  padding-top: 0.25rem;
+}
+
+/*
+ * A part of a page (About You: Story & Proof, Your Voice, Practice Setup) has
+ * its own heading and hairline, so the first section under it needs neither.
+ */
+.bp-clean .bp-part + .bp-section {
+  border-top: 0;
+  margin-top: 1.75rem;
+  padding-top: 0;
+}
+
+.bp-clean .bp-subhead {
+  background: transparent;
+}
+
+/*
+ * Everything lines up with the section titles. A written answer reads as
+ * text, flush left; hovering shows a light fill around it. A box still to
+ * fill in, or the one you're typing in, is a box whose edge lines up instead.
+ */
+.bp-clean .bp-input {
+  border-radius: 0.5rem;
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.bp-clean .bp-input:hover {
+  background: #f6f8fb;
+  outline: 0.5rem solid #f6f8fb;
+  outline-offset: 0;
+}
+
+.bp-clean .bp-input:placeholder-shown,
+.bp-clean .bp-input:focus {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  outline: none;
+}
+
+.bp-clean .bp-input:placeholder-shown {
+  background: #f6f8fb;
+}
+
+.bp-clean .bp-input:placeholder-shown:hover {
+  background: #f0f4f8;
+  border-color: #e6ecf2;
+}
+
+.bp-clean .bp-input:focus {
+  background: #ffffff;
+  border-color: #bfdcf2;
+}
+
+/*
+ * Inside a role or result card the fields are a small form, so they keep
+ * their grey boxes: Role, Company, From, To.
+ */
+.bp-clean .bp-form-card .bp-input,
+.bp-clean .bp-form-card .bp-input:hover {
+  border-color: #e3e9f0;
+  background: #f4f7fa;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  outline: none;
+}
+
+.bp-clean .bp-form-card .bp-input:hover {
+  border-color: #d3dce6;
+  background: #f0f4f8;
+}
+
+.bp-clean .bp-form-card .bp-input:focus {
+  border-color: #bfdcf2;
+  background: #ffffff;
+}
+
+/* Labels sit on the same left edge. */
+.bp-clean .bp-field > div:first-child {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Boxes fit their text, so no resize grips. */
+.bp-clean .cursor-ns-resize {
+  display: none;
+}
+
+.bp-clean textarea.bp-input {
+  resize: none;
+}
+
+/*
+ * Lists you can reorder (Proudest moments): each line as wide as any other
+ * box. The drag handle sits in the margin, the move and remove buttons float
+ * on the line's right, both only on hover.
+ */
+.bp-clean .bp-list-row {
+  position: relative;
+}
+
+.bp-clean .bp-list-grip {
+  position: absolute;
+  left: -1.5rem;
+  top: 0.5rem;
+  margin-top: 0;
+  opacity: 0;
+}
+
+.bp-clean .bp-list-tools {
+  position: absolute;
+  right: 0.375rem;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: row;
+  gap: 0.125rem;
+  margin-top: 0;
+  border-radius: 0.375rem;
+  background: #ffffff;
+  padding: 0.125rem;
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.08);
+  opacity: 0;
+}
+
+.bp-clean .bp-list-row:hover .bp-list-grip,
+.bp-clean .bp-list-row:hover .bp-list-tools,
+.bp-clean .bp-list-row:focus-within .bp-list-tools {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .bp-clean .bp-list-grip {
+    display: none;
+  }
+  .bp-clean .bp-list-tools {
+    opacity: 1;
+  }
+}
+
+/* "Add" buttons in grey: blue stays for links that go somewhere. */
+.bp-clean .bp-section button:has(> .lucide-plus) {
+  color: #64748b;
+}
+
+.bp-clean .bp-section button:has(> .lucide-plus):hover {
+  color: #0f172a;
+}
+
+.bp-clean .bp-field:not(:focus-within) .bp-line-hint {
+  display: none;
+}
+
+/* Messages in a campaign: flat rows split by hairlines, not a box inside a box. */
+.bp-clean .bp-msg {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #edf1f5;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.bp-clean .bp-msg > button,
+.bp-clean .bp-msg > div:first-child {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.bp-clean .bp-msg > div:last-child {
+  border-top: 0;
+  padding-left: 1.5rem;
+  padding-right: 0;
+}
+
+.bp-clean .bp-handoff {
+  border: 0;
+  border-top: 1px solid #edf1f5;
+  border-radius: 0;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/*
+ * The page chat, drawn like the jobs chat: white, a plain "Chat with BCA"
+ * bar, and messages as flat Slack rows (avatar, bold name, time, text).
+ */
+.bp-clean-side .bp-chat-head {
+  align-items: center;
+  min-height: 3rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 1rem;
+  border-color: #f1f5f9;
+}
+
+.bp-clean-side .bp-chat-kicker {
+  display: none;
+}
+
+.bp-clean-side .bp-chat-head h2 {
+  margin-top: 0;
+  font-size: 0.875rem;
+}
+
+.bp-clean-side .bp-chat-feed {
+  background: #ffffff;
+  padding: 0.5rem 0.75rem;
+}
+
+.bp-clean-side .bp-chat-list > li {
+  margin-block: 0;
+}
+
+.bp-clean-side .bp-chat-list > li + li {
+  margin-top: 0.25rem;
+}
+
+.bp-clean-side .bp-chat-msg {
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.75rem 0.5rem 0.25rem;
+}
+
+.bp-clean-side .bp-chat-msg:hover {
+  background: #f8fafc;
+}
+
+.bp-clean-side .bp-chat-msg > div {
+  gap: 0.75rem;
+}
+
+.bp-clean-side .bp-chat-msg > div > img:first-child,
+.bp-clean-side .bp-chat-msg > div > span:first-child {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.75rem;
+}
+
+.bp-clean-side .bp-chat-name {
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* The text sits close under the name: its last line ends near the avatar's bottom. */
+.bp-clean-side .bp-chat-body {
+  margin-top: 0;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: #334155;
+}
+
+/*
+ * The page chat sits on the canvas tint (picked 5 Nov), so the white page in
+ * the middle reads as the work and the columns either side as tools.
+ * Messages sit flat on the tint; only the message box is white, so it is the
+ * brightest thing in the panel. Not the call with Ava: that keeps its own look.
+ */
+.bp-clean-side.bp-chat-side {
+  border-left-color: var(--app-subnav-rule);
+  /* A step lighter than the contents column (--app-subnav-bg), same hue. */
+  background: #eef2f7;
+}
+
+.bp-clean-side.bp-chat-side .bp-side-panel,
+.bp-clean-side.bp-chat-side .bp-chat-panel,
+.bp-clean-side.bp-chat-side .bp-chat-feed,
+.bp-clean-side.bp-chat-side .bp-list-feed {
+  background: transparent;
+}
+
+.bp-clean-side.bp-chat-side .bp-side-head,
+.bp-clean-side.bp-chat-side .bp-chat-panel > p {
+  border-color: var(--app-subnav-rule);
+}
+
+.bp-clean-side.bp-chat-side .bp-chat-msg:hover {
+  background: rgb(255 255 255 / 0.45);
+}
+
+.bp-clean-side.bp-chat-side .bp-chat-foot {
+  border-top: 0;
+  padding-top: 0.5rem;
+}
+
+.bp-clean-side.bp-chat-side .bp-chat-composer {
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 6px 18px -8px rgba(5, 30, 54, 0.18);
+}
+
+/*
+ * No blue ring when you click in (5 Nov): the box opens focused, so the ring
+ * showed all the time and its corners looked clipped. The cursor is enough.
+ */
+.bp-clean-side.bp-chat-side .bp-chat-composer:focus-within {
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 6px 18px -8px rgba(5, 30, 54, 0.18);
+}
+
+/*
+ * The message box is one white box. The Blueprint's field looks (grey until
+ * typed in, hover outline, white box with its own corners on focus) are for
+ * the page's answers, not the chat's typing line.
+ */
+:is(.bp-clean, .bp-clean-side) .bp-chat-composer .bp-input,
+:is(.bp-clean, .bp-clean-side) .bp-chat-composer .bp-input:hover,
+:is(.bp-clean, .bp-clean-side) .bp-chat-composer .bp-input:focus,
+:is(.bp-clean, .bp-clean-side) .bp-chat-composer .bp-input:placeholder-shown,
+:is(.bp-clean, .bp-clean-side) .bp-chat-composer .bp-input:placeholder-shown:hover {
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/*
+ * Boxes fit their text, so a short answer doesn't leave a tall gap under it.
+ * The box sets its own height in code (three lines at least); the clean look
+ * overrides that where the browser can size to content (Chrome; Safari keeps
+ * the three lines).
+ */
+.bp-clean textarea.bp-input {
+  field-sizing: content;
+  min-height: 2.75rem;
+}
+
+@supports (field-sizing: content) {
+  .bp-clean textarea.bp-input {
+    height: auto !important;
+  }
+}
+
+/*
+ * A written answer reads as text, so its box padding would only push it
+ * away from the title. Empty boxes and the one being typed in keep theirs.
+ */
+.bp-clean textarea.bp-input:not(:placeholder-shown):not(:focus):not(.bp-form-card *) {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/*
+ * Lines in a list sit close together, like a list, not like paragraphs. The
+ * same space while typing and when empty, so the text never jumps away from
+ * its bullet. (.bp-list-row twice: outranks the written-answer rule above.)
+ */
+.bp-clean .bp-list-row.bp-list-row textarea.bp-input:not(.bp-form-card *),
+.bp-clean .bp-list-row.bp-list-row input.bp-input:not(.bp-form-card *) {
+  min-height: 0;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+
+/*
+ * Rows that open (each pain, each objection): a hairline between rows, and
+ * each line of text sits close, so a closed list reads as a list.
+ */
+.bp-clean .bp-rows .bp-row + .bp-row {
+  border-top: 1px solid var(--bp-rule);
+}
+
+.bp-clean .bp-rows .bp-input {
+  min-height: 0;
+}
+
+.bp-clean .bp-rows textarea.bp-input:not(:placeholder-shown):not(:focus) {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}

@@ -9,7 +9,8 @@ import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { AvaDock } from "@/components/ava/AvaDock";
 import { AvaSessionProvider } from "@/components/ava/useAvaSession";
-import { useAvaPageHost } from "@/components/ava/avaPageHost";
+import { AdminSupportDockProvider } from "@/components/support/AdminSupportDock";
+import { rememberAvaReturn, useAvaOpenRequests } from "@/components/ava/avaPageLink";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { AppPresenceHeartbeat } from "@/components/presence/AppPresenceHeartbeat";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
@@ -24,6 +25,15 @@ import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
 import { GetClientsHubWarmup } from "@/components/layout/GetClientsHubWarmup";
 import { landingPathForRole } from "@/lib/auth/loginReturnPath";
 
+/** Admin pages that open one coach's record and need that coach's id. */
+function adminPageUsesCoachRecord(pathname: string): boolean {
+  return (
+    pathname.startsWith("/admin/prospects/") ||
+    pathname === "/admin/boss-pro" ||
+    pathname.startsWith("/admin/boss-pro/")
+  );
+}
+
 export default function AdminLayout({
   children,
 }: {
@@ -36,6 +46,17 @@ export default function AdminLayout({
   const [signingOut, setSigningOut] = useState(false);
   const bossWorkshopPage = isBossWorkshopPath(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  /**
+   * Admin pages are you as Admin. Drop a coach left over from "Use as" (the
+   * back button, a link) so the bell, Ava and coach-scoped panels stop
+   * following that coach. A prospect's page and BOSS Pro open a coach's own
+   * record from an admin list, so they keep it.
+   */
+  useEffect(() => {
+    if (adminPageUsesCoachRecord(pathname)) return;
+    clearImpersonation();
+  }, [pathname, clearImpersonation]);
 
   useEffect(() => {
     if (isBossWorkshopPath(pathname)) {
@@ -113,8 +134,16 @@ export default function AdminLayout({
       /* noop */
     }
   };
-  /** The Blueprint has Ava built in: the top-bar button opens that one instead. */
-  const avaPageHost = useAvaPageHost();
+  /** A page's own "Ask Ava" (the Blueprint) opens this one Ava (4 Nov: no second Ava in the page). */
+  // Ava's page sends her back into the side panel on the page you were on.
+  useEffect(() => {
+    if (!avaChatPage) rememberAvaReturn(pathname);
+  }, [avaChatPage, pathname]);
+  const avaAsked = useAvaOpenRequests();
+  useEffect(() => {
+    if (!avaAsked) return;
+    setAiPanelOpen(true);
+  }, [avaAsked]);
 
   const shellPadClass = `${
     playbooksReader ? "pl-0" : sidebarExpanded ? "md:pl-56" : "md:pl-14"
@@ -168,21 +197,18 @@ export default function AdminLayout({
         signingOut={signingOut}
         onSignOut={handleSignOut}
         showAi={showAiSparkles}
-        aiPanelOpen={avaPageHost ? avaPageHost.open : aiPanelOpen}
+        aiPanelOpen={aiPanelOpen}
         profileLoading={profileLoading}
-        onToggleAi={avaPageHost ? avaPageHost.toggle : () => setAiOpen(!aiPanelOpen)}
-        onOpenAiFull={
-          avaPageHost
-            ? avaPageHost.toggle
-            : () => {
-                setAiOpen(true);
-                setAiPanelFullscreen(true);
-              }
-        }
+        onToggleAi={() => setAiOpen(!aiPanelOpen)}
+        onOpenAiFull={() => {
+          setAiOpen(true);
+          setAiPanelFullscreen(true);
+        }}
         avaInMobileNav={showAiSparkles}
         chromeEnabled={chromeEnabled}
       >
       <AvaSessionProvider>
+      <AdminSupportDockProvider>
         <SearchOverlay />
         <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
           {playbooksReader ? null : isMinimalWorkshopChrome && workshopTopRightSlot ? (
@@ -244,7 +270,8 @@ export default function AdminLayout({
             </div>
           </main>
         </BossWorkshopChromeContext.Provider>
-      {aiPanelAvailable && aiPanelOpen && !avaPageHost && !avaChatPage ? (
+      </AdminSupportDockProvider>
+      {aiPanelAvailable && aiPanelOpen && !avaChatPage ? (
         <AvaDock
           onClose={() => setAiOpen(false)}
           fullscreen={aiPanelFullscreen}

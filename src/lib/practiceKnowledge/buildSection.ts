@@ -112,7 +112,7 @@ export async function writeSectionBlocks(
 }
 
 /** What a writer is told when the person asked for changes to a draft. */
-function changesText(changes: string, base: BlueprintBlock[] | null): string {
+export function changesText(changes: string, base: BlueprintBlock[] | null): string {
   return [
     `## Changes asked for\n\n${changes.trim().slice(0, 2_000)}`,
     "Make these changes. They are notes on the writing. A new fact (a number, a client, a result, a year) only goes in if it is already in what they told us above. Otherwise keep the placeholder.",

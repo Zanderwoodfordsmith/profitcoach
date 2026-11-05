@@ -22,6 +22,10 @@ const healthy: FunnelNumbers = {
   clients_won_90d: 1,
   active_clients: 3,
   capacity: 8,
+  clients_won_180d: 2,
+  client_join_months_ago: [1, 4, 14],
+  blueprint_fee_text: "£2,000 a month, six-month minimum",
+  blueprint_goal_text: null,
 };
 
 const pick = (patch: Partial<FunnelNumbers>) => pickConstraint({ ...healthy, ...patch });

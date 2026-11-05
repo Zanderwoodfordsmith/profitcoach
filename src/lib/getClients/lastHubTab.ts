@@ -13,7 +13,8 @@ export type GetClientsLastTabKey =
   | "script"
   | "content"
   | "links"
-  | "toolkit";
+  | "toolkit"
+  | "scoreboard";
 
 export const GET_CLIENTS_LAST_TAB_KEYS: readonly GetClientsLastTabKey[] = [
   "campaigns",
@@ -24,6 +25,7 @@ export const GET_CLIENTS_LAST_TAB_KEYS: readonly GetClientsLastTabKey[] = [
   "content",
   "links",
   "toolkit",
+  "scoreboard",
 ] as const;
 
 const LAST_TAB_KEY_SET = new Set<string>(GET_CLIENTS_LAST_TAB_KEYS);
@@ -40,6 +42,7 @@ const TAB_HREF: Record<GetClientsLastTabKey, (prefix: HubPrefix) => string> = {
   content: (prefix) => `${prefix}/linkedin`,
   links: (prefix) => `${prefix}/share`,
   toolkit: (prefix) => `${prefix}/toolkit`,
+  scoreboard: (prefix) => `${prefix}/scoreboard`,
 };
 
 export type StorageLike = {
@@ -133,11 +136,12 @@ export function readGetClientsLastTabHref(
 }
 
 /**
- * Same idea for My Blueprint (last blueprint page) and Keep Clients (last
- * tab). Stored values are paths, but only ones that map back to themselves
- * through {@link toolsHubPageForPathname} are ever returned.
+ * Same idea for My Blueprint (last blueprint page), Keep Clients (last tab)
+ * and the Academy (last page, down to the lesson or post). Stored values are
+ * paths, but only ones that map back to themselves through
+ * {@link toolsHubPageForPathname} are ever returned.
  */
-export type RememberedToolsHub = "blueprint" | "keep-clients";
+export type RememberedToolsHub = "blueprint" | "keep-clients" | "academy";
 
 const BLUEPRINT_BASE: Record<HubPrefix, string> = {
   "/coach": "/coach/blueprint",
@@ -150,10 +154,17 @@ const KEEP_CLIENTS_TABS = ["clients", "boss-pro", "playbooks", "profit-levers"];
 const TOOLS_HUB_STORAGE_PREFIX: Record<RememberedToolsHub, string> = {
   blueprint: "pc-blueprint-last-page",
   "keep-clients": "pc-keep-clients-last-tab",
+  academy: "pc-academy-last-page",
 };
 
+/** Academy pages live under these roots; admin's lesson archive does not count. */
+const ACADEMY_ROOTS = ["community", "academy"];
+const ADMIN_ACADEMY_EXCLUDED = "/admin/academy/archive";
+
 export function toolsHubHomeHref(hub: RememberedToolsHub, prefix: HubPrefix): string {
-  return hub === "blueprint" ? BLUEPRINT_BASE[prefix] : `${prefix}/clients`;
+  if (hub === "blueprint") return BLUEPRINT_BASE[prefix];
+  if (hub === "academy") return `${prefix}/community`;
+  return `${prefix}/clients`;
 }
 
 /** The page to come back to for `pathname`, or null when it is outside the hub. */
@@ -170,6 +181,18 @@ export function toolsHubPageForPathname(
     if (!path.startsWith(`${base}/`)) return null;
     const slug = path.slice(base.length + 1).split("/")[0] ?? "";
     return /^[a-z0-9-]+$/.test(slug) ? `${base}/${slug}` : null;
+  }
+  if (hub === "academy") {
+    if (path === ADMIN_ACADEMY_EXCLUDED || path.startsWith(`${ADMIN_ACADEMY_EXCLUDED}/`)) {
+      return null;
+    }
+    const inside = ACADEMY_ROOTS.some((root) => {
+      const href = `${prefix}/${root}`;
+      return path === href || path.startsWith(`${href}/`);
+    });
+    if (!inside) return null;
+    const segments = path.slice(1).split("/");
+    return segments.every((s) => /^[A-Za-z0-9_-]+$/.test(s)) ? path : null;
   }
   for (const tab of KEEP_CLIENTS_TABS) {
     const href = `${prefix}/${tab}`;

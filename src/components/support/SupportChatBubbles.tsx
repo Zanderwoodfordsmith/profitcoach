@@ -1,15 +1,20 @@
 "use client";
 
+import { SeenTick } from "./SeenTick";
 import {
   useEffect,
   useRef,
   useState,
   type FormEvent,
   type MouseEvent,
+  type ReactNode,
 } from "react";
 import { Clock, Eye, Mail, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
+import { commentWhen, firstName } from "@/components/practice/comments/SectionCommentsUI";
 import { SupportMessageBody } from "@/components/support/SupportMessageBody";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import {
   formatDayLabel,
@@ -164,7 +169,7 @@ function SupportInternalNoteCard({
 
   return (
     <div className="flex justify-center px-1">
-      <div className="w-full max-w-[min(92%,28rem)] overflow-hidden rounded-xl border border-dashed border-amber-200 bg-amber-50/80 text-sm text-amber-950">
+      <div className="w-full max-w-[min(92%,28rem)] rounded-xl border border-dashed border-amber-200 bg-amber-50/80 text-sm text-amber-950">
         <div className="flex w-full items-center gap-2 px-3.5 py-2.5">
           <button
             type="button"
@@ -200,6 +205,7 @@ function SupportInternalNoteCard({
             <SupportReplyActionsMenu
               replyId={note.id}
               outbound={false}
+              alignRight
               busy={busy}
               onEdit={() => {
                 setDraft(note.body);
@@ -287,10 +293,10 @@ export function SupportChatAvatar({
   name: string;
   avatarUrl?: string | null;
   tone?: "slate" | "sky";
-  size?: "xs" | "md";
+  size?: "xs" | "sm" | "md";
 }) {
   const initials = profileInitialsFromName(name);
-  const box = size === "xs" ? "h-5 w-5 text-[9px]" : "h-9 w-9 text-caption";
+  const box = size === "xs" ? "h-5 w-5 text-[9px]" : size === "sm" ? "h-7 w-7 text-[10px]" : "h-9 w-9 text-caption";
   if (avatarUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -336,10 +342,13 @@ function SupportReplyActionsMenu({
   busy,
   onEdit,
   onDelete,
+  alignRight = outbound,
 }: {
   replyId: string;
   outbound: boolean;
   busy: boolean;
+  /** Open leftwards from the button (defaults to outbound). */
+  alignRight?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -392,7 +401,7 @@ function SupportReplyActionsMenu({
           id={menuId}
           role="menu"
           className={`absolute z-30 mt-0.5 min-w-[8.5rem] overflow-hidden rounded-lg border border-slate-200 bg-white py-0.5 shadow-[0_8px_24px_-6px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 ${
-            outbound ? "right-0" : "left-0"
+            alignRight ? "right-0" : "left-0"
           }`}
           onClick={stop}
         >
@@ -446,6 +455,15 @@ export function SupportViaEmailMark({
   );
 }
 
+function SupportViaWhatsAppMark({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center text-[#25D366]" title={label}>
+      <WhatsAppIcon className="h-3 w-3" />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
 type BubbleProps = {
   reply: SupportReply;
   /** True when this bubble is on the right (outgoing for this viewer). */
@@ -458,7 +476,30 @@ type BubbleProps = {
   showEmailChannel?: boolean;
   onUpdateBody?: (replyId: string, body: string) => Promise<void>;
   onDelete?: (replyId: string) => Promise<void>;
+  /** "slack": every message left-aligned with avatar and name, like Slack. */
+  layout?: SupportThreadLayout;
+  /** Slack layout: same person a moment ago, so skip the avatar and name. */
+  continued?: boolean;
+  /** Cards layout: drawn in the name line after the time (its "Seen" tick). */
+  meta?: ReactNode;
 };
+
+/**
+ * "cards" (Support V2, 5 Nov): the coach's own chat, flat rows of photo, first
+ * name and text, so BCA sees what the coach sees. Drawn by the Blueprint's
+ * clean chat styles (bp-chat-*), so it needs a `bp-doc bp-clean-side` parent.
+ */
+export type SupportThreadLayout = "bubbles" | "slack" | "cards";
+
+/** The text of one message in the coach's chat look. */
+export const CARDS_BODY_CLASS = "bp-chat-body min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]";
+
+/** One message row in the coach's chat look. */
+export const SUPPORT_CHAT_ROW_CLASS = "group bp-chat-msg";
+
+/** Slack's reading size: 15px with tighter lines than the 1.6 used elsewhere. */
+export const SLACK_BODY_CLASS =
+  "min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[15px] leading-normal text-slate-700";
 
 export function SupportChatBubble({
   reply,
@@ -468,9 +509,12 @@ export function SupportChatBubble({
   showEmailChannel = false,
   onUpdateBody,
   onDelete,
+  layout = "bubbles",
+  continued = false,
+  meta = null,
 }: BubbleProps) {
-  const name = authorDisplayName(reply.author) || fallbackName;
-  const avatarUrl = reply.author?.avatar_url ?? null;
+  const name = reply.as_ava ? "Ava" : authorDisplayName(reply.author) || fallbackName;
+  const avatarUrl = reply.as_ava ? null : (reply.author?.avatar_url ?? null);
   const media = parseSupportReplyMedia(reply.media);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(reply.body);
@@ -530,23 +574,7 @@ export function SupportChatBubble({
     }
   }
 
-  return (
-    <div
-      className={`flex items-end gap-2 ${
-        outbound ? "justify-end" : "justify-start"
-      }`}
-    >
-      {!outbound ? (
-        <SupportChatAvatar name={name} avatarUrl={avatarUrl} />
-      ) : null}
-      <div
-        className={`min-w-0 max-w-[min(85%,26rem)] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ring-1 ${
-          outbound
-            ? "rounded-br-md bg-sky-100/90 text-sky-950 ring-sky-200/70"
-            : "rounded-bl-md bg-white text-slate-900 ring-slate-200/80"
-        }`}
-      >
-        {editing ? (
+  const content = editing ? (
           <form onSubmit={(e) => void saveEdit(e)} className="space-y-2">
             <textarea
               ref={textareaRef}
@@ -598,14 +626,188 @@ export function SupportChatBubble({
           </form>
         ) : (
           <>
-            {reply.body.trim() ? <SupportMessageBody body={reply.body} /> : null}
+            {reply.body.trim() ? (
+              <SupportMessageBody
+                body={reply.body}
+                className={layout === "slack" ? SLACK_BODY_CLASS : layout === "cards" ? CARDS_BODY_CLASS : undefined}
+              />
+            ) : null}
             {media.length > 0 ? (
               <div className="mt-2">
                 <CommunityPostMediaGallery items={media} variant="compact" />
               </div>
             ) : null}
           </>
-        )}
+        );
+
+  const emailMark = !showEmailChannel ? null : reply.via_whatsapp ? (
+    <SupportViaWhatsAppMark label={outbound ? "Sent on WhatsApp" : "Received on WhatsApp"} />
+  ) : reply.via_email ? (
+    <SupportViaEmailMark
+      className="opacity-80"
+      label={outbound ? "Also sent by email" : "Received by email"}
+    />
+  ) : null;
+  const editedMark = reply.edited_at ? (
+    <span className="text-caption opacity-80">· edited</span>
+  ) : null;
+  const actionsMenu =
+    canManage && !editing ? (
+      <SupportReplyActionsMenu
+        replyId={reply.id}
+        outbound={layout === "bubbles" ? outbound : false}
+        // Cards: the ⋮ sits at the chat's right edge, so its menu opens leftwards (5 Nov: it hid behind the details).
+        alignRight={layout === "cards" ? true : undefined}
+        busy={busy}
+        onEdit={() => {
+          setDraft(reply.body);
+          setError(null);
+          setEditing(true);
+        }}
+        onDelete={() => void handleDelete()}
+      />
+    ) : null;
+
+  if (layout === "cards") {
+    // First names, as the coach's chat shows them.
+    const shownName = reply.as_ava ? "Ava" : firstName(name) || name;
+    return (
+      <article className={SUPPORT_CHAT_ROW_CLASS}>
+        <div className="flex items-start gap-3">
+          {reply.as_ava ? (
+            <AvaHalo size={36} className="shrink-0" />
+          ) : (
+            <SupportChatAvatar name={name} avatarUrl={avatarUrl} size="sm" tone={outbound ? "sky" : "slate"} />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-baseline gap-x-2">
+              <span className="bp-chat-name min-w-0 truncate">{shownName}</span>
+              {reply.as_ava ? (
+                <span className="rounded bg-[#e3eef8] px-1 text-caption font-semibold tracking-[0.04em] text-[#0c5290]">AI</span>
+              ) : null}
+              <time
+                dateTime={reply.created_at}
+                title={new Date(reply.created_at).toLocaleString("en-GB")}
+                className="shrink-0 text-xs text-[#8595a8]"
+              >
+                {commentWhen(reply.created_at)}
+              </time>
+              <span className="flex shrink-0 items-center gap-1 text-[#8595a8]">
+                {emailMark}
+                {editedMark}
+              </span>
+              {reply.origin ? (
+                reply.origin.href ? (
+                  <a
+                    href={reply.origin.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate text-caption font-medium text-sky-700 hover:underline"
+                  >
+                    {reply.origin.label}
+                  </a>
+                ) : (
+                  <span className="truncate text-caption font-medium text-slate-500">{reply.origin.label}</span>
+                )
+              ) : null}
+              {/* Right-aligned, like a chat's ticks: the Seen tick, then ⋮ on hover. */}
+              {meta || actionsMenu ? (
+                <span className="ml-auto flex shrink-0 items-center gap-1 self-center">
+                  {meta}
+                  {actionsMenu ? (
+                    <span className="opacity-0 focus-within:opacity-100 group-hover:opacity-100">{actionsMenu}</span>
+                  ) : null}
+                </span>
+              ) : null}
+            </div>
+            {content}
+            {error ? <p className="mt-1 text-caption text-rose-600">{error}</p> : null}
+          </div>
+        </div>
+      </article>
+    );
+  }
+
+  if (layout === "slack") {
+    return (
+      <div
+        className={`group flex gap-3 rounded-md px-2 hover:bg-slate-50 ${
+          continued ? "py-0.5" : "pb-0.5 pt-4"
+        }`}
+      >
+        <div className="w-9 shrink-0">
+          {continued ? (
+            <span className="block pt-0.5 text-right text-caption tabular-nums text-slate-400 opacity-0 group-hover:opacity-100">
+              {formatShortTime(reply.created_at)}
+            </span>
+          ) : reply.as_ava ? (
+            <AvaHalo size={36} />
+          ) : (
+            <SupportChatAvatar name={name} avatarUrl={avatarUrl} tone={outbound ? "sky" : "slate"} />
+          )}
+        </div>
+        <div className="min-w-0 flex-1 text-sm text-slate-900">
+          {continued ? null : (
+            <div className="flex items-baseline gap-2">
+              <span className={`${reply.as_ava ? "shrink-0" : "truncate"} text-[15px] font-bold text-slate-900`}>{name}</span>
+              <span className="shrink-0 text-caption tabular-nums text-slate-400">
+                {formatShortTime(reply.created_at)}
+              </span>
+              <span className="flex items-center gap-1 text-slate-400">
+                {emailMark}
+                {editedMark}
+              </span>
+              {reply.origin ? (
+                reply.origin.href ? (
+                  <a
+                    href={reply.origin.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate text-caption font-medium text-sky-700 hover:underline"
+                  >
+                    {reply.origin.label}
+                  </a>
+                ) : (
+                  <span className="truncate text-caption font-medium text-slate-500">{reply.origin.label}</span>
+                )
+              ) : null}
+            </div>
+          )}
+          {content}
+          {continued && (emailMark || editedMark) ? (
+            <span className="flex items-center gap-1 text-slate-400">
+              {emailMark}
+              {editedMark}
+            </span>
+          ) : null}
+          {error ? <p className="mt-1 text-caption text-rose-600">{error}</p> : null}
+        </div>
+        {actionsMenu ? (
+          <div className="shrink-0 pt-0.5 opacity-0 focus-within:opacity-100 group-hover:opacity-100">
+            {actionsMenu}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex items-end gap-2 ${
+        outbound ? "justify-end" : "justify-start"
+      }`}
+    >
+      {!outbound ? (
+        reply.as_ava ? <AvaHalo size={36} /> : <SupportChatAvatar name={name} avatarUrl={avatarUrl} />
+      ) : null}
+      <div
+        className={`min-w-0 max-w-[min(85%,26rem)] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ring-1 ${
+          outbound
+            ? "rounded-br-md bg-sky-100/90 text-sky-950 ring-sky-200/70"
+            : "rounded-bl-md bg-white text-slate-900 ring-slate-200/80"
+        }`}
+      >
+        {content}
         <div
           className={`mt-1.5 flex items-center gap-1 ${
             outbound ? "justify-end" : "justify-start"
@@ -614,28 +816,9 @@ export function SupportChatBubble({
           <span className="text-caption tabular-nums">
             {formatShortTime(reply.created_at)}
           </span>
-          {showEmailChannel && reply.via_email ? (
-            <SupportViaEmailMark
-              className="opacity-80"
-              label={outbound ? "Also sent by email" : "Received by email"}
-            />
-          ) : null}
-          {reply.edited_at ? (
-            <span className="text-caption opacity-80">· edited</span>
-          ) : null}
-          {canManage && !editing ? (
-            <SupportReplyActionsMenu
-              replyId={reply.id}
-              outbound={outbound}
-              busy={busy}
-              onEdit={() => {
-                setDraft(reply.body);
-                setError(null);
-                setEditing(true);
-              }}
-              onDelete={() => void handleDelete()}
-            />
-          ) : null}
+          {emailMark}
+          {editedMark}
+          {actionsMenu}
         </div>
         {error ? (
           <p
@@ -672,7 +855,15 @@ type ThreadProps = {
   onDeleteReply?: (replyId: string) => Promise<void>;
   onUpdateNoteBody?: (noteId: string, body: string) => Promise<void>;
   onDeleteNote?: (noteId: string) => Promise<void>;
+  layout?: SupportThreadLayout;
+  /** The opening message's time: skip a day line for that day, it's already shown. */
+  openedAt?: string;
+  /** BCA ticks a coach's message "Seen" instead of replying (5 Nov). Shows the ticks when given. */
+  onSeen?: (replyId: string, seen: boolean) => void;
 };
+
+/** Slack groups messages from the same person within five minutes. */
+const CONTINUED_WITHIN_MS = 5 * 60 * 1000;
 
 export function SupportChatThread({
   replies,
@@ -684,7 +875,13 @@ export function SupportChatThread({
   onDeleteReply,
   onUpdateNoteBody,
   onDeleteNote,
+  layout = "bubbles",
+  openedAt,
+  onSeen,
 }: ThreadProps) {
+  const slack = layout === "slack";
+  const cards = layout === "cards";
+  const lastReplyId = replies.filter((r) => !r.origin).at(-1)?.id;
   const canManageReplies =
     perspective === "admin" &&
     Boolean(onUpdateReplyBody || onDeleteReply);
@@ -705,15 +902,24 @@ export function SupportChatThread({
   const byDay = groupItemsByDay(items);
 
   return (
-    <div className="space-y-3">
+    <div className={slack ? "space-y-2" : cards ? "space-y-1" : "space-y-3"}>
       {byDay.map((group) => (
-        <div key={group.key} className="space-y-3">
-          <div className="flex justify-center py-1">
-            <span className="rounded-full bg-white/90 px-3 py-0.5 text-caption font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
-              {group.label}
-            </span>
-          </div>
-          {group.items.map((item) => {
+        <div key={group.key} className={slack ? "" : cards ? "space-y-1" : "space-y-3"}>
+          {/* Cards: each message carries its own date, as the coach's chat does. */}
+          {cards || (slack && openedAt && calendarDayKey(openedAt) === group.key) ? null : slack ? (
+            <div className="flex items-center gap-3 py-2">
+              <span className="h-px flex-1 bg-slate-200" aria-hidden />
+              <span className="text-caption font-medium text-slate-500">{group.label}</span>
+              <span className="h-px flex-1 bg-slate-200" aria-hidden />
+            </div>
+          ) : (
+            <div className="flex justify-center py-1">
+              <span className="rounded-full bg-white/90 px-3 py-0.5 text-caption font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
+                {group.label}
+              </span>
+            </div>
+          )}
+          {group.items.map((item, index) => {
             if (item.kind === "note") {
               return (
                 <SupportInternalNoteCard
@@ -731,13 +937,24 @@ export function SupportChatThread({
             const mine = viewerId != null && reply.created_by === viewerId;
             const outbound =
               perspective === "admin" ? staff || mine : mine && !staff;
+            const prev = index > 0 ? group.items[index - 1] : null;
+            const continued =
+              slack &&
+              prev?.kind === "reply" &&
+              prev.reply.created_by === reply.created_by &&
+              prev.reply.origin?.label === reply.origin?.label &&
+              new Date(reply.created_at).getTime() -
+                new Date(prev.reply.created_at).getTime() <
+                CONTINUED_WITHIN_MS;
 
-            return (
+            const bubble = (
               <SupportChatBubble
                 key={reply.id}
                 reply={reply}
                 outbound={outbound}
-                canManage={canManageReplies}
+                layout={layout}
+                continued={continued}
+                canManage={canManageReplies && !reply.origin}
                 showEmailChannel={perspective === "admin"}
                 onUpdateBody={onUpdateReplyBody}
                 onDelete={onDeleteReply}
@@ -749,6 +966,49 @@ export function SupportChatThread({
                       : "Member"
                 }
               />
+            );
+            if (!onSeen || reply.origin) return bubble;
+            // BCA's own messages show the coach's tick; the coach's get BCA's tick button.
+            const bcaWrote = staff || Boolean(reply.as_ava);
+            if (cards) {
+              return (
+                <div key={reply.id} className="group/msg">
+                  <SupportChatBubble
+                    reply={reply}
+                    outbound={outbound}
+                    layout="cards"
+                    canManage={canManageReplies && !reply.origin}
+                    showEmailChannel={perspective === "admin"}
+                    onUpdateBody={onUpdateReplyBody}
+                    onDelete={onDeleteReply}
+                    fallbackName={staff ? "Support" : perspective === "member" ? "You" : "Member"}
+                    meta={
+                      <SeenTick
+                        inline
+                        seenAt={reply.seen_at ?? null}
+                        seenName={reply.seen_name ?? null}
+                        canTick={!bcaWrote}
+                        latest={reply.id === lastReplyId}
+                        onTick={(seen) => onSeen(reply.id, seen)}
+                      />
+                    }
+                  />
+                </div>
+              );
+            }
+            return (
+              <div key={reply.id} className="group/msg">
+                {bubble}
+                <div className={slack ? "pl-14" : outbound ? "flex justify-end pr-11" : "pl-11"}>
+                  <SeenTick
+                    seenAt={reply.seen_at ?? null}
+                    seenName={reply.seen_name ?? null}
+                    canTick={!bcaWrote}
+                    latest={reply.id === lastReplyId}
+                    onTick={(seen) => onSeen(reply.id, seen)}
+                  />
+                </div>
+              </div>
             );
           })}
         </div>

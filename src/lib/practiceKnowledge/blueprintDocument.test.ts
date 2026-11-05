@@ -97,7 +97,8 @@ describe("blueprint map", () => {
   });
 
   it("puts marketing authenticity on Your Voice, and the voice writer reads it", () => {
-    const paths = ["voice:known", "voice:stand", "voice:colour"].flatMap(
+    // 4 Nov: book, film and the values boxes are no longer asked, but stay on the page's stored sections.
+    const paths = ["voice:known", "voice:style", "voice:stand", "voice:colour", "voice:stories", "voice:earlier"].flatMap(
       (key) => sectionByKey(key)?.section.fields?.map((f) => f.path) ?? []
     );
     for (const path of [
@@ -116,6 +117,16 @@ describe("blueprint map", () => {
     const uses = sectionByKey("voice:sound")?.section.uses?.fields ?? [];
     assert.ok(uses.some((p) => p === "practice.voice_known_for"));
     assert.ok(uses.some((p) => p === "practice.voice_hobbies"));
+  });
+
+  it("keeps every answer from the boxes we no longer ask, and the writers still read them", () => {
+    const retired = BLUEPRINT_SECTIONS.filter((ref) => ref.section.retired);
+    assert.ok(retired.length > 0);
+    const read = new Set(BLUEPRINT_SECTIONS.flatMap((ref) => ref.section.uses?.fields ?? []));
+    for (const ref of retired) {
+      assert.equal(ref.section.face, "stored", ref.key);
+      for (const field of ref.section.fields ?? []) assert.ok(read.has(field.path), field.path);
+    }
   });
 });
 

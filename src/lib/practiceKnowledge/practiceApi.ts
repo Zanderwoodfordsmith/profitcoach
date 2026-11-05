@@ -20,6 +20,8 @@ export type PracticeLoad = {
   decision: DecisionRecordRow | null;
   coach_name?: string;
   coach_avatar_url?: string | null;
+  /** When the coach joined (first payment, membership start or account, whichever is earliest). */
+  coach_joined_at?: string | null;
   /** The signed-in person, which can differ from the blueprint coach. */
   viewer_id?: string;
   viewer_name?: string;

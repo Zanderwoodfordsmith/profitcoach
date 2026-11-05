@@ -1,0 +1,124 @@
+/*
+ * Support's docked chat (5 Nov): a column on the right that stays while the
+ * page beside it changes. The app makes room for it on wide screens.
+ */
+/*
+ * Blueprint-chat width beside a page. On Support the right column (the
+ * welcome, then the chat) takes what the list doesn't need: the list keeps
+ * its full width (51rem, its 3.5rem padding inside), so the gap before the
+ * chat matches the gap after the sidebar, as Zander asked.
+ * Never narrower than the Blueprint chat, never wider than 52rem.
+ */
+:root {
+  --support-dock-w: 28rem;
+}
+
+html.support-dock-wide {
+  --support-dock-w: clamp(28rem, calc(100vw - 3.5rem - 51rem), 52rem);
+}
+
+html.support-dock-wide:has([data-app-sidebar].w-56) {
+  --support-dock-w: clamp(28rem, calc(100vw - 14rem - 51rem), 52rem);
+}
+
+/* Under the top bar, like the Blueprint's own chat. Support and the Blueprint leave a column free for it. */
+.support-dock {
+  top: 3.5rem;
+  width: var(--support-dock-w);
+  view-transition-name: support-dock;
+}
+
+/*
+ * Most pages (the usual 60px side padding): the page makes room itself while
+ * the top bar stays full width. It borrows some left padding (60px to 2rem),
+ * keeps the same 2rem gap before the chat, and its content uses everything up
+ * to there (Zander, 5 Nov: no squeezing into a narrow middle).
+ */
+@media (min-width: 1024px) {
+  html.support-docked:not(.support-dock-hosted) main.md\:px-\[60px\] {
+    padding-left: 2rem;
+    padding-right: calc(var(--support-dock-w) + 2rem);
+  }
+
+  html.support-docked:not(.support-dock-hosted) main.md\:px-\[60px\] [data-page-header] {
+    margin-left: -2rem;
+    padding-left: 2rem;
+    margin-right: calc(-1 * (var(--support-dock-w) + 2rem));
+    padding-right: 60px;
+  }
+
+  /* Edge-to-edge pages (the LinkedIn inbox, Membership): the page ends at the chat, the top bar stays full width. */
+  html.support-docked:not(.support-dock-hosted) main.px-0 {
+    padding-right: var(--support-dock-w);
+  }
+
+  html.support-docked:not(.support-dock-hosted) main.px-0 [data-page-header] {
+    margin-right: calc(-1 * var(--support-dock-w));
+  }
+
+  /* Buttons that float bottom right (Sample data) move clear of the chat. */
+  html.support-docked [data-floats-right] {
+    right: calc(var(--support-dock-w) + 1.5rem);
+  }
+
+  /* Campaigns: its right-hand column gives a little room to the table and stats. */
+  html.support-docked .campaigns-overview-grid {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+  }
+
+  /* Anything else: everything moves over, and the chat runs the full height. */
+  html.support-docked:not(.support-dock-hosted) .coach-app-shell:not(:has(main.md\:px-\[60px\], main.px-0)) {
+    padding-right: var(--support-dock-w);
+  }
+
+  html.support-docked:not(.support-dock-hosted) .coach-app-shell:not(:has(main.md\:px-\[60px\], main.px-0)) .support-dock {
+    top: 0;
+  }
+}
+
+/*
+ * Opening the page a chat is about: the chat and the sidebar hold still, the
+ * page fades in from behind the chat.
+ */
+html.support-dock-nav [data-app-sidebar] {
+  view-transition-name: app-sidebar;
+}
+
+html.support-dock-nav::view-transition-group(app-sidebar) {
+  animation: none;
+}
+
+/* The chat slides to its new width as the page comes in, its words held still rather than stretched. */
+html.support-dock-nav::view-transition-group(support-dock) {
+  animation-duration: 380ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html.support-dock-nav::view-transition-old(support-dock),
+html.support-dock-nav::view-transition-new(support-dock) {
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+  animation-duration: 380ms;
+}
+
+html.support-dock-nav::view-transition-old(root) {
+  animation: 160ms ease-out both support-dock-out;
+}
+
+html.support-dock-nav::view-transition-new(root) {
+  animation: 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both support-dock-in;
+}
+
+@keyframes support-dock-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes support-dock-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}

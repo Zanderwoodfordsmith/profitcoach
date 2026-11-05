@@ -1113,7 +1113,7 @@ export function LinkedInCampaignsOverview() {
 
       {campaignsTab ? (
         <div className="min-h-0 flex-1 overflow-y-auto pb-28">
-          <div className="flex flex-col gap-4 pt-4 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:grid-rows-[auto_1fr]">
+          <div className="campaigns-overview-grid flex flex-col gap-4 pt-4 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:grid-rows-[auto_1fr]">
             <div className="xl:col-start-1 xl:row-start-1">
               <CampaignOverviewHero
                 connectRate={rates.connect}

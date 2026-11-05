@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { TargetTip } from "./TargetTip";
 
 /** One £ profit target and what it needs of this row. */
@@ -25,6 +27,8 @@ type Props = {
   per?: string;
   /** What the biggest target needed at their numbers now. During a what-if, shown greyed before the new need. */
   topWas?: number;
+  /** In place of the number, e.g. a box to type it in. */
+  shown?: ReactNode;
 };
 
 /** The biggest target is the right-hand end of every bar; a smaller one sits at its share of it. */
@@ -37,7 +41,7 @@ export function volumeTickAt(target: number, biggest: number): string {
  * full at the biggest target, with that target's need written after the bar. A smaller target is a tick inside the
  * bar (its number on hover).
  */
-export function TargetPath({ value, actual, moved, needs, format, note, onChange, step = 1, label, per = "a year", topWas }: Props) {
+export function TargetPath({ value, actual, moved, needs, format, note, onChange, step = 1, label, per = "a year", topWas, shown }: Props) {
   const biggest = Math.max(...needs.map(({ target }) => target));
   const topNeed = needs.find(({ target }) => target === biggest);
   const top = topNeed?.value ?? 0;
@@ -58,10 +62,12 @@ export function TargetPath({ value, actual, moved, needs, format, note, onChange
   return (
     <>
       <td className="tgt-num tgt-month">
-        <TargetTip tip={tip} end className={moved ? "tgt-value is-whatif" : "tgt-value"}>
-          {differs(actual, value) && actual !== null ? was(actual) : null}
-          {value !== null ? format(value) : "—"}
-        </TargetTip>
+        {shown ?? (
+          <TargetTip tip={tip} end className={moved ? "tgt-value is-whatif" : "tgt-value"}>
+            {differs(actual, value) && actual !== null ? was(actual) : null}
+            {value !== null ? format(value) : "—"}
+          </TargetTip>
+        )}
       </td>
       <td className="tgt-bar-col">
         <span className="tgt-vrow">
