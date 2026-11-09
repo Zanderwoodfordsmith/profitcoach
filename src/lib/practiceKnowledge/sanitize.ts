@@ -39,7 +39,7 @@ import {
 const TEXT = 2000;
 const SHORT = 240;
 const LIST = 20;
-const RESULTS = 12;
+const RESULTS = 25;
 
 function clip(value: unknown, max: number): string {
   return String(value ?? "").trim().slice(0, max);
