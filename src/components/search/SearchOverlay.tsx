@@ -20,6 +20,7 @@ import {
   Play,
   Search,
   X,
+  LifeBuoy,
 } from "lucide-react";
 import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
@@ -56,6 +57,7 @@ import {
   memberDisplayName,
   normalizeSearchQuery,
   SEARCH_INPUT_ID,
+  type SearchClassroomItem,
   type SearchPreview,
 } from "@/lib/search/types";
 import "./searchMotion.css";
@@ -72,6 +74,8 @@ type Option = {
   leading: ReactNode;
   title: ReactNode;
   meta: string;
+  /** The matching line in context, e.g. the sentence from a transcript. */
+  snippet?: ReactNode;
   aside?: string;
   /** Runs before navigating (e.g. remember where search was opened). */
   onChoose?: () => void;
@@ -84,6 +88,15 @@ type Group = {
   allHref?: string;
   options: Option[];
 };
+
+/** Where a transcript hit sits: a time when the transcript has one. */
+function transcriptWhere(item: SearchClassroomItem): string | null {
+  if (!item.transcript_match) return null;
+  if (item.transcript_seconds != null && item.transcript_clock) {
+    return `Said at ${item.transcript_clock}`;
+  }
+  return "In the transcript";
+}
 
 function optionId(index: number): string {
   return `search-option-${index}`;
@@ -112,6 +125,7 @@ export function SearchOverlay() {
   const pathname = usePathname();
   const chrome = useDashboardChrome();
   const { profile, profileLoading } = useDashboardProfile();
+  const isAdmin = profile?.role === "admin";
   const prefix = searchPrefix(pathname);
   const onSearchPage = pathname === `${prefix}/search`;
   const [open, setOpen] = useState(false);
@@ -162,6 +176,7 @@ export function SearchOverlay() {
 
   return (
     <SearchDialog
+      isAdmin={isAdmin}
       prefix={prefix}
       greeting={profileLoading ? null : firstName ? `Hi, ${firstName}` : "Hi"}
       lost={
@@ -195,11 +210,14 @@ function SearchDialog({
   greeting,
   lost,
   canAskAi,
+  isAdmin,
   onAskAi,
   onClose,
 }: {
   prefix: SearchPrefix;
   greeting: string | null;
+  /** Help centre answers show for admins only until Zander releases them. */
+  isAdmin: boolean;
   /** Set when a missing page opened search. */
   lost: { title: string | null; guess: NotFoundDestination | null } | null;
   canAskAi: boolean;
@@ -357,6 +375,22 @@ function SearchDialog({
 
     const out: Group[] = [];
     const { counts } = preview;
+    // Help centre answers (job 211): admin-only until Zander has read them.
+    if (isAdmin && preview.help && preview.help.length > 0) {
+      out.push({
+        id: "help",
+        label: "Help",
+        count: counts.help,
+        allHref: `${prefix}/support?tab=help`,
+        options: preview.help.map((a) => ({
+          key: `help-${a.id}`,
+          href: `${prefix}/support?tab=help&a=${encodeURIComponent(a.id)}`,
+          leading: <SearchIconTile icon={LifeBuoy} />,
+          title: a.question,
+          meta: joinMeta(["Help", a.topic]),
+        })),
+      });
+    }
     if (preview.classroom.length > 0) {
       out.push({
         id: "classroom",
@@ -375,7 +409,7 @@ function SearchDialog({
               }
             : {
                 key: `lesson-${item.id}`,
-                href: searchLessonHref(prefix, item),
+                href: searchLessonHref(prefix, item, preview.q),
                 leading: (
                   <SearchIconTile
                     icon={item.transcript_match && !item.content_match ? Play : BookOpen}
@@ -385,10 +419,14 @@ function SearchDialog({
                 meta: joinMeta([
                   formatCourseBreadcrumb(item.course_id),
                   item.chapter_title,
-                  item.transcript_clock && item.transcript_seconds
-                    ? `Said at ${item.transcript_clock}`
-                    : null,
+                  transcriptWhere(item),
                 ]),
+                snippet:
+                  item.transcript_match && item.transcript_headline ? (
+                    <SearchHighlight html={item.transcript_headline} />
+                  ) : item.body_headline ? (
+                    <SearchHighlight html={item.body_headline} />
+                  ) : undefined,
               }
         ),
       });
@@ -450,6 +488,7 @@ function SearchDialog({
             leading: <SearchIconTile icon={Search} />,
             title: `See all results for “${preview.q}”`,
             meta: joinMeta([
+              isAdmin && counts.help ? `${counts.help} in Help` : null,
               `${counts.classroom} in Classroom`,
               `${counts.community} in Community`,
               `${counts.members} in Members`,
@@ -460,7 +499,7 @@ function SearchDialog({
       });
     }
     return out;
-  }, [lostGuess, prefix, preview, recent, searching]);
+  }, [isAdmin, lostGuess, prefix, preview, recent, searching]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.options), [groups]);
   const indexByKey = useMemo(
@@ -747,6 +786,11 @@ function SearchDialog({
                           {option.meta ? (
                             <span className="block truncate text-sm text-slate-700">
                               {option.meta}
+                            </span>
+                          ) : null}
+                          {option.snippet ? (
+                            <span className="mt-0.5 line-clamp-2 text-sm leading-snug text-slate-500">
+                              {option.snippet}
                             </span>
                           ) : null}
                         </span>

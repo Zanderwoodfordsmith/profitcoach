@@ -378,6 +378,12 @@ export async function createCalendarBooking(
     return { ok: false, status: 500, error: "Could not create booking." };
   }
 
+  if (booking?.id && input.contactId) {
+    // A booked call ends the BOSS Score emails (job 214).
+    const { stopScorecardFollowUp } = await import("@/lib/scorecardFollowUp");
+    await stopScorecardFollowUp(coach.id, input.contactId);
+  }
+
   if (booking?.id) {
     await linkBookingToLead("bookings", String(booking.id), {
       coachId: coach.id,

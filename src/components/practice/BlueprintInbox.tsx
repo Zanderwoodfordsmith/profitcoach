@@ -117,7 +117,10 @@ export function BcaChat({
       .single();
     if (error || !data) return error?.message ?? "Could not send. Try again.";
     // As in Support: a reply reopens a closed chat, and touching the row tells BCA it moved.
-    const after = supportStatusAfterMemberReply(thread.status);
+    const after = supportStatusAfterMemberReply(
+      thread.status,
+      Boolean(thread.created_by_admin) || thread.replies.some((r) => r.created_by !== thread.created_by)
+    );
     const { error: statusError } = await supabaseClient
       .from("community_feedback_reports")
       .update({ status: after ?? thread.status })

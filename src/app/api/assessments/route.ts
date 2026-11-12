@@ -1,7 +1,7 @@
 import { cleanTraffic } from "@/lib/trafficSource";
 import { recordContactTraffic } from "@/lib/trafficSourceServer";
 import { randomUUID } from "crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { getPublicAppBaseUrl } from "@/lib/appBaseUrl";
 import {
   qualifyingToWebhookFields,
@@ -614,6 +614,11 @@ export async function POST(request: Request) {
     }
   }
 
+  // Report + follow-up emails from the coach's own email, when the coach has chosen the app (job 214).
+  after(async () => {
+    const { startScorecardFollowUp } = await import("@/lib/scorecardFollowUp");
+    await startScorecardFollowUp({ coachId, contactId, kind: assessmentType, event: "completed" });
+  });
   return NextResponse.json(
     {
       id: assessment.id,

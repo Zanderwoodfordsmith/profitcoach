@@ -1,4 +1,11 @@
-export type SupportTicketStatus = "open" | "waiting_reply" | "resolved";
+import type { JobStatus } from "@/lib/launch/jobStatus";
+
+/**
+ * A ticket's status, marked the same way as the launch jobs (11 Nov): open is
+ * BCA to do, waiting_reply is Needs coach, resolved is Done. The stored names
+ * predate the job words, so they stay.
+ */
+export type SupportTicketStatus = "open" | "in_progress" | "waiting_reply" | "review" | "resolved";
 export type SupportTicketType =
   | "question"
   | "bug"
@@ -279,30 +286,44 @@ export const SUPPORT_SOURCE_LABELS: Record<SupportTicketSource, string> = {
 
 export const SUPPORT_STATUS_USER_LABELS: Record<SupportTicketStatus, string> = {
   open: "Open",
+  in_progress: "In progress",
   waiting_reply: "Your reply needed",
+  review: "Ready to check",
   resolved: "Resolved",
 };
 
-/** Menu order: Open → Resolved, with waiting on the member last (parked / side path). */
+/** Each ticket status as the job status it reads as: same words, colour and circle. */
+export const SUPPORT_STATUS_JOB: Record<SupportTicketStatus, JobStatus> = {
+  waiting_reply: "needs_you",
+  open: "bca_todo",
+  in_progress: "in_progress",
+  review: "review",
+  resolved: "done",
+};
+
+/** Menu order matches the jobs: Needs coach, BCA to do, In progress, Review, Done. */
 export const SUPPORT_STATUS_ADMIN_LABELS: Record<SupportTicketStatus, string> = {
-  open: "Open",
-  resolved: "Resolved",
-  waiting_reply: "Waiting on member",
+  waiting_reply: "Needs coach",
+  open: "BCA to do",
+  in_progress: "In progress",
+  review: "Review",
+  resolved: "Done",
 };
 
-/** Map legacy + current DB values onto open / waiting_reply / resolved. */
+/** Map legacy + current DB values onto the five statuses. */
 export function normalizeSupportTicketStatus(
   status: string | null | undefined
 ): SupportTicketStatus {
   switch (status) {
     case "open":
+    case "in_progress":
     case "waiting_reply":
+    case "review":
     case "resolved":
       return status;
     case "new":
     case "submitted":
     case "in_review":
-    case "in_progress":
       return "open";
     default:
       return "open";
@@ -313,19 +334,28 @@ export function isSupportTicketOpen(status: SupportTicketStatus): boolean {
   return status !== "resolved";
 }
 
-/** After staff sends a reply: reopen resolved → open; leave waiting_reply alone. */
+/**
+ * The status follows the conversation (12 Nov). The database moves it on every
+ * reply (support_ticket_status_on_reply); these mirror it for the screen.
+ * After BCA replies: Needs coach.
+ */
 export function supportStatusAfterStaffReply(
   status: SupportTicketStatus
 ): SupportTicketStatus | null {
-  if (status === "resolved") return "open";
-  return null;
+  return status === "waiting_reply" ? null : "waiting_reply";
 }
 
-/** After the member/coach replies: waiting_reply or resolved → open. */
+/**
+ * After the coach replies to something waiting on them, or done: In progress
+ * if BCA has replied before, else BCA to do. BCA to do and In progress stay.
+ */
 export function supportStatusAfterMemberReply(
-  status: SupportTicketStatus
+  status: SupportTicketStatus,
+  bcaHasReplied: boolean
 ): SupportTicketStatus | null {
-  if (status === "waiting_reply" || status === "resolved") return "open";
+  if (status === "waiting_reply" || status === "review" || status === "resolved") {
+    return bcaHasReplied ? "in_progress" : "open";
+  }
   return null;
 }
 
@@ -501,8 +531,8 @@ export function memberSupportStatusPresentation(
   if (status === "resolved") {
     return { label: SUPPORT_STATUS_USER_LABELS.resolved, tone: "resolved" };
   }
-  if (status === "waiting_reply") {
-    return { label: SUPPORT_STATUS_USER_LABELS.waiting_reply, tone: "waiting" };
+  if (status === "waiting_reply" || status === "review") {
+    return { label: SUPPORT_STATUS_USER_LABELS[status], tone: "waiting" };
   }
   return { label: SUPPORT_STATUS_USER_LABELS.open, tone: "open" };
 }
@@ -545,7 +575,7 @@ export function coachSupportListSection(
   viewerId: string
 ): CoachSupportListSection {
   if (ticketHasUnreadStaffReply(ticket, replies, viewerId)) return "new";
-  if (ticket.status === "waiting_reply") return "your_reply";
+  if (ticket.status === "waiting_reply" || ticket.status === "review") return "your_reply";
   if (ticket.status === "resolved") return "resolved";
   const last = replies[replies.length - 1];
   const staffHasReplied = replies.some((reply) => reply.created_by !== viewerId);

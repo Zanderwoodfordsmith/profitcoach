@@ -39,6 +39,7 @@ import {
   notifySupportCountsChanged,
 } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
+import { JobStatusChip } from "@/components/jobs/jobParts";
 import { AdminChatLinkPill, AdminChatPanel, adminChatLinkFor, useAdminSupportDock } from "@/components/support/AdminSupportDock";
 import type { SupportThreadLayout } from "@/components/support/SupportChatBubbles";
 import { useMatchesBreakpoint } from "@/hooks/useBreakpoint";
@@ -99,6 +100,7 @@ import type { LaunchProgress } from "@/lib/launch/progress";
 import {
   SUPPORT_SOURCE_LABELS,
   SUPPORT_STATUS_ADMIN_LABELS,
+  SUPPORT_STATUS_JOB,
   supportChatOpenedByBca,
   SUPPORT_TYPE_LABELS,
   supportTypeOptionLabel,
@@ -117,7 +119,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
-import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
+import { badgeClass } from "@/components/ui/Badge";
 import { fieldClass } from "@/components/ui/Field";
 type AdminTicketRow = {
   id: string;
@@ -217,14 +219,6 @@ type PersonGroup = {
   latestAt: string;
 };
 
-const TYPE_TONES: Record<SupportTicketType, BadgeTone> = {
-  question: "blue",
-  bug: "red",
-  idea: "green",
-  billing: "amber",
-  other: "grey",
-};
-
 const ASSIGNEE_FILTERS: { id: SupportAssigneeFilter; label: string }[] = [
   { id: "anyone", label: "All" },
   { id: "zander", label: "Zander" },
@@ -235,20 +229,14 @@ const STATUS_FILTER_OPTIONS: {
   id: SupportStatusFilter;
   label: string;
 }[] = [
-  { id: "open", label: "Open" },
-  { id: "resolved", label: "Resolved" },
+  { id: "open", label: "All open" },
+  { id: "waiting_reply", label: SUPPORT_STATUS_ADMIN_LABELS.waiting_reply },
+  { id: "bca_todo", label: SUPPORT_STATUS_ADMIN_LABELS.open },
+  { id: "in_progress", label: SUPPORT_STATUS_ADMIN_LABELS.in_progress },
+  { id: "review", label: SUPPORT_STATUS_ADMIN_LABELS.review },
+  { id: "resolved", label: SUPPORT_STATUS_ADMIN_LABELS.resolved },
   { id: "all", label: "All statuses" },
 ];
-
-const TYPE_FILTER_OPTIONS: { id: "all" | SupportTicketType; label: string }[] =
-  [
-    { id: "all", label: "All categories" },
-    { id: "question", label: SUPPORT_TYPE_LABELS.question },
-    { id: "bug", label: SUPPORT_TYPE_LABELS.bug },
-    { id: "idea", label: SUPPORT_TYPE_LABELS.idea },
-    { id: "billing", label: SUPPORT_TYPE_LABELS.billing },
-    { id: "other", label: SUPPORT_TYPE_LABELS.other },
-  ];
 
 const filterSelectClass = fieldClass("select", "small");
 
@@ -437,18 +425,21 @@ function inboxAgeBand(iso: string, now = new Date()): string {
   return "Older";
 }
 
-const WAITING_ON_REPLY_BAND = "Waiting on member";
+const WAITING_ON_REPLY_BAND = "Needs coach";
 
 /**
  * Open filter sections:
  * - Needs our reply → Today / Yesterday / … by last unreplied member message
- * - We've replied (or marked waiting) → "Waiting on member" at the bottom
+ * - We've replied (or marked Needs coach / Review) → "Needs coach" at the bottom
  */
 function ticketNeedsStaffReply(
   row: Pick<AdminTicketRow, "status" | "lastUnrepliedMemberAt" | "lastActivityAt" | "reopened_at" | "nothingToAnswer">
 ): boolean {
-  if (row.status === "waiting_reply") return false;
+  // Needs coach, Review and Done wait on nobody at BCA.
+  if (row.status === "waiting_reply" || row.status === "review") return false;
   if (row.status === "resolved") return false;
+  // In progress is BCA's turn whoever wrote last: it stays in the timed groups.
+  if (row.status === "in_progress") return true;
   // Set back to Open by hand after the last message: keep it Open.
   if (row.reopened_at && Date.parse(row.reopened_at) >= Date.parse(row.lastActivityAt)) return true;
   // Ticked "Seen", or BCA started it and the coach hasn't written since.
@@ -457,7 +448,7 @@ function ticketNeedsStaffReply(
   return row.lastActivityAt === row.lastUnrepliedMemberAt;
 }
 
-/** Status as the inbox shows it: Open with our reply last reads as Waiting on member. */
+/** Status as the inbox shows it: BCA to do with our reply last reads as Needs coach. */
 function shownTicketStatus(
   row: Pick<AdminTicketRow, "status" | "lastUnrepliedMemberAt" | "lastActivityAt" | "reopened_at" | "nothingToAnswer">
 ): SupportTicketStatus {
@@ -649,45 +640,6 @@ function WaitingSectionHeader({
   );
 }
 
-/** Support V1 (as it was) or V2 (5 Nov: the chat docked on the right, as coaches see it). Admins pick until one is chosen. */
-type SupportLook = "v1" | "v2";
-const SUPPORT_LOOK_KEY = "admin-support-look";
-
-function useSupportLook(): [SupportLook, (next: SupportLook) => void] {
-  const [look, setLookState] = useState<SupportLook>("v2");
-  useEffect(() => {
-    const saved = window.localStorage.getItem(SUPPORT_LOOK_KEY);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- read the saved choice once, after hydration
-    if (saved === "v1" || saved === "v2") setLookState(saved);
-  }, []);
-  const setLook = useCallback((next: SupportLook) => {
-    setLookState(next);
-    window.localStorage.setItem(SUPPORT_LOOK_KEY, next);
-  }, []);
-  return [look, setLook];
-}
-
-function SupportLookSwitch({ look, onChange }: { look: SupportLook; onChange: (next: SupportLook) => void }) {
-  return (
-    <div className="hidden rounded-lg border border-slate-200 p-0.5 lg:flex" role="group" aria-label="Support look">
-      {(["v1", "v2"] as const).map((option) => (
-        <button
-          key={option}
-          type="button"
-          aria-pressed={look === option}
-          title={option === "v1" ? "As it was" : "Chat on the right, as coaches see it"}
-          onClick={() => onChange(option)}
-          className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-            look === option ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          {option === "v1" ? "V1" : "V2"}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function AdminSupportPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -705,18 +657,14 @@ export function AdminSupportPage() {
     useState<SupportAssigneeFilter>("anyone");
   const [statusFilter, setStatusFilter] =
     useState<SupportStatusFilter>("open");
-  const [typeFilter, setTypeFilter] = useState<"all" | SupportTicketType>(
-    "all"
-  );
   // ?channel=<coach id>[&thread=<key>]: open straight onto a coach's channel (from the launch board).
   const linkedChannel = searchParams.get("channel");
   const linkedThread = searchParams.get("thread");
   const [groupMode, setGroupMode] = useState<GroupMode>(linkedChannel ? "channels" : "tickets");
-  const [look, setLook] = useSupportLook();
   const desktop = useMatchesBreakpoint("lg");
   const dock = useAdminSupportDock();
-  // V2 on wide screens, for tickets (Channels keeps its own feed). Phones keep V1.
-  const v2 = look === "v2" && desktop === true && groupMode !== "channels" && Boolean(dock);
+  // V2 (picked 11 Nov) on wide screens, for tickets. Phones and Channels keep the stacked layout.
+  const v2 = desktop === true && groupMode !== "channels" && Boolean(dock);
   const [coachMembership, setCoachMembership] = useState<
     Record<string, CoachMembership>
   >({});
@@ -998,11 +946,11 @@ export function AdminSupportPage() {
       }
 
       if (statusFilter === "open" && row.status === "resolved") return false;
-      if (statusFilter === "resolved" && row.status !== "resolved") {
-        return false;
+      if (statusFilter !== "open" && statusFilter !== "all") {
+        // As the row shows it: BCA to do with our reply last reads as Needs coach.
+        const shown = shownTicketStatus(row);
+        if ((statusFilter === "bca_todo" ? "open" : statusFilter) !== shown) return false;
       }
-
-      if (typeFilter !== "all" && row.type !== typeFilter) return false;
 
       if (!q) return true;
       const hay = [
@@ -1041,7 +989,6 @@ export function AdminSupportPage() {
     rows,
     assigneeFilter,
     statusFilter,
-    typeFilter,
     pamAssigneeId,
     searchQuery,
     mentionsByTicket,
@@ -1291,7 +1238,7 @@ export function AdminSupportPage() {
 
   useEffect(() => {
     setSelectedPersonKey(null);
-  }, [assigneeFilter, statusFilter, typeFilter, groupMode, searchQuery]);
+  }, [assigneeFilter, statusFilter, groupMode, searchQuery]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -1937,7 +1884,6 @@ export function AdminSupportPage() {
         variant="inbox"
         canEmailNotify={Boolean(row.created_by || row.contact_email?.trim())}
         emailNotifyDefault={supportNotifyDefaultOn(row.source, row.member_notify_email)}
-        emailNotifyLabel={ticketAuthorLabel(row)}
         sendAsOptions={assignees}
         supportCallContact={
           supportCallContact ?? ticketSupportCallContact(row)
@@ -2049,7 +1995,6 @@ export function AdminSupportPage() {
                   <Plus className="h-4 w-4" aria-hidden />
                   New ticket
                 </button>
-                <SupportLookSwitch look={look} onChange={setLook} />
               </div>
             ) : null
           }
@@ -2211,38 +2156,20 @@ export function AdminSupportPage() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-2 gap-1.5">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) =>
-                      setStatusFilter(e.target.value as SupportStatusFilter)
-                    }
-                    aria-label="Filter by status"
-                    className={filterSelectClass}
-                  >
-                    {STATUS_FILTER_OPTIONS.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={typeFilter}
-                    onChange={(e) =>
-                      setTypeFilter(
-                        e.target.value as "all" | SupportTicketType
-                      )
-                    }
-                    aria-label="Filter by category"
-                    className={filterSelectClass}
-                  >
-                    {TYPE_FILTER_OPTIONS.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as SupportStatusFilter)
+                  }
+                  aria-label="Filter by status"
+                  className={filterSelectClass}
+                >
+                  {STATUS_FILTER_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
                 </>
                 ) : null}
 
@@ -2497,7 +2424,7 @@ export function AdminSupportPage() {
                               <span className="min-w-0 flex-1">
                                 <span className="flex items-center gap-1.5">
                                   <span
-                                    className={`truncate text-sm ${
+                                    className={`min-w-0 flex-1 truncate text-sm ${
                                       isNew
                                         ? "font-semibold text-slate-900"
                                         : "font-medium text-slate-800"
@@ -2519,8 +2446,10 @@ export function AdminSupportPage() {
                                       {badgeCount}
                                     </span>
                                   ) : null}
+                                  {/* The jobs' own chip (12 Nov): status on the title line, time on the message line. */}
+                                  <JobStatusChip status={SUPPORT_STATUS_JOB[shownTicketStatus(row)]} audience="admin" />
                                 </span>
-                                <span className="mt-0.5 flex min-w-0 gap-1.5 text-xs text-slate-500">
+                                <span className="mt-0.5 flex min-w-0 items-baseline gap-1.5 text-xs text-slate-500">
                                   <span className="max-w-[40%] shrink truncate font-medium text-slate-600">
                                     {preview.name}
                                   </span>
@@ -2528,16 +2457,9 @@ export function AdminSupportPage() {
                                     {previewText(preview.text, 96) ||
                                       SUPPORT_TYPE_LABELS[row.type]}
                                   </span>
-                                </span>
-                              </span>
-                              <span className="flex shrink-0 flex-col items-end gap-1">
-                                <span className="text-caption tabular-nums text-slate-400">
-                                  {formatSupportRelativeCompact(listAt)}
-                                </span>
-                                <span
-                                  className={badgeClass(TYPE_TONES[row.type])}
-                                >
-                                  {SUPPORT_TYPE_LABELS[row.type]}
+                                  <span className="shrink-0 text-caption tabular-nums text-slate-400">
+                                    {formatSupportRelativeCompact(listAt)}
+                                  </span>
                                 </span>
                               </span>
                             </button>
@@ -2605,7 +2527,7 @@ export function AdminSupportPage() {
                       key={selected.id}
                       title={selected.title?.trim() || ticketAuthorLabel(selected)}
                       status={status}
-                      onToggleDone={() => void updateRow(selected.id, { status: status === "resolved" ? "open" : "resolved" })}
+                      onStatus={(next) => void updateRow(selected.id, { status: next })}
                       link={link ? <AdminChatLinkPill link={link} onOpen={() => openChatPage(selected, link.to)} /> : null}
                     >
                       {ticketThread(selected, "cards")}
@@ -2705,7 +2627,6 @@ export function AdminSupportPage() {
                     variant="inbox"
                     canEmailNotify={Boolean(selectedChannel.profileId)}
                     emailNotifyDefault={false}
-                    emailNotifyLabel={selectedChannel.label}
                     sendAsOptions={assignees}
                     messageLayout="slack"
                     header={

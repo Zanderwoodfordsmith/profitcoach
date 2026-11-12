@@ -212,22 +212,33 @@ export async function weakSpot(coachId: string): Promise<WeakSpot | null> {
  */
 export const MONTHLY_MINUTES = 240;
 
-type Timed = { started_at: string; ended_at: string | null; last_at?: string | null };
+type Timed = { started_at: string; ended_at: string | null; transcript?: { at?: number }[] | null };
+
+/** A silence longer than this between two lines is a pause (a tab left open), not talk. */
+const PAUSE_SECONDS = 5 * 60;
 
 /**
  * A call's length. One that never ended (the tab closed, or it dropped) runs
  * to its last line plus half a minute, or one minute if nothing was said, so
- * a closed tab doesn't cost a coach the full 45.
+ * a closed tab doesn't cost a coach the full 45. Pauses don't count: Paul
+ * Hamnett left a call paused for 4.7 days and it counted as 6,792 minutes.
  */
 function sessionMinutes(s: Timed): number {
-  if (!s.ended_at) {
-    const last = Number(s.last_at);
-    return Number.isFinite(last) && last > 0 ? (last + 30) / 60 : 1;
+  const ats = (s.transcript ?? []).map((l) => Number(l?.at)).filter((n) => Number.isFinite(n) && n >= 0);
+  let paused = 0;
+  for (let i = 1; i < ats.length; i++) {
+    const gap = ats[i] - ats[i - 1];
+    if (gap > PAUSE_SECONDS) paused += gap;
   }
-  return Math.max(0, (new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 60_000);
+  if (!s.ended_at) {
+    const last = ats[ats.length - 1];
+    return last > 0 ? (last - paused + 30) / 60 : 1;
+  }
+  const wall = (new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000;
+  return Math.max(0, (wall - paused) / 60);
 }
 
-const TIMED = "started_at, ended_at, last_at:transcript->-1->>at";
+const TIMED = "started_at, ended_at, transcript";
 
 function monthStart(): string {
   const d = new Date();

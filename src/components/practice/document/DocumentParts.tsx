@@ -21,6 +21,7 @@ import { DecisionRecordView } from "../DecisionRecord";
 import { usePractice } from "../PracticeProvider";
 import { SectionView } from "./SectionView";
 import { AvaHalo } from "@/components/ava/AvaHalo";
+import { tutorialVideoUrl } from "@/lib/tutorialVideos";
 
 /** Pages that belong in the document (not the Command Center or the whole-document page). */
 export function documentPages(group: BlueprintGroup): BlueprintLink[] {
@@ -409,7 +410,7 @@ export function StillNeeded() {
 }
 
 /** Zander's welcome video on the landing cover: why the Blueprint works this way and the three steps. */
-const COVER_VIDEO = "/tutorials/blueprint-welcome.mp4";
+const COVER_VIDEO = tutorialVideoUrl("blueprint-welcome.mp4");
 const COVER_POSTER = "/tutorials/blueprint-welcome-poster.jpg";
 const COVER_VIDEO_SEEN_KEY = "bp-welcome-video-seen";
 

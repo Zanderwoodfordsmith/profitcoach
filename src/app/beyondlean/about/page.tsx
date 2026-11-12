@@ -18,7 +18,7 @@ const CREDENTIALS = [
   "Lean Six Sigma Master Black Belt",
   "HNC Engineering",
   "NVQ 3 Coaching Award",
-  "Trained in The Profit System",
+  "Certified Profit Coach",
 ];
 
 type Props = { searchParams: Promise<{ v?: string }> };
@@ -107,7 +107,8 @@ export default async function AboutPage({ searchParams }: Props) {
               </p>
               <p>
                 Outside work I live on a small farm in North Wales with dogs and ponies. I hold a 5th Dan black belt in
-                karate and coach two clubs. Both teach the same thing: get the basics right, then keep improving.
+                Karate Jitsu. I coached two clubs for over 25 years, and now I coach the odd person in my village.
+                Karate Jitsu and lean teach the same thing: get the basics right, then keep improving.
               </p>
             </div>
           </div>

@@ -8,7 +8,7 @@ import { SectionIntro } from "../Option";
 import { Screen } from "../parts";
 import { ColumnChat, WorkspaceChat } from "./ChatScreens";
 import { GlassPanel, PhoneChat, PhoneSheet, PhoneSunrise, PhoneVoice, SidebarAva } from "./DockMobile";
-import { WIDE } from "./FaceOptions";
+import { WIDE } from "./faces";
 import {
   CampaignDays,
   CampaignOn,
@@ -91,7 +91,7 @@ export function Decided() {
   return (
     <div className="flex flex-col gap-14">
       <SectionIntro title="Decided so far">
-        Your picks, all shown with her new symbol. Still open: her face, the phone, and More screens. Options you passed on have been
+        Your picks, all shown with her new symbol. Still open: the phone and More screens. Options you passed on have been
         removed (git still has them if we ever want one back).
       </SectionIntro>
 
@@ -125,7 +125,7 @@ export function Decided() {
 
       <Pick
         title="Start screen: Ava in the room"
-        line="Option E: her face in a lighter brand-blue room, the glass box and buttons beside her. The face is still to choose; this uses round three."
+        line="Option E: her face in a lighter brand-blue room, the glass box and buttons beside her. Her face is the round three one, picked 11 Nov."
       >
         <Screen label="Chosen start screen">
           <RoomNavyStart mark="haloCore" tone="light" face={WIDE.v3} />

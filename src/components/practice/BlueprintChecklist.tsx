@@ -25,7 +25,7 @@ import { usePractice } from "./PracticeProvider";
 import { useBlueprintInbox, type InboxItem } from "./useBlueprintInbox";
 
 type State = "done" | "todo" | "waiting";
-type Step = {
+export type SetupStep = {
   id: string;
   title: string;
   line: string;
@@ -47,6 +47,7 @@ const OPEN_KEY = "blueprint-checklist-open";
 
 function useChecklistFacts(coachId: string | null, sample: boolean) {
   const [facts, setFacts] = useState<ChecklistFacts | null>(null);
+  const [asked, setAsked] = useState(sample);
   useEffect(() => {
     if (sample) return;
     let cancelled = false;
@@ -59,13 +60,15 @@ function useChecklistFacts(coachId: string | null, sample: boolean) {
       const body = res?.ok
         ? ((await res.json().catch(() => null)) as ChecklistFacts | null)
         : null;
-      if (!cancelled && body) setFacts(body);
+      if (cancelled) return;
+      if (body) setFacts(body);
+      setAsked(true);
     })();
     return () => {
       cancelled = true;
     };
   }, [coachId, sample]);
-  return [facts, setFacts] as const;
+  return [facts, setFacts, asked] as const;
 }
 
 /** Open unless the coach folded it away (remembered on this browser). */
@@ -105,15 +108,14 @@ function callWhen(iso: string): string {
 }
 
 /**
- * The Overview's "Get set up" (5 Nov): one list of what the coach does, from
- * connecting LinkedIn to the campaign going live. The app ticks what it can see;
- * the coach ticks the two it can't (new profile up, prospect list looks right).
+ * What the coach does to get going, from connecting LinkedIn to the campaign
+ * going live. The app ticks what it can see; the coach ticks the two it can't
+ * (new profile up, prospect list looks right). Drawn by the checklist and the timeline.
  */
-export function BlueprintChecklist() {
+export function useSetupSteps() {
   const { knowledge, payload, href, coachId, sample, decision, coachJoinedAt } = usePractice();
-  const [facts, setFacts] = useChecklistFacts(coachId, sample);
+  const [facts, setFacts, asked] = useChecklistFacts(coachId, sample);
   const device = useInstallDevice();
-  const [open, toggleOpen] = useOpen();
   const [getApp, setGetApp] = useState(false);
   const [saving, setSaving] = useState<HandStep | null>(null);
   if (!knowledge || !payload) return null;
@@ -167,7 +169,7 @@ export function BlueprintChecklist() {
   }
 
   const prospects = facts?.prospects ?? 0;
-  const steps: Step[] = [
+  const steps: SetupStep[] = [
     {
       id: "linkedin",
       title: "Connect LinkedIn",
@@ -298,6 +300,16 @@ export function BlueprintChecklist() {
     },
   ];
 
+  return { steps, facts, asked, campaignStatus, getApp, setGetApp };
+}
+
+/** The Overview's "Get set up" (5 Nov): the steps as one foldable list. */
+export function BlueprintChecklist() {
+  const setup = useSetupSteps();
+  const [open, toggleOpen] = useOpen();
+  if (!setup) return null;
+  const { steps, getApp, setGetApp } = setup;
+
   const doneCount = steps.filter((s) => s.state === "done").length;
   const allDone = doneCount === steps.length;
   const next = steps.find((s) => s.state === "todo")?.id ?? null;
@@ -359,7 +371,7 @@ export function BlueprintChecklist() {
  * several show a short list to pick from. Page chats open beside the Overview,
  * chats with BCA in Support's docked chat, so nobody leaves the Blueprint.
  */
-function WaitingForYou() {
+export function WaitingForYou() {
   const { href } = usePractice();
   // As the coach sees it, so BCA previewing the Overview sees the same bar.
   const { items } = useBlueprintInbox({ asCoach: true });
@@ -450,7 +462,7 @@ function itemTitle(item: InboxItem): string {
  * tick, ready to do is dark text with its button, not yet is lighter text.
  * The next one to do gets the filled button.
  */
-function ChecklistRow({ step, next }: { step: Step; next: boolean }) {
+function ChecklistRow({ step, next }: { step: SetupStep; next: boolean }) {
   const done = step.state === "done";
   const waiting = step.state === "waiting";
   const action = step.action && !done ? step.action : null;

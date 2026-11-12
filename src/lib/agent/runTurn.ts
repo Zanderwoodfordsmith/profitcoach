@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { helpAnswersAsMarkdown } from "@/lib/help/helpAnswers";
 
 import { createPendingAction } from "./actions";
 import type { AgentActor } from "./auth";
@@ -76,7 +77,9 @@ function systemPrompt(mode: AgentChatRow["mode"], limited: boolean): string {
   // Ava's voice (card 180) sits right after who she is, in every chat. Editable in Admin → Ava.
   const raw = resolveReference(VOICE_FILE)?.text;
   const voice = raw ? parseFrontmatter(raw).body : null;
-  return [loadIdentity(), ...(voice ? [voice] : []), loadRouter(), session].join("\n\n---\n\n");
+  // Help centre answers (job 211): how the app works, in the words coaches read on Support → Help.
+  const help = `# Help centre answers\nWhen the coach asks how something in the app works, or where to find something, answer from these. Keep the link in the answer so they can open the page.\n\n${helpAnswersAsMarkdown()}`;
+  return [loadIdentity(), ...(voice ? [voice] : []), loadRouter(), help, session].join("\n\n---\n\n");
 }
 
 /** "Offer (offer)" when the page open is a Blueprint page, coach or admin view. */

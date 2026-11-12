@@ -28,11 +28,12 @@ import { ActivityTab } from "./JobActivity";
 import { BcaMark, JOBS, JobStatusCircle, groupLabel, statusLabel } from "./jobParts";
 import type { ProjectThread } from "./useCoachThreads";
 import type { JobState } from "./useJobs";
+import { tutorialVideoUrl } from "@/lib/tutorialVideos";
 
 // Loaded when a Blueprint section's comments open, as in the Blueprint itself.
 const SidePanel = dynamic(() => import("@/components/practice/SidePanel").then((m) => m.SidePanel), { ssr: false });
 
-const WELCOME_VIDEO = "/tutorials/blueprint-welcome.mp4";
+const WELCOME_VIDEO = tutorialVideoUrl("blueprint-welcome.mp4");
 const WELCOME_POSTER = "/tutorials/blueprint-welcome-poster.jpg";
 
 export type JobOpen = { kind: "job"; thread: LaunchThread } | { kind: "message"; row: ProjectThread };

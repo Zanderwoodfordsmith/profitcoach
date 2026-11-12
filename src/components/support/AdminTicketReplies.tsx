@@ -1,16 +1,15 @@
 "use client";
 
 import { SeenTick } from "@/components/support/SeenTick";
+import { JobStatusCircle } from "@/components/jobs/jobParts";
+import { JOB_STATUS_META } from "@/lib/launch/jobStatus";
 import {
   Bold,
   Check,
-  CheckCircle2,
   ChevronDown,
-  Circle,
   Clock,
   Eye,
   FileText,
-  Hourglass,
   Image as ImageIcon,
   Link as LinkIcon,
   Maximize2,
@@ -26,6 +25,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
 import { ReplyCopilotButton } from "@/components/messaging/ReplyCopilotButton";
+import { badgeClass } from "@/components/ui/Badge";
+import { PageLinkTextarea } from "@/components/support/PageLinkTextarea";
+import type { SupportReplySuggestion } from "@/lib/support/replySuggestion";
 import {
   CommentAttachButton,
   CommentImagePreviews,
@@ -115,6 +117,7 @@ import {
   SUPPORT_AUTHOR_SELECT,
   SUPPORT_REPLY_LIST_SELECT,
   SUPPORT_STATUS_ADMIN_LABELS,
+  SUPPORT_STATUS_JOB,
   mapSupportReplyRow,
   normalizeSupportAuthor,
   supportStatusAfterStaffReply,
@@ -211,12 +214,10 @@ type AdminTicketRepliesProps = {
   /** Card = nested under table/card; inbox = full thread pane. */
   variant?: "card" | "inbox";
   openingMessage?: AdminTicketOpening;
-  /** Show "Email about this reply" when we have a member or contact email. */
+  /** Show "Email reply" when we have a member or contact email. */
   canEmailNotify?: boolean;
   /** Default checkbox on (e.g. email_inbox / public_form). */
   emailNotifyDefault?: boolean;
-  /** Short label for who gets the email, e.g. coach name. */
-  emailNotifyLabel?: string | null;
   /** Staff profiles the admin can send as (Zander, Pam, …). */
   sendAsOptions?: SupportAssignee[];
   /** Prefill name/email/phone on support-call booking links from templates. */
@@ -247,7 +248,6 @@ export function AdminTicketReplies({
   openingMessage,
   canEmailNotify = false,
   emailNotifyDefault = false,
-  emailNotifyLabel = null,
   sendAsOptions = [],
   supportCallContact = null,
   onInternalNoteSaved,
@@ -302,6 +302,13 @@ export function AdminTicketReplies({
   const bottomRef = useRef<HTMLDivElement>(null);
   const threadScrollRef = useRef<HTMLDivElement>(null);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  /** Ava's draft waiting on this chat. Hidden once BCA has her write another. */
+  const [suggestion, setSuggestion] = useState<
+    (SupportReplySuggestion & { redrafted?: boolean }) | null
+  >(null);
+  /** The draft as Ava wrote it: untouched, it isn't BCA's own to save or keep. */
+  const suggestionBodyRef = useRef<string | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const sendAsMenuRef = useRef<HTMLDivElement>(null);
@@ -604,12 +611,88 @@ export function AdminTicketReplies({
     setSendAsId(preferred);
   }, [userId, sendAsPeople, sendAsId]);
 
+  function ownDraftText(text: string): string {
+    return text === suggestionBodyRef.current ? "" : text;
+  }
+
+  const hasScheduledReply = scheduledReplies.some((row) => row.status === "scheduled");
+
+  // Puts Ava's draft in the box when the chat opens or the coach writes again.
+  // Only the main inbox: card views can show many tickets at once.
+  useEffect(() => {
+    if (variant !== "inbox" || !reportId || !draftLoaded || hasScheduledReply) return;
+    const boxIsBcasOwn = () =>
+      Boolean(draftRef.current.trim()) && draftRef.current !== suggestionBodyRef.current;
+    if (boxIsBcasOwn()) return;
+
+    let live = true;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const load = async (attempt: number) => {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token || !live) return;
+      const res = await fetch(
+        `/api/admin/support/tickets/${encodeURIComponent(reportId)}/reply-suggestion`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      ).catch(() => null);
+      if (!live || !res?.ok) return;
+      const data = (await res.json()) as {
+        suggestion: SupportReplySuggestion | null;
+        pending: boolean;
+      };
+      if (!live || boxIsBcasOwn()) return;
+      if (data.suggestion) {
+        suggestionBodyRef.current = data.suggestion.body;
+        setSuggestion(data.suggestion);
+        setDraft(data.suggestion.body);
+        setComposerOpen(true);
+      } else if (data.pending && attempt < 8) {
+        retry = setTimeout(() => void load(attempt + 1), 4000);
+      } else if (suggestionBodyRef.current) {
+        // BCA answered elsewhere, so the untouched draft no longer applies.
+        suggestionBodyRef.current = null;
+        setSuggestion(null);
+        setDraft("");
+      }
+    };
+    void load(0);
+    return () => {
+      live = false;
+      if (retry) clearTimeout(retry);
+    };
+  }, [variant, reportId, draftLoaded, hasScheduledReply, replies.length]);
+
+  /** Clears Ava's draft and tells the server, so it isn't offered again. */
+  async function dismissSuggestion() {
+    const id = suggestion?.id;
+    suggestionBodyRef.current = null;
+    setSuggestion(null);
+    setDraft("");
+    if (!id) return;
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) return;
+    await fetch(`/api/admin/support/tickets/${encodeURIComponent(reportId)}/reply-suggestion`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ action: "dismiss", suggestionId: id }),
+    }).catch(() => null);
+  }
+
   useEffect(() => {
     const prevId = prevReportIdRef.current;
     if (prevId && prevId !== reportId) {
-      void saveAdminReplyDraft(prevId, draftRef.current);
+      void saveAdminReplyDraft(prevId, ownDraftText(draftRef.current));
     }
     prevReportIdRef.current = reportId;
+    suggestionBodyRef.current = null;
+    setSuggestion(null);
+    setDraftLoaded(false);
 
     const generation = ++draftLoadGenerationRef.current;
     draftAutosaveReadyRef.current = false;
@@ -643,6 +726,7 @@ export function AdminTicketReplies({
         setComposerOpen(true);
       }
       draftAutosaveReadyRef.current = true;
+      setDraftLoaded(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only on ticket change
   }, [reportId]);
@@ -650,14 +734,14 @@ export function AdminTicketReplies({
   useEffect(() => {
     if (!draftAutosaveReadyRef.current) return;
     const timer = window.setTimeout(() => {
-      void saveAdminReplyDraft(reportId, draft);
+      void saveAdminReplyDraft(reportId, ownDraftText(draft));
     }, ADMIN_REPLY_DRAFT_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [draft, reportId]);
 
   useEffect(() => {
     return () => {
-      void saveAdminReplyDraft(reportIdRef.current, draftRef.current);
+      void saveAdminReplyDraft(reportIdRef.current, ownDraftText(draftRef.current));
       revokePendingSupportVoice(pendingVoice);
       if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
     };
@@ -836,14 +920,17 @@ export function AdminTicketReplies({
       if (!res.ok || !data.suggestion?.trim()) {
         throw new Error(data.error || "Could not draft a reply.");
       }
-      const suggestion = data.suggestion.trim();
-      setDraft(suggestion);
+      const redraft = data.suggestion.trim();
+      // BCA's own now, so it saves like anything they typed.
+      suggestionBodyRef.current = null;
+      setSuggestion((current) => (current ? { ...current, redrafted: true } : current));
+      setDraft(redraft);
       setComposerOpen(true);
       requestAnimationFrame(() => {
         const ta = replyTextareaRef.current;
         if (!ta) return;
         ta.focus();
-        ta.setSelectionRange(suggestion.length, suggestion.length);
+        ta.setSelectionRange(redraft.length, redraft.length);
       });
     } catch (err) {
       if (copilotTicketRef.current !== requestedFor) return;
@@ -1014,6 +1101,28 @@ export function AdminTicketReplies({
       setReplies((current) => [...current, reply]);
       setDraft("");
       void clearAdminReplyDraft(targetId);
+      if (suggestion) {
+        const suggestionId = suggestion.id;
+        suggestionBodyRef.current = null;
+        setSuggestion(null);
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+        if (session?.access_token) {
+          // Saved beside the draft so we can see how much BCA changes over time.
+          void fetch(
+            `/api/admin/support/tickets/${encodeURIComponent(targetId)}/reply-suggestion`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ action: "sent", suggestionId, replyId: reply.id }),
+            }
+          ).catch(() => null);
+        }
+      }
       clearPendingCommentImages(pendingImages);
       setPendingImages([]);
       setPendingFiles([]);
@@ -1333,7 +1442,7 @@ export function AdminTicketReplies({
         onClick={() => switchComposerMode("reply")}
         className={`rounded-md px-2.5 py-1 ${
           composerMode === "reply"
-            ? "bg-white text-slate-900 shadow-sm"
+            ? "bg-sky-700 text-white shadow-sm"
             : "text-slate-500 hover:text-slate-800"
         }`}
       >
@@ -1398,11 +1507,7 @@ export function AdminTicketReplies({
         onChange={(e) => setEmailNotify(e.target.checked)}
         className="h-3.5 w-3.5 rounded border-slate-300 accent-sky-600"
       />
-      <span>
-        Email{" "}
-        {emailNotifyLabel?.trim() ? emailNotifyLabel.trim() : "them"} about this
-        reply
-      </span>
+      <span>Email reply</span>
     </label>
   ) : null;
 
@@ -1478,13 +1583,16 @@ export function AdminTicketReplies({
       </div>
     ) : null;
 
+  const showDraftBadge =
+    composerMode === "reply" && Boolean(suggestion) && !suggestion?.redrafted && Boolean(draft.trim());
+
   const composer = inbox ? (
     <div
       className={`relative flex flex-col ${
         messageLayout === "slack"
           ? "bg-white [&>*]:w-full [&>*]:max-w-2xl"
           : messageLayout === "cards"
-            ? "bp-chat-foot"
+            ? "bp-chat-foot support-reply-foot"
             : "border-t border-slate-200 bg-white"
       } ${composerOpen && composerExpanded ? "min-h-0 flex-1" : "shrink-0"}`}
     >
@@ -1718,11 +1826,11 @@ export function AdminTicketReplies({
                   className="min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400"
                 />
               ) : (
-                <textarea
-                  ref={replyTextareaRef}
+                <PageLinkTextarea
+                  textareaRef={replyTextareaRef}
                   rows={composerExpanded ? undefined : 4}
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onValueChange={setDraft}
                   // Return is a new line; ⌘ or Ctrl + Return sends, as in the coach's chat.
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -1731,12 +1839,42 @@ export function AdminTicketReplies({
                     }
                   }}
                   autoFocus
-                  placeholder="Write a message, or jot notes and tap Ava to draft it..."
-                  className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 pr-12 pb-10 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
-                    composerExpanded ? "min-h-0 flex-1" : ""
-                  }`}
+                  placeholder="Write a message, type @@ to link a page, or jot notes and tap Ava to draft it..."
+                  className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 pb-10 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
+                    showDraftBadge ? "pr-28" : "pr-12"
+                  } ${composerExpanded ? "min-h-0 flex-1" : ""}`}
                 />
               )}
+              {/* Ava's draft: how sure she is, top right; why on hover (11 Nov). */}
+              {showDraftBadge && suggestion ? (
+                <div className="absolute right-2 top-2 flex items-center gap-1">
+                  <span
+                    title={`Ava's draft. ${suggestion.reason}`}
+                    className={`cursor-help ${badgeClass(
+                      suggestion.confidence === "high"
+                        ? "green"
+                        : suggestion.confidence === "medium"
+                          ? "amber"
+                          : "red"
+                    )}`}
+                  >
+                    {suggestion.confidence === "high"
+                      ? "High"
+                      : suggestion.confidence === "medium"
+                        ? "Medium"
+                        : "Low"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void dismissSuggestion()}
+                    aria-label="Clear Ava's draft"
+                    title="Clear Ava's draft"
+                    className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                </div>
+              ) : null}
               {composerMode === "reply" ? (
                 <ReplyCopilotButton
                   loading={copilotLoading}
@@ -2029,10 +2167,10 @@ export function AdminTicketReplies({
             {notifyToggle}
           </div>
           <div className="flex items-end gap-2">
-            <textarea
+            <PageLinkTextarea
               rows={2}
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onValueChange={setDraft}
               placeholder="Reply to the coach…"
               className="min-h-[2.5rem] flex-1 resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             />
@@ -2134,26 +2272,20 @@ export function AdminTicketReplies({
   );
 
   if (inbox) {
-    const statusStyles: Record<
-      SupportTicketStatus,
-      { trigger: string; option: string; icon: ReactNode }
-    > = {
-      open: {
-        trigger: "bg-sky-50 text-sky-800 ring-sky-200/80",
-        option: "bg-sky-50 text-sky-800 hover:bg-sky-100",
-        icon: <Circle className="h-3.5 w-3.5" strokeWidth={2} />,
-      },
-      waiting_reply: {
-        trigger: "bg-amber-50 text-amber-900 ring-amber-200/80",
-        option: "bg-amber-50 text-amber-900 hover:bg-amber-100",
-        icon: <Hourglass className="h-3.5 w-3.5" strokeWidth={1.75} />,
-      },
-      resolved: {
-        trigger: "bg-emerald-50 text-emerald-800 ring-emerald-200/80",
-        option: "bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
-        icon: <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />,
-      },
-    };
+    // The same chip colours and circle as the launch jobs (11 Nov).
+    const statusStyles = Object.fromEntries(
+      (Object.keys(SUPPORT_STATUS_JOB) as SupportTicketStatus[]).map((st) => {
+        const job = SUPPORT_STATUS_JOB[st];
+        return [
+          st,
+          {
+            trigger: `${JOB_STATUS_META[job].chip} ring-black/5`,
+            option: `${JOB_STATUS_META[job].chip} hover:brightness-95`,
+            icon: <JobStatusCircle status={job} audience="admin" />,
+          },
+        ];
+      })
+    ) as Record<SupportTicketStatus, { trigger: string; option: string; icon: ReactNode }>;
 
     const activeStatus = statusStyles[reportStatus];
 

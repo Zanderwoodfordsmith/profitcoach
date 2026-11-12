@@ -329,14 +329,21 @@
   }
 }
 
+/* Phones (11 Nov): her face at the top, fading out before the words, so the heading never crosses her eyes. */
 @media (max-width: 899px) {
   .ava-room-face {
+    inset: 0 0 auto 0;
     width: 100%;
-    background-position: 70% 20%;
+    height: 50%;
+    background-position: 72% 30%;
+    -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 95%);
+    -webkit-mask-composite: source-over;
+    mask-image: linear-gradient(180deg, #000 30%, transparent 95%);
+    mask-composite: add;
   }
 
   .ava-stage:has(.ava-hero-face) .ava-room-face {
-    opacity: 0.3;
+    opacity: 0.6;
   }
 }
 

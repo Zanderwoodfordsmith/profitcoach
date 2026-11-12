@@ -1,0 +1,898 @@
+[
+ {
+  "id": "693fe7c7-128d-4641-873d-df90fd3c343c",
+  "paid_at": "2026-06-05T10:39:21+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3Tev9nEz5QxIrr4n0ShrVQ7j",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "d894fdfc-f4d0-423d-9b78-fa8ff94443d9",
+  "paid_at": "2026-06-06T13:08:38+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TfJxoEz5QxIrr4n0PRvyFkX",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "f03b0dbf-1030-45ec-b0cc-35ed5374cb0f",
+  "paid_at": "2026-06-06T14:49:35+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Tax0ZEz5QxIrr4n1ZkgF2sV",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "12a6580f-5a2a-4176-856e-32b70adf8410",
+  "paid_at": "2026-06-07T12:50:56+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TfgAEEz5QxIrr4n1ojaneo3",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "652482da-0014-44c0-8f96-f0682565d85d",
+  "paid_at": "2026-06-07T18:24:16+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TflMnEz5QxIrr4n0FxJyh9j",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "ef5e40e5-b4f0-4b70-a883-248a1052731a",
+  "paid_at": "2026-06-08T12:43:43+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "c419377f-701c-465e-92c6-0b4f2719c500",
+  "paid_at": "2026-06-08T16:31:08+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3Tg64rEz5QxIrr4n14x5ISel",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "b03780e1-3b62-413e-a913-aa084ada31e7",
+  "paid_at": "2026-06-10T13:04:41+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "e8ffa7ea-8930-48f4-b031-75eeb2082ea2",
+  "paid_at": "2026-06-10T14:27:23+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3Tgn4YEz5QxIrr4n0mrXXkon",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "ca458e1b-4cff-477b-a63c-9ae4d83f04ce",
+  "paid_at": "2026-06-12T11:22:29+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "py_3ThTAMEz5QxIrr4n0OcD1qMU",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "c30445e7-12b3-4890-8947-226007212b6e",
+  "paid_at": "2026-06-12T14:51:01+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TfgAEEz5QxIrr4n1zPugZnF",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "6f11f7e1-9a68-4fc1-8db7-1f8ab65d74b0",
+  "paid_at": "2026-06-15T08:50:35+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TiWE0Ez5QxIrr4n1K7xjDsE",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "25418923-0551-4f44-a3d2-f004fb07c04f",
+  "paid_at": "2026-06-15T11:22:00+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TiYaXEz5QxIrr4n0KraZTYr",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "86c8b78a-a90f-4894-9704-bcee4c681295",
+  "paid_at": "2026-06-15T11:49:37+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Tax0ZEz5QxIrr4n15aoUVXy",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "a0d0ba0d-2202-4f70-b9da-48966bec79f7",
+  "paid_at": "2026-06-16T15:51:04+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TfgAEEz5QxIrr4n1ifUlgat",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "e7114fcf-78c3-4c29-91d3-fa6d45ece690",
+  "paid_at": "2026-06-17T15:35:17+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TjLUWEz5QxIrr4n16WG2SQc",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "1ecb5fc5-2035-483c-b396-e65c76bd12bc",
+  "paid_at": "2026-06-18T15:48:53+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TjiBSEz5QxIrr4n0WKcfcCB",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "caa38efb-d0fe-41bb-b18c-f75309f4d269",
+  "paid_at": "2026-06-19T15:51:07+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TfgAEEz5QxIrr4n11oR4tkv",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "d9f78edf-253e-4acf-83a7-24a714b963ad",
+  "paid_at": "2026-06-19T20:01:57+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "py_3Tk8buEz5QxIrr4n1VDq6jrm",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "c2870ee7-60eb-4259-bd06-0d70067cbf16",
+  "paid_at": "2026-06-21T13:54:37+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TklpXEz5QxIrr4n0TpQK0aj",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "6eae0d17-9ecb-498c-be8e-4862ddffa588",
+  "paid_at": "2026-06-25T08:41:36+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3Tm8qnEz5QxIrr4n0OjdRt6I",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "7b153b98-30aa-4126-bef8-b19e71fd342c",
+  "paid_at": "2026-06-25T11:47:37+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TmBkoEz5QxIrr4n1f4dICoO",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "840fa677-8835-4bbc-85e0-9d5f022918ae",
+  "paid_at": "2026-06-25T17:25:10+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TmH1TEz5QxIrr4n0xQ9C6zg",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "62c4f66f-c330-4592-994a-dbc9bd01b0c5",
+  "paid_at": "2026-06-26T16:15:02+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TmcP9Ez5QxIrr4n0z0lKAXJ",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "529da861-d05d-4c07-84f5-78de639c761a",
+  "paid_at": "2026-06-28T12:51:10+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TfgAEEz5QxIrr4n1KgbwVzH",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "90e6dc92-2f69-495e-b736-280c9f4648ba",
+  "paid_at": "2026-06-29T09:58:44+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TnbxeEz5QxIrr4n1Zxuu79W",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "e2c479f8-a37b-464d-b28d-8f4de6dc5fe7",
+  "paid_at": "2026-06-29T11:25:11+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "af4cd58e-6f90-48e2-855b-c429c46e609c",
+  "paid_at": "2026-06-29T12:30:07+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TneK9Ez5QxIrr4n1vdY2l09",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "d6e6cb9e-f647-4896-b757-b447324d7881",
+  "paid_at": "2026-06-30T14:50:35+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3To2zcEz5QxIrr4n0drGSnpC",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "f3f80cac-7689-4bb7-b227-b36db0fde581",
+  "paid_at": "2026-07-01T16:18:45+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "py_3ToQqUEz5QxIrr4n1dKTVhGT",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "7652edfd-ab0a-43d2-b957-259340422b39",
+  "paid_at": "2026-07-05T10:39:31+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TpnSNEz5QxIrr4n0VNy6dQI",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "b229ed37-5573-4bbb-bf70-195422a313dc",
+  "paid_at": "2026-07-06T13:06:20+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TqCE1Ez5QxIrr4n19GmBROl",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "67edce41-d555-4c66-b6e9-18eec0d58d0e",
+  "paid_at": "2026-07-08T16:29:17+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TqyLWEz5QxIrr4n1bOL3d6o",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "51c881ef-35ea-4552-b15d-a7c8252cd8aa",
+  "paid_at": "2026-07-11T14:35:02+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3ToS29Ez5QxIrr4n1gYmAwnB",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "9d93a997-295d-4ed3-9351-a3062c6fa152",
+  "paid_at": "2026-07-15T08:50:53+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TtOWjEz5QxIrr4n0fh1zDAr",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "b29266ba-6c70-4ce2-9550-a39fc5a40a2c",
+  "paid_at": "2026-07-15T11:21:44+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TtQsjEz5QxIrr4n0tuijCgw",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "1d18a3f6-9f46-4f8f-a940-06b0264e2b4c",
+  "paid_at": "2026-07-16T11:47:48+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TmBkoEz5QxIrr4n1NuHt1t5",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "796ec60c-6a08-4465-9a8b-16a7c68bff67",
+  "paid_at": "2026-07-17T16:36:06+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TuEk3Ez5QxIrr4n1NdXCPoG",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "ccccdd96-efed-4deb-9138-e1ec51be61ec",
+  "paid_at": "2026-07-18T15:50:12+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TuaVBEz5QxIrr4n1q1VE7Y8",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "6315962d-652f-4c46-9741-c189fbcccc4b",
+  "paid_at": "2026-07-19T17:29:56+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "py_3TuyXFEz5QxIrr4n0wQ3drMT",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "6a420621-6257-4794-a4e6-3a84a7e6cf31",
+  "paid_at": "2026-07-21T13:54:06+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Tve7TEz5QxIrr4n0twvbhOJ",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "c02b864a-9827-41ae-bdcd-90dfaccc73d2",
+  "paid_at": "2026-07-23T13:11:38+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TwMPAEz5QxIrr4n1vE5sTdr",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "79ab3ede-4a5b-481e-9c51-65ec7983f441",
+  "paid_at": "2026-07-23T15:50:14+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TqYRlEz5QxIrr4n0jRTdCHN",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "874151f9-47aa-4795-b88f-627b3557111e",
+  "paid_at": "2026-07-23T16:00:26+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Ton27Ez5QxIrr4n10myuSAz",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "098e04ef-6a8f-4172-ab50-5ca63a7c5046",
+  "paid_at": "2026-07-23T16:56:16+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TwPuPEz5QxIrr4n1tRShZv7",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "8c71fc55-92a4-405f-9ea7-1efbbf2445b5",
+  "paid_at": "2026-07-24T17:55:30+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TwnJlEz5QxIrr4n044WS7vW",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "3202ec9a-f276-43d1-89ee-6881b867909f",
+  "paid_at": "2026-07-25T08:42:36+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3Tx1AEEz5QxIrr4n0ObsHJ9Y",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "6e0d6019-6cf0-435f-81f6-c7e91993eeaf",
+  "paid_at": "2026-07-25T10:12:19+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3Tx2Y4Ez5QxIrr4n0cprNmew",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "a85eaeb3-a8da-4b71-84ca-f4354f425798",
+  "paid_at": "2026-07-25T10:14:13+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "2dabcce9-2cfb-4fe5-b702-124daab43686",
+  "paid_at": "2026-07-25T11:48:11+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Tx43pEz5QxIrr4n19E0cK4j",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "5ba7fd9d-4919-49a9-8b91-cfe3981ca4ed",
+  "paid_at": "2026-07-25T17:25:04+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3Tx9JpEz5QxIrr4n1RqkQdAg",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "540b452e-e45a-44bc-a8b6-eb694d7234d3",
+  "paid_at": "2026-07-26T10:56:19+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TxPgkEz5QxIrr4n0YeFWGpQ",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "702df50b-190a-4c7f-aaf3-1436c8a16693",
+  "paid_at": "2026-07-26T15:08:48+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TxTcdEz5QxIrr4n1EFO7XAF",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "82857315-a540-45e1-8735-f42a2649b038",
+  "paid_at": "2026-07-26T16:14:45+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TxUhLEz5QxIrr4n1WMia14f",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "86253d34-9aff-44c8-8de2-2ae1e0836ca7",
+  "paid_at": "2026-07-27T23:03:49+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TxxYHEz5QxIrr4n1kAbVDS3",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "d1dbcf9a-75ba-4fdb-b7b9-a096963b626b",
+  "paid_at": "2026-07-28T12:50:19+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TqYRlEz5QxIrr4n0RHrBDnj",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "c65a7091-7ccf-4e07-90c8-c96eeb4340d1",
+  "paid_at": "2026-07-28T13:00:53+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TyAcqEz5QxIrr4n0J3PETm0",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "6b622d36-40be-4632-82cd-b1ddcb31172f",
+  "paid_at": "2026-07-29T09:59:52+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TyUHBEz5QxIrr4n1EnxsvGe",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "480285f7-38ab-40b2-9a09-55e4b7cdb3b0",
+  "paid_at": "2026-07-29T11:25:55+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "471e990b-588e-44c2-95ec-c573acb016cc",
+  "paid_at": "2026-07-29T12:30:14+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TyWchEz5QxIrr4n1PpvkbKW",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "848f7548-4867-4d25-a654-036644e9cb9a",
+  "paid_at": "2026-07-31T14:50:03+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TzHl7Ez5QxIrr4n1wjOnJf9",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "aab92132-7a03-4543-852f-0c9c3008e132",
+  "paid_at": "2026-07-31T16:45:55+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "e22046c2-9e48-4d66-a371-0b3d7c08c6ea",
+  "paid_at": "2026-08-01T07:48:15+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Tx43pEz5QxIrr4n1fd0SJUB",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "13e2d4fa-8b49-498e-a81b-dfed54e1c7de",
+  "paid_at": "2026-08-01T07:55:30+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3TzXlBEz5QxIrr4n1wBBMFek",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "f8e8ba8d-a564-44f4-ac42-f0034f7182e1",
+  "paid_at": "2026-08-01T13:28:01+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "94cc8b14-b694-4dc3-b6d3-00e16322d5f1",
+  "paid_at": "2026-08-01T15:01:13+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "709b3a34-4827-487d-99a4-4d841581edb1",
+  "paid_at": "2026-08-01T15:40:25+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "67f803db-ce7d-4ecb-90c7-5094e1f9a3cf",
+  "paid_at": "2026-08-01T16:03:07+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "f84d90b2-f4b7-4552-8873-c9129faa3643",
+  "paid_at": "2026-08-01T16:06:34+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "5731b47e-4daf-488f-9e71-0f6a682727c7",
+  "paid_at": "2026-08-01T16:14:26+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "019d71b0-ca8e-41e4-a49b-ae8fbb217752",
+  "paid_at": "2026-08-01T16:15:48+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "41c08922-8b3d-4cdb-b3ea-bfa36ba8ca9a",
+  "paid_at": "2026-08-01T16:16:30+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "8ed89fe3-57f2-470a-9210-58d6f99a6f2a",
+  "paid_at": "2026-08-01T16:19:24+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "py_3Tzfd7Ez5QxIrr4n0qIqvzZZ",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "7342f330-b9d3-4db8-91f4-557461fdfc07",
+  "paid_at": "2026-08-01T17:34:05+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TzgnPEz5QxIrr4n12GkHMBw",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "c253eca1-7495-4b01-a0be-66dbe2754697",
+  "paid_at": "2026-08-02T16:00:53+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U01okEz5QxIrr4n1Uh0Lkfd",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "6fef76e2-14d2-4d8e-aa69-53e3b2b5a68e",
+  "paid_at": "2026-08-04T14:48:17+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Tx43pEz5QxIrr4n1KtAzTAG",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "d052ee98-4cbe-4921-847e-fa56179c36e9",
+  "paid_at": "2026-08-05T10:39:10+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U12E2Ez5QxIrr4n0dSlyZCh",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "58575485-840c-45cd-b4be-726a1f2acd96",
+  "paid_at": "2026-08-06T15:26:14+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U1TBPEz5QxIrr4n0kzel2ml",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "984ee082-6e5b-4645-9823-8a2fb181feb9",
+  "paid_at": "2026-08-06T15:27:41+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U1TCFEz5QxIrr4n1DjMHfDx",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "a5416df1-80c9-4f69-baca-e76c4ea09d59",
+  "paid_at": "2026-08-07T12:50:34+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U1nEJEz5QxIrr4n1BXJ8SGR",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "e8dc9e63-e434-4881-8f5b-58a1b5d3baa7",
+  "paid_at": "2026-08-08T07:48:19+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Tx43pEz5QxIrr4n1HlXmqbX",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "0536c906-4e11-4e6a-ac28-6762eec4738d",
+  "paid_at": "2026-08-08T12:42:42+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "48639bf0-2da2-487f-8f85-7686f4c3029f",
+  "paid_at": "2026-08-08T13:34:11+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TzgnPEz5QxIrr4n1DnO2aMJ",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "d6b87c7d-a85b-4d3d-acce-ff09a336b80e",
+  "paid_at": "2026-08-10T13:03:45+00:00",
+  "status": "canceled",
+  "stripe_charge_id": null,
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "b8c9a108-9b28-496d-ab7b-e41620826866",
+  "paid_at": "2026-08-12T11:20:36+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "py_3U3aCzEz5QxIrr4n0JTYsKgI",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "aa5687a1-8d52-4208-97c6-102bbc20f2b0",
+  "paid_at": "2026-08-14T12:50:39+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U1nEJEz5QxIrr4n1cZ0iOK7",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "bb36be0f-e946-4f9d-9c5f-ac67d9b190e5",
+  "paid_at": "2026-08-15T08:51:35+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U4dJREz5QxIrr4n1GJWS9O7",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "b4207787-469c-4f74-8fca-5c9ea1484bc7",
+  "paid_at": "2026-08-15T10:34:13+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TzgnPEz5QxIrr4n1SKePunC",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "9df3477a-2a17-496d-a849-d393ecffb6cc",
+  "paid_at": "2026-08-15T11:21:53+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U4fesEz5QxIrr4n14GkqvUV",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "924a4507-bce3-4c6b-9339-4ebb194ee55e",
+  "paid_at": "2026-08-15T11:48:21+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3Tx43pEz5QxIrr4n1Cxpun7l",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "cdad90c7-43fd-4c3d-b10a-4937929aad37",
+  "paid_at": "2026-08-17T16:35:59+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U5TVwEz5QxIrr4n1ozJGdb9",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "92e3bac1-06b8-4d64-9fba-dcf69153bf8f",
+  "paid_at": "2026-08-18T11:34:15+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TzgnPEz5QxIrr4n1eEY0wDU",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "9cccc50d-0878-4882-89c2-4add08223389",
+  "paid_at": "2026-08-18T15:48:29+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U5pFWEz5QxIrr4n04g00l7X",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "48178ac1-bc88-43f7-9931-5efd9c1a4b97",
+  "paid_at": "2026-08-19T17:30:47+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "py_3U6DK4Ez5QxIrr4n1EBbA6uV",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "0b6f94c6-eb04-4487-9c59-ceec2a3e8ae5",
+  "paid_at": "2026-08-20T15:50:43+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U1nEJEz5QxIrr4n1bPOtjWL",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "31209927-a504-4d8b-a072-79009d291e23",
+  "paid_at": "2026-08-21T13:54:44+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U6su5Ez5QxIrr4n0J81mqez",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "ddfd569a-18c7-41dc-bf0b-3fdd3dc44cfe",
+  "paid_at": "2026-08-22T15:50:45+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U1nEJEz5QxIrr4n1Nic3WI4",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "9fb310ba-cbca-4a5a-a463-d56b1a3ed3fc",
+  "paid_at": "2026-08-22T17:34:18+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3TzgnPEz5QxIrr4n1Zt2lJNn",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "815934bf-0167-44e8-a53d-ae13b725684b",
+  "paid_at": "2026-08-23T01:21:57+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U4fesEz5QxIrr4n1Ynne34k",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "c2181613-1a40-492b-8645-d646190d2411",
+  "paid_at": "2026-08-23T14:12:28+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U7c8MEz5QxIrr4n1kL4ybCh",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "294f9e76-c0d6-43e5-8f8a-5e3a77f3b3e9",
+  "paid_at": "2026-08-23T15:36:03+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U5TVwEz5QxIrr4n1X8Avm5d",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "28ffc2a6-ec51-48f9-99ef-9ceb3bfee4cb",
+  "paid_at": "2026-08-23T17:57:27+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U7fe5Ez5QxIrr4n1zfKysQc",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "1bd306f0-4984-4fa1-8928-ed90f7df0c93",
+  "paid_at": "2026-08-24T18:56:01+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U832JEz5QxIrr4n0kSHLOdc",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "3d7c8c58-d9d7-4ea5-9315-08f5769263f4",
+  "paid_at": "2026-08-25T08:42:10+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U8FvnEz5QxIrr4n0s9Sxiq9",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "3e6368b4-b058-4b56-bc05-95d3259c6abd",
+  "paid_at": "2026-08-25T11:47:45+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U8IpPEz5QxIrr4n1lJA4kUy",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "ef17e829-eee3-4287-8835-9c0dcb79e53b",
+  "paid_at": "2026-08-25T17:25:51+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U8O6aEz5QxIrr4n1fMcX7b1",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "89f06223-fbf1-4f0d-93cc-b1902cda1145",
+  "paid_at": "2026-08-26T11:56:37+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U8fRXEz5QxIrr4n1hyxRDm0",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "535821c1-9001-4ef8-8eb8-636a55bbc981",
+  "paid_at": "2026-08-26T16:08:39+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U8jNQEz5QxIrr4n05eca4Gr",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "bee9414c-8214-44a9-a3ec-ec998af90f09",
+  "paid_at": "2026-08-26T16:13:59+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U8jSZEz5QxIrr4n1VYUTUSk",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "5d2c762a-9d75-40d4-9e97-b718518899be",
+  "paid_at": "2026-08-28T00:04:38+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U9DHcEz5QxIrr4n1iE1NUn9",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "14eaf431-3072-4c6d-8fe4-86003b7fc076",
+  "paid_at": "2026-08-28T08:57:31+00:00",
+  "status": "failed",
+  "stripe_charge_id": "ch_3U7fe5Ez5QxIrr4n1Evpf3oI",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ },
+ {
+  "id": "e47a3dc0-0949-4928-9f7b-e8b37f8a8c0b",
+  "paid_at": "2026-08-28T11:03:03+00:00",
+  "status": "succeeded",
+  "stripe_charge_id": "ch_3U7fe5Ez5QxIrr4n17vHbBqt",
+  "payment_source": "stripe_stryv_us",
+  "import_source": "stripe_stryv_us_csv"
+ }
+]

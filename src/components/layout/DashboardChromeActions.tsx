@@ -5,10 +5,9 @@ import { Suspense } from "react";
 
 import { AvaHalo } from "@/components/ava/AvaHalo";
 import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
-import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { DashboardTopActions } from "./DashboardTopActions";
 import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
-import { ScoreboardVersionSwitch } from "@/components/scoreboard/ScoreboardVersionSwitch";
+import { BlueprintVersionSwitch } from "@/components/practice/BlueprintVersionSwitch";
 import { useDashboardProfile } from "./useDashboardProfile";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 
@@ -25,7 +24,6 @@ export function DashboardChromeActions({
   className = "",
 }: DashboardChromeActionsProps) {
   const chrome = useDashboardChrome();
-  const { impersonatingCoachId } = useImpersonation();
   const { profile, profileLoading, avatarLabel, avatarImageUrl } = useDashboardProfile(
     chrome?.avatarOverride
   );
@@ -35,10 +33,10 @@ export function DashboardChromeActions({
     <div
       className={`flex max-w-full items-center justify-end gap-1 sm:gap-2 ${className}`}
     >
-      {/* Admins only, and not while viewing as a coach: the Scoreboard is released to coaches. */}
-      {profile?.role === "admin" && !(chrome.variant === "coach" && impersonatingCoachId) ? (
+      {/* Admins only, also while viewing as a coach, so a real coach's timeline can be checked. */}
+      {profile?.role === "admin" ? (
         <Suspense fallback={null}>
-          <ScoreboardVersionSwitch />
+          <BlueprintVersionSwitch />
         </Suspense>
       ) : null}
       <SearchTopBarTrigger className="shrink-0" />

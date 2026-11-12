@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import {
   fireLeadWebhook,
   getCoachLeadWebhookUrl,
@@ -158,5 +158,13 @@ export async function POST(request: Request) {
     });
   }
 
+  if (body.abandoned && contactId) {
+    // "Started, not finished" emails, when the coach has chosen the app (job 214).
+    const leftContactId = contactId;
+    after(async () => {
+      const { startScorecardFollowUp } = await import("@/lib/scorecardFollowUp");
+      await startScorecardFollowUp({ coachId, contactId: leftContactId, kind: "boss_scorecard", event: "started" });
+    });
+  }
   return NextResponse.json({ ok: true, screen });
 }

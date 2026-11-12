@@ -421,6 +421,12 @@
   padding-top: 0.5rem;
 }
 
+/* Support's reply area (11 Nov): a hairline and a darker band, so it stands apart from the feed. */
+.bp-clean-side.bp-chat-side .bp-chat-foot.support-reply-foot {
+  border-top: 1px solid var(--app-subnav-rule);
+  background: var(--app-subnav-bg);
+}
+
 .bp-clean-side.bp-chat-side .bp-chat-composer {
   border-color: transparent;
   box-shadow: 0 1px 2px rgba(5, 30, 54, 0.06), 0 6px 18px -8px rgba(5, 30, 54, 0.18);

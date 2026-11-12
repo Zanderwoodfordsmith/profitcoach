@@ -8,6 +8,7 @@
  */
 
 import { readReplyCopilotRepoFile } from "@/lib/messaging/replyCopilotKnowledge";
+import { helpAnswersAsMarkdown } from "@/lib/help/helpAnswers";
 
 export const SUPPORT_COPILOT_ROUTER_FILE = "support-copilot/ROUTER.md";
 export const SUPPORT_COPILOT_PLAYBOOK_FILE = "support-copilot/playbook.md";
@@ -18,6 +19,7 @@ export const SUPPORT_COPILOT_MAX_TOKENS = 900;
 
 const ROUTER_CAP = 12_000;
 const PLAYBOOK_CAP = 16_000;
+const HELP_CAP = 20_000;
 const MESSAGE_CLIP = 2_000;
 const OPENING_CLIP = 4_000;
 const NOTE_CLIP = 1_000;
@@ -63,6 +65,9 @@ export function composeSupportCopilotSystem(
   );
   const parts = [router];
   if (playbook) parts.push(playbook);
+  // Help centre answers (job 211): the same words the coach can read on Support → Help.
+  const help = capText(helpAnswersAsMarkdown(), HELP_CAP);
+  if (help) parts.push(`# Help centre answers\nUse these when they fit, and link the page the answer links.\n\n${help}`);
   parts.push(SUPPORT_COPILOT_OUTPUT_CONTRACT);
   return parts.join("\n\n");
 }

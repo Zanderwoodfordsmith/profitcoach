@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { FileText, Mic, Play, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Mic, Play, X } from "lucide-react";
 import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import { inferCommunityPostMediaKindFromUrl } from "@/lib/communityPostMedia";
 import { cardClass } from "@/components/ui/Card";
@@ -146,39 +146,66 @@ export function CommunityPostMediaThumb({
 }
 
 function CommunityPostMediaLightbox({
-  item,
+  items,
+  startIndex,
   onClose,
 }: {
-  item: CommunityPostMediaItem;
+  items: CommunityPostMediaItem[];
+  startIndex: number;
   onClose: () => void;
 }) {
+  const [index, setIndex] = useState(startIndex);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const count = items.length;
+  const many = count > 1;
+  const item = items[Math.min(index, count - 1)];
   const video = isVideoItem(item);
   const audio = isAudioItem(item);
+
+  const step = useCallback(
+    (dir: 1 | -1) => setIndex((i) => (i + dir + count) % count),
+    [count]
+  );
 
   const onKey = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      else if (many && e.key === "ArrowRight") step(1);
+      else if (many && e.key === "ArrowLeft") step(-1);
     },
-    [onClose]
+    [onClose, many, step]
   );
 
   useEffect(() => {
     document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onKey]);
+
+  useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [onKey]);
+  }, []);
 
   if (typeof document === "undefined") return null;
+
+  const arrowClass =
+    "absolute top-1/2 z-[201] -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white ring-1 ring-white/20 transition hover:bg-white/20 sm:p-3";
 
   return createPortal(
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/88 p-4 backdrop-blur-[2px]"
       role="presentation"
       onClick={onClose}
+      onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
+      onTouchEnd={(e) => {
+        if (!many || touchStartX === null) return;
+        const dx = (e.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
+        setTouchStartX(null);
+        if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+      }}
     >
       <button
         type="button"
@@ -191,19 +218,49 @@ function CommunityPostMediaLightbox({
       >
         <X className="h-5 w-5" strokeWidth={2} />
       </button>
+      {many ? (
+        <>
+          <button
+            type="button"
+            className={`${arrowClass} left-3 sm:left-6`}
+            aria-label="Previous"
+            onClick={(e) => {
+              e.stopPropagation();
+              step(-1);
+            }}
+          >
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className={`${arrowClass} right-3 sm:right-6`}
+            aria-label="Next"
+            onClick={(e) => {
+              e.stopPropagation();
+              step(1);
+            }}
+          >
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2} />
+          </button>
+          <p className="pointer-events-none absolute bottom-5 left-1/2 z-[201] -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-sm tabular-nums text-white/90">
+            {index + 1} / {count}
+          </p>
+        </>
+      ) : null}
       <div
-        className="flex max-h-[min(90dvh,90vh)] max-w-[min(90dvw,90vw)] items-center justify-center"
+        className="flex max-h-[min(90dvh,90vh)] max-w-[min(80dvw,80vw)] items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         {audio ? (
           <div className={cardClass("raised", "w-[min(28rem,90vw)] p-5")}>
             <p className="mb-3 text-sm font-medium text-slate-700">Voice note</p>
-            <audio src={item.url} controls autoPlay className="w-full" />
+            <audio key={item.url} src={item.url} controls autoPlay className="w-full" />
           </div>
         ) : video ? (
           <video
+            key={item.url}
             src={item.url}
-            className="max-h-[min(90dvh,90vh)] max-w-[min(90dvw,90vw)] rounded-lg shadow-2xl"
+            className="max-h-[min(90dvh,90vh)] max-w-[min(80dvw,80vw)] rounded-lg shadow-2xl"
             controls
             playsInline
             autoPlay
@@ -211,10 +268,11 @@ function CommunityPostMediaLightbox({
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
+            key={item.url}
             src={item.url}
             alt=""
             referrerPolicy="no-referrer"
-            className="h-auto max-h-[min(90dvh,90vh)] w-auto max-w-[min(90dvw,90vw)] object-contain shadow-2xl"
+            className="h-auto max-h-[min(90dvh,90vh)] w-auto max-w-[min(80dvw,80vw)] object-contain shadow-2xl"
           />
         )}
       </div>
@@ -237,9 +295,7 @@ export function CommunityPostMediaGallery({
   items,
   variant = "default",
 }: GalleryProps) {
-  const [lightboxItem, setLightboxItem] = useState<CommunityPostMediaItem | null>(
-    null
-  );
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (items.length === 0) return null;
 
@@ -297,7 +353,7 @@ export function CommunityPostMediaGallery({
                   aria-label={
                     isVideoItem(item) ? "Play video" : "Open image larger"
                   }
-                  onClick={() => setLightboxItem(item)}
+                  onClick={() => setLightboxIndex(index)}
                 >
                   <CommunityPostMediaThumb
                     item={item}
@@ -309,10 +365,11 @@ export function CommunityPostMediaGallery({
             </div>
           ) : null}
         </div>
-        {lightboxItem ? (
+        {lightboxIndex !== null ? (
           <CommunityPostMediaLightbox
-            item={lightboxItem}
-            onClose={() => setLightboxItem(null)}
+            items={visualItems}
+            startIndex={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
           />
         ) : null}
       </>
@@ -337,7 +394,7 @@ export function CommunityPostMediaGallery({
                 aria-label={
                   isVideoItem(item) ? "Play video" : "Open image larger"
                 }
-                onClick={() => setLightboxItem(item)}
+                onClick={() => setLightboxIndex(index)}
               >
                 <CommunityPostMediaThumb item={item} className="h-full" />
               </button>
@@ -345,10 +402,11 @@ export function CommunityPostMediaGallery({
           </div>
         ) : null}
       </div>
-      {lightboxItem ? (
+      {lightboxIndex !== null ? (
         <CommunityPostMediaLightbox
-          item={lightboxItem}
-          onClose={() => setLightboxItem(null)}
+          items={visualItems}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
         />
       ) : null}
     </>

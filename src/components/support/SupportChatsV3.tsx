@@ -36,17 +36,18 @@ type Open = { kind: "page"; slug: string } | { kind: "chat"; id: string } | { ki
  * column holds the welcome until a chat opens there, page chats included, so
  * the coach never leaves Support; "Open page" takes them to what it's about.
  */
-export function SupportChatsV3() {
+export function SupportChatsV3({ startNew = false }: { startNew?: boolean }) {
   return (
     <div className="bp-doc h-full min-h-0">
       <PracticeProvider>
-        <SupportChatsBody />
+        <SupportChatsBody startNew={startNew} />
       </PracticeProvider>
     </div>
   );
 }
 
-function SupportChatsBody() {
+/** `startNew`: the Help centre's "Start a chat" lands here with ?new=1 and the new chat open. */
+function SupportChatsBody({ startNew }: { startNew: boolean }) {
   const { href, coachId: practiceCoachId } = usePractice();
   const comments = useSectionComments();
   const { profile } = useDashboardProfile();
@@ -91,6 +92,14 @@ function SupportChatsBody() {
     if (open?.kind === "page" && !(next?.kind === "page" && next.slug === open.slug)) closeComments.current?.();
     setLocalOpen(next);
   }
+
+  const startedNew = useRef(false);
+  useEffect(() => {
+    if (!startNew || loading || startedNew.current || desktop === null) return;
+    startedNew.current = true;
+    show({ kind: "new" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the list has loaded
+  }, [startNew, loading, desktop]);
 
   async function openBcaChat(id: string, from?: InboxItem) {
     show({ kind: "chat", id }, from);

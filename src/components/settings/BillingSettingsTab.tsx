@@ -7,23 +7,24 @@ import {
   CalendarDays,
   Check,
   CreditCard,
+  Download,
   ExternalLink,
   FileText,
   Loader2,
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
+import { INVOICE_VAT_NOTE } from "@/config/invoiceSeller";
 import { type MembershipInterval, type MembershipPlanKey } from "@/config/membershipPlans";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { buildCoachBillingOverview } from "@/lib/admin/paymentPlanRemaining";
-import {
-  paymentBillingKindLabel,
-  type PaymentBillingKind,
-} from "@/lib/paymentBillingKind";
+import { INVOICE_DETAIL_LIMITS, invoiceLine } from "@/lib/invoices/coachInvoice";
+import type { PaymentBillingKind } from "@/lib/paymentBillingKind";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
-import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
+import { fieldClass, fieldLabelClass } from "@/components/ui/Field";
+import { badgeClass } from "@/components/ui/Badge";
 
 type PlanInfo = {
   key: MembershipPlanKey;
@@ -42,6 +43,7 @@ type BillingPayment = {
   status: string;
   paidAt: string;
   billingKind: PaymentBillingKind | null;
+  invoiceAvailable?: boolean;
 };
 
 type BillingPayload = {
@@ -155,24 +157,8 @@ function brandLabel(value: string): string {
     .join(" ");
 }
 
-function billingKindLabel(kind: PaymentBillingKind | null): string {
-  if (!kind || kind === "other") return "Payment";
-  if (kind === "recurring") return "Subscription";
-  return paymentBillingKindLabel(kind);
-}
-
 function isSucceededPayment(status: string): boolean {
   return status === "succeeded" || status === "paid";
-}
-
-function paymentStatusTone(status: string): BadgeTone {
-  if (status === "succeeded" || status === "paid") {
-    return "green";
-  }
-  if (status === "failed" || status === "payment_failed") {
-    return "red";
-  }
-  return "grey";
 }
 
 function BillingSkeleton() {
@@ -195,7 +181,34 @@ export function BillingSettingsTab() {
   const [error, setError] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<MembershipPlanKey | null>(null);
+  const [invoiceBusyId, setInvoiceBusyId] = useState<string | null>(null);
+  const [invoiceError, setInvoiceError] = useState<string | null>(null);
   const getHeaders = authHeaders(impersonatingCoachId);
+
+  // Fetched rather than linked, because the download needs the sign-in header.
+  async function downloadInvoice(paymentId: string) {
+    setInvoiceBusyId(paymentId);
+    setInvoiceError(null);
+    try {
+      const res = await fetch(`/api/coach/invoices/${encodeURIComponent(paymentId)}`, {
+        headers: await getHeaders(),
+      });
+      if (!res.ok) throw new Error();
+      const name = /filename="([^"]+)"/.exec(
+        res.headers.get("Content-Disposition") ?? ""
+      )?.[1];
+      const url = URL.createObjectURL(await res.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = name ?? "Invoice.pdf";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setInvoiceError("Could not download that invoice. Please try again.");
+    } finally {
+      setInvoiceBusyId(null);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -572,64 +585,261 @@ export function BillingSettingsTab() {
       ) : null}
 
       <section className={cardClass("plain", "overflow-hidden")}>
-        <div className="flex flex-col gap-1 border-b border-slate-200/80 px-5 py-4 sm:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-slate-900">
-              <FileText className="h-4 w-4 text-[#0c5290]" aria-hidden />
-              <h2 className="text-sm font-semibold">Payment history</h2>
-            </div>
-            <span className="text-xs text-slate-600">
+        <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-2 text-slate-900">
+            <FileText className="h-4 w-4 text-[#0c5290]" aria-hidden />
+            <h2 className="text-ui font-semibold">Payments and invoices</h2>
+          </div>
+          {succeededPayments.length > 0 ? (
+            <span className="text-caption text-slate-500">
               {billingOverview.succeededCount}{" "}
               {billingOverview.succeededCount === 1 ? "payment" : "payments"}
             </span>
-          </div>
-          {remainingLine ? (
-            <p className="text-sm font-medium text-slate-800">{remainingLine}</p>
           ) : null}
         </div>
         {succeededPayments.length > 0 ? (
-          <div className="divide-y divide-slate-100">
-            {succeededPayments.map((payment) => (
-              <div
-                key={payment.id}
-                className="flex items-center justify-between gap-3 px-5 py-2.5 sm:px-6"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                    <FileText className="h-3.5 w-3.5" aria-hidden />
-                  </span>
-                  <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
-                    <span className="truncate font-medium text-slate-900">
-                      {billingKindLabel(payment.billingKind)}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      {formatPaymentDate(payment.paidAt)}
-                    </span>
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-4">
-                  <span
-                    className={badgeClass(paymentStatusTone(payment.status), "capitalize")}
+          <>
+            <InvoiceMadeOutTo getHeaders={getHeaders} />
+            {invoiceError ? (
+              <p role="alert" className="border-t border-slate-100 px-5 py-2.5 text-caption text-rose-700 sm:px-6">
+                {invoiceError}
+              </p>
+            ) : null}
+            <ul className="divide-y divide-slate-100 border-t border-slate-100">
+              {succeededPayments.map((payment) => {
+                const date = formatPaymentDate(payment.paidAt);
+                return (
+                  <li
+                    key={payment.id}
+                    className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-0.5 px-5 py-2.5 sm:grid-cols-[6.5rem_1fr_auto_7rem] sm:px-6"
                   >
-                    {payment.status.replaceAll("_", " ")}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-slate-900">
-                    {formatCurrency(payment.amountCents, payment.currency)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+                    <span className="order-3 text-caption text-slate-500 sm:order-none sm:text-ui">
+                      {date}
+                    </span>
+                    <span className="order-1 min-w-0 truncate text-ui text-slate-900 sm:order-none">
+                      {invoiceLine(payment.billingKind).detail}
+                    </span>
+                    <span className="order-2 text-right text-ui font-medium tabular-nums text-slate-900 sm:order-none">
+                      {formatCurrency(payment.amountCents, payment.currency)}
+                    </span>
+                    <span className="order-4 justify-self-end sm:order-none">
+                      {payment.invoiceAvailable ? (
+                        <button
+                          type="button"
+                          onClick={() => void downloadInvoice(payment.id)}
+                          disabled={invoiceBusyId === payment.id}
+                          aria-label={`Download invoice for ${date}`}
+                          className={buttonClass("quiet", "small", "-mr-3.5 disabled:cursor-wait")}
+                        >
+                          {invoiceBusyId === payment.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                          ) : (
+                            <Download className="h-3.5 w-3.5" aria-hidden />
+                          )}
+                          Invoice
+                        </button>
+                      ) : (
+                        <Link
+                          href="/coach/support"
+                          className={buttonClass("quiet", "small", "-mr-3.5")}
+                        >
+                          Ask for invoice
+                        </Link>
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="border-t border-slate-100 px-5 py-3 text-caption text-slate-500 sm:px-6">
+              {INVOICE_VAT_NOTE}
+            </p>
+          </>
         ) : (
-          <div className="px-5 py-8 text-center sm:px-6">
-            <FileText className="mx-auto h-5 w-5 text-slate-400" aria-hidden />
-            <p className="mt-2 text-sm font-medium text-slate-700">No payments recorded yet</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Payments made through this account will appear here.
+          <div className="border-t border-slate-100 px-5 py-8 text-center sm:px-6">
+            <p className="text-ui font-medium text-slate-700">No payments recorded yet</p>
+            <p className="mt-1 text-ui text-slate-500">
+              Your payments and invoices will appear here.
             </p>
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+type InvoiceForm = {
+  business_name: string;
+  address: string;
+  company_number: string;
+  vat_number: string;
+};
+
+/** One line saying who invoices are made out to; opens in place to change it. */
+function InvoiceMadeOutTo({
+  getHeaders,
+}: {
+  getHeaders: () => Promise<Record<string, string>>;
+}) {
+  const [saved, setSaved] = useState<InvoiceForm | null>(null);
+  const [coachName, setCoachName] = useState("");
+  const [draft, setDraft] = useState<InvoiceForm | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const res = await fetch("/api/coach/invoices/details", {
+        headers: await getHeaders(),
+      }).catch(() => null);
+      if (!live) return;
+      if (!res?.ok) {
+        setLoadFailed(true);
+        return;
+      }
+      const body = (await res.json()) as InvoiceForm & { coach_name: string };
+      setCoachName(body.coach_name);
+      setSaved({
+        business_name: body.business_name,
+        address: body.address,
+        company_number: body.company_number,
+        vat_number: body.vat_number,
+      });
+    })();
+    return () => {
+      live = false;
+    };
+    // getHeaders is stable for the current impersonation context.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function save() {
+    if (!draft) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/coach/invoices/details", {
+        method: "PUT",
+        headers: await getHeaders(),
+        body: JSON.stringify(draft),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(body.error ?? "Could not save. Please try again.");
+        return;
+      }
+      setSaved(draft);
+      setDraft(null);
+    } catch {
+      setError("Could not save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loadFailed) {
+    return (
+      <p className="border-t border-slate-100 px-5 py-2.5 text-caption text-rose-700 sm:px-6">
+        Could not load who your invoices are made out to.
+      </p>
+    );
+  }
+
+  if (draft) {
+    const field = (key: keyof InvoiceForm, label: string) => (
+      <label className={fieldLabelClass}>
+        {label}
+        <input
+          type="text"
+          value={draft[key]}
+          maxLength={INVOICE_DETAIL_LIMITS[key]}
+          onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
+          autoFocus={key === "business_name"}
+          className={fieldClass("input", "normal", "mt-1.5 font-normal")}
+        />
+      </label>
+    );
+    return (
+      <form
+        className="grid gap-4 border-t border-slate-100 px-5 py-5 sm:grid-cols-2 sm:px-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+      >
+        <p className="text-ui text-slate-600 sm:col-span-2">
+          These show on all your invoices. Only fill in what you need.
+        </p>
+        <div className="sm:col-span-2">{field("business_name", "Business name")}</div>
+        <label className={`${fieldLabelClass} sm:col-span-2`}>
+          Address
+          <textarea
+            rows={3}
+            value={draft.address}
+            maxLength={INVOICE_DETAIL_LIMITS.address}
+            onChange={(e) => setDraft({ ...draft, address: e.target.value })}
+            className={fieldClass("textarea", "normal", "mt-1.5 resize-none font-normal")}
+          />
+        </label>
+        {field("company_number", "Company number")}
+        {field("vat_number", "VAT number")}
+        <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className={buttonClass("main", "small", "disabled:cursor-wait")}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(null);
+              setError(null);
+            }}
+            className={buttonClass("quiet", "small")}
+          >
+            Cancel
+          </button>
+          {error ? (
+            <span role="alert" className="text-caption text-rose-700">
+              {error}
+            </span>
+          ) : null}
+        </div>
+      </form>
+    );
+  }
+
+  const business = saved?.business_name.trim();
+  const hasDetails = Boolean(
+    saved && Object.values(saved).some((value) => value.trim())
+  );
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-4 border-t border-slate-100 bg-slate-50/60 px-5 py-1.5 sm:px-6">
+      <p className="min-w-0 text-ui text-slate-600">
+        {saved ? (
+          <>
+            Made out to{" "}
+            <span className="font-medium text-slate-900">
+              {business || coachName || "you"}
+            </span>
+          </>
+        ) : (
+          <span className="invisible">Made out to</span>
+        )}
+      </p>
+      {saved ? (
+        <button
+          type="button"
+          onClick={() => setDraft(saved)}
+          className={buttonClass("quiet", "small", "-mr-3.5 shrink-0")}
+        >
+          {hasDetails ? "Change" : "Add details"}
+        </button>
+      ) : null}
     </div>
   );
 }

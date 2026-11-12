@@ -59,6 +59,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/support-reply-drafts",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/practice-build",
       "schedule": "* * * * *"
     },

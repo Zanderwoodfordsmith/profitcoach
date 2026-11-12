@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { communityPostCardPreview } from "@/lib/communityPostMarkdown";
 import { decorateClassroomSearchItems, classroomSearchLessonIds } from "@/lib/search/classroomDisplay";
+import { confirmedHelpAnswers, helpTopic, searchHelpAnswers } from "@/lib/help/helpAnswers";
+import { plainHelpAnswer } from "@/lib/help/plainHelpAnswer";
 import {
   parseSearchTab,
   normalizeSearchQuery,
@@ -11,6 +13,7 @@ import {
   type SearchCommunityComment,
   type SearchCommunityItem,
   type SearchCounts,
+  type SearchHelpItem,
   type SearchMemberItem,
   type SearchTab,
 } from "@/lib/search/types";
@@ -182,6 +185,14 @@ async function previewResponse(q: string) {
     enrichClassroomItems(itemsOf(classroomRes.data) as SearchClassroomItem[], q),
     enrichCommunityItems(itemsOf(communityRes.data) as SearchCommunityItem[]),
   ]);
+  // Help centre answers (job 211): the written answers, no database needed.
+  const helpAll = searchHelpAnswers(q, confirmedHelpAnswers(), 50);
+  const help: SearchHelpItem[] = helpAll.slice(0, 3).map((a) => ({
+    id: a.id,
+    question: a.question,
+    topic: helpTopic(a.topic).name,
+    snippet: plainHelpAnswer(a.answer).slice(0, 160),
+  }));
 
   return NextResponse.json({
     q,
@@ -189,10 +200,12 @@ async function previewResponse(q: string) {
       classroom: asCount(bag(classroomRes.data).total),
       community: asCount(bag(communityRes.data).total),
       members: asCount(bag(membersRes.data).total),
+      help: helpAll.length,
     },
     classroom,
     community,
     members: sanitizeMembers(itemsOf(membersRes.data) as SearchMemberItem[]),
+    help,
   });
 }
 

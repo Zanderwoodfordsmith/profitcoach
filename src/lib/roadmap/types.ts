@@ -44,6 +44,7 @@ export const ROADMAP_AREAS = [
   "keep-clients",
   "academy",
   "platform",
+  "bca-funnel",
 ] as const;
 
 export const ROADMAP_AREA_META: Record<
@@ -91,6 +92,12 @@ export const ROADMAP_AREA_META: Record<
     hint: "Billing, brand, the roadmap, how we ship",
     dot: "bg-amber-500",
     chip: "bg-amber-100 text-amber-800",
+  },
+  "bca-funnel": {
+    label: "BCA website and funnel",
+    hint: "BCA's own website, sales pitch, explainers and member agreement",
+    dot: "bg-orange-500",
+    chip: "bg-orange-100 text-orange-800",
   },
 };
 

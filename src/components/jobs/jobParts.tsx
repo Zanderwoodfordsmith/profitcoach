@@ -41,12 +41,21 @@ const FILL: Partial<Record<JobStatus, number>> = { bca_todo: 0.25, in_progress: 
  * later), a quarter, half and three quarters filled as BCA takes it to
  * review, and a tick once done. The roadmap's drawing, Zander's meanings.
  */
-export function JobStatusCircle({ status, className = "h-3.5 w-3.5" }: { status: JobStatus; className?: string }) {
+export function JobStatusCircle({
+  status,
+  className = "h-3.5 w-3.5",
+  audience = "coach",
+}: {
+  status: JobStatus;
+  className?: string;
+  audience?: "coach" | "admin";
+}) {
   const { color } = JOB_STATUS_META[status];
   const fill = FILL[status];
+  const label = statusLabel(status, audience);
   return (
-    <svg viewBox="0 0 14 14" className={`shrink-0 ${color} ${className}`} role="img" aria-label={statusLabel(status)} fill="none">
-      <title>{statusLabel(status)}</title>
+    <svg viewBox="0 0 14 14" className={`shrink-0 ${color} ${className}`} role="img" aria-label={label} fill="none">
+      <title>{label}</title>
       {status === "needs_you" || status === "later" ? (
         <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="1.4 2.1" strokeLinecap="round" />
       ) : null}

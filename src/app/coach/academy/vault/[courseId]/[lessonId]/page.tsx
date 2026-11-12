@@ -17,19 +17,19 @@ const BASE = "/coach/academy/vault";
 
 type Props = {
   params: Promise<{ courseId: string; lessonId: string }>;
-  searchParams: Promise<{ chapter?: string; t?: string }>;
+  searchParams: Promise<{ chapter?: string; t?: string; tab?: string; q?: string }>;
 };
 
 export default async function CoachAcademyVaultLessonPage({ params, searchParams }: Props) {
   const { courseId, lessonId } = await params;
-  const { chapter: initialChapterId, t: seekSeconds } = await searchParams;
+  const { chapter: initialChapterId, t: seekSeconds, tab, q } = await searchParams;
 
   // Single videos that became chapters of a merged lesson.
   const merged = legacyConsolidatedChapterRedirect(lessonId);
   if (merged && merged.courseId === courseId) {
     redirect(
       `${BASE}/${encodeURIComponent(courseId)}/${encodeURIComponent(merged.lessonId)}${classroomLessonQueryString(
-        { chapter: merged.chapter, t: seekSeconds }
+        { chapter: merged.chapter, t: seekSeconds, tab, q }
       )}`
     );
   }

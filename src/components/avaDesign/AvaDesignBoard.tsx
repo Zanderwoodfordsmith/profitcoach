@@ -6,7 +6,6 @@ import { figtree } from "@/fonts";
 
 import "./avaDesign.css";
 import { Decided, PhoneOpen } from "./sections/Decided";
-import { FaceOptions } from "./sections/FaceOptions";
 import { MoreScreens } from "./sections/MoreScreens";
 
 type Tab = { id: string; label: string; View: ComponentType };
@@ -14,7 +13,6 @@ type Tab = { id: string; label: string; View: ComponentType };
 /** What he has picked, then only what is still open. */
 const TABS: Tab[] = [
   { id: "decided", label: "Decided", View: Decided },
-  { id: "face", label: "Face", View: FaceOptions },
   { id: "phone", label: "Phone", View: PhoneOpen },
   { id: "more", label: "More screens", View: MoreScreens },
 ];

@@ -12,6 +12,34 @@ import {
   parsePhoneNumberFromString,
 } from "libphonenumber-js";
 
+/**
+ * Plain text from an HTML-only email (Apple Mail sends no plain part).
+ * Drops everything from the first quoted block, keeps line breaks, decodes
+ * the common entities. Plain text passes through untouched.
+ */
+export function emailHtmlToText(raw: string): string {
+  if (!/<(?:html|body|div|p|br|blockquote)\b/i.test(raw)) return raw;
+  let html = raw
+    .replace(/<head[\s\S]*?<\/head>/gi, "")
+    .replace(/<(?:style|script)[\s\S]*?<\/(?:style|script)>/gi, "");
+  const quote = html.search(/<blockquote\b|<div[^>]*class="?gmail_quote/i);
+  if (quote >= 0) html = html.slice(0, quote);
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:div|p|li|tr|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&amp;/gi, "&")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /** Pull the member-written part before quoted history / client footers. */
 export function stripEmailQuotedReply(raw: string): string {
   let text = raw.replace(/\r\n/g, "\n").trim();
@@ -268,12 +296,7 @@ export async function tryIngestSupportReplyFromBird(input: {
     () => null
   );
 
-  if (ticket.status === "resolved" || ticket.status === "waiting_reply") {
-    await supabaseAdmin
-      .from("community_feedback_reports")
-      .update({ status: "open" })
-      .eq("id", ticket.id);
-  }
+  // The status moves in the database on insert (support_ticket_status_on_reply).
 
   return { handled: true, ticketId };
 }

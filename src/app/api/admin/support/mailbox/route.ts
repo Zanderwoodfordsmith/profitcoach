@@ -5,6 +5,7 @@ import {
   createSupportMailboxConnectLink,
   disconnectSupportMailbox,
   getSupportMailboxAccount,
+  refreshSupportMailboxStatus,
   syncSupportMailboxInbound,
 } from "@/lib/support/mailbox";
 import { isUnipileConfigured } from "@/lib/unipile/client";
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
     let sync: Awaited<ReturnType<typeof syncSupportMailboxInbound>> | null =
       null;
     if (account && isUnipileConfigured()) {
+      account = await refreshSupportMailboxStatus(account);
       sync = await syncSupportMailboxInbound(15).catch((err) => {
         console.warn("support mailbox sync on GET:", err);
         return null;

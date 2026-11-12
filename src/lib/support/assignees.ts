@@ -68,5 +68,15 @@ export function isSupportMessageSender(
 /** Admin queue: who the ticket is for (assignee or @mention). */
 export type SupportAssigneeFilter = "zander" | "pam" | "anyone";
 
-/** Admin queue: active vs closed vs everything. */
-export type SupportStatusFilter = "open" | "resolved" | "all";
+/**
+ * Admin queue: everything not done ("open"), one status, or everything.
+ * "bca_todo" is the stored "open" status, renamed so it can't clash.
+ */
+export type SupportStatusFilter =
+  | "open"
+  | "all"
+  | "bca_todo"
+  | "in_progress"
+  | "waiting_reply"
+  | "review"
+  | "resolved";

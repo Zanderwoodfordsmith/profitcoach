@@ -161,7 +161,7 @@ export function outreachTemplateVars(
     type_of_owner: "",
     market_observation: "",
     profile_hook: "",
-    review_name: "Business Clarity Review",
+    review_name: "Constraint Call",
     boss_score: "",
     business_level_number: "",
     business_level_name: "",

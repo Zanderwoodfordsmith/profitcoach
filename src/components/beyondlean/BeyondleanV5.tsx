@@ -437,7 +437,7 @@ function About() {
               <BadgeCheck aria-hidden /> I&apos;ve run my own small business, so I know the owner&apos;s chair
             </li>
             <li>
-              <BadgeCheck aria-hidden /> Lean Six Sigma Master Black Belt, trained in The Profit System
+              <BadgeCheck aria-hidden /> Lean Six Sigma Master Black Belt, Certified Profit Coach
             </li>
             <li>
               <BadgeCheck aria-hidden /> I measure before and after, so you see what changed

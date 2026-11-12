@@ -27,6 +27,7 @@ import { ShareQrCodeModal } from "@/components/settings/ShareQrCodeModal";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
+import { tutorialVideoUrl } from "@/lib/tutorialVideos";
 
 const CRM_APP_BASE_URL = "https://app.procoachplatform.com/";
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -422,13 +423,13 @@ function FunnelSettingsSidebar() {
           title="Your links"
           description="Slug, Boss Score landing vs scorecard, Boss Pro, and personalised links."
           duration="3 min"
-          src="/tutorials/start-using-boss-and-links.mp4"
+          src={tutorialVideoUrl("start-using-boss-and-links.mp4")}
         />
         <SidebarVideoCard
           title="Calendar & CRM"
           description="Pro Coach Platform location, calendar embed, and lead webhook."
           duration="3 min"
-          src="/tutorials/setup-crm-and-calendar.mp4"
+          src={tutorialVideoUrl("setup-crm-and-calendar.mp4")}
         />
       </div>
     </aside>

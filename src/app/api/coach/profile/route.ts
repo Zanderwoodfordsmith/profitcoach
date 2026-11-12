@@ -707,10 +707,25 @@ export async function PATCH(request: Request) {
   }
 
   if (body.first_name !== undefined || body.last_name !== undefined) {
+    // Settings auto-save sends only the changed field, so fill the other half
+    // from the saved profile or full_name loses it.
+    let saved: { first_name?: string | null; last_name?: string | null } | null = null;
+    if (body.first_name === undefined || body.last_name === undefined) {
+      const { data } = await supabaseAdmin
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", coachId)
+        .maybeSingle();
+      saved = data;
+    }
     const first =
-      body.first_name !== undefined ? formatPersonName(body.first_name) : "";
+      body.first_name !== undefined
+        ? formatPersonName(body.first_name)
+        : saved?.first_name?.trim() ?? "";
     const last =
-      body.last_name !== undefined ? formatPersonName(body.last_name) : "";
+      body.last_name !== undefined
+        ? formatPersonName(body.last_name)
+        : saved?.last_name?.trim() ?? "";
     updates.full_name = [first, last].filter(Boolean).join(" ").trim() || null;
   }
 

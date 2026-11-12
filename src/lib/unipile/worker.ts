@@ -664,6 +664,8 @@ export async function processOutreachJobsTick(): Promise<{
       });
       const { bookingLinkForCoachLead } = await import("@/lib/booking/leadLink");
       const bookingLink = await bookingLinkForCoachLead(job.coach_id, lead.id as string);
+      const { reviewCallName } = await import("@/lib/scorecardFollowUp");
+      const reviewName = await reviewCallName(job.coach_id);
       const templateExtras = {
         booking_link: bookingLink,
         assessment_url: assessmentUrl,
@@ -671,7 +673,7 @@ export async function processOutreachJobsTick(): Promise<{
         scorecard_link: assessmentUrl,
         assessment_pro_url: assessmentProUrl,
         coach_name: coachName,
-        review_name: "Business Clarity Review",
+        review_name: reviewName,
         ...(scorecardVars ?? {}),
         boss_score_report_link:
           scorecardVars?.boss_score_report_link || assessmentUrl || "",

@@ -97,7 +97,7 @@ type Row = {
 type PageLink = { path: string; label: string; description?: string; group: string };
 
 /** App pages a coach can point others at, grouped the way the sidebar is. */
-function coachPages(): PageLink[] {
+export function coachPages(): PageLink[] {
   const main: PageLink[] = mainNavItems("/coach").map((item) => ({
     path: item.href,
     label: item.label,

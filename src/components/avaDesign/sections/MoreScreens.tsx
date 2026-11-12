@@ -33,7 +33,7 @@ import { ASK, AWAY, CAMPAIGN, COACH, HISTORY, PLAN_STEPS } from "../mock";
 import { Option, SectionIntro, Seg } from "../Option";
 import { AppRail, Composer, Screen, TwoWeight, Typing } from "../parts";
 import { fakeVoice, prefersReducedMotion } from "../useLoop";
-import { FACES } from "./FaceOptions";
+import { FACES } from "./faces";
 import "./moreScreens.css";
 
 type Mark = MarkId;

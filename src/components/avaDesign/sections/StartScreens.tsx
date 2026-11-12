@@ -5,7 +5,7 @@ import { MessageSquareText, Rocket, Search } from "lucide-react";
 import { AvaMark, type MarkId } from "../marks";
 import { COACH } from "../mock";
 import { AppRail, Composer, Starters, TwoWeight } from "../parts";
-import { WIDE } from "./FaceOptions";
+import { WIDE } from "./faces";
 
 /* E · Ava in the room, navy: her face in the navy mist with the Beam's glass box and buttons. */
 export function RoomNavyStart({ mark, tone = "deep", face = WIDE.navyV2 }: { mark: MarkId; tone?: "deep" | "light"; face?: string }) {

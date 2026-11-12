@@ -37,7 +37,7 @@ import {
 import { AvaMark, type MarkId } from "../marks";
 import { ASK, CAMPAIGN, COACH, CONNECT_NOTE, PROSPECTS } from "../mock";
 import { AppRail, Composer, LogoIcon, TwoWeight } from "../parts";
-import { FACES } from "./FaceOptions";
+import { FACES } from "./faces";
 import "./dockMobile.css";
 
 /* ------------------------------------------------------------ The page behind her */

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import {
   ChevronRight,
   CircleHelp,
@@ -31,6 +32,8 @@ import { COACH_LOOK, StageCircle } from "./StageCircle";
 import { PageStatusPill, StatusSteps } from "./StatusGuide";
 import { usePractice } from "./PracticeProvider";
 import { BlueprintChecklist } from "./BlueprintChecklist";
+import { BlueprintTimeline } from "./BlueprintTimeline";
+import { blueprintVersion } from "./BlueprintVersionSwitch";
 import { Modal } from "@/components/ui/Modal";
 
 /** A page's chat: how many messages (its sections' old threads too), and how many are unread. */
@@ -114,6 +117,12 @@ function ViewSwitch({
       ))}
     </div>
   );
+}
+
+/** Checklist or Timeline, from the admin switch in the top bar (6 Nov, until Zander picks). */
+function SetupVersion() {
+  const version = blueprintVersion(useSearchParams().get("v"));
+  return version === "timeline" ? <BlueprintTimeline /> : <BlueprintChecklist />;
 }
 
 /** The blueprint's landing page: where each page stands, and what is waiting on you. */
@@ -249,7 +258,9 @@ export function BlueprintHome() {
         </header>
 
         {/* What the coach does to get going (5 Nov: picked over the "we build for you" strip). */}
-        <BlueprintChecklist />
+        <Suspense fallback={null}>
+          <SetupVersion />
+        </Suspense>
 
         {board ? null : (
           <>

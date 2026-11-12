@@ -36,6 +36,7 @@ import { LessonPlayerTabs } from "@/components/academy/LessonPlayerTabs";
 import type { ClassroomLessonPayload } from "@/lib/academy/classroomLessonPayload";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { LessonSeekRequest } from "@/lib/academy/lessonSeekRequest";
+import { normalizeSearchQuery } from "@/lib/search/types";
 import {
   hasInAppLessonContent,
   splitSectionTitleEyebrow,
@@ -180,6 +181,9 @@ const LESSON_SLAB_BODY = `${LESSON_SLAB_GUTTER} pb-6 md:pb-8`;
 /** Tighter top so tabs sit closer under the video. */
 const LESSON_SLAB_BODY_AFTER_VIDEO = `${LESSON_SLAB_GUTTER} pt-3.5 pb-6 md:pt-4 md:pb-8`;
 const LESSON_SLAB_VIDEO = `${LESSON_SLAB_GUTTER}`;
+
+/** Searched words to mark in the transcript, and where the video was sent. */
+type TranscriptFocus = { query: string; seconds: number | null };
 
 function durationLabel(raw: string): string | null {
   return formatHubDurationLabel(raw);
@@ -483,6 +487,7 @@ function LessonBodyFromFields({
   relatedPlaylist,
   seekRequest,
   onSeekToTranscript,
+  transcriptFocus,
   showVideoHandoff,
   onShowHandoff,
   onHideHandoff,
@@ -511,6 +516,7 @@ function LessonBodyFromFields({
   relatedPlaylist: ReactNode;
   seekRequest: LessonSeekRequest | null;
   onSeekToTranscript: (seconds: number) => void;
+  transcriptFocus: TranscriptFocus | null;
   showVideoHandoff: boolean;
   onShowHandoff: () => void;
   onHideHandoff: () => void;
@@ -682,6 +688,8 @@ function LessonBodyFromFields({
                 transcriptText={effectiveTranscript.trim()}
                 videoChapters={hasChapterPlayback ? videoChapters : undefined}
                 onSeekToSeconds={onSeekToTranscript}
+                highlightQuery={transcriptFocus?.query ?? null}
+                anchorSeconds={transcriptFocus?.seconds ?? null}
               />
             ) : null
           }
@@ -774,6 +782,7 @@ export function ClassroomLessonPlayer({
   );
   const [showVideoHandoff, setShowVideoHandoff] = useState(false);
   const [seekRequest, setSeekRequest] = useState<LessonSeekRequest | null>(null);
+  const [transcriptFocus, setTranscriptFocus] = useState<TranscriptFocus | null>(null);
 
   useEffect(() => {
     setCourse(courseProp);
@@ -794,14 +803,21 @@ export function ClassroomLessonPlayer({
     }));
   }
 
-  /** Deep-link from global search: `?tab=transcript&t=123` seeks media. */
+  /**
+   * Deep-link from global search: `?tab=transcript&t=123&q=words` seeks the
+   * media and marks the searched words in the transcript.
+   */
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const raw = new URLSearchParams(window.location.search).get("t");
-    if (raw == null || raw === "") return;
-    const seconds = Number(raw);
-    if (!Number.isFinite(seconds) || seconds < 0) return;
-    seekToTranscriptTime(seconds);
+    const sp = new URLSearchParams(window.location.search);
+    const raw = sp.get("t");
+    const seconds = raw ? Number(raw) : NaN;
+    const hasSeconds = Number.isFinite(seconds) && seconds >= 0;
+    const query = normalizeSearchQuery(sp.get("q"));
+    setTranscriptFocus(
+      query ? { query, seconds: hasSeconds ? seconds : null } : null
+    );
+    if (hasSeconds) seekToTranscriptTime(seconds);
   }, [lesson.id]);
   const resolveContentCourseId = (lessonId: string) =>
     contentSource === "classroom" ? contentSourceCourseId(lessonId) : course.id;
@@ -997,6 +1013,7 @@ export function ClassroomLessonPlayer({
       : null,
     seekRequest,
     onSeekToTranscript: seekToTranscriptTime,
+    transcriptFocus,
     showVideoHandoff,
     onShowHandoff: () => setShowVideoHandoff(true),
     onHideHandoff: () => setShowVideoHandoff(false),

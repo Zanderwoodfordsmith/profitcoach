@@ -11,7 +11,7 @@ import {
 export const DEFAULT_COACH_CALENDARS = [
   {
     slug: "discovery",
-    name: "Discovery call",
+    name: "Constraint Call",
     meeting_duration_minutes: 15,
     sort_order: 0,
   },

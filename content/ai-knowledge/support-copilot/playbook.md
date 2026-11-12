@@ -34,9 +34,17 @@ Facts the support copilot can use. Keep each answer to one line. Update this whe
 
 ## BOSS Scorecard
 
+- BOSS stands for Business Operating System Score. The BOSS Score is the short one (10 questions plus 3); BOSS Pro is the 50-question one.
 - Where completed scorecards show: Get Clients → Prospects, open the person, BOSS Score.
 - Email alert when a prospect completes the scorecard: say it is coming if NOTES confirm it, otherwise say it is logged.
 - Nurture email placeholders blank: their CRM profile is missing the value (for example a booking link). Staff can check which field.
+
+## Invoices and VAT
+
+- Every paid payment has a PDF invoice in Settings, Billing, under Payment history: [Billing](https://www.theprofitcoach.com/coach/settings?tab=billing). The Invoice button is on each payment.
+- Coaches add their business name, address, company number and VAT number under Invoice details on the same page. Downloading the invoice again shows the new details.
+- A payment showing "Ask for invoice" went through a separate account, so staff need to look at it. Say the team will follow up.
+- VAT: invoices come from Business Coach International Limited. No VAT is charged because the payment is collected by Business Coach Academy Limited, our UK payment company, which has not reached the VAT registration threshold. Say no more than that about tax or company structure, and pass anything further to staff.
 
 ## Pricing (non-members)
 

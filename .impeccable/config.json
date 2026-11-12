@@ -199,6 +199,24 @@
         ],
         "createdAt": "2026-10-29T18:55:45.729Z",
         "reason": "Claude: 6px TOP colour bar on cards copies the BCA design system's card bars (bca-website design-tokens.css --ds-blue-bar/sky-bar/teal-bar, used on the approved BCA homepage step cards); not a side tab"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/support/helpCentre.css"
+        ],
+        "createdAt": "2026-11-06T16:50:19.140Z",
+        "reason": "Zander asked on 6 Nov for the brand gradient across the Help centre headline"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/support/HelpCentre.css"
+        ],
+        "createdAt": "2026-11-07T04:19:43.578Z",
+        "reason": "Zander asked on 6 Nov for the brand gradient across the Help centre headline (same file as helpCentre.css; the hook saw the path with a capital H)"
       }
     ]
   }

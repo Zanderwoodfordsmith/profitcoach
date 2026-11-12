@@ -321,7 +321,11 @@ export function SupportTicketChat({
       const reply = mapSupportReplyRow(data, { fallbackAuthor: viewer });
 
       let nextStatus = ticket.status;
-      const statusAfterReply = supportStatusAfterMemberReply(ticket.status);
+      const statusAfterReply = supportStatusAfterMemberReply(
+        ticket.status,
+        Boolean(ticket.created_by_admin) ||
+          ticket.replies.some((r) => r.created_by !== ticket.created_by)
+      );
       // Always touch the row so updated_at bumps (assignee attention badges).
       const { error: statusError } = await supabaseClient
         .from("community_feedback_reports")

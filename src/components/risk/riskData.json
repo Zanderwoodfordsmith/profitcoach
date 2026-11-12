@@ -1,0 +1,2849 @@
+{
+ "risks": [
+  {
+   "id": "OWNER",
+   "name": "The business needs you",
+   "short": "Owner",
+   "meaning": "It slows or stops when you do.",
+   "question": "If I could not work for three months from Monday, what stops first?",
+   "measure": "Weeks away before sales or cash drop. % of revenue where you hold the main relationship. % of weekly decisions that wait for you. Marks: Warrillow's [three months](https://divestopedia.com/podcast-8-key-drivers-to-increased-valuation-an-interview-with-john-warrillow/2/9574), Michalowicz's [four weeks](https://readingraphics.com/?p=49952).",
+   "boss": "Owner Performance (Infrastructure & Systems)",
+   "pillar": "Value",
+   "classLabel": "Strategic: a choice, often made without noticing",
+   "classKey": "strategic"
+  },
+  {
+   "id": "BLIND",
+   "name": "Bad calls and blind spots",
+   "short": "Blind spots",
+   "meaning": "You decide on hope, and bad news never reaches you.",
+   "question": "What do people here know that I do not want to hear?",
+   "measure": "% over plan on your last three big bets, in £ and months. Big decisions made with one voice in the room, per year. Bad-news items raised with you last quarter.",
+   "boss": "Owner Performance (Vision & Alignment)",
+   "pillar": "Control",
+   "classLabel": "Strategic",
+   "classKey": "strategic"
+  },
+  {
+   "id": "SHOCK",
+   "name": "Life shocks",
+   "short": "Life shocks",
+   "meaning": "Illness, death, divorce or a falling-out hits the owners.",
+   "question": "If a shareholder died or fell out tomorrow, who gets the shares, and where does the cash come from?",
+   "measure": "£ needed to buy out a shareholder's family against £ of cover. Months the firm runs without that person. Value above the [£2.5m business relief cap](https://www.gov.uk/government/publications/changes-to-agricultural-property-relief-and-business-property-relief/agricultural-property-relief-and-business-property-relief-changes).",
+   "boss": "Owner Performance (Vision & Alignment)",
+   "pillar": "Control",
+   "classLabel": "External (death, illness) and Preventable (no agreement in place)",
+   "classKey": "external"
+  },
+  {
+   "id": "BASKETS",
+   "name": "Too few customers or lead sources",
+   "short": "Few customers",
+   "meaning": "One customer or one channel can sink a year.",
+   "question": "If my top customer left today, how many months of cash would that cost?",
+   "measure": "% of revenue and gross profit from top 1, 3 and 10 customers. % of leads from the top source. Yearly retention %. Marks: [Bradbury 10%](https://danbradbury.co.uk/audit), [Warrillow 15%](https://www.theglobeandmail.com/report-on-business/small-business/can-you-pass-the-15-test/article4304887), [Hormozi about 20%, and over half for a channel](https://rosetta.to/u/alexhormozi/give-me-47-minutes-and-i-ll-fix-your-small-business).",
+   "boss": "Revenue & Marketing (Strategy)",
+   "pillar": "Velocity",
+   "classLabel": "Strategic",
+   "classKey": "strategic"
+  },
+  {
+   "id": "CANTLOSE",
+   "name": "People and suppliers you can't lose",
+   "short": "Can't lose",
+   "meaning": "One staff member or supplier holds a key job.",
+   "question": "Who could quit or fail next week and leave us stuck?",
+   "measure": "Key roles with no trained cover. Weeks to replace. % of a key function with one supplier. Notice period in the contract, in days.",
+   "boss": "Team & Leadership (Operations & Delivery)",
+   "pillar": "Control",
+   "classLabel": "Preventable (staff cover) and External (supplier fails)",
+   "classKey": "preventable"
+  },
+  {
+   "id": "CASH",
+   "name": "Cash runs out",
+   "short": "Cash",
+   "meaning": "The bank balance hits zero, even in a good year.",
+   "question": "How many weeks of cash do we have, and what is the date we would have to act?",
+   "measure": "Months of runway. 13-week forecast in place, yes or no. Debtor days. Cash conversion days. Marks: [Crabtree about 2 months](https://www.shortform.com/pdf/simple-numbers-straight-talk-big-profits-pdf-greg-crabtree), [Michalowicz at least 3](https://s3.us-east-1.amazonaws.com/MikeMichalowicz/FTN/Book+Club+Guide), [Harnish a year](https://www.levelingup.com/growth-everywhere-interview/verne-harnish-entrepreneurs-organization/amp).",
+   "boss": "Profit & Cash Flow (Financials & Metrics)",
+   "pillar": "Velocity",
+   "classLabel": "Strategic (how much slack you hold), with External triggers",
+   "classKey": "strategic"
+  },
+  {
+   "id": "PROFIT",
+   "name": "Sales without profit",
+   "short": "Profit",
+   "meaning": "Revenue grows, profit does not, and nobody can see why.",
+   "question": "After paying myself a market wage, what do we really make?",
+   "measure": "Gross margin % and its three-year trend. Pre-tax profit % after a market owner wage ([Crabtree: at least 10%](https://www.getabstract.com/summary/16409)). Days to get monthly accounts.",
+   "boss": "Financials & Metrics (Profit & Cash Flow)",
+   "pillar": "Control",
+   "classLabel": "Preventable (poor numbers) and Strategic (pricing)",
+   "classKey": "preventable"
+  },
+  {
+   "id": "OUTGROWN",
+   "name": "Outgrown the way you run",
+   "short": "Outgrown",
+   "meaning": "What worked at this size breaks at the next.",
+   "question": "What keeps breaking, and who fixes it each time?",
+   "measure": "Owner hours a week firefighting. On-time delivery %. Refund and complaint rate. £ cost of errors. Count of [growing pains](https://distantreader.org/stacks/journals/jsbs/jsbs-218.pdf) out of ten.",
+   "boss": "Infrastructure & Systems (Operations & Delivery; Planning & Execution)",
+   "pillar": "Control",
+   "classLabel": "Preventable",
+   "classKey": "preventable"
+  },
+  {
+   "id": "TEAM",
+   "name": "Weak or stuck team",
+   "short": "Team",
+   "meaning": "The top team is too thin, or will not tell each other the truth.",
+   "question": "Which key seats would I fill with the same person again today?",
+   "measure": "% of key seats you would rehire. Staff turnover %. First-year leavers %. £ cost of your last wrong hire.",
+   "boss": "Team & Leadership (Vision & Alignment)",
+   "pillar": "Value",
+   "classLabel": "Preventable and Strategic",
+   "classKey": "preventable"
+  },
+  {
+   "id": "WORLD",
+   "name": "The world moves on",
+   "short": "World",
+   "meaning": "Your market, buyers or tools change, and last year's plan goes stale.",
+   "question": "What would have to change out there for this plan to stop working?",
+   "measure": "% of revenue from offers under three years old. Margin trend. Win rate. % of revenue exposed to one named shift. Ready what-ifs as % of the sales plan ([Stack: at least 15%](https://www.greatgame.com/blog/ten-steps-to-strategic-planning-success)).",
+   "boss": "Strategy (Vision & Alignment)",
+   "pillar": "Value",
+   "classLabel": "External and Strategic",
+   "classKey": "external"
+  },
+  {
+   "id": "RULES",
+   "name": "Rules and break-ins",
+   "short": "Rules",
+   "meaning": "Tax, law, safety, data or cyber bites you, sometimes personally.",
+   "question": "Which letter or phone call would hurt most, and are we ready for it?",
+   "measure": "£ of HMRC arrears. Overdue filings. Sentencing start point for your turnover ([£2m to £10m turnover: starts at £24,000 for a mid-range case, £450,000 for the worst](https://www.sentencingcouncil.org.uk/offences/crown-court/item/organisations-breach-of-duty-of-employer-towards-employees-and-non-employees-breach-of-duty-of-self-employed-to-others-breach-of-health-and-safety-regulations)). Hours to report a data breach ([72 limit](https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/)). Cover gaps in £.",
+   "boss": "Infrastructure & Systems (Operations & Delivery)",
+   "pillar": "Control",
+   "classLabel": "Preventable",
+   "classKey": "preventable"
+  },
+  {
+   "id": "EXIT",
+   "name": "No way out",
+   "short": "Exit",
+   "meaning": "You cannot sell or hand it on, or you do and regret the terms.",
+   "question": "What is it worth to a buyer today, and how far is that from what I need?",
+   "measure": "[Value gap](https://blog.exit-planning-institute.org/what-is-the-value-gap) in £. % of a likely price paid later or tied to results. Months to get ready ([Key Capital: 12 to 18](https://www.keycapitalpartners.co.uk/12-18-months-before-private-equity-what-sme-founders-should-start-addressing-now/)). Successor spoken to, yes or no.",
+   "boss": "Vision & Alignment (Strategy; Owner Performance)",
+   "pillar": "Value",
+   "classLabel": "Strategic",
+   "classKey": "strategic"
+  }
+ ],
+ "thinkers": [
+  {
+   "id": "john-warrillow",
+   "name": "John Warrillow",
+   "family": "value",
+   "work": "*Built to Sell*; Value Builder",
+   "idea": "Buyers pay less for a firm tied to one customer or to the owner. Eight drivers of value; a typical user has $1M to $20M revenue.",
+   "tool": "Could this run for three months without you? Work first on any driver under 50.",
+   "frames": "Partly. Value drivers, not a risk list. The 15% reasoning does use risk.",
+   "strength": "Medium. [Interview](https://divestopedia.com/podcast-8-key-drivers-to-increased-valuation-an-interview-with-john-warrillow/2/9574); [15% excerpt](https://www.theglobeandmail.com/report-on-business/small-business/can-you-pass-the-15-test/article4304887). Vendor data, unaudited.",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "dan-bradbury-uk",
+   "name": "Dan Bradbury (UK)",
+   "family": "value",
+   "work": "Podcast; *Ideal Exit*; audit",
+   "idea": "Value rests on profit quality, customer concentration, owner dependency, growth and clean financials. Most valuations are wrong, and buyers differ.",
+   "tool": "His audit: a 13-week forecast, no client at 10%, staff cover, a ready data room.",
+   "frames": "Partly. Value drivers and buyer checks. \"Risk\" appears in episode notes.",
+   "strength": "Medium, notes only, no audio. [Audit](https://danbradbury.co.uk/audit); [Ep 302](https://www.buzzsprout.com/1193879/episodes/19753776-ep-302-your-business-probably-isn-t-worth-what-you-think).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "exit-planning-institute",
+   "name": "Exit Planning Institute",
+   "family": "value",
+   "work": "*State of Owner Readiness 2023*; Value Acceleration",
+   "idea": "Half of exits are forced, on its own unsourced estimate. Plan for death, disability, divorce, disagreement and distress.",
+   "tool": "Do you have a written plan for each D? How big is your value gap?",
+   "frames": "Yes.",
+   "strength": "Medium, US only. [Report](https://myccmi.com/wp-content/uploads/2024/05/Owner-Readiness-2023.pdf); [blog](https://blog.exit-planning-institute.org/the-grinch-may-have-stolen-christmas-but-the-5-ds-shouldnt-steal-your-business).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "bo-burlingham",
+   "name": "Bo Burlingham",
+   "family": "value",
+   "work": "*Finish Big*",
+   "idea": "Most owners start too late on exit and pay for it. His distinct risk is leaving unhappy.",
+   "tool": "What will you do the day after you sell? (Our wording.)",
+   "frames": "Partly. Regret after exit.",
+   "strength": "Weak. [Publisher](https://penguinrandomhouse.com/books/305190/finish-big-by-bo-burlingham); [reader notes](https://www.goodreads.com/book/show/29847079).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "carl-allen",
+   "name": "Carl Allen",
+   "family": "value",
+   "work": "Dealmaker guide",
+   "idea": "Buyers push risk back on the seller through later payments. Burned-out or sick sellers get worse terms.",
+   "tool": "How much of the price comes on the day?",
+   "frames": "Yes, from the buyer's side.",
+   "strength": "Medium, 2020, a promoter. [Guide](https://dealmakerwealthsociety.com/wp-content/uploads/2020/08/EMP_HowToGrow.pdf).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "uk-investors-and-brokers-key-capital-kbs-yfm-ferris",
+   "name": "UK investors and brokers (Key Capital, KBS, YFM, Ferris)",
+   "family": "value",
+   "work": "Articles, 2024 to 2026",
+   "idea": "Investors probe founder dependency, thin leadership and client concentration. Earn-outs track reliance on the seller. None give numbers.",
+   "tool": "What happens if the founder steps away? Start 12 to 18 months ahead.",
+   "frames": "Yes, except YFM's article on this point.",
+   "strength": "Medium, each sells a service. [Key Capital](https://www.keycapitalpartners.co.uk/12-18-months-before-private-equity-what-sme-founders-should-start-addressing-now/); [KBS](https://www.kbscorporate.com/?p=59363); [YFM](https://yfmep.com/lab/what-do-private-equity-investors-look-for-in-a-management-team); [Ferris](https://www.legal500.com/intelligence/united-kingdom/finance-and-banking/about-earnouts%E2%80%A6-and-reducing-owner-dependence-to-avoid-them).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "michael-gerber",
+   "name": "Michael Gerber",
+   "family": "ops",
+   "work": "*The E-Myth Revisited*",
+   "idea": "Technicians assume doing the work means they can run the business. Firms die when the owner shrinks them back to a comfort zone.",
+   "tool": "Would this work as a franchise prototype, run on systems?",
+   "frames": "No. Failure modes.",
+   "strength": "Weak. [Reader notes](https://sive.rs/book/EMythRevisited); [EMyth](https://www.emyth.com/inside/groundbreaking-ideas-from-the-e-myth-revisited), which sells coaching.",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "gino-wickman-eos",
+   "name": "Gino Wickman / EOS",
+   "family": "ops",
+   "work": "*Traction*",
+   "idea": "Growth stalls at a \"ceiling\". Off-track numbers and open issues surface trouble.",
+   "tool": "At the annual meeting: what big, urgent problems are missing from the list?",
+   "frames": "No. \"Risks\" appears once on one page.",
+   "strength": "Medium. [Issues](https://www.eosworldwide.com/issues-component); [Glossary](https://www.eosworldwide.com/glossary); Big Issues.",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "verne-harnish",
+   "name": "Verne Harnish",
+   "family": "ops",
+   "work": "*Scaling Up*",
+   "idea": "Three barriers (leadership, infrastructure, marketing) and four decisions. Cash has the shortest fuse.",
+   "tool": "Power of One: what does 1% or one day on each of seven levers do to cash?",
+   "frames": "No. \"Barriers\".",
+   "strength": "Weak. [Book notes](https://buresund.nu/books/scaling-up); [interview notes](https://www.levelingup.com/growth-everywhere-interview/verne-harnish-entrepreneurs-organization/amp); [cash blog](https://scalingup.com/blog/how-one-scaleup-reduced-its-cash-conversion-cycle-by-90-days).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "mike-michalowicz",
+   "name": "Mike Michalowicz",
+   "family": "ops",
+   "work": "*Clockwork*; *Fix This Next*; *Profit First*",
+   "idea": "The Survival Trap keeps owners treating symptoms. Fix the lowest unmet need first.",
+   "tool": "Linchpin Redundancy: can it function if key people, you included, are out?",
+   "frames": "No. Vital needs.",
+   "strength": "Medium. [Fix This Next guide](https://s3.us-east-1.amazonaws.com/MikeMichalowicz/FTN/Book+Club+Guide); [Clockwork](https://mikemichalowicz.com/clockwork/); [summary](https://readingraphics.com/?p=49952).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "greg-crabtree",
+   "name": "Greg Crabtree",
+   "family": "ops",
+   "work": "*Simple Numbers, Straight Talk, Big Profits!*",
+   "idea": "Pay a market owner wage first, or profit misleads.",
+   "tool": "Do you make at least 10% pre-tax after a market wage?",
+   "frames": "No. Needs UK translation for wage and dividends.",
+   "strength": "Weak. [Summary](https://www.getabstract.com/summary/16409); [labour ratio](https://www.accountingtoday.com/news/3-steps-to-maximizing-labor-productivity).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "sam-carpenter",
+   "name": "Sam Carpenter",
+   "family": "ops",
+   "work": "*Work the System*",
+   "idea": "A first-person story: 80 to 100 hour weeks, poor health, close to missing payroll, until he saw a collection of systems.",
+   "tool": "Pick one simple task and document it today.",
+   "frames": "No. A personal crisis story.",
+   "strength": "Medium, self-reported. [Interview](https://mixergy.com/interviews/sam-carpenter-work-the-system-interview/).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "churchill-lewis",
+   "name": "Churchill & Lewis",
+   "family": "stages",
+   "work": "\"The Five Stages of Small Business Growth\" (HBR 1983)",
+   "idea": "Firms fail by growing past their cash, or because the owner cannot delegate. Staying the same size is a valid choice.",
+   "tool": "Do you want to stay or grow? Wanting growth and long holidays carries \"considerable risk\".",
+   "frames": "Partly. Ordinary use of \"risk\", naming failure causes.",
+   "strength": "Strong, read in full. [PDF](https://hbr.org/1983/05/the-five-stages-of-small-business-growth). 1983, US, survivors only.",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "larry-greiner",
+   "name": "Larry Greiner",
+   "family": "stages",
+   "work": "\"Evolution and Revolution as Organizations Grow\" (HBR 1972, 1998)",
+   "idea": "Each phase's fix causes the next crisis, and resistance is strongest at the top. Paraphrase only.",
+   "tool": "Which crisis are we in, and what past habit must we drop?",
+   "frames": "No. \"Crisis\".",
+   "strength": "Strong, read in full, but paraphrase only. [PDF](https://hbr.org/1998/05/evolution-and-revolution-as-organizations-grow). Case histories.",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "ichak-adizes",
+   "name": "Ichak Adizes",
+   "family": "stages",
+   "work": "*Managing Corporate Lifecycles*",
+   "idea": "Each stage has normal problems and abnormal ones. The founder's trap is when the founder cannot be replaced.",
+   "tool": "Normal or abnormal: will this pass, or does it need outside help?",
+   "frames": "Partly. \"Biggest assets and biggest risks\".",
+   "strength": "Medium, institute's own site. [Ch. 4](https://adizes-institute.gitbook.io/adizes/library/books-by-dr.-ichak-adizes/managing-corporate-lifecycles/chapter-four); [glossary](https://adizes-institute.gitbook.io/adizes/dictionary-of-terms/organizational-lifecycle).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "eric-flamholtz",
+   "name": "Eric Flamholtz",
+   "family": "stages",
+   "work": "*Growing Pains*",
+   "idea": "Ten symptoms show a firm has outgrown its structure, such as firefighting and sales rising with flat profit.",
+   "tool": "Count how many of the ten you have.",
+   "frames": "No. \"Growing pains\".",
+   "strength": "Weak, via Hanks, paraphrase only. [Hanks](https://distantreader.org/stacks/journals/jsbs/jsbs-218.pdf).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "les-mckeown",
+   "name": "Les McKeown",
+   "family": "stages",
+   "work": "*Predictable Success*",
+   "idea": "Seven stages. Whitewater is where fun runs out, and Treadmill is too much process.",
+   "tool": "Are we pleasing customers or the internal system?",
+   "frames": "No.",
+   "strength": "Weak. [Podcast notes](https://www.monkhouseandcompany.com/resources/podcast/the-story-of-predictable-success-with-les-mckeown/).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "levie-lichtenstein",
+   "name": "Levie & Lichtenstein",
+   "family": "stages",
+   "work": "Review of 104 stage models, ETP 2010",
+   "idea": "The warning over every chart on this page: stage models have no empirical confirmation.",
+   "tool": "Is this firm's state a fit for its surroundings today?",
+   "frames": "Not about risk. A check on stage models.",
+   "strength": "Strong, read. [PDF](https://effectuation.org/hubfs/Journal%20Articles/2017/06/Levie_et_al-2010-Entrepreneurship_Theory_and_Practice-3.pdf?hsLang=en).",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "eli-goldratt",
+   "name": "Eli Goldratt",
+   "family": "classic",
+   "work": "*The Goal*; *Critical Chain*",
+   "idea": "No direct statement on risk found. Find what limits the system and protect it with buffers.",
+   "tool": "What happens if the constraint stops? (Our wording.)",
+   "frames": "No. Buffers come closest.",
+   "strength": "Weak. [TOC Institute](https://www.tocinstitute.org/five-focusing-steps.html); [Critical Chain](https://en.wikipedia.org/wiki/Critical_chain_project_management).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "peter-drucker",
+   "name": "Peter Drucker",
+   "family": "classic",
+   "work": "*Managing for Results* (1964)",
+   "idea": "Four risks, including those you cannot afford to take and those you cannot afford not to take. Success makes firms take their theory for granted.",
+   "tool": "\"If we did not do this already, would we go into it now?\"",
+   "frames": "Yes on the four types, as quoted second-hand.",
+   "strength": "Weak to medium. [Four types](https://www.labmanager.com/what-s-the-risk-10834); [abandonment](https://www.oreilly.com/library/view/the-daily-drucker/9780061802669/6january.xhtml); [theory](https://adamsmithesq.com/2015/12/whats-your-theory-of-the-business/?single).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "peter-senge",
+   "name": "Peter Senge",
+   "family": "classic",
+   "work": "*The Fifth Discipline*",
+   "idea": "System traps: quick fixes hide root problems, and bad results arrive long after the decision. The dogs: attribution unproven,",
+   "tool": "What are we fixing again that we fixed last year? (Our wording.)",
+   "frames": "No. Our reading.",
+   "strength": "Weak. [Archetypes](https://en.wikipedia.org/wiki/System_archetype); [dogs source](https://tahltan.org/wp-content/uploads/2021/05/TCG_SpringNewsletter2021.pdf).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "andy-grove",
+   "name": "Andy Grove",
+   "family": "classic",
+   "work": "*Only the Paranoid Survive*",
+   "idea": "A change ten times normal size can make your strategy obsolete. Front-line \"Cassandras\" see it first.",
+   "tool": "Which of the six forces would hurt most if it changed tenfold?",
+   "frames": "Partly. Crisis and chance.",
+   "strength": "Weak. [Review](https://www.emerald.com/insight/content/doi/10.1108/jcm.2003.20.4.377.3/full/html).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "jim-collins-with-hansen",
+   "name": "Jim Collins (with Hansen)",
+   "family": "classic",
+   "work": "*Great by Choice*; *How the Mighty Fall*",
+   "idea": "Top firms took fewer bets that could kill them and held more cash. Decline hides behind good results.",
+   "tool": "Could this kill us? Is the downside bigger? Is it out of our control?",
+   "frames": "Yes.",
+   "strength": "Medium. [Stages](https://www.jimcollins.com/books/how-the-mighty-fall.html); [reader notes](https://www.maxmednik.com/blog/notes-on-great-by-choice-by-jim-collins). Large public firms only.",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "ram-charan",
+   "name": "Ram Charan",
+   "family": "classic",
+   "work": "*What the CEO Wants You to Know*; *Execution* (with Bossidy)",
+   "idea": "A money language: cash, margin, velocity, growth, customers.",
+   "tool": "Where is cash stuck: stock or debtors? (Our wording.)",
+   "frames": "No.",
+   "strength": "Weak. [Summary](https://actionablebooks.com/summaries/what-the-ceo-wants-you-to-know/); [notes](https://davidmays.org/BN/BosExec.html).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "nassim-taleb",
+   "name": "Nassim Taleb",
+   "family": "invest",
+   "work": "*Black Swan*; *Antifragile*; ruin paper; HBR 2009",
+   "idea": "Stop predicting rare events. Plan for the hit and avoid ruin. Spare capacity is not waste.",
+   "tool": "What happens if this goes, however unlikely?",
+   "frames": "Yes. Mostly finance, needs translating.",
+   "strength": "Medium. [Ruin paper abstract](https://arxiv.org/abs/1410.5787); [six mistakes summary](https://erm.ncsu.edu/resource-center/risk-management-mistakes).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "howard-marks",
+   "name": "Howard Marks",
+   "family": "invest",
+   "work": "\"Risk Revisited\" (2014 memo)",
+   "idea": "The real risk is permanent loss, and being forced to sell turns a dip into one. Not taking enough risk is also a risk.",
+   "tool": "Can we survive this and carry on? (Our wording.)",
+   "frames": "Yes, for investors.",
+   "strength": "Strong, read. [Memo](https://www.oaktreecapital.com/docs/default-source/memos/2014-09-03-risk-revisited.pdf).",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "warren-buffett",
+   "name": "Warren Buffett",
+   "family": "invest",
+   "work": "Berkshire letters",
+   "idea": "A business that needs a superstar cannot be great. Risk means possible loss, not price swings.",
+   "tool": "If the surgeon left, what would the firm be worth? (Our wording.)",
+   "frames": "Yes, for buying firms.",
+   "strength": "Strong, read. [2007](https://www.berkshirehathaway.com/letters/2007ltr.pdf); [1993](https://www.berkshirehathaway.com/letters/1993.html).",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "charlie-munger",
+   "name": "Charlie Munger",
+   "family": "invest",
+   "work": "1986 Harvard School speech",
+   "idea": "Work out what guarantees failure, then avoid it. He quotes Jacobi for \"invert\".",
+   "tool": "How would we guarantee this firm fails in two years? (Our wording.)",
+   "frames": "Partly. Life advice.",
+   "strength": "Strong, transcript read. [Transcript](https://jamesclear.com/great-speeches/how-to-guarantee-a-life-of-misery-by-charlie-munger).",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "annie-duke",
+   "name": "Annie Duke",
+   "family": "invest",
+   "work": "*Thinking in Bets*; *Quit*",
+   "idea": "People persist too long. Decide your exit point early, while calm.",
+   "tool": "What state, by what date, means we stop?",
+   "frames": "No. Decision quality.",
+   "strength": "Weak to medium. [Her site](https://www.annieduke.com/books/); [interview notes](https://www.lennysnewsletter.com/p/making-better-decisions-annie-duke).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "gary-klein",
+   "name": "Gary Klein",
+   "family": "invest",
+   "work": "\"Performing a Project Premortem\" (HBR 2007)",
+   "idea": "Imagine the plan has already failed, and people name reasons they would otherwise hold back.",
+   "tool": "It is two years on and this failed badly. Why?",
+   "frames": "Partly. Project failure.",
+   "strength": "Strong, article copy read. [HBR](https://hbr.org/2007/09/performing-a-project-premortem); [article](https://hbr.org/2007/09/performing-a-project-premortem).",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "daniel-kahneman",
+   "name": "Daniel Kahneman",
+   "family": "invest",
+   "work": "*Thinking, Fast and Slow*; \"Delusions of Success\"",
+   "idea": "Plans sit too close to the best case. Check how similar efforts really turned out.",
+   "tool": "How did the last ten like this go, here and elsewhere?",
+   "frames": "Partly. Forecast error.",
+   "strength": "Weak. [Summary](https://www.litcharts.com/lit/thinking-fast-and-slow/part-3-chapter-23); [HBR excerpt](https://hbr.org/2003/07/delusions-of-success-how-optimism-undermines-executives-decisions).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "ray-dalio",
+   "name": "Ray Dalio",
+   "family": "invest",
+   "work": "*Principles*",
+   "idea": "Take good odds, but make sure the chance of ruin is nil. Test your view on capable people who disagree.",
+   "tool": "Who is the smartest person who disagrees with me?",
+   "frames": "Yes, as one principle.",
+   "strength": "Medium, his site. [Principles](https://www.principles.com/principles/7e57c357-74bb-4e5b-ab4a-598f54b36f54/).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "morgan-housel",
+   "name": "Morgan Housel",
+   "family": "invest",
+   "work": "*The Psychology of Money*",
+   "idea": "Room for error lets you stay in the game: \"you have to survive to succeed\".",
+   "tool": "Can you survive a 30% fall?",
+   "frames": "Yes, for personal money.",
+   "strength": "Medium. [His essay](https://www.collabfund.com/blog/the-psychology-of-money/).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "alex-hormozi",
+   "name": "Alex Hormozi",
+   "family": "modern",
+   "work": "\"Give Me 47 Minutes\" video; Scaling Roadmap",
+   "idea": "Four named concentration risks: key man, single channel, key customer, key vendor. The roadmap lists risks by headcount.",
+   "tool": "If one person, channel, customer or vendor went, what breaks?",
+   "frames": "Yes on the four. He also uses \"risk\" for the buyer's fear in an offer, a separate subject.",
+   "strength": "Strong for the roadmap, read. Medium for the video, [captions only](https://rosetta.to/u/alexhormozi/give-me-47-minutes-and-i-ll-fix-your-small-business). [Roadmap](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage07_.pdf). US-built.",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "leila-hormozi",
+   "name": "Leila Hormozi",
+   "family": "modern",
+   "work": "*Build* podcast (public show notes)",
+   "idea": "Hiring more on top of chaos makes more chaos. Founders stay the bottleneck when systems are missing.",
+   "tool": "Which decisions are you handing over, and not only tasks?",
+   "frames": "No, in public material we saw. \"People risk\" is our label.",
+   "strength": "Weak, show notes and titles. [Ep 362](https://poddtoppen.se/podcast/1663834553/build-with-leila-hormozi/the-hiring-system-that-lets-your-business-run-solo-ep-362); [Ep 365](https://poddtoppen.se/podcast/1663834553/build-with-leila-hormozi/the-iceberg-illusion-of-leadership-ep-365). Listen before quoting.",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "dan-martell",
+   "name": "Dan Martell",
+   "family": "modern",
+   "work": "*Buy Back Your Time*",
+   "idea": "Growth gets painful around 12 people. Founders then sell, sabotage or stall.",
+   "tool": "What does your time audit show you should hand off first?",
+   "frames": "No. \"Pain Line\".",
+   "strength": "Weak to medium. [Book summary episode](https://www.audioscrape.com/podcast/the-martell-method-w-dan-martell/episode/buy-back-your-time-in-35-minutes--book-summary); [summary](https://readingraphics.com/?p=201388).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "dan-sullivan",
+   "name": "Dan Sullivan",
+   "family": "modern",
+   "work": "*The Dan Sullivan Question*; *The Self-Managing Company*",
+   "idea": "D.O.S. asks what dangers need removing, what chances to take, what strengths to use. It surfaces what the person already fears.",
+   "tool": "What dangers do you have now that need to be eliminated?",
+   "frames": "Partly. Personal \"dangers\", built partly as a sales conversation.",
+   "strength": "Medium: PDF read, strategiccoach.com blocked. [PDF](https://s3.amazonaws.com/strategic-coach-marketing-assets/downloads/Self-ManagingCompanyDownload.pdf); [quoted line](https://www.goodreads.com/work/quotes/7156156).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "keith-cunningham",
+   "name": "Keith Cunningham",
+   "family": "modern",
+   "work": "*The Road Less Stupid* (talks)",
+   "idea": "His biggest losses came from excessive optimism, unexamined assumptions or ignored risk. Protect time to think.",
+   "tool": "What could go wrong?",
+   "frames": "Yes, in his talks.",
+   "strength": "Medium, his own words via auto-captions. [Stupid things talk](https://www.youtube.com/watch?v=iyBWlhZIcpM); [Thinking Time](https://www.youtube.com/watch?v=v0f-m0i8UfA); [frequency](https://www.youtube.com/watch?v=cAmpom-ExVc).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "daniel-priestley-uk",
+   "name": "Daniel Priestley (UK)",
+   "family": "modern",
+   "work": "*Key Person of Influence*; *Oversubscribed*",
+   "idea": "A personal brand drives growth, and then energy moves to the firm. Useful on scorecards, thin on risk.",
+   "tool": "Could your reputation pass to the firm? (Our wording.)",
+   "frames": "No.",
+   "strength": "Weak to medium. [Interview](https://rosetta.to/u/thefutur/personal-branding-masterclass-w-daniel-priestley).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "jack-stack",
+   "name": "Jack Stack",
+   "family": "modern",
+   "work": "*The Great Game of Business*; SRC; Great Game site",
+   "idea": "One number marks your weakest point, and the whole team tracks it. Keep tested what-ifs worth at least 15% of the sales plan.",
+   "tool": "\"What happens if 15 percent to 20 percent of the business is lost overnight?\"",
+   "frames": "Yes, partly. Survival and vulnerability. The wider Game is about engagement.",
+   "strength": "Medium, own firm's site, which sells this. [Principles](https://www.greatgame.com/about/principles); [Uncertain Future](https://www.greatgame.com/blog/planning-for-an-uncertain-future); [interview repost](https://infizia.blogspot.com/2014/05/why-ceo-needs-to-have-plan-b.html).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "patrick-lencioni",
+   "name": "Patrick Lencioni",
+   "family": "team",
+   "work": "*The Five Dysfunctions of a Team*",
+   "idea": "Trust gaps, fear of conflict, weak commitment, dodged accountability and poor focus on results.",
+   "tool": "Where does this team hold back from arguing?",
+   "frames": "No. Team failures.",
+   "strength": "Medium, his firm's site. [Table Group](https://www.tablegroup.com/topics-and-resources/teamwork-5-dysfunctions/).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "noam-wasserman",
+   "name": "Noam Wasserman",
+   "family": "team",
+   "work": "*The Founder's Dilemmas*",
+   "idea": "Friends-and-family teams are the least stable. Founders trade control against wealth. Startup data.",
+   "tool": "Rich or king: which do you want?",
+   "frames": "Partly. \"Dilemmas\".",
+   "strength": "Medium. [Q&A](https://english.ckgsb.edu.cn/knowledge/article/the-hypergrowth-conundrum-qa-with-noam-wasserman-start-up-statistician/); [talk, AI-cleaned](https://businessofsoftware.org/?p=11392).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "tagiuri-davis",
+   "name": "Tagiuri & Davis",
+   "family": "team",
+   "work": "Three-circle model",
+   "idea": "Family, ownership and management tangle. Each of the seven positions sees things differently.",
+   "tool": "Whose interest has nobody spoken for? (Our wording.)",
+   "frames": "Partly. Problems, not risk.",
+   "strength": "Medium, Davis's own account. [Article](https://www.familybusinessmagazine.com/how-three-circles-changed-way-we-understand-family-business).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "gersick-et-al",
+   "name": "Gersick et al.",
+   "family": "team",
+   "work": "*Generation to Generation*",
+   "idea": "Family firm problems shift across generations: from the indispensable founder to sibling power fights.",
+   "tool": "Which ownership stage are you in, and what is next?",
+   "frames": "Partly.",
+   "strength": "Weak. [Summary](https://cfeg.com/about/thought-leadership-stages).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "marshall-goldsmith",
+   "name": "Marshall Goldsmith",
+   "family": "team",
+   "work": "*What Got You Here Won't Get You There*",
+   "idea": "Twenty habits hold successful people back, and they cannot see their own.",
+   "tool": "Do you punish the messenger? Ask your team.",
+   "frames": "Partly.",
+   "strength": "Weak. [Wharton review](https://knowledge.wharton.upenn.edu/?p=6464). Safest to use with an owner.",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "manfred-kets-de-vries",
+   "name": "Manfred Kets de Vries",
+   "family": "team",
+   "work": "SMJ 1984; \"Coaching the Toxic Leader\"",
+   "idea": "A firm can mirror its leader's troubled patterns. Clinical words: for the coach's own thinking, never to label a client.",
+   "tool": "What in this firm mirrors the owner?",
+   "frames": "Yes, harm to the firm.",
+   "strength": "Weak to medium. [Abstract](https://econpapers.repec.org/RePEc:bla:stratm:v:5:y:1984:i:1:p:35-55); [INSEAD](https://knowledge.insead.edu/career/putting-leaders-couch).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "robert-kegan-with-lahey",
+   "name": "Robert Kegan (with Lahey)",
+   "family": "team",
+   "work": "Competing commitments (HBR 2001)",
+   "idea": "People who agree and then stall hold a hidden competing commitment.",
+   "tool": "What are you doing instead, and what are you protecting?",
+   "frames": "No. Why risk fixes stall (our reading).",
+   "strength": "Weak. [Harvard Extension](https://extension.harvard.edu/blog/the-surprising-reason-we-dont-keep-our-resolutions-and-how-to-overcome-it); [HBR 2001](https://hbr.org/2001/11/the-real-reason-people-wont-change).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "clayton-christensen",
+   "name": "Clayton Christensen",
+   "family": "strategy",
+   "work": "*The Innovator's Dilemma*",
+   "idea": "Serving your most demanding customers can leave you open to cheap, simple rivals. Contested: one survey found 9% of his cases fit all tested elements.",
+   "tool": "Who could do to you what you did to others?",
+   "frames": "Yes, as a failure mechanism.",
+   "strength": "Weak to medium. [Institute](https://www.christenseninstitute.org/theory/disruptive-innovation/); [critique](https://tuck.dartmouth.edu/news/articles/deflating-disruption-theory).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "rita-mcgrath",
+   "name": "Rita McGrath",
+   "family": "strategy",
+   "work": "*Seeing Around Corners*; \"Discovery-Driven Planning\" (with MacMillan)",
+   "idea": "Change shows early at the edges, and any advantage expires. Small tests beat big forecasts.",
+   "tool": "What must be true for this to pay?",
+   "frames": "Partly. Large-firm writing.",
+   "strength": "Medium. [Interview](https://www.rolandberger.com/en/Insights/Publications/How-to-compete-in-a-world-of-transient-advantages.html); [HBR 1995](https://hbr.org/1995/07/discovery-driven-planning).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "michael-porter",
+   "name": "Michael Porter",
+   "family": "strategy",
+   "work": "\"The Five Competitive Forces\"",
+   "idea": "Find a position less open to attack. Power sits with few buyers or key suppliers.",
+   "tool": "Who could squeeze our price most? (Our wording.)",
+   "frames": "No.",
+   "strength": "Medium, condensed. [Reprint](https://www.cbsnews.com/news/the-five-competitive-forces-that-shape-strategy).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "hamilton-helmer",
+   "name": "Hamilton Helmer",
+   "family": "strategy",
+   "work": "*7 Powers*",
+   "idea": "Lasting returns need a benefit and a barrier. Few firms this size have real Power (our view).",
+   "tool": "What stops a rival copying this?",
+   "frames": "No.",
+   "strength": "Weak. [Primer](https://www.sachinrekhi.com/7-powers-hamilton-helmer).",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "kaplan-mikes",
+   "name": "Kaplan & Mikes",
+   "family": "strategy",
+   "work": "\"Managing Risks: A New Framework\" (HBR 2012)",
+   "idea": "Three kinds of risk need three methods. Checklists only help with the first kind. A later paper adds [novel risks](https://www.hks.harvard.edu/publications/novel-risks-0).",
+   "tool": "Is this preventable, chosen or external?",
+   "frames": "Yes. The clearest framework here.",
+   "strength": "Strong, read. [HBR](https://hbr.org/2012/06/managing-risks-a-new-framework). Large firms, no outcome data.",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "robert-simons",
+   "name": "Robert Simons",
+   "family": "strategy",
+   "work": "\"How Risky Is Your Company?\" (HBR 1999)",
+   "idea": "Pressure builds from growth, culture and information. Plan slack into the profit plan so shocks do not force bad acts.",
+   "tool": "Risk Exposure Calculator, nine items scored 1 to 5.",
+   "frames": "Yes.",
+   "strength": "Weak: original not opened, item wording from a French thesis. [Overview](https://www.enterrasolutions.com/insights/risk-and-language); [HBR 1999](https://hbr.org/1999/05/how-risky-is-your-company). HBR copyright may limit use.",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "stanley-mcchrystal-with-butrico",
+   "name": "Stanley McChrystal (with Butrico)",
+   "family": "strategy",
+   "work": "*Risk: A User's Guide*",
+   "idea": "Build a \"Risk Immune System\" and stop trying to predict.",
+   "tool": "Which control is weakest?",
+   "frames": "Yes.",
+   "strength": "Weak: digests only. [New Books Network](https://newbooksnetwork.com/control). Do not list the ten dimensions.",
+   "strengthLevel": "weak"
+  },
+  {
+   "id": "tim-ferriss",
+   "name": "Tim Ferriss",
+   "family": "strategy",
+   "work": "TED 2017",
+   "idea": "Define, prevent and repair your worst outcomes, then price the cost of doing nothing.",
+   "tool": "What does doing nothing cost at 6, 12 and 36 months?",
+   "frames": "Yes, for personal choices. Business use is ours.",
+   "strength": "Medium, third-party transcript. [Transcript](https://singjupost.com/tim-ferriss-why-you-should-define-your-fears-instead-of-your-goals-transcript/).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "seneca",
+   "name": "Seneca",
+   "family": "strategy",
+   "work": "Letter 91",
+   "idea": "Expect what can happen, as the shock of surprise weighs most.",
+   "tool": "What can happen, as well as what usually does?",
+   "frames": "Yes, personal misfortune.",
+   "strength": "Strong, translation read. [Letter 91](https://en.wikisource.org/wiki/Moral_letters_to_Lucilius/Letter_91).",
+   "strengthLevel": "strong"
+  },
+  {
+   "id": "reid-hoffman-ben-horowitz",
+   "name": "Reid Hoffman; Ben Horowitz",
+   "family": "strategy",
+   "work": "*Blitzscaling*; \"Peacetime CEO/Wartime CEO\"",
+   "idea": "Contrasts. Hoffman takes speed risk on purpose under strict conditions. Horowitz sets out how leading changes under a real threat.",
+   "tool": "Is this truly a war, or are we avoiding peacetime work?",
+   "frames": "Yes for Hoffman; partly for Horowitz.",
+   "strength": "Medium. [Hoffman](https://www.gic.com.sg/thinkspace/technology/reid-hoffman-on-blitzscaling/); [Horowitz](https://a16z.com/peacetime-ceo-wartime-ceo/).",
+   "strengthLevel": "medium"
+  },
+  {
+   "id": "donald-sull-courtney-et-al-day-schoemaker",
+   "name": "Donald Sull; Courtney et al.; Day & Schoemaker",
+   "family": "strategy",
+   "work": "HBR 1999; 1997; 2005",
+   "idea": "Good firms do more of what worked as markets shift. Name your level of uncertainty before picking a tool. Give someone the job of watching for weak signals.",
+   "tool": "Who owns the watching here?",
+   "frames": "Partly.",
+   "strength": "Weak, previews only. [Sull](https://www.library.hbs.edu/working-knowledge/stuck-in-gear-why-managers-dont-act); [Courtney](https://hbr.org/1997/11/strategy-under-uncertainty); [Day & Schoemaker](https://hbr.org/2005/11/scanning-the-periphery).",
+   "strengthLevel": "weak"
+  }
+ ],
+ "families": [
+  {
+   "key": "value",
+   "name": "Value and exit"
+  },
+  {
+   "key": "ops",
+   "name": "Operating systems"
+  },
+  {
+   "key": "stages",
+   "name": "Stages and lifecycles"
+  },
+  {
+   "key": "classic",
+   "name": "Classic management"
+  },
+  {
+   "key": "invest",
+   "name": "Investors and decision thinkers"
+  },
+  {
+   "key": "modern",
+   "name": "Modern operators"
+  },
+  {
+   "key": "team",
+   "name": "Team, founder and family"
+  },
+  {
+   "key": "strategy",
+   "name": "Strategy and outside change"
+  }
+ ],
+ "links": [
+  {
+   "thinker": "john-warrillow",
+   "risk": "OWNER",
+   "word": "[Hub & Spoke; \"hit-by-a-bus\" test](https://builttosell.com/radio/episode-69/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "john-warrillow",
+   "risk": "BASKETS",
+   "word": "[Switzerland Structure; the 15% test](https://www.theglobeandmail.com/report-on-business/small-business/can-you-pass-the-15-test/article4304887)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "john-warrillow",
+   "risk": "CANTLOSE",
+   "word": "[Switzerland Structure (staff, suppliers)](https://divestopedia.com/podcast-8-key-drivers-to-increased-valuation-an-interview-with-john-warrillow/2/9574)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "john-warrillow",
+   "risk": "CASH",
+   "word": "[Valuation Teeter-Totter](https://divestopedia.com/podcast-8-key-drivers-to-increased-valuation-an-interview-with-john-warrillow/2/9574)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "john-warrillow",
+   "risk": "EXIT",
+   "word": "[Eight drivers of value](https://divestopedia.com/podcast-8-key-drivers-to-increased-valuation-an-interview-with-john-warrillow/2/9574)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "dan-bradbury-uk",
+   "risk": "OWNER",
+   "word": "[Erase Dependency; Single Point of Failure Exercise](https://www.buzzsprout.com/1193879/episodes/19991013-ep-306-i-was-in-a-coma-and-my-business-didn-t-notice)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "dan-bradbury-uk",
+   "risk": "BASKETS",
+   "word": "[Customer concentration; 10% audit line](https://danbradbury.co.uk/audit)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "dan-bradbury-uk",
+   "risk": "CANTLOSE",
+   "word": "[Points of failure; if staff \"suddenly quit\"](https://danbradbury.co.uk/audit)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "dan-bradbury-uk",
+   "risk": "CASH",
+   "word": "[13-week forecast; scenario planning](https://danbradbury.co.uk/audit)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "dan-bradbury-uk",
+   "risk": "PROFIT",
+   "word": "[Profit quality; clean financials](https://www.buzzsprout.com/1193879/episodes/19753776-ep-302-your-business-probably-isn-t-worth-what-you-think)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "dan-bradbury-uk",
+   "risk": "RULES",
+   "word": "[Legal risks; cyber security risks](https://rss.buzzsprout.com/1193879.rss)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "dan-bradbury-uk",
+   "risk": "EXIT",
+   "word": "[READY X; Reckon step](https://www.buzzsprout.com/1193879/episodes/19990992-ep-305-nobody-s-paying-for-the-pencil-marks-what-your-business-is-really-worth)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "exit-planning-institute",
+   "risk": "SHOCK",
+   "word": "[Five Ds](https://blog.exit-planning-institute.org/the-grinch-may-have-stolen-christmas-but-the-5-ds-shouldnt-steal-your-business)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "exit-planning-institute",
+   "risk": "OWNER",
+   "word": "[Avoid reliance on one key person](https://blog.exit-planning-institute.org/the-grinch-may-have-stolen-christmas-but-the-5-ds-shouldnt-steal-your-business)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "exit-planning-institute",
+   "risk": "EXIT",
+   "word": "[Value Gap; forced exit](https://myccmi.com/wp-content/uploads/2024/05/Owner-Readiness-2023.pdf)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "bo-burlingham",
+   "risk": "EXIT",
+   "word": "[Good and bad exits; \"pay a steep price\"](https://penguinrandomhouse.com/books/305190/finish-big-by-bo-burlingham)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "carl-allen",
+   "risk": "EXIT",
+   "word": "[\"transfers the deal risk onto the seller\"](https://dealmakerwealthsociety.com/wp-content/uploads/2020/08/EMP_HowToGrow.pdf)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "carl-allen",
+   "risk": "SHOCK",
+   "word": "[\"distressed\" seller](https://dealmakerwealthsociety.com/wp-content/uploads/2020/08/EMP_HowToGrow.pdf)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "uk-investors-and-brokers-key-capital-kbs-yfm-ferris",
+   "risk": "OWNER",
+   "word": "[What if the founder steps away](https://www.keycapitalpartners.co.uk/12-18-months-before-private-equity-what-sme-founders-should-start-addressing-now/)",
+   "basis": "stated",
+   "who": "Key Capital Partners"
+  },
+  {
+   "thinker": "uk-investors-and-brokers-key-capital-kbs-yfm-ferris",
+   "risk": "BASKETS",
+   "word": "[\"Heavy concentration on a small number of clients\"](https://www.keycapitalpartners.co.uk/12-18-months-before-private-equity-what-sme-founders-should-start-addressing-now/)",
+   "basis": "stated",
+   "who": "Key Capital Partners"
+  },
+  {
+   "thinker": "uk-investors-and-brokers-key-capital-kbs-yfm-ferris",
+   "risk": "OWNER",
+   "word": "[\"How dependent is this business on its current owner?\"](https://www.kbscorporate.com/?p=59363)",
+   "basis": "stated",
+   "who": "KBS Corporate"
+  },
+  {
+   "thinker": "uk-investors-and-brokers-key-capital-kbs-yfm-ferris",
+   "risk": "TEAM",
+   "word": "[\"clear recognition of any talent gaps\"](https://yfmep.com/lab/what-do-private-equity-investors-look-for-in-a-management-team)",
+   "basis": "close",
+   "who": "YFM Equity Partners"
+  },
+  {
+   "thinker": "michael-gerber",
+   "risk": "OWNER",
+   "word": "[Fatal Assumption; the Technician](https://www.emyth.com/inside/groundbreaking-ideas-from-the-e-myth-revisited)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "michael-gerber",
+   "risk": "OUTGROWN",
+   "word": "[Too many balls in the air; getting small again](https://sive.rs/book/EMythRevisited)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "gino-wickman-eos",
+   "risk": "OUTGROWN",
+   "word": "[Hitting the Ceiling](https://www.eosworldwide.com/glossary)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "gino-wickman-eos",
+   "risk": "BLIND",
+   "word": "[Issues List (\"risks\" named once)](https://www.eosworldwide.com/issues-component)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "gino-wickman-eos",
+   "risk": "OWNER",
+   "word": "[Delegate and Elevate](https://www.eosworldwide.com/glossary)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "gino-wickman-eos",
+   "risk": "TEAM",
+   "word": "[Right Person, Right Seat](https://www.eosworldwide.com/glossary)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "verne-harnish",
+   "risk": "OUTGROWN",
+   "word": "[Three barriers](https://buresund.nu/books/scaling-up)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "verne-harnish",
+   "risk": "CASH",
+   "word": "[Cash decision; Power of One](https://monkhouseandcompany.com/blog/why-the-power-of-one-is-the-best-tool-to-fix-cash-flow-in-your-business)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "verne-harnish",
+   "risk": "OWNER",
+   "word": "[Founder's strength becomes the weakness](https://www.levelingup.com/growth-everywhere-interview/verne-harnish-entrepreneurs-organization/amp)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "mike-michalowicz",
+   "risk": "OWNER",
+   "word": "[Queen Bee Role; \"only work if you do?\"](https://mikemichalowicz.com/clockwork/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "mike-michalowicz",
+   "risk": "CANTLOSE",
+   "word": "[Linchpin Redundancy](https://s3.us-east-1.amazonaws.com/MikeMichalowicz/FTN/Book+Club+Guide)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "mike-michalowicz",
+   "risk": "CASH",
+   "word": "[Cash Reserves; Profit First](https://s3.us-east-1.amazonaws.com/MikeMichalowicz/FTN/Book+Club+Guide)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "mike-michalowicz",
+   "risk": "BLIND",
+   "word": "[Survival Trap](https://mikemichalowicz.com/get-out-of-the-survival-trap-for-good/)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "greg-crabtree",
+   "risk": "PROFIT",
+   "word": "[Market owner wage; 10% pre-tax](https://www.getabstract.com/summary/16409)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "churchill-lewis",
+   "risk": "OWNER",
+   "word": "[Omniscience syndrome](https://hbr.org/1983/05/the-five-stages-of-small-business-growth)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "churchill-lewis",
+   "risk": "CASH",
+   "word": "[Omnipotence syndrome](https://hbr.org/1983/05/the-five-stages-of-small-business-growth)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "churchill-lewis",
+   "risk": "EXIT",
+   "word": "[Goals clash; \"considerable risk\"](https://hbr.org/1983/05/the-five-stages-of-small-business-growth)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "churchill-lewis",
+   "risk": "WORLD",
+   "word": "[Ossification](https://hbr.org/1983/05/the-five-stages-of-small-business-growth)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "larry-greiner",
+   "risk": "OWNER",
+   "word": "[Leadership crisis](https://hbr.org/1998/05/evolution-and-revolution-as-organizations-grow)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "larry-greiner",
+   "risk": "OUTGROWN",
+   "word": "[Autonomy, control and red tape crises](https://hbr.org/1998/05/evolution-and-revolution-as-organizations-grow)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "ichak-adizes",
+   "risk": "OWNER",
+   "word": "[Founder's Trap; \"biggest assets and biggest risks\"](https://adizes-institute.gitbook.io/adizes/library/books-by-dr.-ichak-adizes/managing-corporate-lifecycles/chapter-four)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "ichak-adizes",
+   "risk": "CASH",
+   "word": "[Infant mortality](https://adizes-institute.gitbook.io/adizes/library/books-by-dr.-ichak-adizes/managing-corporate-lifecycles/chapter-three)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "ichak-adizes",
+   "risk": "SHOCK",
+   "word": "[The Divorce; Family Trap](https://adizes-institute.gitbook.io/adizes/library/books-by-dr.-ichak-adizes/managing-corporate-lifecycles/chapter-five)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "ichak-adizes",
+   "risk": "WORLD",
+   "word": "[Premature aging; The Fall](https://adizes-institute.gitbook.io/adizes/dictionary-of-terms/organizational-lifecycle)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "eric-flamholtz",
+   "risk": "OUTGROWN",
+   "word": "[Growing pains (via Hanks)](https://distantreader.org/stacks/journals/jsbs/jsbs-218.pdf)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "les-mckeown",
+   "risk": "OUTGROWN",
+   "word": "[Whitewater](https://www.monkhouseandcompany.com/resources/podcast/the-story-of-predictable-success-with-les-mckeown/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "les-mckeown",
+   "risk": "WORLD",
+   "word": "[Treadmill; The Big Rut](https://www.monkhouseandcompany.com/resources/podcast/the-story-of-predictable-success-with-les-mckeown/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "eli-goldratt",
+   "risk": "CANTLOSE",
+   "word": "[The constraint](https://www.tocinstitute.org/five-focusing-steps.html)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "eli-goldratt",
+   "risk": "CASH",
+   "word": "[Buffers](https://en.wikipedia.org/wiki/Critical_chain_project_management)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "peter-drucker",
+   "risk": "WORLD",
+   "word": "[\"Risk one cannot afford not to take\"; theory goes stale](https://www.labmanager.com/what-s-the-risk-10834)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "peter-drucker",
+   "risk": "CASH",
+   "word": "[\"Risk one cannot afford to take\"](https://www.labmanager.com/what-s-the-risk-10834)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "peter-drucker",
+   "risk": "BLIND",
+   "word": "[Delusions against realities](https://meaningring.com/2017/02/02/face-reality-by-peter-drucker/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "peter-drucker",
+   "risk": "PROFIT",
+   "word": "[Five Deadly Business Sins](https://biz-think.blogspot.com/2006/02/five-deadly-business-sins.html)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "peter-senge",
+   "risk": "OUTGROWN",
+   "word": "[Limits to growth; growth and underinvestment](https://en.wikipedia.org/wiki/System_archetype)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "peter-senge",
+   "risk": "OWNER",
+   "word": "[Shifting the burden](https://en.wikipedia.org/wiki/System_archetype)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "peter-senge",
+   "risk": "PROFIT",
+   "word": "[Eroding goals](https://en.wikipedia.org/wiki/System_archetype)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "peter-senge",
+   "risk": "BLIND",
+   "word": "[Barking and sleeping dogs](https://www.billsynnotandassociates.com.au/kb/509-technique-1-28-discussability-of-issues.html)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "nassim-taleb",
+   "risk": "WORLD",
+   "word": "[Black Swan; ruin; fragile](https://arxiv.org/abs/1410.5787)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "nassim-taleb",
+   "risk": "CASH",
+   "word": "[Redundancy treated as waste](https://erm.ncsu.edu/resource-center/risk-management-mistakes)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "howard-marks",
+   "risk": "CASH",
+   "word": "[Permanent loss; forced selling](https://www.oaktreecapital.com/docs/default-source/memos/2014-09-03-risk-revisited.pdf)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "howard-marks",
+   "risk": "WORLD",
+   "word": "[\"the risk of not taking enough risk\"](https://www.oaktreecapital.com/docs/default-source/memos/2014-09-03-risk-revisited.pdf)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "howard-marks",
+   "risk": "CANTLOSE",
+   "word": "[Concentration and manager risk](https://www.oaktreecapital.com/docs/default-source/memos/2014-09-03-risk-revisited.pdf)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "warren-buffett",
+   "risk": "OWNER",
+   "word": "[\"The partnership's moat will go when the surgeon goes.\"](https://www.berkshirehathaway.com/letters/2007ltr.pdf)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "warren-buffett",
+   "risk": "WORLD",
+   "word": "[Moat](https://www.berkshirehathaway.com/letters/2007ltr.pdf)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "warren-buffett",
+   "risk": "CASH",
+   "word": "[Margin of safety (stretched from purchase price)](https://www.berkshirehathaway.com/letters/1992.html)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "charlie-munger",
+   "risk": "BLIND",
+   "word": "[Invert; routes to misery](https://jamesclear.com/great-speeches/how-to-guarantee-a-life-of-misery-by-charlie-munger)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "annie-duke",
+   "risk": "BLIND",
+   "word": "[Quitting on time; kill criteria](https://www.lennysnewsletter.com/p/making-better-decisions-annie-duke)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "gary-klein",
+   "risk": "BLIND",
+   "word": "[Premortem](https://hbr.org/2007/09/performing-a-project-premortem)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "daniel-kahneman",
+   "risk": "BLIND",
+   "word": "[Planning fallacy; outside view](https://www.litcharts.com/lit/thinking-fast-and-slow/part-3-chapter-23)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "andy-grove",
+   "risk": "WORLD",
+   "word": "[Strategic inflection point; 10X factor](https://www.emerald.com/insight/content/doi/10.1108/jcm.2003.20.4.377.3/full/html)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "andy-grove",
+   "risk": "BLIND",
+   "word": "[Helpful Cassandras](https://christielindor.blogspot.com/2017/03/why-only-paranoid-survive.html)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "jim-collins-with-hansen",
+   "risk": "CASH",
+   "word": "[Death line; productive paranoia](https://www.maxmednik.com/blog/notes-on-great-by-choice-by-jim-collins)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "jim-collins-with-hansen",
+   "risk": "WORLD",
+   "word": "[Denial of Risk and Peril](https://www.jimcollins.com/books/how-the-mighty-fall.html)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "jim-collins-with-hansen",
+   "risk": "BLIND",
+   "word": "[Hubris Born of Success; brutal facts](https://jimcollins.com/concepts/Stockdale-Concept.html)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "alex-hormozi",
+   "risk": "OWNER",
+   "word": "[Key man risk](https://rosetta.to/u/alexhormozi/give-me-47-minutes-and-i-ll-fix-your-small-business)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "alex-hormozi",
+   "risk": "BASKETS",
+   "word": "[Key customer risk; single channel risk](https://rosetta.to/u/alexhormozi/give-me-47-minutes-and-i-ll-fix-your-small-business)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "alex-hormozi",
+   "risk": "CANTLOSE",
+   "word": "[Key vendor risk; key man (staff)](https://rosetta.to/u/alexhormozi/give-me-47-minutes-and-i-ll-fix-your-small-business)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "alex-hormozi",
+   "risk": "OUTGROWN",
+   "word": "[Roadmap: \"Systems overwhelmed\" stage](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage07_.pdf)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "alex-hormozi",
+   "risk": "RULES",
+   "word": "[Roadmap: \"Company data and access is at risk\"](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage06_.pdf)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "alex-hormozi",
+   "risk": "BLIND",
+   "word": "[3 Evil Es](https://rosetta.to/u/alexhormozi/the-3-evil-es-that-almost-killed-my-business)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "alex-hormozi",
+   "risk": "PROFIT",
+   "word": "[LTV:CAC targets](https://rosetta.to/u/alexhormozi/the-mathematics-of-business-explained)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "leila-hormozi",
+   "risk": "OWNER",
+   "word": "[Founder bottlenecks](https://poddtoppen.se/podcast/1663834553/build-with-leila-hormozi/the-hiring-system-that-lets-your-business-run-solo-ep-362)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "leila-hormozi",
+   "risk": "TEAM",
+   "word": "[\"It just scales the chaos\"; hiring mistakes](https://poddtoppen.se/podcast/1663834553/build-with-leila-hormozi/the-hiring-system-that-lets-your-business-run-solo-ep-362)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "dan-martell",
+   "risk": "OWNER",
+   "word": "[Pain Line; bottleneck](https://www.audioscrape.com/podcast/the-martell-method-w-dan-martell/episode/buy-back-your-time-in-35-minutes--book-summary)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "dan-martell",
+   "risk": "BLIND",
+   "word": "[Time Assassins](https://www.teamly.com/blog/buy-back-your-time-by-dan-martell-chapter-3/)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "dan-martell",
+   "risk": "BASKETS",
+   "word": "[Churn as \"kryptonite\"](https://www.danmartell.com/how-to-predict-and-prevent-churn/)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "dan-sullivan",
+   "risk": "BLIND",
+   "word": "[Dangers (D.O.S.)](https://www.goodreads.com/work/quotes/7156156)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "dan-sullivan",
+   "risk": "OWNER",
+   "word": "[Self-Managing Company](https://s3.amazonaws.com/strategic-coach-marketing-assets/downloads/Self-ManagingCompanyDownload.pdf)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "keith-cunningham",
+   "risk": "BLIND",
+   "word": "[Excessive optimism, unexamined assumptions, ignored risk](https://www.youtube.com/watch?v=iyBWlhZIcpM)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "keith-cunningham",
+   "risk": "OWNER",
+   "word": "[Operator mode](https://www.youtube.com/watch?v=v0f-m0i8UfA)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "ray-dalio",
+   "risk": "CASH",
+   "word": "[\"risk of ruin\"](https://www.principles.com/principles/7e57c357-74bb-4e5b-ab4a-598f54b36f54/)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "ray-dalio",
+   "risk": "BLIND",
+   "word": "[Go to the pain; seek those who disagree](https://www.principles.com/principles/7e57c357-74bb-4e5b-ab4a-598f54b36f54/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "patrick-lencioni",
+   "risk": "TEAM",
+   "word": "[Five dysfunctions](https://www.tablegroup.com/topics-and-resources/teamwork-5-dysfunctions/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "daniel-priestley-uk",
+   "risk": "OWNER",
+   "word": "[Key person of influence (pulls the other way)](https://rosetta.to/u/thefutur/personal-branding-masterclass-w-daniel-priestley)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "jack-stack",
+   "risk": "BASKETS",
+   "word": "[\"eggs in one basket\"](https://infizia.blogspot.com/2014/05/why-ceo-needs-to-have-plan-b.html); [15% to 20% lost overnight](https://www.greatgame.com/blog/planning-for-an-uncertain-future)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "jack-stack",
+   "risk": "CASH",
+   "word": "[War chest; Critical Number](https://www.greatgame.com/blog/planning-for-an-uncertain-future)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "jack-stack",
+   "risk": "WORLD",
+   "word": "[What-ifs; trapdoors; DEFCON steps](https://www.greatgame.com/what-we-do/hip)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "jack-stack",
+   "risk": "CANTLOSE",
+   "word": "[\"a critical team member\" leaves](https://www.greatgame.com/blog/a-contingency-plan-template-for-business)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "noam-wasserman",
+   "risk": "SHOCK",
+   "word": "[Dilemmas; \"playing with fire\"](https://english.ckgsb.edu.cn/knowledge/article/the-hypergrowth-conundrum-qa-with-noam-wasserman-start-up-statistician/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "noam-wasserman",
+   "risk": "EXIT",
+   "word": "[Rich versus king](https://pubmed.ncbi.nlm.nih.gov/18314638/)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "clayton-christensen",
+   "risk": "WORLD",
+   "word": "[Disruption; best customers lead you astray](https://www.christenseninstitute.org/theory/disruptive-innovation/)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "rita-mcgrath",
+   "risk": "WORLD",
+   "word": "[Inflection points; transient advantage](https://www.rolandberger.com/en/Insights/Publications/How-to-compete-in-a-world-of-transient-advantages.html)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "rita-mcgrath",
+   "risk": "BLIND",
+   "word": "[Weak signals at the edges](https://www.rolandberger.com/en/Insights/Publications/How-to-compete-in-a-world-of-transient-advantages.html)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "michael-porter",
+   "risk": "BASKETS",
+   "word": "[Buyer power](https://www.cbsnews.com/news/the-five-competitive-forces-that-shape-strategy)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "michael-porter",
+   "risk": "CANTLOSE",
+   "word": "[Supplier power](https://www.cbsnews.com/news/the-five-competitive-forces-that-shape-strategy)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "michael-porter",
+   "risk": "WORLD",
+   "word": "[\"less vulnerable to attack\"](https://hbr.org/2008/01/the-five-competitive-forces-that-shape-strategy)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "hamilton-helmer",
+   "risk": "WORLD",
+   "word": "[Power and barriers](https://www.sachinrekhi.com/7-powers-hamilton-helmer)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "hamilton-helmer",
+   "risk": "CANTLOSE",
+   "word": "[Cornered resource, read in reverse](https://www.sachinrekhi.com/7-powers-hamilton-helmer)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "ram-charan",
+   "risk": "CASH",
+   "word": "[Cash, margin, velocity](https://actionablebooks.com/summaries/what-the-ceo-wants-you-to-know/)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "ram-charan",
+   "risk": "PROFIT",
+   "word": "[Return = margin x velocity](https://irontriangle.blogspot.com/2020/06/book-summary-what-ceo-wants-you-to-know.html)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "morgan-housel",
+   "risk": "CASH",
+   "word": "[Room for error](https://www.collabfund.com/blog/the-psychology-of-money/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "sam-carpenter",
+   "risk": "OWNER",
+   "word": "[Collection of systems; 80 to 100 hour weeks](https://mixergy.com/interviews/sam-carpenter-work-the-system-interview/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "tagiuri-davis",
+   "risk": "SHOCK",
+   "word": "[Three circles](https://www.familybusinessmagazine.com/how-three-circles-changed-way-we-understand-family-business)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "gersick-et-al",
+   "risk": "SHOCK",
+   "word": "[\"sibling tension around power and fairness\"](https://cfeg.com/about/thought-leadership-stages)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "gersick-et-al",
+   "risk": "OWNER",
+   "word": "[Founder \"often regarded as indispensable\"](https://cfeg.com/about/thought-leadership-stages)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "kaplan-mikes",
+   "risk": "WORLD",
+   "word": "[Novel risks](https://www.hks.harvard.edu/publications/novel-risks-0)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "robert-simons",
+   "risk": "OUTGROWN",
+   "word": "[Risk Exposure Calculator: pressure from growth](https://www.enterrasolutions.com/insights/risk-and-language)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "robert-simons",
+   "risk": "BLIND",
+   "word": "[Pressure from information; resistance to bad news](https://hbr.org/1999/05/how-risky-is-your-company)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "robert-simons",
+   "risk": "CASH",
+   "word": "[\"slack in the P&L\"](https://hbr.org/1999/05/how-risky-is-your-company)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "stanley-mcchrystal-with-butrico",
+   "risk": "BLIND",
+   "word": "[Risk Immune System](https://newbooksnetwork.com/control)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "tim-ferriss",
+   "risk": "BLIND",
+   "word": "[Fear setting; cost of inaction](https://singjupost.com/tim-ferriss-why-you-should-define-your-fears-instead-of-your-goals-transcript/)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "seneca",
+   "risk": "BLIND",
+   "word": "[\"it is the unexpected that puts the heaviest load upon us\"](https://en.wikisource.org/wiki/Moral_letters_to_Lucilius/Letter_91)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "marshall-goldsmith",
+   "risk": "BLIND",
+   "word": "[Punishing the messenger; withholding information](https://knowledge.wharton.upenn.edu/?p=6464)",
+   "basis": "close",
+   "who": ""
+  },
+  {
+   "thinker": "manfred-kets-de-vries",
+   "risk": "BLIND",
+   "word": "[Neurotic styles; toxic leader](https://econpapers.repec.org/RePEc:bla:stratm:v:5:y:1984:i:1:p:35-55)",
+   "basis": "stated",
+   "who": ""
+  },
+  {
+   "thinker": "robert-kegan-with-lahey",
+   "risk": "BLIND",
+   "word": "[Competing commitment](https://hbr.org/2001/11/the-real-reason-people-wont-change)",
+   "basis": "ours",
+   "who": ""
+  },
+  {
+   "thinker": "reid-hoffman-ben-horowitz",
+   "risk": "CASH",
+   "word": "[Blitzscaling: chosen risk](https://www.gic.com.sg/thinkspace/technology/reid-hoffman-on-blitzscaling/)",
+   "basis": "stated",
+   "who": "Hoffman"
+  },
+  {
+   "thinker": "reid-hoffman-ben-horowitz",
+   "risk": "CASH",
+   "word": "[\"imminent existential threat\"](https://a16z.com/peacetime-ceo-wartime-ceo/)",
+   "basis": "stated",
+   "who": "Horowitz"
+  },
+  {
+   "thinker": "donald-sull-courtney-et-al-day-schoemaker",
+   "risk": "WORLD",
+   "word": "[Active inertia](https://www.library.hbs.edu/working-knowledge/stuck-in-gear-why-managers-dont-act)",
+   "basis": "close",
+   "who": "Sull"
+  },
+  {
+   "thinker": "donald-sull-courtney-et-al-day-schoemaker",
+   "risk": "WORLD",
+   "word": "[Four levels of uncertainty](https://hbr.org/1997/11/strategy-under-uncertainty)",
+   "basis": "close",
+   "who": "Courtney et al."
+  },
+  {
+   "thinker": "donald-sull-courtney-et-al-day-schoemaker",
+   "risk": "WORLD",
+   "word": "[Scanning the periphery](https://hbr.org/2005/11/scanning-the-periphery)",
+   "basis": "close",
+   "who": "Day & Schoemaker"
+  }
+ ],
+ "clashes": [
+  {
+   "n": 1,
+   "title": "One customer: 10%, 15% or 20%",
+   "sides": "**Bradbury:** [\"You don't have a single client that represents 10% or more\"](https://danbradbury.co.uk/audit), a tick-box in his audit. **Warrillow:** hard to sell if one customer tops [15%](https://www.theglobeandmail.com/report-on-business/small-business/can-you-pass-the-15-test/article4304887), a buyer's view. **Hormozi:** losing them [cuts revenue about 20% or more](https://rosetta.to/u/alexhormozi/give-me-47-minutes-and-i-ll-fix-your-small-business), picked because most firms run on 10% to 40% margins, a survival view. **Stack:** plan for [15% to 20% lost overnight](https://www.greatgame.com/blog/planning-for-an-uncertain-future), a planning test and no cap.",
+   "view": "Each is that person's rule. They answer three different questions: audit, sale and survival. No peer-reviewed study backs any line. Listed-firm research shows concentration raises [loan costs](https://econpapers.repec.org/RePEc:eee:jfinec:v:123:y:2017:i:1:p:108-136), and the [effect on profit shifts as a relationship matures](https://academicnewsletter.sufe.edu.cn/info/415535). Measure the client's own months of cash at stake."
+  },
+  {
+   "n": 2,
+   "title": "One channel or several",
+   "sides": "**Hormozi** names [single channel risk](https://rosetta.to/u/alexhormozi/give-me-47-minutes-and-i-ll-fix-your-small-business) at over half of leads, and his roadmap calls one main way of getting customers [risky at 50 to 99 staff](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage07_.pdf). **Focus teaching pulls the other way:** his [Stage 4](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage04_.pdf) says niche down, and Harnish finds it [far easier to scale one thing](https://www.levelingup.com/growth-everywhere-interview/verne-harnish-entrepreneurs-organization/amp).",
+   "view": "Our view is that it comes down to timing: focus to get one engine working, then build a second before it is your only engine."
+  },
+  {
+   "n": 3,
+   "title": "Is founder dependency a risk?",
+   "sides": "**Yes:** [Key Capital](https://www.keycapitalpartners.co.uk/12-18-months-before-private-equity-what-sme-founders-should-start-addressing-now/), [KBS](https://www.kbscorporate.com/?p=59363), [Bradbury](https://www.buzzsprout.com/1193879/episodes/19753776-ep-302-your-business-probably-isn-t-worth-what-you-think), [Hormozi (\"massive red flag\")](https://audioscrape.com/podcast/the-game-with-alex-hormozi/episode/critical-advice-for-businesses-making-less-than-10m--ep-824). **YFM:** [one article on management teams](https://yfmep.com/lab/what-do-private-equity-investors-look-for-in-a-management-team) talks of talent gaps and a plan to fill them, and does not raise it. **Both ways:** Adizes calls founders [\"biggest assets and biggest risks\"](https://adizes-institute.gitbook.io/adizes/library/books-by-dr.-ichak-adizes/managing-corporate-lifecycles/chapter-four), and [losing founder drive too early ages a firm](https://adizes-institute.gitbook.io/adizes/dictionary-of-terms/organizational-lifecycle). [Bain](https://www.bain.com/about/media-center/press-releases/2016/internal-breakdowns-cause-85-percent-of-company-shortfalls-in-achieving-profitable-growth/) reports better returns at founder-involved listed firms.",
+   "view": "Show the founder as asset and risk together. The goal is a firm that can run without the owner, with the owner still free to lead it. YFM's article is silence in one piece and proves nothing about YFM's view."
+  },
+  {
+   "n": 4,
+   "title": "Is staying small a failure?",
+   "sides": "**Churchill & Lewis** reject grow-or-die, with [firms holding steady for 5 to 80 years](https://hbr.org/1983/05/the-five-stages-of-small-business-growth). **Gerber:** businesses that [get small again die or implode](https://sive.rs/book/EMythRevisited). **Martell:** [\"not growing means slowly dying\"](https://www.audioscrape.com/podcast/the-martell-method-w-dan-martell/episode/buy-back-your-time-in-35-minutes--book-summary).",
+   "view": "Make it the owner's choice, using Churchill's stay-or-grow fork. [Inc.'s own 10-year check](https://www.inknowvation.com/node/133014?keywords=) and [Davidsson et al.](https://econpapers.repec.org/RePEc:eee:jbvent:v:24:y:2009:i:4:p:388-406) favour profit before growth. Neither tests staying small."
+  },
+  {
+   "n": 5,
+   "title": "Keep how much cash?",
+   "sides": "[Crabtree about 2 months](https://www.shortform.com/pdf/simple-numbers-straight-talk-big-profits-pdf-greg-crabtree), [Michalowicz at least 3](https://s3.us-east-1.amazonaws.com/MikeMichalowicz/FTN/Book+Club+Guide), [Harnish a year](https://www.levelingup.com/growth-everywhere-interview/verne-harnish-entrepreneurs-organization/amp), [Collins \"freakishly high\"](https://fortune.com/2011/09/30/jim-collins-in-his-own-words).",
+   "view": "Set the number with a stress test, since firms differ. [Listed-firm COVID data](https://pmc.ncbi.nlm.nih.gov/articles/PMC7798547) links cash and low debt to smaller falls."
+  },
+  {
+   "n": 6,
+   "title": "Run lean or keep spare",
+   "sides": "**Goldratt's** TOC Institute says [exploit the constraint first](https://www.tocinstitute.org/five-focusing-steps.html). **Taleb** says treating [redundancy as waste](https://erm.ncsu.edu/resource-center/risk-management-mistakes) makes firms fragile.",
+   "view": "Our reading. Neither names the other. Goldratt's own buffers narrow the gap."
+  },
+  {
+   "n": 7,
+   "title": "One focus or a second leg",
+   "sides": "**Stack** pushes back on sticking to one line, after [\"more than 75 percent of our labor hours\"](https://infizia.blogspot.com/2014/05/why-ceo-needs-to-have-plan-b.html) sat in one market. **Harnish** and [Sullivan's 10x focus](https://www.shortform.com/summary/10x-is-easier-than-2x-summary-dan-sullivan) favour fewer things.",
+   "view": "A live choice. A ready what-if costs less than running two businesses."
+  },
+  {
+   "n": 8,
+   "title": "Personal brand or key person",
+   "sides": "**Priestley** teaches [building a key person of influence brand](https://rosetta.to/u/thefutur/personal-branding-masterclass-w-daniel-priestley), then moving that energy to the firm. **Hormozi:** [\"if your face gets the customers, you are the key man\"](https://rosetta.to/u/alexhormozi/if-i-wanted-to-create-a-business-that-runs-itself-here-s-what-i-d-do).",
+   "view": "The transfer step is the bridge. We found no Priestley statement on owner-dependence risk."
+  },
+  {
+   "n": 9,
+   "title": "Think about failure, or don't",
+   "sides": "**Horowitz:** [\"If you focus on how you might fail, then you will fail\"](https://a16z.com/the-struggle/). **Klein** and [Seneca](https://en.wikisource.org/wiki/Moral_letters_to_Lucilius/Letter_91) rehearse failure on purpose.",
+   "view": "Our resolution is timing: rehearse before the event, look at the target during it."
+  },
+  {
+   "n": 10,
+   "title": "Chosen speed or restraint",
+   "sides": "**Hoffman:** [speed over efficiency under uncertainty](https://www.gic.com.sg/thinkspace/technology/reid-hoffman-on-blitzscaling/), if the market is large and the fit is strong. **Collins:** [fewer death line bets, more cash](https://bobonbooks.com/tag/luck/).",
+   "view": "Hoffman's own conditions rule out most firms this size. That reading is ours."
+  },
+  {
+   "n": 11,
+   "title": "Stay or quit",
+   "sides": "**Duke:** [quit on time, set kill criteria](https://www.annieduke.com/books/). **Stockdale Paradox:** [keep faith you will prevail](https://jimcollins.com/concepts/Stockdale-Concept.html).",
+   "view": "Both demand honest facts. The dispute is about staying."
+  },
+  {
+   "n": 12,
+   "title": "Steady march or chaos",
+   "sides": "**Collins:** [20 Mile March](https://www.maxmednik.com/blog/notes-on-great-by-choice-by-jim-collins). **Grove:** [let chaos reign, then rein it in](https://bdu.siu.edu.ar/bdu/Record/B-55-19166).",
+   "view": "Our reading. Owners will feel this one even if the authors never argued it."
+  },
+  {
+   "n": 13,
+   "title": "Risk maps: use or drop",
+   "sides": "**Kaplan & Mikes** [use risk maps for strategy risk](https://hbr.org/2012/06/managing-risks-a-new-framework). **Cox** shows they can be [\"worse than useless\"](https://econpapers.repec.org/RePEc:wly:riskan:v:28:y:2008:i:2:p:497-512) in some cases.",
+   "view": "Use a map as a talking aid. Rank in pounds and months."
+  },
+  {
+   "n": 14,
+   "title": "Do growth models hold?",
+   "sides": "**Greiner** says firms [cannot skip or return to a phase](https://hbr.org/1998/05/evolution-and-revolution-as-organizations-grow) (paraphrased). **Levie & Lichtenstein** say states [can come in any order](https://strathprints.strath.ac.uk/16367/).",
+   "view": "Side with the evidence."
+  }
+ ],
+ "stageCols": [
+  "Churchill & Lewis",
+  "Greiner",
+  "Adizes",
+  "Gerber",
+  "Hormozi roadmap",
+  "Martell",
+  "Michalowicz",
+  "McKeown",
+  "Harnish"
+ ],
+ "stageRuler": [
+  "size and owner role",
+  "age and size",
+  "behaviour",
+  "owner's mind",
+  "headcount",
+  "headcount and revenue",
+  "needs",
+  "behaviour",
+  "US revenue"
+ ],
+ "levels": [
+  {
+   "name": "Overwhelm",
+   "desc": "not handled, problems surprise the owner",
+   "cols": [
+    "I Existence, II Survival",
+    "Phase 1 Creativity",
+    "Courtship, Infancy",
+    "Infancy",
+    "[1 Monetize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage01_.pdf), [2 Advertise](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage02_.pdf) (1 person)",
+    "Before the Pain Line",
+    "Sales",
+    "Early Struggle",
+    "Under $1M: don't scale yet"
+   ],
+   "loud": [
+    "CASH",
+    "BASKETS",
+    "OWNER"
+   ],
+   "why": "Churchill's early stages turn on customers and cash. Canadian bankruptcies in young firms trace to [weak management knowledge and money handling](https://econpapers.repec.org/RePEc:inm:ororsc:v:14:y:2003:i:5:p:497-509). UK start-ups survive mainly on [accumulated resources](https://econpapers.repec.org/RePEc:eee:jbvent:v:28:y:2013:i:5:p:615-632).",
+   "quiet": "Rules (roadmap Stage 1 [protect yourself](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage01_.pdf))"
+  },
+  {
+   "name": "Overworked",
+   "desc": "handled, but only by the owner",
+   "cols": [
+    "II Survival, early III",
+    "Leadership crisis",
+    "Late Infancy, Go-Go (Founder's Trap appears)",
+    "End of Infancy",
+    "[3 Stabilize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage03_.pdf) (1 to 4), [4 Prioritize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage04_.pdf) (5 to 9)",
+    "[Pain Line](https://getlatka.com/companies/the-saas-academy/interviews/the-saas-academy-dan-martell-2023), about 11 to 12 people",
+    "Sales, Profit",
+    "Fun",
+    "About $1M"
+   ],
+   "loud": [
+    "OWNER",
+    "PROFIT",
+    "BLIND"
+   ],
+   "why": "Churchill names [founders who cannot let go of doing](https://hbr.org/1983/05/the-five-stages-of-small-business-growth). Adizes's trap and Martell's Pain Line sit here. Owner health enters as a single point of failure.",
+   "quiet": "Life shocks, Can't lose"
+  },
+  {
+   "name": "Organised",
+   "desc": "a written way, owner still checks",
+   "cols": [
+    "III-D stay or III-G grow",
+    "Phase 2 Direction, autonomy crisis",
+    "Go-Go into Adolescence",
+    "Adolescence",
+    "[5 Productize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage05_.pdf) (10 to 19), [6 Optimize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage06_.pdf) (20 to 49)",
+    "Replacement Ladder under way",
+    "Profit, Order",
+    "Fun into Whitewater",
+    "$1M to $10M: gross margin"
+   ],
+   "loud": [
+    "OUTGROWN",
+    "TEAM",
+    "CANTLOSE",
+    "BASKETS"
+   ],
+   "why": "Greiner's autonomy crisis (paraphrase: people below the top know more and are held back). Hormozi Stage 5 warns [staff leave with company information](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage05_.pdf).",
+   "quiet": "Rules: from [1 January 2027](https://www.mills-reeve.com/blogs/employment/february-2026/employment-rights-act-2025-updated-implementation-timetable/) hiring errors get costlier"
+  },
+  {
+   "name": "Overseer",
+   "desc": "a team runs it, owner reviews numbers",
+   "cols": [
+    "III-G into IV Take-off",
+    "Phase 3 Delegation, control crisis",
+    "Adolescence",
+    "Adolescence, or Beyond the Comfort Zone",
+    "[6 Optimize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage06_.pdf), [7 Categorize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage07_.pdf) (50 to 99)",
+    "Leadership hires",
+    "Order",
+    "Whitewater, Predictable Success",
+    "$10M to $100M: profitability"
+   ],
+   "loud": [
+    "CASH",
+    "TEAM",
+    "BLIND"
+   ],
+   "why": "Churchill's [omnipotence syndrome](https://hbr.org/1983/05/the-five-stages-of-small-business-growth). Hormozi Stage 7: [spending without limits and one engine](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage07_.pdf). Research: [profit helps both survival and growth, while growth can cut survival](https://lup.lub.lu.se/record/4172420) in new Swedish firms.",
+   "quiet": "Life shocks (partners drift), Exit"
+  },
+  {
+   "name": "Owner",
+   "desc": "runs and improves without the owner, who sets direction",
+   "cols": [
+    "III-D, or V Resource Maturity",
+    "Phase 4 Coordination, red tape crisis",
+    "Prime, with The Fall ahead",
+    "Maturity",
+    "[7 Categorize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage07_.pdf) to [9 Capitalize](https://www.acquisition.com/hubfs/0-100M%20Scaling%20Course%20PDFs%20%28v6%29/Your_ACQ_100MScalingRoadmap-Stage09_.pdf)",
+    "Not found",
+    "Impact, Legacy",
+    "Predictable Success, Treadmill warning",
+    "Not found"
+   ],
+   "loud": [
+    "WORLD",
+    "EXIT",
+    "SHOCK"
+   ],
+   "why": "Older Canadian failures trace to [failing to adapt](https://econpapers.repec.org/RePEc:inm:ororsc:v:14:y:2003:i:5:p:497-509). Churchill's ossification, Collins's [denial of risk](https://www.jimcollins.com/books/how-the-mighty-fall.html), Sull's [active inertia](https://www.library.hbs.edu/working-knowledge/stuck-in-gear-why-managers-dont-act).",
+   "quiet": "Blind spots (success hides bad signs)"
+  }
+ ],
+ "methods": [
+  {
+   "id": "M1",
+   "name": "Three-column sort ([Kaplan & Mikes](https://hbr.org/2012/06/managing-risks-a-new-framework))",
+   "short": "Three-column sort",
+   "what": "Sort worries into preventable, chosen and external, then give each column its own method.",
+   "how": "Empty the owner's worries onto paper. Sort. Pick one method per column.",
+   "time": "60 to 90 min",
+   "suits": "Almost anyone. Our opening pick.",
+   "weak": "Built on large-firm cases. Some risks sit across columns.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M2",
+   "name": "Cash stress test",
+   "short": "Cash stress test",
+   "what": "Push one bad event through the cash flow and see how long the cash lasts. [Named for external risks](https://hbr.org/2012/06/managing-risks-a-new-framework).",
+   "how": "Build 13-week and 12-month models. Run five shocks one at a time, then two together: top customer gone, debtor days +30, owner out six months, costs +20%, lender withdraws. Write the action and the date you must act.",
+   "time": "2 to 4 hours, twice a year",
+   "suits": "Nearly everyone. Best value per hour, in our view.",
+   "weak": "Poor inputs give poor answers. Real trouble comes in clusters.",
+   "evidence": "OPINION for firms this size",
+   "level": "opinion"
+  },
+  {
+   "id": "M3",
+   "name": "What-ifs and contingencies ([Stack](https://www.greatgame.com/blog/ten-steps-to-strategic-planning-success))",
+   "short": "What-ifs",
+   "what": "A contingency is a product or service already researched and costed. His firm holds at least 15% of the sales plan this way.",
+   "how": "Each planning cycle ask: what if our assumptions are wrong, the largest customer goes under, rivals chase our accounts, another shock hits? Cost one or two answers. Ask staff [how confident they are](https://www.greatgame.com/blog/planning-for-an-uncertain-future).",
+   "time": "Half a day a year, plus costing",
+   "suits": "Firms with one market or a big customer, and open-book teams.",
+   "weak": "Sources sell this method and report their own results. Needs spare effort.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M4",
+   "name": "Reverse stress test; \"DEFCON\" talk",
+   "short": "Reverse stress test",
+   "what": "Start at \"we have failed\" and work back. [FCA use](https://www.handbook.fca.org.uk/handbook/WDPG/3/3.html) and [ICAEW's warning](https://www.icaew.com/technical/audit-and-assurance/professional-scepticism/what-is-reverse-stress-testing) both stress mixes of events. Stack [told all staff what would have to happen to close](https://www.greatgame.com/what-we-do/hip).",
+   "how": "Ask: which three things within 12 months would finish us? How likely is each mix? What early sign would show it? Then decide who else hears it.",
+   "time": "2 hours",
+   "suits": "An owner who says \"we're fine\". Firms with debt or personal guarantees.",
+   "weak": "Can feel morbid. Can throw up unlikely stories. FCA duty applies to regulated firms only.",
+   "evidence": "OPINION for firms this size",
+   "level": "opinion"
+  },
+  {
+   "id": "M5",
+   "name": "Pre-mortem ([Klein](https://hbr.org/2007/09/performing-a-project-premortem))",
+   "short": "Pre-mortem",
+   "what": "Team assume the plan \"has just failed\", then write why.",
+   "how": "[Brief the plan. Say it failed badly. Everyone writes alone for a few minutes. Go round one reason at a time. Strengthen the plan.](https://hbr.org/2007/09/performing-a-project-premortem) Our change: the owner speaks last.",
+   "time": "45 to 60 min per decision",
+   "suits": "One big decision, where staff will not contradict the owner.",
+   "weak": "One decision only. Finds only what people can imagine. One large [poster study](https://dlab.sauder.ubc.ca/sjdm/presentations/2021-Poster-Gandhi-Linnea-debiasing-premortem-selfserving~.pdf) found less overconfidence but more self-serving blame.",
+   "evidence": "PARTIAL ([small studies](https://core.ac.uk/works/49608374), none on business outcomes)",
+   "level": "partial"
+  },
+  {
+   "id": "M6",
+   "name": "Kill criteria ([Duke](https://coachingforleaders.com/podcast/quit-bad-stuff-faster-annie-duke/))",
+   "short": "Kill criteria",
+   "what": "Set a state plus a date that means stop, while calm.",
+   "how": "Our example: \"under 10 paying clients by 31 March and we stop.\" Write it down and tell someone.",
+   "time": "15 min",
+   "suits": "The owner's pet project. Pairs with Pre-mortem.",
+   "weak": "Owners may move the line. Source is interview notes.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M7",
+   "name": "D.O.S. ([Sullivan](https://www.goodreads.com/work/quotes/7156156))",
+   "short": "D.O.S.",
+   "what": "Dangers to remove, opportunities to capture, strengths to maximise, looking from a [one or three year view](https://www.strategiccoach.com/resources/the-multiplier-mindset-blog/how-to-overcome-challenges-obstacles-as-an-entrepreneur).",
+   "how": "Ask the owner to list each, then rank. Then check the dangers against the 12 risks, as the owner will miss what they have not counted.",
+   "time": "30 min",
+   "suits": "Opening a relationship. Owners who like talk.",
+   "weak": "Fear-led and subjective. Built partly as a [sales and trust conversation](https://share.transistor.fm/s/4f39fb7e). Not an audit.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M8",
+   "name": "Thinking Time ([Cunningham](https://www.youtube.com/watch?v=v0f-m0i8UfA))",
+   "short": "Thinking Time",
+   "what": "Protected solo thinking, led by one powerful question.",
+   "how": "Pen and paper, door shut, alarm for 45 minutes. Write possibilities, leave an empty dot for the next one. When the alarm goes, drop the bad ideas and diary the best one or two. Risk prompt: [what could go wrong](https://www.youtube.com/watch?v=iyBWlhZIcpM)?",
+   "time": "45 to 60 min. He does it [two or three times a week; once a month is still good](https://www.youtube.com/watch?v=cAmpom-ExVc)",
+   "suits": "Solo owners, reflective owners, no team to run a workshop.",
+   "weak": "Only finds what one head can see, the \"one voice\" trap. Evidence is his own account. Book not read.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M9",
+   "name": "The three dogs: barking, non-barking, sleeping",
+   "short": "The three dogs",
+   "what": "Sort issues for discussion. [Barking: important and urgent. Non-barking: strategically important, not urgent. Sleeping: nobody will raise them.](https://tahltan.org/wp-content/uploads/2021/05/TCG_SpringNewsletter2021.pdf)",
+   "how": "Owner or team sorts anonymously. Coach asks: what is the sleeping dog? Our examples: barking = cash squeeze; non-barking = no successor; sleeping = the family director who underperforms.",
+   "time": "30 to 45 min",
+   "suits": "Family firms, polite teams, partners avoiding a talk.",
+   "weak": "Sorts, does not size. Neither source frames it as a risk tool. The proverb says let them lie, and the tool says raise them.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M10",
+   "name": "Fear setting ([Ferriss](https://singjupost.com/tim-ferriss-why-you-should-define-your-fears-instead-of-your-goals-transcript/))",
+   "short": "Fear setting",
+   "what": "Three pages: define, prevent and repair worst outcomes; benefits of trying; cost of doing nothing at 6, 12 and 36 months.",
+   "how": "Owner writes alone, then reads it to the coach.",
+   "time": "30 to 60 min",
+   "suits": "One frozen decision or an avoided hard talk.",
+   "weak": "Personal tool, business use is ours. Take care with [anxious clients](https://existentialespresso.substack.com/p/stoic-advice-on-establishing-balance).",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M11",
+   "name": "Five Ds check ([EPI](https://myccmi.com/wp-content/uploads/2024/05/Owner-Readiness-2023.pdf))",
+   "short": "Five Ds check",
+   "what": "Plan for divorce, death, disability, distress and disagreement.",
+   "how": "Take each D. Ask who owns the shares, who runs it, where the cash comes from. Translate for the UK: shareholders' agreement, shareholder protection, solicitor and accountant. That translation is ours, so have a UK solicitor check it.",
+   "time": "60 min, then advisers",
+   "suits": "Two or more shareholders. Firms worth over £2.5m.",
+   "weak": "US-built. Coach gives no legal advice.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M12",
+   "name": "Owner-away test and lean continuity plan",
+   "short": "Owner-away test",
+   "what": "[Warrillow's three months](https://divestopedia.com/podcast-8-key-drivers-to-increased-valuation-an-interview-with-john-warrillow/2/9574), [Michalowicz's four weeks](https://readingraphics.com/?p=49952), plus a slim [business impact analysis](https://www.glocertinternational.com/resources/guides/what-is-iso-22301/).",
+   "how": "Ask: from Monday, who signs payments, has passwords, holds the top ten customers, talks to the bank? Stronger: the owner goes for three weeks and the team logs what breaks. Then one page each for site, IT, supplier and owner gone.",
+   "time": "1 hour for the talk; 1 to 2 days for the plan; half-day test a year",
+   "suits": "Any owner holding key relationships. Backed by the logic of [Bennedsen](https://econpapers.repec.org/RePEc:bla:jfinan:v:75:y:2020:i:4:p:1877-1911) and [Becker & Hvide](https://wrap.warwick.ac.uk/147132/).",
+   "weak": "Plans go stale. A trip away can fail if done too soon. Those studies show the harm, not that this test helps.",
+   "evidence": "OPINION on the test; PARTIAL on the harm",
+   "level": "opinion"
+  },
+  {
+   "id": "M13",
+   "name": "Risk register, done lightly",
+   "short": "Light risk register",
+   "what": "A list with one owner, one action and one review date per risk. Pair with a response: treat, tolerate, transfer, terminate ([2004 Orange Book](https://assets.publishing.service.gov.uk/media/5a7aae1eed915d670dd7dd75/The_Orange_Book.pdf)).",
+   "how": "90-minute workshop, 15 to 25 risks. Size each in £ and months. Review the top five to ten each quarter.",
+   "time": "Half a day, then 30 to 60 min a quarter",
+   "suits": "Firms with a lender, investor or board, or several managers.",
+   "weak": "Lists rot. [The current Orange Book](https://assets.publishing.service.gov.uk/media/6453acadc33b460012f5e6b8/HMT_Orange_Book_May_2023.pdf) is for government.",
+   "evidence": "PARTIAL against scoring. None in favour on outcomes",
+   "level": "partial"
+  },
+  {
+   "id": "M14",
+   "name": "FMEA and ICH Q9(R1) ideas (pharma)",
+   "short": "Process failure map",
+   "what": "[FMEA](https://qualitysafety.bmj.com/content/21/7/607): map a process, list how each step fails, score it. [ICH Q9(R1)](https://database.ich.org/sites/default/files/ICH_Q9%28R1%29_Guideline_Step4_2023_0126_0.pdf) adds two ideas that travel: low-risk issues can go \"via less formal means\", and keep subjectivity \"managed and minimized\".",
+   "how": "Pick one process that makes the money, such as order-to-cash. Map it with the people who do it. Skip the multiplication. Discuss the top failures.",
+   "time": "2 to 4 hours per process",
+   "suits": "Manufacturing, labs, food, regulated work, repeatable operations. A natural fit if you come from pharma or quality.",
+   "weak": "[Poor reliability and validity; multiplying ordinal scores is flawed](https://uhra.herts.ac.uk/id/eprint/3558/). Hospital evidence. The risk is over-formalising a £5M firm.",
+   "evidence": "PARTIAL: use the map, drop the score",
+   "level": "partial"
+  },
+  {
+   "id": "M15",
+   "name": "Bow-tie",
+   "short": "Bow-tie",
+   "what": "One bad event in the middle, causes and barriers left, results and barriers right. [Separates real barriers from softer safeguards](https://www.energyinst.org/technical/publications/topics/human-and-organisational-factors/bow-ties-in-risk-management-a-concept-book-for-process-safety).",
+   "how": "Pick one event (payroll fraud, ransomware, serious injury). Draw it. For each barrier ask who owns it and when it was last tested.",
+   "time": "1 to 2 hours per event",
+   "suits": "Physical hazards. Owners who think visually. Top two or three risks.",
+   "weak": "One event at a time. No outcome studies.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M16",
+   "name": "Two-by-two scenarios",
+   "short": "Two-by-two scenarios",
+   "what": "A few [plausible futures](https://medium.com/predict/4-archetypes-shell-2x2-three-scenario-planning-methods-explained-and-compared-d2e41c474a37), not a forecast.",
+   "how": "Pick the decision. Choose the two biggest unknowns as axes. Write a paragraph per world. Ask which moves work in all four.",
+   "time": "Half a day a year",
+   "suits": "Firms exposed to regulation, technology or end-market change.",
+   "weak": "Can end as a nice chat with no decision. [A 2021 review](https://strathprints.strath.ac.uk/id/eprint/76934) is supportive but mixed; [experiments are few](https://strathprints.strath.ac.uk/89479/1/Derbyshire-etal-FFS-2023-The-value-of-experiments-in-futures-and-foresight-science.pdf).",
+   "evidence": "PARTIAL",
+   "level": "partial"
+  },
+  {
+   "id": "M17",
+   "name": "Outside view ([Kahneman](https://www.litcharts.com/lit/thinking-fast-and-slow/part-3-chapter-23))",
+   "short": "Outside view",
+   "what": "Ask how similar efforts really turned out.",
+   "how": "\"Of ten firms like yours trying this, how many hit plan? Why would you be different?\" The coach's view across clients is the data.",
+   "time": "15 min",
+   "suits": "Hires, launches, acquisitions.",
+   "weak": "Few similar cases in one firm.",
+   "evidence": "OPINION in this use",
+   "level": "opinion"
+  },
+  {
+   "id": "M18",
+   "name": "Critical Number and early-warning numbers",
+   "short": "Early-warning numbers",
+   "what": "[One number for the weak point](https://www.greatgame.com/about/principles) (Stack), or 3 to 5 [key risk indicators](https://hbr.org/2012/06/managing-risks-a-new-framework) with an agreed action.",
+   "how": "Our examples, not research: \"top customer over 25% of sales\", \"cash under 8 weeks\". Put them on the monthly scorecard. Choose with [people closest to the action](https://www.greatgame.com/blog/the-myth-and-magic-of-critical-number).",
+   "time": "1 hour to set, 5 min a month",
+   "suits": "Teams that already use a scorecard.",
+   "weak": "Thresholds are invented. Can narrow attention.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M19",
+   "name": "Value audit",
+   "short": "Value audit",
+   "what": "[Value Builder](https://divestopedia.com/podcast-8-key-drivers-to-increased-valuation-an-interview-with-john-warrillow/2/9574) or [Bradbury's audit](https://danbradbury.co.uk/audit): a buyer's-eye score.",
+   "how": "Owner completes it. Coach takes the lowest drivers first. Then get a real valuation.",
+   "time": "30 to 60 min",
+   "suits": "Owners thinking of selling within five years.",
+   "weak": "Vendor data. Links score to offers, not to completed sales. Never promise a multiple.",
+   "evidence": "WEAK",
+   "level": "weak"
+  },
+  {
+   "id": "M20",
+   "name": "Three circles ([Tagiuri & Davis](https://www.familybusinessmagazine.com/how-three-circles-changed-way-we-understand-family-business))",
+   "short": "Three circles",
+   "what": "Place each relative and shareholder across family, ownership and management.",
+   "how": "Draw it. Our question: whose interest has nobody spoken for?",
+   "time": "30 min",
+   "suits": "Family firms, succession.",
+   "weak": "Shows the tangle, does not fix it.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  },
+  {
+   "id": "M21",
+   "name": "Protection and adviser check (UK)",
+   "short": "Protection check",
+   "what": "Key person cover, shareholder protection, tax on both, [inheritance tax cap](https://www.gov.uk/government/publications/changes-to-agricultural-property-relief-and-business-property-relief/agricultural-property-relief-and-business-property-relief-changes).",
+   "how": "Coach prompts, advisers advise. [HMRC's test](https://www.gov.uk/hmrc-internal-manuals/business-income-manual/bim45525) for premium relief is narrow. Our inference: a shareholder's cover often fails it, so ask an accountant.",
+   "time": "1 to 2 adviser meetings",
+   "suits": "Two or more shareholders. One owner plus debt.",
+   "weak": "Advisers earn commission.",
+   "evidence": "STRONG on tax rules; WEAK on demand surveys",
+   "level": "strong"
+  },
+  {
+   "id": "M22",
+   "name": "Competing commitments ([Kegan & Lahey](https://extension.harvard.edu/blog/the-surprising-reason-we-dont-keep-our-resolutions-and-how-to-overcome-it)) and normal or abnormal ([Adizes](https://adizes-institute.gitbook.io/adizes/library/books-by-dr.-ichak-adizes/managing-corporate-lifecycles/chapter-four))",
+   "short": "Competing commitments",
+   "what": "For owners who agree, then stall. And a test for whether a founder problem is a crisis at all.",
+   "how": "Name the goal, list what you do instead, find what you are protecting, test the assumption.",
+   "time": "45 min",
+   "suits": "A risk fix agreed twice and not done.",
+   "weak": "Coaches are not clinicians.",
+   "evidence": "OPINION",
+   "level": "opinion"
+  }
+ ],
+ "picker": [
+  {
+   "order": 0,
+   "said": "Under about 8 weeks of cash, tax arrears, or doubt about paying debts when due",
+   "start": [
+    "M2"
+   ],
+   "then": [],
+   "time": "Hours",
+   "stop": true,
+   "note": "Run the cash stress test today, then see an accountant or a licensed insolvency practitioner. Everything else waits until the firm is stable. Directors can carry personal liability here: [Insolvency Act s214](https://www.legislation.gov.uk/ukpga/1986/45/section/214)."
+  },
+  {
+   "order": 1,
+   "said": "I have a big decision coming",
+   "start": [
+    "M5"
+   ],
+   "then": [
+    "M6",
+    "M17",
+    "M2"
+   ],
+   "time": "2 to 4 hours",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 2,
+   "said": "My bank or investors want to see something",
+   "start": [
+    "M13"
+   ],
+   "then": [
+    "M2"
+   ],
+   "time": "1 day",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 3,
+   "said": "I want to sell or retire",
+   "start": [
+    "M19"
+   ],
+   "then": [
+    "M12",
+    "M11",
+    "M21",
+    "M4"
+   ],
+   "time": "2 to 3 days plus advisers",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 4,
+   "said": "My partner, family or fellow shareholders...",
+   "start": [
+    "M20"
+   ],
+   "then": [
+    "M9",
+    "M11",
+    "M21"
+   ],
+   "time": "Half a day plus advisers",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 5,
+   "said": "We make or handle things that could hurt someone",
+   "start": [
+    "M14"
+   ],
+   "then": [
+    "M15"
+   ],
+   "time": "1 day",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 6,
+   "said": "My market is shifting",
+   "start": [
+    "M16"
+   ],
+   "then": [
+    "M3"
+   ],
+   "time": "1 day a year",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 7,
+   "said": "I have one big customer or one market",
+   "start": [
+    "M2"
+   ],
+   "then": [
+    "M3",
+    "M18"
+   ],
+   "time": "Half a day",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 8,
+   "said": "Everything runs through me",
+   "start": [
+    "M12"
+   ],
+   "then": [
+    "M22"
+   ],
+   "time": "1 hour, then a test",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 9,
+   "said": "We're fine",
+   "start": [
+    "M4"
+   ],
+   "then": [
+    "M1"
+   ],
+   "time": "3 hours",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 10,
+   "said": "Something's off, but nobody says it",
+   "start": [
+    "M9"
+   ],
+   "then": [
+    "M5"
+   ],
+   "time": "1 hour",
+   "stop": false,
+   "note": ""
+  },
+  {
+   "order": 11,
+   "said": "I don't know where to start\" (default)",
+   "start": [
+    "M1"
+   ],
+   "then": [
+    "M2",
+    "M12"
+   ],
+   "time": "About 1 day in all",
+   "stop": false,
+   "note": ""
+  }
+ ],
+ "modifiers": [
+  {
+   "label": "No team, or a team that won't speak up",
+   "change": "Swap Pre-mortem for Thinking Time or Fear setting, or run Pre-mortem and The three dogs anonymously with the owner out of the room."
+  },
+  {
+   "label": "Owner prefers numbers",
+   "change": "Lead with Cash stress test and Early-warning numbers."
+  },
+  {
+   "label": "Owner prefers talk",
+   "change": "Lead with D.O.S., then check it against the 12 risks."
+  },
+  {
+   "label": "Owner thinks in pictures",
+   "change": "Lead with Bow-tie or Three circles."
+  },
+  {
+   "label": "Owner short of time",
+   "change": "Three-column sort and the Owner-away test talk only. In the UK's Help to Grow, [only about a third finished all mentoring hours](https://assets.publishing.service.gov.uk/media/6a297517d95ffddb05d4ae28/help-to-grow-management-phase-1-final-evaluation-report-process-and-impact-evaluation.pdf), so assume owners run short."
+  },
+  {
+   "label": "BOSS area is at Overwhelm or Overworked",
+   "change": "Skip registers. Use Cash stress test, the Owner-away test talk and one Early-warning numbers number."
+  }
+ ],
+ "steps": [
+  {
+   "step": "1. Empty",
+   "coach": "Asks the D.O.S. dangers question, then walks the 12 risks. Asks: what is the sleeping dog?",
+   "owner": "Lists worries, including the unsayable.",
+   "output": "Raw list",
+   "from": "Sullivan; dogs (credit unproven)"
+  },
+  {
+   "step": "2. Sort",
+   "coach": "Sorts each into preventable, chosen or external. Marks the ones that could end the firm or take the house.",
+   "owner": "Says which it can live with.",
+   "output": "Three columns and a red \"could end us\" flag",
+   "from": "Kaplan & Mikes; Collins; Marks"
+  },
+  {
+   "step": "3. Size",
+   "coach": "Sets up the stress test. Checks the top 1, 3 and 10 customers and the owner-away questions. Replaces 1-to-5 scores with pounds and months.",
+   "owner": "Brings figures, with the finance lead.",
+   "output": "Months of cash per shock, % shares, weeks away",
+   "from": "Stack; Warrillow; Cox"
+  },
+  {
+   "step": "4. Choose",
+   "coach": "Asks what doing nothing costs at 6, 12 and 36 months. Links each risk to its BOSS area.",
+   "owner": "Picks three. Names one person, one action, one date and one trigger number for each.",
+   "output": "Top three on one page, added to the BOSS plan",
+   "from": "Ferriss; Drucker's four types"
+  }
+ ],
+ "cadence": [
+  {
+   "when": "Monthly call",
+   "coach": "Looks at the trigger numbers. Asks what bad news reached the owner this month.",
+   "owner": "Reports the numbers and any trigger hit.",
+   "time": "10 min inside the normal call",
+   "output": "Numbers on the scorecard"
+  },
+  {
+   "when": "Each quarter",
+   "coach": "Re-sorts. Retires or replaces risks. Checks actions were done.",
+   "owner": "Picks the next three.",
+   "time": "45 to 60 min",
+   "output": "New top three"
+  },
+  {
+   "when": "Before any big decision",
+   "coach": "Runs the pre-mortem. Asks the outside-view question.",
+   "owner": "Sets a kill point and speaks last.",
+   "time": "60 min",
+   "output": "Changed plan, written stop rule"
+  },
+  {
+   "when": "Twice a year",
+   "coach": "Reviews the cash stress test.",
+   "owner": "Updates it with the finance lead.",
+   "time": "2 hours",
+   "output": "Dated action list"
+  },
+  {
+   "when": "Yearly, with BOSS review",
+   "coach": "Re-runs BOSS, asks about the Five Ds and advisers, and sets one rehearsal: owner away, or a reverse stress test.",
+   "owner": "Does the rehearsal. Notes what broke. Sees advisers.",
+   "time": "Half a day plus the test",
+   "output": "What broke, added to the next three"
+  }
+ ],
+ "figures": [
+  {
+   "topic": "Insolvency",
+   "say": "In September 2026, 1,882 companies in England and Wales went insolvent, down 5% on a year earlier. Compulsory liquidations rose 25%.",
+   "date": "Published 20 Oct 2026",
+   "source": "[Insolvency Service](https://www.gov.uk/government/statistics/company-insolvencies-september-2026/commentary-company-insolvency-statistics-september-2026)",
+   "caveat": "Seasonally adjusted. Old months get revised."
+  },
+  {
+   "topic": "Insolvency rate",
+   "say": "About 1 in 200 companies a year in England and Wales.",
+   "date": "Same",
+   "source": "[Same](https://www.gov.uk/government/statistics/company-insolvencies-september-2026/commentary-company-insolvency-statistics-september-2026)",
+   "caveat": "All sizes. Not a rate for £1M+ firms."
+  },
+  {
+   "topic": "Survival",
+   "say": "ONS finds 38.4% of UK businesses born in 2019 were still going five years later. Many closures are not failures.",
+   "date": "Published 20 Nov 2025",
+   "source": "[ONS](https://www.ons.gov.uk/businessindustryandtrade/business/activitysizeandlocation/bulletins/businessdemography/2024)",
+   "caveat": "Includes tiny and dormant firms. Do not say 62% failed."
+  },
+  {
+   "topic": "Obstacles",
+   "say": "Asked what gets in the way, SME employers most often named...",
+   "date": "Published 25 Sep 2025",
+   "source": "[LSBS 2024](https://www.gov.uk/government/statistics/small-business-survey-2024-businesses-with-employees/longitudinal-small-business-survey-2024-sme-employers-businesses-with-1-to-249-employees)",
+   "caveat": "What owners feel, not measured harm."
+  },
+  {
+   "topic": "Late payment",
+   "say": "A government-commissioned study estimates late payment costs the UK almost £11bn a year and links it to about 38 closures a day.",
+   "date": "July 2025",
+   "source": "[London Economics for DBT](https://assets.publishing.service.gov.uk/media/688a089a6478525675738ff9/late_payments_research_impact_on_uk_economy.pdf)",
+   "caveat": "Modelled from older data, at a modest significance level. Report's own range for cost runs £4.7bn to £17.6bn."
+  },
+  {
+   "topic": "Cyber",
+   "say": "65% of medium businesses reported a breach or attack last year. Most cost little. The danger is the rare bad one.",
+   "date": "Published 30 Apr 2026",
+   "source": "[DSIT](https://www.gov.uk/government/statistics/cyber-security-breaches-survey-20252026/cyber-security-breaches-survey-20252026)",
+   "caveat": "Self-reported, perceived cost, misses unnoticed attacks."
+  },
+  {
+   "topic": "Cyber readiness",
+   "say": "Only 5% of businesses hold Cyber Essentials.",
+   "date": "Same",
+   "source": "[DSIT](https://www.gov.uk/government/statistics/cyber-security-breaches-survey-20252026/cyber-security-breaches-survey-20252026)",
+   "caveat": "All sizes (small 12%)."
+  },
+  {
+   "topic": "Key person",
+   "say": "In a survey by insurer Scottish Widows, 23% of owners said...",
+   "date": "Reported 5 Aug 2026",
+   "source": "[Scottish Widows via Cover](https://www.covermagazine.co.uk/news/4533969/23-smes-fold-lost-key-person-scottish-widows)",
+   "caveat": "Insurer. Hypothetical. Always name the insurer."
+  },
+  {
+   "topic": "Succession",
+   "say": "In a survey of 857 UK businesses by accountants Armstrong Watson...",
+   "date": "9 Jul 2025",
+   "source": "[Armstrong Watson](https://www.armstrongwatson.co.uk/news/2025/07/business-owners-urged-consider-succession-plans-survey-reveals-many-are-ill-prepared)",
+   "caveat": "A firm's own survey. Closest fit on size (average 51 staff)."
+  },
+  {
+   "topic": "Inheritance tax",
+   "say": "State as law, with \"take advice\".",
+   "date": "From 6 Apr 2026",
+   "source": "[GOV.UK](https://www.gov.uk/government/publications/changes-to-agricultural-property-relief-and-business-property-relief/agricultural-property-relief-and-business-property-relief-changes)",
+   "caveat": "Our worked example (£4m firm, about £300,000 tax) ignores other reliefs. Take advice."
+  },
+  {
+   "topic": "Safety fines",
+   "say": "For very high culpability and the highest harm, the guideline starts at...",
+   "date": "In force 1 Feb 2016",
+   "source": "[Sentencing Council](https://www.sentencingcouncil.org.uk/offences/crown-court/item/organisations-breach-of-duty-of-employer-towards-employees-and-non-employees-breach-of-duty-of-self-employed-to-others-breach-of-health-and-safety-regulations)",
+   "caveat": "England and Wales. Prosecutions are few: [246 in 2024/25](https://www.gov.uk/government/publications/the-health-and-safety-executive-annual-report-and-accounts-2024-to-2025/executive-summary-health-and-safety-executive-annual-report-and-accounts-2024-to-2025)."
+  },
+  {
+   "topic": "Data",
+   "say": "State as a rule.",
+   "date": "Current",
+   "source": "[ICO](https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/)",
+   "caveat": "Small-firm fines are rare; the [DPP Law £60,000 case](https://ico.org.uk/media2/pr4bg5hq/dpp-law-ltd-monetary-penalty-notice.pdf) had an appeal we did not check."
+  },
+  {
+   "topic": "Director duties",
+   "say": "Plain summary, with \"get insolvency advice early\".",
+   "date": "Statute; 2022 ruling",
+   "source": "[s214](https://www.legislation.gov.uk/ukpga/1986/45/section/214); [Sequana summary](https://www.rpclegal.com/perspectives/restructuring-and-insolvency/bti-2014-llc-v-sequana-sa-and-others-supreme-court-decision/)",
+   "caveat": "Not legal advice."
+  },
+  {
+   "topic": "Fraud offence",
+   "say": "This law does not apply directly to most firms this size.",
+   "date": "Updated 10 Oct 2025",
+   "source": "[Home Office](https://gov.uk/government/publications/offence-of-failure-to-prevent-fraud-introduced-by-eccta/economic-crime-and-corporate-transparency-act-2023-guidance-to-organisations-on-the-offence-of-failure-to-prevent-fraud-accessible-version)",
+   "caveat": "Group-wide count."
+  },
+  {
+   "topic": "Distress (use with label)",
+   "say": "Insolvency firm BTG's Red Flag Alert reports...",
+   "date": "21 Aug 2026",
+   "source": "[BTG Red Flag Alert](https://www.btguk.com/news/red-flag-alert-q2-2026-figures-released)",
+   "caveat": "Interested party, terms undefined. Q4 2025 was higher, so avoid \"record\" talk."
+  },
+  {
+   "topic": "Employment law",
+   "say": "Law firms report that from 1 January 2027...",
+   "date": "Feb 2026",
+   "source": "[Mills & Reeve](https://www.mills-reeve.com/blogs/employment/february-2026/employment-rights-act-2025-updated-implementation-timetable/)",
+   "caveat": "Law firm summary. Confirm the dates with your adviser."
+  }
+ ],
+ "research": [
+  {
+   "topic": "Losing the leader hurts",
+   "say": "When an entrepreneur dies, firms in one large study suffered large, lasting falls in growth and profit. In Denmark, a CEO's hospital stay cut profit and investment.",
+   "source": "[Becker & Hvide](https://wrap.warwick.ac.uk/147132/); [Bennedsen et al.](https://econpapers.repec.org/RePEc:bla:jfinan:v:75:y:2020:i:4:p:1877-1911)",
+   "limit": "Abstracts read. Neither is UK. Best causal evidence here."
+  },
+  {
+   "topic": "Growth and profit",
+   "say": "Fast growth is not the killer. Growth without profit is the risk to watch.",
+   "source": "[Davidsson et al.](https://econpapers.repec.org/RePEc:eee:jbvent:v:24:y:2009:i:4:p:388-406); [Delmar et al.](https://lup.lub.lu.se/record/4172420); [Inc. check](https://www.inknowvation.com/node/133014?keywords=)",
+   "limit": "Our synthesis. None tested this size band."
+  },
+  {
+   "topic": "Cash",
+   "say": "Firms with more cash and less debt fell less in the COVID shock.",
+   "source": "[Fahlenbrach et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC7798547)",
+   "limit": "Listed US firms, share price."
+  },
+  {
+   "topic": "UK start-ups",
+   "say": "A study of 6,247 UK start-ups found survival depends mainly on the resources they have built up.",
+   "source": "[Coad et al.](https://econpapers.repec.org/RePEc:eee:jbvent:v:28:y:2013:i:5:p:615-632)",
+   "limit": "Start-ups only."
+  },
+  {
+   "topic": "Advice works, a bit",
+   "say": "In a UK trial of 15,207 SMEs, business advice lifted turnover 8.2%, in the short term.",
+   "source": "[Growth Vouchers](https://cep.lse.ac.uk/_NEW/PUBLICATIONS/abstract.asp?index=10660)",
+   "limit": "Working paper. Possibly at the expense of other firms."
+  },
+  {
+   "topic": "Limits of programmes",
+   "say": "The UK's Help to Grow evaluation found 'no statistically significant evidence' of business growth.",
+   "source": "[Ipsos/IES for DBT](https://assets.publishing.service.gov.uk/media/6a297517d95ffddb05d4ae28/help-to-grow-management-phase-1-final-evaluation-report-process-and-impact-evaluation.pdf)",
+   "limit": "Data lags noted. Its survival result compares finishers with dropouts, and its table is inconsistent (p=0.052 marked significant). Do not use the survival number."
+  },
+  {
+   "topic": "Management",
+   "say": "Better-run firms tend to be more productive and more likely to survive. That is a link, not proof.",
+   "source": "[Bloom & Van Reenen](https://econpapers.repec.org/RePEc:oup:qjecon:v:122:y:2007:i:4:p:1351-1408.)",
+   "limit": "732 medium firms including UK."
+  }
+ ],
+ "donts": [
+  {
+   "claim": "\"65% of startups fail because of co-founder conflict\"",
+   "why": "Traces to a 1989 survey of 49 venture capitalists on senior management. [Wasserman's own talk](https://www.builtincolorado.com/articles/noam-wasserman-visits-techstars-boulder-shines-light-made-data-founding-pitfalls-can-kill-your-) says \"people problems\". We found no reliable figure on partner disputes."
+  },
+  {
+   "claim": "\"82% of small firms fail from cash flow\"",
+   "why": "Never traced to a primary source. A nearby real figure: [the median US small firm holds 27 days of cash](https://www.jpmorganchase.com/corporate/institute/report-cash-flows-balances-and-buffer-days.htm), per JPMorgan."
+  },
+  {
+   "claim": "\"Only 30% / 13% / 3% of family firms survive\" (and 30/12/3)",
+   "why": "[One US state, one industry, sales counted as failure](https://business.oregonstate.edu/blog/family-business/second-look-30-13-3-statistic). The [UK family business body's own podcast](https://www.ifb.org.uk/resources/podcast/) queries it."
+  },
+  {
+   "claim": "\"50% of exits are forced\" as a fact",
+   "why": "[EPI's own unsourced estimate](https://myccmi.com/wp-content/uploads/2024/05/Owner-Readiness-2023.pdf), worded three ways, and [one blog](https://blog.exit-planning-institute.org/the-grinch-may-have-stolen-christmas-but-the-5-ds-shouldnt-steal-your-business) turns it into firms failing."
+  },
+  {
+   "claim": "\"70%, 74% or 75% of owners regret selling\"; \"80% of wealth is in the business\"",
+   "why": "[EPI](https://blog.exit-planning-institute.org/what-is-value-acceleration-methodology), [Value Builder](https://www.valuebuilder.com/) and [a podcast summary](https://www.aibrary.ai/podcasts/finish-big/summary-finish-big) give different figures with no study."
+  },
+  {
+   "claim": "Score-to-multiple promises (3.7x to 6.6x, \"71% higher\")",
+   "why": "[Vendor data](https://phoenix.fcbb.com/a-blood-pressure-test-for-your-business), offers not sales, samples differ, mostly North American. Show as vendor data at most, one row, never as a promise."
+  },
+  {
+   "claim": "1.5x to 2x discount for owner dependency",
+   "why": "Unsourced claim from a UK broker search result, not tied to any page, so we hold no link for it. We found no UK buyer publishing a number."
+  },
+  {
+   "claim": "Premortem \"30% more accurate\"",
+   "why": "[Klein says it raised ability to identify reasons by 30%](https://hbr.org/2007/09/performing-a-project-premortem). [Secondary pages](https://resources.rework.com/de/libraries/project-management/pre-mortem) say the 1989 study counted reasons, not their quality. Paper unread."
+  },
+  {
+   "claim": "\"Premature scaling kills 70% (or 74%)\"",
+   "why": "[Consultancy data on tech start-ups](https://techcrunch.com/2011/09/01/a-deeper-look-at-blackboxs-data-on-startup-failure-and-its-top-cause-premature-scaling-infographic), and [critics call it circular](https://www.flyingpenguin.com/?p=13887)."
+  },
+  {
+   "claim": "\"Two-thirds of Inc. 5000 firms shrink or fail\"; 63% survival",
+   "why": "[An opinion piece](https://fortune.com/2016/03/07/fast-growth-companies-fail); Kauffman original not found."
+  },
+  {
+   "claim": "Bain \"85% of barriers are internal\"; When Growth Stalls \"only 13% external\"",
+   "why": "[Survey of executives](https://www.bain.com/about/media-center/press-releases/2016/internal-breakdowns-cause-85-percent-of-company-shortfalls-in-achieving-profitable-growth/) and [large firms](https://www.cbsnews.com/news/when-growth-stalls). Opinion, wrong size."
+  },
+  {
+   "claim": "Any UK customer concentration benchmark",
+   "why": "[2005 Northern Ireland data](https://jbs.cam.ac.uk/cbr-sme-benchmarking-northern-ireland), [undated KPMG](https://www.scotsman.com/business/mid-size-companies-losing-out-billions-1476034), [2020 concern survey](https://www.globaldata.com/sme-reliance-key-client-emphasizes-demand-covid-19-cover-says-globaldata/). Measure the client."
+  },
+  {
+   "claim": "\"26% or 59% would close\" from L&G as a current norm; \"nearly 3 million\"",
+   "why": "[2019](https://group.legalandgeneral.com/en/newsroom/press-releases/one-in-four-of-uk-smes-would-close-immediately-after-losing-a-key-person) and [2021](https://www.covermagazine.co.uk/news/4038207/majority-smes-vulnerable-key-person-loss-legal), insurer, hypothetical, extrapolated. Use the 2026 survey, labelled."
+  },
+  {
+   "claim": "Late payment \"kills 50,000 firms\", \"£23.4bn\"",
+   "why": "[An older study cited in the DBT report](https://assets.publishing.service.gov.uk/media/688a089a6478525675738ff9/late_payments_research_impact_on_uk_economy.pdf); the second figure was unsupported."
+  },
+  {
+   "claim": "\"The new late payment law is in force\"",
+   "why": "[The Bill](https://www.gov.uk/government/news/largest-crackdown-on-late-payments-in-over-25-years-as-landmark-bill-enters-parliament) was introduced 19 May 2026. Royal Assent not confirmed."
+  },
+  {
+   "claim": "Cyber Essentials \"92% less likely to be attacked\"",
+   "why": "[Insurer's claims data](https://www.ncsc.gov.uk/blog-post/cyber-essentials-decade), with careful firms self-selecting. It measures claims, and [GOV.UK words it differently](https://gov.uk/government/publications/cyber-essentials-scheme-overview)."
+  },
+  {
+   "claim": "Founders \"49% have mental health conditions\" without limits; \"NIMH found 72%\"",
+   "why": "[Freeman](https://ideas.repec.org/a/kap/sbusec/v53y2019i2d10.1007_s11187-018-0059-8.html) is small and self-reported, lifetime, US. [A later meta-analysis](https://econpapers.repec.org/RePEc:sae:entthe:v:47:y:2023:i:2:p:553-593) complicates it. The NIMH line looks like a misattribution. We found no study linking owner burnout to firm failure."
+  },
+  {
+   "claim": "Collins \"114 decisions, 10% vs 36%\"; cash at \"3 to 10 times\"; 20% growth rule",
+   "why": "Unpinned summaries. [Reader notes](https://www.maxmednik.com/blog/notes-on-great-by-choice-by-jim-collins) only."
+  },
+  {
+   "claim": "Harnish \"growth sucks cash\"; \"10% discount needs 33% more sales\"",
+   "why": "Search summaries with no page."
+  },
+  {
+   "claim": "EMyth \"80% fail in five years\"",
+   "why": "Unpinned. EMyth's [own \"about half\" line](https://www.emyth.com/inside/groundbreaking-ideas-from-the-e-myth-revisited) comes from a coaching seller."
+  },
+  {
+   "claim": "Deloitte, McKinsey, BCG figures as if about this client",
+   "why": "[Family firms above US$100M](https://businessforum.ro/economy/20251118/deloitte-family-businesses-set-for-84-revenue-growth-by-2030-2574); [McKinsey's model of large firms](https://www.mckinsey.com/mgi/our-research/risk-resilience-and-rebalancing-in-global-value-chains). Wrong size."
+  }
+ ],
+ "fixes": [
+  {
+   "claim": "\"Senge's risk framework: the dogs\"",
+   "fix": "Unverified credit, and not framed as risk.",
+   "source": "[Tahltan](https://tahltan.org/wp-content/uploads/2021/05/TCG_SpringNewsletter2021.pdf); [Synnot](https://www.billsynnotandassociates.com.au/kb/509-technique-1-28-discussability-of-issues.html)"
+  },
+  {
+   "claim": "Warrillow's risk framework",
+   "fix": "Eight value drivers. He has no risk list. Only some drivers are risks in the strict sense.",
+   "source": "[Divestopedia](https://divestopedia.com/podcast-8-key-drivers-to-increased-valuation-an-interview-with-john-warrillow/2/9574)"
+  },
+  {
+   "claim": "\"Four Ds\"",
+   "fix": "EPI uses Five Ds. Some advisers swap \"distress\" for \"disruption\".",
+   "source": "[EPI](https://blog.exit-planning-institute.org/planning-for-the-unexpected-exit)"
+  },
+  {
+   "claim": "\"Risk means more things can happen than will happen\" (Marks)",
+   "fix": "It is Elroy Dimson's line, which Marks credits.",
+   "source": "[Marks](https://www.oaktreecapital.com/docs/default-source/memos/2014-09-03-risk-revisited.pdf)"
+  },
+  {
+   "claim": "Premortem by Kahneman",
+   "fix": "Klein's method. Kahneman popularised it.",
+   "source": "[Klein](https://hbr.org/2007/09/performing-a-project-premortem)"
+  },
+  {
+   "claim": "\"Invert, always invert\" by Munger, at a Harvard commencement",
+   "fix": "He quotes Jacobi, at the Harvard School in Los Angeles. \"Where I'm going to die\" is a story he tells.",
+   "source": "[Transcript](https://jamesclear.com/great-speeches/how-to-guarantee-a-life-of-misery-by-charlie-munger); [Quartr](https://quartr.com/insights/business-philosophy/munger-1986-speech-how-to-guarantee-a-life-of-misery)"
+  },
+  {
+   "claim": "Margin of safety by Buffett or Housel",
+   "fix": "Graham's idea. In Buffett it is about purchase price, so headroom in cash is our stretch.",
+   "source": "[1992 letter](https://www.berkshirehathaway.com/letters/1992.html); [Grow Weekly](https://growweekly.substack.com/p/establishing-a-margin-of-safety)"
+  },
+  {
+   "claim": "Buffett \"Rule No. 1: never lose money\"",
+   "fix": "No primary Berkshire source found.",
+   "source": "Example of the repeat"
+  },
+  {
+   "claim": "Drucker's four types in *Practice of Management* or *Turbulent Times*; \"accepted\" and \"breakthrough\" labels; \"three types\"",
+   "fix": "One source places them in *Managing for Results*, with no page. The usual \"risk you must accept\" paraphrases \"built into the very nature of the business\".",
+   "source": "[Lab Manager](https://www.labmanager.com/what-s-the-risk-10834); Studocu; [Soul of Enterprise](https://www.thesoulofenterprise.com/tsoe/drucker)"
+  },
+  {
+   "claim": "Drucker \"yesterday's logic\" quote; \"planned abandonment\"",
+   "fix": "Wording unverified. We found \"systematic and purposeful abandonment\".",
+   "source": "[Meaning Ring](https://meaningring.com/2017/02/02/face-reality-by-peter-drucker/)"
+  },
+  {
+   "claim": "Three circles by Gersick",
+   "fix": "Tagiuri and Davis, around 1978. Gersick and colleagues added change over time.",
+   "source": "[Davis](https://www.familybusinessmagazine.com/how-three-circles-changed-way-we-understand-family-business)"
+  },
+  {
+   "claim": "Goldratt on risk",
+   "fix": "No direct statement found. The constraint-as-risk link is ours.",
+   "source": "[TOC Institute](https://www.tocinstitute.org/five-focusing-steps.html)"
+  },
+  {
+   "claim": "Dalio's \"stress test\" as a cash test",
+   "fix": "He means testing an opinion against capable people who disagree.",
+   "source": "[Principles](https://www.principles.com/principles/7e57c357-74bb-4e5b-ab4a-598f54b36f54/)"
+  },
+  {
+   "claim": "Hormozi's \"7 Fatal Business Mistakes\"",
+   "fix": "No such episode or document found. Use the four concentration risks.",
+   "source": "[Video](https://rosetta.to/u/alexhormozi/give-me-47-minutes-and-i-ll-fix-your-small-business)"
+  },
+  {
+   "claim": "Hormozi \"risk reversal\"; \"People pay for certainty\"; four guarantee types",
+   "fix": "\"Risk reversal\" not found in his words. The second line is [Terry Rice's](https://www.entrepreneur.com/growing-a-business/5-steps-to-build-your-irresistible-offer-and-attract/444524). The types list is from a likely AI study site. Keep buyer risk apart from business risk.",
+   "source": "As linked"
+  },
+  {
+   "claim": "Talent Grid and Management Diamond by Leila Hormozi",
+   "fix": "Published under Alex's name.",
+   "source": "[Talent Grid](https://rosetta.to/u/alexhormozi/the-talent-grid-how-i-recognize-skill-in-self-team)"
+  },
+  {
+   "claim": "Sullivan's \"Risk Factor\"",
+   "fix": "Not found. The real term is The R-Factor Question, a trust and sales tool.",
+   "source": "[Notes](https://share.transistor.fm/s/4f39fb7e)"
+  },
+  {
+   "claim": "Martell's \"Time Investor\"",
+   "fix": "Not a Time Assassin. The five are Staller, Speed Demon, Supervisor, Saver, Self-Medicator, per a third party.",
+   "source": "[Teamly](https://www.teamly.com/blog/buy-back-your-time-by-dan-martell-chapter-3/)"
+  },
+  {
+   "claim": "Cunningham \"The less risk you perceive, the more risk there is\"; \"the cost of being wrong\"; a \"dumb tax\" definition",
+   "fix": "None confirmed as his. The first is in a [third-party outline](https://bundren-painting.squarespace.com/news/episode-05-keith-j-cunningham-painting-lines-on-the-road-less-stupid). His session length is settled by his own words: 45 to 60 minutes, two or three times a week.",
+   "source": "[Talk](https://www.youtube.com/watch?v=cAmpom-ExVc)"
+  },
+  {
+   "claim": "Four T's from the current Orange Book",
+   "fix": "In the 2004 edition. A text search of May 2023 finds no \"tolerate\", \"transfer\" or \"terminate\".",
+   "source": "[2004](https://assets.publishing.service.gov.uk/media/5a7aae1eed915d670dd7dd75/The_Orange_Book.pdf); [2023](https://assets.publishing.service.gov.uk/media/6453acadc33b460012f5e6b8/HMT_Orange_Book_May_2023.pdf)"
+  },
+  {
+   "claim": "Cox \"should not be used for decisions of any consequence\"",
+   "fix": "Appeared only in a citation list. His own line is use with caution.",
+   "source": "[Cox](https://econpapers.repec.org/RePEc:wly:riskan:v:28:y:2008:i:2:p:497-512)"
+  },
+  {
+   "claim": "\"Premeditatio malorum\" as Seneca's phrase",
+   "fix": "Not in Letter 91 as translated. A later label.",
+   "source": "[Letter 91](https://en.wikisource.org/wiki/Moral_letters_to_Lucilius/Letter_91)"
+  }
+ ]
+}

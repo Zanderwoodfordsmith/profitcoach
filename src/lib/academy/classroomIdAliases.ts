@@ -46,10 +46,12 @@ export function classroomIdsNeedRedirect(
   return false;
 }
 
-/** Keep chapter + seek time across classroom lesson redirects. */
+/** Keep chapter, seek time, tab and searched words across classroom lesson redirects. */
 export function classroomLessonQueryString(sp: {
   chapter?: string | null;
   t?: string | null;
+  tab?: string | null;
+  q?: string | null;
 }): string {
   const params = new URLSearchParams();
   const chapter = sp.chapter?.trim();
@@ -61,6 +63,10 @@ export function classroomLessonQueryString(sp: {
       params.set("t", String(Math.floor(seconds)));
     }
   }
+  const tab = sp.tab?.trim();
+  if (tab) params.set("tab", tab);
+  const q = sp.q?.trim();
+  if (q) params.set("q", q.slice(0, 120));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }

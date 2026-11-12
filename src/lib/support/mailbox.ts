@@ -14,6 +14,7 @@ import {
 import {
   maybeFillProfilePhoneFromEmailBody,
   parseSupportTicketNumberFromSubject,
+  emailHtmlToText,
   stripEmailQuotedReply,
 } from "@/lib/support/ingestEmailReply";
 import {
@@ -81,7 +82,7 @@ export type PlatformUnipileAccount = {
   last_synced_at: string | null;
 };
 
-function mapAccountStatus(raw: Record<string, unknown> | null | undefined): string {
+export function mapAccountStatus(raw: Record<string, unknown> | null | undefined): string {
   if (!raw) return "ERROR";
   const sources = raw.sources as Array<{ id?: string; status?: string }> | undefined;
   const mailSource = sources?.find((s) =>
@@ -346,6 +347,21 @@ export async function updatePlatformAccountStatus(
   return Boolean(data?.id);
 }
 
+/**
+ * Ask Unipile for the live status. A mail connection can drop without a webhook
+ * reaching us, which left the badge green with Reconnect hidden.
+ */
+export async function refreshSupportMailboxStatus(
+  account: PlatformUnipileAccount
+): Promise<PlatformUnipileAccount> {
+  const got = await getUnipileAccount(account.unipile_account_id);
+  if (!got.ok || !got.data) return account;
+  const status = mapAccountStatus(got.data as Record<string, unknown>);
+  if (status === account.status) return account;
+  await updatePlatformAccountStatus(account.unipile_account_id, status);
+  return { ...account, status };
+}
+
 /** Mark read + move to Archive in the support Gmail/Outlook mailbox. */
 export async function tidySupportMailboxEmail(input: {
   emailId: string;
@@ -467,7 +483,7 @@ export async function handleSupportMailReceived(
     .slice(0, 200);
   const details = stripEmailQuotedReply(
     String(body.body_plain || "").trim() ||
-      String(body.body || "").trim() ||
+      emailHtmlToText(String(body.body || "").trim()) ||
       "(No message body)"
   ).slice(0, 8000);
   const threadId = String(body.thread_id || "").trim() || null;
@@ -555,10 +571,8 @@ export async function handleSupportMailReceived(
 
     void maybeFillProfilePhoneFromEmailBody(coachId, details).catch(() => null);
 
+    // The status moves in the database on insert (support_ticket_status_on_reply).
     const patch: Record<string, unknown> = {};
-    if (ticket.status === "resolved" || ticket.status === "waiting_reply") {
-      patch.status = "open";
-    }
     if (options?.linkThreadId) {
       patch.unipile_thread_id = options.linkThreadId;
       patch.unipile_account_id = accountId;
@@ -772,7 +786,7 @@ async function findTicketBySenderSubject(input: {
   );
   matches.sort((a, b) => {
     const rank = (status: string | null) =>
-      status === "open" || status === "waiting_reply" ? 0 : 1;
+      status && status !== "resolved" ? 0 : 1;
     const byStatus = rank(a.status) - rank(b.status);
     if (byStatus) return byStatus;
     return String(b.created_at).localeCompare(String(a.created_at));

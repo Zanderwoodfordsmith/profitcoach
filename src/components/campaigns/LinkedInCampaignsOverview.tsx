@@ -51,6 +51,7 @@ import { AccountSendingModal } from "@/components/campaigns/AccountSendingModal"
 import { CampaignInvitesRailCard } from "@/components/campaigns/CampaignInvitesRailCard";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { CampaignsSubTabs } from "@/components/campaigns/CampaignsSubTabs";
+import { LeadMagnetSettingsButton } from "@/components/leadMagnets/ScorecardEmailSenderPanel";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import {
   ConnectGate,
@@ -1106,6 +1107,8 @@ export function LinkedInCampaignsOverview() {
                   Create campaign
                 </button>
               </>
+            ) : magnetsTab ? (
+              <LeadMagnetSettingsButton impersonatingCoachId={impersonatingCoachId} prefix={prefix} />
             ) : undefined
           }
         />

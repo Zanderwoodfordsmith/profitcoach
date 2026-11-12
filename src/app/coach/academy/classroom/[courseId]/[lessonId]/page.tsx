@@ -28,7 +28,7 @@ const BASE = "/coach/academy/classroom";
 
 type Props = {
   params: Promise<{ courseId: string; lessonId: string }>;
-  searchParams: Promise<{ chapter?: string; t?: string }>;
+  searchParams: Promise<{ chapter?: string; t?: string; tab?: string; q?: string }>;
 };
 
 export default async function CoachAcademyClassroomLessonPage({
@@ -36,7 +36,7 @@ export default async function CoachAcademyClassroomLessonPage({
   searchParams,
 }: Props) {
   const { courseId: rawCourseId, lessonId: rawLessonId } = await params;
-  const { chapter: initialChapterId, t: seekSeconds } = await searchParams;
+  const { chapter: initialChapterId, t: seekSeconds, tab, q } = await searchParams;
   const lessonId = resolveClassroomLessonId(rawLessonId);
   const data = loadClassroomHub();
   const remappedCourseId = classroomCourseIdForLesson(data, lessonId);
@@ -45,6 +45,8 @@ export default async function CoachAcademyClassroomLessonPage({
     classroomLessonQueryString({
       chapter: chapter ?? initialChapterId,
       t: seekSeconds,
+      tab,
+      q,
     });
 
   // Retired Profit Coach OS path: send remapped lessons to their new cards,

@@ -35,7 +35,10 @@ export type StripeCsvImportResult = {
   errors: Array<{ row: number; message: string }>;
 };
 
-/** Stripe Dashboard → Charges export (pre–Payment Intents unified export). */
+/**
+ * Stripe Dashboard → Charges export layout. BCA UK exports use it too, so it
+ * says nothing about which Stripe account a file came from.
+ */
 export function isLegacyStripeChargesExport(csvText: string): boolean {
   const header = csvText.split(/\r?\n/)[0]?.toLowerCase() ?? "";
   return (
@@ -275,10 +278,9 @@ export async function importStripePaymentsCsv(
     skipped: parseSkipped,
     skippedReasons: parseSkippedReasons,
   } = parseStripeUnifiedPaymentsCsv(csvText, options);
-  const useLegacyProductFilter =
-    options?.legacyProductFilter ??
-    isLegacyStripeChargesExport(csvText);
-  const paymentSource = useLegacyProductFilter ? "stripe_stryv_us" : "stripe";
+  // Only an explicit --legacy-products import is the old Stryv US account.
+  const isStryvUsImport = options?.legacyProductFilter === true;
+  const paymentSource = isStryvUsImport ? "stripe_stryv_us" : "stripe";
   const directory = await loadCoachDirectory(supabase);
 
   const result: StripeCsvImportResult = {
@@ -324,7 +326,7 @@ export async function importStripePaymentsCsv(
         paidAtIso: row.paidAtIso,
         declineReason: row.declineReason,
         description: row.description,
-        importSource: useLegacyProductFilter ? "stripe_stryv_us_csv" : "stripe_csv",
+        importSource: isStryvUsImport ? "stripe_stryv_us_csv" : "stripe_csv",
         paymentSource,
       });
 

@@ -20,6 +20,16 @@ export type SearchCounts = {
   community: number;
   classroom: number;
   members: number;
+  /** Help centre answers (job 211). Only in the overlay preview. */
+  help?: number;
+};
+
+/** A Help centre answer in the top-bar search. */
+export type SearchHelpItem = {
+  id: string;
+  question: string;
+  topic: string;
+  snippet: string;
 };
 
 export type SearchCommunityComment = {
@@ -116,6 +126,7 @@ export type SearchPreview = {
   classroom: SearchClassroomItem[];
   community: SearchCommunityItem[];
   members: SearchMemberItem[];
+  help?: SearchHelpItem[];
 };
 
 export function isSearchTab(value: string | null | undefined): value is SearchTab {
@@ -189,7 +200,7 @@ const QUERY_TOKEN_STOPWORDS = new Set([
   "your",
 ]);
 
-function significantQueryTokens(query: string): string[] {
+export function significantQueryTokens(query: string): string[] {
   return query
     .toLowerCase()
     .split(/[^a-z0-9£$]+/)
@@ -242,6 +253,8 @@ export function findTranscriptCueSeconds(
   const items = parseTranscriptItems(transcriptText);
   const cues = items.filter((i) => i.type === "cue");
   if (cues.length === 0) return null;
+  // A transcript with no timestamps parses as one cue at 0:00: no time to offer.
+  if (cues.length === 1 && cues[0].seconds === 0) return null;
 
   const parts: Array<{ start: number; cue: (typeof cues)[number] }> = [];
   let offset = 0;

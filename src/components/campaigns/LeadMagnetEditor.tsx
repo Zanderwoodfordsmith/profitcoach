@@ -18,6 +18,7 @@ import { CoachWatchRulesPanel } from "@/components/campaigns/CoachWatchRulesPane
 import { LeadMagnetOverview } from "@/components/leadMagnets/LeadMagnetOverview";
 import { LeadMagnetPeople } from "@/components/leadMagnets/LeadMagnetPeople";
 import { LeadMagnetShareModal } from "@/components/leadMagnets/LeadMagnetShareModal";
+import { LeadMagnetSettingsButton } from "@/components/leadMagnets/ScorecardEmailSenderPanel";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
 import {
   LandingStatsCustomRangeFields,
@@ -512,7 +513,11 @@ export function LeadMagnetEditor() {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5 pb-16">
-      <CampaignsSubTabs prefix={prefix} active="magnets" />
+      <CampaignsSubTabs
+        prefix={prefix}
+        active="magnets"
+        actions={<LeadMagnetSettingsButton impersonatingCoachId={impersonatingCoachId} prefix={prefix} />}
+      />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-4">

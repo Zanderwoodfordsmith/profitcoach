@@ -606,7 +606,7 @@ export function SearchPage() {
 
                     return (
                       <li key={`lesson-${item.id}`}>
-                        <Link href={searchLessonHref(prefix, item)} className={SEARCH_CARD_CLASS}>
+                        <Link href={searchLessonHref(prefix, item, qFromUrl)} className={SEARCH_CARD_CLASS}>
                           {item.transcript_match && !item.content_match ? (
                             <Play className="mt-1 h-5 w-5 shrink-0 text-sky-700" />
                           ) : (
@@ -629,12 +629,13 @@ export function SearchPage() {
                               </p>
                             ) : null}
                             {item.transcript_headline ? (
-                              <p className="mt-1.5 line-clamp-2 text-base italic leading-relaxed text-slate-500">
-                                Transcript
-                                {item.transcript_clock
-                                  ? ` · ${item.transcript_clock}`
-                                  : ""}
-                                {": "}
+                              <p className="mt-1.5 line-clamp-2 text-base leading-relaxed text-slate-600">
+                                <span className="text-slate-500">
+                                  {item.transcript_seconds != null && item.transcript_clock
+                                    ? `Said at ${item.transcript_clock}`
+                                    : "In the transcript"}
+                                  {": "}
+                                </span>
                                 <SearchHighlight html={item.transcript_headline} />
                               </p>
                             ) : null}

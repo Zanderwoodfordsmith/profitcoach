@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { paymentHasInvoice } from "@/lib/invoices/coachInvoice";
 
 import {
   MEMBERSHIP_PLAN_ORDER,
@@ -123,11 +124,17 @@ export async function GET(request: Request) {
   const { data: payments } = await supabaseAdmin
     .from("coach_payments")
     .select(
-      "id, customer_email, amount_cents, currency, status, paid_at, description, billing_kind_override"
+      "id, customer_email, amount_cents, currency, status, paid_at, description, billing_kind_override, payment_source"
     )
     .eq("coach_id", coachId)
     .order("paid_at", { ascending: false })
     .limit(50);
+  const paymentSourceById = new Map(
+    (payments ?? []).map((payment) => [
+      payment.id as string,
+      payment.payment_source as string | null,
+    ])
+  );
 
   const paymentsForBilling: PaymentForBillingKind[] = (payments ?? []).map(
     (payment) => ({
@@ -254,6 +261,10 @@ export async function GET(request: Request) {
         billingKindById.get(payment.id) ?? "other",
         payment.billing_kind_override
       ),
+      invoiceAvailable: paymentHasInvoice({
+        status: payment.status,
+        payment_source: paymentSourceById.get(payment.id),
+      }),
     })),
     plans,
     stripeConfigured: MEMBERSHIP_PLAN_ORDER.some(

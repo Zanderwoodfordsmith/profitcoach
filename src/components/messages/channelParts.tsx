@@ -18,7 +18,13 @@ import {
   type CommentReads,
   type SectionComment,
 } from "@/lib/practiceKnowledge/sectionCommentTypes";
-import { formatSupportRelativeCompact, type SupportReply } from "@/lib/support/tickets";
+import { JobStatusCircle } from "@/components/jobs/jobParts";
+import {
+  SUPPORT_STATUS_JOB,
+  formatSupportRelativeCompact,
+  type SupportReply,
+  type SupportTicketStatus,
+} from "@/lib/support/tickets";
 import type { LaunchItem, LaunchJob, LaunchProgress } from "@/lib/launch/progress";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -557,33 +563,15 @@ export function BlueprintCommentsBlock({ comments, audience }: { comments: Suppo
   );
 }
 
-/**
- * A one-off message's status with the same circle as the jobs: a quarter while
- * it's with BCA, half while it waits on the coach, a tick once resolved.
- */
+/** A one-off message's status: the jobs' own circle and words (11 Nov). */
 export function MessageStatusCircle({
   status,
   audience,
 }: {
-  status: "open" | "waiting_reply" | "resolved";
+  status: SupportTicketStatus;
   audience: "admin" | "coach";
 }) {
-  const label =
-    status === "resolved"
-      ? "Resolved"
-      : status === "waiting_reply"
-        ? audience === "coach"
-          ? "Waiting on you"
-          : "Waiting on the coach"
-        : audience === "coach"
-          ? "With BCA"
-          : "Open";
-  return (
-    <JobCircle
-      job={{ share: status === "waiting_reply" ? 0.5 : 0.25, done: status === "resolved" }}
-      label={label}
-    />
-  );
+  return <JobStatusCircle status={SUPPORT_STATUS_JOB[status]} audience={audience} />;
 }
 
 /**

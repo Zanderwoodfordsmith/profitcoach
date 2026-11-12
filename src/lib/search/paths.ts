@@ -20,14 +20,26 @@ export function lessonPath(prefix: SearchPrefix, courseId: string, lessonId: str
   return `${prefix}/academy/${hub}/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}`;
 }
 
-/** Lesson hit, opened at the matched chapter and just before the matched words. */
-export function searchLessonHref(prefix: SearchPrefix, item: SearchClassroomItem): string {
+/**
+ * Lesson hit, opened at the matched chapter. A transcript hit also opens the
+ * Transcript tab with the searched words marked, and starts the video just
+ * before they are said when the transcript has timestamps.
+ */
+export function searchLessonHref(
+  prefix: SearchPrefix,
+  item: SearchClassroomItem,
+  query?: string
+): string {
   if (!item.course_id || !item.lesson_id) return `${prefix}/academy/classroom`;
   const base = lessonPath(prefix, item.course_id, item.lesson_id);
   const params = new URLSearchParams();
   if (item.chapter_id) params.set("chapter", item.chapter_id);
-  if (item.transcript_match && item.transcript_seconds != null) {
-    params.set("t", String(seekSecondsForTranscriptHit(item.transcript_seconds)));
+  if (item.transcript_match) {
+    params.set("tab", "transcript");
+    if (query?.trim()) params.set("q", query.trim());
+    if (item.transcript_seconds != null) {
+      params.set("t", String(seekSecondsForTranscriptHit(item.transcript_seconds)));
+    }
   }
   const qs = params.toString();
   return qs ? `${base}?${qs}` : base;

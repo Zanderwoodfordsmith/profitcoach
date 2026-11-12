@@ -1,4 +1,5 @@
 import { type Block, h, note, say, they } from "./blocks";
+import { tutorialVideoUrl } from "@/lib/tutorialVideos";
 
 /**
  * Skills the script names but doesn't explain in place, like "confidence
@@ -25,7 +26,7 @@ export const TECHNIQUES: Technique[] = [
     name: "Confidence looping",
     summary: "After every answer, tie it straight back to what they told you they want.",
     match: /confidence[- ]loop(?:ing|s)?/i,
-    video: { src: "/tutorials/confidence-looping.mp4", poster: "/tutorials/confidence-looping-poster.jpg" },
+    video: { src: tutorialVideoUrl("confidence-looping.mp4"), poster: "/tutorials/confidence-looping-poster.jpg" },
     blocks: [
       note("When you answer a question or show them something, finish by linking it to their result, their problem or their why. It turns a feature into a reason to say yes."),
       note("One loop does very little. Done after every answer, from the pitch all the way to the investment, it builds their certainty minute by minute."),
