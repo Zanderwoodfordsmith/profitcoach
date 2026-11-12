@@ -33,6 +33,7 @@ import { PageStatusPill, StatusSteps } from "./StatusGuide";
 import { usePractice } from "./PracticeProvider";
 import { BlueprintChecklist } from "./BlueprintChecklist";
 import { BlueprintTimeline } from "./BlueprintTimeline";
+import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { blueprintVersion } from "./BlueprintVersionSwitch";
 import { Modal } from "@/components/ui/Modal";
 
@@ -122,7 +123,9 @@ function ViewSwitch({
 /** Checklist or Timeline, from the admin switch in the top bar (6 Nov, until Zander picks). */
 function SetupVersion() {
   const version = blueprintVersion(useSearchParams().get("v"));
-  return version === "timeline" ? <BlueprintTimeline /> : <BlueprintChecklist />;
+  // Timeline stays admin-only until Zander picks (12 Nov): coaches always get the checklist.
+  const { profile } = useDashboardProfile();
+  return version === "timeline" && profile?.role === "admin" ? <BlueprintTimeline /> : <BlueprintChecklist />;
 }
 
 /** The blueprint's landing page: where each page stands, and what is waiting on you. */
