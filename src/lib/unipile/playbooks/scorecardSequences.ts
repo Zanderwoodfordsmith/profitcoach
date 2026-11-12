@@ -9,6 +9,9 @@ const SIGN_OFF = `{{coach_name}}`;
 
 const BOOK_LINE = `Book your {{review_name}}: {{boss_score_report_link}}`;
 
+/** Email 1: their report, then a button straight to the calendar on the report page (12 Nov). */
+const REPORT_AND_BOOK = `👉 See your full report: {{boss_score_report_link}}\n\nBook your {{review_name}}: {{boss_score_report_link}}#book-session`;
+
 const EMAIL_1A = `Hi {{first_name}},
 
 Your score is {{boss_score}}/100. That puts you at level 1: Overwhelmed.
@@ -17,15 +20,13 @@ If that landed heavy, I get it. Most owners in this range work flat out and stil
 
 Your score is a starting point. Nothing more. Almost every owner I speak to has been in this range at some point. The ones who move out of it stop trying to fix everything at once.
 
-Your top focus area right now is {{focus_area_1}}. Start there. Not because it is the loudest fire, but because fixing it gives you the breathing room to fix everything else.
+Your top focus area right now is **{{focus_area_1}}**. Start there. Not because it is the loudest fire, but because fixing it gives you the breathing room to fix everything else.
 
 Before you close this email, book a {{review_name}}. We look at your scorecard together and pick the one thing to fix this month. No selling, no pressure.
 
-${BOOK_LINE}
+${REPORT_AND_BOOK}
 
-${SIGN_OFF}
-
-P.S. You can revisit your full scorecard any time here: {{boss_score_report_link}}`;
+${SIGN_OFF}`;
 
 const EMAIL_1B = `Hi {{first_name}},
 
@@ -35,11 +36,11 @@ You are holding it together. The business runs. Clients get served. Bills get pa
 
 Most owners at this level have built something real. The thing they built relies on them being in it every day. Take the owner out for two weeks and the wheels come off.
 
-You are closer to a real shift than you think. Your top focus area is {{focus_area_1}}. Fixing one area at a time is what moves you out of Overworked and into Organised.
+You are closer to a real shift than you think. Your top focus area is **{{focus_area_1}}**. Fixing one area at a time is what moves you out of Overworked and into Organised.
 
 Book a {{review_name}}. We look at your scorecard and decide your one priority for the next 90 days.
 
-${BOOK_LINE}
+${REPORT_AND_BOOK}
 
 ${SIGN_OFF}`;
 
@@ -51,11 +52,11 @@ You have a real business. Systems work. You have good people. You can take the o
 
 The basic chaos is gone. The business still runs on you. You solve the hardest problems. You make the strategic calls. The business is good. It is not yet what you want it to be.
 
-Your top focus area is {{focus_area_1}}. That is the next bottleneck to break.
+Your top focus area is **{{focus_area_1}}**. That is the next bottleneck to break.
 
 Book a {{review_name}}. We look at your scorecard and figure out what holds you back from the next level.
 
-${BOOK_LINE}
+${REPORT_AND_BOOK}
 
 ${SIGN_OFF}`;
 
@@ -67,11 +68,11 @@ You have built something most owners never reach. The business runs. You have a 
 
 If you are reading this, you probably feel one of two things. You want to push to the final level where the business genuinely runs without you. Or you are asking what the business is for now that it works.
 
-Your top focus area is {{focus_area_1}}. At this level, one weak area is often what stops the business from running fully without you.
+Your top focus area is **{{focus_area_1}}**. At this level, one weak area is often what stops the business from running fully without you.
 
 I would like a {{review_name}}. Not to sell anything. Just to look at what you have built and what comes next.
 
-${BOOK_LINE}
+${REPORT_AND_BOOK}
 
 ${SIGN_OFF}`;
 
@@ -81,11 +82,11 @@ Your score is {{boss_score}}/100. That puts you at level 5: Owner. The top range
 
 Most owners never get here. The business runs without you. The team is solid. The numbers work. You are the owner, not the operator.
 
-You took this scorecard for a reason. Maybe the question of what comes next. Maybe a specific area you can feel is not as strong as the rest. Your top focus area is {{focus_area_1}}, which at this level is worth a closer look.
+You took this scorecard for a reason. Maybe the question of what comes next. Maybe a specific area you can feel is not as strong as the rest. Your top focus area is **{{focus_area_1}}**, which at this level is worth a closer look.
 
 I would like a {{review_name}}. Not about fixing your business. About what you want to do next with it.
 
-${BOOK_LINE}
+${REPORT_AND_BOOK}
 
 ${SIGN_OFF}`;
 
@@ -207,12 +208,12 @@ That is what people call key man risk. You are the bridge. Take you out and the 
 
 It shows up in four places in any business:
 
-1. Marketing. You are the only one who can bring in leads.
-2. Sales. You are the only one who can close.
-3. Delivery. You are the only one who can do the work to the standard.
-4. Operations. You are the glue. Without you, nothing holds.
+1. **Marketing.** You are the only one who can bring in leads.
+2. **Sales.** You are the only one who can close.
+3. **Delivery.** You are the only one who can do the work to the standard.
+4. **Operations.** You are the glue. Without you, nothing holds.
 
-Look at your scorecard. Your top focus area is {{focus_area_1}}. That is one of the places where you are most the bridge.
+Look at your scorecard. Your top focus area is **{{focus_area_1}}**. That is one of the places where you are most the bridge.
 
 Here is the hard part. The better you get at your business, the more of a bridge you become. The more you know, the more people rely on you knowing it.
 
@@ -234,31 +235,31 @@ P.S. The fastest test. Could you take two real weeks off, phone off, no email? I
 
 The scorecard placed you at one of 5 levels. Here is what life actually looks like at each one.
 
-Level 1: Overwhelmed
+**Level 1: Overwhelmed**
 
 You are buried. Every day is a fire. The to-do list grows faster than you can knock it down. You feel behind from the moment you open your eyes. The business is running you. There is no plan because there is no time to make one.
 
 Most owners at this level work the longest hours and earn the least per hour. You are not lazy. You are stuck in firefighting.
 
-Level 2: Overworked
+**Level 2: Overworked**
 
 The fires are smaller. You have built something that works. Clients pay. Bills get paid. The cost is you. Your hours, your weekends, your headspace.
 
 You can see the business, but you cannot step out of it for more than a few days without things slipping. The business runs because you run.
 
-Level 3: Organised
+**Level 3: Organised**
 
 You have systems. Some of them work. You have hired people. Some of them are good. You can take the odd weekend off without the place burning down.
 
 The chaos is gone. You are still the one solving the hardest problems. The strategic calls all come back to you. The business is good. It is not yet what you want it to be.
 
-Level 4: Overseer
+**Level 4: Overseer**
 
 You have a real team. They carry the work. You spend most of your time on strategy. Profit is consistent. You know the numbers.
 
 Two questions come up at this level. How do you push to the last level where the business runs without you at all? And the harder one: what is the business actually for, now that it works?
 
-Level 5: Owner
+**Level 5: Owner**
 
 The business works without you. The team is solid. The numbers work. You take real holidays. You come back and nothing has gone backwards. You spend your time on the things you choose.
 
@@ -306,11 +307,11 @@ ${SIGN_OFF}`
       "Reply SEND and I will email it across.",
       `Hi {{first_name}},
 
-Your top focus area on the scorecard came back as {{focus_area_1}}.
+Your top focus area on the scorecard came back as **{{focus_area_1}}**.
 
 I have a short playbook for that area. It walks through the three moves I see work most often. No fluff, no upsell, just the playbook.
 
-Reply with the word SEND and I will email it across.
+Reply with the word **SEND** and I will email it across.
 
 If you want to go further than a playbook and actually map out what to do in your business, a {{review_name}} will do that better than any document.
 
@@ -370,7 +371,7 @@ The other thing. These problems do not stay where they are. They compound. Whate
 
 Think of it like a sore foot. "When should I see the doctor?" "When it stops being sore." That logic does not work. The longer you wait, the harder it is to walk.
 
-You scored {{boss_score}}/100. Your top focus area is {{focus_area_1}}. That gets harder, not easier, the longer you leave it.
+You scored {{boss_score}}/100. Your top focus area is **{{focus_area_1}}**. That gets harder, not easier, the longer you leave it.
 
 30 minutes. {{review_name}}. Worst case, you walk away with one move you can make in the next 30 days.
 
@@ -390,7 +391,7 @@ Most owners who take the scorecard close it, read the result, and carry on doing
 
 Here is the cost of that year. 12 months of weeks that look the same. 12 months of the same fires. 12 months where the business does not give you more of what you wanted from it.
 
-You told us you want {{desired_outcome}}. Standing still moves you further from that, not closer.
+You told us you want **{{desired_outcome}}**. Standing still moves you further from that, not closer.
 
 The owners who move are the ones who decide to do something different. Usually that decision happens after a conversation.
 

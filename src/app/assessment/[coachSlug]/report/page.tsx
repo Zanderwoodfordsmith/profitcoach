@@ -97,6 +97,15 @@ export default function ScorecardReportPage() {
     };
   }, [token, coachSlugFromPath, searchParams]);
 
+  // Email buttons link to #book-session; the report loads after the page, so jump once it's there.
+  useEffect(() => {
+    if (!result || typeof window === "undefined" || window.location.hash !== "#book-session") return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("book-session")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [result]);
+
   useEffect(() => {
     if (!coachSlug) return;
     void (async () => {

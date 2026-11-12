@@ -12,6 +12,7 @@ import {
   startUnipileChat,
 } from "@/lib/unipile/client";
 import { unpackEmailBody } from "@/lib/unipile/playbookSteps";
+import { plainEmailToHtml } from "@/lib/email/plainEmailHtml";
 import { facebookProfileIdentifier } from "@/lib/unipile/facebookIdentity";
 import { instagramUsername } from "@/lib/unipile/instagramIdentity";
 import { liftWhatsAppImportBlock } from "@/lib/messaging/whatsappImport";
@@ -396,7 +397,7 @@ export async function sendCampaignEmail(input: {
     account_id: accountId,
     to: [{ identifier: email, display_name: displayName }],
     subject: unpacked.subject,
-    body: unpacked.body,
+    body: plainEmailToHtml(unpacked.body),
   });
   if (!sent.ok) throw new Error(sent.error || "Email send failed");
   return sent.data?.tracking_id ?? sent.data?.provider_id ?? email;

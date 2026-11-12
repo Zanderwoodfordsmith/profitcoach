@@ -264,7 +264,7 @@ async function sendReportEmailFromSupport(input: { coachId: string; contactId: s
     account_id: mailbox.unipile_account_id,
     to: [{ identifier: email, ...(contact?.full_name ? { display_name: String(contact.full_name) } : {}) }],
     subject: unpacked.subject,
-    body: unpacked.body,
+    body: (await import("@/lib/email/plainEmailHtml")).plainEmailToHtml(unpacked.body),
   };
   const from = {
     identifier: BCA_SUPPORT_EMAIL,
