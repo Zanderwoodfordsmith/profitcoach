@@ -4,8 +4,8 @@ import type { LaunchItem } from "./progress";
 
 /**
  * A launch job's status, one of six (Zander, 2 Nov). The circle fills as it
- * moves along: dashed when it needs the coach, a quarter when BCA has it to
- * do, half while BCA is working on it, three quarters when it waits for the
+ * moves along: dashed when it needs the coach, an empty ring when BCA has it to
+ * do (a quarter until 16 Nov), half while BCA is working on it, three quarters when it waits for the
  * coach to check, a tick when done. "To do" (stored as later; "Not started" until 2 Nov) is a job
  * nobody can start yet, or one with nothing to track for this coach yet.
  * The words match the Blueprint's own section pills (Needs you, BCA to do,
@@ -15,13 +15,17 @@ export type JobStatus = "later" | "needs_you" | "bca_todo" | "in_progress" | "re
 
 export const JOB_STATUSES: JobStatus[] = ["needs_you", "bca_todo", "in_progress", "review", "done", "later"];
 
-/** Each status has one colour: the circle and the chip always match. */
+/**
+ * Each status has one colour: the circle and the chip always match. Same
+ * colours as the Blueprint's pills and circles (16 Nov): red for the coach,
+ * grey before BCA starts, blue while working, amber for review, green done.
+ */
 export const JOB_STATUS_META: Record<JobStatus, { label: string; coachLabel?: string; chip: string; color: string }> = {
-  needs_you: { label: "Needs coach", coachLabel: "Needs you", chip: "bg-orange-100 text-orange-800", color: "text-orange-500" },
-  bca_todo: { label: "BCA to do", chip: "bg-sky-100 text-sky-800", color: "text-sky-600" },
-  in_progress: { label: "In progress", chip: "bg-blue-100 text-blue-800", color: "text-blue-600" },
-  review: { label: "Review", chip: "bg-yellow-100 text-yellow-800", color: "text-yellow-500" },
-  done: { label: "Done", chip: "bg-emerald-100 text-emerald-800", color: "text-emerald-600" },
+  needs_you: { label: "Needs coach", coachLabel: "Needs you", chip: "bg-rose-50 text-rose-700", color: "text-rose-500" },
+  bca_todo: { label: "BCA to do", chip: "bg-slate-100 text-slate-700", color: "text-slate-400" },
+  in_progress: { label: "In progress", chip: "bg-sky-50 text-[#0c5290]", color: "text-[#1a8fd4]" },
+  review: { label: "Review", chip: "bg-amber-50 text-amber-800", color: "text-amber-500" },
+  done: { label: "Done", chip: "bg-emerald-50 text-emerald-700", color: "text-emerald-500" },
   later: { label: "To do", chip: "bg-slate-100 text-slate-500", color: "text-slate-400" },
 };
 

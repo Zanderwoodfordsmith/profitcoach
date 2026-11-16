@@ -46,7 +46,7 @@ async function countForBca(ctx: AgentToolContext, input: AgentToolInput, key: st
 }
 /** The LinkedIn profile: written part by part by the same writer as "Write every part from my Blueprint". */
 const LINKEDIN_KEY = "linkedin:rewrite";
-const PART_TITLES: Record<ProfileSectionId, string> = {
+export const PART_TITLES: Record<ProfileSectionId, string> = {
   headline: "Headline",
   about: "About",
   featured: "Featured",
@@ -71,7 +71,7 @@ function clip(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max)}\n[More on the card.]` : text;
 }
 
-async function loadOptimizerRow(coachId: string) {
+export async function loadOptimizerRow(coachId: string) {
   const { data, error } = await supabaseAdmin
     .from("coach_linkedin_profiles")
     .select("snapshot, optimizer_draft")
@@ -207,7 +207,7 @@ async function writeGate(input: AgentToolInput, ctx: AgentToolContext): Promise<
   return key === LINKEDIN_KEY ? linkedInDraft(input, ctx) : sectionDraft(key, input, ctx);
 }
 
-async function saveLinkedIn(coachId: string, parts: Partial<Record<ProfileSectionId, string>>) {
+export async function saveLinkedIn(coachId: string, parts: Partial<Record<ProfileSectionId, string>>) {
   const row = await loadOptimizerRow(coachId);
   if (!row.exists) throw new AgentToolError("Their LinkedIn import is gone, so there is nowhere to save the profile. Import it again.");
   let next = row.draft;

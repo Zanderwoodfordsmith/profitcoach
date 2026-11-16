@@ -291,6 +291,7 @@ export function AvaChat({
       showCoach={showCoach}
       onDecide={(action, decision) => void convo.decide(action, decision)}
       onNavigate={onNavigate}
+      thumbs={convo.readOnly || !convo.chatId ? undefined : { marks: convo.marks, onMark: convo.markReply }}
     />
   ) : stage ? (
     heroStyle === "face" ? (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpDown, Check, ChevronDown, ChevronRight, FileCheck2, MessageSquare, Plus, Send, Zap } from "lucide-react";
+import { ArrowUpDown, Check, ChevronDown, ChevronRight, FileCheck2, ListChecks, MessageSquare, Plus, Search, Send, Zap } from "lucide-react";
 
 import type { BoardCoach } from "@/app/api/admin/blueprints/route";
 import type { LaunchStepKey } from "@/lib/practiceKnowledge/boardData";
@@ -10,11 +10,13 @@ import { PageIcon } from "@/components/practice/pageIcons";
 import { STAGE_LOOK, StageCircle } from "@/components/practice/StageCircle";
 import { BLUEPRINT_GROUPS } from "@/lib/practiceKnowledge/blueprint";
 import { BOARD_COLUMNS, BOARD_TAGS, progressOf, type BoardColumnId, type BoardTag } from "@/lib/practiceKnowledge/blueprintBoard";
+import type { ToCheckItem } from "@/lib/launch/avaAuto";
+import { formatSupportRelativeCompact } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 
 type Page = { slug: string; title: string };
-type View = "board" | "coaches";
+type View = "check" | "board" | "coaches";
 
 const VIEW_KEY = "admin-blueprints-view";
 const GROUP_KEY = "admin-blueprints-grouped";
@@ -110,8 +112,12 @@ async function adminHeaders(): Promise<Record<string, string> | null> {
   return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : null;
 }
 
+/** The last board loaded, so coming back to Launches shows it straight away while it refreshes. */
+let lastBoard: { coaches: BoardCoach[]; pages: Page[] } | null = null;
+
 export function BlueprintsBoard() {
-  const [data, setData] = useState<{ coaches: BoardCoach[]; pages: Page[] } | null>(null);
+  const [data, setData] = useState<{ coaches: BoardCoach[]; pages: Page[] } | null>(lastBoard);
+  const [toCheck, setToCheck] = useState<ToCheckItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [view, setViewState] = useState<View>("board");
   const [everyone, setEveryone] = useState(false);
@@ -140,7 +146,7 @@ export function BlueprintsBoard() {
     try {
       const saved = window.localStorage.getItem(VIEW_KEY);
       // eslint-disable-next-line react-hooks/set-state-in-effect -- read browser storage after hydration
-      if (saved === "coaches") setViewState(saved);
+      if (saved === "coaches" || saved === "check") setViewState(saved);
       if (window.localStorage.getItem(GROUP_KEY) === "no") setGroupedState(false);
       const savedSort = window.localStorage.getItem(SORT_KEY);
       if (SORTS.some((o) => o.id === savedSort)) setSortState(savedSort as Sort);
@@ -187,8 +193,23 @@ export function BlueprintsBoard() {
       return;
     }
     setError(null);
-    setData({ coaches: body.coaches, pages: body.pages });
+    lastBoard = { coaches: body.coaches, pages: body.pages };
+    setData(lastBoard);
   }, []);
+
+  /** What Ava has waiting for BCA, across coaches (16 Nov). */
+  const loadToCheck = useCallback(async () => {
+    const headers = await adminHeaders();
+    if (!headers) return;
+    const res = await fetch("/api/admin/launch/to-check", { headers }).catch(() => null);
+    const body = (await res?.json().catch(() => null)) as { items?: ToCheckItem[] } | null;
+    if (body?.items) setToCheck(body.items);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- state is set after the fetch, not during the effect
+    void loadToCheck();
+  }, [loadToCheck, view]);
 
   useEffect(() => {
     let cancelled = false;
@@ -255,6 +276,7 @@ export function BlueprintsBoard() {
   const toolbar = (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 pb-5 pt-6 md:px-6">
       <div className="inline-flex rounded-lg bg-white p-0.5 ring-1 ring-inset ring-slate-200" role="group" aria-label="Columns">
+        {switchButton("check", toCheck?.length ? `To check ${toCheck.length}` : "To check")}
         {switchButton("board", "By status")}
         {switchButton("coaches", "By page")}
       </div>
@@ -358,9 +380,91 @@ export function BlueprintsBoard() {
       {data && view === "board" && grouped ? (
         <Lanes coaches={coaches} pages={pages} showDone={showDone} onShowDone={() => setShowDone(true)} />
       ) : null}
+      {data && view === "check" ? <ToCheck items={toCheck} coaches={data.coaches} pages={pages} /> : null}
       {data && view === "coaches" ? (
         <PageLanes coaches={coaches} pages={pages} onTick={(coach_id, step, on) => void saveLaunch({ coach_id, tick: { step, on } })} />
       ) : null}
+    </div>
+  );
+}
+
+/** Where each waiting thing is checked: its Blueprint page. Prospect lists wait on Your Ideal Client. */
+function checkPage(jobKey: string): string {
+  if (jobKey === "lead-list") return "market";
+  return jobKey.startsWith("page:") ? jobKey.slice(5) : "market";
+}
+
+function CheckIcon({ kind }: { kind: ToCheckItem["kind"] }) {
+  const Icon = kind === "searches" ? Search : kind === "message" ? MessageSquare : kind === "answers" ? ListChecks : FileCheck2;
+  return <Icon className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />;
+}
+
+/**
+ * To check (16 Nov): everything Ava drafted by herself that waits for BCA,
+ * by coach, oldest first. Each row opens the coach's page with Ava's strip
+ * open: read it, change it, then Release (or Import it, or Send).
+ */
+function ToCheck({ items, coaches, pages }: { items: ToCheckItem[] | null; coaches: BoardCoach[]; pages: Page[] }) {
+  if (!items) return <p className="px-6 py-4 text-sm text-slate-500">Loading what&rsquo;s waiting…</p>;
+  if (!items.length) {
+    return <p className="px-6 py-4 text-sm text-slate-500">Nothing waiting for you. Ava drafts each piece as soon as what she needs is in.</p>;
+  }
+  const byId = new Map(coaches.map((c) => [c.coach_id, c]));
+  const groups: { coach: BoardCoach | null; coachId: string; items: ToCheckItem[] }[] = [];
+  for (const item of items) {
+    let group = groups.find((g) => g.coachId === item.coach_id);
+    if (!group) {
+      group = { coach: byId.get(item.coach_id) ?? null, coachId: item.coach_id, items: [] };
+      groups.push(group);
+    }
+    group.items.push(item);
+  }
+  return (
+    <div className="min-h-0 flex-1 overflow-auto px-4 pb-10 md:px-6">
+      <ul className="max-w-3xl space-y-4">
+        {groups.map((group) => (
+          <li key={group.coachId} className="overflow-hidden rounded-lg bg-white ring-1 ring-inset ring-slate-200">
+            <div className="flex items-center gap-2.5 border-b border-slate-100 px-4 py-2.5">
+              {group.coach ? <Face coach={group.coach} size={24} /> : null}
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">{group.coach?.name ?? "Coach"}</span>
+              <span className="text-sm tabular-nums text-slate-500">{group.items.length} to check</span>
+            </div>
+            <ul className="divide-y divide-slate-100">
+              {group.items.map((item) => {
+                const slug = checkPage(item.job_key);
+                const page = pages.find((p) => p.slug === slug);
+                const href = group.coach ? cardHref(group.coach, slug, "in_progress") : null;
+                const body = (
+                  <>
+                    <CheckIcon kind={item.kind} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-slate-900">
+                        {item.job_key === "lead-list" ? "Prospect lists" : (page?.title ?? slug)}
+                      </span>
+                      <span className="block truncate text-sm text-slate-600">{item.what}</span>
+                    </span>
+                    <time dateTime={item.created_at} className="shrink-0 text-xs tabular-nums text-slate-400">
+                      {formatSupportRelativeCompact(item.created_at)}
+                    </time>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                  </>
+                );
+                return (
+                  <li key={item.id}>
+                    {href ? (
+                      <Link href={href} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
+                        {body}
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-3 px-4 py-2.5">{body}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -637,9 +741,15 @@ const LAUNCH_COLUMNS: { key: LaunchStepKey; label: string; hint: string }[] = [
   { key: "campaign_live", label: "Live", hint: "The campaign is turned on" },
 ];
 
-/** Green tick when done, an empty ring when not. */
+/** Green tick when done, an empty ring when not: the same ring as the status circles' BCA to do (16 Nov). */
 function StepMark({ done }: { done: boolean }) {
-  if (!done) return <span className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-inset ring-slate-300" aria-hidden />;
+  if (!done) {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" aria-hidden>
+        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 14 14" className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden>
       <circle cx="7" cy="7" r="7" fill="currentColor" />

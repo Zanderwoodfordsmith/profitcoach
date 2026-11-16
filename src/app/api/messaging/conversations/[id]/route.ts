@@ -820,15 +820,13 @@ export async function POST(
       return NextResponse.json({ error: "Could not save comment." }, { status: 500 });
     }
 
+    // A note is not a reply: leave last_direction alone so the thread stays in Needs reply.
     await supabaseAdmin
       .from("messaging_conversations")
       .update({
-        ...conversationActivityPatch({
-          lastChannel: "system",
-          lastDirection: "outbound",
-          lastMessageAt: now,
-          lastPreview: preview,
-        }),
+        last_channel: "system",
+        last_message_at: now,
+        last_preview: preview,
       })
       .eq("id", id);
 

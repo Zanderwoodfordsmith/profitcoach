@@ -173,7 +173,11 @@ export function summarizeKnowledgeForPrompt(
   push("market.roles_held", "Roles", listValue(payload.market.roles_held).join(", "));
   push("market.industries_worked", "Industries worked", listValue(payload.market.industries_worked).join(", "));
   push("market.industries_credibility", "Credibility in", listValue(payload.market.industries_credibility).join(", "));
-  push("market.buyer_roles", "Who signs off", listValue(payload.market.buyer_roles).join(", "));
+  push("market.buyer_roles", "Job titles to target", listValue(payload.market.buyer_roles).join(", "));
+  push("market.list_sectors", "Sectors on the prospect list", listValue(payload.market.list_sectors).join("; "));
+  push("market.list_size", "Company size on the list", textValue(payload.market.list_size));
+  push("market.list_where", "Where on the list", textValue(payload.market.list_where));
+  push("market.list_leave_out", "Leave off the list", listValue(payload.market.list_leave_out).join("; "));
   push("market.avoid", "Will not take", listValue(payload.market.avoid).join(", "));
   push("market.geography_pref", "Geography", payload.market.geography_pref?.value ?? "");
   push("client.characteristics", "Ideal client, who they are", listValue(payload.client.characteristics).join("; "));

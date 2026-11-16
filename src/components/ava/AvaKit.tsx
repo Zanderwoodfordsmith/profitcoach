@@ -25,11 +25,13 @@ import {
   Send,
   Sparkles,
   Square,
+  ThumbsDown,
+  ThumbsUp,
   UserSearch,
   type LucideIcon,
 } from "lucide-react";
 
-import type { AgentChatSummary } from "@/components/agent/useAgentConversation";
+import type { AgentChatSummary, ReplyThumb } from "@/components/agent/useAgentConversation";
 import { commentWhen } from "@/components/practice/comments/SectionCommentsUI";
 import { ProfitCoachAiMarkdown } from "@/components/profitCoachAi/ProfitCoachAiMarkdown";
 import type { AgentActionView, AgentDisplayItem } from "@/lib/agent/types";
@@ -287,6 +289,103 @@ export function AvaProposalCard({
 const linkPill =
   "inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--ava-field-rule)] px-3 py-1.5 text-sm font-semibold text-[var(--ava-sky)] hover:bg-[var(--ava-tint)]";
 
+/** Thumbs on Ava's replies (job 225): your marks by turn, and how to save one. */
+export type AvaThumbs = {
+  marks: Record<number, ReplyThumb>;
+  onMark: (turn: number, verdict: ReplyThumb | null, note?: string) => Promise<boolean>;
+};
+
+/** For each turn (the reply to the person's Nth message), the index of Ava's last words in it. */
+function replyEnds(items: AgentDisplayItem[]): Map<number, number> {
+  const ends = new Map<number, number>();
+  let turn = 0;
+  items.forEach((item, i) => {
+    if (item.type === "user") turn += 1;
+    else if (item.type === "assistant" && item.text.trim() && turn > 0) ends.set(i, turn);
+  });
+  // Keep only the last words of each turn.
+  const lastOf = new Map<number, number>();
+  for (const [i, t] of ends) lastOf.set(t, i);
+  return new Map([...lastOf].map(([t, i]) => [i, t]));
+}
+
+/** Up or down under one of Ava's replies. Down asks, optionally, what was wrong. */
+function AvaReplyThumbs({ turn, thumbs }: { turn: number; thumbs: AvaThumbs }) {
+  const mark = thumbs.marks[turn] ?? null;
+  const [asking, setAsking] = useState(false);
+  const [note, setNote] = useState("");
+  const [thanks, setThanks] = useState(false);
+
+  async function pick(verdict: ReplyThumb) {
+    const next = mark === verdict ? null : verdict;
+    setThanks(false);
+    setAsking(next === "off");
+    await thumbs.onMark(turn, next);
+  }
+
+  async function sendNote() {
+    const text = note.trim();
+    if (!text) return setAsking(false);
+    if (await thumbs.onMark(turn, "off", text)) {
+      setAsking(false);
+      setNote("");
+      setThanks(true);
+    }
+  }
+
+  const button = (verdict: ReplyThumb, label: string, Icon: LucideIcon) => (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      aria-pressed={mark === verdict}
+      onClick={() => void pick(verdict)}
+      className={`flex h-7 w-7 items-center justify-center rounded-md transition hover:bg-[var(--ava-tint)] ${
+        mark === verdict ? "text-[var(--ava-sky)]" : "text-[var(--ava-muted)] opacity-70 hover:opacity-100"
+      }`}
+    >
+      <Icon className="h-3.5 w-3.5" strokeWidth={2} fill={mark === verdict ? "currentColor" : "none"} aria-hidden />
+    </button>
+  );
+
+  return (
+    <div className="-mt-1.5 pl-1">
+      <div className="flex items-center gap-0.5">
+        {button("good", "Good reply", ThumbsUp)}
+        {button("off", "Not right", ThumbsDown)}
+        {thanks ? <span className="ml-1.5 text-xs text-[var(--ava-muted)]">Thanks. This helps us make Ava better.</span> : null}
+      </div>
+      {asking ? (
+        <form
+          className="mt-1 flex max-w-[94%] items-center gap-1.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void sendNote();
+          }}
+        >
+          <input
+            autoFocus
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setAsking(false);
+            }}
+            placeholder="What was wrong? (optional)"
+            maxLength={2000}
+            className="min-w-0 flex-1 rounded-md border border-[var(--ava-field-rule)] bg-transparent px-2.5 py-1.5 text-sm text-[var(--ava-ink)] placeholder:text-[var(--ava-muted)] focus:border-[var(--ava-sky)] focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-md px-2.5 py-1.5 text-sm font-semibold text-[var(--ava-sky)] hover:bg-[var(--ava-tint)]"
+          >
+            {note.trim() ? "Send" : "Skip"}
+          </button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
 /** The conversation: bubbles, what Ava saved, cards waiting for an OK, and links. */
 export function AvaFeed({
   items,
@@ -295,6 +394,7 @@ export function AvaFeed({
   showCoach,
   onDecide,
   onNavigate,
+  thumbs,
 }: {
   items: AgentDisplayItem[];
   busyId: string | null;
@@ -303,11 +403,15 @@ export function AvaFeed({
   onDecide: (action: AgentActionView, decision: "confirm" | "cancel") => void;
   /** Called when a link inside the app is followed (the stage docks itself). */
   onNavigate?: () => void;
+  /** Thumbs under each finished reply. Left out on chats you can only read. */
+  thumbs?: AvaThumbs;
 }) {
   const dark = useAvaDark();
   const running = [...items].reverse().find((item) => item.type === "tool" && item.ok === null);
   const last = items[items.length - 1];
   const waiting = streaming && (!last || last.type !== "assistant" || Boolean(running));
+  const ends = thumbs ? replyEnds(items) : null;
+  const currentTurn = items.filter((item) => item.type === "user").length;
   return (
     <div className="space-y-3">
       {items.map((item, i) => {
@@ -318,12 +422,20 @@ export function AvaFeed({
                 {item.text}
               </AvaBubble>
             );
-          case "assistant":
-            return item.text.trim() ? (
-              <AvaBubble key={i} role="assistant">
-                <ProfitCoachAiMarkdown content={item.text} className="ava-md text-[0.9375rem] leading-[1.6]" />
-              </AvaBubble>
-            ) : null;
+          case "assistant": {
+            if (!item.text.trim()) return null;
+            const turn = ends?.get(i);
+            // No thumbs on the reply still being written.
+            const rate = thumbs && turn != null && !(streaming && turn === currentTurn);
+            return (
+              <div key={i} className="space-y-3">
+                <AvaBubble role="assistant">
+                  <ProfitCoachAiMarkdown content={item.text} className="ava-md text-[0.9375rem] leading-[1.6]" />
+                </AvaBubble>
+                {rate ? <AvaReplyThumbs turn={turn} thumbs={thumbs} /> : null}
+              </div>
+            );
+          }
           case "tool":
             // Only what changed is worth showing: "Saved to Story · Results".
             return item.ok && item.note ? (

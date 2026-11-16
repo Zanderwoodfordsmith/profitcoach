@@ -12,12 +12,15 @@ import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { AvaCatalog } from "@/lib/agent/avaCatalog";
 
 import { AvaBrainTab } from "./AvaBrainTab";
+import { AvaChatsTab } from "./AvaChatsTab";
+import { chatsVersion } from "./AvaChatsVersionSwitch";
 import { AvaIntakeTab } from "./AvaIntakeTab";
 import { AvaKnowledgeFile, AvaKnowledgeTab } from "./AvaKnowledgeTab";
 import { AvaNudgeQueue } from "./AvaNudgeQueue";
 import { AvaSkillPage, AvaSkillsTab } from "./AvaSkillsTab";
 
 const TABS = [
+  { key: "chats", label: "Chats" },
   { key: "brain", label: "Brain" },
   { key: "knowledge", label: "Knowledge" },
   { key: "skills", label: "Skills" },
@@ -55,10 +58,13 @@ export function AvaAdmin() {
       const params = new URLSearchParams();
       if (nextTab !== DEFAULT_TAB) params.set("tab", nextTab);
       if (open) params.set("open", open);
+      // Keep the admin layout switch (Chats: Table | List) while moving around.
+      const v = search.get("v");
+      if (v) params.set("v", v);
       const q = params.toString();
       router.push(q ? `/admin/ava?${q}` : "/admin/ava", { scroll: false });
     },
-    [router]
+    [router, search]
   );
 
   useEffect(() => {
@@ -92,7 +98,7 @@ export function AvaAdmin() {
     <div className="flex h-full min-h-0 flex-col">
       <StickyPageHeader
         title="Ava"
-        description="How she thinks, the skills she can open, and the files she loads. Edits go live on her next turn."
+        description="Her chats with coaches, how she thinks, the skills she can open, and the files she loads. Edits go live on her next turn."
         bleedInset="px-4 md:px-6"
         tabs={
           <PageHeaderUnderlineTabs
@@ -109,7 +115,7 @@ export function AvaAdmin() {
       />
 
       {error ? <p className="px-5 py-6 text-sm text-rose-700">{error}</p> : null}
-      {!catalog && !error && tab !== "intake" && tab !== "nudges" && tab !== "design" ? (
+      {!catalog && !error && tab !== "intake" && tab !== "nudges" && tab !== "design" && tab !== "chats" ? (
         <p className="flex items-center gap-2 px-5 py-6 text-sm text-slate-600">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           Loading Ava…
@@ -148,6 +154,7 @@ export function AvaAdmin() {
           : scroll(<AvaSkillsTab catalog={catalog} onOpen={(id) => go("skills", id)} onCatalog={setCatalog} />)
         : null}
 
+      {tab === "chats" ? <AvaChatsTab openId={openId} onOpen={(id) => go("chats", id)} layout={chatsVersion(search.get("v"))} /> : null}
       {tab === "intake" ? scroll(<AvaIntakeTab />) : null}
       {tab === "nudges" ? scroll(<AvaNudgeQueue />) : null}
       {catalog && tab === "flow" ? scroll(<AdminBlueprintFlow />) : null}

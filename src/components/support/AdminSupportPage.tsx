@@ -121,6 +121,7 @@ import { getSessionUser } from "@/lib/supabaseAccessToken";
 import { buttonClass } from "@/components/ui/Button";
 import { badgeClass } from "@/components/ui/Badge";
 import { fieldClass } from "@/components/ui/Field";
+import { HelpCentre } from "@/components/support/HelpCentre";
 type AdminTicketRow = {
   id: string;
   created_at: string;
@@ -643,8 +644,9 @@ function WaitingSectionHeader({
 export function AdminSupportPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const topTab =
-    searchParams.get("tab") === "settings" ? "settings" : "inbox";
+  const tabParam = searchParams.get("tab");
+  // Help: the same pages coaches see, so admins can check what they read.
+  const topTab = tabParam === "settings" ? "settings" : tabParam === "help" ? "help" : "inbox";
   const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
   const [rows, setRows] = useState<AdminTicketRow[]>([]);
   const [assignees, setAssignees] = useState<SupportAssignee[]>([]);
@@ -708,9 +710,9 @@ export function AdminSupportPage() {
     setAppOrigin(window.location.origin);
   }, []);
 
-  function selectTopTab(tab: "inbox" | "settings") {
+  function selectTopTab(tab: "inbox" | "settings" | "help") {
     router.replace(
-      tab === "settings" ? "/admin/support?tab=settings" : "/admin/support",
+      tab === "inbox" ? "/admin/support" : `/admin/support?tab=${tab}`,
       { scroll: false }
     );
   }
@@ -1950,7 +1952,9 @@ export function AdminSupportPage() {
         topTab === "settings"
           ? // Inbox shell is overflow-hidden; settings must scroll inside it.
             "!mx-0 mr-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-[60px]"
-          : "min-h-0 flex-1 overflow-hidden"
+          : topTab === "help"
+            ? "min-h-0 flex-1 overflow-y-auto px-4 pt-6 md:px-10 lg:px-14"
+            : "min-h-0 flex-1 overflow-hidden"
       }
       header={
         <StickyPageHeader
@@ -1960,7 +1964,9 @@ export function AdminSupportPage() {
           description={
             topTab === "settings"
               ? "Who can take support calls, and when."
-              : "Ticket inbox for coach questions, bugs, ideas, and private lesson asks."
+              : topTab === "help"
+                ? "The help pages coaches see."
+                : "Ticket inbox for coach questions, bugs, ideas, and private lesson asks."
           }
           tabs={
             <PageHeaderUnderlineTabs
@@ -1972,6 +1978,13 @@ export function AdminSupportPage() {
                   label: "Inbox",
                   active: topTab === "inbox",
                   onClick: () => selectTopTab("inbox"),
+                },
+                {
+                  kind: "button",
+                  id: "help",
+                  label: "Help",
+                  active: topTab === "help",
+                  onClick: () => selectTopTab("help"),
                 },
                 {
                   kind: "button",
@@ -2003,6 +2016,8 @@ export function AdminSupportPage() {
     >
       {topTab === "settings" ? (
         <SupportCallAdminSettings appOrigin={appOrigin} />
+      ) : topTab === "help" ? (
+        <HelpCentre topic={searchParams.get("topic")} article={searchParams.get("a")} admin />
       ) : (
         <>
       {createOpen ? (

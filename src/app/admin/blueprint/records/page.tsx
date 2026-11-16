@@ -1,7 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { AdminPracticeQueue } from "@/components/admin/AdminPracticeQueue";
-
+/** Records was replaced by Coaches → Launches (16 Nov). */
 export default function AdminBlueprintRecordsPage() {
-  return <AdminPracticeQueue />;
+  redirect("/admin/client-success/blueprint");
 }

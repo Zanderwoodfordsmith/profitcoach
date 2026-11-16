@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Globe2, ImagePlus, Lock, Plus, Video, Vote, X } from "lucide-react";
+import { CalendarDays, Globe2, ImagePlus, Lock, Plus, Sparkles, Video, Vote, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { CommunityCategory } from "@/components/community/CommunityFeed";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
@@ -113,6 +113,15 @@ export function CreatePostModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authorRole, setAuthorRole] = useState<string | null>(null);
+  /** Author is the signed-in admin (not someone they act as). */
+  const [authorIsMe, setAuthorIsMe] = useState(false);
+  const [avaWriting, setAvaWriting] = useState(false);
+  const [whatsApp, setWhatsApp] = useState<{
+    linked: boolean;
+    reason: string | null;
+    group: string | null;
+  } | null>(null);
+  const [sendToWhatsApp, setSendToWhatsApp] = useState(false);
   const [schedulePopoverOpen, setSchedulePopoverOpen] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [pollOpen, setPollOpen] = useState(false);
@@ -129,6 +138,11 @@ export function CreatePostModal({
     () => categories.find((c) => c.slug === "announcements") ?? null,
     [categories]
   );
+  const isAnnouncementPost =
+    isAuthorAdmin &&
+    !isLessonQa &&
+    Boolean(announcementsCategory) &&
+    categoryId === announcementsCategory?.id;
   const lessonCategory = useMemo(
     () => categories.find((c) => c.slug === lessonCategorySlug) ?? null,
     [categories, lessonCategorySlug]
@@ -165,17 +179,87 @@ export function CreatePostModal({
         if (!cancelled) setAuthorRole(null);
         return;
       }
-      const { data } = await supabaseClient
-        .from("profiles")
-        .select("role")
-        .eq("id", authorId)
-        .maybeSingle();
-      if (!cancelled) setAuthorRole((data?.role as string | null) ?? null);
+      const [{ data }, { data: userData }] = await Promise.all([
+        supabaseClient
+          .from("profiles")
+          .select("role")
+          .eq("id", authorId)
+          .maybeSingle(),
+        supabaseClient.auth.getUser(),
+      ]);
+      if (cancelled) return;
+      setAuthorRole((data?.role as string | null) ?? null);
+      setAuthorIsMe(userData.user?.id === authorId);
     })();
     return () => {
       cancelled = true;
     };
   }, [impersonatingCoachId, pathname, viewerIsAdmin]);
+
+  useEffect(() => {
+    if (!isAnnouncementPost || whatsApp) return;
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const res = await fetch("/api/admin/community/whatsapp-announce", {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+      }).catch(() => null);
+      const json = (await res?.json().catch(() => null)) as {
+        linked?: boolean;
+        reason?: string | null;
+        group?: string | null;
+      } | null;
+      if (cancelled) return;
+      setWhatsApp({
+        linked: Boolean(json?.linked),
+        reason: json?.reason ?? (res?.ok ? null : "Couldn't check your WhatsApp."),
+        group: json?.group ?? null,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAnnouncementPost, whatsApp]);
+
+  const writeWithAva = useCallback(async () => {
+    const note = [title.trim(), body.trim()].filter(Boolean).join("\n\n");
+    if (!note || avaWriting) return;
+    setAvaWriting(true);
+    setError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const authorId = await getCommunityAuthorId(
+        coachPersonaForCommunity(pathname, impersonatingCoachId, viewerIsAdmin)
+      );
+      const res = await fetch("/api/admin/community/announcement-draft", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ note, authorId }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        title?: string;
+        body?: string;
+        error?: string;
+      };
+      if (!res.ok || !json.title || !json.body) {
+        setError(json.error || "Ava couldn't write that one. Try again.");
+        return;
+      }
+      setTitle(json.title);
+      setBody(json.body);
+    } catch {
+      setError("Ava couldn't write that one. Try again.");
+    } finally {
+      setAvaWriting(false);
+    }
+  }, [avaWriting, body, impersonatingCoachId, pathname, title, viewerIsAdmin]);
 
   const revokeAllPending = useCallback((items: PendingMedia[]) => {
     for (const p of items) {
@@ -226,6 +310,16 @@ export function CreatePostModal({
     if (Number.isNaN(dt.getTime())) return null;
     return dt.toISOString();
   }, [scheduledAtLocal]);
+
+  const whatsAppBlockedReason = !whatsApp
+    ? "Checking your WhatsApp…"
+    : !authorIsMe
+      ? "WhatsApp sends from your own number, so only when you post as yourself."
+      : !whatsApp.linked
+        ? whatsApp.reason || "Link your WhatsApp first."
+        : scheduledAtIso
+          ? "WhatsApp only sends when you post now, not scheduled."
+          : null;
 
   const scheduleSummary = useMemo(() => {
     if (!scheduledAtIso) return null;
@@ -355,11 +449,38 @@ export function CreatePostModal({
         onMarkPostRead?.(created.id);
       }
 
+      let whatsAppError: string | null = null;
+      if (
+        created?.id &&
+        isAnnouncementPost &&
+        sendToWhatsApp &&
+        !whatsAppBlockedReason
+      ) {
+        const res = await fetch("/api/admin/community/whatsapp-announce", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({ postId: created.id }),
+        }).catch(() => null);
+        if (!res?.ok) {
+          const json = (await res?.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          whatsAppError =
+            json?.error || "WhatsApp didn't send. Try posting it there by hand.";
+        }
+      }
+
       notifyAcademyTrackedActionsChanged();
 
       revokeAllPending(pendingMedia);
       setPendingMedia([]);
       await onCreated();
+      if (whatsAppError) {
+        window.alert(`Posted in the community, but not on WhatsApp.\n\n${whatsAppError}`);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong while posting.";
       setError(msg);
@@ -387,6 +508,9 @@ export function CreatePostModal({
     scheduledAtIso,
     isAuthorAdmin,
     announcementsCategory,
+    isAnnouncementPost,
+    sendToWhatsApp,
+    whatsAppBlockedReason,
     title,
   ]);
 
@@ -463,7 +587,9 @@ export function CreatePostModal({
               ? lessonCommunityComposerPlaceholder(lessonContext.lessonId)
               : isLessonQa
                 ? "Ask a question or share something…"
-                : "Write something…"
+                : isAnnouncementPost
+                  ? "Write it, or type a rough note (e.g. Thursday 4pm, objections, bring a real one) and press Write with Ava…"
+                  : "Write something…"
           }
           autoResize
           maxAutoHeightPx={0}
@@ -480,6 +606,41 @@ export function CreatePostModal({
           active={Boolean(title.trim() || body.trim())}
           draft={{ kind: "post", title, body }}
         />
+        {isAnnouncementPost ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => void writeWithAva()}
+              disabled={avaWriting || !(title.trim() || body.trim())}
+              className={buttonClass("second", "small")}
+              title="Ava turns what you've typed into the announcement"
+            >
+              <Sparkles className="h-4 w-4" strokeWidth={1.9} aria-hidden />
+              {avaWriting ? "Ava is writing…" : "Write with Ava"}
+            </button>
+            <label
+              className={`inline-flex items-center gap-2 text-sm ${
+                whatsAppBlockedReason ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-700"
+              }`}
+              title={whatsAppBlockedReason ?? undefined}
+            >
+              <input
+                type="checkbox"
+                checked={sendToWhatsApp && !whatsAppBlockedReason}
+                disabled={Boolean(whatsAppBlockedReason)}
+                onChange={(e) => setSendToWhatsApp(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+              />
+              Also send to WhatsApp
+              {whatsApp?.group ? (
+                <span className="text-slate-400">({whatsApp.group})</span>
+              ) : null}
+            </label>
+            {whatsAppBlockedReason && whatsApp ? (
+              <span className="text-caption text-slate-500">{whatsAppBlockedReason}</span>
+            ) : null}
+          </div>
+        ) : null}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">

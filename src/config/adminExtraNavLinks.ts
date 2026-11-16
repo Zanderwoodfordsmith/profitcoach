@@ -66,6 +66,51 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Signature scores per coach (off the Coaches tabs for now)",
   },
   {
+    href: "/admin/client-success/revenue",
+    label: "Coach income",
+    hint: "Cash coaches have logged themselves (off the Coaches tabs for now)",
+  },
+  {
+    href: "/admin/client-success/usage",
+    label: "Coach usage",
+    hint: "Who is active in the app, by role, over 30 days (off the Coaches tabs since 16 Nov)",
+  },
+  {
+    href: "/admin/campaigns/invites",
+    label: "LinkedIn invites waiting",
+    hint: "Withdraw connection requests nobody has accepted, by hand or on a schedule",
+  },
+  {
+    href: "/admin/linkedin-inbox",
+    label: "LinkedIn inbox copy",
+    hint: "Your last 3 LinkedIn threads, saved by the Chrome extension's inbox sync button",
+  },
+  {
+    href: "/admin/risk",
+    label: "Risk Playbook",
+    hint: "What could sink a business: every thinker's answer side by side",
+  },
+  {
+    href: "/admin/risk/model",
+    label: "Risk model (draft)",
+    hint: "Ten risks in one picture",
+  },
+  {
+    href: "/admin/academy/classroom/weekly-focus",
+    label: "Weekly Focus",
+    hint: "This week's Classroom focus, with past weeks",
+  },
+  {
+    href: "/admin/lesson-import",
+    label: "Lesson import status",
+    hint: "Video, content and transcript cover for each Classroom lesson. Links to the growth system overview.",
+  },
+  {
+    href: "/admin/academy/resources/list",
+    label: "Old resources list",
+    hint: "The list from before the Resource Library. Still the only place to delete a resource.",
+  },
+  {
     href: "/admin/calls?tab=settings",
     label: "My native booking (hours)",
     hint: "Set your own availability — no impersonation. Book link appears after save.",

@@ -1,7 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { AdminBlueprintFlow } from "@/components/admin/AdminBlueprintFlow";
-
+/** The flow map lives in Admin → Ava → Flow. */
 export default function AdminBlueprintFlowPage() {
-  return <AdminBlueprintFlow />;
+  redirect("/admin/ava?tab=flow");
 }

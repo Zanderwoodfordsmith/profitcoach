@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Lock } from "lucide-react";
 
 import { useAvaTurns, useAvaWorkSlot } from "@/components/ava/avaPageLink";
 import { ActivityTab, useAvaOpen } from "@/components/jobs/JobActivity";
 import { avaWorkFor, pageScope } from "@/lib/launch/avaWork";
+
+/** The prospect list is planned from Your Ideal Client, so Ava's lists wait on that page (16 Nov). */
+const LIST_SCOPE = "lead-list";
 import type { AgentShow } from "@/lib/agent/types";
 import { sectionByKey, type BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
 
@@ -28,12 +31,19 @@ export function PageActivity({ page, onShow }: { page: BlueprintLink; onShow?: (
   const [saves, setSaves] = useState(0);
   const scopeKey = pageScope(page.slug);
   const waitingByPage = useAvaOpen(knowledge?.coach_id ?? null, Boolean(slot && knowledge), turns + saves);
+  const withLists = page.slug === "market";
+  const waitingHere = (waitingByPage[scopeKey] ?? 0) + (withLists ? (waitingByPage[LIST_SCOPE] ?? 0) : 0);
+  // Something waiting for BCA: open it, so checking is one click from Launches (16 Nov).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- open once the count arrives
+    if (waitingHere > 0) setOpen(true);
+  }, [waitingHere, page.slug]);
   if (!slot || !knowledge || !payload) return null;
 
   const ava = avaWorkFor(scopeKey, { ...knowledge, payload });
   // Ava's greeting doesn't say whose Blueprint she's on, so the strip does.
   const coachFirst = coachName.trim().split(/\s+/)[0] || "";
-  const waiting = waitingByPage[scopeKey] ?? 0;
+  const waiting = waitingHere;
   const summary = waiting
     ? `${waiting} to check`
     : ava.ready
@@ -64,7 +74,7 @@ export function PageActivity({ page, onShow }: { page: BlueprintLink; onShow?: (
       {open ? (
         // A white card in her blue room, scrolling inside a set height so the chat stays usable.
         // The room's white caret would vanish on white.
-        <div className="mx-1.5 mb-1.5 max-h-[50vh] overflow-y-auto rounded-xl bg-white p-3 text-slate-900 [&_textarea]:[caret-color:#0f172a]">
+        <div className="mx-1.5 mb-1.5 max-h-[70vh] overflow-y-auto rounded-xl bg-white p-3 text-slate-900 [&_textarea]:[caret-color:#0f172a] [&_input]:[caret-color:#0f172a]">
           <ActivityTab
             key={page.slug}
             coachId={knowledge.coach_id}
@@ -83,6 +93,22 @@ export function PageActivity({ page, onShow }: { page: BlueprintLink; onShow?: (
               onShow?.({ page: ref.page.slug, section: sectionKey, href: ref.page.href, label: ref.section.title });
             }}
           />
+          {withLists && waitingByPage[LIST_SCOPE] ? (
+            <ActivityTab
+              key={LIST_SCOPE}
+              coachId={knowledge.coach_id}
+              coachName={coachName}
+              scope={{ key: LIST_SCOPE, label: "Prospect lists", ava: { toWrite: [], missing: [], ready: false } }}
+              className="mt-4 border-t border-slate-100 pt-4"
+              embedded
+              refreshKey={turns}
+              onChanged={() => {
+                reload();
+                setSaves((n) => n + 1);
+              }}
+              onOpenPart={() => {}}
+            />
+          ) : null}
         </div>
       ) : null}
     </div>,

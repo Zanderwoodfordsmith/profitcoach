@@ -40,6 +40,8 @@ export type LaunchStepKey = (typeof LAUNCH_EXTRA_STEPS)[number];
 export type LaunchStep = Pick<GettingLiveStep, "done" | "source" | "detail">;
 
 export async function loadBoardCoaches(): Promise<{ coaches: BoardCoach[]; pages: BlueprintLink[] }> {
+  // Getting live is the slowest part and doesn't need the Blueprint rows: start it first.
+  const liveLoad = loadGettingLive().catch(() => null);
   const { data: rows, error } = await supabaseAdmin
     .from("coach_practice_knowledge")
     .select("*")
@@ -55,7 +57,7 @@ export async function loadBoardCoaches(): Promise<{ coaches: BoardCoach[]; pages
     ids.length ? supabaseAdmin.from("coaches").select("id, slug").in("id", ids) : Promise.resolve({ data: [] as Record<string, unknown>[] }),
     commentHeadsForCoaches(ids),
     openForCoaches(ids),
-    loadGettingLive().catch(() => null),
+    liveLoad,
     ids.length
       ? supabaseAdmin.from("linkedin_outreach_accounts").select("coach_id, provider, status").in("coach_id", ids)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),

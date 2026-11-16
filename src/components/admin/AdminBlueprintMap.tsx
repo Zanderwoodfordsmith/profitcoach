@@ -112,7 +112,7 @@ export function AdminBlueprintMap() {
           </button>
         ))}
         <Link
-          href="/admin/blueprint/flow"
+          href="/admin/ava?tab=flow"
           className={buttonClass("quiet", "normal", "ml-auto")}
         >
           Flow map
@@ -228,7 +228,7 @@ export function AdminBlueprintMap() {
                                   return (
                                     <li key={c.coach_id}>
                                       <a
-                                        href={`/admin/blueprint/records/${c.coach_id}`}
+                                        href={`/admin/blueprint/coach?coach=${encodeURIComponent(c.coach_id)}`}
                                         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
                                           ready ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-white text-slate-600 ring-slate-200"
                                         }`}

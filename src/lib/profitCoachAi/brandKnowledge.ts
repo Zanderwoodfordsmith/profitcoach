@@ -218,6 +218,14 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     group: "community-copilot",
     dir: "ai-knowledge",
   },
+  {
+    file: "announcement-writer/ROUTER.md",
+    label: "Announcement writer",
+    description:
+      "How Ava turns a rough note into an Announcements post (also sent to WhatsApp). Shape, emojis, sign-off and example posts.",
+    group: "community-copilot",
+    dir: "ai-knowledge",
+  },
 ];
 
 const CORE_DIR = path.join(process.cwd(), "content", "ai-knowledge");

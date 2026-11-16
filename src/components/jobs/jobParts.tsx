@@ -34,12 +34,12 @@ function pie(fill: number): string {
   return `M7 7 L7 3.5 A3.5 3.5 0 ${fill > 0.5 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z`;
 }
 
-const FILL: Partial<Record<JobStatus, number>> = { bca_todo: 0.25, in_progress: 0.5, review: 0.75 };
+const FILL: Partial<Record<JobStatus, number>> = { in_progress: 0.5, review: 0.75 };
 
 /**
  * The job's circle: dashed when it needs the coach (faint when it's for
- * later), a quarter, half and three quarters filled as BCA takes it to
- * review, and a tick once done. The roadmap's drawing, Zander's meanings.
+ * later), an empty ring for BCA to do, half and three quarters filled as
+ * it moves to review, and a tick once done. Matches the Blueprint (16 Nov). The roadmap's drawing, Zander's meanings.
  */
 export function JobStatusCircle({
   status,
@@ -59,6 +59,7 @@ export function JobStatusCircle({
       {status === "needs_you" || status === "later" ? (
         <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="1.4 2.1" strokeLinecap="round" />
       ) : null}
+      {status === "bca_todo" ? <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" /> : null}
       {fill ? (
         <>
           <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" />

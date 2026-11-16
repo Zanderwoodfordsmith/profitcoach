@@ -6,6 +6,7 @@ import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
 import { changesText, sectionPrompt, writeSectionBlocks } from "@/lib/practiceKnowledge/buildSection";
 import { ensureCoachLinkedIn } from "@/lib/practiceKnowledge/coachLinkedIn";
 import { commentPage, pageChatKey } from "@/lib/practiceKnowledge/pageChat";
+import { emailCoachAboutComment } from "@/lib/practiceKnowledge/commentMessaging";
 import { addSectionComment } from "@/lib/practiceKnowledge/sectionComments";
 import { SECTION_SKILLS, writerContract } from "@/lib/practiceKnowledge/skills";
 import { sourced } from "@/lib/practiceKnowledge/sourced";
@@ -19,6 +20,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { avaSectionsFor, avaWorkFor, fillableAnswer, missingLabel, scopeLabel, scopePage, type AvaMissing } from "./avaWork";
 import { launchThread } from "./threads";
+import { whatNextMessage } from "./whatNext";
 
 /**
  * Ava's Activity (job 172): Ava working for BCA on one Blueprint page
@@ -28,11 +30,29 @@ import { launchThread } from "./threads";
  * The job_key column holds the scope.
  */
 
-export type ActivityKind = "note" | "ava" | "draft" | "message" | "answers" | "event";
+export type ActivityKind = "note" | "ava" | "draft" | "message" | "answers" | "event" | "searches";
 export type ActivityStatus = "open" | "saved" | "sent" | "dismissed" | "replaced";
 
 export type DraftSection = { key: string; title: string; blocks: BlueprintBlock[]; drafted_at: string };
-export type AnswerFill = { path: string; label: string; value: string };
+export type AnswerFill = {
+  path: string;
+  label: string;
+  value: string;
+  /** Where Ava got it, for her own drafts: "Pam's avatar doc", "Their LinkedIn". */
+  from?: string;
+};
+
+/** One prospect list Ava would build: her reason, and the Sales Navigator search. */
+export type ProspectSearchDraft = {
+  id: string;
+  label: string;
+  why: string;
+  url: string;
+  /** People LinkedIn says the search finds, when we could ask. */
+  size: number | null;
+  /** Picked to import. */
+  on: boolean;
+};
 
 export type ActivityItem = {
   id: string;
@@ -50,6 +70,17 @@ export type ActivityItem = {
     answers?: AnswerFill[];
     /** Missing answers a message asks for (paths). */
     asks?: string[];
+    /** Ava filled these from what we know, not the coach's own words: saved as BCA's, for the coach to check. */
+    by?: "ava";
+    /** Ava's thinking, for BCA: what she used, what disagreed, what to check. */
+    thinking?: string;
+    /** Boxes no source answers, and how to ask. */
+    missing?: { path: string; label: string; ask: string }[];
+    searches?: ProspectSearchDraft[];
+    /** A LinkedIn profile draft: its parts by id. Release puts them in the LinkedIn editor. */
+    linkedinParts?: Record<string, string>;
+    /** The lists started from these searches. */
+    imported?: { label: string; list: string }[];
   };
   status: ActivityStatus | null;
   edited: boolean;
@@ -72,7 +103,7 @@ export async function listActivity(coachId: string, jobKey: string): Promise<Act
   return (data ?? []) as ActivityItem[];
 }
 
-async function add(item: {
+export async function add(item: {
   coachId: string;
   jobKey: string;
   kind: ActivityKind;
@@ -100,14 +131,14 @@ async function add(item: {
   return data as ActivityItem;
 }
 
-async function getItem(id: string): Promise<ActivityItem> {
+export async function getItem(id: string): Promise<ActivityItem> {
   const { data, error } = await supabaseAdmin.from("launch_job_activity").select(SELECT).eq("id", id).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("That item has gone.");
   return data as ActivityItem;
 }
 
-async function resolve(id: string, status: ActivityStatus, userId: string | null, patch: Partial<ActivityItem> = {}) {
+export async function resolve(id: string, status: ActivityStatus, userId: string | null, patch: Partial<ActivityItem> = {}) {
   const { error } = await supabaseAdmin
     .from("launch_job_activity")
     .update({ ...patch, status, resolved_at: new Date().toISOString(), resolved_by: userId })
@@ -117,7 +148,7 @@ async function resolve(id: string, status: ActivityStatus, userId: string | null
 }
 
 /** Close whatever of this kind is still open on the job: a newer one takes its place. */
-async function replaceOpen(coachId: string, jobKey: string, kind: ActivityKind) {
+export async function replaceOpen(coachId: string, jobKey: string, kind: ActivityKind) {
   await supabaseAdmin
     .from("launch_job_activity")
     .update({ status: "replaced", resolved_at: new Date().toISOString() })
@@ -127,7 +158,7 @@ async function replaceOpen(coachId: string, jobKey: string, kind: ActivityKind) 
     .eq("status", "open");
 }
 
-async function openOf(coachId: string, jobKey: string, kind: ActivityKind): Promise<ActivityItem | null> {
+export async function openOf(coachId: string, jobKey: string, kind: ActivityKind): Promise<ActivityItem | null> {
   const { data } = await supabaseAdmin
     .from("launch_job_activity")
     .select(SELECT)
@@ -141,7 +172,7 @@ async function openOf(coachId: string, jobKey: string, kind: ActivityKind): Prom
   return (data as ActivityItem | null) ?? null;
 }
 
-async function coachFirstName(coachId: string): Promise<string> {
+export async function coachFirstName(coachId: string): Promise<string> {
   const { data } = await supabaseAdmin.from("profiles").select("first_name, full_name").eq("id", coachId).maybeSingle();
   return data?.first_name?.trim() || data?.full_name?.trim().split(/\s+/)[0] || "the coach";
 }
@@ -209,11 +240,13 @@ async function draftSections(
 }
 
 /** "Run Ava": draft every section still to write in this job, as one draft to check. */
-export async function runAva(coachId: string, jobKey: string, userId: string | null): Promise<ActivityItem> {
+export async function runAva(coachId: string, jobKey: string, userId: string | null, only?: string[]): Promise<ActivityItem> {
   const row = await ensurePracticeKnowledge(coachId);
   const work = avaWorkFor(jobKey, row);
-  if (!work.toWrite.length) throw new Error("Nothing in this job for Ava to write.");
-  const { sections, failed } = await draftSections(coachId, work.toWrite);
+  // Ava's own runs write only the sections that aren't blocked (16 Nov).
+  const keys = only ? work.toWrite.filter((key) => only.includes(key)) : work.toWrite;
+  if (!keys.length) throw new Error("Nothing in this job for Ava to write.");
+  const { sections, failed } = await draftSections(coachId, keys);
   if (!sections.length) throw new Error("Ava couldn't write this. Try again.");
   await replaceOpen(coachId, jobKey, "draft");
   return add({
@@ -266,13 +299,26 @@ export async function saveDraft(id: string, userId: string | null): Promise<Acti
     });
   }
   await resolve(id, "saved", userId);
-  return add({
+  const event = await add({
     coachId: draft.coach_id,
     jobKey: draft.job_key,
     kind: "event",
     body: `Saved ${sections.map((s) => s.title).join(", ")} to the Blueprint${draft.edited ? ", after changes" : ", as Ava wrote it"}. It's now with the coach to check.`,
     createdBy: userId,
   });
+  await queueWhatNext(draft.coach_id, draft.job_key);
+  return event;
+}
+
+/**
+ * After a release, the message telling the coach what to do next, waiting
+ * for BCA's Send (16 Nov). Only on pages the coach can see and check.
+ */
+async function queueWhatNext(coachId: string, jobKey: string): Promise<void> {
+  const slug = scopePage(jobKey);
+  if (!slug) return;
+  const text = whatNextMessage(slug, await coachFirstName(coachId));
+  if (text) await queueCoachMessage(coachId, jobKey, text).catch(() => null);
 }
 
 export async function dismiss(id: string, userId: string | null): Promise<void> {
@@ -564,11 +610,13 @@ export async function chaseState(coachId: string, jobKey: string) {
 
 /** Ava drafts a message asking the coach for what's missing. BCA checks it before it goes. */
 export async function askCoach(coachId: string, jobKey: string, userId: string | null): Promise<ActivityItem> {
-  const [row, name] = await Promise.all([ensurePracticeKnowledge(coachId), coachFirstName(coachId)]);
+  const [row, name, boxes] = await Promise.all([ensurePracticeKnowledge(coachId), coachFirstName(coachId), openOf(coachId, jobKey, "answers")]);
   const work = avaWorkFor(jobKey, row);
   // Only what the coach fills in. BCA's own gaps are BCA's to fill.
   const asks: AvaMissing[] = work.missing.filter((m) => m.coach);
-  if (!asks.length) throw new Error(`Nothing missing here is ${name}'s to fill in.`);
+  // Boxes Ava couldn't fill from anything we have (price, guarantee): only the coach knows (16 Nov).
+  const boxAsks = boxes?.payload.by === "ava" ? (boxes.payload.missing ?? []) : [];
+  if (!asks.length && !boxAsks.length) throw new Error(`Nothing missing here is ${name}'s to fill in.`);
   const { data } = await generateCampaignJson<{ message?: string }>({
     system: `You are Ava, on the BCA team, writing to a new Profit Coach in the chat on their Blueprint. You are openly an AI assistant and BCA checks your messages.
 
@@ -580,7 +628,10 @@ ${rules()}`,
     user: `Coach's first name: ${name}
 Working on: ${jobLabel(jobKey)}
 What we still need from them:
-${asks.map((m) => `- ${missingLabel(m, jobKey)}${m.ask ? `. Question: ${m.ask}` : ""}`).join("\n")}
+${[
+  ...asks.map((m) => `- ${missingLabel(m, jobKey)}${m.ask ? `. Question: ${m.ask}` : ""}`),
+  ...boxAsks.map((m) => `- ${m.label}${m.ask ? `. Question: ${m.ask}` : ""}`),
+].join("\n")}
 
 JSON only.`,
     maxTokens: 600,
@@ -593,7 +644,7 @@ JSON only.`,
     jobKey,
     kind: "message",
     body: message,
-    payload: { asks: asks.map((m) => m.path ?? m.id) },
+    payload: { asks: [...asks.map((m) => m.path ?? m.id), ...boxAsks.map((m) => m.path)] },
     status: "open",
     createdBy: userId,
   });
@@ -607,14 +658,21 @@ export async function sendMessage(id: string, userId: string, body: string): Pro
   if (!text) throw new Error("The message is empty.");
   const slug = scopePage(item.job_key);
   if (slug) {
-    // Into the page's chat as Ava. Blueprint chats don't email yet: the coach sees it in their Blueprint.
+    // Into the page's chat as Ava, and by email so the coach knows (16 Nov).
     await addSectionComment({ coachId: item.coach_id, sectionKey: pageChatKey(slug), authorId: userId, side: "ava", body: text });
     await resolve(id, "sent", userId, { body: text, edited: item.edited || text !== item.body.trim() });
+    const mailed = await emailCoachAboutComment({
+      coachId: item.coach_id,
+      sectionKey: pageChatKey(slug),
+      authorId: userId,
+      body: text,
+      media: [],
+    }).catch(() => null);
     return add({
       coachId: item.coach_id,
       jobKey: item.job_key,
       kind: "event",
-      body: `Ava's message went into the ${jobLabel(item.job_key)} chat.`,
+      body: `Ava's message went into the ${jobLabel(item.job_key)} chat${mailed?.ok ? " and by email" : ""}.`,
       createdBy: userId,
     });
   }
@@ -690,19 +748,24 @@ export async function saveAnswers(id: string, userId: string | null, edits?: Ans
             .map((line) => line.replace(/^[-•*]\s*/, "").trim())
             .filter(Boolean)
         : a.value.trim();
-    // "interview": the coach said it, so it counts as their own answer.
-    (patch[group] ??= {})[key] = sourced(value, "interview");
+    // "interview": the coach said it, so it counts as their own answer. Ava's drafts are BCA's, for the coach to check.
+    (patch[group] ??= {})[key] = sourced(value, item.payload.by === "ava" ? "admin" : "interview");
   }
   await patchPracticeKnowledge({ coachId: item.coach_id, payloadPatch: patch as Partial<PracticeKnowledgePayload> });
   const changed = JSON.stringify(answers) !== JSON.stringify(item.payload.answers ?? []);
-  await resolve(id, "saved", userId, { edited: changed, payload: { answers } });
-  return add({
+  await resolve(id, "saved", userId, { edited: changed, payload: { ...item.payload, answers } });
+  const event = await add({
     coachId: item.coach_id,
     jobKey: item.job_key,
     kind: "event",
-    body: `Put the coach's answers into the Blueprint: ${answers.map((a) => a.label).join(", ")}.`,
+    body:
+      item.payload.by === "ava"
+        ? `Released ${answers.map((a) => a.label).join(", ")} to the coach to check${changed ? ", after changes" : ", as Ava wrote it"}.`
+        : `Put the coach's answers into the Blueprint: ${answers.map((a) => a.label).join(", ")}.`,
     createdBy: userId,
   });
+  if (item.payload.by === "ava") await queueWhatNext(item.coach_id, item.job_key);
+  return event;
 }
 
 // ---------------------------------------------------------------- across coaches

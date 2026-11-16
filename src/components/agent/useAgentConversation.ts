@@ -18,6 +18,8 @@ export type AgentChatSummary = {
   pinned_at?: string | null;
 };
 
+export type ReplyThumb = "good" | "off";
+
 export function useAgentConversation({
   authHeaders,
   screenPath,
@@ -38,6 +40,8 @@ export function useAgentConversation({
   const [coach, setCoach] = useState<AgentCoach | null>(defaultCoach);
   const [title, setTitle] = useState<string | null>(null);
   const [readOnly, setReadOnly] = useState(false);
+  /** Your thumbs on Ava's replies, by turn (the reply to your Nth message). */
+  const [marks, setMarks] = useState<Record<number, ReplyThumb>>({});
   const [streaming, setStreaming] = useState(false);
   const [deciding, setDeciding] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -217,8 +221,10 @@ export function useAgentConversation({
       const body = (await res.json()) as {
         chat: { id: string; title?: string; coach: AgentCoach | null; readOnly?: boolean };
         items: AgentDisplayItem[];
+        marks?: { turn: number; verdict: ReplyThumb }[];
       };
       setChatId(body.chat.id);
+      setMarks(Object.fromEntries((body.marks ?? []).map((m) => [m.turn, m.verdict])));
       setCoach(body.chat.coach);
       setTitle(body.chat.title ?? null);
       setReadOnly(Boolean(body.chat.readOnly));
@@ -229,7 +235,39 @@ export function useAgentConversation({
     [authHeaders]
   );
 
+  /** Thumbs up or down on one reply (null takes it back). A note says what was wrong. */
+  const markReply = useCallback(
+    async (turn: number, verdict: ReplyThumb | null, note?: string) => {
+      if (!chatId || readOnly) return false;
+      const before = marks[turn];
+      setMarks((prev) => {
+        const next = { ...prev };
+        if (verdict) next[turn] = verdict;
+        else delete next[turn];
+        return next;
+      });
+      const headers = await authHeaders();
+      const res = headers
+        ? await fetch(`/api/agent/chats/${chatId}/marks`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ turn, verdict, ...(note ? { note } : {}) }),
+          }).catch(() => null)
+        : null;
+      if (res?.ok) return true;
+      setMarks((prev) => {
+        const next = { ...prev };
+        if (before) next[turn] = before;
+        else delete next[turn];
+        return next;
+      });
+      return false;
+    },
+    [authHeaders, chatId, marks, readOnly]
+  );
+
   const newChat = useCallback(() => {
+    setMarks({});
     setItems([]);
     setChatId(null);
     setTitle(null);
@@ -240,5 +278,5 @@ export function useAgentConversation({
 
   // Before the first reply, the chat is about the default coach.
   const shownCoach = chatId ? coach : defaultCoach;
-  return { items, chatId, coach: shownCoach, title, setTitle, readOnly, streaming, deciding, error, send, decide, openChat, newChat };
+  return { items, chatId, coach: shownCoach, title, setTitle, readOnly, streaming, deciding, error, send, decide, openChat, newChat, marks, markReply };
 }

@@ -156,6 +156,16 @@ function day(iso: string | null | undefined): string | null {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
+/**
+ * The Blueprint Call is held once its booked time has passed. Coaches whose
+ * intake was marked done before calls were booked here keep their tick.
+ */
+function blueprintCallStep(bookedAt: string | null | undefined, intakeDoneAt: string | null | undefined): { done: boolean; detail: string | null } {
+  if (bookedAt && Date.parse(bookedAt) < Date.now()) return { done: true, detail: `Held ${day(bookedAt)}` };
+  if (intakeDoneAt) return { done: true, detail: `Held ${day(intakeDoneAt)}` };
+  return { done: false, detail: bookedAt ? `Booked for ${day(bookedAt)}` : null };
+}
+
 /** The written sections BCA produces, on pages coaches see. */
 function writtenSectionKeys(): string[] {
   const keys: string[] = [];
@@ -425,10 +435,8 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
 
     const auto: Record<GettingLiveStepKey, { done: boolean; detail: string | null }> = {
       about_you: { done: aboutYou >= 100, detail: knowledgeRow ? `${aboutYou}% done` : "Not started" },
-      blueprint_call: {
-        done: Boolean(knowledgeRow?.interview_completed_at),
-        detail: knowledgeRow?.interview_completed_at ? `Held ${day(knowledgeRow.interview_completed_at)}` : null,
-      },
+      // 16 Nov: the booked Blueprint Call once its time has passed (this read only Ava's intake chat, so held calls showed as not done).
+      blueprint_call: blueprintCallStep(knowledgeRow?.payload.review.decision_call_booked_at?.value, knowledgeRow?.interview_completed_at),
       blueprint_written: {
         done: writtenKeys.length > 0 && written >= writtenKeys.length,
         detail: `${written} of ${writtenKeys.length} sections written`,

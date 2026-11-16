@@ -432,6 +432,10 @@ export function sanitizePayloadPatch(
         fallback
       ),
       buyer_roles: asSourced(market.buyer_roles, asStringList, fallback),
+      list_sectors: asSourced(market.list_sectors, asStringList, fallback),
+      list_size: asSourced(market.list_size, (v) => clip(v, SHORT) || null, fallback),
+      list_where: asSourced(market.list_where, (v) => clip(v, SHORT) || null, fallback),
+      list_leave_out: asSourced(market.list_leave_out, asStringList, fallback),
     };
   }
   if (client) {

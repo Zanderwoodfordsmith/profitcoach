@@ -22,6 +22,7 @@ export type CollapsibleConversation = {
   last_message_at?: string | null;
   last_channel?: string | null;
   last_direction?: string | null;
+  has_inbound?: boolean | null;
   reply_channels?: string[];
   unipile_chat_id?: string | null;
   last_preview?: string | null;
@@ -189,6 +190,7 @@ export function collapseConversationsByContact<T extends CollapsibleConversation
       ...(email ? { prospect_email: email } : {}),
       prospect_linkedin_provider_id: providerId,
       unread_count: unread,
+      has_inbound: sorted.some((row) => Boolean(row.has_inbound)),
       reply_channels: [...channels],
       thread_count: group.length,
       sibling_conversation_ids: siblings.map((s) => s.id),

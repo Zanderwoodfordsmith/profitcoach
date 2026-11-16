@@ -102,15 +102,10 @@ function sectionThere(key: string, row: PracticeKnowledgeRow): boolean {
   return (ref.section.fields ?? []).filter((f) => f.required).every((f) => fieldFilled(row.payload, f));
 }
 
-export function avaWorkFor(jobKey: string, row: PracticeKnowledgeRow | null): AvaWork {
-  if (!row) return { toWrite: [], missing: [], ready: false };
-  const toWrite = avaSectionsFor(jobKey).filter((key) => {
-    const ref = sectionByKey(key)!;
-    return sectionWorkflow(ref, row).status === "todo";
-  });
-  const writing = new Set(toWrite);
+/** What these sections read that isn't there yet. Sections in `writing` are written in the same run, so they don't block. */
+export function missingFor(keys: string[], row: PracticeKnowledgeRow, writing: Set<string> = new Set(keys)): AvaMissing[] {
   const missing = new Map<string, AvaMissing>();
-  for (const key of toWrite) {
+  for (const key of keys) {
     const section = sectionByKey(key)!.section;
     for (const path of section.uses?.fields ?? []) {
       const home = FIELD_HOME.get(path);
@@ -127,7 +122,6 @@ export function avaWorkFor(jobKey: string, row: PracticeKnowledgeRow | null): Av
       });
     }
     for (const need of section.needs ?? []) {
-      // Written in this same run, so it's no blocker.
       if (writing.has(need) || sectionThere(need, row)) continue;
       const ref = sectionByKey(need);
       if (!ref) continue;
@@ -141,7 +135,16 @@ export function avaWorkFor(jobKey: string, row: PracticeKnowledgeRow | null): Av
       });
     }
   }
-  const list = [...missing.values()];
+  return [...missing.values()];
+}
+
+export function avaWorkFor(jobKey: string, row: PracticeKnowledgeRow | null): AvaWork {
+  if (!row) return { toWrite: [], missing: [], ready: false };
+  const toWrite = avaSectionsFor(jobKey).filter((key) => {
+    const ref = sectionByKey(key)!;
+    return sectionWorkflow(ref, row).status === "todo";
+  });
+  const list = missingFor(toWrite, row);
   return { toWrite, missing: list, ready: toWrite.length > 0 && list.length === 0 };
 }
 

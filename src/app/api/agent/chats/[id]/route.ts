@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { loadChatActions } from "@/lib/agent/actions";
 import { resolveAgentActor } from "@/lib/agent/auth";
+import { loadMarks } from "@/lib/agent/chatReview";
 import { deleteOwnChat, displayItems, loadChat, loadChatForAdmin, updateOwnChat } from "@/lib/agent/chatStore";
 import { loadAgentCoach } from "@/lib/agent/coaches";
 
@@ -17,9 +18,12 @@ export async function GET(request: Request, ctx: Ctx) {
   const chat =
     (await loadChat(id, auth.actor.actorUserId)) ?? (auth.actor.isAdmin ? await loadChatForAdmin(id) : null);
   if (!chat) return NextResponse.json({ error: "Chat not found." }, { status: 404 });
-  const [actions, coach] = await Promise.all([
+  const readOnly = chat.actor_user_id !== auth.actor.actorUserId;
+  const [actions, coach, marks] = await Promise.all([
     loadChatActions(chat.id),
     chat.coach_id ? loadAgentCoach(chat.coach_id) : Promise.resolve(null),
+    // Your own thumbs on Ava's replies, so they show again.
+    readOnly ? Promise.resolve([]) : loadMarks(chat.id, chat.mode === "admin" ? "bca" : "coach"),
   ]);
   return NextResponse.json({
     chat: {
@@ -27,9 +31,10 @@ export async function GET(request: Request, ctx: Ctx) {
       title: chat.title,
       mode: chat.mode,
       coach,
-      readOnly: chat.actor_user_id !== auth.actor.actorUserId,
+      readOnly,
     },
     items: displayItems(chat.api_messages, chat.mode, actions),
+    marks: marks.map((m) => ({ turn: m.turn, verdict: m.verdict })),
   });
 }
 

@@ -48,6 +48,32 @@ describe("conversationMatchesFilters", () => {
     );
   });
 
+  it("keeps people who replied in Replied after the coach answers", () => {
+    const filters: InboxFilters = {
+      ...EMPTY_INBOX_FILTERS,
+      replied: true,
+    };
+    assert.equal(inboxFiltersActive(filters), true);
+    assert.equal(
+      conversationMatchesFilters(
+        row({ has_inbound: true, last_direction: "outbound" }),
+        filters
+      ),
+      true
+    );
+    assert.equal(
+      conversationMatchesFilters(row({ last_direction: "inbound" }), filters),
+      true
+    );
+    assert.equal(
+      conversationMatchesFilters(
+        row({ has_inbound: false, last_direction: "outbound" }),
+        filters
+      ),
+      false
+    );
+  });
+
   it("filters LinkedIn by channel without hiding unmatched threads", () => {
     const filters: InboxFilters = {
       ...EMPTY_INBOX_FILTERS,

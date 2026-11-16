@@ -85,6 +85,9 @@ export function SupportChatPagePicker({
           className={fieldClass("select", "small", "min-w-0 flex-1")}
         >
           <option value="">No page</option>
+          {linked && !CHAT_PAGES.some((p) => p.path === linked.path) ? (
+            <option value={linked.path}>{linked.name}</option>
+          ) : null}
           {GROUPS.map((group) => (
             <optgroup key={group} label={group}>
               {CHAT_PAGES.filter((p) => p.group === group).map((p) => (

@@ -226,6 +226,33 @@
         ],
         "createdAt": "2026-11-12T16:21:23.061Z",
         "reason": "Claude: email HTML must use a web-safe font stack; Gmail and Outlook strip custom fonts"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/ava/AvaChatReader.tsx"
+        ],
+        "createdAt": "2026-11-16T06:37:49.567Z",
+        "reason": "Claude: false positive, slate text and sky-600 background are separate ternary branches (picked = white on sky-600, not picked = slate on white)"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/ava/AvaChatsTab.tsx"
+        ],
+        "createdAt": "2026-11-16T06:38:58.917Z",
+        "reason": "Claude: false positive, slate text and sky-600 background are separate ternary branches (picked = white on sky-600, not picked = slate on white)"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/AdminBlueprintMap.tsx"
+        ],
+        "createdAt": "2026-11-16T09:52:48.314Z",
+        "reason": "Claude: L233 ternary pairs text-slate-600 with bg-white and text-emerald-800 with bg-emerald-50; detector mixes the two branches. Pre-existing line."
       }
     ]
   }

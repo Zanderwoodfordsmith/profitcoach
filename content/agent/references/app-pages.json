@@ -1,0 +1,1263 @@
+{
+  "generatedAt": "2026-11-16T10:20:12.803Z",
+  "model": "claude-sonnet-5-5",
+  "pages": [
+    {
+      "path": "/coach",
+      "adminPath": "/admin",
+      "hash": "cdb599ff0e2cccd8",
+      "coachVisible": false,
+      "title": "Coach home (redirect)",
+      "where": "Not a page a coach opens. Signing in or opening the coach area sends them straight to Academy → Community.",
+      "summary": "Nothing to do here: the page shows \"Redirecting…\" and moves the coach on to the Community page.",
+      "tabs": [],
+      "controls": [],
+      "notes": "Coaches only see a brief \"Redirecting…\" message before landing on Academy → Community. If something is wrong with the account they see \"Unable to load your profile.\", \"Unable to load coach info.\" or a \"Coach record not found\" message, and an admin must fix it. Admins who are not viewing as a coach are sent to the admin Community page instead."
+    },
+    {
+      "path": "/coach/academy/classroom",
+      "adminPath": "/admin/academy/classroom",
+      "hash": "c91989d6c836ab8a",
+      "coachVisible": true,
+      "title": "Classroom",
+      "where": "Academy → Classroom",
+      "summary": "Browse the training courses, open one to start learning, and see how far you have got in each.",
+      "tabs": [],
+      "controls": [
+        "Course cards (Start Here, Coach Action Plan, Going Pro, Get Calls, Win Clients, Coach Clients) with a picture, a short label such as Onboarding, Strategy, Foundations, Marketing, Sales or Delivery, a title and a description",
+        "Progress bar on each course card, with a percentage and a count such as '3 of 12 complete'",
+        "**The Portfolio System** banner under the course cards, with an arrow strip to open the map (**Open the map** on small screens)",
+        "**The Vault** box at the bottom with a **Show** / **Hide** arrow to open or fold it",
+        "Vault course cards inside The Vault: Personal growth, Book summaries and Tools & set-up",
+        "A row of single talks from other coaches in the Vault, each with a video picture, length, title and speaker name"
+      ],
+      "notes": "Clicking a course card opens its first lesson. The Vault starts folded for new coaches and opens by itself once you have started a Vault lesson; Show or Hide is remembered on this device. Lessons marked as drafts are hidden from coaches and only admins see them."
+    },
+    {
+      "path": "/coach/academy/classroom/[courseId]",
+      "adminPath": "/admin/academy/classroom/[courseId]",
+      "hash": "4bc0f64a14014143",
+      "coachVisible": false,
+      "title": "Classroom course entry",
+      "where": "Academy → Classroom",
+      "summary": "This page has nothing on screen; it sends the coach straight to the first lesson of the chosen course, or back to the Classroom list if the course is retired or empty.",
+      "tabs": [],
+      "controls": [],
+      "notes": "Coaches never see this page itself, only the lesson it redirects to. Do not describe it as a place to go; point coaches to Academy → Classroom and the course's lessons instead."
+    },
+    {
+      "path": "/coach/academy/classroom/system",
+      "adminPath": "/admin/academy/classroom/system",
+      "hash": "e4361847278c57fb",
+      "coachVisible": true,
+      "title": "System",
+      "where": "Academy → Classroom → System (or open the Classroom and choose the lead flow map)",
+      "summary": "See the whole path from finding ideal clients to keeping them as one map, and open the lesson behind each step.",
+      "tabs": [],
+      "controls": [
+        "**Classroom** back link at the top left, returns to the Classroom",
+        "Step 1 **Find Your Ideal Clients** cards: Choose Your Ideal Client, Define the Problem You Solve, Build Your Prospect List",
+        "Step 2 **Set Up Your Pipeline** cards: Optimise Your LinkedIn Profile, Create Your Lead Capture, Set Up Your Call Booking",
+        "Step 3 **Lead Generation & Win Clients** flow map with boxes such as Prospect Lists, Interest Sequence, Reply Sequence, Discovery Call, Value Session, New Client, and decision diamonds Reachable?, Interested?, Booked?, Qualified?, Won?",
+        "**Customise funnel** button in the step 3 header, opens the funnel settings",
+        "**Reachable**, **Interested**, **Booked**, **Qualified**, **Won** sliders in the funnel settings, they change the numbers on the map",
+        "**New clients** box with minus and plus buttons in the funnel settings, how many new clients you want",
+        "**Reset** button in the funnel settings, puts the default rates back",
+        "**Close funnel settings** (X) button in the funnel settings",
+        "Step 4 **Build Authority** cards: Run Your Newsletter, Email Your List, Post on Social",
+        "Step 5 **Keep Clients** cards: Onboard New Clients, Deliver Coaching, Retain & Renew",
+        "Hover over or focus a card or map box to see a summary and an **Open lesson** button",
+        "Click a map box to open a detail box under the map, with **Close** and **Open lesson**",
+        "**Show sample messages** drop-down on the Interest Sequence hover card"
+      ],
+      "notes": "Funnel settings are saved in the coach's own browser only. Newsletter, Email Your List, Post on Social and a few map boxes show no lesson yet (Lesson coming soon). Info (i) icons in each step header show what the step is for.}"
+    },
+    {
+      "path": "/coach/academy/classroom/weekly-focus",
+      "adminPath": "/admin/academy/classroom/weekly-focus",
+      "hash": "a1ac351a25cf13e3",
+      "coachVisible": true,
+      "title": "Weekly Focus",
+      "where": "Academy → Classroom → This Week's Focus (open from the Classroom page; the Classroom link at the top of this page takes you back)",
+      "summary": "Read this week's focus and action, listen to the audio or read the lesson, and look back at earlier weeks.",
+      "tabs": [],
+      "controls": [
+        "**Classroom** link at the top, goes back to the Classroom",
+        "**This Week’s Focus** label (shows **Past Focus** when you open an earlier week), with the title and a short description",
+        "**This Week’s Action** box with the action to do this week",
+        "**Listen** audio player, shown only when that week has audio",
+        "Lesson text under the action, shown only when that week has text",
+        "**Open** button (named after the learning path, e.g. Open + path name) opens the related path in the Classroom",
+        "**Back to this week** button, shown only when viewing a past week",
+        "**Past weeks** list with the week number, path, title and action for each week",
+        "**Open** link on each past week row"
+      ],
+      "notes": "The audio and lesson text load a moment after the page and only appear for a signed-in coach. The Past weeks list only shows once there are earlier weeks.  Weeks are shown by number, with no streaks."
+    },
+    {
+      "path": "/coach/academy/classroom/weekly-focus/[weekId]",
+      "adminPath": "/admin/academy/classroom/weekly-focus/[weekId]",
+      "hash": "6cf525342de01e7b",
+      "coachVisible": true,
+      "title": "Weekly focus",
+      "where": "Academy → Classroom → open a weekly focus (this week's or a past week)",
+      "summary": "Read one week's focus, do its action, listen to the audio, and jump into the related learning path.",
+      "tabs": [],
+      "controls": [
+        "**Classroom** link at the top, goes back to the Classroom",
+        "**This Week’s Focus** or **Past Focus** label above the title (past weeks also show the week number)",
+        "**This week’s action** box with the one thing to do",
+        "**Listen** audio player, shown only when the week has audio",
+        "Lesson text under the action, shown only when the week has it",
+        "**Open** button at the bottom, named after the related path, goes to that learning path",
+        "**Back to this week** button, shown only on a past week",
+        "**Past weeks** list with a row for each earlier week, each with an **Open** link"
+      ],
+      "notes": "The audio and lesson text load a moment after the page, and only appear if that week has them. The Past weeks list only appears once there are earlier weeks. An unknown week link shows a not-found page."
+    },
+    {
+      "path": "/coach/academy/resources",
+      "adminPath": "/admin/academy/resources",
+      "hash": "97f7a385efb755b4",
+      "coachVisible": true,
+      "title": "The Resource Library",
+      "where": "Academy → Resources",
+      "summary": "Browse, search and open every guide, sheet, deck and template for winning clients, running sessions and using the Profit System.",
+      "tabs": [],
+      "controls": [
+        "**Search inside every resource** box at the top of the page",
+        "**All**, **Docs**, **Sheets**, **Slides**, **Files**, **Videos**, **Reading** filter buttons, each showing a count",
+        "**Get clients** section: opens to list its resources (BOSS Scorecard marketing workshop, message sequences, newsletter, follow-up)",
+        "**Keep clients** section: opens to list its resources (masterfile, Sessions 1 to 4, how to open and close)",
+        "**Profit System** section: opens to show columns for **Vision**, **Velocity** and **Value**, with resources filed by BOSS area",
+        "**Overview** link in the left contents list",
+        "**Search inside resources** box in the left contents list",
+        "**Contents** button on phones to open or fold the left list",
+        "**Collapse contents** / **Expand contents** button to shrink or open the left list",
+        "**The Resource Library** link at the top of the left list, back to this page",
+        "**The old Resources list** link at the bottom of the left list"
+      ],
+      "notes": "Clicking any resource opens its own page. Searching looks inside the text of every resource, and the search text loads a moment after the page opens. Typing a search or picking a filter replaces the three sections with a results list."
+    },
+    {
+      "path": "/coach/academy/resources/[page]",
+      "adminPath": "/admin/academy/resources/[page]",
+      "hash": "a7cdb21d85abeaa5",
+      "coachVisible": true,
+      "title": "One resource page",
+      "where": "Academy → Resources → pick a page",
+      "summary": "Read one resource page (a guide, sheet, slide deck, file, video or reading list) and copy, download or open what it links to.",
+      "tabs": [],
+      "controls": [
+        "**Watch the lesson** button at top right, only on pages that have a lesson",
+        "**Download PDF** button at top right, only on pages with written guide text; it opens the print box",
+        "**Make a copy** button on a Google Sheet or slide deck, so each client gets their own copy",
+        "**View the master** button on a sheet, opens the original",
+        "**Open** button on a slide deck, opens it in Google Slides",
+        "**Download** button on a file, saves it to your computer",
+        "**Open in Drive** button on a file",
+        "**How to run it** link beside a group of sheet tabs, opens the matching guide page",
+        "**Watch the video** button, shown when a video can't play on the page",
+        "Sheet tab list under **The tabs**, each tab links to that part of the sheet",
+        "**Previous** and **Next** links at the bottom, to read through the whole library in order"
+      ],
+      "notes": "The page text and links load after you are signed in; if they fail you see \"This resource didn't load. Sign in again, or refresh the page.\" Which buttons appear depends on what the page holds. Slide decks and Office files show a preview on the page, but Keynote files can only be downloaded."
+    },
+    {
+      "path": "/coach/academy/resources/list",
+      "adminPath": "/admin/academy/resources/list",
+      "hash": "4ff9caaedf3f2741",
+      "coachVisible": true,
+      "title": "Resources (link list)",
+      "where": "Academy → Resources → ← The Resource Library link leads back; this list is the original link version of the Resources page",
+      "summary": "Browse or search the Academy's resource links and open any of them in a new tab.",
+      "tabs": [
+        {
+          "label": "Coach delivery",
+          "path": null
+        },
+        {
+          "label": "Profit system",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**← The Resource Library** link at the top, goes back to the Resource Library page",
+        "Area switch at the top with one button per area (for example Profit system); the other area names come from the app's area list",
+        "**Search resources…** box, searches title, topic, link and section name",
+        "**Resource** column: each title is a link that opens in a new tab",
+        "**Topic** column: only shown while searching",
+        "**Type** column: badge such as Document, Spreadsheet, Video or PDF",
+        "Section and topic header rows with a count: click to open or close them",
+        "**Open full document** link inside a one-file group, opens the whole file",
+        "Line under the search showing how many resources are in the chosen area",
+        "**No resources match your search.** message when a search finds nothing"
+      ],
+      "notes": "This is the older list kept while the Resource Library is on test, so it may not appear in the sidebar. The trash icon and 'Admin mode' note are admin-only and coaches never see them. The exact area names come from a list not shown in the code, so only describe them if the coach sees them."
+    },
+    {
+      "path": "/coach/ava",
+      "adminPath": "/admin/ava",
+      "hash": "1671ce89fd11389f",
+      "coachVisible": true,
+      "title": "Ava",
+      "where": "Not shown in the sidebar or section tabs given; open the Ava page at /coach/ava",
+      "summary": "This is the full-page home of Ava, the AI assistant, where a coach can ask for help finding things in the app.",
+      "tabs": [],
+      "controls": [],
+      "notes": "The page code only loads Ava's page and does not show its labels or buttons, so do not describe specific buttons or fields here. There is no sidebar link for it in the names provided."
+    },
+    {
+      "path": "/coach/blueprint",
+      "adminPath": "/admin/blueprint",
+      "hash": "cb57ce00b852c21b",
+      "coachVisible": true,
+      "title": "My Blueprint",
+      "where": "My Blueprint in the sidebar (coach tools)",
+      "summary": "See your setup checklist and every Blueprint page with its status, then open a page to answer questions, review work and chat with BCA.",
+      "tabs": [],
+      "controls": [
+        "**Your Blueprint** heading with a **?** button (\"How your Blueprint works\") that opens a pop-up with where you are, a video and what each status means",
+        "**List** / **Board** switch at the top right: List shows pages in rows, Board shows a card per page in status columns (Needs you, BCA, In progress, Review, Done)",
+        "**Get set up** checklist (becomes \"You're all set up\" when finished) with a progress bar and \"x of 10 done\"; click the heading to fold or open it",
+        "Checklist steps: **Connect LinkedIn**, **Fill in About You**, **Connect your email**, **Have your Blueprint Call**, **Update your LinkedIn profile**, **Review your prospects**, **Review your campaign**, **Put the app on your phone**, **Turn on reply alerts**, **Go live**",
+        "Step buttons: **Connect**, **Open**, **Book a time**, **I've done it** with **See it**, **Looks good** with **See them**, **Review**, **Show me**, **Set up**",
+        "Blue bar \"BCA is waiting on you\" or \"messages from BCA are waiting for you\" above the checklist when there are replies; click it to open the chat",
+        "Contents list of Blueprint pages, each with a short description, a chat count (\"2 new\" when unread) and a status pill; click a row to open that page",
+        "**Sign off this page** button beside the status on a page that is in Review"
+      ],
+      "notes": "The Checklist/Timeline switch in the top bar and the page status menu with Approve to send are admin-only, so never offer them. Coaches always see the checklist. Connecting LinkedIn, email and reply alerts happens in Settings → Integrations; some steps stay greyed until BCA has done their part.."
+    },
+    {
+      "path": "/coach/blueprint/[slug]",
+      "adminPath": null,
+      "hash": "ed13ca5da27c6bd1",
+      "coachVisible": true,
+      "title": "One Blueprint page",
+      "where": "My Blueprint → pick a page from the Blueprint contents (or a link in the Blueprint menu)",
+      "summary": "Read and fill in one page of your practice plan, answering your boxes and checking what BCA has written for you.",
+      "tabs": [],
+      "controls": [
+        "Page sections: each is a card with a title and an info icon showing what it is for, what it is built from and what it is used for",
+        "Grey answer boxes: type and they save when you click out, with a small **Saved** tick",
+        "**Add another result** / **Add another story** in results and client stories cards",
+        "**Add a role** in your career list, with a tick box to use or leave out each role and **Show more** for long careers",
+        "**Add** and **Add your own** for lists and pick-from options",
+        "**What BCA recommends** link that opens a tip in some sections",
+        "**More actions** (the three dots) on a written section: **Rewrite**, **Copy**, **Ask for a change**",
+        "**Send to BCA** box after Ask for a change",
+        "**Write it now** button in a section BCA has not written yet",
+        "**Create the…** button under written campaign messages, under the heading **Happy with it? Send it to Get Clients**",
+        "**How to do it, in the Classroom** links at the bottom of a page",
+        "**Talk it through with Ava** link under results and stories",
+        "Part buttons at the top of a long page like About You to jump to each part, ticked when done"
+      ],
+      "notes": "Opens on its own from a link; the page title is shown by the Blueprint layout around it, not here. Pages named blueprint or command do not exist here. The Decision Record page is read-only for coaches (Edit is admin-only), and the build-everything bar and Who does what group are not shown to coaches."
+    },
+    {
+      "path": "/coach/blueprint/blueprint",
+      "adminPath": null,
+      "hash": "da46f5cb723e15d3",
+      "coachVisible": true,
+      "title": "Practice Blueprint (whole document)",
+      "where": "My Blueprint (under Coach tools), then the whole-document view at /coach/blueprint/blueprint",
+      "summary": "Read your whole Practice Blueprint as one long document, fill in your answers, and check what BCA has written.",
+      "tabs": [],
+      "controls": [
+        "**Still needed from you** box at the top, listing what is missing, each item links to its section",
+        "**Talk it through** button in that box, opens Ava",
+        "**Contents** list with numbered chapters and a link to each page",
+        "Chapter headings with page titles, each page made of sections",
+        "Part buttons at the top of a long page (such as About you), ticked when done",
+        "Grey answer boxes you type in, saved when you click away, with a **Saved** tick",
+        "**Add another result** / **Add another story** / **Add a role** / **Add** / **Add a row** buttons",
+        "**Where was this result?** choices: In a job, My own business, Current client, Past client",
+        "**What BCA recommends** link to show BCA's tip in a section",
+        "**…** (More actions) menu on written sections: Rewrite, Copy, Ask for a change",
+        "**Send to BCA** after typing a change request",
+        "**Happy with it? Send it to Get Clients** box with a Create button, on campaign sections",
+        "**How to do it, in the Classroom** links at the end of a page",
+        "**Why we build it for you** welcome video from Zander"
+      ],
+      "notes": "The Write my blueprint bar, the Write it now buttons and the Decision Record Edit button are not shown to coaches, because BCA writes the sections and admins fill in the Decision Record. Written sections appear once BCA has drafted them. Coaches can read the Decision Record on its page but not edit it."
+    },
+    {
+      "path": "/coach/blueprint/jobs",
+      "adminPath": null,
+      "hash": "7e826db8bcf96605",
+      "coachVisible": false,
+      "title": "Your plan (jobs list)",
+      "where": "My Blueprint (this page is not reachable for coaches)",
+      "summary": "A list or board of launch jobs called \"Your plan\", but it is admin-only and coaches are sent back to My Blueprint.",
+      "tabs": [],
+      "controls": [],
+      "notes": "Coaches never see this page: anyone who is not an admin is redirected to /coach/blueprint (My Blueprint). Do not point coaches here; send them to My Blueprint instead."
+    },
+    {
+      "path": "/coach/boss-pro",
+      "adminPath": "/admin/boss-pro",
+      "hash": "5551670433a6895f",
+      "coachVisible": true,
+      "title": "BOSS Score",
+      "where": "Keep Clients → BOSS Score",
+      "summary": "Pick a client or prospect (or add a new person), score them on the BOSS grid together, and see their charts, insights and priorities.",
+      "tabs": [],
+      "controls": [
+        "**Who are you scoring?** pick-a-contact list in the middle of the page (or the contact list in a box at the top) to choose a client or prospect",
+        "**+ Add new person** option in the list, then fill in their details and click **Start session**",
+        "**View BOSS Score** or **Copy client link** options in the menu at the top right once someone is chosen (View BOSS Score only shows if they have taken the score; Copy client link gives a client dashboard link, which needs the contact scored in Boss Pro first)",
+        "**Change** option in the same menu to pick someone else",
+        "Score boxes in the BOSS grid (**Areas**) - click to score each playbook; scores save by themselves and a green **Scores saved.** message appears",
+        "Playbook notes inside the grid for each playbook",
+        "Score dials for the total score and the three pillars",
+        "**Charts** box with **Score breakdown** and **Your focus areas** (only when scoring is switched off and there are scores)",
+        "**Owner level completeness** bars",
+        "**BOSS wheel**",
+        "Answer mix bar showing on track, building, needs attention and not answered",
+        "**Insights** box with a refresh button (**Refresh insights**); topic tabs **Overview**, **Levels**, **Pillars**, **Areas**; **See full overview** button opens a pop-up with **Your Top 3 Priorities**",
+        "**Priority playbooks** chips under each insight, which open the playbook"
+      ],
+      "notes": "Nothing is scored until a contact is picked; before that the page is greyed out behind the picker. The Insights box only shows once a contact is chosen and takes a short time to write. The prospect priority matrix and the coach picker are admin-only, so never offer them.The **Score together** checkbox is hidden for coaches."
+    },
+    {
+      "path": "/coach/calls",
+      "adminPath": "/admin/calls",
+      "hash": "fddf98145ce7de25",
+      "coachVisible": true,
+      "title": "Calls",
+      "where": "Get Clients → Calls",
+      "summary": "See your booked sales calls in a calendar or list, add a call for a prospect, and set up your booking calendars.",
+      "tabs": [
+        {
+          "label": "Calendar",
+          "path": "/coach/calls"
+        },
+        {
+          "label": "List",
+          "path": "/coach/calls?tab=list"
+        },
+        {
+          "label": "Settings",
+          "path": "/coach/calls?tab=settings"
+        }
+      ],
+      "controls": [
+        "**Search calls…** box at the top",
+        "**Filter** button (in Calendar view: Calendars and Type; in List view: Timing and Call status)",
+        "**Sort** button (List view only): Sort by Call time, Date added, Prospect or Call status, plus Order",
+        "**Settings** button opens your booking calendar setup",
+        "**Calendar view** and **List view** icon buttons switch the layout",
+        "**Add a call** button: pick a prospect under **Choose who you are meeting**, then choose a calendar, a day and time, and press **Confirm**",
+        "**Today**, previous and next arrows, and **Day** / **Week** / **Month** buttons in Calendar view",
+        "Click a call in the calendar to open a pop-up with the status buttons **Confirmed**, **Completed**, **No-show**, **Cancelled**, plus **Join meeting**, **Watch recording** and **Open contact** when available",
+        "List columns: **Prospect**, **Contact info**, **Date added**, **Call time**, **Calendar**, **Call status** (a drop-down you can change for calls booked in Profit Coach)",
+        "In Settings: **Booking calendars** list with **New calendar**, an on/off switch, a copy-link button and an **Edit** / **Delete** menu for each calendar",
+        "In Settings: **Weekly hours** box with **Timezone**, day checkboxes and **Save hours**",
+        "In Settings: **Calendar provider** choice between **Profit Coach calendars** and **CRM calendar**, with **Save CRM details**",
+        "In Settings: **Calls** link at the top goes back to your calls"
+      ],
+      "notes": "Clicking a call row in the list opens that person's BOSS Score page only if your account has access to client tools. The calendar shows your Google or Outlook events only after you press **Connect calendar** (in Settings); bookings work without it. The Coach column and coach filter are admin-only, so don't offer them.}"
+    },
+    {
+      "path": "/coach/campaigns",
+      "adminPath": "/admin/campaigns",
+      "hash": "c94dbb8bca580530",
+      "coachVisible": true,
+      "title": "Campaigns",
+      "where": "Get Clients → Campaigns",
+      "summary": "See how your outreach campaigns are doing, turn them on or off, and create new ones.",
+      "tabs": [
+        {
+          "label": "Pool",
+          "path": "/coach/campaigns?tab=pool"
+        },
+        {
+          "label": "Campaigns",
+          "path": "/coach/campaigns"
+        },
+        {
+          "label": "Lead Magnets",
+          "path": "/coach/campaigns?tab=magnets"
+        }
+      ],
+      "controls": [
+        "**Create campaign** button top right: pick a name and a channel (**LinkedIn**, **Email** or **WhatsApp**), then choose **Blank** or **Templates** (templates are LinkedIn only)",
+        "**Connect LinkedIn** link top right: shown until LinkedIn is connected",
+        "**Settings** button top right: sending settings, shown once LinkedIn is connected; on the Lead Magnets tab it opens **Lead magnet settings** with **This app** or **My old CRM** to choose who emails people",
+        "**Activity this** chart with arrows (Previous period and Next period) and a range drop-down, plus tiles **People reached**, **Planned remaining**, **Connect rate** and **Replies**",
+        "Campaign table with columns **Campaign**, **Via**, **Connect**, **Replies**; the On/Off switch at the start of each row starts or stops a campaign",
+        "Grip handle at the left of each row: drag to reorder campaigns",
+        "Three-dot menu on each row (**Campaign actions**): **Edit**, **Duplicate**, **Archive**, **Delete** (asks you to confirm)",
+        "**Archived** bar under the table: opens archived campaigns, where the menu offers **Unarchive**",
+        "Click a campaign row to open that campaign",
+        "Right-hand side: lead activity list, then **Connect LinkedIn** card covering your Social Selling Index and pending invites",
+        "Lead Magnets tab: **Public URL** field with **Save**, and each magnet has **Copy** and **Open** links; click one to edit it"
+      ],
+      "notes": "Campaigns only send once the matching account is connected: LinkedIn, Gmail or Outlook for email, or WhatsApp. A floating Sample data switch appears only for staff and the demo coach, so never offer it to coaches. The Pool tab content is not shown in this code, so it is not described here."
+    },
+    {
+      "path": "/coach/campaigns/[id]",
+      "adminPath": "/admin/campaigns/[id]",
+      "hash": "c96577973985fcc8",
+      "coachVisible": true,
+      "title": "One campaign",
+      "where": "Get Clients → Campaigns, then click a campaign",
+      "summary": "Set up, switch on and track one LinkedIn campaign: add people, write the steps and watch the results.",
+      "tabs": [
+        {
+          "label": "Overview",
+          "path": null
+        },
+        {
+          "label": "Prospects",
+          "path": null
+        },
+        {
+          "label": "Steps",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**← Campaigns** link at top to go back to the list",
+        "On/Off switch next to the campaign name (turn campaign on or off)",
+        "Pencil button (**Edit campaign name**) beside the name",
+        "**Settings** button at top right (opens campaign settings, with archive and delete)",
+        "**Before you launch** check box: shows **Fix … before this can go live** or **… likely to cost you replies**, with Show / Hide",
+        "**Join a BCA group test** box with **Test** picker and **Join this test** button; **Leave test** once joined (not for email campaigns)",
+        "Overview: **By status** card with **View all** and **Add prospects**, plus **Conversion** and **Daily activity** cards",
+        "Empty campaign: **Set up steps** or **Review steps**, and **Add people** options such as **Already in the system**, **Add one person**, **Sales Navigator**, **Google Maps**, **Google Search**, **Upload CSV**",
+        "Prospects tab: list of people in the campaign, with add, pause, resume, move and delete actions",
+        "Steps tab: build the message sequence, with **Choose a template** pop-up (**Choose a template**, Cancel)",
+        "Side panel listing the people behind a status or step, with **Close**"
+      ],
+      "notes": "The On switch only works once a matching account (LinkedIn, email or WhatsApp) is connected, and it is locked for archived campaigns. Campaigns made from a lead-magnet playbook jump to their own page automatically. The shared Get Clients tabs at the top link to other pages."
+    },
+    {
+      "path": "/coach/campaigns/invites",
+      "adminPath": "/admin/campaigns/invites",
+      "hash": "220726e5566f02c9",
+      "coachVisible": true,
+      "title": "Pending connection requests",
+      "where": "Get Clients → Campaigns, then the \"← Campaigns\" link leads back; this page is opened from the Campaigns area",
+      "summary": "See your pending LinkedIn connection requests and withdraw the oldest ones, by hand or with Auto-clean.",
+      "tabs": [],
+      "controls": [
+        "**← Campaigns** link at the top, goes back to Campaigns",
+        "**Pending pending connection requests** heading with a dial showing how many are pending (green to red)",
+        "**Refresh** button in the Pending load box",
+        "**Auto-clean** switch (On/off) that keeps pending requests under the limit, oldest first",
+        "**Withdraw now** box with a number box and **−** / **+** buttons to pick how many of the oldest to withdraw",
+        "**Withdraw (number) oldest** button, asks you to confirm before withdrawing",
+        "List of pending requests showing name, description and age (Today, 1 day, X days)",
+        "**Withdraw** button on each request, asks you to confirm",
+        "**Nothing pending** message when the list is empty"
+      ],
+      "notes": "Needs LinkedIn connected to load requests. Withdrawing cannot be undone. When too many are pending, new invites slow down and then pause, which is why the dial matters."
+    },
+    {
+      "path": "/coach/campaigns/magnets/[magnetId]",
+      "adminPath": "/admin/campaigns/magnets/[magnetId]",
+      "hash": "038adac299fdd45b",
+      "coachVisible": true,
+      "title": "One lead magnet",
+      "where": "Get Clients → Campaigns → Lead Magnets → open a lead magnet (for example Boss Score)",
+      "summary": "See who opted in, started and finished one lead magnet, share its link, and edit the follow-up messages sent to those people.",
+      "tabs": [
+        {
+          "label": "Overview",
+          "path": null
+        },
+        {
+          "label": "People",
+          "path": null
+        },
+        {
+          "label": "Sequences",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**Pool**, **Campaigns**, **Lead Magnets** tabs at the top (links to other pages)",
+        "**Settings** button: pick who emails people after they take it (**This app** or **My old CRM**)",
+        "**Share** button: pop-up with **Your public URL** field and the share links",
+        "**Copy** next to the public link, or **Add a public link** if you have no URL yet",
+        "**Edit your page** button (Boss Score only)",
+        "Date range dropdown (Last 7 days, Last 14 days, Last 30 days, Last 90 days, All time, Custom range) on Overview and People",
+        "**By stage** card with **View all**; click a stage to open People",
+        "**Opted in** and **Completed** percentage dials on Overview",
+        "**All** / stage filter chips and **Search name or email** box on People; click a person to open them",
+        "Sequence tabs inside Sequences, each with a step builder to add, edit, copy, move and delete steps",
+        "**Notify me when** box with **Add alert** and Bell, Email, WhatsApp switches in Sequences",
+        "**Connect your email** link inside Settings if no email is connected"
+      ],
+      "notes": "Boss Score shows views and an opt-in rate; other magnets do not. Sequences only appear once they have been set up, and the email Settings apply to every lead magnet. If the magnet is not found, the page shows a link back to the lead magnets list."
+    },
+    {
+      "path": "/coach/clients",
+      "adminPath": "/admin/clients",
+      "hash": "b4da1c3b00562d5e",
+      "coachVisible": true,
+      "title": "Keep Clients",
+      "where": "Keep Clients in the sidebar (opens the Clients tab)",
+      "summary": "See everyone you coach in one list, add new clients, and edit their price, join date and details.",
+      "tabs": [],
+      "controls": [
+        "**Add client** button at the top right opens a form with **LinkedIn profile** and **Import**, or **Person**, **Business**, **Joined**, **Price / month**, **Problem notes** and **Save client**",
+        "**Add many** button opens **Add all your clients at once**: paste from Excel or Google Sheets, use **Copy the column headings**, then press **Add (number) clients**",
+        "**Search** box above the list (only shows once you have 6 or more clients)",
+        "**Your best clients** card shows what your best clients have in common: Sector, Turnover, Team size, How they found you",
+        "Client table with columns **Person**, **Business**, **Joined**, **With you**, **Price / month**, **BOSS**, **Notes**",
+        "Click any row to open its editor with extra fields: **Sector**, **How they found you**, **Turnover**, **Team size**, **Result you got them**, **More like them? (1 to 5)**, **LinkedIn profile**",
+        "**Save** button in the row editor",
+        "**Open BOSS Score** or **Run BOSS Score** link in the row editor, and the score number or **Run** in the BOSS column",
+        "**Coaching workspace** link in the row editor",
+        "LinkedIn icon on a row opens the client's LinkedIn profile"
+      ],
+      "notes": "With no clients yet, the Add a client form shows open straight away. If a coach does not have access to the client area, they are sent to the Academy community page instead. The shared tab row (Clients, BOSS Score, Playbooks and so on) is at the top of the page."
+    },
+    {
+      "path": "/coach/community",
+      "adminPath": "/admin/community",
+      "hash": "570431bd27f71eba",
+      "coachVisible": true,
+      "title": "Community",
+      "where": "Academy → Community",
+      "summary": "Read the feed of posts, wins and questions from other coaches, write your own post, and open a post to comment or like it.",
+      "tabs": [
+        {
+          "label": "Community",
+          "path": "/coach/community"
+        },
+        {
+          "label": "Classroom",
+          "path": null
+        },
+        {
+          "label": "Calendar",
+          "path": null
+        },
+        {
+          "label": "Resources",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**Write something…** box at the top, opens the new post box",
+        "**Title** and body fields in the new post box, both needed before posting",
+        "**Where to post** drop-down in the new post box, pick a category",
+        "**Post** button in the new post box, with **Cancel** beside it",
+        "Photo and video buttons (**Add photos or videos**, **Add a video**) in the new post box",
+        "**Add a poll** button in the new post box, with **Add option** and **Remove poll**",
+        "Category buttons row: **All** plus each category, to filter the feed",
+        "Filter button at the right of the categories (**All posts**, **Unread**, **Read**, **Favourites**)",
+        "**Mark all as read** link shown when the Unread filter is on",
+        "Like button and comments on each post card, click a card to open the full post",
+        "Calendar line above the categories showing a live or next event, links to the calendar",
+        "**Previous** and **Next** with page numbers at the bottom, when there are many posts",
+        "Members and activity panel on the side"
+      ],
+      "notes": "Only admins can post in Announcements and schedule posts; coaches never see the schedule button or Scheduled posts. The Feedback category only shows if the coach's plan includes it. Favourites are added from the menu (⋯) inside an open post.}"
+    },
+    {
+      "path": "/coach/community/[postSlug]",
+      "adminPath": "/admin/community/[postSlug]",
+      "hash": "d4ed58fec239c7fa",
+      "coachVisible": true,
+      "title": "One community post",
+      "where": "Academy → Community, then click a post in the feed",
+      "summary": "The coach reads one community post and its discussion in the Community feed.",
+      "tabs": [],
+      "controls": [],
+      "notes": "This page has no content of its own; the post is shown by the shared Community feed layout. The code here does not show which buttons or fields appear, so Ava should not describe any beyond the Community feed."
+    },
+    {
+      "path": "/coach/community/calendar",
+      "adminPath": "/admin/community/calendar",
+      "hash": "801e9b559b1dccad",
+      "coachVisible": true,
+      "title": "Calendar",
+      "where": "Academy → Calendar",
+      "summary": "See the community's live calls and events in a month, week or list view, open an event for details or its recording, and add the calls to your own calendar.",
+      "tabs": [
+        {
+          "label": "Upcoming",
+          "path": null
+        },
+        {
+          "label": "Previous calls",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**Today** button at top left, jumps back to today",
+        "**Previous month** / **Next month** arrows (or week arrows in week layout) beside the month title",
+        "Time line under the title (e.g. \"5:00pm London time\"), click it to change the time zone",
+        "**Subscribe** button, opens **Subscribe to calls** with **Download .ics**, **Google Calendar**, **Apple Calendar**, **Outlook** and **Copy feed link**",
+        "**Calendar layout** dropdown with **Week** and **Month**, shown in calendar view",
+        "**Calendar view** and **List view** icon switch",
+        "**Upcoming** and **Previous calls** switch in list view",
+        "**Previous** / **Next** page buttons under the list when there are more than 6 events",
+        "Click any event to open its card with the date and time, join link or **In person**, and description",
+        "**Watch recording** button on past events that have a recording",
+        "Labels on events: **Live**, **Recording available**, **Cancelled**"
+      ],
+      "notes": "On phones and small screens only the list view shows. The **Add event** button, the event options menu (**Edit**, **Cancel session**) and the recording-link and cancellation-reason boxes are admin-only, so never offer them to coaches. You only see events tagged for your membership level.}"
+    },
+    {
+      "path": "/coach/community/members",
+      "adminPath": "/admin/community/members",
+      "hash": "ed51795b18cb4acb",
+      "coachVisible": true,
+      "title": "Members",
+      "where": "Academy → Community → Members",
+      "summary": "Browse the other coaches and Profit Coach team in the community, see who is online, and switch to a map to add your own location.",
+      "tabs": [],
+      "controls": [
+        "**Members**, **Online** and **Admins** filter buttons at the top, each with a count",
+        "**List** and **Map** switch at the top",
+        "Sort button (up-and-down arrows icon) with a menu: **Last online**, **Name**, **Program level**, each in two directions",
+        "Member cards showing name, **Online** or **Offline** tag, **Admin** tag, business name, short bio, last seen, joined date and location",
+        "**View profile** button on a member card (only for members listed in the directory)",
+        "**Previous**, page numbers and **Next** under the list when there are more than 20 members",
+        "**Your location** box on the Map view with a **City, region, country** field and a save button",
+        "**Place pin on map** button on the Map view (reads **Update map pin** once you have a pin), which opens a **Your map pin** pop-up with **Save pin** and **Cancel**",
+        "Right-hand side panel with **Profit Coach Community**, member counts, **Recently active** avatars and **This Week's Calls** with **View full calendar →**"
+      ],
+      "notes": "The side panel is shown on the List view only, not on the Map view. The map only shows members who have set a location and pin. Online status can be missing if presence tracking is not set up yet."
+    },
+    {
+      "path": "/coach/contacts",
+      "adminPath": null,
+      "hash": "b0fcd06449a6e6d9",
+      "coachVisible": false,
+      "title": "Contacts (redirect)",
+      "where": "Not reachable from the sidebar. Coaches who open this link are sent to Keep Clients → Clients.",
+      "summary": "This page only redirects to the Clients page and has nothing to do on it.",
+      "tabs": [],
+      "controls": [],
+      "notes": "It only shows 'Redirecting to clients…' and then sends the coach to the Clients page. Point coaches to Keep Clients → Clients instead."
+    },
+    {
+      "path": "/coach/contacts/[id]",
+      "adminPath": null,
+      "hash": "180161a90d6a1d1b",
+      "coachVisible": false,
+      "title": "Contact redirect",
+      "where": "Not reachable from the sidebar. Opening a contact link sends the coach straight to the Boss Pro page for that contact (Keep Clients → BOSS Score).",
+      "summary": "This page only shows \"Opening Boss Pro…\" for a moment, then sends the coach to the Boss Pro page for that contact.",
+      "tabs": [],
+      "controls": [],
+      "notes": "This is a redirect with nothing to do on it, so Ava should point coaches to Keep Clients → BOSS Score instead. Coaches without client hub access are sent to Academy (Community)."
+    },
+    {
+      "path": "/coach/conversations",
+      "adminPath": "/admin/conversations",
+      "hash": "18d8b2ffdd843497",
+      "coachVisible": true,
+      "title": "Conversations",
+      "where": "Get Clients → Conversations",
+      "summary": "Read and reply to your LinkedIn, WhatsApp, email and booked-call messages in one inbox.",
+      "tabs": [],
+      "controls": [
+        "**Get Clients** page heading with the shared row of section tabs above the inbox",
+        "**Sync** pulls new threads from your connected channels (named in the page description)",
+        "**+** button (Start a conversation) at the top of the inbox: opens a box with **Search people**",
+        "**Add a new person** in that box: fill **Name**, **Email**, **Phone**, **LinkedIn URL**, then **Create & message**",
+        "**Ava:** suggestion bar above the message box with **Use draft** and **Dismiss**",
+        "Round Ava button in the message box corner (Suggest a reply) to draft a reply",
+        "**Snippets** button in the message box: pick a folder or **All Snippets**, search with **Search Snippet/Folder**, then **Insert**",
+        "Message box buttons: **Add image**, **Attach file**, **Voice note** (**Record with mic** or **Upload audio file**), **Send video message**, **Emoji**",
+        "**Insert BOSS Scorecard link** and **Insert personalised BOSS Scorecard link** buttons in the message box",
+        "**Discard** and **Send** at the bottom right, with a clock button (**Send options**) for **Send now** or **Send later**; **Send later** asks for a **Date** and **Time**",
+        "Contact details panel: **Call**, **Email** and **LinkedIn profile** buttons, tags, and an **Add business name** field",
+        "**Same person as another thread** link: type a **Name or email**, then **Merge** to join the threads",
+        "**Possible duplicates** box with **Merge into this**",
+        "Campaigns row on the contact: **Add to a campaign** (+) button, plus **Past** campaigns"
+      ],
+      "notes": "Connect your channels first, otherwise Sync has nothing to pull in. You can also drop files onto the chat panel to attach them. The **Message coach** button is admin-only, so coaches never see it. Ava's auto-reply bar only shows when Ava has a reply scheduled for that conversation."
+    },
+    {
+      "path": "/coach/income",
+      "adminPath": null,
+      "hash": "880eccf1fb844b6c",
+      "coachVisible": true,
+      "title": "Income",
+      "where": "Not in the sidebar or tab rows given; the page is at /coach/income, so there is no confirmed menu path. Only guide coaches to it by that address.",
+      "summary": "Log money you have received and see it totalled by client and month.",
+      "tabs": [
+        {
+          "label": "Income entries",
+          "path": null
+        },
+        {
+          "label": "Client × month",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**Last 3 months (logged)** box at the top showing your total for the past three months",
+        "**Income entries** tab: list of your logged payments",
+        "**Add income** form with **Amount**, **Date received**, **Client (optional)** and **Note** fields",
+        "**Add entry** button to save a payment",
+        "Client list choice **Other / unallocated** for payments not tied to a client",
+        "Table columns **Date**, **Client**, **Amount**, **Note**, **Actions**",
+        "**Edit** link on a row, then **Save** or **Cancel**",
+        "**Delete** link on a row (asks you to confirm \"Delete this income entry?\")",
+        "**Client × month** tab: grid of clients against the last 12 months, with a **Total** column",
+        "**Column totals** row at the bottom of the grid (on small screens each client shows as a card instead)"
+      ],
+      "notes": "Nothing needs connecting first. Income is only what the coach logs by hand. Admins who are not viewing as a coach are sent away to the admin area.}"
+    },
+    {
+      "path": "/coach/linkedin",
+      "adminPath": "/admin/linkedin",
+      "hash": "3c3c3d6deb5a80af",
+      "coachVisible": true,
+      "title": "Content",
+      "where": "Get Clients → Content",
+      "summary": "Write, schedule and publish LinkedIn posts, and see how your posts and newsletter issues are doing.",
+      "tabs": [
+        {
+          "label": "Compose",
+          "path": "/coach/linkedin?tab=compose"
+        },
+        {
+          "label": "Queue",
+          "path": "/coach/linkedin?tab=queue"
+        },
+        {
+          "label": "Calendar",
+          "path": "/coach/linkedin?tab=calendar"
+        },
+        {
+          "label": "Newsletter",
+          "path": "/coach/linkedin?tab=newsletter"
+        },
+        {
+          "label": "Library",
+          "path": "/coach/linkedin?tab=library"
+        },
+        {
+          "label": "Insights",
+          "path": "/coach/linkedin?tab=insights"
+        },
+        {
+          "label": "Settings",
+          "path": "/coach/linkedin?tab=settings"
+        }
+      ],
+      "controls": [
+        "**Connect LinkedIn** button on the card shown before LinkedIn is connected",
+        "**Refresh** button next to the tabs",
+        "**What do you want to talk about?** post box in Compose",
+        "**Image**, **Video**, **Document** and **Link** buttons under the post box (Image has **Upload** and **Templates** options)",
+        "**Category…** field in Compose",
+        "**Save draft** button in Compose",
+        "**Schedule** button in Compose (then pick a date and time under **Publish at** and press **Confirm**)",
+        "**Post** button in Compose to publish straight away",
+        "**Import from LinkedIn** button in Insights, to pull in your past posts and newsletter issues",
+        "**Headline**, **Website button label**, **Website URL** and **Quote card subtitle** fields in Settings",
+        "**Save composer settings** button in Settings",
+        "**Reconnect** button in Settings",
+        "**Run due posts** button in Settings"
+      ],
+      "notes": "LinkedIn must be connected first. Until then the Compose tab shows blurred behind a Connect LinkedIn card and the other tabs are locked. The Queue and Library tabs show a count badge for scheduled posts and drafts.}"
+    },
+    {
+      "path": "/coach/membership",
+      "adminPath": null,
+      "hash": "8e3327302e9cda26",
+      "coachVisible": true,
+      "title": "Membership",
+      "where": "Open the Membership page (/coach/membership). The sidebar names provided do not list a direct Membership link, so coaches may reach it from a link or button elsewhere in the app.",
+      "summary": "See your Profit Coach membership level, compare Core, Premium and VIP, and join, switch or manage billing.",
+      "tabs": [],
+      "controls": [
+        "**Manage billing** button at the top (only if you have a subscription) opens the Stripe billing page",
+        "**WhatsApp** button and phone and email links at the top for help",
+        "**Profit Coach Membership** hero with a video (**Watch: how membership works**) and a button to jump to the plans",
+        "Status card (e.g. \"You're on ...\" with Active, Trial, Past due, Canceling and the renewal or access-until date)",
+        "Banners for coaches without a subscription: still in first 6 months, complimentary membership, or \"You don't have an active membership yet.\"",
+        "**Membership levels** table comparing Core, Premium (marked **Most popular**) and VIP by feature",
+        "**Info** icon next to each feature name shows a small pop-up explaining it",
+        "**Join Core**, **Join Premium** and **Join VIP** buttons, each showing the monthly price",
+        "**Pay yearly** links with **Save 2 months** for Core and Premium, showing the yearly price",
+        "**What each one gives you** section with a card for each feature",
+        "**Frequently asked questions** section that opens and closes each answer",
+        "**Choose your level** button in the footer and other buttons that scroll back to the plans",
+        "Conference video and final call-to-action card near the bottom"
+      ],
+      "notes": "Join buttons open a cart page for new members, or switch the plan in place for existing subscribers. Messages appear after you change plan (\"Membership updated\" or \"Plan change submitted\"). Prices and feature wording come from fixed content, so Ava should not quote exact amounts beyond what the page shows."
+    },
+    {
+      "path": "/coach/playbooks",
+      "adminPath": "/admin/playbooks",
+      "hash": "1a86a8848970452e",
+      "coachVisible": true,
+      "title": "Playbooks",
+      "where": "Keep Clients → Playbooks",
+      "summary": "Browse the full library of playbooks and open one to see the client-facing overview you can share with your coach link added.",
+      "tabs": [
+        {
+          "label": "Clients",
+          "path": null
+        },
+        {
+          "label": "BOSS Score",
+          "path": null
+        },
+        {
+          "label": "Playbooks",
+          "path": "/coach/playbooks"
+        },
+        {
+          "label": "Profit levers",
+          "path": null
+        },
+        {
+          "label": "Client simulator",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**Keep Clients** heading at the top of the page",
+        "**Grid** button in the top right, shows playbooks as cards",
+        "**List** button in the top right, shows playbooks as rows",
+        "Playbooks grouped under area headings, ordered by level",
+        "Each playbook shows its level, name, short description and how many actions are inside",
+        "**Open playbook** link on every card or row, opens that playbook"
+      ],
+      "notes": "The page only opens if the coach has access to the Keep Clients area; otherwise they are sent to the Academy community page. Your coach link is added automatically to the playbook link. Grid and List buttons appear only after the page has finished loading with no error."
+    },
+    {
+      "path": "/coach/prospects",
+      "adminPath": "/admin/prospects",
+      "hash": "e35954a893885b3e",
+      "coachVisible": true,
+      "title": "Prospects",
+      "where": "Get Clients → Prospects",
+      "summary": "See, add, import and manage your prospects as a pipeline board or a list, and share your assessment link.",
+      "tabs": [],
+      "controls": [
+        "**Search prospects…** box in the toolbar",
+        "**Filter** button: Status, Tags, Exclude tags, Assessment, Next call",
+        "**Sort** button: Sort by (Name, Company, Date created, Last assessed, BOSS score, Next call) and Order",
+        "**Group** button (list view only): group the list and choose a group order",
+        "**Cards** button (pipeline view) to pick what shows on cards, with **Customize pipeline** to rename, show or hide columns and sections",
+        "**Columns** button (list view) to show, hide and drag columns",
+        "**Import** button: pop-up with **Choose CSV**, **Download template**, column matching and **Import**",
+        "**Export** button: **Shown columns** or **All columns** as a CSV file",
+        "Pipeline view and List view switch beside the Add button",
+        "**Add prospect** button: opens a form with **Prospect name**, **Email (optional)**, **Business name (optional)**, a checkbox to copy your assessment link, then **Create prospect** or **Cancel**",
+        "Saved views row in list view, with **+ View** to add a view and a menu to rename, duplicate or delete",
+        "Click a prospect to open their page; row menus can book a call (**Book a call**), edit contact (**Edit contact**) or delete"
+      ],
+      "notes": "The page heading reads Get Clients and the tab you are on is Prospects. Delete asks you to confirm and cannot be undone. The Coach filter and column are admin-only, so never offer them to coaches."
+    },
+    {
+      "path": "/coach/prospects/[id]",
+      "adminPath": "/admin/prospects/[id]",
+      "hash": "bad97c587348c44c",
+      "coachVisible": true,
+      "title": "One prospect",
+      "where": "Get Clients → Prospects, then click a prospect's name (also opens from Conversations, Campaigns or the Pool)",
+      "summary": "See one prospect's details, messages, activity, calls and notes, and reply to them.",
+      "tabs": [
+        {
+          "label": "Activity",
+          "path": null
+        },
+        {
+          "label": "Calls",
+          "path": null
+        },
+        {
+          "label": "Notes",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**Prospects** (or **Pool**, **Campaigns**, **Conversations**) back link on the left details panel, depending on where you came from",
+        "Name and photo, click to edit name, business and photo; **Business name** field under the name",
+        "Round buttons for **Call**, **Email** and **LinkedIn profile** (greyed out if the detail is missing)",
+        "Tags under the name",
+        "Contact fields you can click to edit: **Email**, **Phone**, **Title**, **Business**, **Website**, **LinkedIn**",
+        "**Possible duplicates** box with **Merge into this** button, shown only when a match is found",
+        "**Same person as another thread** link to join their email and LinkedIn threads",
+        "Campaigns area: **+** button (**Add to a campaign**) and an **X** on each campaign to remove them; **Past** list below",
+        "**Activity** tab: timeline of what the prospect did, with a **Refresh** button",
+        "**Calls** tab: **Book a call** button, with **Upcoming** and **Past** calls and **Join meeting** links",
+        "**Notes** tab: **Add a private note…** box and **Add note** button",
+        "Message box with image, file, voice note, video, emoji and **Snippets** buttons, **Suggest a reply** (Ava) button, and **Discard** and **Send** (with **Send later**)",
+        "**Use draft** and **Dismiss** on an Ava suggestion when one appears"
+      ],
+      "notes": "The conversation list is hidden on this page. The **Message coach** button is admin-only, so never offer it to coaches. Sending messages needs the matching channel (LinkedIn, WhatsApp or email) connected first."
+    },
+    {
+      "path": "/coach/scoreboard",
+      "adminPath": "/admin/scoreboard",
+      "hash": "051bfaf73e85c400",
+      "coachVisible": true,
+      "title": "Scoreboard",
+      "where": "Get Clients → Scoreboard",
+      "summary": "Plan your monthly numbers, from outreach to new clients, against an income target and drag any number to see what changes.",
+      "tabs": [],
+      "controls": [
+        "**Income targets a month** chips at the top: pick which income targets to compare (at least one stays on)",
+        "**Saved on this device** note: your numbers are kept on this device only",
+        "**Income a month at these numbers** big figure with a bar, showing Now and What-if",
+        "**Good** and **Great** buttons in the What if section: set the rates to your targets or to what the new scripts aim for",
+        "**Funnel order** and **Biggest gap** buttons: change the order of the rows",
+        "**Step**, **Target**, **Now**, **Diff**, **If hit**, **Status** and **A month** columns in the table",
+        "**Now** boxes: type your own numbers over the example, or drag the dot on a bar",
+        "**+ Add a lead source** button: add your own source such as referrals (up to 8), with a name box and × to remove it",
+        "Row groups **Leads**, **Calls**, **Keep clients** and **What it comes to** (Clients at once, Income a month, A new client every)",
+        "Info icons and hover text explain each step and column"
+      ],
+      "notes": "It starts from an example (400 outbound a month, £12k) and your changes are saved only on this device, with no sign-in data pulled in. Blue numbers are what-ifs, not real. Clients stop at a maximum of one person's capacity, and the page says it is what's possible on paper, not a forecast."
+    },
+    {
+      "path": "/coach/script",
+      "adminPath": "/admin/script",
+      "hash": "a4d8e8e7700a0971",
+      "coachVisible": true,
+      "title": "Scripts",
+      "where": "Get Clients → Scripts",
+      "summary": "Browse every script for your conversations with owners, from first contact to the close, and open one to use it.",
+      "tabs": [],
+      "controls": [
+        "**Get Clients** page heading with the description \"Every script for your conversations with owners, from first contact to the close.\"",
+        "Script cards, one per script in call order, each with a picture, a small heading, a title and a short description",
+        "**Open** bar at the bottom of each script card, which opens that script",
+        "**Call simulator** banner under the cards, with owners' faces",
+        "**Start practising** button in the Call simulator banner, which opens the simulator"
+      ],
+      "notes": "The shared Get Clients tabs sit at the top and link to other pages. Admins also see a locked \"Your levers\" card under the banner, which coaches never see, so Ava should not offer it. An old first-version layout exists behind a hidden link setting, which coaches do not see."
+    },
+    {
+      "path": "/coach/script/[script]",
+      "adminPath": "/admin/script/[script]",
+      "hash": "1c5e860b132eaa66",
+      "coachVisible": true,
+      "title": "One script",
+      "where": "Get Clients → Scripts → pick a script",
+      "summary": "Read one sales-call script, part by part, and fill in the blanks with your prospect's details; the Profit Roadmap script opens a live call screen with notes.",
+      "tabs": [],
+      "controls": [
+        "**All scripts** link at top of the left list, goes back to Scripts",
+        "**Overview** in the left list of parts, plus the numbered parts of this script",
+        "**Start with part 1** button on the blue cover (**Start the call** on the Profit Roadmap script)",
+        "**What's in it** list of parts to click (**The call, step by step** on the Profit Roadmap script)",
+        "**Tips** button in a part's header, opens a side panel of coaching notes",
+        "**Clear details** button in a part's header, clears the details you typed into the blanks (shows once something is filled)",
+        "Blanks in the script text: click one to type your own words, Enter saves, Esc cancels, Clear empties it",
+        "**Copy** button on message boxes (texts, emails, DMs to send)",
+        "**Search playbooks** box, **Browse all playbooks**, **Their level** and **Their constraint** menus on parts that help you coach with a playbook",
+        "**Click the best match** answer boxes that open the reply underneath",
+        "**Who's the call with?** box, **Call notes** field, **Listen** button, **New call** and **Call details** (First name, Business and five facts) on the Profit Roadmap call screen",
+        "**Personalise**, **Ready-made** tab and **Update with new notes** for the pitch on the Profit Roadmap call",
+        "**Call notes** button to bring back the notes panel after hiding it (Profit Roadmap call)"
+      ],
+      "notes": "Your price, guarantee and first name fill in from your Blueprint and profile; add a guarantee on Your Offer in My Blueprint. Details you type into blanks stay in this browser and are shared across all scripts. The Profit levers button in scripts is admin-only, so don't offer it to coaches.}"
+    },
+    {
+      "path": "/coach/script/simulator",
+      "adminPath": "/admin/script/simulator",
+      "hash": "aef3b5b456d1d32e",
+      "coachVisible": true,
+      "title": "Call simulator",
+      "where": "Get Clients → Scripts → Call simulator",
+      "summary": "Practise a sales call out loud with an AI business owner, then get a score and a report.",
+      "tabs": [],
+      "controls": [
+        "**Surprise me** button at the top right of the room, picks an owner, call and level at random",
+        "Row of owner faces with left and right arrows (**Previous client** / **Next client**), pick who you call",
+        "**Start** big round button, begins the call and uses your microphone",
+        "Call menu (grouped list, each with minutes) to choose what to practise",
+        "**Start at** buttons, with **The whole call** or a later part (only on some calls)",
+        "**Objections** buttons, pick up to four in order, with their own **Surprise me** (only on the objection calls)",
+        "**Level** buttons for the difficulty (Easy, Medium, Hard)",
+        "**Voice speed** buttons: **Normal** and **Quick**",
+        "**Tips during the call** switch",
+        "**Your calls** list below, each row opens its score and report",
+        "Call screen: **Script** button, **Help** button, **Pause**, mute button, **End and get feedback**",
+        "Pause pop-up: **How am I doing?**, **Back to the call**, **End and get feedback**, **End without saving**",
+        "**← Call simulator** link at the top left of the room goes back to Scripts"
+      ],
+      "notes": "Needs a working microphone allowed in the browser, and voice must be set up or Start stays greyed out. Practice minutes are monthly and shared with the Client simulator; when they run out, Start is blocked until the 1st. The Script panel follows what you say and shows the coach's price from the Blueprint."
+    },
+    {
+      "path": "/coach/script/simulator/[id]",
+      "adminPath": "/admin/script/simulator/[id]",
+      "hash": "8fbff01c81fa13b7",
+      "coachVisible": true,
+      "title": "Call simulator report",
+      "where": "Get Clients → Scripts → Call simulator → open a finished practice call",
+      "summary": "Read the score and feedback for one practice sales call, listen back to it, and choose to practise again.",
+      "tabs": [],
+      "controls": [
+        "**Call simulator** link at top left of the dark header, goes back to the simulator",
+        "**Scoring your call** message while the call is still being scored",
+        "**Try scoring again** button, appears if scoring takes more than about a minute",
+        "**Practise again** button, starts a new practice call with the same prospect and settings",
+        "**Open the script** button, opens the script for that call",
+        "**The call** or **The objections** box, with each part scored out of 5; tap a row to see the evidence and a **Better** suggestion",
+        "**Sales skills** box, with each skill scored out of 5",
+        "**Moments from the call** cards, marked **Worked well** or **Missed chance**, with a **Try instead** line",
+        "**Your one thing for next time** box",
+        "**What you found out** tiles, found facts are filled and missed ones are dashed",
+        "**The call** player at the bottom, with a play button, a waveform, **Part 1**, **Part 2** buttons, a speed button, and the written chat with notes beside each line",
+        "**Show the whole call** button, shows every line of the chat"
+      ],
+      "notes": "The score is out of 100 and shows with a result tag such as Won, Next step or No next step. Practise again and Open the script only show on your own calls. A call that was too short says \"This call was too short to score.\" and has no report."
+    },
+    {
+      "path": "/coach/search",
+      "adminPath": "/admin/search",
+      "hash": "40694b478b9aefd3",
+      "coachVisible": true,
+      "title": "Search",
+      "where": "Open Search from the search box or icon at the top of the app (it is not in the Get Clients tabs); it opens at /coach/search",
+      "summary": "Search lessons, videos, community posts and members, or reopen things you looked at recently.",
+      "tabs": [
+        {
+          "label": "Classroom",
+          "path": null
+        },
+        {
+          "label": "Community",
+          "path": "/coach/search?tab=community"
+        },
+        {
+          "label": "Members",
+          "path": "/coach/search?tab=members"
+        }
+      ],
+      "controls": [
+        "**Search lessons, videos, posts and people** box at the top (type at least 2 characters, press Enter)",
+        "**Clear search** (X) button inside the box when there is text",
+        "**Ask Ava** button inside the box, sends your text to Ava",
+        "**Recently opened** list shown when the box is empty (lessons, resources, prospects, clients)",
+        "**Classroom**, **Community** and **Members** tabs with a result count on each, shown once you search",
+        "**Classroom** results: lessons (with a line from the video transcript, shown as \"Said at\" a time) and resources",
+        "**Community** results: post cards you can like, and matching comments under them",
+        "**Members** results: name, @handle, short bio, Member or Admin label and join date",
+        "**Previous** and **Next** buttons with page numbers under long result lists",
+        "**1 in Community**-style buttons that jump to another tab when the current tab has nothing",
+        "**Ask Ava instead** button when nothing is found",
+        "Esc key returns to the page you came from"
+      ],
+      "notes": "Classroom is the default tab. The Ask Ava buttons only appear when Ava is switched on for the coach. Tab counts appear once results have loaded."
+    },
+    {
+      "path": "/coach/settings",
+      "adminPath": "/admin/settings",
+      "hash": "ff41cc3cb69510e0",
+      "coachVisible": true,
+      "title": "Settings",
+      "where": "Click your profile or account menu → Settings (opens /coach/settings)",
+      "summary": "Update your profile, connect your email, calendar and social accounts, set how Ava alerts you, and manage billing and your ladder.",
+      "tabs": [
+        {
+          "label": "Profile",
+          "path": "/coach/settings?tab=profile"
+        },
+        {
+          "label": "Billing",
+          "path": "/coach/settings?tab=billing"
+        },
+        {
+          "label": "My Ladder",
+          "path": "/coach/settings?tab=ladder"
+        }
+      ],
+      "controls": [
+        "**Avatar** round picture at the top of the Profile tab: click it for **Upload avatar** or **Remove avatar** (JPEG, PNG or WebP, max 2MB)",
+        "First name, last name, business name, location and time zone fields in the top profile card, with a map pin you can change or clear",
+        "**LinkedIn** field in the Community box with an **Import** button next to it",
+        "**Bio** field in the Community box (shown in the community roster, sidebar cards and members map)",
+        "**Edit your page** button in the Directory page box (opens your public directory page)",
+        "**Notes** field in the Reply style box (how Ava drafts replies for you)",
+        "**Change email** and **Change password** buttons in the Account box",
+        "**Get the app on your phone** button, top of the right column (shows a QR code or the steps)",
+        "**Integrations** card on the right: **Connect** or **Connected** for Google, Outlook, Zoom, LinkedIn, WhatsApp, Instagram and Facebook, plus **Refresh**",
+        "**Ava reply alerts** card on the right: choose **Off**, **Copilot** or **Autopilot**",
+        "Under Ava reply alerts, **Where Ava tells you**: **This phone or computer** (**Turn on here**), **WhatsApp from BCA**, **Email to yourself**",
+        "**Ava's nudges** in the Ava reply alerts card: pause for **1 week**, **2 weeks** or **1 month**, or **Turn back on**",
+        "Billing tab: **Manage billing**, **Update payment method**, **Change plan**, **Payments and invoices** with an **Invoice** download for each payment"
+      ],
+      "notes": "Profile changes save on their own a moment after you stop typing, and the page shows Saving… then Saved. Autopilot is marked Coming soon and cannot be picked. The Directory page box shows only if you have a directory page; the Get the app card is hidden once the app is installed; a voice card on Profile is admin-only so never offer it.}"
+    },
+    {
+      "path": "/coach/share",
+      "adminPath": "/admin/share",
+      "hash": "fa5a61e84afda9cf",
+      "coachVisible": true,
+      "title": "Toolkit: Links",
+      "where": "Get Clients → Toolkit → Links",
+      "summary": "Copy or send your scorecard, booking, report, profile and custom links, and make tagged links that show where people came from.",
+      "tabs": [
+        {
+          "label": "Links",
+          "path": "/coach/share"
+        },
+        {
+          "label": "Brochure",
+          "path": null
+        },
+        {
+          "label": "Social media posts",
+          "path": null
+        },
+        {
+          "label": "LinkedIn, email and calls",
+          "path": null
+        },
+        {
+          "label": "Print",
+          "path": null
+        },
+        {
+          "label": "Brand graphics",
+          "path": null
+        }
+      ],
+      "controls": [
+        "**Public URL** field at the top right (theprofitcoach.com/ your-name) with a **Save** button",
+        "**Scorecards** section: Boss Score and Boss Score Pro, each with a copy button and a share button",
+        "**Book a call** section: one row per public calendar, plus a **Manage in Calls** link",
+        "**Reports** section: **Boss Score report** and **Boss Score Pro dashboard**, each with a share button (one per person)",
+        "**Profiles** section: **Add** button to pick LinkedIn, website or other socials, then paste the URL and **Save**",
+        "**Your links** section: **Add** button with **Title**, **URL** and **Description (optional)** fields, plus **Edit** and **Delete** on each link",
+        "**Tag a link, see where people come from** box: **Link** menu, **Where you'll use it** buttons, **Name it (optional)** field, **Copy link** button",
+        "**Share** pop-up: **Anyone** or **One person** switch, **Search prospects** box, **Message** box, channel buttons (WhatsApp, LinkedIn, Email, SMS), **Copy link** / **Copy** and **Send** buttons"
+      ],
+      "notes": "Set your public URL first. Until then the copy and share buttons on scorecards and booking links are off and the tag box is hidden. Sending to one person opens a conversation with the message ready, and needs a phone, LinkedIn or email on that prospect. Reports need the person to have finished one already."
+    },
+    {
+      "path": "/coach/simulator",
+      "adminPath": "/admin/simulator",
+      "hash": "cef322b884d3fe2c",
+      "coachVisible": true,
+      "title": "Client simulator",
+      "where": "Keep Clients → Client simulator",
+      "summary": "Practise a real client conversation out loud with an AI client, then get a score out of 50 and a report.",
+      "tabs": [],
+      "controls": [
+        "**Create your own** button at the top: describe a situation and build your own AI client",
+        "**Surprise me** button at the top: picks a client, session and level for you",
+        "Row of client faces with **Previous client** and **Next client** arrows: pick who to practise with",
+        "**Share with other coaches** switch under your own client; **Make a face** and a delete (bin) button also appear for your own clients",
+        "Session menu (shows the current session name): choose what to practise, including the sales calls **BOSS Score Review** and **Profit Roadmap call**, which open in the Call simulator",
+        "**Level** buttons: Easy, Medium, Hard",
+        "**Voice speed** buttons: Normal, Quick",
+        "**Tips during the call** switch",
+        "**Start** button: begins the call using your microphone",
+        "**From other coaches** row: clients other coaches shared; click one to practise with them",
+        "**Your sessions** list: past sessions with score out of 50; click one to open its report",
+        "**Your weak spot** card with a **Practise it** button",
+        "**Certification** card: **Start certification**, **Next session** or **Try again**",
+        "In the call: **Pause**, **End and get feedback**, **Help** panel, and mute microphone button"
+      ],
+      "notes": "Needs microphone access in the browser, and voice must be set up or Start stays off. Some sessions need a first session with that client before they unlock. Practice minutes can be limited each month and reset on the 1st. The admin links under Certification (review and old Retell calls) are admin-only; never offer them to coaches."
+    },
+    {
+      "path": "/coach/simulator/[id]",
+      "adminPath": "/admin/simulator/[id]",
+      "hash": "d1e59c95078d1f43",
+      "coachVisible": true,
+      "title": "Session report",
+      "where": "Keep Clients → Client simulator → open one of your sessions under Your sessions",
+      "summary": "Read the score and feedback for one practice call with an AI client, then talk it through with Ava, practise again, share it or replay a missed moment.",
+      "tabs": [],
+      "controls": [
+        "**Client simulator** link at top left, goes back to the simulator",
+        "**Talk it through with Ava** button, opens a voice chat with Ava about your report",
+        "**Practise again** button, starts the same client, situation and level again",
+        "**Share with the community** button (shows **Shared with the community** once posted), opens a pop-up to post it",
+        "**Continue with** the client's first name, button for a follow-up call (practice sessions only)",
+        "**The session** and **POWER skills** boxes, each area opens to show evidence and a **Better** tip",
+        "**Moments from the call** cards marked **Worked well** or **Missed chance**, with a **Try instead** line",
+        "**Your one thing for next time** box",
+        "**What** the client **shared** and **What** the client **agreed to** lists",
+        "**The call** section with a play button, waveform, chapters, speed button and the written chat with notes",
+        "**Try that moment again** button beside a missed chance, starts a short replay call",
+        "**Show the whole call** / **Show less** button under the call",
+        "**Try scoring again** button, appears if scoring takes over a minute"
+      ],
+      "notes": "Right after a call the page shows a scoring screen and refreshes until the report is ready; a call too short to score says so. In the share pop-up you can edit the **Title** and **Post**, choose Score **Show**/**Hide**, post in **Feedback** or **Wins**, then press **Post it** (or **Stop sharing the report** if already shared). Talk it through, Practise again, Share and replays are only for your own sessions; replays only for practice sessions, not Certification."
+    },
+    {
+      "path": "/coach/support",
+      "adminPath": "/admin/support",
+      "hash": "2d49d16516fd96be",
+      "coachVisible": true,
+      "title": "Support",
+      "where": "Support (in the app menu)",
+      "summary": "Chat with Zander and Pam at BCA: start a new chat, read replies, and mark chats done.",
+      "tabs": [],
+      "controls": [
+        "**New chat** button beside the **Your chats** heading, starts a chat with BCA",
+        "**Needs you** group: chats waiting for your reply, with an \"N new\" badge",
+        "**Open** group: chats still going where nobody is waiting on you",
+        "**Done** group: finished chats, folded away until you click it",
+        "**Post in community** button in the welcome box on the right (above the list on phones)",
+        "**Next support call** pill in the welcome box, opens the calendar when a call is coming up",
+        "Click a chat to read it in the box on the right",
+        "Message box at the bottom of a chat, with attachments, to write a reply",
+        "**Mark done** / **Reopen** button at the top of an open chat",
+        "Chat name at the top of an open chat: click to rename it",
+        "**Open ... page** button at the top of a chat, when it is about a particular page",
+        "Tick **Seen** on BCA's messages so the chat leaves Needs you without a reply"
+      ],
+      "notes": "The Help tab (Chats / Help tabs and the help centre with search and topics) is admin-only, so coaches do not see it and Ava must not offer it. We aim to reply within 2 business days. Zander answers app questions; Pam answers coaching questions."
+    },
+    {
+      "path": "/coach/toolkit",
+      "adminPath": "/admin/toolkit",
+      "hash": "20e5935e52be6cd1",
+      "coachVisible": true,
+      "title": "Toolkit",
+      "where": "Get Clients → Toolkit",
+      "summary": "Download your 90-day programme brochure, social posts, banners, print files and brand graphics with your name, photo and QR code.",
+      "tabs": [
+        {
+          "label": "Links",
+          "path": null
+        },
+        {
+          "label": "Brochure",
+          "path": "/coach/toolkit"
+        },
+        {
+          "label": "Social media posts",
+          "path": "/coach/toolkit?view=social"
+        },
+        {
+          "label": "LinkedIn, email and calls",
+          "path": "/coach/toolkit?view=linkedin"
+        },
+        {
+          "label": "Print",
+          "path": "/coach/toolkit?view=print"
+        },
+        {
+          "label": "Brand graphics",
+          "path": "/coach/toolkit?view=brand"
+        }
+      ],
+      "controls": [
+        "**Documents you send** section on Brochure tab, with a preview of the 90-day programme",
+        "**Show the fee** tick box under the brochure preview (price stays off unless ticked)",
+        "**Print or save PDF** button under the brochure preview",
+        "**Event name** box on the event banner card (Print tab), default \"Profit Workshop\"",
+        "**PDF** button on print cards (opens the print view)",
+        "**PNG** button on each graphic card",
+        "**SVG** button on each graphic card, for a designer",
+        "**Links** link in the yellow notice, takes you to set your public link",
+        "Brand graphics tab shows the BOSS Compass, BOSS Wheel and the 50 playbooks in groups"
+      ],
+      "notes": "The brochure only shows once Your Story and Your Offer are written in My Blueprint; until then buttons link to the missing parts. QR codes need a public link set in Links, otherwise placeholders appear. The Brand graphics tab is generic and has no personal QR code."
+    }
+  ]
+}

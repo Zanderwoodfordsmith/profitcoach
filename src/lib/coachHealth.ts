@@ -197,6 +197,8 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
         .select("coach_id, campaign_id, status, interest_outcome")
         .in("coach_id", ids)
         .gte("updated_at", since30)
+        // Only replies and interest are counted below; fetching every lead took ~20s.
+        .or(`status.in.(replied,${[...INTERESTED].join(",")}),interest_outcome.eq.positive`)
         .range(f, t)
     ),
     supabaseAdmin.from("ghl_appointments").select("coach_id, calendar_name, prospect_name, start_time, created_at, campaign_lead_id").gte("created_at", since30),
@@ -240,14 +242,16 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
   }
   // Acceptance among people invited in the window.
   const accepted = new Map<string, number>();
-  for (const [coachId, leadIds] of invitedLeadIds) {
-    let n = 0;
-    for (let i = 0; i < leadIds.length; i += 300) {
-      const { data } = await supabaseAdmin.from("linkedin_campaign_leads").select("status").in("id", leadIds.slice(i, i + 300));
-      for (const l of data ?? []) if (ACCEPTED.has(String(l.status))) n += 1;
-    }
-    accepted.set(coachId, n);
-  }
+  await Promise.all(
+    [...invitedLeadIds].map(async ([coachId, leadIds]) => {
+      let n = 0;
+      for (let i = 0; i < leadIds.length; i += 300) {
+        const { data } = await supabaseAdmin.from("linkedin_campaign_leads").select("status").in("id", leadIds.slice(i, i + 300));
+        for (const l of data ?? []) if (ACCEPTED.has(String(l.status))) n += 1;
+      }
+      accepted.set(coachId, n);
+    })
+  );
 
   // Imported Sales Robot history lives in archived campaigns; it isn't this month's activity.
   const { data: archived } = await supabaseAdmin.from("linkedin_campaigns").select("id").in("coach_id", ids).eq("status", "archived");

@@ -16,7 +16,7 @@ import type { AgentMode } from "./types";
 const CONTENT_ROOT = path.join(process.cwd(), "content");
 const CAPABILITIES_ROOT = path.join(process.cwd(), "content", "agent", "capabilities");
 
-const REFERENCE_MAX_CHARS = 14_000;
+const REFERENCE_MAX_CHARS = 20_000;
 
 /** References that live in code rather than in a Markdown file. */
 export const CODE_REFERENCES: Record<string, { name: string; text: () => string }> = {

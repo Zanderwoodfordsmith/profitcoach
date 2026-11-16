@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+import { findAppPage, linkForPath } from "../appPages";
 import type { AgentToolDef } from "../types";
 import { AgentToolError, coachOf, isUuid, str } from "./util";
 
@@ -43,19 +44,27 @@ export const guideTools: AgentToolDef[] = [
     name: "link_to_page",
     label: "Finding the page",
     description:
-      "Give the person a button to a page in the app. Page keys come from the app map. For one campaign use page \"campaign\" with campaign_id.",
+      "Give the person a button to a page in the app. Pass `path`: any page or tab path from the page map (app-pages.md), e.g. /coach/calls or /coach/campaigns?tab=pool; for a page about one item, fill in the real id. The older `page` keys still work; for one campaign use page \"campaign\" with campaign_id.",
     input_schema: {
       type: "object",
       properties: {
+        path: { type: "string", description: "A page or tab path from the page map" },
         page: { type: "string", enum: PAGE_KEYS },
         campaign_id: { type: "string" },
         label: { type: "string", description: "Optional button text" },
       },
-      required: ["page"],
     },
     run: async (input, ctx) => {
-      const link = pageHref(ctx.mode, str(input, "page"), str(input, "campaign_id"));
-      if (!link) throw new AgentToolError("Unknown page, or a campaign page without a campaign id.");
+      const wanted = str(input, "path");
+      let link: { href: string; label: string } | null = null;
+      if (wanted) {
+        const href = linkForPath(ctx.mode, wanted);
+        if (!href) throw new AgentToolError("That path is not in the page map. Use a page or tab path from app-pages.md.");
+        link = { href, label: `Open ${findAppPage(wanted)?.title ?? "the page"}` };
+      } else {
+        link = pageHref(ctx.mode, str(input, "page"), str(input, "campaign_id"));
+        if (!link) throw new AgentToolError("Unknown page, or a campaign page without a campaign id.");
+      }
       const label = str(input, "label") || link.label;
       return {
         ok: true,
@@ -64,6 +73,30 @@ export const guideTools: AgentToolDef[] = [
             ? "Admin pages show the coach you are viewing as. Use View as coach to see theirs."
             : undefined,
         _link: { href: link.href, label },
+      };
+    },
+  },
+  {
+    name: "page_details",
+    label: "Checking the page",
+    description:
+      "What is on one page: its tabs, the main buttons and boxes with their exact labels, and what must be connected first. Call it before naming buttons on a page. Pass a path from the page map.",
+    input_schema: {
+      type: "object",
+      properties: { path: { type: "string" } },
+      required: ["path"],
+    },
+    run: async (input) => {
+      const page = findAppPage(str(input, "path"));
+      if (!page) throw new AgentToolError("That path is not in the page map.");
+      return {
+        title: page.title,
+        path: page.path,
+        where: page.where,
+        summary: page.summary,
+        tabs: page.tabs,
+        buttons_and_boxes: page.controls,
+        notes: page.notes || undefined,
       };
     },
   },

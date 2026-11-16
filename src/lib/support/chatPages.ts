@@ -73,5 +73,24 @@ export const CHAT_PAGES: ChatPage[] = [
 /** The listed page for a saved link, or null. */
 export function chatPageFor(path: string | null | undefined): ChatPage | null {
   if (!path) return null;
+  if (CONVERSATION_PATH.test(path)) {
+    return {
+      path,
+      group: "The app",
+      name: "A conversation",
+      button: "Open the conversation",
+      about: "one of the coach's conversations with a prospect",
+    };
+  }
   return CHAT_PAGES.find((page) => page.path === path) ?? null;
+}
+
+/**
+ * One of the coach's conversations with a prospect (16 Nov, job 224): BCA starts
+ * a chat about a reply, and the chat's button opens that conversation.
+ */
+const CONVERSATION_PATH = /^\/coach\/conversations\?conversation=[0-9a-f-]{36}$/i;
+
+export function conversationChatPath(conversationId: string): string {
+  return `/coach/conversations?conversation=${conversationId}`;
 }

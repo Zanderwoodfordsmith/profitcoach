@@ -33,15 +33,37 @@ export async function listOnboardingTranscripts(
   return (data ?? []) as OnboardingSourceRow[];
 }
 
-export function onboardingTranscriptText(rows: OnboardingSourceRow[]): string {
-  if (!rows.length) return "";
+/** Pam's notes from the Blueprint Call: what was agreed with the coach. */
+export function isCallNotes(row: Pick<OnboardingSourceRow, "source">): boolean {
+  return row.source === "blueprint_call_notes";
+}
+
+function sourceText(rows: OnboardingSourceRow[], cap: number): string {
   return rows
     .map((row) => {
       const when = row.called_at ? ` (${row.called_at.slice(0, 10)})` : "";
       return `### ${row.title || "Onboarding call"}${when}\n\n${row.body.trim()}`;
     })
     .join("\n\n")
-    .slice(0, 14_000);
+    .slice(0, cap);
+}
+
+/**
+ * Pam's call notes first, with their own room (16 Nov): they are what the
+ * coach agreed, so they win over older answers. Then the calls themselves.
+ */
+export function onboardingTranscriptText(rows: OnboardingSourceRow[]): string {
+  if (!rows.length) return "";
+  const notes = rows.filter(isCallNotes);
+  const calls = rows.filter((row) => !isCallNotes(row));
+  return [
+    notes.length
+      ? `Pam's notes from the Blueprint Call. They were agreed with the coach on the call: where they differ from older answers, follow them. Where a doc holds several versions, the last one wins. Never repeat a claim about the coach's results that their own answers don't back up.\n\n${sourceText(notes, 24_000)}`
+      : "",
+    calls.length ? sourceText(calls, 14_000) : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 async function coachIdentity(coachId: string): Promise<{

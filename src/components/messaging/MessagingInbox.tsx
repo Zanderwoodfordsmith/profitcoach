@@ -71,6 +71,7 @@ import {
 } from "@/lib/messaging/messageReactions";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { MessageCoachButton } from "@/components/messaging/MessageCoachButton";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
@@ -192,6 +193,7 @@ type ConversationRow = {
   last_preview?: string | null;
   last_channel?: string | null;
   last_direction?: string | null;
+  has_inbound?: boolean | null;
   prospect_tags?: string[];
   in_campaign?: boolean;
   campaign_ids?: string[];
@@ -1043,6 +1045,7 @@ function inboxEmptyCopy(
   if (searching) return "No conversations match that search.";
   if (filters.otherEmail) {
     return filters.needsReply ||
+      filters.replied ||
       filters.hasBooking ||
       filters.channel !== "all" ||
       Boolean(filters.tag) ||
@@ -3504,8 +3507,11 @@ export function MessagingInbox({
   useEffect(() => {
     const id = (searchParams.get("conversation") || "").trim();
     if (!/^[0-9a-f-]{36}$/i.test(id) || avaDeepLinkRef.current === id) return;
-    avaDeepLinkRef.current = id;
-    const t = setTimeout(() => openConversation(id), 0);
+    // Mark it done only once it opens: a re-render can cancel the timer first.
+    const t = setTimeout(() => {
+      avaDeepLinkRef.current = id;
+      openConversation(id);
+    }, 0);
     return () => clearTimeout(t);
   }, [searchParams, openConversation]);
 
@@ -4529,6 +4535,11 @@ export function MessagingInbox({
                             hint: "Last message was inbound",
                           },
                           {
+                            key: "replied" as const,
+                            label: "Replied",
+                            hint: "They've written back at least once",
+                          },
+                          {
                             key: "hasBooking" as const,
                             label: "Has booking",
                             hint: "Linked to a booked call",
@@ -5327,6 +5338,9 @@ export function MessagingInbox({
                     >
                       Don't import
                     </button>
+                  ) : null}
+                  {impersonatingCoachId ? (
+                    <MessageCoachButton conversationId={selected.id} />
                   ) : null}
                   {selected ? (
                     <ReplyDispositionBar

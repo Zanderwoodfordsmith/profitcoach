@@ -1,14 +1,11 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { use } from "react";
-
-import { AdminPracticeDetail } from "@/components/admin/AdminPracticeDetail";
-
-export default function AdminBlueprintRecordPage({
+/** A coach's record now opens their Blueprint in the coach view (16 Nov). */
+export default async function AdminBlueprintRecordPage({
   params,
 }: {
   params: Promise<{ coachId: string }>;
 }) {
-  const { coachId } = use(params);
-  return <AdminPracticeDetail coachId={coachId} />;
+  const { coachId } = await params;
+  redirect(`/admin/blueprint/coach?coach=${encodeURIComponent(coachId)}`);
 }

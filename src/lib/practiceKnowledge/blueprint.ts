@@ -58,6 +58,8 @@ export type FieldSpec = {
    * following the phone number, a detected time zone, a connected inbox, or an
    * on/off switch for a two-option answer (on is the first option).
    */
+  /** A pounds amount: digits only, shown with £, stored like "£12,000". */
+  money?: boolean;
   widget?: "phone" | "whatsapp" | "timezone" | "hours" | "email" | "tone" | "style" | "switch" | "birthday";
   /** Only shown when another answer is one of these values, e.g. guarantee terms once there is a guarantee. */
   showIf?: { path: FieldSpec["path"]; in: string[] };
@@ -359,6 +361,9 @@ const GROUPS: BlueprintGroup[] = [
             key: "voice:sounds",
             title: "Sounds like you",
             source: "from_you",
+            // 16 Nov: confusing, and the writers get the coach's voice from LinkedIn posts and the other answers. Earlier answers still reach them.
+            face: "stored",
+            retired: true,
             about: "A short message you would actually send. The writers copy its rhythm and words.",
             feeds: "Every message BCA writes for you",
             fields: [
@@ -482,12 +487,13 @@ const GROUPS: BlueprintGroup[] = [
             id: "goal",
             key: "setup:goal",
             part: "Practice Setup",
-            title: "Your goal for the next 12 months",
+            // 16 Nov: one number instead of a free-text goal, so it is clear and the targets can use it.
+            title: "Your monthly income goal",
             source: "from_you",
-            about: "How many clients you want, what you want to earn, and how much you want to work. We plan your campaigns and targets around it.",
+            about: "What you want to earn each month from coaching, 12 months from now. We plan your campaigns and targets around it.",
             feeds: "Your targets, how hard we run your campaigns",
             fields: [
-              { path: "practice.goal_12_months", label: "Your goal for the next 12 months", kind: "longtext", example: "8 clients at £1,500 a month by next November, working four days a week", help: "Clients, income and hours. A rough number is fine.", ask: "What do you want from your practice in the next 12 months? How many clients, what you want to earn, and how much you want to work?" },
+              { path: "practice.goal_12_months", label: "Your monthly income goal", kind: "text", money: true, example: "12,000", help: "Pounds a month, 12 months from now. A rough number is fine.", ask: "In 12 months, how much do you want to earn a month from coaching?" },
             ],
           },
           {
@@ -607,7 +613,7 @@ const GROUPS: BlueprintGroup[] = [
             about: "The person every message is written to: who they are, where they spend their time, and how they think.",
             feeds: "The walkthrough, campaign messaging",
             fields: [
-              { path: "client.characteristics", label: "Who they are", kind: "list", required: true, example: "Late 40s, sales director, earning well into six figures\nOn LinkedIn most days, plays golf at the weekend\nAmbitious, and wants financial freedom without losing the family", help: "Age, role, family and money, where they spend their time, and what they value. Strongest first.", ask: "Describe the person you most want to help. Age, role, family, what they earn, and how they spend their time, in a few short lines." },
+              { path: "client.characteristics", label: "Who they are", kind: "list", required: true, example: "Early 50s, founder and MD of a 30-person engineering firm\nOn LinkedIn most days, plays golf at the weekend\nProud of what they have built, and wants it to run without them", help: "Age, role, family and money, where they spend their time, and what they value. Strongest first.", ask: "Describe the person you most want to help. Age, role, family, what they earn, and how they spend their time, in a few short lines." },
             ],
           },
           {
@@ -617,8 +623,8 @@ const GROUPS: BlueprintGroup[] = [
             about: "What they want less of, and what they want more of. Today and later both go in the same box.",
             feeds: "Pain points, campaign messaging, call script",
             fields: [
-              { path: "client.pains_now", label: "Less of", kind: "list", required: true, example: "No say over his own week\nThe job has started to feel like a trap\nAnother five years of the same if nothing changes", help: "What they want less of: what hurts today, the daily frustrations, and what happens if they leave it. In their words, strongest first.", ask: "What does this person want less of right now, and what happens if they leave it? A few lines, strongest first." },
-              { path: "client.desires_now", label: "More of", kind: "list", example: "A week he can plan himself\nTo be home for dinner\nHis own practice, earning properly", help: "What they want more of: what they want soon, and the life they picture once this is solved.", ask: "What does this person want more of instead, soon and in the life they picture?" },
+              { path: "client.pains_now", label: "Less of", kind: "list", required: true, example: "Every decision still comes back to him\nSales go up but the bank balance does not\nAnother five years of the same if nothing changes", help: "What they want less of: what hurts today, the daily frustrations, and what happens if they leave it. In their words, strongest first.", ask: "What does this person want less of right now, and what happens if they leave it? A few lines, strongest first." },
+              { path: "client.desires_now", label: "More of", kind: "list", example: "A week he can plan himself\nTo be home for dinner\nA team that runs the day without him", help: "What they want more of: what they want soon, and the life they picture once this is solved.", ask: "What does this person want more of instead, soon and in the life they picture?" },
             ],
           },
           {
@@ -628,7 +634,7 @@ const GROUPS: BlueprintGroup[] = [
             about: "How this person talks: what they say and think, and the words that would put them off.",
             feeds: "Campaign messaging, LinkedIn, newsletters, call script",
             fields: [
-              { path: "client.says", label: "What they say and think", kind: "list", required: true, example: "I just need to get through this quarter\nI would go on my own if I knew where to start\nWhat if I cannot provide for my family?", help: "What they say out loud, what they think in private, and what they keep hearing from others. Their words, not marketing language.", ask: "What does this person say about their business when they are fed up? Use their actual words." },
+              { path: "client.says", label: "What they say and think", kind: "list", required: true, example: "I just need to get through this quarter\nEverything still comes back to me\nWhere is the money actually going?", help: "What they say out loud, what they think in private, and what they keep hearing from others. Their words, not marketing language.", ask: "What does this person say about their business when they are fed up? Use their actual words." },
               { path: "client.words_avoid", label: "Words to avoid", kind: "list", example: "Guru\nHustle\nPassive income", help: "Words that sound like everyone else, or that this person would not trust." },
             ],
           },
@@ -639,8 +645,8 @@ const GROUPS: BlueprintGroup[] = [
             about: "The moment they decide to get help, and what they say when they are interested and still hesitate.",
             feeds: "Campaign messaging, call script",
             fields: [
-              { path: "client.buying_triggers", label: "The moment they act", kind: "list", required: true, example: "Misses something important at home\nA boss who will not respect a boundary\nSees a friend with the life he wants", help: "The event that finally makes them say enough.", ask: "What event finally makes this person decide to get help?" },
-              { path: "client.objections", label: "Objections", kind: "list", example: "I cannot afford to drop the salary\nI have tried to start before and stalled\nWhat if it does not replace my income?", help: "What they say when they are interested and still hesitate." },
+              { path: "client.buying_triggers", label: "The moment they act", kind: "list", required: true, example: "Misses something important at home\nLoses a big customer or a key person\nA year of growth with no more profit to show for it", help: "The event that finally makes them say enough.", ask: "What event finally makes this person decide to get help?" },
+              { path: "client.objections", label: "Objections", kind: "list", example: "We cannot afford it right now\nWe have tried consultants before\nI have not got the time", help: "What they say when they are interested and still hesitate." },
             ],
           },
           {
@@ -650,7 +656,22 @@ const GROUPS: BlueprintGroup[] = [
             about: "Why they would pick you rather than do it alone or hire someone else, and what earns their trust.",
             feeds: "The offer, campaign messaging",
             fields: [
-              { path: "client.why_you", label: "Why you", kind: "longtext", required: true, example: "You have done their job, and you have the whole path ready, so they do not have to figure out the business and leave the salary on the same day.", help: "The difference they would care about: your authority, proof from owners like them, and any real limit on how many clients you take. Never invent a limit.", ask: "Why would they pick you, rather than do it alone or hire someone else? What proof would they trust?" },
+              { path: "client.why_you", label: "Why you", kind: "longtext", required: true, example: "You have run a business like theirs, so you know where the time and the money really go, and you help them fix it without months spent on the basics.", help: "The difference they would care about: your authority, proof from owners like them, and any real limit on how many clients you take. Never invent a limit.", ask: "Why would they pick you, rather than do it alone or hire someone else? What proof would they trust?" },
+            ],
+          },
+          {
+            // 16 Nov: the prospect list is built from this. Pam's call notes fill it; "Who signs off" answers carry over as job titles.
+            id: "list",
+            title: "Who goes on your list",
+            source: "from_you",
+            about: "The owners we search for on LinkedIn: what their business does, how big it is, where it is, and their job titles. We build your prospect list from it.",
+            feeds: "Your prospect list",
+            fields: [
+              { path: "market.list_sectors", label: "What their business does", kind: "list", required: true, example: "Independent gyms\nPadel, tennis and squash clubs\nClimbing centres", help: "The kinds of business to search for, one per line, in the words owners use about themselves. Each line can become its own list." },
+              { path: "market.list_size", label: "How big", kind: "text", required: true, example: "£1m to £10m, 11 to 50 staff", help: "Turnover and staff. Many owners never link their staff to the company page, so we also search the size band below." },
+              { path: "market.list_where", label: "Where", kind: "text", example: "United Kingdom", help: "Country or region. Left blank, we search the UK." },
+              { path: "market.buyer_roles", label: "Job titles", kind: "list", example: "Owner\nFounder\nManaging Director\nCommercial Director", help: "Who says yes to hiring you. Owner, founder, CEO and MD are always searched; add any others." },
+              { path: "market.list_leave_out", label: "Leave out", kind: "list", example: "Franchises and big chains\nCouncil-run leisure centres\nAnyone you already compete with", help: "Kinds of business to leave off the list." },
             ],
           },
           {
@@ -1155,6 +1176,18 @@ const GROUPS: BlueprintGroup[] = [
     ],
   },
 ];
+
+/**
+ * A box we no longer ask never blocks anything (16 Nov): nobody can see it to
+ * fill it in, so it is never required. Earlier answers still reach the writers.
+ */
+for (const group of GROUPS) {
+  for (const page of group.pages) {
+    for (const section of page.sections) {
+      if (section.retired && section.fields) section.fields = section.fields.map(({ required: _required, ...field }) => field);
+    }
+  }
+}
 
 export const BLUEPRINT_GROUPS: BlueprintGroup[] = GROUPS.filter((group) => !group.hidden);
 

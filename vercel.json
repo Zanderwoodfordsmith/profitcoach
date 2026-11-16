@@ -85,6 +85,10 @@
     {
       "path": "/api/cron/blueprint-progress",
       "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/ava-chat-review",
+      "schedule": "0 7 * * 1"
     }
   ]
 }

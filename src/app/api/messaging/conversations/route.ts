@@ -56,7 +56,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabaseAdmin
     .from("messaging_conversations")
     .select(
-      "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, prospect_avatar_url, prospect_linkedin_url, prospect_linkedin_provider_id, prospect_business_name, last_message_at, created_at, starred, unread_count, last_preview, last_channel, last_direction, unipile_chat_id"
+      "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, prospect_avatar_url, prospect_linkedin_url, prospect_linkedin_provider_id, prospect_business_name, last_message_at, created_at, starred, unread_count, last_preview, last_channel, last_direction, has_inbound, unipile_chat_id"
     )
     .eq("coach_id", coachId)
     .is("hidden_at", null)

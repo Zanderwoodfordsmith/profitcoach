@@ -1,10 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, MessageSquare, PanelLeftOpen, X, Zap } from "lucide-react";
 
 import type { AgentShow } from "@/lib/agent/types";
@@ -216,9 +216,37 @@ export function PracticeShell({
   function openAssistant() {
     requestAvaOpen();
   }
+  // The right-hand column slides in when someone opens it, and slides out when they close it.
+  const sideRef = useRef<HTMLElement>(null);
+  const sideShown = Boolean(side && sidePanelDesktop === true);
+  // Not when a page opens its chat as it loads: only when someone asks for it.
+  const settled = useRef(false);
+  useEffect(() => {
+    if (!ready) return;
+    const timer = window.setTimeout(() => (settled.current = true), 1000);
+    return () => window.clearTimeout(timer);
+  }, [ready]);
+  useLayoutEffect(() => {
+    if (sideShown && settled.current && sideRef.current) slideSide(sideRef.current, "in");
+  }, [sideShown]);
+  const closing = useRef(false);
   function closeSide() {
-    setCalling(false);
-    comments?.close();
+    const shut = () => {
+      setCalling(false);
+      comments?.close();
+    };
+    const slide = sideRef.current && !closing.current ? slideSide(sideRef.current, "out") : null;
+    if (!slide) return shut();
+    closing.current = true;
+    void slide.finished
+      .catch(() => undefined)
+      .then(() => {
+        flushSync(shut);
+        // Gone by now; if not, put it back as it was.
+        slide.cancel();
+        (sideRef.current?.firstElementChild as HTMLElement | null)?.style.removeProperty("width");
+        closing.current = false;
+      });
   }
   function switchSide(mode: SideMode) {
     setCalling(false);
@@ -669,8 +697,9 @@ export function PracticeShell({
 
       {side && sidePanelDesktop === true ? (
           <aside
+            ref={sideRef}
             aria-label={side === "call" ? "Call with Ava" : "Chat"}
-            className={`bp-no-print hidden shrink-0 flex-col border-l border-slate-200 lg:flex ${clean ? "bp-clean-side" : ""} ${side === "comments" ? "bp-chat-side" : ""} ${clean && side === "comments" ? "basis-[25rem] grow-[1000] max-w-[32rem]" : "w-[23rem]"} ${
+            className={`bp-no-print hidden shrink-0 flex-col overflow-hidden border-l border-slate-200 lg:flex ${clean ? "bp-clean-side" : ""} ${side === "comments" ? "bp-chat-side" : ""} ${clean && side === "comments" ? "basis-[25rem] grow-[1000] max-w-[32rem]" : "w-[23rem]"} ${
               embedded
                 ? "lg:h-full lg:min-h-0"
                 : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)] lg:self-start"
@@ -783,6 +812,33 @@ function CleanChatButton({ pageSlug, onOpen, className }: { pageSlug: string; on
       ) : null}
     </button>
   );
+}
+
+/**
+ * The chat column grows in from the right and slows as it lands (ease-out), pushing the
+ * page across, like Ava's chats panel. It leaves faster, speeding up as it goes (ease-in).
+ * The chat inside keeps its width meanwhile, so its words don't rewrap. Off for reduced motion.
+ */
+function slideSide(column: HTMLElement, way: "in" | "out"): Animation | null {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
+  const width = column.getBoundingClientRect().width;
+  const chat = column.firstElementChild as HTMLElement | null;
+  if (chat) chat.style.width = `${chat.getBoundingClientRect().width}px`;
+  const open = [{ maxWidth: "0px" }, { maxWidth: `${width}px` }];
+  const slide = column.animate(
+    way === "in" ? open : open.reverse(),
+    way === "in"
+      ? { duration: 340, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }
+      : { duration: 200, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" },
+  );
+  if (way === "in") {
+    // Drawing the chat takes a moment, and the first frame after it is stamped with the time
+    // before it. Start the clock a frame later, or the start of the slide is skipped.
+    slide.pause();
+    requestAnimationFrame(() => requestAnimationFrame(() => slide.play()));
+    void slide.finished.catch(() => undefined).then(() => chat?.style.removeProperty("width"));
+  }
+  return slide;
 }
 
 /** BCA only, in the contents: Ava has something waiting on this page, or could write it now. */

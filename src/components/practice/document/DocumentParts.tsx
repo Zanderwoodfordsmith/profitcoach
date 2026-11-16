@@ -218,9 +218,10 @@ export function ChapterView({ group, index }: { group: BlueprintGroup; index: nu
 }
 
 export function BuildBar({ compact = false }: { compact?: boolean }) {
-  const { building, buildAll, stopBuild, knowledge } = usePractice();
+  const { building, buildAll, stopBuild, knowledge, viewer } = usePractice();
   const progress = useBlueprintProgress();
-  if (!progress || !knowledge) return null;
+  // 16 Nov: Ava drafts for BCA to check first, so coaches no longer write straight into their Blueprint.
+  if (!progress || !knowledge || viewer === "coach") return null;
   const running = building.active.length > 0;
   const pct = building.total ? Math.round((building.done / building.total) * 100) : 0;
   const allWritten = progress.written === progress.toWrite;

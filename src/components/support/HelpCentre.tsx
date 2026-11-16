@@ -40,7 +40,8 @@ const TOPIC_ICONS: Record<HelpTopicId, LucideIcon> = {
   "where-things-moved": Signpost,
 };
 
-export const HELP_BASE = "/coach/support?tab=help";
+// Query-only, so Help links stay on whichever Support page shows them (coach or admin).
+export const HELP_BASE = "?tab=help";
 const NEW_CHAT = "/coach/support?new=1";
 
 export function helpHref(parts: { topic?: HelpTopicId | null; article?: string | null }): string {

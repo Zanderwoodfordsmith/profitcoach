@@ -9,7 +9,7 @@ import { usePractice } from "@/components/practice/PracticeProvider";
 import { buttonClass } from "@/components/ui/Button";
 import { changedSince, missingLabel, type AvaWork } from "@/lib/launch/avaWork";
 import { sectionByKey } from "@/lib/practiceKnowledge/blueprint";
-import type { ActivityItem, AnswerFill, JobSkill } from "@/lib/launch/jobActivity";
+import type { ActivityItem, AnswerFill, JobSkill, ProspectSearchDraft } from "@/lib/launch/jobActivity";
 import { formatSupportRelativeCompact } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -147,6 +147,8 @@ export function ActivityTab({
   if (!feed) return <p className="mt-8 text-sm text-slate-500">Loading the activity…</p>;
 
   const hasOpenDraft = feed.items.some((i) => i.kind === "draft" && i.status === "open");
+  // Ava filled the page's boxes herself: the next writing waits on their release, not on anyone typing (16 Nov).
+  const hasOpenBoxes = feed.items.some((i) => i.kind === "answers" && i.status === "open" && i.payload.by === "ava");
   const earlier = embedded ? feed.items.filter((i) => i.status !== "open").length : 0;
   const items = embedded && !showEarlier ? feed.items.filter((i) => i.status === "open") : feed.items;
 
@@ -164,6 +166,7 @@ export function ActivityTab({
         first={first}
         feed={feed}
         hasOpenDraft={hasOpenDraft}
+        hasOpenBoxes={hasOpenBoxes}
         embedded={embedded}
         busy={busy}
         onRun={() => void act("Ava is writing. This takes a minute or two.", { action: "run" })}
@@ -185,6 +188,9 @@ export function ActivityTab({
               onSend={(id, text) => act(`Sending to ${first}…`, { action: "send", id, text }, { changes: true })}
               onSaveAnswers={(id, answers) => act("Putting the answers in…", { action: "save_answers", id, answers }, { changes: true })}
               onDismiss={(id) => void act("Dismissing…", { action: "dismiss", id })}
+              onAsk={() => void act(`Ava is writing to ${first}…`, { action: "ask" })}
+              onImport={(id, picks) => act("Starting the import…", { action: "import", id, picks }, { changes: true })}
+              onReplan={(text) => act("Ava is planning the lists again…", { action: "draft_searches", text })}
             />
           </li>
         ))}
@@ -232,6 +238,7 @@ function AvaCard({
   first,
   feed,
   hasOpenDraft,
+  hasOpenBoxes,
   embedded,
   busy,
   onRun,
@@ -243,6 +250,7 @@ function AvaCard({
   first: string;
   feed: Feed;
   hasOpenDraft: boolean;
+  hasOpenBoxes: boolean;
   embedded: boolean;
   busy: string | null;
   onRun: () => void;
@@ -258,7 +266,15 @@ function AvaCard({
   const { saved, asWritten } = feed.score;
 
   let line: React.ReactNode;
-  if (!ava.toWrite.length) {
+  if (hasOpenBoxes) {
+    line = ava.toWrite.length ? (
+      <>
+        Ava filled in the boxes below. Release them and she writes {titles(ava.toWrite)} straight after.
+      </>
+    ) : (
+      "Ava filled in the boxes below. Check them, then release them."
+    );
+  } else if (!ava.toWrite.length) {
     line =
       scope.key === "linkedin-profile" || scope.key === "page:linkedin"
         ? embedded
@@ -304,7 +320,7 @@ function AvaCard({
         <AvaHalo size={30} className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1 text-[15px] leading-normal text-slate-700">
           {line}
-          {ava.toWrite.length || canFill ? (
+          {!hasOpenBoxes && (ava.toWrite.length || canFill) ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {ava.toWrite.length ? (
                 <button type="button" disabled={Boolean(busy)} onClick={onRun} className={buttonClass(ava.ready ? "main" : "second", "small")}>
@@ -395,6 +411,9 @@ function FeedItem({
   onSend,
   onSaveAnswers,
   onDismiss,
+  onAsk,
+  onImport,
+  onReplan,
 }: {
   item: ActivityItem;
   author?: { name: string; avatar_url: string | null };
@@ -404,6 +423,9 @@ function FeedItem({
   onSend: (id: string, text: string) => Promise<boolean>;
   onSaveAnswers: (id: string, answers: AnswerFill[]) => Promise<boolean>;
   onDismiss: (id: string) => void;
+  onAsk: () => void;
+  onImport: (id: string, picks: { id: string; on: boolean }[]) => Promise<boolean>;
+  onReplan: (text: string) => Promise<boolean>;
 }) {
   if (item.kind === "event") {
     return (
@@ -437,7 +459,10 @@ function FeedItem({
   }
   if (item.kind === "draft") return <DraftCard item={item} busy={busy} onSave={onSave} onDismiss={onDismiss} />;
   if (item.kind === "message") return <MessageCard item={item} first={first} busy={busy} onSend={onSend} onDismiss={onDismiss} />;
-  return <AnswersCard item={item} first={first} busy={busy} onSave={onSaveAnswers} onDismiss={onDismiss} />;
+  if (item.kind === "searches") {
+    return <SearchesCard item={item} busy={busy} onImport={onImport} onReplan={onReplan} onDismiss={onDismiss} />;
+  }
+  return <AnswersCard item={item} first={first} busy={busy} onSave={onSaveAnswers} onDismiss={onDismiss} onAsk={onAsk} />;
 }
 
 function CardHead({ item, title }: { item: ActivityItem; title: string }) {
@@ -521,12 +546,12 @@ function DraftCard({
       {open ? (
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
           <button type="button" disabled={busy} onClick={() => onSave(item.id)} className={buttonClass("main", "small")}>
-            Save to the Blueprint
+            Release
           </button>
           <button type="button" disabled={busy} onClick={() => onDismiss(item.id)} className={buttonClass("quiet", "small")}>
             Dismiss
           </button>
-          <span className="text-xs text-slate-500">Saving shows it to the coach to check. To change it, tell Ava below.</span>
+          <span className="text-xs text-slate-500">Release puts it in the Blueprint for the coach to check, and Ava drafts a message telling them. To change it, tell Ava below.</span>
         </div>
       ) : null}
     </article>
@@ -589,22 +614,29 @@ function AnswersCard({
   busy,
   onSave,
   onDismiss,
+  onAsk,
 }: {
   item: ActivityItem;
   first: string;
   busy: boolean;
   onSave: (id: string, answers: AnswerFill[]) => Promise<boolean>;
   onDismiss: (id: string) => void;
+  onAsk: () => void;
 }) {
   const open = item.status === "open";
   const [answers, setAnswers] = useState<AnswerFill[]>(item.payload.answers ?? []);
+  // Ava filled these from what we know (16 Nov), rather than picking them out of the coach's reply.
+  const byAva = item.payload.by === "ava";
+  const missing = item.payload.missing ?? [];
   return (
     <article className={`rounded-xl px-4 py-3.5 ring-1 ring-inset ${open ? "bg-white ring-[#0c5290]/30 shadow-sm" : "bg-white ring-slate-200"}`}>
-      <CardHead item={item} title={`${first}'s answers, from the chat`} />
+      <CardHead item={item} title={byAva ? "Ava filled in these boxes" : `${first}'s answers, from the chat`} />
+      {byAva && item.payload.thinking ? <p className="mt-1.5 text-sm leading-normal text-slate-500">{item.payload.thinking}</p> : null}
       <div className="mt-3 space-y-3">
         {answers.map((answer, i) => (
           <label key={answer.path} className="block">
             <span className="text-sm font-medium text-slate-900">{answer.label}</span>
+            {answer.from ? <span className="ml-2 text-xs text-slate-400">From {answer.from}</span> : null}
             {open ? (
               <textarea
                 value={answer.value}
@@ -618,15 +650,139 @@ function AnswersCard({
           </label>
         ))}
       </div>
+      {open && missing.length ? (
+        <div className="mt-3 rounded-lg bg-orange-50 px-3 py-2.5 text-sm text-orange-900">
+          <p>
+            Only {first} knows: <span className="font-medium">{missing.map((m) => m.label).join(", ")}</span>.
+          </p>
+          <button type="button" disabled={busy} onClick={onAsk} className={`mt-2 ${buttonClass("second", "small")}`}>
+            Ask {first}
+          </button>
+        </div>
+      ) : null}
       {open ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button type="button" disabled={busy} onClick={() => void onSave(item.id, answers)} className={buttonClass("main", "small")}>
-            Put into the Blueprint
+            {byAva ? `Release to ${first}` : "Put into the Blueprint"}
           </button>
           <button type="button" disabled={busy} onClick={() => onDismiss(item.id)} className={buttonClass("quiet", "small")}>
             Dismiss
           </button>
+          {byAva ? (
+            <span className="text-xs text-slate-500">Release puts these in {first}&rsquo;s Blueprint to check, and Ava drafts a message telling them.</span>
+          ) : null}
         </div>
+      ) : null}
+    </article>
+  );
+}
+
+/**
+ * Ava's prospect lists (16 Nov): her thinking, then each list with what
+ * LinkedIn says it finds. Untick what you don't want, ask her to change it,
+ * or Import it: the lists go into the coach's Pool one at a time.
+ */
+function SearchesCard({
+  item,
+  busy,
+  onImport,
+  onReplan,
+  onDismiss,
+}: {
+  item: ActivityItem;
+  busy: boolean;
+  onImport: (id: string, picks: { id: string; on: boolean }[]) => Promise<boolean>;
+  onReplan: (text: string) => Promise<boolean>;
+  onDismiss: (id: string) => void;
+}) {
+  const open = item.status === "open";
+  const [searches, setSearches] = useState<ProspectSearchDraft[]>(item.payload.searches ?? []);
+  const [change, setChange] = useState("");
+  const ticked = searches.filter((s) => s.on);
+  const known = ticked.every((s) => s.size !== null);
+  const total = ticked.reduce((sum, s) => sum + Math.min(s.size ?? 0, 2_500), 0);
+  const version = item.payload.version ?? 1;
+  return (
+    <article className={`rounded-xl px-4 py-3.5 ring-1 ring-inset ${open ? "bg-white ring-[#0c5290]/30 shadow-sm" : "bg-white ring-slate-200"}`}>
+      <CardHead item={item} title={`Ava's prospect lists${version > 1 ? ` · version ${version}` : ""}`} />
+      {item.payload.changes ? <p className="mt-1.5 text-sm text-slate-500">Changed: &ldquo;{item.payload.changes}&rdquo;</p> : null}
+      {item.payload.thinking ? <p className="mt-1.5 text-[15px] leading-normal text-slate-700">{item.payload.thinking}</p> : null}
+      {item.body ? <p className="mt-1.5 text-sm text-orange-800">{item.body}</p> : null}
+      <ul className="mt-3 divide-y divide-slate-100 border-y border-slate-100">
+        {searches.map((search, i) => (
+          <li key={search.id} className="flex items-start gap-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={search.on}
+              disabled={!open || busy}
+              onChange={(e) => setSearches((list) => list.map((s, j) => (j === i ? { ...s, on: e.target.checked } : s)))}
+              aria-label={`Import ${search.label}`}
+              className="mt-1 h-4 w-4 accent-[#0c5290]"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-sm font-semibold text-slate-900">{search.label}</span>
+                <span className="text-sm tabular-nums text-slate-500">
+                  {search.size === null ? "size unknown" : `${search.size.toLocaleString("en-GB")} people`}
+                  {search.size !== null && search.size > 2_500 ? " (LinkedIn gives 2,500)" : ""}
+                </span>
+              </p>
+              {search.why ? <p className="text-sm text-slate-600">{search.why}</p> : null}
+            </div>
+            <a
+              href={search.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-[#0c5290] hover:underline"
+            >
+              Sales Navigator
+              <ArrowUpRight className="h-3 w-3" aria-hidden />
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-sm text-slate-600">
+        {known ? `About ${total.toLocaleString("en-GB")} people ticked.` : "Some sizes are unknown."} Aim for 1,000 to 2,500; 800 at least where the market is thin.
+      </p>
+      {item.payload.imported?.length ? (
+        <p className="mt-1 text-sm text-slate-500">Imported so far: {item.payload.imported.map((l) => l.label).join(", ")}.</p>
+      ) : null}
+      {open ? (
+        <>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={busy || !ticked.length}
+              onClick={() => void onImport(item.id, searches.map((s) => ({ id: s.id, on: s.on })))}
+              className={buttonClass("main", "small")}
+            >
+              Import it
+            </button>
+            <button type="button" disabled={busy} onClick={() => onDismiss(item.id)} className={buttonClass("quiet", "small")}>
+              Dismiss
+            </button>
+            <span className="text-xs text-slate-500">Goes into the coach&rsquo;s Pool through their LinkedIn, one list at a time.</span>
+          </div>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (change.trim() && (await onReplan(change))) setChange("");
+            }}
+            className="mt-3 flex gap-2"
+          >
+            <input
+              value={change}
+              onChange={(e) => setChange(e.target.value)}
+              disabled={busy}
+              placeholder="Ask Ava to change the lists, e.g. add a 1 to 10 staff list"
+              aria-label="Ask Ava to change the lists"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/15"
+            />
+            <button type="submit" disabled={busy || !change.trim()} className={buttonClass("second", "small")}>
+              Change
+            </button>
+          </form>
+        </>
       ) : null}
     </article>
   );

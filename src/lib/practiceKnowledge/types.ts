@@ -252,6 +252,11 @@ export type PracticeKnowledgePayload = {
     avoid: Sourced<string[]> | null;
     geography_pref: Sourced<GeographyPref> | null;
     buyer_roles: Sourced<string[]> | null;
+    /** Who goes on the prospect list (16 Nov), filled by BCA from the Blueprint Call. */
+    list_sectors: Sourced<string[]> | null;
+    list_size: Sourced<string> | null;
+    list_where: Sourced<string> | null;
+    list_leave_out: Sourced<string[]> | null;
   };
   /** The person every message is written to. Filled on Your Ideal Client. */
   client: {

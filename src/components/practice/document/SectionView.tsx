@@ -126,6 +126,48 @@ function ResizeGrip({ onResize }: { onResize: (height: number) => void }) {
 }
 
 /** A box that is always ready to type in. It grows with the answer and saves when you leave it. */
+/** A pounds amount: digits only, £ in front, stored like "£12,000". An older written answer shows underneath until replaced. */
+function MoneyBox({ field }: { field: FieldSpec }) {
+  const { payload, saveField } = usePractice();
+  const current = payload ? fieldValue(payload, field.path)?.value : null;
+  const stored = String(current ?? "").trim();
+  const isAmount = /^£?[\d,]+$/.test(stored);
+  const digits = isAmount ? stored.replace(/\D/g, "") : "";
+  const [value, setValue] = useState(digits);
+  const [seen, setSeen] = useState(digits);
+  if (digits !== seen) {
+    setSeen(digits);
+    setValue(digits);
+  }
+  const shown = value ? Number(value).toLocaleString("en-GB") : "";
+
+  function save() {
+    if (value === digits) return;
+    saveField(field, value ? `£${Number(value).toLocaleString("en-GB")}` : "");
+  }
+
+  return (
+    <div>
+      <div className="relative max-w-[14rem]">
+        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[0.9375rem] text-[var(--bp-muted)]">£</span>
+        <input
+          id={`f-${field.path}`}
+          inputMode="numeric"
+          value={shown}
+          placeholder={field.example}
+          onChange={(e) => setValue(e.target.value.replace(/\D/g, "").slice(0, 9))}
+          onBlur={save}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          className={`${INPUT_BOX} pl-7 tabular-nums`}
+        />
+      </div>
+      {stored && !isAmount ? <p className="mt-1.5 px-0.5 text-xs text-[var(--bp-faint)]">You wrote before: {stored}</p> : null}
+    </div>
+  );
+}
+
 function AnswerBox({ field }: { field: FieldSpec }) {
   const { payload, saveField } = usePractice();
   const current = payload ? fieldValue(payload, field.path)?.value : null;
@@ -1076,6 +1118,8 @@ function blankRole(kind: CareerRole["kind"]): CareerRole {
  * Your career: one row per role, from LinkedIn until the coach changes
  * anything. Tick what we use, open a row to edit it or say what they did.
  */
+const CAREER_SHOWN = 6;
+
 function CareerEditor({ field }: { field: FieldSpec }) {
   const { payload, saveField, coachId, sample } = usePractice();
   const raw = payload ? fieldValue(payload, field.path)?.value : null;
@@ -1123,6 +1167,12 @@ function CareerEditor({ field }: { field: FieldSpec }) {
 
   const change = (id: string, patch: Partial<CareerRole>) => shown.map((r) => (r.id === id ? { ...r, ...patch } : r));
 
+  // Long careers fold (16 Nov): the first six ticked roles, plus any open one; the rest behind "Show more".
+  const [all, setAll] = useState(false);
+  const firstTicked = shown.filter((r) => r.show).slice(0, CAREER_SHOWN).map((r) => r.id);
+  const visible = all ? shown : shown.filter((r) => firstTicked.includes(r.id) || open.includes(r.id));
+  const folded = shown.length - visible.length;
+
   function add() {
     const role = blankRole("job");
     setRows([...shown, role]);
@@ -1157,7 +1207,7 @@ function CareerEditor({ field }: { field: FieldSpec }) {
         <p className="mb-2.5 px-0.5 text-sm text-[var(--bp-muted)]">From your LinkedIn. Untick anything you do not want us to use.</p>
       ) : null}
       <ul className="flex flex-col gap-2">
-        {shown.map((role, index) => {
+        {visible.map((role, index) => {
           const isOpen = open.includes(role.id);
           const own = role.kind === "own";
           const sub = [role.company, role.industry].filter(Boolean).join(" · ");
@@ -1250,6 +1300,16 @@ function CareerEditor({ field }: { field: FieldSpec }) {
           );
         })}
       </ul>
+      {folded > 0 || (all && shown.length > CAREER_SHOWN) ? (
+        <button
+          type="button"
+          onClick={() => setAll(!all)}
+          className="bp-no-print mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#f1f4f8] px-3 py-2 text-sm font-semibold text-[var(--bp-muted)] transition-colors hover:bg-[#e6ebf1] hover:text-[var(--bp-ink)]"
+        >
+          {all ? "Show less" : `Show ${folded} more`}
+          <ChevronDown className={`h-4 w-4 transition-transform ${all ? "rotate-180" : ""}`} aria-hidden />
+        </button>
+      ) : null}
       <div className="bp-no-print mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 px-0.5">
         <button type="button" onClick={add} className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--bp-blue)] hover:underline">
           <Plus className="h-4 w-4" aria-hidden />
@@ -1306,6 +1366,8 @@ function Field({ field, changed, solo }: { field: FieldSpec; changed?: boolean; 
         <CareerEditor field={field} />
       ) : structured ? (
         <ResultCards field={field} />
+      ) : field.money ? (
+        <MoneyBox field={field} />
       ) : (
         <AnswerBox field={field} />
       )}

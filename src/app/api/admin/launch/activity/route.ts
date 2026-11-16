@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { parseCoachIdHeader } from "@/lib/coachId";
 import {
@@ -12,12 +12,12 @@ import {
   openForCoaches,
   runAva,
   saveAnswers,
-  saveDraft,
   sendMessage,
   talkToAva,
   type AnswerFill,
 } from "@/lib/launch/jobActivity";
-import { isScope } from "@/lib/launch/avaWork";
+import { advanceCoach, draftPageAnswers, draftProspectSearches, importSearches, releaseDraft } from "@/lib/launch/avaAuto";
+import { isScope, scopePage } from "@/lib/launch/avaWork";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -76,13 +76,36 @@ export async function GET(request: Request) {
 }
 
 type Body = {
-  action?: "run" | "talk" | "ask" | "fill" | "save" | "send" | "save_answers" | "dismiss";
+  action?:
+    | "run"
+    | "talk"
+    | "ask"
+    | "fill"
+    | "save"
+    | "send"
+    | "save_answers"
+    | "dismiss"
+    | "draft_answers"
+    | "draft_searches"
+    | "import"
+    | "advance";
   coachId?: string;
   job?: string;
   id?: string;
   text?: string;
   answers?: AnswerFill[];
+  picks?: { id: string; on: boolean }[];
 };
+
+/** A release unblocks what comes next: Ava starts on it straight away, in the background. */
+function advanceLater(coachId: string | null, userId: string | null) {
+  if (!coachId) return;
+  after(() =>
+    advanceCoach(coachId, userId).catch((err) => {
+      console.error("advance after release:", err instanceof Error ? err.message : "failed");
+    })
+  );
+}
 
 export async function POST(request: Request) {
   const auth = await requireAdmin(request);
@@ -112,7 +135,8 @@ export async function POST(request: Request) {
         break;
       case "save":
         if (!body.id) return fail("Missing draft.");
-        await saveDraft(body.id, userId);
+        await releaseDraft(body.id, userId);
+        advanceLater(coachId, userId);
         break;
       case "send":
         if (!body.id) return fail("Missing message.");
@@ -121,7 +145,27 @@ export async function POST(request: Request) {
       case "save_answers":
         if (!body.id) return fail("Missing answers.");
         await saveAnswers(body.id, userId, body.answers);
+        advanceLater(coachId, userId);
         break;
+      case "draft_answers": {
+        const slug = job ? scopePage(job) : null;
+        if (!coachId || !slug) return fail("Unknown coach or page.");
+        await draftPageAnswers(coachId, slug, userId);
+        break;
+      }
+      case "draft_searches":
+        if (!coachId) return fail("Unknown coach.");
+        await draftProspectSearches(coachId, userId, body.text);
+        break;
+      case "import":
+        if (!body.id) return fail("Missing searches.");
+        await importSearches(body.id, userId, body.picks);
+        break;
+      case "advance": {
+        if (!coachId) return fail("Unknown coach.");
+        const started = await advanceCoach(coachId, userId);
+        return NextResponse.json({ ok: true, started });
+      }
       case "dismiss":
         if (!body.id) return fail("Missing item.");
         await dismiss(body.id, userId);

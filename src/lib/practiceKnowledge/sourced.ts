@@ -79,6 +79,10 @@ export function emptyPracticePayload(): PracticeKnowledgePayload {
       avoid: null,
       geography_pref: null,
       buyer_roles: null,
+      list_sectors: null,
+      list_size: null,
+      list_where: null,
+      list_leave_out: null,
     },
     client: {
       characteristics: null,

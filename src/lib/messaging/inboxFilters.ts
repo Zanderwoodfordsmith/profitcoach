@@ -12,6 +12,8 @@ export type InboxFilterConversation = {
   booking_id?: string | null;
   last_channel?: string | null;
   last_direction?: string | null;
+  /** The person has written back at least once (stays true after the coach answers). */
+  has_inbound?: boolean | null;
   in_campaign?: boolean;
   campaign_ids?: string[];
   prospect_tags?: string[];
@@ -24,6 +26,7 @@ export type InboxFilterConversation = {
 
 export type InboxFilters = {
   needsReply: boolean;
+  replied: boolean;
   hasBooking: boolean;
   inCampaign: boolean;
   inPool: boolean;
@@ -37,6 +40,7 @@ export type InboxFilters = {
 
 export const EMPTY_INBOX_FILTERS: InboxFilters = {
   needsReply: false,
+  replied: false,
   hasBooking: false,
   inCampaign: false,
   inPool: false,
@@ -50,6 +54,7 @@ export const EMPTY_INBOX_FILTERS: InboxFilters = {
 
 export type InboxFlagFilter =
   | "needsReply"
+  | "replied"
   | "hasBooking"
   | "inCampaign"
   | "inPool"
@@ -75,6 +80,13 @@ export function isOtherEmailConversation(
   return true;
 }
 
+/** They have written to the coach at least once, whoever spoke last. */
+export function conversationHasReplied(
+  conversation: InboxFilterConversation
+): boolean {
+  return Boolean(conversation.has_inbound) || conversation.last_direction === "inbound";
+}
+
 export function conversationMatchesChannel(
   conversation: InboxFilterConversation,
   channel: InboxChannelFilter
@@ -86,6 +98,7 @@ export function conversationMatchesChannel(
 export function inboxFiltersActive(filters: InboxFilters): boolean {
   return (
     filters.needsReply ||
+    filters.replied ||
     filters.hasBooking ||
     filters.inCampaign ||
     filters.inPool ||
@@ -153,6 +166,7 @@ export function conversationMatchesFilters(
   if (filters.needsReply && conversation.last_direction !== "inbound") {
     return false;
   }
+  if (filters.replied && !conversationHasReplied(conversation)) return false;
   if (filters.hasBooking && !conversation.booking_id) return false;
   if (filters.inCampaign && !conversation.in_campaign) return false;
   if (filters.inPool && !conversation.in_pool) return false;

@@ -30,7 +30,9 @@ storage, migrations in `supabase/migrations`), Stripe billing, Vercel hosting.
   chosen; once he picks, remove the versions he passed on. Put the switch in
   the top title bar, just left of search (admin only), not in the page.
 - **Keep navigation flat:** group by the thing itself, few layers, one
-  sensible default instead of parallel variants.
+  sensible default instead of parallel variants. Admin-only tools never go
+  inside coach views such as My Blueprint; put them in the admin section
+  (Ava, Coaches, Tools and links).
 - **Copy:** follow `content/ai-knowledge/writing-rules.md` (binding for all
   copy). Everyday words a 12-year-old understands. Never name or credit Jack.
 - **Never delete profiles or auth users as cleanup.** Community tables cascade
