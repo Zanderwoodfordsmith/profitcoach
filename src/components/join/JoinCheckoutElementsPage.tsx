@@ -33,6 +33,7 @@ const COUNTRIES = [
   { code: "AU", label: "Australia" },
   { code: "CA", label: "Canada" },
   { code: "NZ", label: "New Zealand" },
+  { code: "IN", label: "India" },
   { code: "DE", label: "Germany" },
   { code: "FR", label: "France" },
   { code: "ES", label: "Spain" },
