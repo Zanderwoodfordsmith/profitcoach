@@ -593,6 +593,11 @@ export function MentionTextarea({
     if (!ta || !inner) return;
     inner.style.minHeight = `${ta.scrollHeight}px`;
     inner.style.transform = `translateY(-${ta.scrollTop}px)`;
+    // A scrollbar narrows the box's text; keep the copy underneath wrapping the same.
+    const cs = getComputedStyle(ta);
+    const bar =
+      ta.offsetWidth - ta.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+    inner.style.width = bar > 0 ? `${ta.offsetWidth - bar}px` : "";
   }, []);
 
   const safeHighlightIdx = useMemo(
@@ -975,6 +980,8 @@ export function MentionTextarea({
       maxAutoHeightPx > 0 ? Math.min(el.scrollHeight, maxAutoHeightPx) : el.scrollHeight;
     const next = Math.max(minAutoHeightPx, clampedHeight);
     el.style.height = `${next}px`;
+    // Past the cap the box scrolls, so a long reply can be read with the wheel.
+    el.style.overflowY = el.scrollHeight > next ? "auto" : "hidden";
   }, [autoResize, maxAutoHeightPx, minAutoHeightPx, displayValue]);
 
   useLayoutEffect(() => {

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { MessageSquare, Pencil } from "lucide-react";
+import { Mail, MessageSquare, Pencil } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import type { ProjectThread } from "@/components/jobs/useCoachThreads";
@@ -10,6 +11,7 @@ import { notifyCoachSupportReadChanged } from "@/components/layout/useNewFeedbac
 import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import type { SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes";
 import { CHAT_TITLE_MAX, topicFrom } from "@/lib/support/chatTitle";
+import { chatPageName } from "@/lib/support/chatPages";
 import { parseSupportTicketMedia } from "@/lib/support/supportTicketMedia";
 import {
   SUPPORT_AUTHOR_SELECT,
@@ -19,6 +21,7 @@ import {
   isSupportStaffAuthor,
   mapSupportReplyRow,
   mapSupportTicketRow,
+  normalizeSupportAuthor,
   supportChatOpenedByBca,
   supportStatusAfterMemberReply,
   type SupportReply,
@@ -29,6 +32,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { ChatComposer } from "./comments/ChatComposer";
 import { FileDropZone } from "@/components/messaging/FileDropZone";
 import { SeenTick } from "@/components/support/SeenTick";
+import { SupportMessageBody } from "@/components/support/SupportMessageBody";
 import { commentsCall } from "./comments/SectionCommentsContext";
 import { CommentAvatar, commentWhen, firstName } from "./comments/SectionCommentsUI";
 import { useHalfHeight } from "./composer";
@@ -45,12 +49,24 @@ export function BcaChat({
   coachId,
   onClose,
   onChange,
+  asBca = false,
+  about = null,
+  aboutName = null,
+  welcome = null,
 }: {
   thread: ProjectThread | null;
   coach: SupportTicketAuthor | null;
   coachId: string;
   onClose: () => void;
   onChange: (thread: ProjectThread) => void;
+  /** BCA viewing as the coach (18 Nov, job 228): messages go to the coach as BCA, not as them. */
+  asBca?: boolean;
+  /** The page a new chat is about (where it was opened), so its button goes back there. */
+  about?: string | null;
+  /** What it's about, as the coach sees it: "Lead Magnets", "Jason Dodd". */
+  aboutName?: string | null;
+  /** What an empty chat shows above the box (the panel's hello about this page). */
+  welcome?: ReactNode;
 }) {
   const { ref: panelRef, half } = useHalfHeight<HTMLDivElement>();
   const feedRef = useRef<HTMLDivElement>(null);
@@ -88,7 +104,71 @@ export function BcaChat({
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
+  // BCA's send, as in Support: in the app only, or also by email or on WhatsApp (18 Nov).
+  const [via, setVia] = useState<"none" | "email" | "whatsapp">("none");
+  const [whatsApp, setWhatsApp] = useState<{ available: boolean; from?: string; reason?: string } | null>(null);
+  const [sendNote, setSendNote] = useState<string | null>(null);
+  const threadId = thread?.id ?? null;
+  useEffect(() => {
+    if (!asBca) return;
+    let cancelled = false;
+    void (async () => {
+      const headers = await bcaHeaders();
+      if (!headers) return;
+      const query = threadId ? `report_id=${threadId}` : `coach_id=${coachId}`;
+      const res = await fetch(`/api/admin/support/coach-chat?${query}`, { headers }).catch(() => null);
+      const data = (await res?.json().catch(() => null)) as { available?: boolean; from?: string; reason?: string } | null;
+      if (!cancelled && data) setWhatsApp({ available: Boolean(data.available), from: data.from, reason: data.reason });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [asBca, threadId, coachId]);
+
+  async function postAsBca(body: string, media: CommunityPostMediaItem[]): Promise<string | null> {
+    const headers = await bcaHeaders();
+    if (!headers) return "Sign in again, then retry.";
+    const res = await fetch("/api/admin/support/coach-chat", {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ coach_id: coachId, report_id: thread?.id ?? null, body, media, via, about, about_name: aboutName }),
+    }).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as {
+      error?: string;
+      report?: Parameters<typeof mapSupportTicketRow>[0] & { topic?: string | null; context_path?: string | null; opener?: unknown };
+      reply?: Parameters<typeof mapSupportReplyRow>[0];
+      whatsapp_error?: string | null;
+    } | null;
+    if (!res?.ok || !data) return data?.error ?? "Could not send. Try again.";
+    const sent = data.reply ? mapSupportReplyRow(data.reply) : null;
+    setSendNote(
+      data.whatsapp_error
+        ? `Sent here, but WhatsApp didn't go: ${data.whatsapp_error}`
+        : via === "whatsapp"
+          ? `Also sent on WhatsApp from ${whatsApp?.from ?? "BCA"}'s phone.`
+          : via === "email"
+            ? "Also emailed."
+            : null
+    );
+    if (data.report) {
+      onChange({
+        ...mapSupportTicketRow(data.report, { fallbackAuthor: coach }),
+        replies: sent ? [sent] : [],
+        topic: data.report.topic ?? null,
+        context_path: data.report.context_path ?? null,
+        opener: normalizeSupportAuthor(data.report.opener as Parameters<typeof normalizeSupportAuthor>[0]),
+      });
+    } else if (thread && sent) {
+      onChange({ ...thread, status: "waiting_reply", replies: [...thread.replies, sent] });
+    }
+    notifyCoachSupportReadChanged();
+    return null;
+  }
+
   async function post(body: string, media: CommunityPostMediaItem[]): Promise<string | null> {
+    if (asBca) return postAsBca(body, media);
+    // A chat started on a page is about that page (a tab, a prospect): its button goes back there.
+    const aboutPath = about?.startsWith("/coach/") ? about : null;
     if (!thread) {
       const { data, error } = await supabaseClient
         .from("community_feedback_reports")
@@ -101,13 +181,14 @@ export function BcaChat({
           media: media.length ? media : null,
           status: "open",
           page_path: window.location.pathname,
+          context_path: aboutPath,
         })
         .select(
           `id, created_at, created_by, ticket_number, type, title, details, page_path, status, media, coach_last_read_at, member_notify_email, topic, author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})`
         )
         .single();
       if (error || !data) return error?.message ?? "Could not send. Try again.";
-      onChange({ ...mapSupportTicketRow(data as unknown as Parameters<typeof mapSupportTicketRow>[0]), replies: [], topic: null, context_path: null });
+      onChange({ ...mapSupportTicketRow(data as unknown as Parameters<typeof mapSupportTicketRow>[0]), replies: [], topic: null, context_path: aboutPath });
       return null;
     }
     const { data, error } = await supabaseClient
@@ -135,7 +216,7 @@ export function BcaChat({
 
   return (
     <FileDropZone ref={panelRef} className="bp-chat-panel flex h-full min-h-0 flex-col bg-white">
-      <div ref={feedRef} className="bp-scroll bp-chat-feed min-h-0 flex-1 overflow-y-auto bg-[#f5f8fb] px-4 py-4">
+      <div ref={feedRef} className={`bp-scroll bp-chat-feed min-h-0 flex-1 overflow-y-auto bg-[#f5f8fb] px-4 py-4`}>
         {messages.length ? (
           <ol className="bp-chat-list space-y-3">
             {messages.map((message, index) => (
@@ -147,24 +228,78 @@ export function BcaChat({
               />
             ))}
           </ol>
+        ) : welcome ? (
+          <div className="flex min-h-full flex-col justify-center py-6">
+            {welcome}
+          </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center px-6 text-center">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#1a8fd4] shadow-[0_1px_2px_rgba(5,30,54,0.08)]">
               <MessageSquare className="h-5 w-5" aria-hidden />
             </span>
-            <p className="mt-3 text-sm font-semibold text-[var(--bp-ink)]">New chat with BCA</p>
-            <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">Ask us anything. We reply here.</p>
+            <p className="mt-3 text-sm font-semibold text-[var(--bp-ink)]">
+              {asBca ? `New chat with ${coach?.first_name?.trim() || "the coach"}` : "New chat with BCA"}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">
+              {asBca
+                ? `About ${aboutName ?? (about ? chatPageName(about) : "anything")}. They can reply in Support.`
+                : about
+                  ? `Ask us anything about ${aboutName ?? chatPageName(about)}. We reply here.`
+                  : "Ask us anything. We reply here."}
+            </p>
           </div>
         )}
         {tickError ? <p className="mt-2 text-xs text-rose-600">{tickError}</p> : null}
+        {sendNote ? <p className="mt-2 text-xs text-[var(--bp-muted)]">{sendNote}</p> : null}
       </div>
       <ChatComposer
         chatKey={thread ? `bca:${thread.id}` : "bca:new"}
-        other="BCA"
+        other={asBca ? coach?.first_name?.trim() || "the coach" : "BCA"}
         replying={Boolean(thread?.replies.some((r) => isSupportStaffAuthor(r.author)))}
         maxHeight={half}
         onEscape={onClose}
         onPost={post}
+        extraActions={
+          asBca ? (
+            // Support's "also send" pair, the same look (18 Nov): off, email, or WhatsApp.
+            <div className="mr-1 inline-flex items-center gap-1" role="group" aria-label="Also send">
+              {(
+                [
+                  { id: "email", icon: <Mail className="h-3.5 w-3.5" aria-hidden />, enabled: true, title: "Also send by email" },
+                  {
+                    id: "whatsapp",
+                    icon: <WhatsAppIcon className="h-3.5 w-3.5" />,
+                    enabled: Boolean(whatsApp?.available),
+                    title: whatsApp?.available
+                      ? `Also send on WhatsApp from ${whatsApp.from}'s phone`
+                      : whatsApp?.reason || "WhatsApp is not linked",
+                  },
+                ] as const
+              ).map((option) => {
+                const active = via === option.id;
+                const label = active ? `${option.title} (on, click to turn off)` : option.title;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    aria-pressed={active}
+                    aria-label={label}
+                    title={label}
+                    disabled={!option.enabled}
+                    onClick={() => setVia(active ? "none" : option.id)}
+                    className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+                      active
+                        ? "border-sky-600 bg-sky-600 text-white"
+                        : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                    }`}
+                  >
+                    {option.icon}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null
+        }
       />
     </FileDropZone>
   );
@@ -213,7 +348,10 @@ function ChatMessage({ message, latest, onTick }: { message: SupportReply; lates
               </span>
             </div>
             {media.length && /^Sent (a voice note|a video|an image|images|a document|documents)$/.test(message.body) ? null : (
-              <p className="bp-chat-body mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1e2f44]">{message.body}</p>
+              <SupportMessageBody
+                body={message.body}
+                className="bp-chat-body mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1e2f44]"
+              />
             )}
             {media.length ? (
               <div className="mt-1.5 max-w-[20rem]">
@@ -425,4 +563,12 @@ export function Row({
       )}
     </li>
   );
+}
+
+/** The signed-in admin's token, for BCA's own sends. */
+async function bcaHeaders(): Promise<Record<string, string> | null> {
+  const {
+    data: { session },
+  } = await supabaseClient.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : null;
 }

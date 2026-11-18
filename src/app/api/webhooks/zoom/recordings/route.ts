@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { attachZoomRecordingToCommunityCalendar } from "@/lib/zoomRecordingCalendarSync";
+import { importZoomChatLinksToCalendar } from "@/lib/zoomChatLinks";
 import { evaluateCommunityZoomRecordingIngest } from "@/lib/zoomRecordingIngestFilter";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   buildZoomUrlValidationResponse,
+  extractZoomChatDownloadUrl,
   parseZoomRecordingCompletedPayload,
   verifyZoomWebhookSignature,
   type ZoomWebhookEnvelope,
@@ -130,8 +132,26 @@ export async function POST(request: Request) {
       });
     }
 
+    // Links people shared in the Zoom chat go on the same session.
+    let chatLinksAdded = 0;
+    if (result.eventId && result.occurrenceStartIso && body.payload?.object) {
+      try {
+        const chat = await importZoomChatLinksToCalendar(supabaseAdmin, {
+          chatDownloadUrl: extractZoomChatDownloadUrl(body.payload.object),
+          downloadToken: body.download_token?.trim() || null,
+          eventId: result.eventId,
+          occurrenceStartIso: result.occurrenceStartIso,
+        });
+        chatLinksAdded = chat.added;
+        console.info("zoom recording webhook chat links:", chat);
+      } catch (error) {
+        console.error("zoom recording webhook chat links failed:", error);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
+      chat_links_added: chatLinksAdded,
       match_status: result.status,
       event_id: result.eventId ?? null,
       occurrence_start: result.occurrenceStartIso ?? null,

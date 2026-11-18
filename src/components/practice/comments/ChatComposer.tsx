@@ -2,6 +2,7 @@
 
 import { AudioLines, ArrowUp, Clock, Loader2, Mail, Square, X } from "lucide-react";
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
+import type { ReactNode } from "react";
 
 import {
   ChatComposerTools,
@@ -18,6 +19,8 @@ import { supportComposerFallbackBody } from "@/lib/support/supportTicketMedia";
 import { useAutoGrow, useVoiceInput } from "../composer";
 import { usePractice } from "../PracticeProvider";
 import { commentsCall, useSectionComments } from "./SectionCommentsContext";
+import { hasTypedLink, LinkUnderlay } from "./LinkUnderlay";
+import { SupportMessageBody } from "@/components/support/SupportMessageBody";
 
 /** "Thu 6 Nov, 09:00" */
 function whenLabel(iso: string): string {
@@ -36,6 +39,7 @@ export function ChatComposer({
   maxHeight,
   onEscape,
   onPost,
+  extraActions = null,
 }: {
   chatKey: string;
   /** Who is on the other end: the coach's name, or BCA. */
@@ -45,6 +49,8 @@ export function ChatComposer({
   onEscape: () => void;
   /** Send somewhere other than a page chat (the Inbox's chats with BCA). Returns an error, or null. */
   onPost?: (body: string, media: CommunityPostMediaItem[]) => Promise<string | null>;
+  /** Buttons beside Send for this box only (BCA's "also send by email or WhatsApp" in the Support panel). */
+  extraActions?: ReactNode;
 }) {
   const comments = useSectionComments();
   const { coachId, transcribe } = usePractice();
@@ -65,6 +71,7 @@ export function ChatComposer({
 
   // The box grows with the message, up to half the panel, then scrolls.
   const boxRef = useAutoGrow(draft, maxHeight);
+  const draftHasLink = hasTypedLink(draft);
   const dictation = useVoiceInput(transcribe, (said) => {
     setDraft((prev) => (prev ? `${prev} ${said}` : said).slice(0, COMMENT_MAX_LENGTH));
     boxRef.current?.focus();
@@ -222,7 +229,11 @@ export function ChatComposer({
                   {row.status === "failed" ? "Didn't send" : `Sends ${whenLabel(row.scheduled_for)}`}
                   {row.email_notify ? " · emails them too" : ""}
                 </p>
-                <p className="truncate">{row.status === "failed" && row.last_error ? row.last_error : row.body}</p>
+                {row.status === "failed" && row.last_error ? (
+                  <p className="truncate">{row.last_error}</p>
+                ) : (
+                  <SupportMessageBody body={row.body} className="truncate" />
+                )}
               </div>
               <button type="button" onClick={() => void cancel(row.id)} aria-label="Cancel this message" title="Cancel" className="rounded p-0.5 hover:bg-white hover:text-[var(--bp-ink)]">
                 <X className="h-3.5 w-3.5" aria-hidden />
@@ -233,7 +244,7 @@ export function ChatComposer({
       ) : null}
       {error || dictation.failed ? <p className="mb-2 text-sm text-[#9b2c2c]">{error || dictation.failed}</p> : null}
       {note ? <p className="mb-2 text-xs text-[var(--bp-muted)]">{note}</p> : null}
-      <div className="bp-chat-composer rounded-2xl border border-[var(--bp-rule)] bg-white">
+      <div className="bp-chat-composer relative rounded-2xl border border-[var(--bp-rule)] bg-white">
         <textarea
           ref={boxRef}
           value={draft}
@@ -241,9 +252,11 @@ export function ChatComposer({
           onKeyDown={onKey}
           rows={1}
           disabled={!ready}
+          style={draftHasLink ? { color: "transparent", caretColor: "var(--bp-ink)" } : undefined}
           placeholder={dictation.transcribing ? "Turning your voice into text…" : replying ? `Reply to ${other}` : `Write to ${other}`}
           className="bp-input block w-full resize-none bg-transparent px-4 pb-1 pt-3 text-ui leading-6 text-[var(--bp-ink)] outline-none placeholder:text-[var(--bp-faint)]"
         />
+        {draftHasLink ? <LinkUnderlay boxRef={boxRef} text={draft} /> : null}
         <div className="px-2 pb-2 pt-1">
           <ChatComposerTools
             enabled
@@ -287,6 +300,7 @@ export function ChatComposer({
             }
             trailing={
               <div className="flex items-center gap-0.5">
+                {extraActions}
                 {bca ? (
                   <>
                     <button

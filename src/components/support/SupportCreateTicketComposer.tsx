@@ -1,10 +1,11 @@
 "use client";
 
-import { ChevronDown, FileText, ImagePlus, Video, X } from "lucide-react";
+import { ChevronDown, FileText, ImagePlus, MessageSquare, Video, X } from "lucide-react";
+import { topicFrom } from "@/lib/support/chatTitle";
 import { SupportDocumentAttachButton } from "@/components/support/SupportDocumentAttach";
 import { FileDropZone } from "@/components/messaging/FileDropZone";
 import { PreviewableMedia } from "@/components/media/AttachmentPreviewModal";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   SupportVoiceRecorder,
   pendingSupportVoiceToFile,
@@ -64,14 +65,22 @@ export function CoachSearchCombobox({
   onChange,
   placeholder = "Select coach…",
   allowClear = false,
+  trigger,
+  triggerTitle,
+  autoOpen = false,
 }: {
   coaches: SupportCreateTicketCoachOption[];
   value: string;
   onChange: (id: string) => void;
   placeholder?: string;
   allowClear?: boolean;
+  /** Small inline button (e.g. an icon) instead of the field. The list then opens under the nearest positioned parent. */
+  trigger?: ReactNode;
+  triggerTitle?: string;
+  /** Open the list with its search box ready, so picking the coach comes first. */
+  autoOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -123,7 +132,23 @@ export function CoachSearchCombobox({
   }
 
   return (
-    <div ref={rootRef} className="relative mt-1.5">
+    <div ref={rootRef} className={trigger ? "inline-flex" : "relative mt-1.5"}>
+      {trigger ? (
+        <button
+          type="button"
+          onClick={() => {
+            setOpen((prev) => !prev);
+            setQuery("");
+          }}
+          title={triggerTitle}
+          aria-label={triggerTitle}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          className="inline-flex shrink-0 rounded p-0.5 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+        >
+          {trigger}
+        </button>
+      ) : (
       <button
         type="button"
         onClick={() => {
@@ -148,10 +173,11 @@ export function CoachSearchCombobox({
           aria-hidden
         />
       </button>
+      )}
 
       {open ? (
         <div
-          className="absolute left-0 right-0 z-[130] mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg ring-1 ring-black/5"
+          className={`absolute left-0 right-0 z-[130] mt-1 ${trigger ? "top-full" : ""} overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg ring-1 ring-black/5`}
           role="listbox"
           aria-label="Coaches"
         >
@@ -225,6 +251,8 @@ type Props = {
     ticket: SupportTicket,
     result?: { emailed?: string | null; emailError?: string | null }
   ) => void;
+  /** "column": fills the inbox's middle column instead of sitting in a pop-up card. */
+  layout?: "card" | "column";
 };
 
 export function SupportCreateTicketComposer({
@@ -234,13 +262,15 @@ export function SupportCreateTicketComposer({
   createdByAdminId,
   onClose,
   onCreated,
+  layout = "card",
 }: Props) {
   const isAdminCreate = Boolean(coachOptions && coachOptions.length > 0);
   const [coachId, setCoachId] = useState("");
   const [assignedTo, setAssignedTo] = useState(DEFAULT_SUPPORT_ASSIGNEE_ID);
   const [title, setTitle] = useState("");
   const [details, setDetails] = useState("");
-  const [type, setType] = useState<SupportTicketType>("bug");
+  // The column is BCA writing to a coach, so a question; the right column can change it after.
+  const [type, setType] = useState<SupportTicketType>(layout === "column" ? "question" : "bug");
   const [notifyEmail, setNotifyEmail] = useState(true);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
@@ -267,7 +297,8 @@ export function SupportCreateTicketComposer({
   }, []);
 
   const canSubmit =
-    title.trim().length > 0 &&
+    // The column names the ticket from the message when the subject is left empty.
+    (title.trim().length > 0 || layout === "column") &&
     (details.trim().length > 0 ||
       pendingMedia.length > 0 ||
       Boolean(pendingVoice)) &&
@@ -361,13 +392,14 @@ export function SupportCreateTicketComposer({
       const detailsText =
         details.trim() ||
         (pendingVoice ? "See voice note attached." : "(See attachments.)");
+      const ticketTitle = title.trim() || topicFrom(detailsText);
 
       const insertPayload = isAdminCreate
         ? {
             created_by: createdBy,
             created_by_admin: createdByAdminId ?? user.id,
             type,
-            title: title.trim(),
+            title: ticketTitle,
             details: detailsText,
             media: media.length > 0 ? media : null,
             member_notify_email: notifyEmail,
@@ -384,7 +416,7 @@ export function SupportCreateTicketComposer({
         : {
             created_by: createdBy,
             type,
-            title: title.trim(),
+            title: ticketTitle,
             details: detailsText,
             media: media.length > 0 ? media : null,
             member_notify_email: notifyEmail,
@@ -467,6 +499,234 @@ export function SupportCreateTicketComposer({
     } finally {
       setSaving(false);
     }
+  }
+
+  const previewList = pendingPreviews.length > 0 ? (
+      <ul className="flex flex-wrap gap-2">
+        {pendingPreviews.map((p) => (
+          <li key={p.key} className="relative">
+            {p.kind === "video" ? (
+              <PreviewableMedia
+                url={p.previewUrl}
+                kind="video"
+                mediaClassName="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
+              />
+            ) : p.kind === "audio" ? (
+              <div className="flex h-16 w-44 flex-col justify-center gap-0.5 rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
+                <span className="truncate text-caption font-medium text-slate-500">
+                  {p.name}
+                </span>
+                <audio controls src={p.previewUrl} className="h-8 w-full" />
+              </div>
+            ) : p.kind === "file" ? (
+              <div className="flex h-16 max-w-52 items-center gap-2 rounded-lg bg-slate-50 px-2 ring-1 ring-slate-200">
+                <FileText className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={1.75} />
+                <span className="truncate text-xs font-medium text-slate-700">
+                  {p.name}
+                </span>
+              </div>
+            ) : (
+              <PreviewableMedia
+                url={p.previewUrl}
+                kind="image"
+                mediaClassName="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
+              />
+            )}
+            <button
+              type="button"
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white shadow hover:bg-slate-900"
+              aria-label="Remove attachment"
+              onClick={() => removePending(p.key)}
+            >
+              <X className="h-3 w-3" strokeWidth={2.5} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    ) : null;
+
+  const attachTools = (micButton: ReactNode) => (
+    <div className="flex items-center gap-0.5">
+      <label
+        className="inline-flex cursor-pointer rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+        title="Add photo"
+      >
+        <ImagePlus className="h-4 w-4" strokeWidth={1.75} />
+        <span className="sr-only">Photo</span>
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="sr-only"
+          disabled={pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
+          onChange={(e) => {
+            addPendingFiles(Array.from(e.target.files ?? []));
+            e.target.value = "";
+          }}
+        />
+      </label>
+      <label
+        className="inline-flex cursor-pointer rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+        title="Attach video"
+      >
+        <Video className="h-4 w-4" strokeWidth={1.75} />
+        <span className="sr-only">Video</span>
+        <input
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime,.mp4,.mov"
+          className="sr-only"
+          disabled={pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
+          onChange={(e) => {
+            addPendingFiles(Array.from(e.target.files ?? []));
+            e.target.value = "";
+          }}
+        />
+      </label>
+      <ScreenRecordButton
+        target={{ key: recordingKey, label: "your new ticket" }}
+        disabled={saving || pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
+      />
+      <SupportDocumentAttachButton
+        disabled={saving || pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
+        onPick={(files) => addPendingFiles(Array.from(files ?? []))}
+      />
+      {micButton}
+    </div>
+  );
+
+  const emailToggle = (
+    <label
+      className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-500"
+      title={
+        isAdminCreate
+          ? "Email this message to the coach now. Later support replies are emailed too."
+          : accountEmail
+            ? `Email ${accountEmail} when support replies.`
+            : "Email me when support replies."
+      }
+    >
+      <input
+        type="checkbox"
+        checked={notifyEmail}
+        onChange={(e) => setNotifyEmail(e.target.checked)}
+        className="h-3.5 w-3.5 rounded border-slate-300 accent-sky-600"
+      />
+      <span className="whitespace-nowrap">
+        {isAdminCreate ? "Email the coach" : "Email me on reply"}
+      </span>
+    </label>
+  );
+
+  // Inbox New ticket (18 Nov): drawn like an open ticket. Title bar, who it's
+  // for, an empty thread, and the reply box at the bottom.
+  if (layout === "column") {
+    const coach = coachOptions?.find((c) => c.id === coachId) ?? null;
+    return (
+      <FileDropZone
+        onFiles={(files) => {
+          setError(null);
+          addPendingFiles(files, { allowAudio: true });
+        }}
+        className="bp-side-panel ava-ui flex h-full min-h-0 flex-col overflow-hidden"
+      >
+        <div className="bp-side-head relative z-[2] flex h-12 shrink-0 items-center gap-2 border-b px-4">
+          <MessageSquare className="h-4 w-4 shrink-0 text-[var(--ava-muted)]" aria-hidden />
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="New ticket"
+            aria-label="Subject"
+            title="Subject. Leave it empty to use the first line of your message."
+            className="min-w-0 flex-1 truncate bg-transparent text-[0.8125rem] font-semibold text-[var(--ava-ink)] outline-none placeholder:text-[var(--ava-ink)] focus:placeholder:text-[var(--ava-muted)]"
+          />
+          <button
+            type="button"
+            aria-label="Close new ticket"
+            title="Close"
+            onClick={onClose}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[var(--ava-muted)] hover:bg-white/60 hover:text-[var(--ava-ink)]"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+
+        <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-center gap-3 border-b border-slate-100 bg-white px-4 py-2.5">
+            <span className="text-sm text-slate-500">To</span>
+            <div className="min-w-0 flex-1">
+              <CoachSearchCombobox
+                coaches={coachOptions ?? []}
+                value={coachId}
+                onChange={setCoachId}
+                autoOpen
+              />
+            </div>
+          </div>
+
+          <div className="flex min-h-0 flex-1 items-center justify-center px-6 text-center">
+            <p className="text-sm text-slate-400">
+              {coach
+                ? `Your message starts a new ticket with ${authorDisplayName(coach).split(" ")[0]}.`
+                : "Choose who it's for, then write your message below."}
+            </p>
+          </div>
+
+          <div className="bp-chat-foot support-reply-foot shrink-0">
+            <div className="space-y-2 px-3 py-2.5">
+              {previewList}
+              <div className="relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-sky-400">
+                <textarea
+                  rows={4}
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
+                  // Return is a new line; ⌘ or Ctrl + Return sends, as on a ticket.
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      void submit();
+                    }
+                  }}
+                  placeholder="Write your message…"
+                  className="min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400"
+                />
+              </div>
+              <SupportVoiceRecorder
+                pending={null}
+                onChange={(note) => {
+                  if (!note) return;
+                  addPendingFiles([pendingSupportVoiceToFile(note)], { allowAudio: true });
+                  revokePendingSupportVoice(note);
+                }}
+                disabled={saving || pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
+                onError={setError}
+                toolbar={(micButton) => (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    {attachTools(micButton)}
+                    <div className="flex min-w-0 items-center gap-3">
+                      {emailToggle}
+                      <button
+                        type="button"
+                        disabled={!canSubmit}
+                        onClick={() => void submit()}
+                        className="rounded-md bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                      >
+                        {saving ? "Sending…" : "Send"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              />
+              {error ? (
+                <p className="text-xs text-rose-600" role="alert">
+                  {error}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </FileDropZone>
+    );
   }
 
   return (
@@ -610,49 +870,7 @@ export function SupportCreateTicketComposer({
           />
         </div>
 
-        {pendingPreviews.length > 0 ? (
-          <ul className="flex flex-wrap gap-2">
-            {pendingPreviews.map((p) => (
-              <li key={p.key} className="relative">
-                {p.kind === "video" ? (
-                  <PreviewableMedia
-                    url={p.previewUrl}
-                    kind="video"
-                    mediaClassName="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
-                  />
-                ) : p.kind === "audio" ? (
-                  <div className="flex h-16 w-44 flex-col justify-center gap-0.5 rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
-                    <span className="truncate text-caption font-medium text-slate-500">
-                      {p.name}
-                    </span>
-                    <audio controls src={p.previewUrl} className="h-8 w-full" />
-                  </div>
-                ) : p.kind === "file" ? (
-                  <div className="flex h-16 max-w-52 items-center gap-2 rounded-lg bg-slate-50 px-2 ring-1 ring-slate-200">
-                    <FileText className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={1.75} />
-                    <span className="truncate text-xs font-medium text-slate-700">
-                      {p.name}
-                    </span>
-                  </div>
-                ) : (
-                  <PreviewableMedia
-                    url={p.previewUrl}
-                    kind="image"
-                    mediaClassName="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
-                  />
-                )}
-                <button
-                  type="button"
-                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white shadow hover:bg-slate-900"
-                  aria-label="Remove attachment"
-                  onClick={() => removePending(p.key)}
-                >
-                  <X className="h-3 w-3" strokeWidth={2.5} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        {previewList}
 
         <SupportVoiceRecorder
           pending={null}
@@ -667,73 +885,9 @@ export function SupportCreateTicketComposer({
           onError={setError}
           toolbar={(micButton) => (
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-0.5">
-                <label
-                  className="inline-flex cursor-pointer rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                  title="Add photo"
-                >
-                  <ImagePlus className="h-4 w-4" strokeWidth={1.75} />
-                  <span className="sr-only">Photo</span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    className="sr-only"
-                    disabled={pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
-                    onChange={(e) => {
-                      addPendingFiles(Array.from(e.target.files ?? []));
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                <label
-                  className="inline-flex cursor-pointer rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                  title="Attach video"
-                >
-                  <Video className="h-4 w-4" strokeWidth={1.75} />
-                  <span className="sr-only">Video</span>
-                  <input
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime,.mp4,.mov"
-                    className="sr-only"
-                    disabled={pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
-                    onChange={(e) => {
-                      addPendingFiles(Array.from(e.target.files ?? []));
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                <ScreenRecordButton
-                  target={{ key: recordingKey, label: "your new ticket" }}
-                  disabled={saving || pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
-                />
-                <SupportDocumentAttachButton
-                  disabled={saving || pendingMedia.length >= COMMUNITY_POST_MEDIA_MAX}
-                  onPick={(files) => addPendingFiles(Array.from(files ?? []))}
-                />
-                {micButton}
-              </div>
+              {attachTools(micButton)}
               <div className="flex min-w-0 items-center gap-2">
-                <label
-                  className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-500"
-                  title={
-                    isAdminCreate
-                      ? "Email this message to the coach now. Later support replies are emailed too."
-                      : accountEmail
-                        ? `Email ${accountEmail} when support replies.`
-                        : "Email me when support replies."
-                  }
-                >
-                  <input
-                    type="checkbox"
-                    checked={notifyEmail}
-                    onChange={(e) => setNotifyEmail(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-slate-300 accent-sky-600"
-                  />
-                  <span className="whitespace-nowrap">
-                    {isAdminCreate ? "Email the coach" : "Email me on reply"}
-                  </span>
-                </label>
+                {emailToggle}
                 <button
                   type="button"
                   disabled={!canSubmit}

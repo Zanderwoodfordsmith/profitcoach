@@ -1,13 +1,15 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+import { coachHasFeature, resolveCoachAccessForUserId } from "@/lib/coachAccess/resolveCoachAccess";
+
 import type { AgentMode } from "./types";
 import { verifyAccessToken } from "@/lib/auth/verifyAccessToken";
 
 /**
  * Who is talking to Ava, and in which mode. Admins always get admin mode (any
  * coach). Coaches get coach mode on their own account: every coach has the
- * Blueprint skills, and the rest (campaigns, lists, imports) once an admin has
- * switched the agent on for them.
+ * "Everyone" skills, and coaches whose membership includes Get Clients (or who
+ * have Ava switched on by an admin) also get the "Coaches with Get Clients" ones.
  */
 
 export type AgentActor = {
@@ -16,7 +18,7 @@ export type AgentActor = {
   mode: AgentMode;
   /** Admin viewing as a coach: the default active coach for a new chat. */
   impersonatedCoachId: string | null;
-  /** Coach without the agent switched on: Blueprint skills only. */
+  /** Coach without Get Clients in their membership (and Ava not switched on): "Everyone" skills only. */
   limited: boolean;
 };
 
@@ -57,6 +59,9 @@ export async function resolveAgentActor(
   }
 
   if (profile?.role === "coach") {
+    const fullAva =
+      coach?.ai_agent_enabled === true ||
+      coachHasFeature(await resolveCoachAccessForUserId(user.id), "nav.marketing");
     return {
       ok: true,
       actor: {
@@ -64,7 +69,7 @@ export async function resolveAgentActor(
         isAdmin: false,
         mode: "coach",
         impersonatedCoachId: null,
-        limited: coach?.ai_agent_enabled !== true,
+        limited: !fullAva,
       },
     };
   }

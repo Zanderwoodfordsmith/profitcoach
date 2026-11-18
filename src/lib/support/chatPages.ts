@@ -94,3 +94,16 @@ const CONVERSATION_PATH = /^\/coach\/conversations\?conversation=[0-9a-f-]{36}$/
 export function conversationChatPath(conversationId: string): string {
   return `/coach/conversations?conversation=${conversationId}`;
 }
+
+/** The conversation a chat path points at, or null. */
+export function conversationIdOfChatPath(path: string | null | undefined): string | null {
+  if (!path || !CONVERSATION_PATH.test(path)) return null;
+  return path.split("=")[1] ?? null;
+}
+
+/** What to call the page you're on, for "New chat about …". */
+export function chatPageName(path: string): string {
+  const page = chatPageFor(path) ?? chatPageFor(path.split("?")[0]);
+  if (!page) return "this page";
+  return CONVERSATION_PATH.test(path) ? "this conversation" : page.name;
+}

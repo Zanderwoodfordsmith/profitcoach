@@ -21,8 +21,8 @@ const ACCESS: { value: SkillAccess; label: string; hint: string; pill: string; c
   { value: "everyone", label: "Everyone", hint: "All coaches", pill: "bg-emerald-50 text-emerald-800 ring-emerald-200", coach: true },
   {
     value: "agent",
-    label: "Coaches with Ava on",
-    hint: "Only those with Ava switched on",
+    label: "Coaches with Get Clients",
+    hint: "Members whose plan includes Get Clients, plus anyone with Ava switched on",
     pill: "bg-sky-50 text-sky-800 ring-sky-200",
     coach: true,
   },

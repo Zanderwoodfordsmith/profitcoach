@@ -23,6 +23,13 @@ describe("parseUnipileEmailAttachmentMeta", () => {
     ]);
     assert.equal(parsed[0]?.inline, true);
   });
+
+  it("keeps a Gmail file that has a cid but inline false", () => {
+    const parsed = parseUnipileEmailAttachmentMeta([
+      { id: "pdf", name: "deck.pdf", mime: "application/pdf", cid: "f_abc", inline: false },
+    ]);
+    assert.equal(parsed[0]?.inline, false);
+  });
 });
 
 describe("classifySupportEmailAttachment", () => {

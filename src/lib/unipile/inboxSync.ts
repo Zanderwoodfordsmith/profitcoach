@@ -8,7 +8,6 @@ import {
 } from "@/lib/contacts/linkedinIdentity";
 import {
   isChannelOnlySubject,
-  isGenericConversationName,
   looksLikePersonName,
   personNameFromDisplayName,
 } from "@/lib/messaging/conversationDisplay";
@@ -67,6 +66,8 @@ import {
   listUnipileChatMessages,
   getUnipileEmail,
   isUnipileAccountNotFound,
+  isUnipileAccountDisconnected,
+  isUnipileRateLimited,
   listUnipileChats,
   listUnipileEmails,
   sendUnipileChatMessage,
@@ -90,6 +91,20 @@ const EMAIL_FORCE_PAGES = 12;
 const CHAT_PAGE_SIZE = 80;
 const CHAT_SOFT_PAGES = 1;
 const CHAT_FORCE_PAGES = 2;
+/** Chat message pages to walk back when a changed chat has a burst of new messages. */
+const CHAT_MESSAGE_PAGE_SIZE = 50;
+const CHAT_MESSAGE_MAX_PAGES = 3;
+/** Quick syncs look this far behind the saved marker, so late-stamped items are not skipped. */
+export const SYNC_OVERLAP_MS = 15 * 60 * 1000;
+/** Hard cap on a single provider call. Email list pages can take ~19s. */
+const LIST_CALL_TIMEOUT_MS = 25_000;
+const ITEM_CALL_TIMEOUT_MS = 15_000;
+/** After "too many requests", leave the account alone this long. */
+const RATE_LIMIT_BACKOFF_MS = 15 * 60 * 1000;
+/** Default time budget for starting new provider calls in one run. */
+export const DEFAULT_SYNC_BUDGET_MS = 40_000;
+/** Lock lasts the run's time budget plus this, so a crashed run frees it soon. */
+const SYNC_LOCK_SLACK_SECONDS = 60;
 
 function previewOf(text: string | null | undefined) {
   const t = (text || "").replace(/\s+/g, " ").trim();
@@ -102,72 +117,119 @@ function emailThreadKey(threadId: string | null | undefined, emailId: string) {
   return `email:${emailId}`;
 }
 
+type PagedList = {
+  ok: boolean;
+  items: Array<Record<string, unknown>>;
+  /** Listing reached its end or its page cap. */
+  complete: boolean;
+  accountMissing?: boolean;
+  disconnected?: boolean;
+  rateLimited?: boolean;
+  error?: string;
+};
+
+/**
+ * A quick sync hit its page cap: more changed since the marker than one run
+ * reads (600 emails / 240 chats). Count it as finished so the marker moves on
+ * instead of re-reading the same newest pages forever. Same ceiling the old
+ * sync had; the note lands in the run log.
+ */
+const PAGE_CAP_NOTE =
+  "More changed since the last sync than one run reads; oldest part of the gap skipped.";
+
 async function listUnipileEmailsPaged(input: {
   accountId: string;
   metaOnly: boolean;
   maxPages: number;
   deadlineAt?: number;
-}): Promise<{
-  ok: boolean;
-  items: Array<Record<string, unknown>>;
-  accountMissing?: boolean;
-}> {
+  /** ISO: only emails after this (quick sync). Null = newest pages. */
+  after?: string | null;
+}): Promise<PagedList> {
   const items: Array<Record<string, unknown>> = [];
   let cursor: string | null = null;
   for (let page = 0; page < input.maxPages; page += 1) {
-    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
+    if (input.deadlineAt && Date.now() > input.deadlineAt) {
+      return { ok: true, items, complete: false };
+    }
     const listed = await listUnipileEmails({
       account_id: input.accountId,
       limit: EMAIL_PAGE_SIZE,
       meta_only: input.metaOnly,
       cursor,
+      after: input.after ?? null,
+      timeoutMs: LIST_CALL_TIMEOUT_MS,
     });
     if (!listed.ok) {
       return {
         ok: false,
         items,
+        complete: false,
         accountMissing: isUnipileAccountNotFound(listed),
+        disconnected: isUnipileAccountDisconnected(listed),
+        rateLimited: isUnipileRateLimited(listed),
+        error: listed.error,
       };
     }
     const pageItems = listed.data?.items ?? [];
     items.push(...pageItems);
     cursor = listed.data?.cursor ?? null;
-    if (!cursor || pageItems.length === 0) break;
+    if (!cursor || pageItems.length === 0) {
+      return { ok: true, items, complete: true };
+    }
   }
-  return { ok: true, items };
+  // Page cap hit with more left: older history is out of reach either way.
+  return {
+    ok: true,
+    items,
+    complete: true,
+    error: input.after ? PAGE_CAP_NOTE : undefined,
+  };
 }
 
 async function listUnipileChatsPaged(input: {
   accountId: string;
   maxPages: number;
   deadlineAt?: number;
-}): Promise<{
-  ok: boolean;
-  items: Array<Record<string, unknown>>;
-  accountMissing?: boolean;
-}> {
+  /** ISO: only chats with activity after this (quick sync). */
+  after?: string | null;
+}): Promise<PagedList> {
   const items: Array<Record<string, unknown>> = [];
   let cursor: string | null = null;
   for (let page = 0; page < input.maxPages; page += 1) {
-    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
+    if (input.deadlineAt && Date.now() > input.deadlineAt) {
+      return { ok: true, items, complete: false };
+    }
     const listed = await listUnipileChats({
       account_id: input.accountId,
       limit: CHAT_PAGE_SIZE,
       cursor,
+      after: input.after ?? null,
+      timeoutMs: LIST_CALL_TIMEOUT_MS,
     });
     if (!listed.ok) {
       return {
         ok: false,
         items,
+        complete: false,
         accountMissing: isUnipileAccountNotFound(listed),
+        disconnected: isUnipileAccountDisconnected(listed),
+        rateLimited: isUnipileRateLimited(listed),
+        error: listed.error,
       };
     }
     const pageItems = listed.data?.items ?? [];
     items.push(...pageItems);
     cursor = listed.data?.cursor ?? null;
-    if (!cursor || pageItems.length === 0) break;
+    if (!cursor || pageItems.length === 0) {
+      return { ok: true, items, complete: true };
+    }
   }
-  return { ok: true, items };
+  return {
+    ok: true,
+    items,
+    complete: true,
+    error: input.after ? PAGE_CAP_NOTE : undefined,
+  };
 }
 
 /** Soft syncs (inbox open) skip if last run was within this window. Cron/force bypass. */
@@ -179,6 +241,13 @@ type AccountSyncResult = {
   messages: number;
   /** Unipile 404 — the session was deleted or merged on their side. */
   accountMissing?: boolean;
+  /** Everything in the window was handled; safe to move the marker. */
+  complete?: boolean;
+  /** Provider login lapsed; the coach must reconnect. */
+  disconnected?: boolean;
+  /** Provider said slow down; stop and back off. */
+  rateLimited?: boolean;
+  error?: string;
 };
 
 type ChatMessageInput = {
@@ -303,6 +372,7 @@ async function resolveChatCounterpart(input: {
 async function backfillUnnamedChatIdentities(input: {
   coachId: string;
   channel: UnipileAppChannel;
+  deadlineAt?: number;
 }): Promise<void> {
   const columns =
     "id, unipile_chat_id, prospect_name, subject, prospect_avatar_url, prospect_linkedin_url";
@@ -340,9 +410,11 @@ async function backfillUnnamedChatIdentities(input: {
     const chatId = String(row.unipile_chat_id || "");
     if (!chatId) continue;
     if (fetched >= 25) break;
+    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
 
     const listed = await listUnipileChatAttendees({ chat_id: chatId });
     fetched += 1;
+    if (isUnipileRateLimited(listed)) break;
     if (!listed.ok) continue;
     const attendees = (listed.data?.items ?? [])
       .map(parseUnipileAttendee)
@@ -418,6 +490,65 @@ function identityPatch(input: {
   return patch;
 }
 
+/**
+ * Latest messages for one chat. For a chat we already hold, keep walking back
+ * a page at a time until we reach a message we have (a burst of new ones).
+ */
+async function pullChatMessages(input: {
+  chatId: string;
+  existingConversationId: string | null;
+  deadlineAt?: number;
+}): Promise<{
+  ok: boolean;
+  items: Array<Record<string, unknown>>;
+  rateLimited?: boolean;
+  /** Chat no longer exists on the provider side. */
+  gone?: boolean;
+  error?: string;
+}> {
+  const items: Array<Record<string, unknown>> = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < CHAT_MESSAGE_MAX_PAGES; page += 1) {
+    if (page > 0 && input.deadlineAt && Date.now() > input.deadlineAt) break;
+    const res = await listUnipileChatMessages({
+      chat_id: input.chatId,
+      limit: CHAT_MESSAGE_PAGE_SIZE,
+      cursor,
+      timeoutMs: ITEM_CALL_TIMEOUT_MS,
+    });
+    if (!res.ok) {
+      const rateLimited = isUnipileRateLimited(res);
+      // Later pages are a bonus; keep what the first page gave us.
+      if (page > 0 && !rateLimited) break;
+      return {
+        ok: page > 0,
+        items,
+        rateLimited,
+        gone: res.status === 404,
+        error: res.error,
+      };
+    }
+    const pageItems = res.data?.items ?? [];
+    items.push(...pageItems);
+    cursor = res.data?.cursor ?? null;
+    if (!cursor || pageItems.length === 0 || !input.existingConversationId) {
+      break;
+    }
+    const ids = pageItems
+      .map((m) => String(m.id || m.message_id || ""))
+      .filter(Boolean);
+    if (!ids.length) break;
+    const { data: known } = await supabaseAdmin
+      .from("messaging_messages")
+      .select("id")
+      .eq("conversation_id", input.existingConversationId)
+      .in("unipile_message_id", ids)
+      .limit(1);
+    if (known?.length) break;
+  }
+  return { ok: true, items };
+}
+
 async function syncMessagingAccount(input: {
   coachId: string;
   unipileAccountId: string;
@@ -434,24 +565,48 @@ async function syncMessagingAccount(input: {
   deadlineAt?: number;
   /** Extra chat list pages beyond the first 80. Soft = 1, force = more. */
   maxPages?: number;
+  /**
+   * Quick sync: only chats active after this ISO time. Every listed chat
+   * then gets its messages pulled (it changed, by definition).
+   */
+  after?: string | null;
+  /**
+   * Skip chats whose time and unread count match ours before any per-chat
+   * lookups (one query for the whole page). The nightly pass leaves this off
+   * so names, photos, contact links and empty threads get repaired.
+   */
+  skipUnchanged?: boolean;
 }): Promise<AccountSyncResult> {
   const syncChannel = input.channel;
   if (syncChannel === "whatsapp") {
     // Never list recent WhatsApp chats or backfill history. Personal threads
     // stay on the phone. New messages arrive by webhook for pool, prospect,
     // and client numbers the coach has not blocked.
-    return dropDisallowedWhatsAppThreads(input.coachId);
+    const dropped = await dropDisallowedWhatsAppThreads(input.coachId);
+    return { ...dropped, complete: true };
   }
 
   let chats = 0;
   let messages = 0;
+  let cutShort = false;
+  let rateLimited = false;
+  let lastError: string | undefined;
   const listed = await listUnipileChatsPaged({
     accountId: input.unipileAccountId,
     maxPages: input.maxPages ?? CHAT_SOFT_PAGES,
     deadlineAt: input.deadlineAt,
+    after: input.after ?? null,
   });
   if (!listed.ok) {
-    return { chats, messages, accountMissing: listed.accountMissing };
+    return {
+      chats,
+      messages,
+      complete: false,
+      accountMissing: listed.accountMissing,
+      disconnected: listed.disconnected,
+      rateLimited: listed.rateLimited,
+      error: listed.error,
+    };
   }
   const items = prioritizeUnipileChats(
     listed.items,
@@ -461,9 +616,10 @@ async function syncMessagingAccount(input: {
   const priorityChatSet = new Set(
     (input.priorityChatIds ?? []).map((id) => id.trim()).filter(Boolean)
   );
-  const attendeesByProviderId = await loadAttendeesByProviderId(
-    input.unipileAccountId
-  );
+  // Nothing changed: no need to ask the provider for the attendee list.
+  const attendeesByProviderId = items.length
+    ? await loadAttendeesByProviderId(input.unipileAccountId)
+    : new Map<string, UnipileChatAttendee>();
   const includeMessages = input.includeMessages !== false;
   const messagesOnlyIfStale = Boolean(input.messagesOnlyIfStale);
   const requireKnown = channelRequiresKnownContact(input.channel);
@@ -478,10 +634,54 @@ async function syncMessagingAccount(input: {
   let linkedInPairResolves = 0;
   let emptyThreadPulls = 0;
 
+  const unchangedChatIds = new Set<string>();
+  if (input.skipUnchanged && includeMessages && messagesOnlyIfStale) {
+    const listedIds = items
+      .map((chat) => String(chat.id || chat.chat_id || ""))
+      .filter(Boolean);
+    for (let i = 0; i < listedIds.length; i += 100) {
+      const { data: rows } = await supabaseAdmin
+        .from("messaging_conversations")
+        .select("unipile_chat_id, last_message_at, unread_count, last_preview")
+        .eq("coach_id", input.coachId)
+        .in("unipile_chat_id", listedIds.slice(i, i + 100));
+      const byId = new Map(
+        (rows ?? []).map((row) => [String(row.unipile_chat_id), row])
+      );
+      for (const chat of items) {
+        const chatId = String(chat.id || chat.chat_id || "");
+        const local = byId.get(chatId);
+        if (!local || priorityChatSet.has(chatId)) continue;
+        const stamp = String(chat.timestamp || chat.last_message_at || "").trim();
+        const remoteAt = stamp ? new Date(stamp).getTime() : 0;
+        const localAt = local.last_message_at
+          ? new Date(local.last_message_at as string).getTime()
+          : 0;
+        const remoteUnread = Number(chat.unread_count) || 0;
+        const localUnread = Number(local.unread_count) || 0;
+        const hasPreview = Boolean(
+          (local.last_preview as string | null)?.trim()
+        );
+        if (
+          Number.isFinite(remoteAt) &&
+          remoteAt <= localAt + 1000 &&
+          remoteUnread <= localUnread &&
+          hasPreview
+        ) {
+          unchangedChatIds.add(chatId);
+        }
+      }
+    }
+  }
+
   for (const chat of items) {
-    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
+    if (input.deadlineAt && Date.now() > input.deadlineAt) {
+      cutShort = true;
+      break;
+    }
     const chatId = String(chat.id || chat.chat_id || "");
     if (!chatId) continue;
+    if (unchangedChatIds.has(chatId)) continue;
 
     let { data: lead } = await supabaseAdmin
       .from("linkedin_campaign_leads")
@@ -782,7 +982,9 @@ async function syncMessagingAccount(input: {
 
     let shouldPullMessages = includeMessages;
     const isPriorityChat = priorityChatSet.has(chatId);
-    if (includeMessages && messagesOnlyIfStale && !isPriorityChat) {
+    // Quick sync lists only chats that changed, so always pull them. This
+    // also heals chats a webhook bumped without storing the message.
+    if (includeMessages && messagesOnlyIfStale && !isPriorityChat && !input.after) {
       if (!existingConv?.id) {
         shouldPullMessages = true;
       } else {
@@ -822,8 +1024,26 @@ async function syncMessagingAccount(input: {
 
     if (!shouldPullMessages) continue;
 
-    const msgs = await listUnipileChatMessages({ chat_id: chatId, limit: 30 });
-    if (!msgs.ok) continue;
+    const pulled = await pullChatMessages({
+      chatId,
+      existingConversationId: existingConv?.id
+        ? (existingConv.id as string)
+        : null,
+      deadlineAt: input.deadlineAt,
+    });
+    if (pulled.rateLimited) {
+      rateLimited = true;
+      lastError = pulled.error;
+      break;
+    }
+    if (!pulled.ok) {
+      // A deleted chat is done; anything else means retry next run.
+      if (!pulled.gone) {
+        cutShort = true;
+        lastError = pulled.error;
+      }
+      continue;
+    }
 
     let latestAt: string | null = null;
     let latestPreview: string | null = null;
@@ -845,7 +1065,7 @@ async function syncMessagingAccount(input: {
       createdAt: string;
     }> = [];
 
-    for (const msg of msgs.data?.items ?? []) {
+    for (const msg of pulled.items) {
       const messageId = String(msg.id || msg.message_id || "");
       if (!messageId) continue;
       const flags = parseUnipileMessageFlags(msg as Record<string, unknown>);
@@ -1014,12 +1234,27 @@ async function syncMessagingAccount(input: {
     }
   }
 
-  await backfillUnnamedChatIdentities({
-    coachId: input.coachId,
-    channel: input.channel,
-  });
+  // Name/photo repair re-asks the provider about the same people, so it
+  // runs only on the nightly pass (skipUnchanged off), with time to spare.
+  if (
+    !input.skipUnchanged &&
+    !rateLimited &&
+    (!input.deadlineAt || input.deadlineAt - Date.now() > 10_000)
+  ) {
+    await backfillUnnamedChatIdentities({
+      coachId: input.coachId,
+      channel: input.channel,
+      deadlineAt: input.deadlineAt,
+    });
+  }
 
-  return { chats, messages };
+  return {
+    chats,
+    messages,
+    complete: listed.complete && !cutShort && !rateLimited,
+    rateLimited,
+    error: lastError ?? listed.error,
+  };
 }
 
 async function syncMailingAccount(input: {
@@ -1030,17 +1265,30 @@ async function syncMailingAccount(input: {
   /** Epoch ms — stop between threads so a serverless run ends cleanly. */
   deadlineAt?: number;
   maxPages?: number;
+  /** Quick sync: only emails dated after this ISO time. */
+  after?: string | null;
 }): Promise<AccountSyncResult> {
   let chats = 0;
   let messages = 0;
+  let cutShort = false;
+  let rateLimited = false;
   const listed = await listUnipileEmailsPaged({
     accountId: input.unipileAccountId,
     metaOnly: Boolean(input.metaOnly),
     maxPages: input.maxPages ?? EMAIL_SOFT_PAGES,
     deadlineAt: input.deadlineAt,
+    after: input.after ?? null,
   });
   if (!listed.ok) {
-    return { chats, messages, accountMissing: listed.accountMissing };
+    return {
+      chats,
+      messages,
+      complete: false,
+      accountMissing: listed.accountMissing,
+      disconnected: listed.disconnected,
+      rateLimited: listed.rateLimited,
+      error: listed.error,
+    };
   }
 
   const knownContacts = await loadKnownContactIndex(input.coachId);
@@ -1091,24 +1339,45 @@ async function syncMailingAccount(input: {
     }
   }
 
+  // One lookup for every thread's conversation instead of one per thread.
+  const convByThread = new Map<string, { id: string; contact_id: string | null }>();
+  const threadKeys = [...byThread.keys()];
+  for (let i = 0; i < threadKeys.length; i += 100) {
+    const { data: convRows } = await supabaseAdmin
+      .from("messaging_conversations")
+      .select("id, contact_id, unipile_chat_id")
+      .eq("coach_id", input.coachId)
+      .in("unipile_chat_id", threadKeys.slice(i, i + 100));
+    for (const row of convRows ?? []) {
+      convByThread.set(String(row.unipile_chat_id), {
+        id: row.id as string,
+        contact_id: (row.contact_id as string | null) ?? null,
+      });
+    }
+  }
+
   // meta_only lists return empty bodies — fetch the full email for new or
   // subject-only rows so Conversations shows the message, not its subject.
   // A confirmed-empty body (calendar RSVP) is marked resolved so it does not
   // consume this budget on every later sync.
   let bodyFetches = 0;
+  let bodyBudgetHit = false;
   const emailBody = async (
     email: Record<string, unknown>
   ): Promise<{ text: string; confirmedEmpty: boolean }> => {
     const direct = unipileEmailBodyText(email);
     if (direct) return { text: direct, confirmedEmpty: false };
-    if (bodyFetches >= MAX_EMAIL_BODY_FETCHES_PER_SYNC) {
+    if (bodyFetches >= MAX_EMAIL_BODY_FETCHES_PER_SYNC || rateLimited) {
+      bodyBudgetHit = true;
       return { text: "", confirmedEmpty: false };
     }
     bodyFetches += 1;
     const full = await getUnipileEmail(
       String(email.id || ""),
-      input.unipileAccountId
+      input.unipileAccountId,
+      { timeoutMs: ITEM_CALL_TIMEOUT_MS }
     );
+    if (isUnipileRateLimited(full)) rateLimited = true;
     if (!full.ok || !full.data) {
       // Gone from the mailbox. Retrying it forever blocks real bodies.
       return { text: "", confirmedEmpty: full.status === 404 };
@@ -1118,7 +1387,23 @@ async function syncMailingAccount(input: {
   };
 
   for (const [threadKey, emails] of byThread) {
-    if (input.deadlineAt && Date.now() > input.deadlineAt) break;
+    if (input.deadlineAt && Date.now() > input.deadlineAt) {
+      cutShort = true;
+      break;
+    }
+    if (rateLimited) break;
+    // Every email in this thread is already stored with its body: nothing
+    // to do, so skip the per-thread lookups.
+    const threadAlreadyStored = emails.every((email) => {
+      const stored = storedById.get(String(email.id || ""));
+      if (!stored) return false;
+      return !emailNeedsBodyFetch({
+        bodyText: stored.body_text,
+        subject: String(email.subject || "").trim(),
+        metadata: stored.metadata,
+      });
+    });
+    if (threadAlreadyStored) continue;
     emails.sort((a, b) => {
       const da = new Date(String(a.date || 0)).getTime();
       const db = new Date(String(b.date || 0)).getTime();
@@ -1147,12 +1432,7 @@ async function syncMailingAccount(input: {
     const subject = String(latest.subject || "Email").slice(0, 200);
 
     let conversationId: string | null = null;
-    const { data: existingConv } = await supabaseAdmin
-      .from("messaging_conversations")
-      .select("id, contact_id")
-      .eq("coach_id", input.coachId)
-      .eq("unipile_chat_id", threadKey)
-      .maybeSingle();
+    const existingConv = convByThread.get(threadKey) ?? null;
 
     const known = matchKnownContact(knownContacts, { email: prospectEmail });
     const linkedContactId =
@@ -1300,12 +1580,264 @@ async function syncMailingAccount(input: {
     }
   }
 
-  return { chats, messages };
+  // Bodies skipped for budget must be listed again next run, so hold the
+  // marker. A body that failed to fetch is left to the nightly check.
+  return {
+    chats,
+    messages,
+    complete: listed.complete && !cutShort && !rateLimited && !bodyBudgetHit,
+    rateLimited,
+    error: listed.error,
+  };
+}
+
+export type InboxSyncTrigger = "button" | "visit" | "cron" | "nightly" | "other";
+
+/** Per channel: done, more to fetch, must reconnect, provider asked us to wait, or failed. */
+export type InboxAccountOutcome =
+  | "done"
+  | "more"
+  | "reconnect"
+  | "backoff"
+  | "error";
+
+export type InboxSyncResult = {
+  chats: number;
+  messages: number;
+  skipped?: boolean;
+  reason?: "no_account" | "cooldown" | "busy";
+  /** Oldest finished sync across connected channels (honest "last synced"). */
+  last_synced_at?: string | null;
+  /** Something is left; calling again carries on from where this stopped. */
+  more?: boolean;
+  accounts?: Array<{
+    provider: string;
+    channel: string;
+    outcome: InboxAccountOutcome;
+  }>;
+};
+
+type SyncAccountRow = {
+  id: string;
+  unipile_account_id: string;
+  provider: string;
+  last_synced_at: string | null;
+  sync_cursor_at: string | null;
+  sync_backoff_until: string | null;
+};
+
+function accountChannelLabel(provider: string): string {
+  const normalized = normalizeUnipileProvider(provider);
+  if (isMailingProvider(normalized)) return "email";
+  if (isMessagingProvider(normalized)) return providerToAppChannel(normalized);
+  return String(provider || "").toLowerCase();
+}
+
+function inBackoff(row: SyncAccountRow, now: number): boolean {
+  if (!row.sync_backoff_until) return false;
+  return new Date(row.sync_backoff_until).getTime() > now;
+}
+
+/** Oldest last-finished time across channels that are not waiting out a back-off. */
+function oldestSyncedAt(rows: SyncAccountRow[], now: number): string | null {
+  let oldest: string | null = null;
+  for (const row of rows) {
+    if (inBackoff(row, now)) continue;
+    const at = row.last_synced_at;
+    if (!at) return null;
+    if (!oldest || new Date(at) < new Date(oldest)) oldest = at;
+  }
+  return oldest;
+}
+
+async function logSyncRun(row: {
+  coachId: string;
+  accountId: string;
+  provider: string;
+  trigger: InboxSyncTrigger;
+  startedAt: number;
+  complete: boolean;
+  chats: number;
+  messages: number;
+  outcome: InboxAccountOutcome;
+  error?: string | null;
+}) {
+  const finished = Date.now();
+  const { error } = await supabaseAdmin.from("inbox_sync_runs").insert({
+    coach_id: row.coachId,
+    account_id: row.accountId,
+    provider: row.provider,
+    trigger: row.trigger,
+    started_at: new Date(row.startedAt).toISOString(),
+    finished_at: new Date(finished).toISOString(),
+    duration_ms: finished - row.startedAt,
+    complete: row.complete,
+    chats: row.chats,
+    messages: row.messages,
+    outcome: row.outcome,
+    error: row.error ? String(row.error).slice(0, 500) : null,
+  });
+  if (error) console.error("inbox sync run log:", error.message);
+}
+
+async function syncOneAccount(input: {
+  coachId: string;
+  account: SyncAccountRow;
+  trigger: InboxSyncTrigger;
+  force: boolean;
+  deep: boolean;
+  priorityChatIds?: string[];
+  deadlineAt: number;
+}): Promise<{
+  chats: number;
+  messages: number;
+  outcome: InboxAccountOutcome;
+}> {
+  const { account } = input;
+  const provider = normalizeUnipileProvider(account.provider);
+  const startedAt = Date.now();
+
+  if (inBackoff(account, startedAt)) {
+    return { chats: 0, messages: 0, outcome: "backoff" };
+  }
+
+  // Quick sync: only what changed since the marker, minus an overlap.
+  // First-ever or nightly deep pass: newest pages, no date filter.
+  const after =
+    !input.deep && account.sync_cursor_at
+      ? new Date(
+          new Date(account.sync_cursor_at).getTime() - SYNC_OVERLAP_MS
+        ).toISOString()
+      : null;
+  const softVisit = !input.force;
+
+  let result: AccountSyncResult = { chats: 0, messages: 0, complete: false };
+  let thrown: string | null = null;
+  try {
+    if (isMailingProvider(provider)) {
+      // Headers only: full bodies in a list page are slow (seen 19s/page);
+      // bodies for new emails are fetched one by one, capped per run.
+      result = await syncMailingAccount({
+        coachId: input.coachId,
+        unipileAccountId: account.unipile_account_id,
+        metaOnly: true,
+        deadlineAt: input.deadlineAt,
+        maxPages: after ? EMAIL_FORCE_PAGES : EMAIL_SOFT_PAGES,
+        after,
+      });
+    } else if (isMessagingProvider(provider)) {
+      // Without a marker (first sync, nightly pass) only chats that look
+      // newer than ours get their messages pulled, whatever the trigger, so
+      // the run always fits the time budget and can finish.
+      result = await syncMessagingAccount({
+        coachId: input.coachId,
+        unipileAccountId: account.unipile_account_id,
+        channel: providerToAppChannel(provider),
+        includeMessages: true,
+        messagesOnlyIfStale: true,
+        maxLinkedInPairResolves: softVisit ? 3 : undefined,
+        priorityChatIds: input.priorityChatIds,
+        deadlineAt: input.deadlineAt,
+        maxPages: after ? CHAT_FORCE_PAGES + 1 : CHAT_SOFT_PAGES,
+        after,
+        skipUnchanged: !input.deep,
+      });
+    } else {
+      result = { chats: 0, messages: 0, complete: true };
+    }
+  } catch (err) {
+    thrown = err instanceof Error ? err.message : String(err);
+    console.error("unipile inbox sync account failed:", {
+      coachId: input.coachId,
+      accountId: account.id,
+      error: thrown,
+    });
+  }
+
+  let outcome: InboxAccountOutcome;
+  const nowIso = new Date().toISOString();
+  if (result.accountMissing) {
+    outcome = "reconnect";
+    const { handleUnipileAccountStatusEvent } = await import(
+      "@/lib/unipile/webhookHandlers"
+    );
+    await handleUnipileAccountStatusEvent({
+      account_id: account.unipile_account_id,
+      event: "DELETED",
+    });
+  } else if (result.disconnected) {
+    // Leave the account row alone (other parts, e.g. calendar, may still
+    // work); the coach sees "needs reconnecting" and admin sees it as stale.
+    outcome = "reconnect";
+    await supabaseAdmin
+      .from("linkedin_outreach_accounts")
+      .update({
+        last_sync_error: (result.error || "Disconnected.").slice(0, 500),
+      })
+      .eq("id", account.id);
+  } else if (result.rateLimited) {
+    outcome = "backoff";
+    await supabaseAdmin
+      .from("linkedin_outreach_accounts")
+      .update({
+        sync_backoff_until: new Date(
+          Date.now() + RATE_LIMIT_BACKOFF_MS
+        ).toISOString(),
+        last_sync_error: (result.error || "Provider asked us to slow down.").slice(0, 500),
+      })
+      .eq("id", account.id);
+  } else if (thrown) {
+    outcome = "error";
+    await supabaseAdmin
+      .from("linkedin_outreach_accounts")
+      .update({ last_sync_error: thrown.slice(0, 500) })
+      .eq("id", account.id);
+  } else if (result.complete) {
+    outcome = "done";
+    // Marker = when this run started, so anything arriving mid-run is
+    // picked up next time (plus the overlap).
+    await supabaseAdmin
+      .from("linkedin_outreach_accounts")
+      .update({
+        last_synced_at: nowIso,
+        last_sync_finished_at: nowIso,
+        sync_cursor_at: new Date(startedAt).toISOString(),
+        last_sync_error: null,
+      })
+      .eq("id", account.id);
+  } else {
+    outcome = "more";
+    if (result.error) {
+      await supabaseAdmin
+        .from("linkedin_outreach_accounts")
+        .update({ last_sync_error: result.error.slice(0, 500) })
+        .eq("id", account.id);
+    }
+  }
+
+  await logSyncRun({
+    coachId: input.coachId,
+    accountId: account.id,
+    provider: account.provider,
+    trigger: input.trigger,
+    startedAt,
+    complete: outcome === "done",
+    chats: result.chats,
+    messages: result.messages,
+    outcome,
+    error: thrown || result.error || null,
+  });
+
+  return { chats: result.chats, messages: result.messages, outcome };
 }
 
 /**
  * Pull Unipile chats (LI/WA/IG/Messenger) and emails (Gmail/Outlook) into
  * messaging_* for this coach.
+ *
+ * Never runs past `deadlineAt` (default 40s from now): each channel stops
+ * between provider calls, keeps its marker, and reports `more` so the caller
+ * can carry on. One run per coach at a time (lock). Channels run side by side.
  */
 export async function syncUnipileInboxForCoach(
   coachId: string,
@@ -1314,21 +1846,21 @@ export async function syncUnipileInboxForCoach(
     minIntervalMs?: number;
     priorityChatIds?: string[];
     deadlineAt?: number;
+    trigger?: InboxSyncTrigger;
+    /** Nightly safety net: ignore markers and re-read the newest pages. */
+    deep?: boolean;
   }
-): Promise<{
-  chats: number;
-  messages: number;
-  skipped?: boolean;
-  reason?: string;
-  last_synced_at?: string | null;
-}> {
-  const { data: accounts } = await supabaseAdmin
+): Promise<InboxSyncResult> {
+  const { data } = await supabaseAdmin
     .from("linkedin_outreach_accounts")
-    .select("id, unipile_account_id, provider, last_synced_at")
+    .select(
+      "id, unipile_account_id, provider, last_synced_at, sync_cursor_at, sync_backoff_until"
+    )
     .eq("coach_id", coachId)
     .eq("status", "OK");
+  const accounts = (data ?? []) as SyncAccountRow[];
 
-  if (!accounts?.length) {
+  if (!accounts.length) {
     return {
       chats: 0,
       messages: 0,
@@ -1338,53 +1870,23 @@ export async function syncUnipileInboxForCoach(
     };
   }
 
-  const lastSyncedAt = accounts.reduce<string | null>((latest, row) => {
-    const at = row.last_synced_at as string | null;
-    if (!at) return latest;
-    if (!latest || new Date(at) > new Date(latest)) return at;
-    return latest;
-  }, null);
+  const now = Date.now();
+  const lastSyncedAt = oldestSyncedAt(accounts, now);
+  const deadlineAt = options?.deadlineAt ?? now + DEFAULT_SYNC_BUDGET_MS;
+  const trigger = options?.trigger ?? "other";
 
   const minIntervalMs =
     options?.minIntervalMs ??
     (options?.force ? 60_000 : UNIPILE_INBOX_SOFT_SYNC_MS);
-  if (
-    lastSyncedAt &&
-    Date.now() - new Date(lastSyncedAt).getTime() < minIntervalMs
-  ) {
-    const { data: genericRows } = await supabaseAdmin
-      .from("messaging_conversations")
-      .select("id, last_channel, prospect_name")
-      .eq("coach_id", coachId)
-      .in("last_channel", ["linkedin", "whatsapp", "instagram", "messenger"])
-      .limit(40);
-    const needsIdentity = (genericRows ?? []).some((row) =>
-      isGenericConversationName(
-        row.prospect_name as string | null,
-        row.last_channel as string | null
-      )
-    );
-    if (needsIdentity) {
-      let chats = 0;
-      for (const account of accounts) {
-        const provider = normalizeUnipileProvider(account.provider as string);
-        if (!isMessagingProvider(provider)) continue;
-        const result = await syncMessagingAccount({
-          coachId,
-          unipileAccountId: account.unipile_account_id as string,
-          channel: providerToAppChannel(provider),
-          includeMessages: false,
-        });
-        chats += result.chats;
-      }
-      return {
-        chats,
-        messages: 0,
-        skipped: true,
-        reason: "cooldown",
-        last_synced_at: lastSyncedAt,
-      };
-    }
+  const allInBackoff = accounts.every((row) => inBackoff(row, now));
+  const withinCooldown =
+    allInBackoff ||
+    (lastSyncedAt !== null &&
+      now - new Date(lastSyncedAt).getTime() < minIntervalMs);
+
+  // Synced moments ago: nothing to do (no lock needed). Missing names and
+  // photos are repaired by the nightly pass, not on every page open.
+  if (withinCooldown) {
     return {
       chats: 0,
       messages: 0,
@@ -1394,67 +1896,76 @@ export async function syncUnipileInboxForCoach(
     };
   }
 
-  let chats = 0;
-  let messages = 0;
-  const force = Boolean(options?.force);
-  // Soft page-open: refresh chat metadata + only pull messages for chats that
-  // look newer/unread. Force/cron: full message history for listed chats.
-  const softVisit = !force;
-
-  for (const account of accounts) {
-    if (options?.deadlineAt && Date.now() > options.deadlineAt) break;
-    const provider = normalizeUnipileProvider(account.provider as string);
-    let result: AccountSyncResult = { chats: 0, messages: 0 };
-    try {
-      if (isMailingProvider(provider)) {
-        result = await syncMailingAccount({
-          coachId,
-          unipileAccountId: account.unipile_account_id as string,
-          metaOnly: softVisit,
-          deadlineAt: options?.deadlineAt,
-          maxPages: force ? EMAIL_FORCE_PAGES : EMAIL_SOFT_PAGES,
-        });
-      } else if (isMessagingProvider(provider)) {
-        result = await syncMessagingAccount({
-          coachId,
-          unipileAccountId: account.unipile_account_id as string,
-          channel: providerToAppChannel(provider),
-          includeMessages: true,
-          messagesOnlyIfStale: softVisit,
-          maxLinkedInPairResolves: softVisit ? 3 : undefined,
-          priorityChatIds: options?.priorityChatIds,
-          deadlineAt: options?.deadlineAt,
-          maxPages: force ? CHAT_FORCE_PAGES : CHAT_SOFT_PAGES,
-        });
-      }
-    } catch (err) {
-      console.error("unipile inbox sync account failed:", {
-        coachId,
-        accountId: account.id,
-        error: err instanceof Error ? err.message : String(err),
-      });
+  const holder = crypto.randomUUID();
+  const { data: gotLock, error: lockError } = await supabaseAdmin.rpc(
+    "try_inbox_sync_lock",
+    {
+      p_coach_id: coachId,
+      p_holder: holder,
+      p_ttl_seconds:
+        Math.max(0, Math.ceil((deadlineAt - now) / 1000)) +
+        SYNC_LOCK_SLACK_SECONDS,
     }
-    chats += result.chats;
-    messages += result.messages;
-
-    if (result.accountMissing) {
-      const { handleUnipileAccountStatusEvent } = await import(
-        "@/lib/unipile/webhookHandlers"
-      );
-      await handleUnipileAccountStatusEvent({
-        account_id: account.unipile_account_id,
-        event: "DELETED",
-      });
-      continue;
-    }
-
-    await supabaseAdmin
-      .from("linkedin_outreach_accounts")
-      .update({ last_synced_at: new Date().toISOString() })
-      .eq("id", account.id);
+  );
+  if (lockError) {
+    // Lock table unavailable: run anyway rather than never syncing.
+    console.error("inbox sync lock:", lockError.message);
+  } else if (!gotLock) {
+    return {
+      chats: 0,
+      messages: 0,
+      skipped: true,
+      reason: "busy",
+      last_synced_at: lastSyncedAt,
+    };
   }
 
-  return { chats, messages, last_synced_at: new Date().toISOString() };
+  try {
+    const results = await Promise.all(
+      accounts.map(async (account) => {
+        const r = await syncOneAccount({
+          coachId,
+          account,
+          trigger,
+          force: Boolean(options?.force),
+          deep: Boolean(options?.deep),
+          priorityChatIds: options?.priorityChatIds,
+          deadlineAt,
+        });
+        return { account, ...r };
+      })
+    );
+
+    const { data: after } = await supabaseAdmin
+      .from("linkedin_outreach_accounts")
+      .select(
+        "id, unipile_account_id, provider, last_synced_at, sync_cursor_at, sync_backoff_until"
+      )
+      .eq("coach_id", coachId)
+      .eq("status", "OK");
+
+    return {
+      chats: results.reduce((sum, r) => sum + r.chats, 0),
+      messages: results.reduce((sum, r) => sum + r.messages, 0),
+      last_synced_at: oldestSyncedAt(
+        (after ?? []) as SyncAccountRow[],
+        Date.now()
+      ),
+      more: results.some((r) => r.outcome === "more" || r.outcome === "error"),
+      accounts: results.map((r) => ({
+        provider: r.account.provider,
+        channel: accountChannelLabel(r.account.provider),
+        outcome: r.outcome,
+      })),
+    };
+  } finally {
+    if (!lockError) {
+      await supabaseAdmin.rpc("release_inbox_sync_lock", {
+        p_coach_id: coachId,
+        p_holder: holder,
+      });
+    }
+  }
 }
 
 /** @deprecated Alias — multi-channel sync. */

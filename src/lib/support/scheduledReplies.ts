@@ -18,6 +18,7 @@ type DueRow = {
   body: string;
   media: CommunityPostMediaItem[] | null;
   email_notify: boolean;
+  whatsapp_notify: boolean;
   attempts: number;
 };
 
@@ -38,7 +39,7 @@ export async function processDueScheduledSupportReplies(
   const { data: due, error } = await supabaseAdmin
     .from("support_scheduled_replies")
     .select(
-      "id, report_id, created_by, body, media, email_notify, attempts, scheduled_for"
+      "id, report_id, created_by, body, media, email_notify, whatsapp_notify, attempts, scheduled_for"
     )
     .eq("status", "scheduled")
     .lte("scheduled_for", now)
@@ -153,6 +154,24 @@ async function deliverScheduledReply(
       updated_at: new Date().toISOString(),
     })
     .eq("id", row.id);
+
+  if (row.whatsapp_notify) {
+    const { sendSupportReplyOnWhatsApp } = await import("@/lib/support/whatsapp");
+    const sentWa = await sendSupportReplyOnWhatsApp({
+      replyId: reply.id as string,
+      adminId: row.created_by,
+    });
+    if (!sentWa.ok) {
+      await supabaseAdmin
+        .from("support_scheduled_replies")
+        .update({
+          last_error: `WhatsApp: ${sentWa.error}`.slice(0, 500),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", row.id);
+    }
+    return;
+  }
 
   if (!row.email_notify || !body) return;
 

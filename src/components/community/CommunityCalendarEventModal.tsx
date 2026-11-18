@@ -20,6 +20,7 @@ import {
 } from "@/lib/supabaseErrorMessage";
 import type { CommunityCalendarOccurrence } from "@/lib/communityCalendarTypes";
 import { CommunityCalendarCoverImage } from "@/components/community/CommunityCalendarCoverImage";
+import { CommunityCalendarEventLinks } from "@/components/community/CommunityCalendarEventLinks";
 import {
   communityCalendarCancelledBadgeClass,
   communityCalendarCoverUrl,
@@ -138,7 +139,23 @@ export function CommunityCalendarEventModal({
     const overlay = overlayRef.current;
     if (!overlay) return;
 
+    // A box inside the card that can still scroll this way (a long message
+    // being written) takes the wheel itself.
+    const innerBoxScrolls = (target: EventTarget | null, dy: number) => {
+      for (
+        let el = target instanceof Element ? target : null;
+        el && el !== overlay && el !== scrollContainerRef.current;
+        el = el.parentElement
+      ) {
+        const oy = getComputedStyle(el).overflowY;
+        if (oy !== "auto" && oy !== "scroll") continue;
+        if (dy < 0 ? el.scrollTop > 0 : el.scrollTop + el.clientHeight < el.scrollHeight - 1) return true;
+      }
+      return false;
+    };
+
     const trapWheel = (e: WheelEvent) => {
+      if (innerBoxScrolls(e.target, e.deltaY)) return;
       const scrollEl = scrollContainerRef.current;
       if (!scrollEl || !scrollEl.contains(e.target as Node)) {
         e.preventDefault();
@@ -441,6 +458,11 @@ export function CommunityCalendarEventModal({
                 })}
             </div>
           ) : null}
+          <CommunityCalendarEventLinks
+            occurrence={occurrence}
+            eventRow={eventRow}
+            canManage={canManage}
+          />
           {isPast && canManage && !occurrence.isCancelled ? (
             <div className="space-y-2 border-t border-slate-100 pt-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">

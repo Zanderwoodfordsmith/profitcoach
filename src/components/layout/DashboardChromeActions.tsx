@@ -9,6 +9,7 @@ import { DashboardTopActions } from "./DashboardTopActions";
 import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
 import { BlueprintVersionSwitch } from "@/components/practice/BlueprintVersionSwitch";
 import { AvaChatsVersionSwitch } from "@/components/admin/ava/AvaChatsVersionSwitch";
+import { BcaChatTopBarButton } from "@/components/support/BcaChatTopBarButton";
 import { useDashboardProfile } from "./useDashboardProfile";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 
@@ -51,6 +52,8 @@ export function DashboardChromeActions({
         embedded
         className="shrink-0"
       />
+      {/* Chat with BCA, beside Ava (18 Nov): coaches, and admins viewing as one. */}
+      {chrome.variant === "coach" ? <BcaChatTopBarButton /> : null}
       {chrome.showAi ? (
         <button
           type="button"

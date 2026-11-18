@@ -49,7 +49,10 @@ export function parseUnipileEmailAttachmentMeta(
       typeof row.size === "number" && Number.isFinite(row.size)
         ? row.size
         : null;
-    const inline = Boolean(row.inline) || Boolean(row.cid);
+    // Gmail gives every attachment a cid (real files too), so trust Unipile's
+    // inline flag when it sends one; cid only decides when the flag is missing.
+    const inline =
+      typeof row.inline === "boolean" ? row.inline : Boolean(row.cid);
     out.push({ id, name, mime, size, inline });
   }
   return out;

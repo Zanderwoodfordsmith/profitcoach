@@ -66,6 +66,28 @@ export function isUnipileAccountNotFound(
   );
 }
 
+/** The provider login lapsed (e.g. Gmail source in CREDENTIALS): coach must reconnect. */
+export function isUnipileAccountDisconnected(
+  result: UnipileResult<unknown>
+): boolean {
+  if (result.ok) return false;
+  const type = (result.raw as { type?: string } | undefined)?.type ?? "";
+  const blob = `${result.error ?? ""} ${type}`.toLowerCase();
+  return (
+    type === "errors/disconnected_account" ||
+    blob.includes("disconnected from the provider")
+  );
+}
+
+/** Provider or Unipile asked us to slow down. Stop and back off. */
+export function isUnipileRateLimited(result: UnipileResult<unknown>): boolean {
+  if (result.ok) return false;
+  if (result.status === 429) return true;
+  const type = (result.raw as { type?: string } | undefined)?.type ?? "";
+  const blob = `${result.error ?? ""} ${type}`.toLowerCase();
+  return /too[_ ]many[_ ]requests|rate[_ ]?limit|throttl/.test(blob);
+}
+
 export const UNIPILE_LINKEDIN_RECONNECT_ERROR =
   "LinkedIn was disconnected. Reconnect LinkedIn, then try again.";
 
@@ -404,17 +426,26 @@ export async function listUnipileChats(input: {
   account_id: string;
   limit?: number;
   cursor?: string | null;
+  /** ISO time: only chats with activity after this. */
+  after?: string | null;
+  timeoutMs?: number;
 }) {
   const qs = new URLSearchParams({
     account_id: input.account_id,
     limit: String(input.limit ?? 50),
   });
   if (input.cursor) qs.set("cursor", input.cursor);
+  if (input.after) qs.set("after", input.after);
   return unipileFetch<{
     object?: string;
     items?: Array<Record<string, unknown>>;
     cursor?: string | null;
-  }>("GET", `/api/v1/chats?${qs.toString()}`);
+  }>(
+    "GET",
+    `/api/v1/chats?${qs.toString()}`,
+    undefined,
+    input.timeoutMs ? { timeoutMs: input.timeoutMs } : undefined
+  );
 }
 
 export async function listUnipileAttendees(input: {
@@ -455,6 +486,7 @@ export async function listUnipileChatMessages(input: {
   chat_id: string;
   limit?: number;
   cursor?: string | null;
+  timeoutMs?: number;
 }) {
   const qs = new URLSearchParams({
     limit: String(input.limit ?? 50),
@@ -466,7 +498,9 @@ export async function listUnipileChatMessages(input: {
     cursor?: string | null;
   }>(
     "GET",
-    `/api/v1/chats/${encodeURIComponent(input.chat_id)}/messages?${qs.toString()}`
+    `/api/v1/chats/${encodeURIComponent(input.chat_id)}/messages?${qs.toString()}`,
+    undefined,
+    input.timeoutMs ? { timeoutMs: input.timeoutMs } : undefined
   );
 }
 
@@ -862,6 +896,9 @@ export async function listUnipileEmails(input: {
   cursor?: string | null;
   meta_only?: boolean;
   thread_id?: string | null;
+  /** ISO time: only emails dated after this. */
+  after?: string | null;
+  timeoutMs?: number;
 }) {
   const qs = new URLSearchParams({
     account_id: input.account_id,
@@ -870,11 +907,17 @@ export async function listUnipileEmails(input: {
   if (input.cursor) qs.set("cursor", input.cursor);
   if (input.meta_only != null) qs.set("meta_only", String(input.meta_only));
   if (input.thread_id) qs.set("thread_id", input.thread_id);
+  if (input.after) qs.set("after", input.after);
   return unipileFetch<{
     object?: string;
     items?: Array<Record<string, unknown>>;
     cursor?: string | null;
-  }>("GET", `/api/v1/emails?${qs.toString()}`);
+  }>(
+    "GET",
+    `/api/v1/emails?${qs.toString()}`,
+    undefined,
+    input.timeoutMs ? { timeoutMs: input.timeoutMs } : undefined
+  );
 }
 
 /** Mark read and/or move folders (e.g. Archive) for a Gmail/Outlook message. */
@@ -923,7 +966,8 @@ export type UnipileEmailAttachment = {
 
 export async function getUnipileEmail(
   emailId: string,
-  accountId?: string | null
+  accountId?: string | null,
+  options?: { timeoutMs?: number }
 ): Promise<
   UnipileResult<{
     id?: string;
@@ -941,7 +985,12 @@ export async function getUnipileEmail(
   const path = qs.toString()
     ? `/api/v1/emails/${encodeURIComponent(emailId)}?${qs}`
     : `/api/v1/emails/${encodeURIComponent(emailId)}`;
-  return unipileFetch("GET", path);
+  return unipileFetch(
+    "GET",
+    path,
+    undefined,
+    options?.timeoutMs ? { timeoutMs: options.timeoutMs } : undefined
+  );
 }
 
 async function unipileFetchBinary(

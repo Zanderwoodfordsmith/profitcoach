@@ -206,3 +206,69 @@ export async function deleteCommunityCalendarEventSeries(
     .eq("id", eventId);
   if (error) throw error;
 }
+
+/** A link or file on one calendar session (workbook, announcement post, Zoom chat link). */
+export type CommunityCalendarEventLink = {
+  id: string;
+  event_id: string;
+  occurrence_start: string | null;
+  label: string;
+  url: string;
+  source: "manual" | "upload" | "zoom_chat";
+  created_at: string;
+};
+
+/**
+ * Links belong to one date of a recurring series, or to the whole one-off
+ * event (null), so moving a one-off event keeps its links.
+ */
+export function communityCalendarLinkOccurrenceStart(
+  event: Pick<CommunityCalendarEventRow, "is_recurring" | "recurrence">,
+  occurrenceStartIso: string
+): string | null {
+  if (!isRecurringCommunityCalendarEvent(event)) return null;
+  return DateTime.fromISO(occurrenceStartIso, { zone: "utc" }).toISO();
+}
+
+export async function loadCommunityCalendarEventLinks(
+  eventId: string,
+  occurrenceStart: string | null
+): Promise<CommunityCalendarEventLink[]> {
+  let query = supabaseClient
+    .from("community_calendar_event_links")
+    .select("id, event_id, occurrence_start, label, url, source, created_at")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: true });
+  query =
+    occurrenceStart === null
+      ? query.is("occurrence_start", null)
+      : query.eq("occurrence_start", occurrenceStart);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as CommunityCalendarEventLink[];
+}
+
+export async function addCommunityCalendarEventLink(link: {
+  event_id: string;
+  occurrence_start: string | null;
+  label: string;
+  url: string;
+  source: "manual" | "upload";
+}): Promise<void> {
+  const session = await supabaseClient.auth.getSession();
+  const { error } = await supabaseClient
+    .from("community_calendar_event_links")
+    .insert({ ...link, created_by: session.data.session?.user.id ?? null });
+  if (error) {
+    if (error.code === "23505") throw new Error("That link is already on this session.");
+    throw error;
+  }
+}
+
+export async function deleteCommunityCalendarEventLink(id: string): Promise<void> {
+  const { error } = await supabaseClient
+    .from("community_calendar_event_links")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}

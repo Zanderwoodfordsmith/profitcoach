@@ -141,7 +141,7 @@ export function capabilitiesForMode(mode: AgentMode): Capability[] {
 /**
  * Who may open a skill when Admin → Ava → Skills has no setting for it, from
  * its frontmatter: admin-only modes mean admin only, the blueprint group means
- * every coach, the rest need Ava switched on.
+ * every coach, the rest need Get Clients in their membership (or Ava switched on).
  */
 export function defaultSkillAccess(cap: Pick<Capability, "modes" | "group">): SkillAccess {
   if (!cap.modes.includes("coach")) return "admin";
@@ -156,7 +156,7 @@ export function skillAccessFor(cap: Capability): SkillAccess {
 /**
  * What this person may open. The frontmatter modes stay a hard limit (a skill
  * written for admin mode never reaches a coach); the Skills setting decides
- * the rest. A limited coach is one without Ava switched on.
+ * the rest. A limited coach is one without Get Clients (and without Ava switched on).
  */
 export function capabilitiesForActor(mode: AgentMode, limited: boolean): Capability[] {
   return capabilitiesForMode(mode).filter((cap) => {

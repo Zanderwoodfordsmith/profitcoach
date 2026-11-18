@@ -169,6 +169,11 @@ export async function syncOutreachAccountsForCoach(coachId: string) {
     );
     const platformIds = await listPlatformUnipileAccountIds();
     for (const id of platformIds) claimed.add(id);
+    // Nor an admin's own WhatsApp linked for Support.
+    const { data: lines } = await supabaseAdmin
+      .from("support_whatsapp_lines")
+      .select("unipile_account_id");
+    for (const row of lines ?? []) claimed.add(row.unipile_account_id as string);
   } catch {
     /* ignore during migrate */
   }

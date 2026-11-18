@@ -6,6 +6,11 @@ import {
   isSupportMailboxNotifyName,
   upsertSupportMailboxFromNotify,
 } from "@/lib/support/mailbox";
+import {
+  adminIdFromSupportWhatsAppNotifyName,
+  isSupportWhatsAppNotifyName,
+  upsertSupportWhatsAppLine,
+} from "@/lib/support/whatsapp";
 
 /**
  * Unipile hosted-auth notify webhook.
@@ -42,6 +47,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, purpose: "alerts" });
     } catch (err) {
       console.error("unipile alerts notify:", err);
+      return NextResponse.json({ error: "Notify failed" }, { status: 500 });
+    }
+  }
+
+  // An admin's own WhatsApp for Support — never write coach outreach rows.
+  if (isSupportWhatsAppNotifyName(name)) {
+    const adminId = adminIdFromSupportWhatsAppNotifyName(name);
+    if (!adminId) return NextResponse.json({ ok: true, ignored: true });
+    try {
+      await upsertSupportWhatsAppLine({ unipileAccountId, adminId });
+      const { ensureUnipileWebhooksRegistered } = await import("@/lib/unipile/webhooks");
+      void ensureUnipileWebhooksRegistered(request).catch((err) => {
+        console.warn("unipile webhook register:", err);
+      });
+      return NextResponse.json({ ok: true, purpose: "support_whatsapp" });
+    } catch (err) {
+      console.error("unipile support whatsapp notify:", err);
       return NextResponse.json({ error: "Notify failed" }, { status: 500 });
     }
   }

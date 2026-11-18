@@ -151,6 +151,20 @@ export function extractZoomTranscriptDownloadUrl(
   return null;
 }
 
+/** The in-meeting chat file (saved when "Save chat" is on in Zoom cloud recording). */
+export function extractZoomChatDownloadUrl(
+  object: ZoomRecordingObject
+): string | null {
+  for (const file of object.recording_files ?? []) {
+    const type = (file.file_type ?? "").toUpperCase();
+    const recordingType = (file.recording_type ?? "").toLowerCase();
+    if (type !== "CHAT" && recordingType !== "chat_file") continue;
+    const download = asHttpUrl(file.download_url);
+    if (download) return download;
+  }
+  return null;
+}
+
 function asDurationMinutes(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
     return Math.trunc(value);

@@ -233,6 +233,8 @@ function TabItem({ item }: { item: PageHeaderUnderlineTabItem }) {
         onFocus={() => item.onPrefetch?.()}
         onClick={item.onNavigate}
         className={cls}
+        aria-current={item.active ? "page" : undefined}
+        data-tab-active={item.active ? "" : undefined}
         {...hint}
       >
         {item.label}
@@ -240,7 +242,7 @@ function TabItem({ item }: { item: PageHeaderUnderlineTabItem }) {
     );
   }
   return (
-    <button type="button" onClick={item.onClick} className={cls} {...hint}>
+    <button type="button" onClick={item.onClick} className={cls} data-tab-active={item.active ? "" : undefined} {...hint}>
       {item.label}
     </button>
   );

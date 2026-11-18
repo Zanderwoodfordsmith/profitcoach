@@ -543,9 +543,23 @@ export async function handleSupportMailReceived(
       return "duplicate";
     }
 
+    // Sender's email matches no login or alias (e.g. a work address): the
+    // ticket's own coach wrote it. Only a ticket with no coach falls back to
+    // a BCA author, which would show the message under BCA's name and photo.
     const coachId = await findCoachProfileIdByEmail(contactEmail);
+    const ticketOwnerId = coachId
+      ? null
+      : ((
+          await supabaseAdmin
+            .from("community_feedback_reports")
+            .select("created_by")
+            .eq("id", ticket.id)
+            .maybeSingle()
+        ).data?.created_by as string | null | undefined) ?? null;
     const replyAuthor =
-      coachId || (await findSystemReplyAuthor(account.connected_by));
+      coachId ||
+      ticketOwnerId ||
+      (await findSystemReplyAuthor(account.connected_by));
 
     if (replyAuthor) {
       const { error: replyError } = await supabaseAdmin
@@ -852,19 +866,54 @@ export async function syncSupportMailboxInbound(limit = 25): Promise<{
     };
   }
 
-  const listed = await listUnipileEmails({
-    account_id: mailbox.unipile_account_id,
-    limit,
-    meta_only: true,
-  });
-  if (!listed.ok) {
-    return {
-      scanned: 0,
-      created: 0,
-      replies: 0,
-      skipped: 0,
-      errors: [listed.error || "Could not list support emails."],
-    };
+  // The cron runs every minute with 60s: stop starting new fetches at 40s.
+  const startedAt = Date.now();
+  const deadlineAt = startedAt + 40_000;
+  // Only emails since the last fully checked point (15 min overlap); the
+  // webhook is the main path, this is the backup.
+  const { data: cursorRow } = await supabaseAdmin
+    .from("platform_unipile_accounts")
+    .select("sync_cursor_at")
+    .eq("id", mailbox.id)
+    .maybeSingle();
+  const cursorAt = (cursorRow?.sync_cursor_at as string | null) ?? null;
+  const after = cursorAt
+    ? new Date(new Date(cursorAt).getTime() - 15 * 60 * 1000).toISOString()
+    : null;
+
+  const items: Array<Record<string, unknown>> = [];
+  let pageCursor: string | null = null;
+  let listedAll = false;
+  for (let page = 0; page < 4; page += 1) {
+    if (page > 0 && Date.now() > deadlineAt) break;
+    const listed = await listUnipileEmails({
+      account_id: mailbox.unipile_account_id,
+      limit,
+      meta_only: true,
+      after,
+      cursor: pageCursor,
+      timeoutMs: 25_000,
+    });
+    if (!listed.ok) {
+      if (page === 0) {
+        return {
+          scanned: 0,
+          created: 0,
+          replies: 0,
+          skipped: 0,
+          errors: [listed.error || "Could not list support emails."],
+        };
+      }
+      break;
+    }
+    const pageItems = listed.data?.items ?? [];
+    items.push(...pageItems);
+    pageCursor = listed.data?.cursor ?? null;
+    // First run (no marker): the newest page is enough.
+    if (!pageCursor || pageItems.length === 0 || !after) {
+      listedAll = true;
+      break;
+    }
   }
 
   const supportEmail = BCA_SUPPORT_EMAIL.trim().toLowerCase();
@@ -872,13 +921,48 @@ export async function syncSupportMailboxInbound(limit = 25): Promise<{
   let replies = 0;
   let skipped = 0;
   const errors: string[] = [];
-  const items = listed.data?.items ?? [];
+  let cutShort = false;
+
+  // Emails already handled: skip without fetching the full email again.
+  const listedIds = items
+    .map((item) => String(item.id || "").trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  if (listedIds.length) {
+    const [seenRows, ticketRows, replyRows] = await Promise.all([
+      supabaseAdmin
+        .from("support_mailbox_seen_emails")
+        .select("email_id")
+        .in("email_id", listedIds),
+      supabaseAdmin
+        .from("community_feedback_reports")
+        .select("unipile_email_id")
+        .in("unipile_email_id", listedIds),
+      supabaseAdmin
+        .from("community_feedback_replies")
+        .select("unipile_email_id")
+        .in("unipile_email_id", listedIds),
+    ]);
+    for (const row of seenRows.data ?? []) seen.add(String(row.email_id));
+    for (const row of ticketRows.data ?? [])
+      seen.add(String(row.unipile_email_id));
+    for (const row of replyRows.data ?? [])
+      seen.add(String(row.unipile_email_id));
+  }
 
   for (const item of items) {
     const emailId = String(item.id || "").trim();
     if (!emailId) {
       skipped += 1;
       continue;
+    }
+    if (seen.has(emailId)) {
+      skipped += 1;
+      continue;
+    }
+    if (Date.now() > deadlineAt) {
+      cutShort = true;
+      break;
     }
 
     if (shouldSkipInactiveSupportEmail(item)) {
@@ -905,9 +989,16 @@ export async function syncSupportMailboxInbound(limit = 25): Promise<{
       continue;
     }
 
-    const full = await getUnipileEmail(emailId, mailbox.unipile_account_id);
+    const full = await getUnipileEmail(emailId, mailbox.unipile_account_id, {
+      timeoutMs: 15_000,
+    });
     if (!full.ok || !full.data) {
       errors.push(`${emailId}: ${full.error || "fetch failed"}`);
+      if (full.status === 404) {
+        await supabaseAdmin
+          .from("support_mailbox_seen_emails")
+          .upsert({ email_id: emailId, outcome: "gone" });
+      }
       continue;
     }
 
@@ -924,11 +1015,26 @@ export async function syncSupportMailboxInbound(limit = 25): Promise<{
       if (detail === "ticket_created") created += 1;
       else if (detail === "thread_reply") replies += 1;
       else skipped += 1;
+      // A failed insert must be retried next minute, so it is not "seen".
+      if (detail !== "insert_failed") {
+        await supabaseAdmin
+          .from("support_mailbox_seen_emails")
+          .upsert({ email_id: emailId, outcome: String(detail).slice(0, 60) });
+      }
     } catch (err) {
       errors.push(
         `${emailId}: ${err instanceof Error ? err.message : "ingest failed"}`
       );
     }
+  }
+
+  // Move the marker only when every listed email was handled; failures are
+  // retried next minute (handled ones are skipped via the seen list).
+  if (listedAll && !cutShort && errors.length === 0) {
+    await supabaseAdmin
+      .from("platform_unipile_accounts")
+      .update({ sync_cursor_at: new Date(startedAt).toISOString() })
+      .eq("id", mailbox.id);
   }
 
   return {

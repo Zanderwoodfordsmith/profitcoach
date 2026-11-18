@@ -253,6 +253,15 @@
         ],
         "createdAt": "2026-11-16T09:52:48.314Z",
         "reason": "Claude: L233 ternary pairs text-slate-600 with bg-white and text-emerald-800 with bg-emerald-50; detector mixes the two branches. Pre-existing line."
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/support/BcaChatTopBarButton.tsx"
+        ],
+        "createdAt": "2026-11-18T08:58:20.593Z",
+        "reason": "Claude: icon button on a transparent background (bg-transparent text-slate-700), same classes as the Ava top-bar button beside it in DashboardChromeActions"
       }
     ]
   }

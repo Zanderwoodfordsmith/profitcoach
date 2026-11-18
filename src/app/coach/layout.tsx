@@ -284,7 +284,8 @@ export default function CoachLayout({
         chromeEnabled={chromeEnabled}
       >
       <AvaSessionProvider>
-      <SupportDockProvider>
+      {/* One panel on the right at a time: Ava or the chat with BCA (18 Nov). */}
+      <SupportDockProvider othersOpen={aiPanelOpen} onOpen={() => setAiOpen(false)}>
       <SearchOverlay />
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {!playbooksReader && isMinimalWorkshopChrome && workshopTopRightSlot ? (

@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-11-16T10:20:12.803Z",
+  "generatedAt": "2026-11-18T10:25:53.469Z",
   "model": "claude-sonnet-5-5",
   "pages": [
     {
       "path": "/coach",
       "adminPath": "/admin",
-      "hash": "cdb599ff0e2cccd8",
+      "hash": "201eedfcd10fbc81",
       "coachVisible": false,
-      "title": "Coach home (redirect)",
-      "where": "Not a page a coach opens. Signing in or opening the coach area sends them straight to Academy → Community.",
-      "summary": "Nothing to do here: the page shows \"Redirecting…\" and moves the coach on to the Community page.",
+      "title": "Coach home redirect",
+      "where": "Not a page a coach opens from the sidebar; /coach sends them on automatically.",
+      "summary": "Nothing to do here: it shows \"Redirecting…\" and then sends the coach to the Academy Community page.",
       "tabs": [],
       "controls": [],
-      "notes": "Coaches only see a brief \"Redirecting…\" message before landing on Academy → Community. If something is wrong with the account they see \"Unable to load your profile.\", \"Unable to load coach info.\" or a \"Coach record not found\" message, and an admin must fix it. Admins who are not viewing as a coach are sent to the admin Community page instead."
+      "notes": "This is a redirect only. Coaches who are signed in land on Academy → Community; signed-out people go to the login page, and admins not viewing as a coach go to the admin community. If the coach's record is missing, the page shows an error and an admin has to set the coach up."
     },
     {
       "path": "/coach/academy/classroom",
@@ -210,23 +210,24 @@
     {
       "path": "/coach/blueprint",
       "adminPath": "/admin/blueprint",
-      "hash": "cb57ce00b852c21b",
+      "hash": "45108c068e9dea27",
       "coachVisible": true,
       "title": "My Blueprint",
-      "where": "My Blueprint in the sidebar (coach tools)",
-      "summary": "See your setup checklist and every Blueprint page with its status, then open a page to answer questions, review work and chat with BCA.",
+      "where": "My Blueprint (in the sidebar, under coach tools)",
+      "summary": "See your Blueprint pages and how far each one has got, and work through the setup checklist to get your campaign live.",
       "tabs": [],
       "controls": [
-        "**Your Blueprint** heading with a **?** button (\"How your Blueprint works\") that opens a pop-up with where you are, a video and what each status means",
-        "**List** / **Board** switch at the top right: List shows pages in rows, Board shows a card per page in status columns (Needs you, BCA, In progress, Review, Done)",
-        "**Get set up** checklist (becomes \"You're all set up\" when finished) with a progress bar and \"x of 10 done\"; click the heading to fold or open it",
+        "**Your Blueprint** heading with a **?** button (How your Blueprint works) that opens a pop-up with Where you are, a video and how status works",
+        "**List** / **Board** switch at the top right: List shows pages in groups, Board shows a card per page in columns by status",
+        "**Get set up** checklist (folds open and shut) with a count like '3 of 10 done' and a progress bar",
         "Checklist steps: **Connect LinkedIn**, **Fill in About You**, **Connect your email**, **Have your Blueprint Call**, **Update your LinkedIn profile**, **Review your prospects**, **Review your campaign**, **Put the app on your phone**, **Turn on reply alerts**, **Go live**",
-        "Step buttons: **Connect**, **Open**, **Book a time**, **I've done it** with **See it**, **Looks good** with **See them**, **Review**, **Show me**, **Set up**",
-        "Blue bar \"BCA is waiting on you\" or \"messages from BCA are waiting for you\" above the checklist when there are replies; click it to open the chat",
-        "Contents list of Blueprint pages, each with a short description, a chat count (\"2 new\" when unread) and a status pill; click a row to open that page",
-        "**Sign off this page** button beside the status on a page that is in Review"
+        "Step buttons: **Connect**, **Open**, **Book a time**, **I've done it**, **Looks good**, **Review**, **Show me**, **Set up**, plus quick links **See it** and **See them**",
+        "Blue bar **BCA is waiting on you** (or '[number] messages from BCA are waiting for you'), shown only when there are replies waiting; click it to open the chat",
+        "Page rows in List: each shows the title, a short line, a chat count or '[number] new', and a status label; click one to open that page",
+        "Statuses: **Needs you**, **BCA**, **In progress**, **Review**, **Done**",
+        "Board columns hold the same page cards, one column per status"
       ],
-      "notes": "The Checklist/Timeline switch in the top bar and the page status menu with Approve to send are admin-only, so never offer them. Coaches always see the checklist. Connecting LinkedIn, email and reply alerts happens in Settings → Integrations; some steps stay greyed until BCA has done their part.."
+      "notes": "The 'Get set up' steps need LinkedIn, email and reply alerts connected in Settings → Integrations; the app ticks what it can see, and you tick 'Update your LinkedIn profile' and 'Review your prospects' yourself. The Checklist/Timeline switch in the top bar is admin-only, so coaches only ever see the checklist. Each Blueprint page below the overview has its own chat and a 'Sign off this page' button when a page is in Review."
     },
     {
       "path": "/coach/blueprint/[slug]",
@@ -398,11 +399,11 @@
     {
       "path": "/coach/campaigns/[id]",
       "adminPath": "/admin/campaigns/[id]",
-      "hash": "c96577973985fcc8",
+      "hash": "6c04d3f0433e7998",
       "coachVisible": true,
       "title": "One campaign",
       "where": "Get Clients → Campaigns, then click a campaign",
-      "summary": "Set up, switch on and track one LinkedIn campaign: add people, write the steps and watch the results.",
+      "summary": "Coach runs one LinkedIn campaign: turns it on or off, sees how it is doing, manages the people in it and edits its steps.",
       "tabs": [
         {
           "label": "Overview",
@@ -418,19 +419,20 @@
         }
       ],
       "controls": [
-        "**← Campaigns** link at top to go back to the list",
-        "On/Off switch next to the campaign name (turn campaign on or off)",
-        "Pencil button (**Edit campaign name**) beside the name",
-        "**Settings** button at top right (opens campaign settings, with archive and delete)",
-        "**Before you launch** check box: shows **Fix … before this can go live** or **… likely to cost you replies**, with Show / Hide",
-        "**Join a BCA group test** box with **Test** picker and **Join this test** button; **Leave test** once joined (not for email campaigns)",
-        "Overview: **By status** card with **View all** and **Add prospects**, plus **Conversion** and **Daily activity** cards",
-        "Empty campaign: **Set up steps** or **Review steps**, and **Add people** options such as **Already in the system**, **Add one person**, **Sales Navigator**, **Google Maps**, **Google Search**, **Upload CSV**",
-        "Prospects tab: list of people in the campaign, with add, pause, resume, move and delete actions",
-        "Steps tab: build the message sequence, with **Choose a template** pop-up (**Choose a template**, Cancel)",
-        "Side panel listing the people behind a status or step, with **Close**"
+        "**← Campaigns** link at the top, goes back to the campaigns list",
+        "On/off switch at the top left (**On** / **Off**) that starts or pauses the campaign",
+        "Campaign name with a pencil button (**Edit campaign name**) to rename it",
+        "**Settings** button at the top right, opens a pop-up with campaign settings, archive and delete",
+        "**Before you launch** style panel (appears as \"Fix … before this can go live\" or \"… likely to cost you replies\") with **Show** / **Hide**",
+        "**Join a BCA group test** panel with **Show** / **Hide**, a **Test** dropdown and **Join this test** button (not shown for email campaigns)",
+        "**Leave test** button when already in a group test",
+        "Overview: **By status** card with **View all** and **Add prospects**; **Conversion** card; **Daily activity** chart",
+        "Overview when empty: **Set up steps** (or **Review steps**) and **Add people** options such as **Already in the system**, **Add one person**, **Sales Navigator**, **Google Maps**, **Google Search**, **Upload CSV**",
+        "Prospects tab: table of people in the campaign, with add, pause, resume, move and delete actions and mark interest",
+        "Steps tab: build the sequence, add, duplicate, reorder or delete steps, connect an account, and choose a template",
+        "**Choose a template** pop-up (writes the steps, editable afterwards) with **Cancel**"
       ],
-      "notes": "The On switch only works once a matching account (LinkedIn, email or WhatsApp) is connected, and it is locked for archived campaigns. Campaigns made from a lead-magnet playbook jump to their own page automatically. The shared Get Clients tabs at the top link to other pages."
+      "notes": "The campaign switch is greyed out until the right account (LinkedIn, email or WhatsApp) is connected, and for archived campaigns. Campaigns made from a lead magnet playbook automatically open on their own magnet page instead. The page shows \"Campaign not found.\" with a back link if the campaign does not exist.\""
     },
     {
       "path": "/coach/campaigns/invites",
@@ -518,11 +520,11 @@
     {
       "path": "/coach/community",
       "adminPath": "/admin/community",
-      "hash": "570431bd27f71eba",
+      "hash": "5fffa67b3437663a",
       "coachVisible": true,
       "title": "Community",
-      "where": "Academy → Community",
-      "summary": "Read the feed of posts, wins and questions from other coaches, write your own post, and open a post to comment or like it.",
+      "where": "Academy → Community (the first tab in the Academy tab row)",
+      "summary": "Read the feed of posts, wins and questions from other coaches, write your own post, and open a post to comment.",
       "tabs": [
         {
           "label": "Community",
@@ -543,20 +545,19 @@
       ],
       "controls": [
         "**Write something…** box at the top, opens the new post box",
-        "**Title** and body fields in the new post box, both needed before posting",
-        "**Where to post** drop-down in the new post box, pick a category",
-        "**Post** button in the new post box, with **Cancel** beside it",
-        "Photo and video buttons (**Add photos or videos**, **Add a video**) in the new post box",
-        "**Add a poll** button in the new post box, with **Add option** and **Remove poll**",
-        "Category buttons row: **All** plus each category, to filter the feed",
-        "Filter button at the right of the categories (**All posts**, **Unread**, **Read**, **Favourites**)",
-        "**Mark all as read** link shown when the Unread filter is on",
-        "Like button and comments on each post card, click a card to open the full post",
-        "Calendar line above the categories showing a live or next event, links to the calendar",
-        "**Previous** and **Next** with page numbers at the bottom, when there are many posts",
-        "Members and activity panel on the side"
+        "**Title** and body field in the new post box",
+        "**Where to post** drop-down in the new post box (pick a category; Announcements is not offered to coaches)",
+        "**Add photos or videos** button, **Add a video** button (paste a YouTube, Loom, Vimeo or Wistia link, or upload a file, then **ADD**), and **Add a poll** button in the new post box",
+        "**Post** and **Cancel** buttons in the new post box",
+        "**All** and category buttons in a row under the box, to filter posts by category",
+        "Filter icon at the right of the category row, with **All posts**, **Unread**, **Read** and **Favourites**",
+        "**Mark all as read** link, shown when the Unread filter is on",
+        "Post cards: click one to open it, comment and like; the ⋯ menu has **Add to favourites**",
+        "**Previous**, page numbers and **Next** at the bottom (20 posts per page)",
+        "Event line under the box: a **Live** now or next event note that links to the Calendar",
+        "Members sidebar on the right of the feed"
       ],
-      "notes": "Only admins can post in Announcements and schedule posts; coaches never see the schedule button or Scheduled posts. The Feedback category only shows if the coach's plan includes it. Favourites are added from the menu (⋯) inside an open post.}"
+      "notes": "Scheduled posts, Write with Ava and Also send to WhatsApp are admin-only, so never offer them to coaches. The feedback category only appears if the coach's plan includes the feedback channel. Old links with ?tab=map go to the Members page map and ?tab=calendar goes to the Calendar tab.}"
     },
     {
       "path": "/coach/community/[postSlug]",
@@ -573,11 +574,11 @@
     {
       "path": "/coach/community/calendar",
       "adminPath": "/admin/community/calendar",
-      "hash": "801e9b559b1dccad",
+      "hash": "8207ea92827498d8",
       "coachVisible": true,
       "title": "Calendar",
       "where": "Academy → Calendar",
-      "summary": "See the community's live calls and events in a month, week or list view, open an event for details or its recording, and add the calls to your own calendar.",
+      "summary": "See upcoming and past community calls on a calendar or list, open a call for details and its link, watch recordings, and subscribe to your calendar app.",
       "tabs": [
         {
           "label": "Upcoming",
@@ -589,19 +590,20 @@
         }
       ],
       "controls": [
-        "**Today** button at top left, jumps back to today",
-        "**Previous month** / **Next month** arrows (or week arrows in week layout) beside the month title",
-        "Time line under the title (e.g. \"5:00pm London time\"), click it to change the time zone",
-        "**Subscribe** button, opens **Subscribe to calls** with **Download .ics**, **Google Calendar**, **Apple Calendar**, **Outlook** and **Copy feed link**",
-        "**Calendar layout** dropdown with **Week** and **Month**, shown in calendar view",
-        "**Calendar view** and **List view** icon switch",
+        "**Today** button at top left jumps back to today",
+        "**Previous month** / **Next month** arrows (they say week in week layout) beside the month title",
+        "Time zone line under the title (for example \"5:00pm London time\"); click it to pick a different time zone",
+        "**Subscribe** button opens the Subscribe to calls pop-up",
+        "**Download .ics**, **Google Calendar**, **Apple Calendar**, **Outlook** and **Copy feed link** inside the Subscribe pop-up",
+        "**Calendar layout** drop-down with **Week** or **Month** (calendar view only)",
+        "**Calendar view** and **List view** icon buttons",
         "**Upcoming** and **Previous calls** switch in list view",
-        "**Previous** / **Next** page buttons under the list when there are more than 6 events",
-        "Click any event to open its card with the date and time, join link or **In person**, and description",
-        "**Watch recording** button on past events that have a recording",
-        "Labels on events: **Live**, **Recording available**, **Cancelled**"
+        "Click any call to open its card with time, location link, description and extra links",
+        "**Watch recording** button on past calls that have a recording",
+        "**Previous** / **Next** page buttons under the list when there are more than 6 calls",
+        "Live calls show a red **Live** badge; cancelled calls show **Cancelled**"
       ],
-      "notes": "On phones and small screens only the list view shows. The **Add event** button, the event options menu (**Edit**, **Cancel session**) and the recording-link and cancellation-reason boxes are admin-only, so never offer them to coaches. You only see events tagged for your membership level.}"
+      "notes": "On phones and small screens only the list view is shown. Adding, editing and cancelling events, and saving recording links or cancellation reasons, are admin-only (the Add event button and Event options menu), so never offer them to coaches. Coaches only see calls that match their membership.}"
     },
     {
       "path": "/coach/community/members",
@@ -652,29 +654,27 @@
     {
       "path": "/coach/conversations",
       "adminPath": "/admin/conversations",
-      "hash": "18d8b2ffdd843497",
+      "hash": "5ac865409a813639",
       "coachVisible": true,
       "title": "Conversations",
       "where": "Get Clients → Conversations",
-      "summary": "Read and reply to your LinkedIn, WhatsApp, email and booked-call messages in one inbox.",
+      "summary": "Read and reply to your LinkedIn, WhatsApp, email and booked-call messages in one inbox, and start new conversations.",
       "tabs": [],
       "controls": [
-        "**Get Clients** page heading with the shared row of section tabs above the inbox",
-        "**Sync** pulls new threads from your connected channels (named in the page description)",
-        "**+** button (Start a conversation) at the top of the inbox: opens a box with **Search people**",
-        "**Add a new person** in that box: fill **Name**, **Email**, **Phone**, **LinkedIn URL**, then **Create & message**",
-        "**Ava:** suggestion bar above the message box with **Use draft** and **Dismiss**",
-        "Round Ava button in the message box corner (Suggest a reply) to draft a reply",
-        "**Snippets** button in the message box: pick a folder or **All Snippets**, search with **Search Snippet/Folder**, then **Insert**",
-        "Message box buttons: **Add image**, **Attach file**, **Voice note** (**Record with mic** or **Upload audio file**), **Send video message**, **Emoji**",
-        "**Insert BOSS Scorecard link** and **Insert personalised BOSS Scorecard link** buttons in the message box",
-        "**Discard** and **Send** at the bottom right, with a clock button (**Send options**) for **Send now** or **Send later**; **Send later** asks for a **Date** and **Time**",
-        "Contact details panel: **Call**, **Email** and **LinkedIn profile** buttons, tags, and an **Add business name** field",
-        "**Same person as another thread** link: type a **Name or email**, then **Merge** to join the threads",
-        "**Possible duplicates** box with **Merge into this**",
-        "Campaigns row on the contact: **Add to a campaign** (+) button, plus **Past** campaigns"
+        "**Get Clients** page heading with the note that Sync pulls new threads from connected channels",
+        "**Start a conversation** (+ button) in the inbox: opens **Search people** to pick someone, or **Add a new person** to fill in **Name**, **Email**, **Phone**, **LinkedIn URL** and press **Create & message**",
+        "**Snippets** button by the message box: folders of ready-made replies, search with **Search Snippet/Folder**, then **Insert**",
+        "Message box tools: **Add image**, **Attach file**, **Voice note** (**Record with mic** or **Upload audio file**), **Send video message**, **Emoji**; you can also drag files onto the chat",
+        "**Send** with a clock button for **Send now** or **Send later** (pick a date and time, then **Schedule**), plus **Discard**",
+        "**Suggest a reply** round Ava button in the message box corner",
+        "Ava bar over the message box: **Use draft** or **Dismiss**; when Ava is replying for you, cancel the scheduled message to stop it",
+        "**This person's reply** chip (shows **Reply** until set): choose Interested, Not interested or the maybe-later option, or **Clear**",
+        "Insert BOSS Scorecard link buttons (general and personalised) by the message box",
+        "**Same person as another thread** link: search **Name or email**, then **Merge**",
+        "Person details: edit name, **Business name**, **Call**, **Email**, **LinkedIn profile**, tags, and **Possible duplicates** with **Merge into this**",
+        "Campaigns for the person: **Add to a campaign** (+) menu, remove with the x, and a **Past** list"
       ],
-      "notes": "Connect your channels first, otherwise Sync has nothing to pull in. You can also drop files onto the chat panel to attach them. The **Message coach** button is admin-only, so coaches never see it. Ava's auto-reply bar only shows when Ava has a reply scheduled for that conversation."
+      "notes": "Messages only appear once you have connected your channels (LinkedIn, WhatsApp, email); use Sync to pull in new threads. Ava's draft bar and some person details only show when there is something to show."
     },
     {
       "path": "/coach/income",
@@ -857,11 +857,11 @@
     {
       "path": "/coach/prospects/[id]",
       "adminPath": "/admin/prospects/[id]",
-      "hash": "bad97c587348c44c",
+      "hash": "4d270735727888e6",
       "coachVisible": true,
       "title": "One prospect",
-      "where": "Get Clients → Prospects, then click a prospect's name (also opens from Conversations, Campaigns or the Pool)",
-      "summary": "See one prospect's details, messages, activity, calls and notes, and reply to them.",
+      "where": "Get Clients → Prospects, then click a person's name (also opens from Conversations, Campaigns or the Pool)",
+      "summary": "See one prospect's details, messages and history, and message them, book a call or add a note.",
       "tabs": [
         {
           "label": "Activity",
@@ -877,21 +877,22 @@
         }
       ],
       "controls": [
-        "**Prospects** (or **Pool**, **Campaigns**, **Conversations**) back link on the left details panel, depending on where you came from",
-        "Name and photo, click to edit name, business and photo; **Business name** field under the name",
-        "Round buttons for **Call**, **Email** and **LinkedIn profile** (greyed out if the detail is missing)",
-        "Tags under the name",
-        "Contact fields you can click to edit: **Email**, **Phone**, **Title**, **Business**, **Website**, **LinkedIn**",
-        "**Possible duplicates** box with **Merge into this** button, shown only when a match is found",
+        "**Back link** at the top of the details side, named Prospects, Conversations, Campaigns or Pool depending on where you came from",
+        "**Business name** field under the person's name (click to edit)",
+        "Round buttons for **Call**, **Email** and **LinkedIn profile** (greyed out if the number, email or LinkedIn is missing)",
+        "**Add to a campaign** (+ button) with a remove (x) on each campaign they are in",
+        "**Possible duplicates** box with **Merge into this** button",
         "**Same person as another thread** link to join their email and LinkedIn threads",
-        "Campaigns area: **+** button (**Add to a campaign**) and an **X** on each campaign to remove them; **Past** list below",
-        "**Activity** tab: timeline of what the prospect did, with a **Refresh** button",
-        "**Calls** tab: **Book a call** button, with **Upcoming** and **Past** calls and **Join meeting** links",
-        "**Notes** tab: **Add a private note…** box and **Add note** button",
-        "Message box with image, file, voice note, video, emoji and **Snippets** buttons, **Suggest a reply** (Ava) button, and **Discard** and **Send** (with **Send later**)",
-        "**Use draft** and **Dismiss** on an Ava suggestion when one appears"
+        "**Refresh** button on the Activity, Calls and Notes row",
+        "**Book a call** button in the Calls tab (Upcoming and Past calls, **Join meeting** link)",
+        "**Add a note** box with **Add note** button in the Notes tab (private, Ctrl/⌘+Enter saves)",
+        "**Suggest a reply** (Ava) button in the message box",
+        "**Use draft** and **Dismiss** on Ava's suggested reply",
+        "Message box tools: add image, **Attach file**, **Voice note**, **Send video message**, **Emoji**, **Discard**, **Send** with Send now / Send later",
+        "Buttons to insert the BOSS Scorecard link into a message",
+        "**Delete** confirmation pop-up (Delete prospect?)"
       ],
-      "notes": "The conversation list is hidden on this page. The **Message coach** button is admin-only, so never offer it to coaches. Sending messages needs the matching channel (LinkedIn, WhatsApp or email) connected first."
+      "notes": "The page has the Get Clients tab row on top and the conversation with this person on the main side. Some parts only appear when they apply, such as duplicates, Ava's draft, scorecard link buttons and email or WhatsApp options. Admin-only behaviour (acting as a coach) is never shown to coaches."
     },
     {
       "path": "/coach/scoreboard",
@@ -1014,15 +1015,15 @@
     {
       "path": "/coach/search",
       "adminPath": "/admin/search",
-      "hash": "40694b478b9aefd3",
+      "hash": "a68d45abccdac636",
       "coachVisible": true,
       "title": "Search",
-      "where": "Open Search from the search box or icon at the top of the app (it is not in the Get Clients tabs); it opens at /coach/search",
+      "where": "Open Search from the top bar or search icon in the app (it is not in the sidebar list). The page address is /coach/search.",
       "summary": "Search lessons, videos, community posts and members, or reopen things you looked at recently.",
       "tabs": [
         {
           "label": "Classroom",
-          "path": null
+          "path": "/coach/search"
         },
         {
           "label": "Community",
@@ -1034,20 +1035,18 @@
         }
       ],
       "controls": [
-        "**Search lessons, videos, posts and people** box at the top (type at least 2 characters, press Enter)",
-        "**Clear search** (X) button inside the box when there is text",
-        "**Ask Ava** button inside the box, sends your text to Ava",
-        "**Recently opened** list shown when the box is empty (lessons, resources, prospects, clients)",
-        "**Classroom**, **Community** and **Members** tabs with a result count on each, shown once you search",
-        "**Classroom** results: lessons (with a line from the video transcript, shown as \"Said at\" a time) and resources",
-        "**Community** results: post cards you can like, and matching comments under them",
-        "**Members** results: name, @handle, short bio, Member or Admin label and join date",
-        "**Previous** and **Next** buttons with page numbers under long result lists",
-        "**1 in Community**-style buttons that jump to another tab when the current tab has nothing",
-        "**Ask Ava instead** button when nothing is found",
-        "Esc key returns to the page you came from"
+        "**Search lessons, videos, posts and people** box at the top (type at least 2 letters, press Enter)",
+        "**Clear search** (X) button inside the box once you type",
+        "**Ask Ava** button in the box (opens Ava with your search text)",
+        "**Recently opened** list under the box when it is empty (lessons, resources, prospects, clients)",
+        "**Classroom**, **Community**, **Members** tabs, each with a result count (shown once you search)",
+        "Result cards: lessons and resources in Classroom, posts in Community, people in Members",
+        "**Like** and comment buttons on community post results",
+        "**Nothing in** message with buttons like **3 in Community** to jump to a tab that has hits",
+        "**Ask Ava instead** button when there are no results",
+        "**Previous**, page numbers and **Next** under long result lists"
       ],
-      "notes": "Classroom is the default tab. The Ask Ava buttons only appear when Ava is switched on for the coach. Tab counts appear once results have loaded."
+      "notes": "Search only starts at 2 or more characters. Ask Ava buttons only show if Ava is turned on for the coach. Pressing Esc goes back to the page you came from.  Recently opened resources, prospects and clients only appear for things opened on this device."
     },
     {
       "path": "/coach/settings",
@@ -1190,27 +1189,29 @@
     {
       "path": "/coach/support",
       "adminPath": "/admin/support",
-      "hash": "2d49d16516fd96be",
+      "hash": "a9c5843e79651165",
       "coachVisible": true,
       "title": "Support",
-      "where": "Support (in the app menu)",
+      "where": "Support (the Support page in the app, /coach/support)",
       "summary": "Chat with Zander and Pam at BCA: start a new chat, read replies, and mark chats done.",
       "tabs": [],
       "controls": [
-        "**New chat** button beside the **Your chats** heading, starts a chat with BCA",
-        "**Needs you** group: chats waiting for your reply, with an \"N new\" badge",
-        "**Open** group: chats still going where nobody is waiting on you",
+        "**Your chats** heading with the list of all your chats with BCA",
+        "**New chat** button at the top of the list (also in the welcome box)",
+        "**Needs you** group: chats waiting for your reply, with a count and **new** badges",
+        "**Open** group: chats you have started that nobody is waiting on",
         "**Done** group: finished chats, folded away until you click it",
-        "**Post in community** button in the welcome box on the right (above the list on phones)",
-        "**Next support call** pill in the welcome box, opens the calendar when a call is coming up",
-        "Click a chat to read it in the box on the right",
-        "Message box at the bottom of a chat, with attachments, to write a reply",
-        "**Mark done** / **Reopen** button at the top of an open chat",
-        "Chat name at the top of an open chat: click to rename it",
-        "**Open ... page** button at the top of a chat, when it is about a particular page",
-        "Tick **Seen** on BCA's messages so the chat leaves Needs you without a reply"
+        "**Mark done** / **Reopen** button beside the chat name, in the chat panel",
+        "Chat name at the top of the panel: click it to rename the chat",
+        "**Open that page** style button in the chat panel (goes to the page the chat is about, or **Back to Support**)",
+        "Message box at the bottom of a chat to type, attach files and send",
+        "Tick under a BCA message to mark it **Seen** without replying",
+        "Welcome box on the right with **Hi, your name**, **New chat** and **Post in community** buttons",
+        "Cards for Zander (the app: setup, bugs, how things work) and Pam (coaching: sessions, the method, what to say to a client)",
+        "**Next support call** pill linking to the calendar, shown when a call is coming up",
+        "**Close panel** button (X) to close the open chat"
       ],
-      "notes": "The Help tab (Chats / Help tabs and the help centre with search and topics) is admin-only, so coaches do not see it and Ava must not offer it. We aim to reply within 2 business days. Zander answers app questions; Pam answers coaching questions."
+      "notes": "Zander and Pam aim to reply within 2 business days. On phones the welcome sits above the list and chats open from the bottom of the screen. A Help tab (help centre) exists but is admin-only, so never send coaches there."
     },
     {
       "path": "/coach/toolkit",

@@ -641,7 +641,15 @@ export function SupportChatBubble({
         );
 
   const emailMark = !showEmailChannel ? null : reply.via_whatsapp ? (
-    <SupportViaWhatsAppMark label={outbound ? "Sent on WhatsApp" : "Received on WhatsApp"} />
+    <SupportViaWhatsAppMark
+      label={
+        reply.whatsapp_with
+          ? `On WhatsApp with ${reply.whatsapp_with}`
+          : outbound
+            ? "Sent on WhatsApp"
+            : "Received on WhatsApp"
+      }
+    />
   ) : reply.via_email ? (
     <SupportViaEmailMark
       className="opacity-80"

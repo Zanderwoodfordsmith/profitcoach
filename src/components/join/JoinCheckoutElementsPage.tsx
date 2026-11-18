@@ -26,20 +26,37 @@ type Contact = {
   postalCode: string;
 };
 
-const COUNTRIES = [
-  { code: "GB", label: "United Kingdom" },
-  { code: "IE", label: "Ireland" },
-  { code: "US", label: "United States" },
-  { code: "AU", label: "Australia" },
-  { code: "CA", label: "Canada" },
-  { code: "NZ", label: "New Zealand" },
-  { code: "IN", label: "India" },
-  { code: "DE", label: "Germany" },
-  { code: "FR", label: "France" },
-  { code: "ES", label: "Spain" },
-  { code: "IT", label: "Italy" },
-  { code: "NL", label: "Netherlands" },
-] as const;
+/** Shown first; the rest of the world follows A to Z. */
+const TOP_COUNTRY_CODES = ["GB", "IE", "US", "AU", "CA", "NZ", "IN"];
+
+const ALL_COUNTRY_CODES =
+  "AD AE AF AG AI AL AM AO AQ AR AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CD CF CG CH CI CK CL CM CN CO CR CV CW CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HN HR HT HU ID IE IL IM IN IO IQ IS IT JE JM JO JP KE KG KH KI KM KN KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MK ML MM MN MO MQ MR MS MT MU MV MW MX MY MZ NA NC NE NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PY QA RE RO RS RU RW SA SB SC SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SZ TA TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG US UY UZ VA VC VE VG VN VU WF WS XK YE YT ZA ZM ZW".split(
+    " "
+  );
+
+/** Countries with no postcodes: the postcode box is optional for these. */
+const NO_POSTCODE_COUNTRIES = new Set(
+  "AE AG AO AW BF BI BJ BO BS BW BZ CD CF CG CI CK CM DJ DM ER FJ GA GD GH GM GQ GY HK JM KI KM KN LC ML MO MR MW NR NU QA RW SB SC SL SR ST TD TF TG TK TL TO TT TV UG VU YE ZW".split(
+    " "
+  )
+);
+
+const COUNTRIES = (() => {
+  let names: Intl.DisplayNames | null = null;
+  try {
+    names = new Intl.DisplayNames(["en-GB"], { type: "region" });
+  } catch {
+    names = null;
+  }
+  const label = (code: string) => names?.of(code) ?? code;
+  const rest = ALL_COUNTRY_CODES.filter((c) => !TOP_COUNTRY_CODES.includes(c))
+    .map((code) => ({ code, label: label(code) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  return [
+    ...TOP_COUNTRY_CODES.map((code) => ({ code, label: label(code) })),
+    ...rest,
+  ];
+})();
 
 const inputClassName =
   "block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-3 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20";
@@ -305,7 +322,9 @@ function CheckoutForm({
       name: fullName || contact.email,
       address: {
         country: contact.country.trim(),
-        postal_code: contact.postalCode.trim(),
+        ...(contact.postalCode.trim()
+          ? { postal_code: contact.postalCode.trim() }
+          : {}),
       },
     });
     if (addressResult.type === "error") {
@@ -352,7 +371,10 @@ function CheckoutForm({
       setError("Please select your country.");
       return;
     }
-    if (!contact.postalCode.trim()) {
+    if (
+      !contact.postalCode.trim() &&
+      !NO_POSTCODE_COUNTRIES.has(contact.country)
+    ) {
       setError("Please enter your postcode.");
       return;
     }
@@ -581,14 +603,18 @@ function CheckoutForm({
                 Postcode
               </span>
               <input
-                required
+                required={!NO_POSTCODE_COUNTRIES.has(contact.country)}
                 autoComplete="postal-code"
                 value={contact.postalCode}
                 onChange={(e) =>
                   setContact((c) => ({ ...c, postalCode: e.target.value }))
                 }
                 className={inputClassName}
-                placeholder="Postcode"
+                placeholder={
+                  NO_POSTCODE_COUNTRIES.has(contact.country)
+                    ? "Postcode (if you have one)"
+                    : "Postcode"
+                }
               />
             </label>
           </div>

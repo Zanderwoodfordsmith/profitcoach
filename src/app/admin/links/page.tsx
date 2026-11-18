@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
+import { InboxSyncHealthCard } from "@/components/admin/InboxSyncHealthCard";
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { adminExtraNavLinks } from "@/config/adminExtraNavLinks";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -256,6 +257,7 @@ export default function AdminLinksPage() {
         <p className="text-sm text-slate-600">Checking access…</p>
       ) : (
         <div className="flex flex-col gap-4">
+          <InboxSyncHealthCard />
           <LinkGroup
             title="Test post-payment onboarding"
             items={programmeOnboardingLinks}

@@ -1,6 +1,7 @@
 "use client";
 
 import { SeenTick } from "@/components/support/SeenTick";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { JobStatusCircle } from "@/components/jobs/jobParts";
 import { JOB_STATUS_META } from "@/lib/launch/jobStatus";
 import {
@@ -11,6 +12,7 @@ import {
   Eye,
   FileText,
   Image as ImageIcon,
+  Mail,
   Link as LinkIcon,
   Maximize2,
   Minimize2,
@@ -294,7 +296,16 @@ export function AdminTicketReplies({
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [emailNotify, setEmailNotify] = useState(emailNotifyDefault);
+  // "Also send via": one of none, email or WhatsApp (18 Nov).
+  const [alsoVia, setAlsoVia] = useState<"none" | "email" | "whatsapp">(
+    canEmailNotify && emailNotifyDefault ? "email" : "none"
+  );
+  const emailNotify = alsoVia === "email";
+  const [whatsAppRoute, setWhatsAppRoute] = useState<{
+    available: boolean;
+    from?: string;
+    reason?: string;
+  } | null>(null);
   const [notifyNote, setNotifyNote] = useState<string | null>(null);
   const [copilotLoading, setCopilotLoading] = useState(false);
   const [copilotError, setCopilotError] = useState<string | null>(null);
@@ -362,9 +373,54 @@ export function AdminTicketReplies({
     null;
 
   useEffect(() => {
-    setEmailNotify(emailNotifyDefault);
+    setAlsoVia(canEmailNotify && emailNotifyDefault ? "email" : "none");
     setNotifyNote(null);
-  }, [reportId, emailNotifyDefault]);
+  }, [reportId, emailNotifyDefault, canEmailNotify]);
+
+  // Last message came on WhatsApp: reply on WhatsApp by default (once per chat,
+  // so a manual switch sticks).
+  const autoWhatsAppForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!reportId || autoWhatsAppForRef.current === reportId) return;
+    const last = replies[replies.length - 1];
+    if (!last || last.report_id !== reportId || !whatsAppRoute) return;
+    autoWhatsAppForRef.current = reportId;
+    if (last.via_whatsapp && whatsAppRoute.available) setAlsoVia("whatsapp");
+  }, [reportId, replies, whatsAppRoute]);
+
+  // Can this chat go out on WhatsApp, and from whose phone?
+  useEffect(() => {
+    setWhatsAppRoute(null);
+    if (!reportId) return;
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch(
+        `/api/admin/support/whatsapp?report_id=${encodeURIComponent(reportId)}${
+          sendAsId ? `&as=${encodeURIComponent(sendAsId)}` : ""
+        }`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      ).catch(() => null);
+      const body = (await res?.json().catch(() => null)) as {
+        available?: boolean;
+        from?: string;
+        reason?: string;
+      } | null;
+      if (!cancelled && body) {
+        setWhatsAppRoute({
+          available: Boolean(body.available),
+          from: body.from,
+          reason: body.reason,
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [reportId, sendAsId]);
 
   // The first message's tick, as changed here; otherwise as loaded.
   const [openingSeen, setOpeningSeen] = useState<{ id: string; at: string | null } | null>(null);
@@ -1204,6 +1260,42 @@ export function AdminTicketReplies({
           }
         }
       }
+      if (alsoVia === "whatsapp" && whatsAppRoute?.available) {
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+        if (session?.access_token) {
+          const waRes = await fetch(
+            `/api/admin/support/tickets/${targetId}/whatsapp-send`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ replyId: reply.id }),
+            }
+          ).catch(() => null);
+          const waBody = (await waRes?.json().catch(() => ({}))) as {
+            error?: string;
+            from?: string;
+          };
+          if (waRes?.ok) {
+            setNotifyNote(`Sent on WhatsApp from ${waBody.from || whatsAppRoute.from}'s phone.`);
+            setReplies((current) =>
+              current.map((row) =>
+                row.id === reply.id
+                  ? { ...row, via_whatsapp: true, whatsapp_with: waBody.from || whatsAppRoute.from || null }
+                  : row
+              )
+            );
+          } else {
+            setNotifyNote(
+              `Reply saved, but WhatsApp did not send: ${waBody.error || "try again."}`
+            );
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send reply.");
     } finally {
@@ -1278,6 +1370,7 @@ export function AdminTicketReplies({
           body: replyBody,
           media: uploaded.length > 0 ? uploaded : null,
           email_notify: willEmail,
+          whatsapp_notify: alsoVia === "whatsapp" && Boolean(whatsAppRoute?.available),
           scheduled_for: when.toISOString(),
           status: "scheduled",
         })
@@ -1499,17 +1592,55 @@ export function AdminTicketReplies({
       </label>
     ) : null;
 
-  const notifyToggle = canEmailNotify ? (
-    <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-600">
-      <input
-        type="checkbox"
-        checked={emailNotify}
-        onChange={(e) => setEmailNotify(e.target.checked)}
-        className="h-3.5 w-3.5 rounded border-slate-300 accent-sky-600"
-      />
-      <span>Email reply</span>
-    </label>
-  ) : null;
+  // Also send by email or WhatsApp: click to turn on, click again to turn off.
+  const alsoViaButtons: Array<{
+    id: "email" | "whatsapp";
+    icon: ReactNode;
+    enabled: boolean;
+    title: string;
+  }> = [
+    {
+      id: "email",
+      icon: <Mail className="h-3.5 w-3.5" aria-hidden />,
+      enabled: canEmailNotify,
+      title: canEmailNotify ? "Also send by email" : "No email for this chat",
+    },
+    {
+      id: "whatsapp",
+      icon: <WhatsAppIcon className="h-3.5 w-3.5" />,
+      enabled: Boolean(whatsAppRoute?.available),
+      title: whatsAppRoute?.available
+        ? `Also send on WhatsApp from ${whatsAppRoute.from}'s phone`
+        : whatsAppRoute?.reason || "WhatsApp is not linked",
+    },
+  ];
+  const notifyToggle =
+    canEmailNotify || whatsAppRoute?.available ? (
+      <div className="inline-flex items-center gap-1" role="group" aria-label="Also send">
+        {alsoViaButtons.map((option) => {
+          const active = alsoVia === option.id;
+          const label = active ? `${option.title} (on, click to turn off)` : option.title;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={active}
+              aria-label={label}
+              title={label}
+              disabled={!option.enabled}
+              onClick={() => setAlsoVia(active ? "none" : option.id)}
+              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+                active
+                  ? "border-sky-600 bg-sky-600 text-white"
+                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+              }`}
+            >
+              {option.icon}
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
 
   const sendAsPicker =
     sendAsPeople.length > 0 ? (

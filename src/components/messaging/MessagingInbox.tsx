@@ -71,7 +71,6 @@ import {
 } from "@/lib/messaging/messageReactions";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
-import { MessageCoachButton } from "@/components/messaging/MessageCoachButton";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
@@ -1073,6 +1072,27 @@ function inboxEmptyCopy(
     : "No conversations yet. Book a call to create the first thread.";
 }
 
+function capitalise(text: string): string {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+function syncChannelName(channel: string): string {
+  switch (channel) {
+    case "linkedin":
+      return "LinkedIn";
+    case "email":
+      return "email";
+    case "whatsapp":
+      return "WhatsApp";
+    case "instagram":
+      return "Instagram";
+    case "messenger":
+      return "Messenger";
+    default:
+      return channel;
+  }
+}
+
 function formatInboxSyncedAt(iso: string | null): string {
   if (!iso) return "Not synced yet";
   const then = new Date(iso).getTime();
@@ -1425,6 +1445,8 @@ export function MessagingInbox({
   }>({ name: "You", avatarUrl: null });
   const [liSyncing, setLiSyncing] = useState(false);
   const [liSyncNote, setLiSyncNote] = useState<string | null>(null);
+  /** Red + link: only when the coach must do something (reconnect, sign in). */
+  const [liSyncNeedsAction, setLiSyncNeedsAction] = useState(false);
   const [inboxAccounts, setInboxAccounts] = useState<InboxAccountRow[]>([]);
   const [accountsLoaded, setAccountsLoaded] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -2230,81 +2252,172 @@ export function MessagingInbox({
       liSyncingRef.current = true;
       setLiSyncing(true);
       setLiSyncNote(null);
-      try {
-        const headers = await authHeaders();
-        if (!headers) return;
-        const row = conversationsRef.current.find(
-          (c) => c.id === selectedIdRef.current
-        );
-        const res = await fetch("/api/coach/linkedin-outreach/inbox-sync", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            force,
-            priority_conversation_id: selectedIdRef.current,
-            priority_conversation_ids: row?.sibling_conversation_ids ?? [],
-          }),
-        });
-        const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          skipped?: boolean;
-          reason?: string;
-          chats?: number;
-          messages?: number;
-          last_synced_at?: string | null;
-        };
-        if (body.last_synced_at) setLastSyncedAt(body.last_synced_at);
-        if (!res.ok) {
-          if (!force && (res.status === 401 || res.status === 403)) return;
-          setLiSyncNote(body.error || "Inbox sync failed.");
-          return;
-        }
-        if (body.skipped) {
-          if (force) {
-            setLiSyncNote(
-              body.reason === "no_account"
-                ? "Connect a channel in Settings to sync."
-                : "Synced very recently — try again in a minute."
-            );
-          }
-          // Identity-only backfill still wrote chats — apply once, silently.
-          if ((body.chats ?? 0) > 0) {
-            pendingListRefreshRef.current = false;
-            await loadList({ silent: true, fromSync: true });
-            const openId = selectedIdRef.current;
-            if (openId && !composerDirtyRef.current) {
-              await loadThread(openId, { silent: true });
-            }
-          }
-          await loadInboxAccounts();
-          return;
-        }
-        const msgCount = body.messages ?? 0;
-        const chatCount = body.chats ?? 0;
-        if (force) {
-          setLiSyncNote(
-            `Synced ${chatCount} chats · ${msgCount} new messages`
-          );
-        } else if (msgCount > 0) {
-          setLiSyncNote(
-            msgCount === 1
-              ? "1 new message"
-              : `${msgCount} new messages`
-          );
-        } else {
-          // Soft visit with nothing new — keep the quiet "Last synced" status.
-          setLiSyncNote(null);
-        }
-        // Capture finished in the background — swap the list in one shot.
+      setLiSyncNeedsAction(false);
+      type SyncBody = {
+        error?: string;
+        skipped?: boolean;
+        reason?: string;
+        chats?: number;
+        messages?: number;
+        last_synced_at?: string | null;
+        more?: boolean;
+        accounts?: Array<{ channel: string; outcome: string }>;
+      };
+      const wait = (ms: number) =>
+        new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+      const refreshAfterWrite = async () => {
         pendingListRefreshRef.current = false;
         await loadList({ silent: true, fromSync: true });
         const openId = selectedIdRef.current;
         if (openId && !composerDirtyRef.current) {
           await loadThread(openId, { silent: true });
         }
+      };
+      try {
+        const headers = await authHeaders();
+        if (!headers) return;
+        const callOnce = async (): Promise<{
+          ok: boolean;
+          status: number;
+          body: SyncBody;
+        }> => {
+          try {
+            const row = conversationsRef.current.find(
+              (c) => c.id === selectedIdRef.current
+            );
+            const res = await fetch("/api/coach/linkedin-outreach/inbox-sync", {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                force,
+                priority_conversation_id: selectedIdRef.current,
+                priority_conversation_ids: row?.sibling_conversation_ids ?? [],
+              }),
+            });
+            const body = (await res.json().catch(() => ({}))) as SyncBody;
+            return { ok: res.ok, status: res.status, body };
+          } catch {
+            return { ok: false, status: 0, body: {} };
+          }
+        };
+
+        // One sync can need a few calls: carry on while a channel says
+        // "more" (up to 3 times), wait out another sync already running,
+        // and retry a dropped connection once before saying anything.
+        let msgCount = 0;
+        let last: { ok: boolean; status: number; body: SyncBody } | null =
+          null;
+        let carryOns = 0;
+        let busyWaits = 0;
+        let networkRetries = 0;
+        for (let call = 0; call < 8; call += 1) {
+          const r = await callOnce();
+          if (r.body.last_synced_at) setLastSyncedAt(r.body.last_synced_at);
+          if (!r.ok) {
+            if (r.status === 401 || r.status === 403) {
+              if (!force) return;
+              last = r;
+              break;
+            }
+            if (networkRetries < 1) {
+              networkRetries += 1;
+              await wait(3000);
+              continue;
+            }
+            last = r;
+            break;
+          }
+          if (r.body.skipped && r.body.reason === "busy" && busyWaits < 2) {
+            busyWaits += 1;
+            await wait(8000);
+            continue;
+          }
+          last = r;
+          msgCount += r.body.messages ?? 0;
+          if ((r.body.chats ?? 0) > 0 || (r.body.messages ?? 0) > 0) {
+            await refreshAfterWrite();
+          }
+          if (r.body.more && carryOns < 3) {
+            carryOns += 1;
+            const behind = (r.body.accounts ?? [])
+              .filter((a) => a.outcome === "more" || a.outcome === "error")
+              .map((a) => syncChannelName(a.channel));
+            setLiSyncNote(
+              behind.length
+                ? `Catching up on ${behind.join(" and ")}…`
+                : "Catching up…"
+            );
+            continue;
+          }
+          break;
+        }
+
+        if (!last) return;
+        if (!last.ok) {
+          // Not something the coach can fix: say it plainly, no red.
+          if (force) {
+            setLiSyncNote(
+              last.status === 401 || last.status === 403
+                ? "Please sign in again to sync."
+                : "Sync didn't finish. It will try again on its own."
+            );
+            setLiSyncNeedsAction(last.status === 401 || last.status === 403);
+          }
+          return;
+        }
+        const body = last.body;
+        if (body.skipped) {
+          if (body.reason === "no_account") {
+            if (force) {
+              setLiSyncNote("Connect a channel in Settings to sync.");
+              setLiSyncNeedsAction(true);
+            }
+          } else if (body.reason === "busy") {
+            if (force) {
+              setLiSyncNote("Another sync is running. New messages will appear shortly.");
+            }
+          } else if (force) {
+            setLiSyncNote("Synced a moment ago. Try again in a minute.");
+          }
+          await loadInboxAccounts();
+          return;
+        }
+
+        const accounts = body.accounts ?? [];
+        const reconnect = accounts
+          .filter((a) => a.outcome === "reconnect")
+          .map((a) => syncChannelName(a.channel));
+        const paused = accounts
+          .filter((a) => a.outcome === "backoff")
+          .map((a) => syncChannelName(a.channel));
+        const behind = accounts
+          .filter((a) => a.outcome === "more" || a.outcome === "error")
+          .map((a) => syncChannelName(a.channel));
+        const newLine =
+          msgCount === 1 ? "1 new message" : `${msgCount} new messages`;
+
+        if (reconnect.length) {
+          setLiSyncNote(
+            `${capitalise(reconnect.join(" and "))} ${reconnect.length > 1 ? "need" : "needs"} reconnecting.`
+          );
+          setLiSyncNeedsAction(true);
+        } else if (paused.length) {
+          setLiSyncNote(
+            `${capitalise(paused.join(" and "))} asked us to slow down. We'll try again in a few minutes.`
+          );
+        } else if (behind.length) {
+          setLiSyncNote(
+            `${msgCount > 0 ? `${newLine} · ` : ""}Older ${behind.join(" and ")} messages will finish arriving within the hour.`
+          );
+        } else if (force) {
+          setLiSyncNote(msgCount > 0 ? `Up to date · ${newLine}` : "Up to date");
+        } else if (msgCount > 0) {
+          setLiSyncNote(newLine);
+        } else {
+          // Quiet visit with nothing new: keep the "Last synced" status.
+          setLiSyncNote(null);
+        }
         await loadInboxAccounts();
-      } catch {
-        if (force) setLiSyncNote("Inbox sync failed.");
       } finally {
         liSyncingRef.current = false;
         setLiSyncing(false);
@@ -4812,14 +4925,15 @@ export function MessagingInbox({
           <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5">
             <p
               className={`min-w-0 truncate text-caption ${
-                liSyncNote && /failed|Connect/i.test(liSyncNote)
+                liSyncNote && liSyncNeedsAction
                   ? "text-rose-600"
                   : "text-slate-500"
               }`}
               aria-live="polite"
+              title={liSyncNote ?? undefined}
             >
               {liSyncing
-                ? "Checking for updates…"
+                ? liSyncNote || "Checking for updates…"
                 : liSyncNote
                   ? liSyncNote
                   : !accountsLoaded
@@ -4832,12 +4946,13 @@ export function MessagingInbox({
                           }`
                         : "Ready to sync connected channels"}
             </p>
-            {accountsLoaded && inboxAccounts.length === 0 ? (
+            {(accountsLoaded && inboxAccounts.length === 0) ||
+            (liSyncNeedsAction && !liSyncing) ? (
               <Link
                 href={settingsIntegrationsHref}
                 className="shrink-0 text-caption font-medium text-sky-700 hover:text-sky-800"
               >
-                Connect
+                {inboxAccounts.length === 0 ? "Connect" : "Reconnect"}
               </Link>
             ) : (
               <button
@@ -5297,6 +5412,12 @@ export function MessagingInbox({
                       />
                     )}
                     <div className="min-w-0">
+                      {/* Names this person for the Support chat on the right (18 Nov). */}
+                      <span
+                        hidden
+                        data-chat-about={displayName || undefined}
+                        data-chat-path={prospectMode ? undefined : `/coach/conversations?conversation=${selected.id}`}
+                      />
                       {canEditIdentity ? (
                         <EditPersonNameButton
                           name={displayName}
@@ -5339,9 +5460,6 @@ export function MessagingInbox({
                       Don't import
                     </button>
                   ) : null}
-                  {impersonatingCoachId ? (
-                    <MessageCoachButton conversationId={selected.id} />
-                  ) : null}
                   {selected ? (
                     <ReplyDispositionBar
                       value={replyDisposition}
@@ -5375,6 +5493,7 @@ export function MessagingInbox({
               </>
             ) : prospectMode && (threadProspect || displayName) ? (
               <div className="flex min-w-0 items-center gap-3">
+                <span hidden data-chat-about={displayName || undefined} />
                 <AvatarWithChannels
                   name={displayName || "Prospect"}
                   url={prospectAvatarUrl}

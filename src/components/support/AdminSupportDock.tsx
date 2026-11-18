@@ -63,7 +63,8 @@ export function adminChatLinkFor(row: {
 }): AdminChatLink | null {
   if (!row.created_by) return null;
   const linked = chatPageFor(row.context_path);
-  const path = linked?.path ?? contextPath(row.page_path);
+  // A chat about any coach page (a prospect, a tab) links straight to it (18 Nov).
+  const path = linked?.path ?? (row.context_path?.startsWith("/coach/") ? row.context_path : null) ?? contextPath(row.page_path);
   if (!path) return null;
   const [bare, query] = path.split("?");
   const blueprint = BLUEPRINT_PAGES.find((p) => p.href === bare);

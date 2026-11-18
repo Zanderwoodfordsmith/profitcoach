@@ -1176,7 +1176,10 @@ export function LinkedInCampaignEditor() {
               />
             ) : (
               <div className="flex min-w-0 items-center gap-1.5">
-                <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+                <h1
+                  className="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl"
+                  data-chat-about={campaign.name}
+                >
                   {campaign.name}
                 </h1>
                 <button

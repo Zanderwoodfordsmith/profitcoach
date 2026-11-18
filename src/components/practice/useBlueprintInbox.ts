@@ -61,7 +61,8 @@ export function useBlueprintInbox({ asCoach = false }: { asCoach?: boolean } = {
         : [];
     }),
     ...questions
-      .filter((q) => q.unread > 0 || supportChatWaitingOn(q.thread, q.thread.replies) === "coach")
+      // A done chat with a new reply is only something to read, not to do: it shows in Support's Done group (18 Nov).
+      .filter((q) => q.thread.status !== "resolved" && (q.unread > 0 || supportChatWaitingOn(q.thread, q.thread.replies) === "coach"))
       .map((q): InboxItem => ({ kind: "question", key: `question:${q.thread.id}`, thread: q.thread, unread: q.unread, at: q.at })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1));
 

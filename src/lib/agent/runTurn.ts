@@ -70,7 +70,7 @@ function systemPrompt(mode: AgentChatRow["mode"], limited: boolean): string {
     `Mode: ${mode}. Capabilities you can open: ${ids.join(", ")}.`,
     ...(limited
       ? [
-          "This coach doesn't have every skill switched on yet. If they ask for something outside the capabilities above (campaigns, lists, imports), say BCA can switch it on for them, and carry on with what you can do.",
+          "This coach's membership doesn't include Get Clients. If they ask for something outside the capabilities above (campaigns, lists, imports), say it comes with Get Clients in the membership and BCA can tell them more (escalate if they want to talk about it), and carry on with what you can do.",
         ]
       : []),
   ].join("\n");

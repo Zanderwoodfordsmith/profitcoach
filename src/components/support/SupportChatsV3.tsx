@@ -22,13 +22,14 @@ import { pageChatKey } from "@/lib/practiceKnowledge/pageChat";
 import { ticketHasUnreadStaffReply } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-import { BRAND_BUTTON, ContextLink, chatLinkFor, useHostSupportDock, useSupportDock, useWideSupportColumn } from "./SupportDock";
+import { BRAND_BUTTON, ContextLink, chatLinkFor, useHostSupportDock, useSupportDock, useWideSupportColumn, type DockChat } from "./SupportDock";
 
 import { SupportWelcome } from "./SupportWelcome";
 
 const COMMUNITY_HREF = "/coach/community?compose=1";
 
-type Open = { kind: "page"; slug: string } | { kind: "chat"; id: string } | { kind: "new" } | null;
+/** What the right column shows: the same as the docked chat (the list included, 18 Nov). */
+type Open = DockChat | null;
 
 /**
  * Support (chats look 3, picked 5 Nov). The main area is the list, as wide as the Blueprint
@@ -234,7 +235,7 @@ function SupportChatsBody({ startNew }: { startNew: boolean }) {
       unread={q.unread}
       count={q.count}
       at={q.at}
-      muted={q.thread.status === "resolved"}
+      muted={q.thread.status === "resolved" && !q.unread}
     />
   );
 
@@ -327,6 +328,7 @@ function SupportChatsBody({ startNew }: { startNew: boolean }) {
               count={resolved.length}
               folded={!resolvedOpen}
               onFold={() => setResolvedOpen((v) => !v)}
+              peek={<ul>{resolved.filter((q) => q.unread > 0 || isOpen(q.thread.id)).map(chatRow)}</ul>}
             >
               <ul>{resolved.map(chatRow)}</ul>
             </Group>
@@ -370,6 +372,7 @@ function Group({
   count,
   folded = false,
   onFold,
+  peek,
   children,
 }: {
   id: string;
@@ -379,6 +382,8 @@ function Group({
   count: number;
   folded?: boolean;
   onFold?: () => void;
+  /** Shown while folded: done chats with a new reply stay in sight until read, and while open. */
+  peek?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -400,7 +405,7 @@ function Group({
           </span>
         )}
       </h2>
-      {folded ? null : children}
+      {folded ? peek : children}
     </section>
   );
 }

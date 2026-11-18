@@ -15,6 +15,7 @@ import { PAGE_STATUS_COPY, type PageStatusId } from "@/lib/practiceKnowledge/pag
 import { commentCapabilities, COMMENT_MAX_LENGTH, type CommentPerson, type SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes";
 
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
+import { SupportMessageBody } from "@/components/support/SupportMessageBody";
 
 import { useHalfHeight } from "../composer";
 import { ChatComposer } from "./ChatComposer";
@@ -96,9 +97,10 @@ export function CommentItem({ comment, mine, compact = false }: { comment: Secti
             {commentWhen(comment.created_at)}
           </time>
         </p>
-        <p className={`whitespace-pre-wrap break-words text-[#1e2f44] ${compact ? "text-ui leading-5" : "mt-0.5 text-read"}`}>
-          {comment.body}
-        </p>
+        <SupportMessageBody
+          body={comment.body}
+          className={`whitespace-pre-wrap break-words text-[#1e2f44] ${compact ? "text-ui leading-5" : "mt-0.5 text-read"}`}
+        />
       </div>
     </li>
   );
@@ -601,7 +603,10 @@ function CommentCard({
               <>
                 {/* "Sent a voice note" and the like only stand in for an empty box: the file says it. */}
                 {comment.media.length && /^Sent (a voice note|a video|an image|images|a document|documents)$/.test(comment.body) ? null : (
-                  <p className="bp-chat-body mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1e2f44]">{comment.body}</p>
+                  <SupportMessageBody
+                    body={comment.body}
+                    className="bp-chat-body mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1e2f44]"
+                  />
                 )}
                 {comment.media.length ? (
                   <div className="mt-1.5 max-w-[20rem]">

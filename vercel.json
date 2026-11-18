@@ -43,6 +43,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/cron/linkedin-inbox-sync/deep",
+      "schedule": "*/10 3-4 * * *"
+    },
+    {
       "path": "/api/cron/linkedin-invite-withdraw",
       "schedule": "0 */6 * * *"
     },

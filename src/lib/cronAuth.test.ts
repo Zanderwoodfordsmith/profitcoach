@@ -7,22 +7,33 @@ function req(headers: Record<string, string>): Request {
 }
 
 describe("isCronRequest", () => {
-  it("accepts current Vercel cron user-agent", () => {
+  process.env.CRON_SECRET = "test-secret-123";
+
+  it("accepts the cron secret", () => {
     assert.equal(
-      isCronRequest(req({ "user-agent": "vercel-cron/1.0" })),
+      isCronRequest(req({ authorization: "Bearer test-secret-123" })),
       true
     );
   });
 
-  it("accepts x-vercel-cron-schedule", () => {
+  it("rejects a wrong secret", () => {
     assert.equal(
-      isCronRequest(req({ "x-vercel-cron-schedule": "* * * * *" })),
-      true
+      isCronRequest(req({ authorization: "Bearer test-secret-124" })),
+      false
     );
   });
 
-  it("accepts legacy x-vercel-cron: 1", () => {
-    assert.equal(isCronRequest(req({ "x-vercel-cron": "1" })), true);
+  it("rejects Vercel-looking headers without the secret", () => {
+    assert.equal(
+      isCronRequest(
+        req({
+          "user-agent": "vercel-cron/1.0",
+          "x-vercel-cron-schedule": "* * * * *",
+          "x-vercel-cron": "1",
+        })
+      ),
+      false
+    );
   });
 
   it("rejects a bare browser GET", () => {
@@ -30,5 +41,16 @@ describe("isCronRequest", () => {
       isCronRequest(req({ "user-agent": "Mozilla/5.0" })),
       false
     );
+  });
+
+  it("rejects everything when no secret is set", () => {
+    const saved = process.env.CRON_SECRET;
+    delete process.env.CRON_SECRET;
+    assert.equal(isCronRequest(req({ authorization: "Bearer " })), false);
+    assert.equal(
+      isCronRequest(req({ authorization: "Bearer test-secret-123" })),
+      false
+    );
+    process.env.CRON_SECRET = saved;
   });
 });

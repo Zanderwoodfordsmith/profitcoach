@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
-import { syncLinkedInInboxForCoach } from "@/lib/unipile/inboxSync";
+import {
+  DEFAULT_SYNC_BUDGET_MS,
+  syncLinkedInInboxForCoach,
+} from "@/lib/unipile/inboxSync";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-export const maxDuration = 60;
+/**
+ * The sync stops starting provider calls after DEFAULT_SYNC_BUDGET_MS (40s);
+ * one call is capped at 25s, so the worst case ends well inside this.
+ */
+export const maxDuration = 120;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -26,10 +33,12 @@ function collectPriorityIds(body: {
 }
 
 /**
- * Soft LinkedIn inbox pull for the signed-in coach.
- * Respects a 2h cooldown unless `{ force: true }`.
+ * Inbox pull for the signed-in coach (all connected channels).
+ * Respects a 2h cooldown unless `{ force: true }`. Returns `more: true` when
+ * a channel stopped early; calling again carries on from there.
  */
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   const auth = await requireOutreachCoach(request);
   if (auth.error || !auth.coachId) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
@@ -58,6 +67,8 @@ export async function POST(request: Request) {
     const result = await syncLinkedInInboxForCoach(auth.coachId, {
       force: Boolean(body.force),
       priorityChatIds,
+      trigger: body.force ? "button" : "visit",
+      deadlineAt: startedAt + DEFAULT_SYNC_BUDGET_MS,
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {

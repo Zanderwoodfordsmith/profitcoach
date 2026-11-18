@@ -3,6 +3,7 @@
 import {
   ArrowDownAZ,
   ArrowLeft,
+  BadgeCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -10,6 +11,9 @@ import {
   ClipboardList,
   Clock,
   ExternalLink,
+  Link2,
+  Mail,
+  Phone,
   Plus,
   Search,
   Trash2,
@@ -55,6 +59,7 @@ import {
   SupportCreateTicketComposer,
 } from "@/components/support/SupportCreateTicketComposer";
 import { SupportMailboxConnect } from "@/components/support/SupportMailboxConnect";
+import { SupportWhatsAppConnect } from "@/components/support/SupportWhatsAppConnect";
 import {
   DEFAULT_SUPPORT_ASSIGNEE_ID,
   isSupportAssignable,
@@ -110,6 +115,7 @@ import {
   normalizeSupportTicketType,
   supportTicketScore,
   type SupportReply,
+  type SupportTicket,
   type SupportTicketAuthor,
   type SupportTicketSource,
   type SupportTicketStatus,
@@ -1730,11 +1736,44 @@ export function AdminSupportPage() {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
-          <div className="flex items-center gap-3">
+          <div className="relative flex items-start gap-3">
             <ListAvatar label={ticketAuthorLabel(row)} avatarUrl={ticketAuthorAvatarUrl(row)} />
-            <div className="min-w-0">
-              <p className="truncate text-ui font-semibold text-slate-900">{ticketAuthorLabel(row)}</p>
-              {row.contact_email ? <p className="truncate text-caption text-slate-500">{row.contact_email}</p> : null}
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-1">
+                <p className="truncate text-ui font-semibold text-slate-900">{ticketAuthorLabel(row)}</p>
+                <CoachSearchCombobox
+                  coaches={coaches}
+                  value={row.created_by ?? ""}
+                  allowClear
+                  onChange={(id) => void linkTicketCoach(row.id, id || null)}
+                  triggerTitle={
+                    row.created_by
+                      ? "Linked to a coach. Click to change."
+                      : row.contact_email
+                        ? "Not linked to a coach. Click to link (this email is remembered for future mail)."
+                        : "Not linked to a coach. Click to link."
+                  }
+                  trigger={
+                    row.created_by ? (
+                      <BadgeCheck className="h-4 w-4 text-sky-600" aria-hidden />
+                    ) : (
+                      <Link2 className="h-4 w-4 text-amber-500" aria-hidden />
+                    )
+                  }
+                />
+              </div>
+              {contact.email || row.contact_email ? (
+                <a href={`mailto:${contact.email || row.contact_email}`} className="mt-0.5 flex min-w-0 items-center gap-1.5 text-caption text-slate-500 hover:text-slate-800">
+                  <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                  <span className="truncate">{contact.email || row.contact_email}</span>
+                </a>
+              ) : null}
+              {contact.phone ? (
+                <a href={`tel:${contact.phone.replace(/\s+/g, "")}`} className="mt-0.5 flex min-w-0 items-center gap-1.5 text-caption text-slate-500 hover:text-slate-800">
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                  <span className="truncate">{contact.phone}</span>
+                </a>
+              ) : null}
             </div>
           </div>
           {row.created_by ? (
@@ -1755,37 +1794,39 @@ export function AdminSupportPage() {
           ) : null}
 
           <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
-            <label className="block">
-              <span className={label}>Status</span>
-              <select
-                value={shownTicketStatus(row)}
-                disabled={busy}
-                onChange={(e) => void updateRow(row.id, { status: e.target.value as SupportTicketStatus })}
-                className={fieldClass("select", "small")}
-              >
-                {(Object.keys(SUPPORT_STATUS_ADMIN_LABELS) as SupportTicketStatus[]).map((st) => (
-                  <option key={st} value={st}>
-                    {SUPPORT_STATUS_ADMIN_LABELS[st]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className={label}>Assignee</span>
-              <select
-                value={row.assigned_to ?? ""}
-                disabled={busy}
-                onChange={(e) => void updateRow(row.id, { assigned_to: e.target.value || null })}
-                className={fieldClass("select", "small")}
-              >
-                <option value="">Anyone</option>
-                {assigneePickerOptions(assignees, row.assignee).map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {assigneeShortName(a)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {/* Assignee: tap a face; tap the chosen one again to leave it with anyone. */}
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate text-caption font-medium text-slate-500">
+                {row.assignee ? <>Assigned to <span className="text-slate-900">{assigneeShortName(row.assignee)}</span></> : "Not assigned"}
+              </span>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {assigneePickerOptions(assignees, row.assignee).map((a) => {
+                  const chosen = row.assigned_to === a.id;
+                  const name = assigneeShortName(a);
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      disabled={busy}
+                      title={chosen ? `${name} (click to unassign)` : `Assign to ${name}`}
+                      aria-label={chosen ? `Unassign ${name}` : `Assign to ${name}`}
+                      aria-pressed={chosen}
+                      onClick={() => void updateRow(row.id, { assigned_to: chosen ? null : a.id })}
+                      className={`rounded-full transition ${chosen ? "ring-2 ring-sky-600 ring-offset-2" : "opacity-60 hover:opacity-100"}`}
+                    >
+                      {a.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.avatar_url} alt="" referrerPolicy="no-referrer" className="h-7 w-7 rounded-full object-cover" />
+                      ) : (
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-caption font-semibold text-slate-700">
+                          {initialsFromLabel(authorDisplayName(a))}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <label className="block">
               <span className={label}>Type</span>
               <select
@@ -1830,19 +1871,6 @@ export function AdminSupportPage() {
                 <SupportChatPagePicker key={row.id} reportId={row.id} value={row.context_path ?? null} stacked />
               </div>
             ) : null}
-            <div>
-              <span className={label}>Linked coach</span>
-              <CoachSearchCombobox
-                coaches={coaches}
-                value={row.created_by ?? ""}
-                allowClear
-                placeholder="Link to a coach…"
-                onChange={(id) => void linkTicketCoach(row.id, id || null)}
-              />
-              {row.contact_email && !row.created_by ? (
-                <p className="mt-1.5 text-caption text-slate-500">Linking also remembers this email for future mail.</p>
-              ) : null}
-            </div>
           </div>
 
           {/* Book a call draws its own rule above it. */}
@@ -1943,6 +1971,70 @@ export function AdminSupportPage() {
     );
   }
 
+  // A ticket made in the New ticket column: add it to the list and open it.
+  const onTicketCreated = (
+    created: SupportTicket,
+    result?: { emailed?: string | null; emailError?: string | null }
+  ) => {
+    const row: AdminTicketRow = {
+      id: created.id,
+      created_at: created.created_at,
+      created_by: created.created_by,
+      ticket_number: created.ticket_number,
+      type: created.type,
+      title: created.title,
+      details: created.details,
+      page_path: created.page_path,
+      status: created.status,
+      source: created.source,
+      assigned_to: created.assigned_to,
+      community_post_id: created.community_post_id,
+      contact_email: created.contact_email,
+      submitter_name: created.submitter_name,
+      importance: created.importance,
+      ease: created.ease,
+      media: created.media,
+      member_notify_email: created.member_notify_email,
+      author: created.author
+        ? {
+            id: created.author.id,
+            full_name: created.author.full_name,
+            first_name: created.author.first_name,
+            last_name: created.author.last_name,
+            avatar_url: created.author.avatar_url,
+            role: created.author.role,
+          }
+        : null,
+      opener: assignees.find((a) => a.id === adminUserId) ?? null,
+      assignee: created.assignee
+        ? {
+            id: created.assignee.id,
+            full_name: created.assignee.full_name,
+            first_name: created.assignee.first_name,
+            last_name: created.assignee.last_name,
+            avatar_url: created.assignee.avatar_url,
+            role: created.assignee.role,
+          }
+        : null,
+      lastUnrepliedMemberAt: created.created_at,
+      lastActivityAt: created.created_at,
+      lastMessage: null,
+      replyCount: 0,
+      nothingToAnswer: true,
+      topic: null,
+    };
+    setRows((prev) => [row, ...prev]);
+    setSelectedId(row.id);
+    setCreateOpen(false);
+    if (result?.emailError) {
+      setCreateNotice(null);
+      setError(result.emailError);
+    } else if (result?.emailed) {
+      setError(null);
+      setCreateNotice(`Emailed ${result.emailed}.`);
+    }
+  };
+
   return (
     <DashboardPageSection
       contentMaxWidthClass={topTab === "settings" ? "max-w-6xl" : "max-w-none"}
@@ -2000,6 +2092,7 @@ export function AdminSupportPage() {
             topTab === "inbox" ? (
               <div className="flex flex-wrap items-center gap-2">
                 <SupportMailboxConnect />
+                <SupportWhatsAppConnect />
                 <button
                   type="button"
                   onClick={() => setCreateOpen(true)}
@@ -2020,86 +2113,6 @@ export function AdminSupportPage() {
         <HelpCentre topic={searchParams.get("topic")} article={searchParams.get("a")} admin />
       ) : (
         <>
-      {createOpen ? (
-        <div
-          className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Create support ticket"
-          onClick={() => setCreateOpen(false)}
-        >
-          <div
-            className="my-4 w-full max-w-[40.5rem] shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SupportCreateTicketComposer
-              coachOptions={coaches}
-              assigneeOptions={assignees}
-              createdByAdminId={adminUserId}
-              onClose={() => setCreateOpen(false)}
-              onCreated={(created, result) => {
-                const row: AdminTicketRow = {
-                  id: created.id,
-                  created_at: created.created_at,
-                  created_by: created.created_by,
-                  ticket_number: created.ticket_number,
-                  type: created.type,
-                  title: created.title,
-                  details: created.details,
-                  page_path: created.page_path,
-                  status: created.status,
-                  source: created.source,
-                  assigned_to: created.assigned_to,
-                  community_post_id: created.community_post_id,
-                  contact_email: created.contact_email,
-                  submitter_name: created.submitter_name,
-                  importance: created.importance,
-                  ease: created.ease,
-                  media: created.media,
-                  member_notify_email: created.member_notify_email,
-                  author: created.author
-                    ? {
-                        id: created.author.id,
-                        full_name: created.author.full_name,
-                        first_name: created.author.first_name,
-                        last_name: created.author.last_name,
-                        avatar_url: created.author.avatar_url,
-                        role: created.author.role,
-                      }
-                    : null,
-                  opener: assignees.find((a) => a.id === adminUserId) ?? null,
-                  assignee: created.assignee
-                    ? {
-                        id: created.assignee.id,
-                        full_name: created.assignee.full_name,
-                        first_name: created.assignee.first_name,
-                        last_name: created.assignee.last_name,
-                        avatar_url: created.assignee.avatar_url,
-                        role: created.assignee.role,
-                      }
-                    : null,
-                  lastUnrepliedMemberAt: created.created_at,
-                  lastActivityAt: created.created_at,
-                  lastMessage: null,
-                  replyCount: 0,
-                  nothingToAnswer: true,
-                  topic: null,
-                };
-                setRows((prev) => [row, ...prev]);
-                setSelectedId(row.id);
-                setCreateOpen(false);
-                if (result?.emailError) {
-                  setCreateNotice(null);
-                  setError(result.emailError);
-                } else if (result?.emailed) {
-                  setError(null);
-                  setCreateNotice(`Emailed ${result.emailed}.`);
-                }
-              }}
-            />
-          </div>
-        </div>
-      ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col max-lg:min-h-[calc(100dvh-8rem)]">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -2307,6 +2320,7 @@ export function AdminSupportPage() {
                               onClick={() => {
                                 setSelectedPersonKey(group.key);
                                 setSelectedId(group.tickets[0]?.id ?? null);
+                                setCreateOpen(false);
                               }}
                               className={`flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left ${
                                 isWaiting
@@ -2375,7 +2389,7 @@ export function AdminSupportPage() {
                     </li>
                   ) : (
                     listTickets.map((row, index) => {
-                      const active = selectedId === row.id;
+                      const active = selectedId === row.id && !createOpen;
                       const attention = attentionByTicket[row.id];
                       const badgeCount = supportAttentionBadgeCount(attention);
                       const isNew = Boolean(attention);
@@ -2423,7 +2437,10 @@ export function AdminSupportPage() {
                           >
                             <button
                               type="button"
-                              onClick={() => setSelectedId(row.id)}
+                              onClick={() => {
+                                setSelectedId(row.id);
+                                setCreateOpen(false);
+                              }}
                               className={`flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left ${
                                 active
                                   ? "bg-sky-50/80 ring-1 ring-sky-200"
@@ -2488,7 +2505,19 @@ export function AdminSupportPage() {
               )}
             </aside>
 
-            {groupMode === "channels" && !selected && !pendingThreadKey && pageChatSlug && selectedChannel?.profileId ? (
+            {createOpen ? (
+              // New ticket opens here, in the middle, drawn like an open ticket.
+              <section className="bp-doc bp-clean-side bp-chat-side flex min-h-0 min-w-0 flex-col overflow-hidden">
+                <SupportCreateTicketComposer
+                  layout="column"
+                  coachOptions={coaches}
+                  assigneeOptions={assignees}
+                  createdByAdminId={adminUserId}
+                  onClose={() => setCreateOpen(false)}
+                  onCreated={onTicketCreated}
+                />
+              </section>
+            ) : groupMode === "channels" && !selected && !pendingThreadKey && pageChatSlug && selectedChannel?.profileId ? (
               <ChannelPageChat
                 key={`${selectedChannel.profileId}:${pageChatSlug}`}
                 coachId={selectedChannel.profileId}
@@ -2897,7 +2926,7 @@ export function AdminSupportPage() {
             {/* Right: ticket details */}
             {v2 ? (
               <aside className="hidden min-h-0 min-w-0 flex-col border-l border-slate-200 bg-white xl:flex">
-                {selected && !showPeopleList ? v2Details(selected) : null}
+                {selected && !showPeopleList && !createOpen ? v2Details(selected) : null}
               </aside>
             ) : (
             <aside
@@ -2905,7 +2934,7 @@ export function AdminSupportPage() {
                 groupMode === "channels" ? "" : "xl:flex"
               }`}
             >
-              {ticketDetails ?? (
+              {(createOpen ? null : ticketDetails) ?? (
                 <div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm text-slate-400">
                   Ticket details appear here
                 </div>

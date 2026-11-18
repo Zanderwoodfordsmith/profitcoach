@@ -72,6 +72,8 @@ export type SupportReply = {
   via_email?: boolean;
   /** Came in or went out on WhatsApp. */
   via_whatsapp?: boolean;
+  /** Whose WhatsApp it was on (BCA first name, e.g. "Pam"). */
+  whatsapp_with?: string | null;
   /** Written somewhere else (a Blueprint section) and shown in this thread. Read-only here. */
   origin?: { label: string; href: string | null };
   /** Ava wrote it and BCA approved it (created_by is the admin who sent it). Shown as Ava. */
@@ -103,6 +105,7 @@ export const SUPPORT_REPLY_LIST_SELECT = `
   community_comment_id,
   via_email,
   via_whatsapp,
+  whatsapp_with,
   as_ava,
   seen_at,
   seen_author:profiles!seen_by (first_name, full_name),
@@ -124,6 +127,7 @@ export function mapSupportReplyRow(
     community_comment_id?: string | null;
     via_email?: boolean | null;
     via_whatsapp?: boolean | null;
+    whatsapp_with?: string | null;
     as_ava?: boolean | null;
     seen_at?: string | null;
     seen_author?: SeenAuthorRaw;
@@ -142,6 +146,7 @@ export function mapSupportReplyRow(
     community_comment_id: raw.community_comment_id ?? null,
     via_email: Boolean(raw.via_email),
     via_whatsapp: Boolean(raw.via_whatsapp),
+    whatsapp_with: raw.whatsapp_with ?? null,
     as_ava: Boolean(raw.as_ava),
     seen_at: raw.seen_at ?? null,
     seen_name: raw.seen_at ? seenName(raw.seen_author) : null,
