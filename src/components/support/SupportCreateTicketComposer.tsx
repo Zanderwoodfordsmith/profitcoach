@@ -1,6 +1,8 @@
 "use client";
 
-import { ChevronDown, FileText, ImagePlus, MessageSquare, Video, X } from "lucide-react";
+import { Check, ChevronDown, FileText, ImagePlus, Mail, MessageSquare, Video, X } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
+import { SupportChatAvatar, supportAuthorShortName } from "@/components/support/SupportChatBubbles";
 import { topicFrom } from "@/lib/support/chatTitle";
 import { SupportDocumentAttachButton } from "@/components/support/SupportDocumentAttach";
 import { FileDropZone } from "@/components/messaging/FileDropZone";
@@ -27,6 +29,7 @@ import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCo
 import {
   DEFAULT_SUPPORT_ASSIGNEE_ID,
   assigneeDisplayName,
+  isSupportMessageSender,
   type SupportAssignee,
 } from "@/lib/support/assignees";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -237,6 +240,15 @@ export function CoachSearchCombobox({
   );
 }
 
+/** How the first message went out besides the app (admin New ticket). */
+export type SupportCreateTicketResult = {
+  emailed?: string | null;
+  emailError?: string | null;
+  /** Whose phone it went from on WhatsApp. */
+  whatsAppFrom?: string | null;
+  whatsAppError?: string | null;
+};
+
 type Props = {
   /** Effective author (impersonated coach when demo-toggling). Ignored when coachOptions is set. */
   authorId?: string | null;
@@ -247,10 +259,7 @@ type Props = {
   /** Admin profile id for `created_by_admin` when creating on behalf of a coach. */
   createdByAdminId?: string | null;
   onClose: () => void;
-  onCreated: (
-    ticket: SupportTicket,
-    result?: { emailed?: string | null; emailError?: string | null }
-  ) => void;
+  onCreated: (ticket: SupportTicket, result?: SupportCreateTicketResult) => void;
   /** "column": fills the inbox's middle column instead of sitting in a pop-up card. */
   layout?: "card" | "column";
 };
@@ -279,6 +288,84 @@ export function SupportCreateTicketComposer({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Who it's from and how it also goes out, as in a ticket's reply box (19 Nov).
+  const [sendAsId, setSendAsId] = useState<string | null>(createdByAdminId ?? null);
+  const [sendAsMenuOpen, setSendAsMenuOpen] = useState(false);
+  const sendAsMenuRef = useRef<HTMLDivElement>(null);
+  const [whatsAppNotify, setWhatsAppNotify] = useState(false);
+  const [whatsAppRoute, setWhatsAppRoute] = useState<{
+    available: boolean;
+    from?: string;
+    reason?: string;
+  } | null>(null);
+
+  const sendAsPeople = useMemo(() => {
+    const preferred = ["zander", "pam"];
+    const rank = (a: SupportAssignee) => {
+      const i = preferred.indexOf((a.first_name ?? "").toLowerCase());
+      return i === -1 ? 99 : i;
+    };
+    return (assigneeOptions ?? [])
+      .filter(isSupportMessageSender)
+      .sort((a, b) => rank(a) - rank(b) || assigneeDisplayName(a).localeCompare(assigneeDisplayName(b)));
+  }, [assigneeOptions]);
+  const activeSendAs =
+    sendAsPeople.find((a) => a.id === sendAsId) ??
+    sendAsPeople.find((a) => a.id === createdByAdminId) ??
+    sendAsPeople[0] ??
+    null;
+  const sendAsLabel = (a: SupportAssignee) =>
+    supportAuthorShortName({
+      id: a.id,
+      full_name: a.full_name,
+      first_name: a.first_name,
+      last_name: a.last_name,
+      avatar_url: a.avatar_url,
+      role: a.role ?? "admin",
+    });
+
+  useEffect(() => {
+    if (!sendAsMenuOpen) return;
+    function onPointerDown(e: MouseEvent) {
+      if (e.target instanceof Node && !sendAsMenuRef.current?.contains(e.target)) {
+        setSendAsMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [sendAsMenuOpen]);
+
+  // Can this coach get it on WhatsApp, and from whose phone?
+  const activeSendAsId = activeSendAs?.id ?? null;
+  useEffect(() => {
+    setWhatsAppRoute(null);
+    if (!isAdminCreate || !coachId) return;
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch(
+        `/api/admin/support/whatsapp?coach_id=${encodeURIComponent(coachId)}${
+          activeSendAsId ? `&as=${encodeURIComponent(activeSendAsId)}` : ""
+        }`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      ).catch(() => null);
+      const body = (await res?.json().catch(() => null)) as {
+        available?: boolean;
+        from?: string;
+        reason?: string;
+      } | null;
+      if (!cancelled && body) {
+        setWhatsAppRoute({ available: Boolean(body.available), from: body.from, reason: body.reason });
+        if (!body.available) setWhatsAppNotify(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdminCreate, coachId, activeSendAsId]);
 
   useEffect(() => {
     if (isAdminCreate) return;
@@ -397,7 +484,7 @@ export function SupportCreateTicketComposer({
       const insertPayload = isAdminCreate
         ? {
             created_by: createdBy,
-            created_by_admin: createdByAdminId ?? user.id,
+            created_by_admin: activeSendAs?.id ?? createdByAdminId ?? user.id,
             type,
             title: ticketTitle,
             details: detailsText,
@@ -461,10 +548,32 @@ export function SupportCreateTicketComposer({
 
       let emailed: string | null = null;
       let emailError: string | null = null;
+      let whatsAppFrom: string | null = null;
+      let whatsAppError: string | null = null;
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (isAdminCreate && whatsAppNotify && whatsAppRoute?.available) {
+        if (!session?.access_token) {
+          whatsAppError = "Ticket created, but WhatsApp did not send. Sign in again, then reply on the ticket.";
+        } else {
+          const waRes = await fetch(`/api/admin/support/tickets/${created.id}/whatsapp-send`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ opening: true }),
+          }).catch(() => null);
+          const waBody = (await waRes?.json().catch(() => ({}))) as { error?: string; from?: string } | undefined;
+          if (!waRes?.ok) {
+            whatsAppError = `Ticket created, but WhatsApp did not send: ${waBody?.error || "try again from the ticket."}`;
+          } else {
+            whatsAppFrom = waBody?.from || whatsAppRoute.from || null;
+          }
+        }
+      }
       if (isAdminCreate && notifyEmail) {
-        const {
-          data: { session },
-        } = await supabaseClient.auth.getSession();
         if (!session?.access_token) {
           emailError =
             "Ticket created, but the email could not be sent. Sign in again, then reply on the ticket to email the coach.";
@@ -493,7 +602,7 @@ export function SupportCreateTicketComposer({
         }
       }
 
-      onCreated(created, { emailed, emailError });
+      onCreated(created, { emailed, emailError, whatsAppFrom, whatsAppError });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send ticket.");
     } finally {
@@ -617,6 +726,112 @@ export function SupportCreateTicketComposer({
     </label>
   );
 
+  // Also send by email or WhatsApp, as in a ticket's reply box: click on, click off.
+  const alsoViaButtons = [
+    {
+      id: "email" as const,
+      icon: <Mail className="h-3.5 w-3.5" aria-hidden />,
+      enabled: true,
+      title: "Also send by email. Later replies are emailed too.",
+      active: notifyEmail,
+      setActive: setNotifyEmail,
+    },
+    {
+      id: "whatsapp" as const,
+      icon: <WhatsAppIcon className="h-3.5 w-3.5" />,
+      enabled: Boolean(whatsAppRoute?.available),
+      title: whatsAppRoute?.available
+        ? `Also send on WhatsApp from ${whatsAppRoute.from}'s phone`
+        : !coachId
+          ? "Choose who it's for first"
+          : whatsAppRoute?.reason || "Checking WhatsApp…",
+      active: whatsAppNotify,
+      setActive: setWhatsAppNotify,
+    },
+  ];
+  const alsoViaToggle = (
+    <div className="inline-flex items-center gap-1" role="group" aria-label="Also send">
+      {alsoViaButtons.map((option) => {
+        const label = option.active ? `${option.title} (on, click to turn off)` : option.title;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={option.active}
+            aria-label={label}
+            title={label}
+            disabled={!option.enabled}
+            onClick={() => option.setActive(!option.active)}
+            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+              option.active && option.id === "whatsapp"
+                ? "border-[#25D366] bg-[#25D366] text-white"
+                : option.active
+                  ? "border-sky-600 bg-sky-600 text-white"
+                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+            }`}
+          >
+            {option.icon}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const sendAsPicker =
+    sendAsPeople.length > 0 && activeSendAs ? (
+      <div className="relative shrink-0" ref={sendAsMenuRef}>
+        <button
+          type="button"
+          aria-label={`From ${sendAsLabel(activeSendAs)}`}
+          aria-expanded={sendAsMenuOpen}
+          onClick={() => setSendAsMenuOpen((v) => !v)}
+          className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+        >
+          <SupportChatAvatar
+            name={assigneeDisplayName(activeSendAs)}
+            avatarUrl={activeSendAs.avatar_url}
+            tone="sky"
+            size="xs"
+          />
+          <span>{sendAsLabel(activeSendAs)}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />
+        </button>
+        {sendAsMenuOpen ? (
+          <div
+            role="menu"
+            className="absolute right-0 top-full z-30 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/10"
+          >
+            {sendAsPeople.map((person) => {
+              const active = person.id === activeSendAs.id;
+              return (
+                <button
+                  key={person.id}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setSendAsId(person.id);
+                    setSendAsMenuOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
+                    active ? "bg-sky-50 font-medium text-sky-800" : "text-slate-800 hover:bg-slate-50"
+                  }`}
+                >
+                  <SupportChatAvatar
+                    name={assigneeDisplayName(person)}
+                    avatarUrl={person.avatar_url}
+                    tone="sky"
+                    size="xs"
+                  />
+                  <span className="min-w-0 flex-1">{sendAsLabel(person)}</span>
+                  {active ? <Check className="h-3.5 w-3.5 shrink-0 text-sky-600" strokeWidth={2.5} /> : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    ) : null;
+
   // Inbox New ticket (18 Nov): drawn like an open ticket. Title bar, who it's
   // for, an empty thread, and the reply box at the bottom.
   if (layout === "column") {
@@ -662,6 +877,12 @@ export function SupportCreateTicketComposer({
                 autoOpen
               />
             </div>
+            {sendAsPicker ? (
+              <>
+                <span className="text-sm text-slate-500">From</span>
+                {sendAsPicker}
+              </>
+            ) : null}
           </div>
 
           <div className="flex min-h-0 flex-1 items-center justify-center px-6 text-center">
@@ -704,7 +925,7 @@ export function SupportCreateTicketComposer({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     {attachTools(micButton)}
                     <div className="flex min-w-0 items-center gap-3">
-                      {emailToggle}
+                      {isAdminCreate ? alsoViaToggle : emailToggle}
                       <button
                         type="button"
                         disabled={!canSubmit}

@@ -191,12 +191,18 @@ export async function dispatchUnipileWebhookPayload(
   if (event.includes("reaction") || event === "message_received" || body.message_id || body.chat_id) {
     const accountId = String(body.account_id || "").trim();
     if (accountId) {
-      const { supportWhatsAppLineForUnipileAccount, handleSupportWhatsAppWebhook } =
-        await import("@/lib/support/whatsapp");
+      const {
+        supportWhatsAppLineForUnipileAccount,
+        handleSupportWhatsAppWebhook,
+        handleSupportWhatsAppReactionWebhook,
+      } = await import("@/lib/support/whatsapp");
       const line = await supportWhatsAppLineForUnipileAccount(accountId);
       if (line) {
         const isReaction = event.includes("reaction") || Boolean(body.reaction || body.reaction_sender);
-        const detail = isReaction ? "reaction_ignored" : await handleSupportWhatsAppWebhook(line, body);
+        // A coach's reaction shows on our message; it's never a new message.
+        const detail = isReaction
+          ? await handleSupportWhatsAppReactionWebhook(line, body)
+          : await handleSupportWhatsAppWebhook(line, body);
         return { handled: "support_whatsapp", detail };
       }
     }

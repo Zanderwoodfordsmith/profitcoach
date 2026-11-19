@@ -12,6 +12,7 @@ import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import type { SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes";
 import { CHAT_TITLE_MAX, topicFrom } from "@/lib/support/chatTitle";
 import { chatPageName } from "@/lib/support/chatPages";
+import { readScreenContext } from "@/lib/support/screenContext";
 import { parseSupportTicketMedia } from "@/lib/support/supportTicketMedia";
 import {
   SUPPORT_AUTHOR_SELECT,
@@ -31,8 +32,9 @@ import { supabaseClient } from "@/lib/supabaseClient";
 
 import { ChatComposer } from "./comments/ChatComposer";
 import { FileDropZone } from "@/components/messaging/FileDropZone";
-import { SeenTick } from "@/components/support/SeenTick";
+import { SupportReaction } from "@/components/support/SupportReaction";
 import { SupportMessageBody } from "@/components/support/SupportMessageBody";
+import { FoldLongMessage } from "@/components/support/FoldLongMessage";
 import { commentsCall } from "./comments/SectionCommentsContext";
 import { CommentAvatar, commentWhen, firstName } from "./comments/SectionCommentsUI";
 import { useHalfHeight } from "./composer";
@@ -73,28 +75,34 @@ export function BcaChat({
   const messages = thread ? [openingMessage(thread), ...thread.replies] : [];
   const [tickError, setTickError] = useState<string | null>(null);
 
-  /** Tick (or untick) one of BCA's messages "Seen" as the coach, so it leaves Needs you without a reply. */
-  async function tick(message: SupportReply, seen: boolean) {
+  /** React to one of BCA's messages as the coach (null takes it off), so it leaves Needs you without a reply. */
+  async function tick(message: SupportReply, reaction: string | null) {
     if (!thread) return;
     setTickError(null);
     const opening = message.id === `opening-${thread.id}`;
     const { error } = await supabaseClient.rpc("set_support_message_seen", {
       p_report_id: thread.id,
       p_reply_id: opening ? null : message.id,
-      p_seen: seen,
-      // BCA viewing as the coach ticks for the coach, as it sends for them.
+      p_seen: Boolean(reaction),
+      // BCA viewing as the coach reacts for the coach, as it sends for them.
       p_seen_by: coachId,
+      p_reaction: reaction,
     });
     if (error) {
-      setTickError("Couldn't tick it. Try again.");
+      setTickError("Couldn't react. Try again.");
       return;
     }
-    const at = seen ? new Date().toISOString() : null;
-    const name = seen ? coach?.first_name?.trim() || null : null;
+    const at = reaction ? new Date().toISOString() : null;
+    const name = reaction ? coach?.first_name?.trim() || null : null;
     onChange(
       opening
-        ? { ...thread, opening_seen_at: at, opening_seen_name: name }
-        : { ...thread, replies: thread.replies.map((r) => (r.id === message.id ? { ...r, seen_at: at, seen_name: name } : r)) }
+        ? { ...thread, opening_seen_at: at, opening_seen_name: name, opening_seen_reaction: reaction }
+        : {
+            ...thread,
+            replies: thread.replies.map((r) =>
+              r.id === message.id ? { ...r, seen_at: at, seen_name: name, seen_reaction: reaction } : r
+            ),
+          }
     );
     notifyCoachSupportReadChanged();
   }
@@ -165,6 +173,27 @@ export function BcaChat({
     return null;
   }
 
+  /** Ava drafts BCA's message from the conversation on screen right now and the chat so far (19 Nov). */
+  async function draftAsBca(hint: string): Promise<{ draft?: string; error?: string }> {
+    const headers = await bcaHeaders();
+    if (!headers) return { error: "Sign in again, then retry." };
+    const screen = readScreenContext();
+    const res = await fetch("/api/admin/support/coach-chat/draft", {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coach_id: coachId,
+        report_id: thread?.id ?? null,
+        conversation_id: screen.conversationId ?? null,
+        about_name: screen.name ?? aboutName,
+        hint,
+      }),
+    }).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as { draft?: string; error?: string } | null;
+    if (!res?.ok || !data?.draft) return { error: data?.error ?? "Ava couldn't draft it. Try again." };
+    return { draft: data.draft };
+  }
+
   async function post(body: string, media: CommunityPostMediaItem[]): Promise<string | null> {
     if (asBca) return postAsBca(body, media);
     // A chat started on a page is about that page (a tab, a prospect): its button goes back there.
@@ -224,7 +253,7 @@ export function BcaChat({
                 key={message.id}
                 message={message}
                 latest={index === messages.length - 1}
-                onTick={(seen) => void tick(message, seen)}
+                onTick={(reaction) => void tick(message, reaction)}
               />
             ))}
           </ol>
@@ -259,6 +288,7 @@ export function BcaChat({
         maxHeight={half}
         onEscape={onClose}
         onPost={post}
+        onDraft={asBca ? draftAsBca : undefined}
         extraActions={
           asBca ? (
             // Support's "also send" pair, the same look (18 Nov): off, email, or WhatsApp.
@@ -305,8 +335,8 @@ export function BcaChat({
   );
 }
 
-/** One message, as a page chat draws it: avatar, name, BCA or AI tag, time, text, and its "Seen" tick. */
-function ChatMessage({ message, latest, onTick }: { message: SupportReply; latest: boolean; onTick: (seen: boolean) => void }) {
+/** One message, as a page chat draws it: avatar, name, BCA or AI tag, time, text, and its reaction. */
+function ChatMessage({ message, latest, onTick }: { message: SupportReply; latest: boolean; onTick: (reaction: string | null) => void }) {
   const side = message.as_ava ? "ava" : isSupportStaffAuthor(message.author) ? "bca" : "coach";
   // First names only, and no BCA tag (5 Nov): coaches know Zander and Pam.
   const name = message.as_ava
@@ -337,21 +367,24 @@ function ChatMessage({ message, latest, onTick }: { message: SupportReply; lates
               </time>
               {/* In the name line, right-aligned like a chat's ticks (5 Nov), so it takes no row of its own. */}
               <span className="ml-auto flex shrink-0 self-center">
-                <SeenTick
+                <SupportReaction
                   inline
-                  seenAt={message.seen_at ?? null}
-                  seenName={mine ? message.seen_name ?? null : "you"}
-                  canTick={!mine}
+                  reactedAt={message.seen_at ?? null}
+                  reaction={message.seen_reaction ?? null}
+                  reactedName={mine ? message.seen_name ?? null : "you"}
+                  canReact={!mine}
                   latest={latest}
-                  onTick={onTick}
+                  onReact={onTick}
                 />
               </span>
             </div>
             {media.length && /^Sent (a voice note|a video|an image|images|a document|documents)$/.test(message.body) ? null : (
-              <SupportMessageBody
-                body={message.body}
-                className="bp-chat-body mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1e2f44]"
-              />
+              <FoldLongMessage className="mt-1">
+                <SupportMessageBody
+                  body={message.body}
+                  className="bp-chat-body whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1e2f44]"
+                />
+              </FoldLongMessage>
             )}
             {media.length ? (
               <div className="mt-1.5 max-w-[20rem]">
@@ -447,6 +480,7 @@ function openingMessage(thread: ProjectThread): SupportReply {
     media: thread.media,
     seen_at: thread.opening_seen_at ?? null,
     seen_name: thread.opening_seen_name ?? null,
+    seen_reaction: thread.opening_seen_reaction ?? null,
   };
 }
 

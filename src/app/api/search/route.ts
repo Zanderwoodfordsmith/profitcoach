@@ -5,6 +5,7 @@ import { communityPostCardPreview } from "@/lib/communityPostMarkdown";
 import { decorateClassroomSearchItems, classroomSearchLessonIds } from "@/lib/search/classroomDisplay";
 import { confirmedHelpAnswers, helpTopic, searchHelpAnswers } from "@/lib/help/helpAnswers";
 import { plainHelpAnswer } from "@/lib/help/plainHelpAnswer";
+import { searchCoachProspects } from "@/lib/search/prospects";
 import {
   parseSearchTab,
   normalizeSearchQuery,
@@ -157,18 +158,22 @@ const PREVIEW_LIMIT: Record<SearchTab, number> = {
   members: 3,
 };
 
-/** Overlay: the first few hits from every tab, with each tab's total as its count. */
-async function previewResponse(q: string) {
+/**
+ * Overlay: the first few hits from every tab, with each tab's total as its
+ * count, plus the prospects of the coach in view (coachId).
+ */
+async function previewResponse(q: string, coachId: string) {
   const run = (rpcName: string, tab: SearchTab) =>
     supabaseAdmin.rpc(rpcName, {
       p_query: q,
       p_limit: PREVIEW_LIMIT[tab],
       p_offset: 0,
     });
-  const [classroomRes, communityRes, membersRes] = await Promise.all([
+  const [classroomRes, communityRes, membersRes, prospects] = await Promise.all([
     run("search_academy_classroom", "classroom"),
     run("search_academy_community", "community"),
     run("search_academy_members", "members"),
+    searchCoachProspects(coachId, q),
   ]);
   const failed = classroomRes.error ?? communityRes.error ?? membersRes.error;
   if (failed) {
@@ -206,6 +211,7 @@ async function previewResponse(q: string) {
     community,
     members: sanitizeMembers(itemsOf(membersRes.data) as SearchMemberItem[]),
     help,
+    prospects,
   });
 }
 
@@ -239,7 +245,8 @@ export async function GET(request: Request) {
   }
 
   if (url.searchParams.get("preview") === "1") {
-    return previewResponse(q);
+    // userId is the coach an admin is viewing as, or the caller.
+    return previewResponse(q, auth.userId);
   }
 
   const { data: countsRaw, error: countsError } = await supabaseAdmin.rpc(

@@ -57,6 +57,7 @@ import { SupportTicketCoachPayments } from "@/components/support/SupportTicketCo
 import {
   CoachSearchCombobox,
   SupportCreateTicketComposer,
+  type SupportCreateTicketResult,
 } from "@/components/support/SupportCreateTicketComposer";
 import { SupportMailboxConnect } from "@/components/support/SupportMailboxConnect";
 import { SupportWhatsAppConnect } from "@/components/support/SupportWhatsAppConnect";
@@ -128,6 +129,7 @@ import { buttonClass } from "@/components/ui/Button";
 import { badgeClass } from "@/components/ui/Badge";
 import { fieldClass } from "@/components/ui/Field";
 import { HelpCentre } from "@/components/support/HelpCentre";
+import { SupportDashboard } from "@/components/support/SupportDashboard";
 type AdminTicketRow = {
   id: string;
   created_at: string;
@@ -153,6 +155,7 @@ type AdminTicketRow = {
   reopened_at?: string | null;
   created_by_admin?: string | null;
   opening_seen_at?: string | null;
+  opening_seen_reaction?: string | null;
   /**
    * BCA has nothing to answer (5 Nov): it ticked the coach's last message
    * "Seen", or BCA wrote the chat's first message and nothing has come since.
@@ -652,7 +655,15 @@ export function AdminSupportPage() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   // Help: the same pages coaches see, so admins can check what they read.
-  const topTab = tabParam === "settings" ? "settings" : tabParam === "help" ? "help" : "inbox";
+  // Dashboard: how support is going, admin only like the rest of this page (job 237).
+  const topTab =
+    tabParam === "settings"
+      ? "settings"
+      : tabParam === "help"
+        ? "help"
+        : tabParam === "dashboard"
+          ? "dashboard"
+          : "inbox";
   const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
   const [rows, setRows] = useState<AdminTicketRow[]>([]);
   const [assignees, setAssignees] = useState<SupportAssignee[]>([]);
@@ -716,7 +727,7 @@ export function AdminSupportPage() {
     setAppOrigin(window.location.origin);
   }, []);
 
-  function selectTopTab(tab: "inbox" | "settings" | "help") {
+  function selectTopTab(tab: "inbox" | "dashboard" | "settings" | "help") {
     router.replace(
       tab === "inbox" ? "/admin/support" : `/admin/support?tab=${tab}`,
       { scroll: false }
@@ -832,6 +843,7 @@ export function AdminSupportPage() {
           topic,
           created_by_admin,
           opening_seen_at,
+          opening_seen_reaction,
           author:profiles!created_by ( id, full_name, first_name, last_name, avatar_url, role, phone ),
           opener:profiles!created_by_admin ( id, full_name, first_name, last_name, avatar_url, role ),
           assignee:profiles!assigned_to ( id, full_name, first_name, last_name, avatar_url, role )
@@ -1128,6 +1140,21 @@ export function AdminSupportPage() {
     if (row) setSelectedId(row.id);
     else setPendingThreadKey(linkedThread);
   }, [linkedChannel, linkedThread, loading, channelGroups, rows]);
+
+  // ?ticket=<id>: open that ticket (links from the Dashboard tab).
+  const linkedTicket = searchParams.get("ticket");
+  const openedLinkedTicketRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!linkedTicket || loading || openedLinkedTicketRef.current === linkedTicket) return;
+    const row = rows.find((r) => r.id === linkedTicket);
+    if (!row) return;
+    openedLinkedTicketRef.current = linkedTicket;
+    setGroupMode("tickets");
+    setAssigneeFilter("anyone");
+    setStatusFilter(row.status === "resolved" ? "all" : "open");
+    setSearchQuery("");
+    setSelectedId(linkedTicket);
+  }, [linkedTicket, loading, rows]);
   const blueprintByThread = useBlueprintComments(
     groupMode === "channels" ? selectedChannel?.profileId ?? null : null,
     threadRefreshKey,
@@ -1957,6 +1984,7 @@ export function AdminSupportPage() {
           media: row.media,
           viaEmail: row.source === "email_inbox",
           seenAt: row.opening_seen_at ?? null,
+          seenReaction: row.opening_seen_reaction ?? null,
           byBca: supportChatOpenedByBca(row),
         }}
         onStatusTouched={() => {
@@ -1974,7 +2002,7 @@ export function AdminSupportPage() {
   // A ticket made in the New ticket column: add it to the list and open it.
   const onTicketCreated = (
     created: SupportTicket,
-    result?: { emailed?: string | null; emailError?: string | null }
+    result?: SupportCreateTicketResult
   ) => {
     const row: AdminTicketRow = {
       id: created.id,
@@ -2005,7 +2033,7 @@ export function AdminSupportPage() {
             role: created.author.role,
           }
         : null,
-      opener: assignees.find((a) => a.id === adminUserId) ?? null,
+      opener: assignees.find((a) => a.id === (created.created_by_admin ?? adminUserId)) ?? null,
       assignee: created.assignee
         ? {
             id: created.assignee.id,
@@ -2026,13 +2054,13 @@ export function AdminSupportPage() {
     setRows((prev) => [row, ...prev]);
     setSelectedId(row.id);
     setCreateOpen(false);
-    if (result?.emailError) {
-      setCreateNotice(null);
-      setError(result.emailError);
-    } else if (result?.emailed) {
-      setError(null);
-      setCreateNotice(`Emailed ${result.emailed}.`);
-    }
+    const problems = [result?.whatsAppError, result?.emailError].filter(Boolean);
+    const sent = [
+      result?.whatsAppFrom ? `Sent on WhatsApp from ${result.whatsAppFrom}'s phone.` : null,
+      result?.emailed ? `Emailed ${result.emailed}.` : null,
+    ].filter(Boolean);
+    setError(problems.length ? problems.join(" ") : null);
+    setCreateNotice(sent.length ? sent.join(" ") : null);
   };
 
   return (
@@ -2046,7 +2074,9 @@ export function AdminSupportPage() {
             "!mx-0 mr-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-[60px]"
           : topTab === "help"
             ? "min-h-0 flex-1 overflow-y-auto px-4 pt-6 md:px-10 lg:px-14"
-            : "min-h-0 flex-1 overflow-hidden"
+            : topTab === "dashboard"
+              ? "min-h-0 flex-1 overflow-y-auto overscroll-contain"
+              : "min-h-0 flex-1 overflow-hidden"
       }
       header={
         <StickyPageHeader
@@ -2058,6 +2088,8 @@ export function AdminSupportPage() {
               ? "Who can take support calls, and when."
               : topTab === "help"
                 ? "The help pages coaches see."
+                : topTab === "dashboard"
+                  ? "How support is going: what's waiting, how fast we reply, and what coaches ask about."
                 : "Ticket inbox for coach questions, bugs, ideas, and private lesson asks."
           }
           tabs={
@@ -2070,6 +2102,13 @@ export function AdminSupportPage() {
                   label: "Inbox",
                   active: topTab === "inbox",
                   onClick: () => selectTopTab("inbox"),
+                },
+                {
+                  kind: "button",
+                  id: "dashboard",
+                  label: "Dashboard",
+                  active: topTab === "dashboard",
+                  onClick: () => selectTopTab("dashboard"),
                 },
                 {
                   kind: "button",
@@ -2109,6 +2148,8 @@ export function AdminSupportPage() {
     >
       {topTab === "settings" ? (
         <SupportCallAdminSettings appOrigin={appOrigin} />
+      ) : topTab === "dashboard" ? (
+        <SupportDashboard />
       ) : topTab === "help" ? (
         <HelpCentre topic={searchParams.get("topic")} article={searchParams.get("a")} admin />
       ) : (

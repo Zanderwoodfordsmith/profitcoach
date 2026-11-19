@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { clearWinsQueueSessionDismiss } from "@/lib/adminWinsReplyQueueSession";
+import { resolvePostLoginPath } from "@/lib/auth/loginReturnPath";
 import {
   AuthSplitShell,
   authInputClassName,
@@ -13,6 +16,7 @@ import {
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const { clearImpersonation, clearContactImpersonation } = useImpersonation();
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -81,16 +85,45 @@ export default function ResetPasswordPage() {
       return;
     }
     setLoading(true);
-    const { error: updateError } = await supabaseClient.auth.updateUser({
+    const { data, error: updateError } = await supabaseClient.auth.updateUser({
       password,
     });
-    setLoading(false);
-    if (updateError) {
-      setError(updateError.message);
+    if (updateError || !data.user) {
+      setLoading(false);
+      setError(updateError?.message ?? "Could not update your password.");
       return;
     }
-    await supabaseClient.auth.signOut();
-    router.push("/login?reset=success");
+
+    // Stay signed in with the recovery session and land where a normal
+    // sign-in would, so nobody has to retype the new password straight away.
+    clearImpersonation();
+    clearContactImpersonation();
+    clearWinsQueueSessionDismiss();
+
+    let role: "admin" | "coach" | "client" = "coach";
+    try {
+      const res = await fetch("/api/profile-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: data.user.id }),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      const json = (await res.json()) as {
+        role?: string;
+        linked_contact_type?: string | null;
+      };
+      if (json.role === "admin" || json.role === "coach" || json.role === "client") {
+        role = json.role;
+      }
+      if (role === "client" && json.linked_contact_type === "prospect") {
+        await supabaseClient.auth.signOut();
+        router.push("/login?reason=prospect_portal");
+        return;
+      }
+    } catch {
+      role = "coach";
+    }
+    router.push(resolvePostLoginPath(role, null));
   }
 
   if (initError) {

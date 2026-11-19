@@ -9,8 +9,10 @@ import {
   listSupportWhatsAppLines,
   refreshSupportWhatsAppLineStatus,
   SUPPORT_WHATSAPP_HISTORY_DAYS,
+  supportWhatsAppLeadLine,
   supportWhatsAppLineForAdmin,
   supportWhatsAppRoute,
+  supportWhatsAppRouteForCoach,
   syncSupportWhatsAppLine,
   type SupportWhatsAppLine,
 } from "@/lib/support/whatsapp";
@@ -49,15 +51,20 @@ export async function GET(request: Request) {
   }
   const params = new URL(request.url).searchParams;
   const reportId = params.get("report_id")?.trim();
+  // New ticket: no ticket yet, so ask by coach.
+  const coachId = params.get("coach_id")?.trim();
   // Who the reply is sent as (the "send as" picker), so it goes from their phone.
   const as = params.get("as")?.trim();
   const asId = as && /^[0-9a-f-]{36}$/i.test(as) ? as : auth.userId;
   try {
-    if (reportId) {
-      const route = await supportWhatsAppRoute({ reportId, adminId: asId });
-      return NextResponse.json(
-        route.ok ? { available: true, from: route.fromName } : { available: false, reason: route.reason }
-      );
+    if (reportId || coachId) {
+      const route = reportId
+        ? await supportWhatsAppRoute({ reportId, adminId: asId })
+        : await supportWhatsAppRouteForCoach({ coachId: coachId!, adminId: asId });
+      if (!route.ok) return NextResponse.json({ available: false, reason: route.reason });
+      // The line a first WhatsApp reply starts with, shown faintly in the box.
+      const lead = reportId ? await supportWhatsAppLeadLine(reportId) : null;
+      return NextResponse.json({ available: true, from: route.fromName, lead });
     }
 
     let line = await supportWhatsAppLineForAdmin(auth.userId);

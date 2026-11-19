@@ -10,7 +10,7 @@ import { PageIcon } from "@/components/practice/pageIcons";
 import { STAGE_LOOK, StageCircle } from "@/components/practice/StageCircle";
 import { BLUEPRINT_GROUPS } from "@/lib/practiceKnowledge/blueprint";
 import { BOARD_COLUMNS, BOARD_TAGS, progressOf, type BoardColumnId, type BoardTag } from "@/lib/practiceKnowledge/blueprintBoard";
-import type { ToCheckItem } from "@/lib/launch/avaAuto";
+import type { ChainState, ToCheckItem } from "@/lib/launch/avaAuto";
 import { formatSupportRelativeCompact } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
@@ -118,6 +118,7 @@ let lastBoard: { coaches: BoardCoach[]; pages: Page[] } | null = null;
 export function BlueprintsBoard() {
   const [data, setData] = useState<{ coaches: BoardCoach[]; pages: Page[] } | null>(lastBoard);
   const [toCheck, setToCheck] = useState<ToCheckItem[] | null>(null);
+  const [chains, setChains] = useState<Record<string, ChainState[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [view, setViewState] = useState<View>("board");
   const [everyone, setEveryone] = useState(false);
@@ -202,8 +203,9 @@ export function BlueprintsBoard() {
     const headers = await adminHeaders();
     if (!headers) return;
     const res = await fetch("/api/admin/launch/to-check", { headers }).catch(() => null);
-    const body = (await res?.json().catch(() => null)) as { items?: ToCheckItem[] } | null;
+    const body = (await res?.json().catch(() => null)) as { items?: ToCheckItem[]; chains?: Record<string, ChainState[]> } | null;
     if (body?.items) setToCheck(body.items);
+    if (body?.chains) setChains(body.chains);
   }, []);
 
   useEffect(() => {
@@ -380,7 +382,7 @@ export function BlueprintsBoard() {
       {data && view === "board" && grouped ? (
         <Lanes coaches={coaches} pages={pages} showDone={showDone} onShowDone={() => setShowDone(true)} />
       ) : null}
-      {data && view === "check" ? <ToCheck items={toCheck} coaches={data.coaches} pages={pages} /> : null}
+      {data && view === "check" ? <ToCheck items={toCheck} chains={chains} coaches={data.coaches} pages={pages} /> : null}
       {data && view === "coaches" ? (
         <PageLanes coaches={coaches} pages={pages} onTick={(coach_id, step, on) => void saveLaunch({ coach_id, tick: { step, on } })} />
       ) : null}
@@ -399,12 +401,62 @@ function CheckIcon({ kind }: { kind: ToCheckItem["kind"] }) {
   return <Icon className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />;
 }
 
+const CHAIN_LOOK: Record<ChainState["state"], { dot: string; text: string }> = {
+  released: { dot: "bg-emerald-500", text: "text-slate-500" },
+  check: { dot: "bg-amber-500", text: "text-amber-700" },
+  next: { dot: "bg-sky-500", text: "text-sky-700" },
+  waiting: { dot: "bg-slate-300", text: "text-slate-500" },
+};
+
+/** The launch chain (18 Nov): each step in order, and where it is. A step to check opens the page with Ava's strip. */
+function ChainList({ chain, coach }: { chain: ChainState[]; coach: BoardCoach | null }) {
+  return (
+    <ol className="divide-y divide-slate-100">
+      {chain.map((step, i) => {
+        const look = CHAIN_LOOK[step.state];
+        const href = step.state === "check" && coach ? cardHref(coach, checkPage(step.scope), "in_progress") : null;
+        const body = (
+          <>
+            <span className="w-4 shrink-0 text-right text-xs tabular-nums text-slate-400">{i + 1}</span>
+            <span className={`h-2 w-2 shrink-0 rounded-full ${look.dot}`} aria-hidden />
+            <span className={`min-w-0 flex-1 truncate text-sm ${step.state === "released" ? "text-slate-500" : "font-semibold text-slate-900"}`}>{step.label}</span>
+            <span className={`shrink-0 truncate text-sm ${look.text}`}>{step.note}</span>
+            {href ? <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden /> : <span className="w-4 shrink-0" />}
+          </>
+        );
+        return (
+          <li key={step.id}>
+            {href ? (
+              <Link href={href} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50">
+                {body}
+              </Link>
+            ) : (
+              <div className="flex items-center gap-3 px-4 py-2">{body}</div>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 /**
  * To check (16 Nov): everything Ava drafted by herself that waits for BCA,
  * by coach, oldest first. Each row opens the coach's page with Ava's strip
- * open: read it, change it, then Release (or Import it, or Send).
+ * open: read it, change it, then Release (or Import it, or Send). Since 18 Nov
+ * each coach shows the launch chain first, then anything else waiting.
  */
-function ToCheck({ items, coaches, pages }: { items: ToCheckItem[] | null; coaches: BoardCoach[]; pages: Page[] }) {
+function ToCheck({
+  items,
+  chains,
+  coaches,
+  pages,
+}: {
+  items: ToCheckItem[] | null;
+  chains: Record<string, ChainState[]>;
+  coaches: BoardCoach[];
+  pages: Page[];
+}) {
   if (!items) return <p className="px-6 py-4 text-sm text-slate-500">Loading what&rsquo;s waiting…</p>;
   if (!items.length) {
     return <p className="px-6 py-4 text-sm text-slate-500">Nothing waiting for you. Ava drafts each piece as soon as what she needs is in.</p>;
@@ -429,8 +481,12 @@ function ToCheck({ items, coaches, pages }: { items: ToCheckItem[] | null; coach
               <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">{group.coach?.name ?? "Coach"}</span>
               <span className="text-sm tabular-nums text-slate-500">{group.items.length} to check</span>
             </div>
+            {chains[group.coachId]?.length ? <ChainList chain={chains[group.coachId]} coach={group.coach} /> : null}
+            {chains[group.coachId]?.length && group.items.some((item) => !chains[group.coachId].some((c) => c.itemId === item.id)) ? (
+              <p className="border-t border-slate-100 px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Also waiting</p>
+            ) : null}
             <ul className="divide-y divide-slate-100">
-              {group.items.map((item) => {
+              {group.items.filter((item) => !chains[group.coachId]?.some((c) => c.itemId === item.id)).map((item) => {
                 const slug = checkPage(item.job_key);
                 const page = pages.find((p) => p.slug === slug);
                 const href = group.coach ? cardHref(group.coach, slug, "in_progress") : null;

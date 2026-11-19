@@ -21,6 +21,7 @@ import { usePractice } from "../PracticeProvider";
 import { commentsCall, useSectionComments } from "./SectionCommentsContext";
 import { hasTypedLink, LinkUnderlay } from "./LinkUnderlay";
 import { SupportMessageBody } from "@/components/support/SupportMessageBody";
+import { AvaHalo } from "@/components/ava/AvaHalo";
 
 /** "Thu 6 Nov, 09:00" */
 function whenLabel(iso: string): string {
@@ -40,6 +41,7 @@ export function ChatComposer({
   onEscape,
   onPost,
   extraActions = null,
+  onDraft,
 }: {
   chatKey: string;
   /** Who is on the other end: the coach's name, or BCA. */
@@ -51,6 +53,8 @@ export function ChatComposer({
   onPost?: (body: string, media: CommunityPostMediaItem[]) => Promise<string | null>;
   /** Buttons beside Send for this box only (BCA's "also send by email or WhatsApp" in the Support panel). */
   extraActions?: ReactNode;
+  /** Ava drafts the message (BCA writing to a coach, 19 Nov). Gets what's typed as her brief; returns the draft or an error. */
+  onDraft?: (typed: string) => Promise<{ draft?: string; error?: string }>;
 }) {
   const comments = useSectionComments();
   const { coachId, transcribe } = usePractice();
@@ -62,7 +66,7 @@ export function ChatComposer({
   const [voiceNote, setVoiceNote] = useState<PendingVoiceNote | null>(null);
   const [video, setVideo] = useState<PendingVideoNote | null>(null);
   const [email, setEmail] = useState(false);
-  const [busy, setBusy] = useState<null | "send" | "schedule">(null);
+  const [busy, setBusy] = useState<null | "send" | "schedule" | "draft">(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -170,6 +174,23 @@ export function ChatComposer({
       boxRef.current?.focus();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Ava's draft replaces the box; what was typed was her brief. */
+  async function draftWithAva() {
+    if (!onDraft || busy) return;
+    setBusy("draft");
+    setError(null);
+    try {
+      const result = await onDraft(draft.trim());
+      if (result.error || !result.draft) throw new Error(result.error ?? "Ava couldn't draft it.");
+      setDraft(result.draft.slice(0, COMMENT_MAX_LENGTH));
+      boxRef.current?.focus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ava couldn't draft it.");
     } finally {
       setBusy(null);
     }
@@ -300,6 +321,19 @@ export function ChatComposer({
             }
             trailing={
               <div className="flex items-center gap-0.5">
+                {onDraft ? (
+                  // Ava's own mark, the circle with the star (19 Nov): never the old sparkle.
+                  <button
+                    type="button"
+                    onClick={() => void draftWithAva()}
+                    disabled={busy !== null}
+                    aria-label={busy === "draft" ? "Ava is drafting" : "Draft with Ava"}
+                    title={draft.trim() ? "Ava writes it from what you typed and the conversation on screen" : "Ava drafts it from the conversation on screen"}
+                    className="mr-1 grid h-8 w-8 place-items-center rounded-md hover:bg-slate-100 disabled:cursor-default disabled:hover:bg-transparent"
+                  >
+                    <AvaHalo size={24} state={busy === "draft" ? "thinking" : "idle"} />
+                  </button>
+                ) : null}
                 {extraActions}
                 {bca ? (
                   <>
@@ -339,7 +373,7 @@ export function ChatComposer({
                   title="Send (⌘ Enter)"
                   className="ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bp-blue)] text-white transition-colors hover:bg-[var(--bp-sky)] disabled:bg-[#c3cdd9] disabled:hover:bg-[#c3cdd9]"
                 >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ArrowUp className="h-4 w-4" aria-hidden />}
+                  {busy === "send" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ArrowUp className="h-4 w-4" aria-hidden />}
                 </button>
               </div>
             }

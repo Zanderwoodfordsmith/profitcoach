@@ -7,8 +7,8 @@ import type { ProfileSectionId } from "@/lib/linkedinProfileOptimizer/types";
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
 import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { ensureCoachPool } from "@/lib/leadLists/audienceLists";
-import { BLUEPRINT_SECTIONS, fieldFilled, type FieldSpec, type SectionRef } from "@/lib/practiceKnowledge/blueprint";
-import { boardPages } from "@/lib/practiceKnowledge/blueprintBoard";
+import { BLUEPRINT_SECTIONS, fieldFilled, sectionByKey, type FieldSpec, type SectionRef } from "@/lib/practiceKnowledge/blueprint";
+import { blueprintContextFromRow } from "@/lib/practiceKnowledge/blueprintContext";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
 import { listOnboardingTranscripts, onboardingTranscriptText } from "@/lib/practiceKnowledge/ingestOnboarding";
 import { summarizeKnowledgeForPrompt } from "@/lib/practiceKnowledge/prompts";
@@ -24,6 +24,7 @@ import { requireLiveLinkedInUnipileAccount } from "@/lib/unipile/linkedinSearchA
 import { salesNavUrlForUnipile } from "@/lib/unipile/linkedinSearchCursor";
 
 import { avaWorkFor, fillableAnswer, missingFor, pageScope } from "./avaWork";
+import { inputPrint, withOpenDrafts } from "./drafts";
 import { whatNextMessage } from "./whatNext";
 import {
   add,
@@ -127,6 +128,7 @@ export async function draftPageAnswers(coachId: string, slug: string, userId: st
 
 Where to look, in this order:
 1. Pam's notes from the Blueprint Call. They were agreed with the coach. Where a doc holds several versions, the last one wins. Where two docs disagree (for example the coach changed market), use the newest and say so in "thinking".
+   Two strong cases for different markets (different industries, both well backed): pick the stronger one, with the most proof and the closest match to the coach's own career, and fill every box for that one market. Start "thinking" with "Two strong markets:", name both and say why you picked one, so BCA can overturn it.
 2. The coach's own answers.
 3. Their LinkedIn.
 4. Call transcripts.
@@ -209,6 +211,12 @@ async function searchSize(accountId: string | null, url: string): Promise<number
   return typeof n === "number" ? n : null;
 }
 
+/** What the lists read: the list box and the job titles. */
+function listPrint(row: PracticeKnowledgeRow): string {
+  const paths = (sectionByKey("market:list")?.section.fields ?? []).map((f) => f.path as string);
+  return inputPrint(row, { paths: [...paths, "market.buyer_roles"] });
+}
+
 /** The list box is filled in: Ava has something to search for. */
 export function listBoxReady(row: PracticeKnowledgeRow): boolean {
   return listValue(row.payload.market.list_sectors).length > 0;
@@ -220,7 +228,7 @@ export function listBoxReady(row: PracticeKnowledgeRow): boolean {
  * what LinkedIn says each one finds. BCA ticks, changes, then "Import it".
  */
 export async function draftProspectSearches(coachId: string, userId: string | null, changes?: string): Promise<ActivityItem> {
-  const row = await ensurePracticeKnowledge(coachId);
+  const row = await withOpenDrafts(coachId, await ensurePracticeKnowledge(coachId));
   if (!listBoxReady(row)) throw new Error("Fill in Who goes on your list first (Your Ideal Client).");
   const [sources, inPool, previous, { data: profile }] = await Promise.all([
     coachSources(coachId, row),
@@ -314,6 +322,7 @@ Plan the lists now. JSON only.`;
       thinking: data?.thinking?.trim() || undefined,
       changes: changes?.trim() || undefined,
       version: (previous?.payload.version ?? 0) + 1,
+      inputs: listPrint(row),
     },
     status: "open",
     edited: Boolean(changes?.trim()),
@@ -394,13 +403,23 @@ function linkedInReady(row: PracticeKnowledgeRow): boolean {
   return Boolean(row.built_sections["voice:sound"]) && idealClient.every(({ field }) => fieldFilled(row.payload, field));
 }
 
+/** What the profile reads from the Blueprint: the voice guide and the Ideal Client boxes. */
+function linkedInPrint(row: PracticeKnowledgeRow): string {
+  return inputPrint(row, { built: ["voice:sound"], paths: bcaAnswerFields("market").map(({ field }) => field.path as string) });
+}
+
 /**
  * Ava writes the whole LinkedIn profile (every part, the same writer as the
  * LinkedIn page's "Write every part"), as a draft for BCA. Release puts it in
  * the coach's LinkedIn editor, where they copy it across.
  */
 export async function draftLinkedInProfile(coachId: string, userId: string | null): Promise<ActivityItem> {
-  const inputs = await loadProfileWriterInputs(coachId, {});
+  const [loaded, row] = await Promise.all([
+    loadProfileWriterInputs(coachId, {}),
+    ensurePracticeKnowledge(coachId).then((raw) => withOpenDrafts(coachId, raw)),
+  ]);
+  // The writer reads the Blueprint with Ava's open drafts in, so it can follow the voice guide and Ideal Client before they're released.
+  const inputs = { ...loaded, blueprint: blueprintContextFromRow(row) };
   if (!inputs.snapshot) throw new Error("Their LinkedIn isn't imported yet, so there's nothing to rewrite.");
   const snapshot = inputs.snapshot;
   const written = await Promise.all(
@@ -427,6 +446,7 @@ export async function draftLinkedInProfile(coachId: string, userId: string | nul
       sections: [{ key: "linkedin:rewrite", title: "Your LinkedIn profile", blocks, drafted_at: new Date().toISOString() }],
       linkedinParts: parts,
       version: 1,
+      inputs: linkedInPrint(row),
     },
     status: "open",
     createdBy: userId,
@@ -477,66 +497,100 @@ function writable(scope: string, row: PracticeKnowledgeRow): string[] {
   return keys;
 }
 
+// ---------------------------------------------------------------- the launch chain
+
 /**
- * Everything Ava can draft for this coach right now, BCA-only: boxes to fill,
- * written sections whose inputs are in, and the prospect lists. A page with
- * something already waiting for BCA is left alone. Returns what she started.
+ * The launch chain (18 Nov): what a coach needs to launch, in order. Each
+ * step starts once what it reads is drafted, not released, so one run fills
+ * the chain for BCA to check top to bottom. Offer, Content, Reactivation and
+ * the pitch are off until they're dialled in.
  */
-export async function advanceCoach(coachId: string, userId: string | null): Promise<string[]> {
-  const row = await ensurePracticeKnowledge(coachId);
-  const { data: open } = await supabaseAdmin
-    .from("launch_job_activity")
-    .select("job_key")
-    .eq("coach_id", coachId)
-    .eq("status", "open")
-    .in("kind", ["draft", "answers", "searches"]);
-  const waiting = new Set((open ?? []).map((o) => o.job_key as string));
+export type ChainStep = { id: string; label: string; scope: string; kind: ActivityItem["kind"]; sections?: string[] };
 
-  // Ava fills a page's boxes once; what she couldn't fill waits for the coach, not for another try.
-  const { data: tried } = await supabaseAdmin
-    .from("launch_job_activity")
-    .select("job_key")
-    .eq("coach_id", coachId)
-    .eq("kind", "answers")
-    .in("status", ["saved", "dismissed"])
-    .contains("payload", { by: "ava" });
-  const triedBoxes = new Set((tried ?? []).map((t) => t.job_key as string));
+export const LAUNCH_CHAIN: ChainStep[] = [
+  { id: "ideal-client", label: "Ideal Client boxes", scope: pageScope("market"), kind: "answers" },
+  { id: "voice", label: "Voice guide", scope: pageScope("about"), kind: "draft", sections: ["voice:sound"] },
+  {
+    id: "market",
+    label: "Market options, walkthrough and pain points",
+    scope: pageScope("market"),
+    kind: "draft",
+    sections: ["market:options", "market:avatar", "market:pains"],
+  },
+  { id: "linkedin", label: "LinkedIn profile", scope: LINKEDIN_SCOPE, kind: "draft" },
+  { id: "lists", label: "Lead lists", scope: LIST_SCOPE, kind: "searches" },
+  {
+    id: "campaigns",
+    label: "Connection campaigns",
+    scope: pageScope("campaigns"),
+    kind: "draft",
+    sections: ["campaigns:messaging", "campaigns:conversation"],
+  },
+];
 
+type ChainItem = Pick<ActivityItem, "id" | "job_key" | "kind" | "status" | "edited" | "payload">;
+
+/** BCA changed something this draft read since Ava wrote it. BCA's own changes to a draft are never thrown away. */
+function outOfDate(item: ChainItem | null, print: string): boolean {
+  return Boolean(item && !item.edited && item.payload.inputs && item.payload.inputs !== print);
+}
+
+/** One pass down the chain: every step that can start now, side by side. */
+async function advanceOnce(coachId: string, userId: string | null): Promise<string[]> {
+  const raw = await ensurePracticeKnowledge(coachId);
+  const { data } = await supabaseAdmin
+    .from("launch_job_activity")
+    .select("id, job_key, kind, status, edited, payload")
+    .eq("coach_id", coachId)
+    .in("kind", ["draft", "answers", "searches"])
+    .in("status", ["open", "saved", "dismissed"]);
+  const items = (data ?? []) as ChainItem[];
+  const openOfKind = (step: ChainStep) => items.find((i) => i.status === "open" && i.job_key === step.scope && i.kind === step.kind) ?? null;
+  // Released or turned down: Ava doesn't start that step again by herself.
+  const finished = (step: ChainStep) => items.some((i) => i.status !== "open" && i.job_key === step.scope && i.kind === step.kind);
+  const row = await withOpenDrafts(coachId, raw);
+  const step = (id: string) => LAUNCH_CHAIN.find((s) => s.id === id)!;
   const runs: { label: string; run: () => Promise<unknown> }[] = [];
-  for (const page of boardPages()) {
-    const scope = pageScope(page.slug);
-    if (waiting.has(scope)) continue;
-    if (emptyBoxes(page.slug, row).length && !triedBoxes.has(scope)) {
-      runs.push({ label: `${page.title}: boxes`, run: () => draftPageAnswers(coachId, page.slug, userId) });
+
+  // 1. The Ideal Client boxes, from Pam's notes. Once: what she couldn't fill waits for the coach.
+  const idealClient = step("ideal-client");
+  const triedBoxes = items.some((i) => i.status !== "open" && i.job_key === idealClient.scope && i.kind === "answers" && i.payload.by === "ava");
+  if (!openOfKind(idealClient) && !triedBoxes && emptyBoxes("market", raw).length) {
+    runs.push({ label: idealClient.label, run: () => draftPageAnswers(coachId, "market", userId) });
+  }
+
+  // 2, 3 and 6. Written sections: the voice guide, the market, the campaigns.
+  for (const s of LAUNCH_CHAIN.filter((c) => c.sections)) {
+    const existing = openOfKind(s);
+    if (existing) {
+      const keys = (existing.payload.sections ?? []).map((x) => x.key).filter((key) => s.sections!.includes(key));
+      const base = await withOpenDrafts(coachId, raw, [s.scope]);
+      if (keys.length && outOfDate(existing, inputPrint(base, { sections: keys }))) {
+        runs.push({ label: `${s.label} (rewritten)`, run: () => runAva(coachId, s.scope, userId, keys) });
+      }
       continue;
     }
-    const keys = writable(scope, row);
-    if (keys.length) runs.push({ label: `${page.title}: writing`, run: () => runAva(coachId, scope, userId, keys) });
+    const keys = writable(s.scope, row).filter((key) => s.sections!.includes(key));
+    if (keys.length) runs.push({ label: s.label, run: () => runAva(coachId, s.scope, userId, keys) });
   }
-  // The LinkedIn profile: once, after the Ideal Client and voice guide are in. Later rewrites are by hand.
-  if (!waiting.has(LINKEDIN_SCOPE) && linkedInReady(row)) {
-    const { data: li } = await supabaseAdmin
-      .from("launch_job_activity")
-      .select("id")
-      .eq("coach_id", coachId)
-      .eq("job_key", LINKEDIN_SCOPE)
-      .eq("kind", "draft")
-      .limit(1);
+
+  // 4. The LinkedIn profile, once the voice guide and Ideal Client are drafted.
+  const linkedin = step("linkedin");
+  const liOpen = openOfKind(linkedin);
+  if (liOpen) {
+    if (outOfDate(liOpen, linkedInPrint(row))) runs.push({ label: `${linkedin.label} (rewritten)`, run: () => draftLinkedInProfile(coachId, userId) });
+  } else if (!finished(linkedin) && linkedInReady(row)) {
     const optimizer = await loadOptimizerRow(coachId).catch(() => null);
-    if (!li?.length && optimizer?.snapshot && emptyDraft(optimizer.draft)) {
-      runs.push({ label: "LinkedIn profile", run: () => draftLinkedInProfile(coachId, userId) });
-    }
+    if (optimizer?.snapshot && emptyDraft(optimizer.draft)) runs.push({ label: linkedin.label, run: () => draftLinkedInProfile(coachId, userId) });
   }
-  if (!waiting.has(LIST_SCOPE) && listBoxReady(row)) {
-    const { count } = await supabaseAdmin
-      .from("launch_job_activity")
-      .select("id", { count: "exact", head: true })
-      .eq("coach_id", coachId)
-      .eq("kind", "searches")
-      .eq("status", "saved");
-    if (!count && (await poolSize(coachId)) < LIST_TARGET.aim) {
-      runs.push({ label: "Prospect lists", run: () => draftProspectSearches(coachId, userId) });
-    }
+
+  // 5. The lead lists, once the list box is drafted.
+  const lists = step("lists");
+  const listOpen = openOfKind(lists);
+  if (listOpen) {
+    if (outOfDate(listOpen, listPrint(row))) runs.push({ label: `${lists.label} (rewritten)`, run: () => draftProspectSearches(coachId, userId) });
+  } else if (!finished(lists) && listBoxReady(row) && (await poolSize(coachId)) < LIST_TARGET.aim) {
+    runs.push({ label: lists.label, run: () => draftProspectSearches(coachId, userId) });
   }
 
   const results = await Promise.allSettled(runs.map((r) => r.run()));
@@ -544,6 +598,83 @@ export async function advanceCoach(coachId: string, userId: string | null): Prom
     if (result.status === "rejected") console.error(`advance ${runs[i].label}:`, result.reason instanceof Error ? result.reason.message : "failed");
   });
   return runs.filter((_, i) => results[i].status === "fulfilled").map((r) => r.label);
+}
+
+/**
+ * Ava works down the launch chain for this coach, BCA-only: each pass
+ * unlocks the next, until nothing more can start. She stops starting new
+ * passes after about two and a half minutes (the request's time limit); the
+ * next release or "advance" carries on. Returns what she drafted.
+ */
+export async function advanceCoach(coachId: string, userId: string | null): Promise<string[]> {
+  const startedAt = Date.now();
+  const done: string[] = [];
+  for (let pass = 0; pass < LAUNCH_CHAIN.length && Date.now() - startedAt < 150_000; pass++) {
+    const started = await advanceOnce(coachId, userId);
+    if (!started.length) break;
+    done.push(...started);
+  }
+  return done;
+}
+
+/** Where one chain step is, for the To check list. */
+export type ChainState = {
+  id: string;
+  label: string;
+  state: "released" | "check" | "next" | "waiting";
+  /** "Waiting on Pain points", or what's in the draft. */
+  note: string;
+  /** The open item to check. */
+  itemId?: string;
+  scope: string;
+};
+
+/** The launch chain for one coach: what's released, what's to check, and what each later step waits on. */
+export async function chainState(coachId: string): Promise<ChainState[]> {
+  const raw = await ensurePracticeKnowledge(coachId);
+  const [{ data }, row, optimizer, inPool] = await Promise.all([
+    supabaseAdmin
+      .from("launch_job_activity")
+      .select("id, job_key, kind, status, edited, payload")
+      .eq("coach_id", coachId)
+      .in("kind", ["draft", "answers", "searches"])
+      .in("status", ["open", "saved", "dismissed"]),
+    withOpenDrafts(coachId, raw),
+    loadOptimizerRow(coachId).catch(() => null),
+    poolSize(coachId),
+  ]);
+  const items = (data ?? []) as ChainItem[];
+  const waitingOn = (labels: string[]) => `Waiting on ${labels.join(", ")}`;
+  return LAUNCH_CHAIN.map((step): ChainState => {
+    const base = { id: step.id, label: step.label, scope: step.scope };
+    const open = items.find((i) => i.status === "open" && i.job_key === step.scope && i.kind === step.kind);
+    if (open) return { ...base, state: "check", itemId: open.id, note: "Ava's draft is ready for you" };
+    const finished = items.some((i) => i.status !== "open" && i.job_key === step.scope && i.kind === step.kind);
+    if (step.sections) {
+      const left = step.sections.filter((key) => !raw.built_sections[key]);
+      if (!left.length) return { ...base, state: "released", note: "Released" };
+      const blockers = missingFor(left, row).filter((m) => !(m.kind === "answer" && m.coach));
+      return blockers.length
+        ? { ...base, state: "waiting", note: waitingOn(blockers.map((m) => m.label)) }
+        : { ...base, state: "next", note: "Ava writes this next" };
+    }
+    if (step.id === "ideal-client") {
+      if (finished || !emptyBoxes("market", raw).length) return { ...base, state: "released", note: "Released" };
+      return { ...base, state: "next", note: "Ava fills these next, from Pam's notes" };
+    }
+    if (step.id === "linkedin") {
+      if (finished) return { ...base, state: "released", note: "Released" };
+      if (!optimizer?.snapshot) return { ...base, state: "waiting", note: waitingOn(["their LinkedIn import"]) };
+      if (!emptyDraft(optimizer.draft)) return { ...base, state: "released", note: "Already has a profile draft" };
+      const needs = [!row.built_sections["voice:sound"] ? "Voice guide" : "", !linkedInReady(row) && row.built_sections["voice:sound"] ? "Ideal Client boxes" : ""].filter(Boolean);
+      return needs.length ? { ...base, state: "waiting", note: waitingOn(needs) } : { ...base, state: "next", note: "Ava writes this next" };
+    }
+    // Lead lists.
+    if (finished) return { ...base, state: "released", note: "Imported" };
+    if (inPool >= LIST_TARGET.aim) return { ...base, state: "released", note: `${inPool.toLocaleString("en-GB")} already in their Pool` };
+    if (!listBoxReady(row)) return { ...base, state: "waiting", note: waitingOn(["Who goes on your list"]) };
+    return { ...base, state: "next", note: "Ava plans these next" };
+  });
 }
 
 // ---------------------------------------------------------------- BCA's list

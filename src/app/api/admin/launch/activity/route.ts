@@ -97,7 +97,7 @@ type Body = {
   picks?: { id: string; on: boolean }[];
 };
 
-/** A release unblocks what comes next: Ava starts on it straight away, in the background. */
+/** A release or a change unblocks what comes next (the launch chain): Ava starts on it straight away, in the background. */
 function advanceLater(coachId: string | null, userId: string | null) {
   if (!coachId) return;
   after(() =>
@@ -120,10 +120,12 @@ export async function POST(request: Request) {
       case "run":
         if (!coachId || !job) return fail("Unknown coach or job.");
         await runAva(coachId, job, userId);
+        advanceLater(coachId, userId);
         break;
       case "talk":
         if (!coachId || !job) return fail("Unknown coach or job.");
         await talkToAva(coachId, job, userId, body.text ?? "");
+        advanceLater(coachId, userId);
         break;
       case "ask":
         if (!coachId || !job) return fail("Unknown coach or job.");
@@ -151,11 +153,13 @@ export async function POST(request: Request) {
         const slug = job ? scopePage(job) : null;
         if (!coachId || !slug) return fail("Unknown coach or page.");
         await draftPageAnswers(coachId, slug, userId);
+        advanceLater(coachId, userId);
         break;
       }
       case "draft_searches":
         if (!coachId) return fail("Unknown coach.");
         await draftProspectSearches(coachId, userId, body.text);
+        advanceLater(coachId, userId);
         break;
       case "import":
         if (!body.id) return fail("Missing searches.");

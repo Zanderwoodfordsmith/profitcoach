@@ -1,6 +1,6 @@
 "use client";
 
-import { SeenTick } from "@/components/support/SeenTick";
+import { SupportReaction } from "@/components/support/SupportReaction";
 import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { JobStatusCircle } from "@/components/jobs/jobParts";
 import { JOB_STATUS_META } from "@/lib/launch/jobStatus";
@@ -130,6 +130,7 @@ import {
 import { cardClass } from "@/components/ui/Card";
 import { commentWhen, firstName } from "@/components/practice/comments/SectionCommentsUI";
 import { fieldClass } from "@/components/ui/Field";
+import { stripGreetingAndSignOff } from "@/lib/support/greetingSignOff";
 
 type ComposerMode = "reply" | "note";
 
@@ -156,6 +157,26 @@ const SCHEDULED_REPLY_SELECT = `
   last_error,
   author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
 `;
+
+/**
+ * Best effort (19 Nov): an edit or delete of BCA's WhatsApp reply also goes to
+ * WhatsApp. Edits only take within ~15 minutes; nothing shows if it fails.
+ */
+async function syncReplyOnWhatsApp(reportId: string, replyId: string, action: "edit" | "delete") {
+  try {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) return;
+    await fetch(`/api/admin/support/tickets/${reportId}/whatsapp-update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ replyId, action }),
+    });
+  } catch {
+    // Silent: the app's copy is what counts.
+  }
+}
 
 function mapScheduledReply(raw: {
   id: string;
@@ -200,8 +221,10 @@ export type AdminTicketOpening = {
   viaEmail?: boolean;
   /** A pinned channel thread: no author, just a line on what it's for. */
   pinned?: boolean;
-  /** The "Seen" tick on this first message (5 Nov). */
+  /** The other side's reaction on this first message (was the "Seen" tick, 5 Nov). */
   seenAt?: string | null;
+  /** Which emoji (19 Nov); null on an old tick, shown as 👍. */
+  seenReaction?: string | null;
   /** BCA wrote it (New ticket), so the tick is the coach's to give, not ours. */
   byBca?: boolean;
 };
@@ -296,15 +319,17 @@ export function AdminTicketReplies({
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
-  // "Also send via": one of none, email or WhatsApp (18 Nov).
-  const [alsoVia, setAlsoVia] = useState<"none" | "email" | "whatsapp">(
-    canEmailNotify && emailNotifyDefault ? "email" : "none"
+  // "Also send via": email, WhatsApp, both or neither (19 Nov).
+  const [emailNotify, setEmailNotify] = useState(
+    canEmailNotify && emailNotifyDefault
   );
-  const emailNotify = alsoVia === "email";
+  const [whatsAppNotify, setWhatsAppNotify] = useState(false);
   const [whatsAppRoute, setWhatsAppRoute] = useState<{
     available: boolean;
     from?: string;
     reason?: string;
+    /** Bold line the first WhatsApp reply starts with (chat began in the app or by email). */
+    lead?: string | null;
   } | null>(null);
   const [notifyNote, setNotifyNote] = useState<string | null>(null);
   const [copilotLoading, setCopilotLoading] = useState(false);
@@ -373,7 +398,8 @@ export function AdminTicketReplies({
     null;
 
   useEffect(() => {
-    setAlsoVia(canEmailNotify && emailNotifyDefault ? "email" : "none");
+    setEmailNotify(canEmailNotify && emailNotifyDefault);
+    setWhatsAppNotify(false);
     setNotifyNote(null);
   }, [reportId, emailNotifyDefault, canEmailNotify]);
 
@@ -385,7 +411,10 @@ export function AdminTicketReplies({
     const last = replies[replies.length - 1];
     if (!last || last.report_id !== reportId || !whatsAppRoute) return;
     autoWhatsAppForRef.current = reportId;
-    if (last.via_whatsapp && whatsAppRoute.available) setAlsoVia("whatsapp");
+    if (last.via_whatsapp && whatsAppRoute.available) {
+      setWhatsAppNotify(true);
+      setEmailNotify(false);
+    }
   }, [reportId, replies, whatsAppRoute]);
 
   // Can this chat go out on WhatsApp, and from whose phone?
@@ -408,12 +437,14 @@ export function AdminTicketReplies({
         available?: boolean;
         from?: string;
         reason?: string;
+        lead?: string | null;
       } | null;
       if (!cancelled && body) {
         setWhatsAppRoute({
           available: Boolean(body.available),
           from: body.from,
           reason: body.reason,
+          lead: body.lead ?? null,
         });
       }
     })();
@@ -422,31 +453,47 @@ export function AdminTicketReplies({
     };
   }, [reportId, sendAsId]);
 
-  // The first message's tick, as changed here; otherwise as loaded.
-  const [openingSeen, setOpeningSeen] = useState<{ id: string; at: string | null } | null>(null);
+  // The first message's reaction, as changed here; otherwise as loaded.
+  const [openingSeen, setOpeningSeen] = useState<{ id: string; at: string | null; reaction: string | null } | null>(null);
   const openingSeenAt = openingSeen?.id === reportId ? openingSeen.at : (openingMessage?.seenAt ?? null);
+  const openingReaction = openingSeen?.id === reportId ? openingSeen.reaction : (openingMessage?.seenReaction ?? null);
   const [seenError, setSeenError] = useState<string | null>(null);
 
-  /** Tick a coach's message "Seen" (null = the first message): it stops needing a reply. */
-  async function markSeen(replyId: string | null, seen: boolean) {
+  /**
+   * React to a coach's message (null = the first message; reaction null = take
+   * it off, 19 Nov): it stops needing a reply, and nothing new is sent. On a
+   * WhatsApp message the reaction goes on it in WhatsApp too.
+   */
+  async function markSeen(replyId: string | null, reaction: string | null) {
     if (!reportId) return;
     setSeenError(null);
-    const { error: seenFailed } = await supabaseClient.rpc("set_support_message_seen", {
-      p_report_id: reportId,
-      p_reply_id: replyId,
-      p_seen: seen,
-    });
-    if (seenFailed) {
-      setSeenError("Couldn't tick it. Try again.");
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    const res = session?.access_token
+      ? await fetch(`/api/admin/support/tickets/${reportId}/react`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ replyId, reaction }),
+        }).catch(() => null)
+      : null;
+    const result = res?.ok ? ((await res.json().catch(() => null)) as { whatsapp?: string | null } | null) : null;
+    if (!result) {
+      setSeenError("Couldn't react. Try again.");
       return;
     }
-    const at = seen ? new Date().toISOString() : null;
+    if (result.whatsapp === "failed") {
+      setSeenError("Saved here, but WhatsApp didn't take the reaction.");
+    }
+    const at = reaction ? new Date().toISOString() : null;
     if (replyId) {
       setReplies((current) =>
-        current.map((r) => (r.id === replyId ? { ...r, seen_at: at, seen_name: seen ? "you" : null } : r))
+        current.map((r) =>
+          r.id === replyId ? { ...r, seen_at: at, seen_name: reaction ? "you" : null, seen_reaction: reaction } : r
+        )
       );
     } else {
-      setOpeningSeen({ id: reportId, at });
+      setOpeningSeen({ id: reportId, at, reaction });
     }
     onStatusTouched?.();
   }
@@ -454,12 +501,13 @@ export function AdminTicketReplies({
   const openingTick =
     reportId && openingMessage && !openingMessage.pinned ? (
       <div className="group/msg">
-        <SeenTick
-          seenAt={openingSeenAt}
-          seenName={null}
-          canTick={!openingMessage.byBca}
+        <SupportReaction
+          reactedAt={openingSeenAt}
+          reaction={openingReaction}
+          reactedName={null}
+          canReact={!openingMessage.byBca}
           latest={replies.length === 0}
-          onTick={(seen) => void markSeen(null, seen)}
+          onReact={(reaction) => void markSeen(null, reaction)}
         />
         {seenError ? <p className="mt-1 text-caption text-rose-600">{seenError}</p> : null}
       </div>
@@ -599,12 +647,17 @@ export function AdminTicketReplies({
       setReplies((current) =>
         current.map((r) => (r.id === replyId ? next : r))
       );
+      if (next.via_whatsapp) void syncReplyOnWhatsApp(reportId, replyId, "edit");
     },
     [replies, reportId]
   );
 
   const deleteReply = useCallback(
     async (replyId: string) => {
+      // Before the row goes: it holds the WhatsApp message id.
+      if (replies.find((r) => r.id === replyId)?.via_whatsapp) {
+        await syncReplyOnWhatsApp(reportId, replyId, "delete");
+      }
       const { error: deleteError } = await supabaseClient
         .from("community_feedback_replies")
         .delete()
@@ -613,7 +666,7 @@ export function AdminTicketReplies({
       if (deleteError) throw deleteError;
       setReplies((current) => current.filter((r) => r.id !== replyId));
     },
-    [reportId]
+    [replies, reportId]
   );
 
   const updateNoteBody = useCallback(
@@ -1260,7 +1313,7 @@ export function AdminTicketReplies({
           }
         }
       }
-      if (alsoVia === "whatsapp" && whatsAppRoute?.available) {
+      if (whatsAppNotify && whatsAppRoute?.available) {
         const {
           data: { session },
         } = await supabaseClient.auth.getSession();
@@ -1281,7 +1334,10 @@ export function AdminTicketReplies({
             from?: string;
           };
           if (waRes?.ok) {
-            setNotifyNote(`Sent on WhatsApp from ${waBody.from || whatsAppRoute.from}'s phone.`);
+            const waNote = `Sent on WhatsApp from ${waBody.from || whatsAppRoute.from}'s phone.`;
+            setNotifyNote((prev) => (prev ? `${prev} ${waNote}` : waNote));
+            // The chat is on WhatsApp now: later replies need no "About…" line.
+            setWhatsAppRoute((prev) => (prev ? { ...prev, lead: null } : prev));
             setReplies((current) =>
               current.map((row) =>
                 row.id === reply.id
@@ -1290,9 +1346,8 @@ export function AdminTicketReplies({
               )
             );
           } else {
-            setNotifyNote(
-              `Reply saved, but WhatsApp did not send: ${waBody.error || "try again."}`
-            );
+            const waNote = `WhatsApp did not send: ${waBody.error || "try again."}`;
+            setNotifyNote((prev) => (prev ? `${prev} ${waNote}` : `Reply saved, but ${waNote}`));
           }
         }
       }
@@ -1370,7 +1425,7 @@ export function AdminTicketReplies({
           body: replyBody,
           media: uploaded.length > 0 ? uploaded : null,
           email_notify: willEmail,
-          whatsapp_notify: alsoVia === "whatsapp" && Boolean(whatsAppRoute?.available),
+          whatsapp_notify: whatsAppNotify && Boolean(whatsAppRoute?.available),
           scheduled_for: when.toISOString(),
           status: "scheduled",
         })
@@ -1618,7 +1673,8 @@ export function AdminTicketReplies({
     canEmailNotify || whatsAppRoute?.available ? (
       <div className="inline-flex items-center gap-1" role="group" aria-label="Also send">
         {alsoViaButtons.map((option) => {
-          const active = alsoVia === option.id;
+          const active = option.id === "email" ? emailNotify : whatsAppNotify;
+          const setActive = option.id === "email" ? setEmailNotify : setWhatsAppNotify;
           const label = active ? `${option.title} (on, click to turn off)` : option.title;
           return (
             <button
@@ -1628,9 +1684,11 @@ export function AdminTicketReplies({
               aria-label={label}
               title={label}
               disabled={!option.enabled}
-              onClick={() => setAlsoVia(active ? "none" : option.id)}
+              onClick={() => setActive(!active)}
               className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
-                active
+                active && option.id === "whatsapp"
+                  ? "border-[#25D366] bg-[#25D366] text-white"
+                  : active
                   ? "border-sky-600 bg-sky-600 text-white"
                   : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700"
               }`}
@@ -1957,6 +2015,17 @@ export function AdminTicketReplies({
                   className="min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400"
                 />
               ) : (
+                <>
+                {/* First WhatsApp reply on an app or email chat: the line it starts with. */}
+                {whatsAppNotify && whatsAppRoute?.available && whatsAppRoute.lead ? (
+                  <p
+                    className={`px-3 pt-2.5 text-xs text-slate-400 ${showDraftBadge ? "pr-28" : "pr-12"}`}
+                    title="Added at the top on WhatsApp only, so the coach knows what it's about"
+                  >
+                    <span className="font-medium text-slate-500">Starts with: </span>
+                    <span className="font-semibold text-slate-500">{whatsAppRoute.lead.replace(/^\*|\*$/g, "")}</span>
+                  </p>
+                ) : null}
                 <PageLinkTextarea
                   textareaRef={replyTextareaRef}
                   rows={composerExpanded ? undefined : 4}
@@ -1975,6 +2044,7 @@ export function AdminTicketReplies({
                     showDraftBadge ? "pr-28" : "pr-12"
                   } ${composerExpanded ? "min-h-0 flex-1" : ""}`}
                 />
+                </>
               )}
               {/* Ava's draft: how sure she is, top right; why on hover (11 Nov). */}
               {showDraftBadge && suggestion ? (
@@ -2486,6 +2556,10 @@ export function AdminTicketReplies({
       ? parseSupportTicketMedia(openingMessage.media)
       : [];
     const openingBody = openingMessage?.body.trim() ?? "";
+    // Shown without "Hi Zander," and their name at the end (18 Nov).
+    const openingShown = openingMessage
+      ? stripGreetingAndSignOff(openingMessage.body, openingMessage.authorLabel)
+      : "";
 
     const slack = messageLayout === "slack";
     const cards = messageLayout === "cards";
@@ -2520,19 +2594,20 @@ export function AdminTicketReplies({
                   ) : null}
                   {reportId && !openingMessage.pinned ? (
                     <span className="ml-auto flex shrink-0 self-center">
-                      <SeenTick
+                      <SupportReaction
                         inline
-                        seenAt={openingSeenAt}
-                        seenName={null}
-                        canTick={!openingMessage.byBca}
+                        reactedAt={openingSeenAt}
+                        reaction={openingReaction}
+                        reactedName={null}
+                        canReact={!openingMessage.byBca}
                         latest={replies.length === 0}
-                        onTick={(seen) => void markSeen(null, seen)}
+                        onReact={(reaction) => void markSeen(null, reaction)}
                       />
                     </span>
                   ) : null}
                 </div>
                 <div className="bp-chat-body [&_p]:text-[length:inherit] [&_p]:leading-[inherit] [&_p]:text-[color:inherit]">
-                  <SupportOpeningBody key={reportId} text={openingMessage.body}>
+                  <SupportOpeningBody key={reportId} text={openingShown}>
                     {openingMedia.length > 0 ? (
                       <div className={openingBody ? "mt-2" : undefined}>
                         <CommunityPostMediaGallery items={openingMedia} variant="compact" />
@@ -2568,7 +2643,7 @@ export function AdminTicketReplies({
             </div>
             <p className="font-semibold">{openingMessage.title}</p>
             <div className="[&_p]:text-[15px] [&_p]:leading-normal [&_p]:text-slate-700">
-            <SupportOpeningBody key={reportId} text={openingMessage.body}>
+            <SupportOpeningBody key={reportId} text={openingShown}>
               {openingMedia.length > 0 ? (
                 <div className={openingBody ? "mt-3" : undefined}>
                   <CommunityPostMediaGallery items={openingMedia} variant="compact" />
@@ -2622,7 +2697,7 @@ export function AdminTicketReplies({
             <h2 className="mt-3 text-subhead font-semibold text-slate-900">
               {openingMessage.title}
             </h2>
-            <SupportOpeningBody key={reportId} text={openingMessage.body}>
+            <SupportOpeningBody key={reportId} text={openingShown}>
               {openingMedia.length > 0 ? (
                 <div className={openingBody ? "mt-3" : undefined}>
                   <CommunityPostMediaGallery
@@ -2669,7 +2744,7 @@ export function AdminTicketReplies({
                 onDeleteReply={deleteReply}
                 onUpdateNoteBody={updateNoteBody}
                 onDeleteNote={deleteNote}
-                onSeen={reportId ? (id, seen) => void markSeen(id, seen) : undefined}
+                onSeen={reportId ? (id, reaction) => void markSeen(id, reaction) : undefined}
               />
             )}
             {scheduledBubbles}
@@ -2702,7 +2777,7 @@ export function AdminTicketReplies({
             onDeleteReply={deleteReply}
             onUpdateNoteBody={updateNoteBody}
             onDeleteNote={deleteNote}
-            onSeen={reportId ? (id, seen) => void markSeen(id, seen) : undefined}
+            onSeen={reportId ? (id, reaction) => void markSeen(id, reaction) : undefined}
           />
         </div>
       )}

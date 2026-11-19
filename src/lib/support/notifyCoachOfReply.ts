@@ -17,6 +17,7 @@ import {
   listUnipileEmails,
   sendUnipileEmail,
 } from "@/lib/unipile/client";
+import { endsWithSignOff, startsWithGreeting } from "@/lib/support/greetingSignOff";
 
 /**
  * Delay before a queued notify is due. Kept at 0 so the admin reply request
@@ -161,16 +162,25 @@ export function buildSupportReplyEmailHtml(input: {
   signatureName: string | null;
   supportUrl: string;
   videos?: CommunityPostMediaItem[];
+  /** "Hi Bruce," goes on top unless the reply already starts with a greeting. */
+  recipientFirstName?: string | null;
 }): string {
   const preview = input.replyBody.trim().slice(0, 2000);
   const bodyHtml = supportMarkdownToEmailInnerHtml(preview);
   const signature = input.signatureName?.trim() || "Profit Coach Support";
+  const firstName = input.recipientFirstName?.trim();
+  const greetingHtml = startsWithGreeting(preview)
+    ? ""
+    : `<p style="margin:0 0 20px;">${escapeHtml(firstName ? `Hi ${firstName},` : "Hi,")}</p>\n`;
+  // Typed "Thanks, Zander" already: don't sign twice.
+  const signatureHtml = endsWithSignOff(preview, signature)
+    ? ""
+    : `\n<p style="color:#334155;font-size:14px;margin:0;">${escapeHtml(signature)}</p>`;
   const videosHtml = (input.videos ?? []).map(supportEmailVideoHtml).join("\n");
-  return `<p style="margin:0 0 20px;">${bodyHtml}</p>
+  return `${greetingHtml}<p style="margin:0 0 20px;">${bodyHtml}</p>
 ${videosHtml ? `${videosHtml}\n` : ""}<p style="color:#334155;font-size:14px;margin:0 0 20px;">You can reply to this email or <a href="${escapeHtml(
     input.supportUrl
-  )}" style="color:#0369a1;text-decoration:underline;">open Support in the app</a>, whichever is easiest.</p>
-<p style="color:#334155;font-size:14px;margin:0;">${escapeHtml(signature)}</p>`;
+  )}" style="color:#0369a1;text-decoration:underline;">open Support in the app</a>, whichever is easiest.</p>${signatureHtml}`;
 }
 
 function formatStaffReplyBodies(replies: StaffReplyForEmail[]): string {
@@ -525,6 +535,7 @@ export async function notifyCoachOfSupportReply(input: {
     signatureName: input.signatureName,
     supportUrl,
     videos: input.videos,
+    recipientFirstName: input.recipient.name?.trim().split(/\s+/)[0] || null,
   });
 
   const subject = supportReplyEmailSubject(subjectTitle, input.ticketNumber);
@@ -615,7 +626,7 @@ export async function sendSupportCreatedTicketEmail(input: {
   const { data: ticket, error } = await supabaseAdmin
     .from("community_feedback_reports")
     .select(
-      "id, ticket_number, title, details, media, created_by, contact_email, submitter_name, source, member_notify_email, email_notify_last_sent_at, unipile_email_id"
+      "id, ticket_number, title, details, media, created_by, created_by_admin, contact_email, submitter_name, source, member_notify_email, email_notify_last_sent_at, unipile_email_id"
     )
     .eq("id", input.ticketId)
     .maybeSingle();
@@ -663,7 +674,8 @@ export async function sendSupportCreatedTicketEmail(input: {
   const { data: signer } = await supabaseAdmin
     .from("profiles")
     .select("full_name, first_name")
-    .eq("id", input.signatureUserId)
+    // Signed by whoever the ticket is from (New ticket's "send as"), else the sender.
+    .eq("id", (ticket.created_by_admin as string | null) || input.signatureUserId)
     .maybeSingle();
 
   const media = parseSupportTicketMedia(ticket.media);

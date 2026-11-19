@@ -30,9 +30,8 @@ export const SUPPORT_COPILOT_ROUTER_FALLBACK =
 /** Locked in code so a bad Knowledge-tab edit cannot drop these. */
 export const SUPPORT_COPILOT_OUTPUT_CONTRACT = `Output
 - Return the reply body only. No preamble, no labels, no code fences, no quotes around the whole message.
-- Start with "Hi <first name>," on its own line when you know their name.
+- No greeting and no sign-off: the chat shows both names, and email adds "Hi <first name>," and the sender's name itself.
 - Plain text with blank lines between paragraphs. Markdown links are allowed: [label](url). No headings, no bold.
-- Sign off with the sender's first name on its own line when SENDER_NAME is known.
 - Never use the em dash character.
 - Never include a password.
 - Never claim something is fixed or changed unless STAFF_HINT or NOTES say so. Use a [placeholder] for anything staff must fill in.`;

@@ -52,9 +52,11 @@ export type SupportTicket = {
   author?: SupportTicketAuthor | null;
   assignee?: SupportTicketAuthor | null;
   media?: unknown;
-  /** The "Seen" tick on the chat's first message (5 Nov). */
+  /** The other side's reaction on the chat's first message (was the "Seen" tick, 5 Nov). */
   opening_seen_at?: string | null;
   opening_seen_name?: string | null;
+  /** Which emoji (19 Nov); null on an old tick, shown as 👍. */
+  opening_seen_reaction?: string | null;
 };
 
 export type SupportReply = {
@@ -78,9 +80,11 @@ export type SupportReply = {
   origin?: { label: string; href: string | null };
   /** Ava wrote it and BCA approved it (created_by is the admin who sent it). Shown as Ava. */
   as_ava?: boolean;
-  /** The other side ticked it "Seen" (5 Nov): when, and their first name. */
+  /** The other side reacted (was the "Seen" tick, 5 Nov): when, and their first name. */
   seen_at?: string | null;
   seen_name?: string | null;
+  /** Which emoji (19 Nov); null on an old tick, shown as 👍. */
+  seen_reaction?: string | null;
 };
 
 /** Who ticked a message, as the select returns it. */
@@ -108,12 +112,13 @@ export const SUPPORT_REPLY_LIST_SELECT = `
   whatsapp_with,
   as_ava,
   seen_at,
+  seen_reaction,
   seen_author:profiles!seen_by (first_name, full_name),
   author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
 `;
 
 /** Add to a chat's select for the first message's "Seen" tick. */
-export const SUPPORT_OPENING_SEEN_SELECT = "opening_seen_at, opening_seen_author:profiles!opening_seen_by (first_name, full_name)";
+export const SUPPORT_OPENING_SEEN_SELECT = "opening_seen_at, opening_seen_reaction, opening_seen_author:profiles!opening_seen_by (first_name, full_name)";
 
 export function mapSupportReplyRow(
   raw: {
@@ -130,6 +135,7 @@ export function mapSupportReplyRow(
     whatsapp_with?: string | null;
     as_ava?: boolean | null;
     seen_at?: string | null;
+    seen_reaction?: string | null;
     seen_author?: SeenAuthorRaw;
     author?: SupportTicketAuthor | SupportTicketAuthor[] | null;
   },
@@ -150,6 +156,7 @@ export function mapSupportReplyRow(
     as_ava: Boolean(raw.as_ava),
     seen_at: raw.seen_at ?? null,
     seen_name: raw.seen_at ? seenName(raw.seen_author) : null,
+    seen_reaction: raw.seen_at ? (raw.seen_reaction ?? null) : null,
     author:
       normalizeSupportAuthor(raw.author) ?? options?.fallbackAuthor ?? null,
   };
@@ -187,6 +194,7 @@ export type SupportTicketRow = {
   author?: SupportTicketAuthor | SupportTicketAuthor[] | null;
   assignee?: SupportTicketAuthor | SupportTicketAuthor[] | null;
   opening_seen_at?: string | null;
+  opening_seen_reaction?: string | null;
   opening_seen_author?: SeenAuthorRaw;
 };
 
@@ -220,6 +228,7 @@ export function mapSupportTicketRow(
     assignee: normalizeSupportAuthor(row.assignee),
     opening_seen_at: row.opening_seen_at ?? null,
     opening_seen_name: row.opening_seen_at ? seenName(row.opening_seen_author) : null,
+    opening_seen_reaction: row.opening_seen_at ? (row.opening_seen_reaction ?? null) : null,
   };
 }
 

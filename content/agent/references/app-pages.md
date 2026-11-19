@@ -45,7 +45,7 @@ Written from the app's code by `scripts/ava-app-map.ts`; do not edit by hand (ru
 - **Toolkit: Links** `/coach/share`: Get Clients → Toolkit → Links. Copy or send your scorecard, booking, report, profile and custom links, and make tagged links that show where people came from. Tabs: **Links** `/coach/share`, **Brochure**, **Social media posts**, **LinkedIn, email and calls**, **Print**, **Brand graphics**.
 - **Client simulator** `/coach/simulator`: Keep Clients → Client simulator. Practise a real client conversation out loud with an AI client, then get a score out of 50 and a report.
 - **Session report** `/coach/simulator/[id]`: Keep Clients → Client simulator → open one of your sessions under Your sessions. Read the score and feedback for one practice call with an AI client, then talk it through with Ava, practise again, share it or replay a missed moment.
-- **Support** `/coach/support`: Support (the Support page in the app, /coach/support). Chat with Zander and Pam at BCA: start a new chat, read replies, and mark chats done.
+- **Support** `/coach/support`: Support (in the main menu) at /coach/support. Chat with Zander and Pam, see all your chats in one list, and start a new chat when you need help.
 - **Toolkit** `/coach/toolkit`: Get Clients → Toolkit. Download your 90-day programme brochure, social posts, banners, print files and brand graphics with your name, photo and QR code. Tabs: **Links**, **Brochure** `/coach/toolkit`, **Social media posts** `/coach/toolkit?view=social`, **LinkedIn, email and calls** `/coach/toolkit?view=linkedin`, **Print** `/coach/toolkit?view=print`, **Brand graphics** `/coach/toolkit?view=brand`.
 
 ## My Blueprint: every page, section and box

@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-11-18T10:25:53.469Z",
+  "generatedAt": "2026-11-19T14:43:42.369Z",
   "model": "claude-sonnet-5-5",
   "pages": [
     {
       "path": "/coach",
       "adminPath": "/admin",
-      "hash": "201eedfcd10fbc81",
+      "hash": "33468a1009d2aa54",
       "coachVisible": false,
-      "title": "Coach home redirect",
-      "where": "Not a page a coach opens from the sidebar; /coach sends them on automatically.",
-      "summary": "Nothing to do here: it shows \"Redirecting…\" and then sends the coach to the Academy Community page.",
+      "title": "Coach home (redirect)",
+      "where": "Not a page coaches open; it passes them straight on",
+      "summary": "Nothing to do here: the page checks who is signed in and sends coaches on to Academy → Community.",
       "tabs": [],
       "controls": [],
-      "notes": "This is a redirect only. Coaches who are signed in land on Academy → Community; signed-out people go to the login page, and admins not viewing as a coach go to the admin community. If the coach's record is missing, the page shows an error and an admin has to set the coach up."
+      "notes": "Coaches only see \"Redirecting…\" for a moment before landing on the Academy Community page. If the coach's record is missing they see an error saying to ask an admin to set it up. Admins not viewing as a coach are sent to the admin area, so Ava should not offer this page."
     },
     {
       "path": "/coach/academy/classroom",
@@ -285,14 +285,14 @@
     {
       "path": "/coach/blueprint/jobs",
       "adminPath": null,
-      "hash": "7e826db8bcf96605",
+      "hash": "573fe7e46076c48e",
       "coachVisible": false,
       "title": "Your plan (jobs list)",
-      "where": "My Blueprint (this page is not reachable for coaches)",
-      "summary": "A list or board of launch jobs called \"Your plan\", but it is admin-only and coaches are sent back to My Blueprint.",
+      "where": "My Blueprint (no menu link; coaches are sent back to /coach/blueprint)",
+      "summary": "A new list of launch jobs that is switched on for admins only, so a coach who opens it is sent straight back to My Blueprint.",
       "tabs": [],
       "controls": [],
-      "notes": "Coaches never see this page: anyone who is not an admin is redirected to /coach/blueprint (My Blueprint). Do not point coaches here; send them to My Blueprint instead."
+      "notes": "Coaches never see this page: it redirects them to My Blueprint. Do not send a coach here or describe its list, board or job pages. Everything on it (Your plan, List/Board toggle, jobs, Anything else) is admin only for now."
     },
     {
       "path": "/coach/boss-pro",
@@ -1189,29 +1189,27 @@
     {
       "path": "/coach/support",
       "adminPath": "/admin/support",
-      "hash": "a9c5843e79651165",
+      "hash": "651c84df0c8ecb3d",
       "coachVisible": true,
       "title": "Support",
-      "where": "Support (the Support page in the app, /coach/support)",
-      "summary": "Chat with Zander and Pam at BCA: start a new chat, read replies, and mark chats done.",
+      "where": "Support (in the main menu) at /coach/support",
+      "summary": "Chat with Zander and Pam, see all your chats in one list, and start a new chat when you need help.",
       "tabs": [],
       "controls": [
         "**Your chats** heading with the list of all your chats with BCA",
-        "**New chat** button at the top of the list (also in the welcome box)",
-        "**Needs you** group: chats waiting for your reply, with a count and **new** badges",
-        "**Open** group: chats you have started that nobody is waiting on",
+        "**New chat** button at the top of the list, opens a chat box on the right",
+        "**Needs you** group: chats waiting for your reply or reading",
+        "**Open** group: chats that are going and not waiting on you",
         "**Done** group: finished chats, folded away until you click it",
-        "**Mark done** / **Reopen** button beside the chat name, in the chat panel",
-        "Chat name at the top of the panel: click it to rename the chat",
-        "**Open that page** style button in the chat panel (goes to the page the chat is about, or **Back to Support**)",
-        "Message box at the bottom of a chat to type, attach files and send",
-        "Tick under a BCA message to mark it **Seen** without replying",
-        "Welcome box on the right with **Hi, your name**, **New chat** and **Post in community** buttons",
-        "Cards for Zander (the app: setup, bugs, how things work) and Pam (coaching: sessions, the method, what to say to a client)",
-        "**Next support call** pill linking to the calendar, shown when a call is coming up",
-        "**Close panel** button (X) to close the open chat"
+        "**Mark done** / **Reopen** button at the top of an open chat",
+        "**Rename this chat** by clicking the chat name at the top of an open chat",
+        "**Post in community** button in the welcome panel",
+        "**Next support call** green pill in the welcome panel, opens the calendar",
+        "Welcome panel on the right (above the list on phones) saying who answers: Zander for the app, Pam for coaching",
+        "Message box at the bottom of an open chat, where you type and send, with reactions on BCA's messages",
+        "Open page button at the top of a chat, which takes you to the page it is about"
       ],
-      "notes": "Zander and Pam aim to reply within 2 business days. On phones the welcome sits above the list and chats open from the bottom of the screen. A Help tab (help centre) exists but is admin-only, so never send coaches there."
+      "notes": "Chats open in a panel on the right (a pop-up on phones). The Help tab (Help centre with search and topics) is admin-only, so coaches never see it and Ava should not offer it. The page links to Support with ?new=1 start a new chat straight away.}"
     },
     {
       "path": "/coach/toolkit",

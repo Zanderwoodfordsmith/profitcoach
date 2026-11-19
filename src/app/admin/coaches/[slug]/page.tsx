@@ -17,6 +17,7 @@ import {
   type AdminCoachLinkedInProfile,
 } from "@/components/admin/AdminCoachLinkedInPanel";
 import { AdminCoachContentHistory } from "@/components/admin/AdminCoachContentHistory";
+import { AdminCoachSources } from "@/components/admin/AdminCoachSources";
 import { CoachProfileBlueprint } from "@/components/admin/CoachProfileBlueprint";
 import { CoachGettingLive } from "@/components/admin/CoachGettingLive";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
@@ -120,7 +121,7 @@ type CoachPayment = {
   billing_kind_override: PaymentBillingKind | null;
 };
 
-type TabId = "overview" | "getting-live" | "linkedin" | "blueprint" | "payments";
+type TabId = "overview" | "getting-live" | "linkedin" | "blueprint" | "sources" | "payments";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
 
@@ -219,7 +220,7 @@ export default function AdminCoachDetailPage({
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "payments" || tab === "linkedin" || tab === "blueprint" || tab === "getting-live" || tab === "practice") {
+    if (tab === "payments" || tab === "linkedin" || tab === "blueprint" || tab === "sources" || tab === "getting-live" || tab === "practice") {
       setActiveTab(tab === "practice" ? "blueprint" : tab);
     } else if (!tab) {
       setActiveTab("overview");
@@ -551,6 +552,7 @@ export default function AdminCoachDetailPage({
               {tabButton("getting-live", "Launch")}
               {tabButton("linkedin", "LinkedIn")}
               {tabButton("blueprint", "Blueprint")}
+              {tabButton("sources", "Sources")}
               {tabButton("payments", `Payments (${paymentSummary.succeededCount})`)}
             </nav>
           </div>
@@ -905,6 +907,8 @@ export default function AdminCoachDetailPage({
               <CoachProfileBlueprint coachId={coach.id} coachSlug={coach.slug} />
             </div>
           ) : null}
+
+          {activeTab === "sources" ? <AdminCoachSources coachSlug={coach.slug} /> : null}
 
           {activeTab === "payments" ? (
             <div className="space-y-6">

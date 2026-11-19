@@ -5345,6 +5345,13 @@ export function MessagingInbox({
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
             {selected ? (
               <>
+                {/* Names this person for the Support chat on the right, whichever header shows (18 Nov). */}
+                <span
+                  hidden
+                  data-chat-about={displayName || undefined}
+                  data-chat-path={prospectMode ? undefined : `/coach/conversations?conversation=${selected.id}`}
+                  data-chat-conversation={selected.id}
+                />
                 {canOpenProspectProfile ? (
                   <button
                     type="button"
@@ -5412,12 +5419,6 @@ export function MessagingInbox({
                       />
                     )}
                     <div className="min-w-0">
-                      {/* Names this person for the Support chat on the right (18 Nov). */}
-                      <span
-                        hidden
-                        data-chat-about={displayName || undefined}
-                        data-chat-path={prospectMode ? undefined : `/coach/conversations?conversation=${selected.id}`}
-                      />
                       {canEditIdentity ? (
                         <EditPersonNameButton
                           name={displayName}

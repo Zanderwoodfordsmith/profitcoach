@@ -1,6 +1,6 @@
 "use client";
 
-import { SeenTick } from "./SeenTick";
+import { SupportReaction } from "./SupportReaction";
 import {
   useEffect,
   useRef,
@@ -14,6 +14,8 @@ import { AvaHalo } from "@/components/ava/AvaHalo";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import { commentWhen, firstName } from "@/components/practice/comments/SectionCommentsUI";
 import { SupportMessageBody } from "@/components/support/SupportMessageBody";
+import { FoldLongMessage } from "@/components/support/FoldLongMessage";
+import { stripGreetingAndSignOff } from "@/lib/support/greetingSignOff";
 import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import {
@@ -480,7 +482,7 @@ type BubbleProps = {
   layout?: SupportThreadLayout;
   /** Slack layout: same person a moment ago, so skip the avatar and name. */
   continued?: boolean;
-  /** Cards layout: drawn in the name line after the time (its "Seen" tick). */
+  /** Cards layout: drawn in the name line after the time (its reaction). */
   meta?: ReactNode;
 };
 
@@ -627,10 +629,12 @@ export function SupportChatBubble({
         ) : (
           <>
             {reply.body.trim() ? (
-              <SupportMessageBody
-                body={reply.body}
-                className={layout === "slack" ? SLACK_BODY_CLASS : layout === "cards" ? CARDS_BODY_CLASS : undefined}
-              />
+              <FoldLongMessage>
+                <SupportMessageBody
+                  body={stripGreetingAndSignOff(reply.body, name)}
+                  className={layout === "slack" ? SLACK_BODY_CLASS : layout === "cards" ? CARDS_BODY_CLASS : undefined}
+                />
+              </FoldLongMessage>
             ) : null}
             {media.length > 0 ? (
               <div className="mt-2">
@@ -640,22 +644,29 @@ export function SupportChatBubble({
           </>
         );
 
-  const emailMark = !showEmailChannel ? null : reply.via_whatsapp ? (
-    <SupportViaWhatsAppMark
-      label={
-        reply.whatsapp_with
-          ? `On WhatsApp with ${reply.whatsapp_with}`
-          : outbound
-            ? "Sent on WhatsApp"
-            : "Received on WhatsApp"
-      }
-    />
-  ) : reply.via_email ? (
-    <SupportViaEmailMark
-      className="opacity-80"
-      label={outbound ? "Also sent by email" : "Received by email"}
-    />
-  ) : null;
+  // Email and WhatsApp marks sit side by side when a reply went out on both.
+  const emailMark =
+    showEmailChannel && (reply.via_email || reply.via_whatsapp) ? (
+      <span className="inline-flex items-center gap-1">
+        {reply.via_email ? (
+          <SupportViaEmailMark
+            className="opacity-80"
+            label={outbound ? "Also sent by email" : "Received by email"}
+          />
+        ) : null}
+        {reply.via_whatsapp ? (
+          <SupportViaWhatsAppMark
+            label={
+              reply.whatsapp_with
+                ? `On WhatsApp with ${reply.whatsapp_with}`
+                : outbound
+                  ? "Sent on WhatsApp"
+                  : "Received on WhatsApp"
+            }
+          />
+        ) : null}
+      </span>
+    ) : null;
   const editedMark = reply.edited_at ? (
     <span className="text-caption opacity-80">· edited</span>
   ) : null;
@@ -718,7 +729,7 @@ export function SupportChatBubble({
                   <span className="truncate text-caption font-medium text-slate-500">{reply.origin.label}</span>
                 )
               ) : null}
-              {/* Right-aligned, like a chat's ticks: the Seen tick, then ⋮ on hover. */}
+              {/* Right-aligned, like a chat's ticks: the reaction, then ⋮ on hover. */}
               {meta || actionsMenu ? (
                 <span className="ml-auto flex shrink-0 items-center gap-1 self-center">
                   {meta}
@@ -866,8 +877,8 @@ type ThreadProps = {
   layout?: SupportThreadLayout;
   /** The opening message's time: skip a day line for that day, it's already shown. */
   openedAt?: string;
-  /** BCA ticks a coach's message "Seen" instead of replying (5 Nov). Shows the ticks when given. */
-  onSeen?: (replyId: string, seen: boolean) => void;
+  /** BCA reacts to a coach's message instead of replying (was "Seen", 5 Nov; 19 Nov). Null takes it off. Shows reactions when given. */
+  onSeen?: (replyId: string, reaction: string | null) => void;
 };
 
 /** Slack groups messages from the same person within five minutes. */
@@ -976,7 +987,7 @@ export function SupportChatThread({
               />
             );
             if (!onSeen || reply.origin) return bubble;
-            // BCA's own messages show the coach's tick; the coach's get BCA's tick button.
+            // BCA's own messages show the coach's reaction; the coach's get BCA's reaction buttons.
             const bcaWrote = staff || Boolean(reply.as_ava);
             if (cards) {
               return (
@@ -991,13 +1002,14 @@ export function SupportChatThread({
                     onDelete={onDeleteReply}
                     fallbackName={staff ? "Support" : perspective === "member" ? "You" : "Member"}
                     meta={
-                      <SeenTick
+                      <SupportReaction
                         inline
-                        seenAt={reply.seen_at ?? null}
-                        seenName={reply.seen_name ?? null}
-                        canTick={!bcaWrote}
+                        reactedAt={reply.seen_at ?? null}
+                        reaction={reply.seen_reaction ?? null}
+                        reactedName={reply.seen_name ?? null}
+                        canReact={!bcaWrote}
                         latest={reply.id === lastReplyId}
-                        onTick={(seen) => onSeen(reply.id, seen)}
+                        onReact={(reaction) => onSeen(reply.id, reaction)}
                       />
                     }
                   />
@@ -1008,12 +1020,13 @@ export function SupportChatThread({
               <div key={reply.id} className="group/msg">
                 {bubble}
                 <div className={slack ? "pl-14" : outbound ? "flex justify-end pr-11" : "pl-11"}>
-                  <SeenTick
-                    seenAt={reply.seen_at ?? null}
-                    seenName={reply.seen_name ?? null}
-                    canTick={!bcaWrote}
+                  <SupportReaction
+                    reactedAt={reply.seen_at ?? null}
+                    reaction={reply.seen_reaction ?? null}
+                    reactedName={reply.seen_name ?? null}
+                    canReact={!bcaWrote}
                     latest={reply.id === lastReplyId}
-                    onTick={(seen) => onSeen(reply.id, seen)}
+                    onReact={(reaction) => onSeen(reply.id, reaction)}
                   />
                 </div>
               </div>

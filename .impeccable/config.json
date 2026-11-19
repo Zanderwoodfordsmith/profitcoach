@@ -262,6 +262,42 @@
         ],
         "createdAt": "2026-11-18T08:58:20.593Z",
         "reason": "Claude: icon button on a transparent background (bg-transparent text-slate-700), same classes as the Ava top-bar button beside it in DashboardChromeActions"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/support/SupportDashboard.tsx"
+        ],
+        "createdAt": "2026-11-18T16:00:36.554Z",
+        "reason": "Claude: toggle ternary, slate text only on bg-white; sky-600 state uses text-white (approved bright-blue toggle pattern)"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/AdminCoachSources.tsx"
+        ],
+        "createdAt": "2026-11-19T09:41:38.662Z",
+        "reason": "Claude: toggle uses text-slate-600 only on the unselected white state; selected state is bg-sky-600 text-white"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/support/SupportCreateTicketComposer.tsx"
+        ],
+        "createdAt": "2026-11-19T09:53:33.357Z",
+        "reason": "Claude: slate-800 is the inactive menu row on white/slate-50 hover; active row is sky-800 on sky-50; same classes as AdminTicketReplies send-as menu"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/support/SupportReaction.tsx"
+        ],
+        "createdAt": "2026-11-19T09:59:40.247Z",
+        "reason": "Claude: the sky-50 background only shows on hover, together with hover:text-sky-700; resting state is grey icon on white"
       }
     ]
   }

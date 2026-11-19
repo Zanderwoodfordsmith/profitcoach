@@ -170,7 +170,6 @@ async function deliverScheduledReply(
         })
         .eq("id", row.id);
     }
-    return;
   }
 
   if (!row.email_notify || !body) return;

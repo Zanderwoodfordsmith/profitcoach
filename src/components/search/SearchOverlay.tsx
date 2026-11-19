@@ -33,7 +33,9 @@ import {
 } from "@/components/search/SearchRecentList";
 import { useSearchRecents } from "@/components/search/useSearchRecents";
 import { formatCommunityRelativeActivityAgo } from "@/lib/communityRelativeTime";
-import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { profileInitialsFromName } from "@/lib/communityProfile";
 import { queueAiPrompt } from "@/lib/profitCoachAi/queuedPrompt";
 import { OPEN_SEARCH_EVENT, takeLostSearchPath } from "@/lib/search/overlay";
 import { EmptyBossWheel } from "@/components/notFound/EmptyBossWheel";
@@ -59,12 +61,13 @@ import {
   SEARCH_INPUT_ID,
   type SearchClassroomItem,
   type SearchPreview,
+  type SearchProspectItem,
 } from "@/lib/search/types";
 import "./searchMotion.css";
 import { AvaHalo } from "@/components/ava/AvaHalo";
 
 const LISTBOX_ID = "search-overlay-listbox";
-const PLACEHOLDER = "Search lessons, videos, posts and people";
+const PLACEHOLDER = "Search prospects, lessons, videos, posts and people";
 
 type Option = {
   key: string;
@@ -96,6 +99,50 @@ function transcriptWhere(item: SearchClassroomItem): string | null {
     return `Said at ${item.transcript_clock}`;
   }
   return "In the transcript";
+}
+
+/** A prospect's photo, or their initials. */
+function ProspectAvatar({ item }: { item: SearchProspectItem }) {
+  return item.avatar_url ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={item.avatar_url}
+      alt=""
+      referrerPolicy="no-referrer"
+      className="h-10 w-10 shrink-0 rounded-full object-cover shadow-[0_0_0_1px_rgb(226_232_240)]"
+    />
+  ) : (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600 shadow-[0_0_0_1px_rgb(226_232_240)]">
+      {profileInitialsFromName(item.name)}
+    </span>
+  );
+}
+
+const CHANNEL_LABEL: Record<string, string> = {
+  linkedin: "LinkedIn",
+  email: "Email",
+  whatsapp: "WhatsApp",
+  sms: "Text",
+};
+
+function prospectHref(prefix: SearchPrefix, item: SearchProspectItem): string {
+  const id = encodeURIComponent(item.id);
+  if (item.kind === "client") return `${prefix}/clients/${id}`;
+  if (item.kind === "conversation") return `${prefix}/conversations?conversation=${id}`;
+  return `${prefix}/prospects/${id}`;
+}
+
+function prospectMeta(item: SearchProspectItem): string {
+  const status = item.status
+    ? item.status.charAt(0).toUpperCase() + item.status.slice(1).replace(/_/g, " ")
+    : null;
+  const what =
+    item.kind === "client"
+      ? "Client"
+      : item.kind === "conversation"
+        ? `${item.channel ? CHANNEL_LABEL[item.channel] ?? "Inbox" : "Inbox"} chat`
+        : joinMeta(["Prospect", status]);
+  return joinMeta([what, item.business]);
 }
 
 function optionId(index: number): string {
@@ -225,6 +272,7 @@ function SearchDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const { impersonatingCoachId } = useImpersonation();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLFormElement>(null);
@@ -309,14 +357,15 @@ function SearchDialog({
     let cancelled = false;
     const t = window.setTimeout(async () => {
       try {
-        const token = await getValidSupabaseAccessToken();
-        if (!token) {
+        // Carries the coach an admin is viewing as, so Prospects are theirs.
+        const headers = await getCoachAuthHeaders(impersonatingCoachId);
+        if (!headers) {
           if (!cancelled) setError("Sign in to search.");
           return;
         }
         const res = await fetch(
           `/api/search?${new URLSearchParams({ q, preview: "1" })}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers }
         );
         const body = (await res.json()) as SearchPreview & { error?: string };
         if (cancelled) return;
@@ -333,7 +382,7 @@ function SearchDialog({
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [q, searching]);
+  }, [q, searching, impersonatingCoachId]);
 
   const groups = useMemo<Group[]>(() => {
     if (!searching) {
@@ -375,6 +424,20 @@ function SearchDialog({
 
     const out: Group[] = [];
     const { counts } = preview;
+    // Names are the most specific thing anyone types, so the coach's own people come first.
+    if (preview.prospects && preview.prospects.length > 0) {
+      out.push({
+        id: "prospects",
+        label: "Prospects",
+        options: preview.prospects.map((p) => ({
+          key: `prospect-${p.kind}-${p.id}`,
+          href: prospectHref(prefix, p),
+          leading: <ProspectAvatar item={p} />,
+          title: p.name,
+          meta: prospectMeta(p),
+        })),
+      });
+    }
     // Help centre answers (job 211): admin-only until Zander has read them.
     if (isAdmin && preview.help && preview.help.length > 0) {
       out.push({
@@ -716,7 +779,7 @@ function SearchDialog({
 
           {!searching && recent && recent.length === 0 ? (
             <p className="search-fade-in px-6 py-6 text-center text-base text-slate-700">
-              Try a lesson name, a phrase from a video, or a member&apos;s name.
+              Try a prospect&apos;s name, a lesson name or a phrase from a video.
             </p>
           ) : null}
 

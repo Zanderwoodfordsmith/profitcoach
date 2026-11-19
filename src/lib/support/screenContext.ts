@@ -10,10 +10,11 @@ import { chatPageFor } from "./chatPages";
  * ("Lead Magnets" under Campaigns), else the page's own name.
  *
  * Pages name an item with a marker: `data-chat-about="Jason Dodd"`, and
- * `data-chat-path` when the address bar doesn't point at it (the inbox).
+ * `data-chat-path` when the address bar doesn't point at it (the inbox), and
+ * `data-chat-conversation` for the thread open, so Ava can draft about it.
  * Tabs mark the open one with `data-tab-active` (PageHeaderUnderlineTabs).
  */
-export type ScreenContext = { path: string; name: string | null };
+export type ScreenContext = { path: string; name: string | null; conversationId?: string | null };
 
 function outsidePanel(el: Element): boolean {
   return !el.closest(".support-dock");
@@ -23,7 +24,9 @@ export function readScreenContext(): ScreenContext {
   const path = `${window.location.pathname}${window.location.search}`;
   const marked = [...document.querySelectorAll<HTMLElement>("[data-chat-about]")].filter(outsidePanel).pop();
   const named = marked?.dataset.chatAbout?.trim();
-  if (marked && named) return { path: marked.dataset.chatPath?.trim() || path, name: named };
+  if (marked && named) {
+    return { path: marked.dataset.chatPath?.trim() || path, name: named, conversationId: marked.dataset.chatConversation?.trim() || null };
+  }
   const tab = [...document.querySelectorAll<HTMLElement>("[data-tab-active]")].filter(outsidePanel).pop();
   const tabName = tab?.textContent?.replace(/\s+/g, " ").trim();
   if (tabName) return { path, name: tabName };

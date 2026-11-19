@@ -732,6 +732,32 @@ export async function reactUnipilePost(input: {
   });
 }
 
+/** React to a chat message (WhatsApp, LinkedIn…) with a native emoji; "" takes it off. */
+export async function reactUnipileMessage(input: { message_id: string; reaction: string }) {
+  return unipileFetch<{ object?: string; success?: boolean }>(
+    "POST",
+    `/api/v1/messages/${encodeURIComponent(input.message_id)}/reaction`,
+    { reaction: input.reaction }
+  );
+}
+
+/** WhatsApp: may be refused (or quietly ignored) after ~15 minutes. */
+export async function editUnipileMessage(input: { message_id: string; text: string }) {
+  return unipileFetch<{ object?: string }>(
+    "PATCH",
+    `/api/v1/messages/${encodeURIComponent(input.message_id)}`,
+    { text: input.text }
+  );
+}
+
+/** Deletes for everyone (the only option Unipile has). */
+export async function deleteUnipileMessage(messageId: string) {
+  return unipileFetch<{ object?: string }>(
+    "DELETE",
+    `/api/v1/messages/${encodeURIComponent(messageId)}`
+  );
+}
+
 export async function listUnipileWebhooks() {
   return unipileFetch<{
     object?: string;

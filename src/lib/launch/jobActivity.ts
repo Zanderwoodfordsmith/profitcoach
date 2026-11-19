@@ -18,6 +18,7 @@ import {
 } from "@/lib/support/notifyCoachOfReply";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+import { inputPrint, storedAnswer, withOpenDrafts } from "./drafts";
 import { avaSectionsFor, avaWorkFor, fillableAnswer, missingLabel, scopeLabel, scopePage, type AvaMissing } from "./avaWork";
 import { launchThread } from "./threads";
 import { whatNextMessage } from "./whatNext";
@@ -81,6 +82,8 @@ export type ActivityItem = {
     linkedinParts?: Record<string, string>;
     /** The lists started from these searches. */
     imported?: { label: string; list: string }[];
+    /** A fingerprint of what Ava read (inputPrint): when it changes, the launch chain writes this again. */
+    inputs?: string;
   };
   status: ActivityStatus | null;
   edited: boolean;
@@ -191,12 +194,13 @@ function jobLabel(jobKey: string): string {
 async function draftSections(
   coachId: string,
   keys: string[],
-  opts: { changes?: string | null; base?: DraftSection[] } = {}
+  opts: { changes?: string | null; base?: DraftSection[]; scope?: string } = {}
 ): Promise<{ sections: DraftSection[]; failed: string[] }> {
   if (keys.some((key) => writerContract(key).sources.has("linkedin"))) {
     await ensureCoachLinkedIn(coachId).catch(() => null);
   }
-  let row: PracticeKnowledgeRow = await ensurePracticeKnowledge(coachId);
+  // Ava's open drafts on other pages count (the launch chain runs on drafts); this page's own doesn't.
+  let row: PracticeKnowledgeRow = await withOpenDrafts(coachId, await ensurePracticeKnowledge(coachId), opts.scope ? [opts.scope] : []);
   const left = new Set(keys);
   const sections: DraftSection[] = [];
   const failed: string[] = [];
@@ -241,12 +245,12 @@ async function draftSections(
 
 /** "Run Ava": draft every section still to write in this job, as one draft to check. */
 export async function runAva(coachId: string, jobKey: string, userId: string | null, only?: string[]): Promise<ActivityItem> {
-  const row = await ensurePracticeKnowledge(coachId);
+  const row = await withOpenDrafts(coachId, await ensurePracticeKnowledge(coachId), [jobKey]);
   const work = avaWorkFor(jobKey, row);
   // Ava's own runs write only the sections that aren't blocked (16 Nov).
   const keys = only ? work.toWrite.filter((key) => only.includes(key)) : work.toWrite;
   if (!keys.length) throw new Error("Nothing in this job for Ava to write.");
-  const { sections, failed } = await draftSections(coachId, keys);
+  const { sections, failed } = await draftSections(coachId, keys, { scope: jobKey });
   if (!sections.length) throw new Error("Ava couldn't write this. Try again.");
   await replaceOpen(coachId, jobKey, "draft");
   return add({
@@ -254,7 +258,7 @@ export async function runAva(coachId: string, jobKey: string, userId: string | n
     jobKey,
     kind: "draft",
     body: work.missing.length ? `Written with ${work.missing.length} thing${work.missing.length === 1 ? "" : "s"} missing.` : "",
-    payload: { sections, version: 1, failed: failed.length ? failed : undefined },
+    payload: { sections, version: 1, failed: failed.length ? failed : undefined, inputs: inputPrint(row, { sections: sections.map((s) => s.key) }) },
     status: "open",
     createdBy: userId,
   });
@@ -263,7 +267,7 @@ export async function runAva(coachId: string, jobKey: string, userId: string | n
 /** A new version of the open draft with BCA's changes, only for the sections they're about. */
 async function redraft(draft: ActivityItem, changes: string, keys: string[], userId: string | null): Promise<ActivityItem> {
   const current = draft.payload.sections ?? [];
-  const { sections: fresh, failed } = await draftSections(draft.coach_id, keys, { changes, base: current });
+  const { sections: fresh, failed } = await draftSections(draft.coach_id, keys, { changes, base: current, scope: draft.job_key });
   if (!fresh.length) throw new Error("Ava couldn't make that change. Try again.");
   const byKey = new Map(fresh.map((s) => [s.key, s]));
   await resolve(draft.id, "replaced", userId);
@@ -741,13 +745,7 @@ export async function saveAnswers(id: string, userId: string | null, edits?: Ans
   for (const a of answers) {
     const field = fillableAnswer(a.path)!;
     const [group, key] = a.path.split(".");
-    const value =
-      field.kind === "list"
-        ? a.value
-            .split("\n")
-            .map((line) => line.replace(/^[-•*]\s*/, "").trim())
-            .filter(Boolean)
-        : a.value.trim();
+    const value = storedAnswer(field, a.value);
     // "interview": the coach said it, so it counts as their own answer. Ava's drafts are BCA's, for the coach to check.
     (patch[group] ??= {})[key] = sourced(value, item.payload.by === "ava" ? "admin" : "interview");
   }

@@ -49,8 +49,8 @@ The Academy roadmap (/admin/roadmap, table `roadmap_jobs`) is the one queue.
   Review with three lines at the top of its notes: "Where to look:" (a
   localhost:3002 link), "I checked:" (each test you ran and what happened)
   and "You check:" (only what you couldn't test: taste, copy, real data,
-  real admin logins; "Nothing" if so). Never move a job to Done or Live
-  yourself.
+  real admin logins; "Nothing" if so). Don't move a job to Done yourself;
+  Live follows the rule below.
 - If his check finds something to change, the job goes back to In progress
   with the change added to its checklist, then returns to Review. No
   second review column.
@@ -69,6 +69,10 @@ The Academy roadmap (/admin/roadmap, table `roadmap_jobs`) is the one queue.
   for stage. On staging (`staged`) = on staging. Live = coaches have it.
   Zander drags Review → Ready. After `stage`, move every Ready job to On
   staging; after `live --yes`, move every On staging job to Live.
+- After `live --yes` and a Ready production build, you own the board: move
+  any job whose work just went live and meets its Done when to Live, from
+  any column (Review included), noting what you checked. One that doesn't
+  meet it stays put, with the gap in its notes (Zander, 18 Nov).
 - Only a brand-new page or tab is built admin-only until it's ready. Changes
   to pages coaches already see are not gated; they go live with `live --yes`.
 - Zander releases by name, never by job number: "release Scripts" = remove

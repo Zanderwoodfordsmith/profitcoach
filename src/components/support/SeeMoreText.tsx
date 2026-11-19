@@ -1,8 +1,8 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { SupportMessageBody } from "@/components/support/SupportMessageBody";
-import "./supportOpeningScroll.css";
+import { FoldLongMessage } from "@/components/support/FoldLongMessage";
 import {
   feedBodyNeedsTruncation,
   postBodyNeedsTruncation,
@@ -25,17 +25,6 @@ type Props = {
 
 const BASE_TEXT =
   "min-w-0 text-read leading-relaxed break-words [overflow-wrap:anywhere] text-slate-700";
-
-/**
- * Opening message on a support ticket. Twice the old 12rem cap.
- * The box stays as short as the content; it scrolls only when the body
- * is taller than this, with a bar that stays visible.
- */
-const supportOpeningScrollClassName =
-  "max-h-[min(50vh,24rem)] overflow-y-auto overscroll-contain";
-
-/** Classic bar (not the overlay that fades) so a long message looks scrollable. */
-const supportOpeningScrollbarClassName = "support-opening-scroll";
 
 const seeLessButtonClassName =
   "mt-1 font-medium text-sky-600 hover:text-sky-500 hover:underline";
@@ -169,10 +158,9 @@ export function SeeMoreText({
 }
 
 /**
- * Ticket opening body for the coach inbox and the admin inbox.
- * See more grows the message to about twice the old height. If it is still
- * longer, this region scrolls and the bar stays visible. See less sits
- * under the region so it stays clickable.
+ * A chat's first message in admin Support. Folds only when it is long, by
+ * the same rule as every other message (19 Nov, FoldLongMessage); it used
+ * to fold anything over two lines.
  */
 export function SupportOpeningBody({
   text,
@@ -181,60 +169,16 @@ export function SupportOpeningBody({
   text: string;
   children?: ReactNode;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [overflows, setOverflows] = useState(false);
   const trimmed = text.trim();
-
-  useLayoutEffect(() => {
-    const scroller = scrollerRef.current;
-    const content = contentRef.current;
-    if (!scroller || !content) return;
-    const measure = () => {
-      setOverflows(scroller.scrollHeight > scroller.clientHeight + 1);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(scroller);
-    observer.observe(content);
-    return () => observer.disconnect();
-  }, [expanded, trimmed]);
-
   if (!trimmed && !children) return null;
-
   return (
     <div className="mt-1.5">
-      <div
-        ref={scrollerRef}
-        className={
-          overflows
-            ? `${supportOpeningScrollClassName} ${supportOpeningScrollbarClassName}`
-            : supportOpeningScrollClassName
-        }
-      >
-        <div ref={contentRef}>
-          {trimmed ? (
-            <SeeMoreText
-              text={text}
-              variant="feed"
-              expanded={expanded}
-              onExpandedChange={setExpanded}
-              showSeeLess={false}
-            />
-          ) : null}
-          {children}
-        </div>
-      </div>
-      {expanded ? (
-        <button
-          type="button"
-          className={seeLessButtonClassName}
-          onClick={() => setExpanded(false)}
-        >
-          See less
-        </button>
+      {trimmed ? (
+        <FoldLongMessage>
+          <SupportMessageBody body={trimmed} className={`${BASE_TEXT} whitespace-pre-wrap`} />
+        </FoldLongMessage>
       ) : null}
+      {children}
     </div>
   );
 }

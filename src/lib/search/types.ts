@@ -24,6 +24,22 @@ export type SearchCounts = {
   help?: number;
 };
 
+/**
+ * A prospect, client or inbox thread of the coach in view (the coach, or the
+ * coach an admin is viewing as). A thread only shows when it has no contact.
+ */
+export type SearchProspectItem = {
+  id: string;
+  kind: "prospect" | "client" | "conversation";
+  name: string;
+  business: string | null;
+  avatar_url: string | null;
+  /** Prospect stage, e.g. "replied". */
+  status: string | null;
+  /** Thread channel, e.g. "linkedin". */
+  channel: string | null;
+};
+
 /** A Help centre answer in the top-bar search. */
 export type SearchHelpItem = {
   id: string;
@@ -127,6 +143,8 @@ export type SearchPreview = {
   community: SearchCommunityItem[];
   members: SearchMemberItem[];
   help?: SearchHelpItem[];
+  /** Only in the overlay preview; no tab on the full results page. */
+  prospects?: SearchProspectItem[];
 };
 
 export function isSearchTab(value: string | null | undefined): value is SearchTab {

@@ -11,11 +11,14 @@
  */
 import { phoneMatchKey } from "@/lib/messaging/knownContacts";
 import {
+  extractReactionEmoji,
   isUnipileReactionEvent,
   parseUnipileMessageFlags,
 } from "@/lib/messaging/messageReactions";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { DEFAULT_SUPPORT_ASSIGNEE_ID } from "@/lib/support/assignees";
+import { supportChatOpenedByBca } from "@/lib/support/tickets";
+import { supportComposerFallbackBody } from "@/lib/support/supportTicketMedia";
 import {
   createHostedAuthLink,
   deleteUnipileAccount,
@@ -25,6 +28,7 @@ import {
   listUnipileAccounts,
   listUnipileChatMessages,
   listUnipileChats,
+  reactUnipileMessage,
   sendUnipileChatMessage,
   startUnipileChat,
   unipileFetch,
@@ -445,6 +449,39 @@ async function ingestCoachMessage(input: {
       }
       return "echo_linked";
     }
+    // A voice note or file sent from the app goes as its own message with no
+    // text: it belongs to a reply that was just sent with files.
+    if (!msg.text.trim() && msg.hasFiles) {
+      const { data: withFiles } = await supabaseAdmin
+        .from("community_feedback_replies")
+        .select("id, report:community_feedback_reports!inner(created_by)")
+        .eq("via_whatsapp", true)
+        .eq("report.created_by", coachId)
+        .not("media", "is", null)
+        .gte("created_at", since)
+        .limit(1);
+      if (withFiles?.length) return "echo_linked";
+    }
+    // A New ticket's first message sent on WhatsApp, when Unipile gave no message id.
+    const { data: openedFromApp } = await supabaseAdmin
+      .from("community_feedback_reports")
+      .select("id, details")
+      .eq("created_by", coachId)
+      .eq("source", "admin_created")
+      .is("whatsapp_message_id", null)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    const opening = (openedFromApp ?? []).find(
+      (r) => String(r.details || "").trim() === msg.text.trim()
+    );
+    if (opening) {
+      await supabaseAdmin
+        .from("community_feedback_reports")
+        .update({ whatsapp_message_id: msg.id })
+        .eq("id", opening.id);
+      return "echo_linked";
+    }
   }
 
   const authorId = msg.isSender ? line.admin_id : coachId;
@@ -523,6 +560,12 @@ export async function handleSupportWhatsAppWebhook(
   const chatId = String(body.chat_id || "").trim();
   if (!chatId) return "missing_chat";
 
+  // A reaction sent as a message event: it goes on the message it's on.
+  const flags = parseUnipileMessageFlags({ ...body, text: body.message || body.text });
+  if (isUnipileReactionEvent(flags) && flags.parentId) {
+    return handleSupportWhatsAppReactionWebhook(line, body);
+  }
+
   const { data: known } = await supabaseAdmin
     .from("support_whatsapp_chats")
     .select("coach_id")
@@ -579,6 +622,15 @@ export async function syncSupportWhatsAppLine(
       chats += 1;
       const pulled = await listUnipileChatMessages({ chat_id: chatId, limit: 50 });
       if (!pulled.ok) continue;
+      // Reactions ride on the message they're on, which may be older than sinceIso.
+      for (const raw of pulled.data?.items ?? []) {
+        const id = String(raw.id || raw.message_id || "").trim();
+        const reactions = parseUnipileMessageFlags(raw).reactions;
+        if (!id || !reactions.length) continue;
+        for (const r of reactions) {
+          await applySupportWhatsAppReaction({ line, messageId: id, reaction: r.value, fromBca: Boolean(r.is_sender), keepIfGone: true });
+        }
+      }
       const items = (pulled.data?.items ?? [])
         .map((m) => messageFromUnipile(m))
         .filter((m): m is IncomingMessage => Boolean(m))
@@ -629,6 +681,105 @@ export async function syncSupportWhatsAppLine(
 }
 
 // ---------------------------------------------------------------------------
+// Reactions (19 Nov): "got it" without another message
+// ---------------------------------------------------------------------------
+
+/**
+ * A reaction on WhatsApp to a message in a coach's Support chat. In a
+ * one-to-one chat the reaction is the other side's: on the coach's message
+ * it's BCA (this line's admin), on BCA's it's the coach. It counts as the
+ * old "Seen" tick, so the chat stops waiting. An empty reaction takes it off.
+ * `fromBca` (when known) skips someone reacting to their own message.
+ */
+export async function applySupportWhatsAppReaction(input: {
+  line: SupportWhatsAppLine;
+  messageId: string;
+  reaction: string;
+  fromBca?: boolean | null;
+  /** Polling only sees reactions that are there: never take one off. */
+  keepIfGone?: boolean;
+}): Promise<string> {
+  const emoji = input.reaction.trim().slice(0, 16);
+  if (!emoji && input.keepIfGone) return "skipped";
+
+  const { data: reply } = await supabaseAdmin
+    .from("community_feedback_replies")
+    .select("id, created_by, as_ava, seen_at, seen_reaction, report:community_feedback_reports!inner(created_by)")
+    .eq("whatsapp_message_id", input.messageId)
+    .maybeSingle();
+  if (reply) {
+    const report = (Array.isArray(reply.report) ? reply.report[0] : reply.report) as { created_by: string } | null;
+    const coachId = report?.created_by ?? null;
+    if (!coachId) return "no_coach";
+    const coachWrote = reply.created_by === coachId && !reply.as_ava;
+    if (input.fromBca != null && input.fromBca === !coachWrote) return "own_message";
+    if (!emoji && !reply.seen_at) return "unchanged";
+    if (emoji && reply.seen_at && reply.seen_reaction === emoji) return "unchanged";
+    await supabaseAdmin
+      .from("community_feedback_replies")
+      .update(
+        emoji
+          ? { seen_at: new Date().toISOString(), seen_by: coachWrote ? input.line.admin_id : coachId, seen_reaction: emoji }
+          : { seen_at: null, seen_by: null, seen_reaction: null }
+      )
+      .eq("id", reply.id);
+    return emoji ? "reaction_added" : "reaction_removed";
+  }
+
+  const { data: report } = await supabaseAdmin
+    .from("community_feedback_reports")
+    .select("id, created_by, created_by_admin, source, opening_seen_at, opening_seen_reaction")
+    .eq("whatsapp_message_id", input.messageId)
+    .maybeSingle();
+  if (!report?.created_by) return "not_ours";
+  const coachWrote = !supportChatOpenedByBca(report);
+  if (input.fromBca != null && input.fromBca === !coachWrote) return "own_message";
+  if (!emoji && !report.opening_seen_at) return "unchanged";
+  if (emoji && report.opening_seen_at && report.opening_seen_reaction === emoji) return "unchanged";
+  await supabaseAdmin
+    .from("community_feedback_reports")
+    .update(
+      emoji
+        ? {
+            opening_seen_at: new Date().toISOString(),
+            opening_seen_by: coachWrote ? input.line.admin_id : report.created_by,
+            opening_seen_reaction: emoji,
+          }
+        : { opening_seen_at: null, opening_seen_by: null, opening_seen_reaction: null }
+    )
+    .eq("id", report.id);
+  return emoji ? "reaction_added" : "reaction_removed";
+}
+
+/** Webhook: someone reacted on a linked BCA WhatsApp. Only coach chats' messages are ours. */
+export async function handleSupportWhatsAppReactionWebhook(
+  line: SupportWhatsAppLine,
+  body: Record<string, unknown>
+): Promise<string> {
+  const flags = parseUnipileMessageFlags(body);
+  // A dedicated reaction webhook names the message reacted to in message_id;
+  // a reaction sent as a message event names it as its parent.
+  const dedicated = String(body.event || "").toLowerCase().includes("reaction") || "reaction" in body;
+  const messageId = flags.parentId || (dedicated ? String(body.message_id || "").trim() : "");
+  if (!messageId) return "reaction_no_message";
+  const reaction = dedicated ? String(body.reaction ?? "") : extractReactionEmoji(flags.text);
+  return applySupportWhatsAppReaction({ line, messageId, reaction });
+}
+
+/** BCA reacted in the app to a coach's WhatsApp message: send it on WhatsApp too ("" takes it off). */
+export async function reactOnSupportWhatsApp(input: {
+  whatsappMessageId: string;
+  reaction: string | null;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sent = await reactUnipileMessage({
+    message_id: input.whatsappMessageId,
+    reaction: input.reaction ?? "",
+  });
+  if (!sent.ok) return { ok: false, error: sent.error || "WhatsApp did not take the reaction." };
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 // Sending from the app
 // ---------------------------------------------------------------------------
 
@@ -648,6 +799,15 @@ export async function supportWhatsAppRoute(input: {
     .maybeSingle();
   const coachId = (report?.created_by as string | null) ?? null;
   if (!coachId) return { ok: false, reason: "This chat has no coach." };
+  return supportWhatsAppRouteForCoach({ coachId, adminId: input.adminId });
+}
+
+/** Which phone a WhatsApp message to this coach would go from (New ticket, before the ticket exists). */
+export async function supportWhatsAppRouteForCoach(input: {
+  coachId: string;
+  adminId: string;
+}): Promise<SupportWhatsAppRoute> {
+  const { coachId } = input;
   const { data: coach } = await supabaseAdmin
     .from("profiles")
     .select("phone, role")
@@ -675,9 +835,15 @@ export async function supportWhatsAppRoute(input: {
   return { ok: true, line, fromName: await firstNameOf(line.admin_id), to, coachId };
 }
 
-async function filesForMedia(media: unknown): Promise<Array<{ blob: Blob; filename: string }>> {
+type WhatsAppFile = { blob: Blob; filename: string };
+
+/** The reply's files, with its voice note (if any) kept apart so it can go as a real voice note. */
+async function filesForMedia(
+  media: unknown
+): Promise<{ files: WhatsAppFile[]; voice: WhatsAppFile | null }> {
   const items = Array.isArray(media) ? media.slice(0, 5) : [];
-  const files: Array<{ blob: Blob; filename: string }> = [];
+  const files: WhatsAppFile[] = [];
+  let voice: WhatsAppFile | null = null;
   for (const item of items) {
     const url = typeof item?.url === "string" ? item.url : "";
     if (!url) continue;
@@ -685,9 +851,52 @@ async function filesForMedia(media: unknown): Promise<Array<{ blob: Blob; filena
     if (!res?.ok) continue;
     const blob = await res.blob();
     const fromUrl = decodeURIComponent(url.split("?")[0]!.split("/").pop() || "file");
-    files.push({ blob, filename: (typeof item.name === "string" && item.name) || fromUrl });
+    const file = { blob, filename: (typeof item.name === "string" && item.name) || fromUrl };
+    if (item.kind === "audio" && !voice) voice = file;
+    else files.push(file);
   }
-  return files;
+  return { files, voice };
+}
+
+/** True when a reply has a voice note among its files. */
+function hasVoiceNote(media: unknown): boolean {
+  return Array.isArray(media) && media.some((item) => item?.kind === "audio");
+}
+
+/**
+ * The first WhatsApp message on a chat that began in the app or by email
+ * starts with a bold line saying what it's about, so it doesn't land out of
+ * the blue. Null once the chat is already on WhatsApp. Not saved in the reply.
+ */
+export async function supportWhatsAppLeadLine(
+  reportId: string,
+  exceptReplyId?: string
+): Promise<string | null> {
+  const { data: report } = await supabaseAdmin
+    .from("community_feedback_reports")
+    .select("source, title, whatsapp_message_id")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (!report || report.source === "whatsapp" || report.whatsapp_message_id) return null;
+
+  let earlier = supabaseAdmin
+    .from("community_feedback_replies")
+    .select("id")
+    .eq("report_id", reportId)
+    .eq("via_whatsapp", true)
+    .limit(1);
+  if (exceptReplyId) earlier = earlier.neq("id", exceptReplyId);
+  const { data: onWhatsApp } = await earlier;
+  if (onWhatsApp?.length) return null;
+
+  const about =
+    report.source === "email_inbox"
+      ? "About your email"
+      : report.source === "admin_created"
+        ? "About our message in the app"
+        : "About your question in the app";
+  const title = String(report.title || "").trim();
+  return `*${title ? `${about}: ${title}` : about}*`;
 }
 
 /** Send a saved Support reply to the coach on WhatsApp and mark it. */
@@ -709,10 +918,91 @@ export async function sendSupportReplyOnWhatsApp(input: {
     adminId: (reply.created_by as string | null) || input.adminId,
   });
   if (!route.ok) return { ok: false, error: route.reason };
-  const { line, coachId, to } = route;
 
-  const text = String(reply.body || "").trim();
-  const attachments = await filesForMedia(reply.media);
+  let body = String(reply.body || "").trim();
+  // "Sent a voice note" is only the app's label: on WhatsApp the voice note speaks for itself.
+  if (hasVoiceNote(reply.media) && body === supportComposerFallbackBody({ text: "", voice: true })) {
+    body = "";
+  }
+  const lead = await supportWhatsAppLeadLine(reply.report_id as string, reply.id as string);
+  const text = lead ? (body ? `${lead}\n\n${body}` : lead) : body;
+  const sent = await sendOnWhatsApp(route, text, reply.media);
+  if (!sent.ok) return sent;
+
+  await supabaseAdmin
+    .from("community_feedback_replies")
+    .update({
+      via_whatsapp: true,
+      whatsapp_with: route.fromName,
+      ...(sent.messageId ? { whatsapp_message_id: sent.messageId } : {}),
+    })
+    .eq("id", reply.id);
+  await rememberChat({
+    line: route.line,
+    coachId: route.coachId,
+    chatId: sent.chatId,
+    reportId: reply.report_id as string,
+    sentAt: new Date().toISOString(),
+  });
+  return { ok: true, fromName: route.fromName };
+}
+
+/** Placeholder text a ticket gets when it was only attachments: not worth sending. */
+const OPENING_PLACEHOLDERS = new Set(["(See attachments.)", "See voice note attached."]);
+
+/**
+ * Send a ticket's first message (New ticket in admin Support) to the coach on
+ * WhatsApp, from the phone of whoever it's from. The coach's answer then lands
+ * in this ticket.
+ */
+export async function sendSupportOpeningOnWhatsApp(input: {
+  reportId: string;
+  adminId: string;
+}): Promise<{ ok: true; fromName: string } | { ok: false; error: string }> {
+  const { data: report } = await supabaseAdmin
+    .from("community_feedback_reports")
+    .select("id, created_by_admin, details, media, whatsapp_message_id")
+    .eq("id", input.reportId)
+    .maybeSingle();
+  if (!report) return { ok: false, error: "Ticket not found." };
+  if (report.whatsapp_message_id) return { ok: true, fromName: "" };
+
+  const route = await supportWhatsAppRoute({
+    reportId: report.id as string,
+    adminId: (report.created_by_admin as string | null) || input.adminId,
+  });
+  if (!route.ok) return { ok: false, error: route.reason };
+
+  const details = String(report.details || "").trim();
+  const text = OPENING_PLACEHOLDERS.has(details) ? "" : details;
+  const sent = await sendOnWhatsApp(route, text, report.media);
+  if (!sent.ok) return sent;
+
+  if (sent.messageId) {
+    // Also how the echo from the phone is recognised and not saved twice.
+    await supabaseAdmin
+      .from("community_feedback_reports")
+      .update({ whatsapp_message_id: sent.messageId })
+      .eq("id", report.id);
+  }
+  await rememberChat({
+    line: route.line,
+    coachId: route.coachId,
+    chatId: sent.chatId,
+    reportId: report.id as string,
+    sentAt: new Date().toISOString(),
+  });
+  return { ok: true, fromName: route.fromName };
+}
+
+/** Send text and files to the coach on WhatsApp: their existing chat, or a new one. */
+async function sendOnWhatsApp(
+  route: Extract<SupportWhatsAppRoute, { ok: true }>,
+  text: string,
+  media: unknown
+): Promise<{ ok: true; chatId: string; messageId: string | null } | { ok: false; error: string }> {
+  const { line, coachId, to } = route;
+  const { files: attachments, voice } = await filesForMedia(media);
 
   const { data: chatRow } = await supabaseAdmin
     .from("support_whatsapp_chats")
@@ -724,14 +1014,16 @@ export async function sendSupportReplyOnWhatsApp(input: {
   let chatId = (chatRow?.unipile_chat_id as string | undefined) ?? null;
   let messageId: string | null = null;
   if (chatId) {
-    const sent = await sendUnipileChatMessage({
-      chat_id: chatId,
-      account_id: line.unipile_account_id,
-      text,
-      attachments: attachments.length ? attachments : undefined,
-    });
-    if (!sent.ok) return { ok: false, error: sent.error || "WhatsApp did not send." };
-    messageId = sent.data?.message_id ?? null;
+    if (text || attachments.length) {
+      const sent = await sendUnipileChatMessage({
+        chat_id: chatId,
+        account_id: line.unipile_account_id,
+        text,
+        attachments: attachments.length ? attachments : undefined,
+      });
+      if (!sent.ok) return { ok: false, error: sent.error || "WhatsApp did not send." };
+      messageId = sent.data?.message_id ?? null;
+    }
   } else {
     const started = await startUnipileChat({
       account_id: line.unipile_account_id,
@@ -752,21 +1044,25 @@ export async function sendSupportReplyOnWhatsApp(input: {
     }
   }
 
-  const now = new Date().toISOString();
-  await supabaseAdmin
-    .from("community_feedback_replies")
-    .update({
-      via_whatsapp: true,
-      whatsapp_with: route.fromName,
-      ...(messageId ? { whatsapp_message_id: messageId } : {}),
-    })
-    .eq("id", reply.id);
-  await rememberChat({
-    line,
-    coachId,
-    chatId,
-    reportId: reply.report_id as string,
-    sentAt: now,
-  });
-  return { ok: true, fromName: route.fromName };
+  // The voice note goes on its own, as a real WhatsApp voice note (play button,
+  // not a file). If WhatsApp won't take the format, it goes as a file instead.
+  if (voice) {
+    let sent = await sendUnipileChatMessage({
+      chat_id: chatId,
+      account_id: line.unipile_account_id,
+      voice_message: voice,
+    }).catch(() => null);
+    if (!sent?.ok) {
+      sent = await sendUnipileChatMessage({
+        chat_id: chatId,
+        account_id: line.unipile_account_id,
+        attachments: [voice],
+      }).catch(() => null);
+    }
+    if (!sent?.ok && !messageId) {
+      return { ok: false, error: sent?.error || "WhatsApp did not send the voice note." };
+    }
+    messageId = messageId ?? sent?.data?.message_id ?? null;
+  }
+  return { ok: true, chatId, messageId };
 }
