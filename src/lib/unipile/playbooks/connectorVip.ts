@@ -6,46 +6,74 @@ import {
   type OutreachPlaybook,
 } from "@/lib/unipile/playbookSteps";
 
-const VIP_MSG1_A = `Hi {{first_name}}, Most owners running a {{company}} business your size tell me revenue is growing but profit isn't following it. The issue is rarely sales. It's that nobody has ever scored the nine areas underneath the business to find where the money is actually leaking. Worth a chat? I've got two ideas for a business your size.`;
+/**
+ * Built on Paul Hamnett's sports facility campaign (Oct 2026): a note with a
+ * real result, then short follow-ups that each give something and end on a
+ * yes or no. {{type_of_owner}}, {{your_result}} and {{market_observation}}
+ * block launch until the coach writes their own words in.
+ */
 
-const VIP_MSG1_B = `Hi {{first_name}}, Most owners at your size aren't short of work. They're short of themselves. Everything still routes through you. That isn't a time management problem, it's a systems one, and it's usually three specific things. Want me to tell you which three?`;
+const NOTE_A = `Hi {{first_name}}, I work with {{type_of_owner}}.
 
-const VIP_MSG2_A = `Forgot to mention, the last {{company}} owner I did this with found £180K sitting in his pricing, not his pipeline. Would it help to see what we changed?`;
+Are you looking to grow your profit?
 
-const VIP_MSG2_B = `Forgot to mention, we took a £900K owner from 58 hours a week to 41 in five months without dropping revenue. Want me to show you what came off his plate first?`;
+I ask because {{your_result}}.
 
-const VIP_MSG4_A = `Totally get it if the timing's off. Just know that when getting profit to move without adding headcount does become the priority, I'd be glad to help. All the best either way, {{first_name}}.`;
+Is this of interest?`;
 
-const VIP_MSG4_B = `No worries if now isn't the moment. When getting the business to run without you does move up the list, I'm here. Wishing you a good quarter either way.`;
+const NOTE_B = `Hi {{first_name}}, I work with {{type_of_owner}}.
 
-/** Four LinkedIn DMs over ~14 days after they accept. 9 connection requests a day. */
+Are you looking to step back from the day-to-day?
+
+I ask because {{your_result}}.
+
+Is this of interest?`;
+
+const THANKS = `Hi {{first_name}}, thanks for connecting.
+
+Are you looking to:
+1️⃣ Get more from the team and the customers you already have
+2️⃣ Step back from the day-to-day without the place grinding to a halt
+
+I ask because {{your_result}}.
+
+The problem usually isn't the effort. The team and the systems haven't kept up with the business. Most owners at your stage are the same.
+
+✅ Is this of interest?`;
+
+const OBSERVATION = `{{market_observation}} Is that true for you, or is it different your end?`;
+
+const FIVE_NUMBERS = `{{first_name}}, something worth knowing. Five numbers sit behind profit: leads, conversion, average spend, how often customers come back, and margin. Lift each by 10% and profit grows by around 61%, because they multiply. Which of the five has the most room in your business right now?`;
+
+const SCORE = `{{first_name}}, would it help to see where your business is strongest and weakest? The BOSS Score takes 3 minutes and shows the one thing holding it back. Want me to send it over?`;
+
+const LAST = `I'll leave it there, {{first_name}}. If the business ever needs you more than you'd like, I'm easy to find. Either way, good luck with the rest of the year.`;
+
+/** Note with your result, then five short messages over about four weeks. */
 export const VIP_GET_INTEREST_PLAYBOOK: OutreachPlaybook = {
   id: "vip-get-interest",
   name: "Connector",
   channel: "linkedin",
   description:
-    "Connect, then the 2-week interest sequence. 9 connection requests a day. After they accept: 48 hours of posts, then problem opener, proof, name nudge, loose breakup.",
+    "Connection note with your own result, then five short messages over about four weeks: thanks with two outcomes, a common pain, the five profit numbers, the BOSS Score, and a polite close. Write who you work with, your result and what you hear from owners before it can start.",
   northStar: "interested_reply",
-  seedDefault: true,
+  seedDefault: false,
   dailyInviteLimit: 9,
   steps: spaced([
-    inviteStep(""),
+    inviteStep(NOTE_A, [
+      { key: "A", label: "Grow profit", body: NOTE_A },
+      { key: "B", label: "Step back", body: NOTE_B },
+    ]),
+    waitStep(0.0833),
+    messageStep(THANKS),
+    waitStep(24),
+    messageStep(OBSERVATION),
     waitStep(48),
-    messageStep(VIP_MSG1_A, [
-      { key: "A", label: "Profit isn't following revenue", body: VIP_MSG1_A },
-      { key: "B", label: "Owner is the bottleneck", body: VIP_MSG1_B },
-    ]),
-    waitStep(72),
-    messageStep(VIP_MSG2_A, [
-      { key: "A", label: "Pricing proof", body: VIP_MSG2_A },
-      { key: "B", label: "Hours proof", body: VIP_MSG2_B },
-    ]),
-    waitStep(72),
-    messageStep("{{first_name}}?"),
-    waitStep(144),
-    messageStep(VIP_MSG4_A, [
-      { key: "A", label: "Profit priority", body: VIP_MSG4_A },
-      { key: "B", label: "Run without you", body: VIP_MSG4_B },
-    ]),
+    messageStep(FIVE_NUMBERS),
+    waitStep(96),
+    messageStep(SCORE),
+    waitStep(336),
+    messageStep(LAST),
+    { step_type: "notify", config: { email: false, in_app: true, whatsapp: false } },
   ]),
 };

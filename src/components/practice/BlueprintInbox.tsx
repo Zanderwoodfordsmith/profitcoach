@@ -13,7 +13,7 @@ import type { SectionComment } from "@/lib/practiceKnowledge/sectionCommentTypes
 import { CHAT_TITLE_MAX, topicFrom } from "@/lib/support/chatTitle";
 import { chatPageName } from "@/lib/support/chatPages";
 import { readScreenContext } from "@/lib/support/screenContext";
-import { parseSupportTicketMedia } from "@/lib/support/supportTicketMedia";
+import { isMediaOnlyBody, parseSupportTicketMedia } from "@/lib/support/supportTicketMedia";
 import {
   SUPPORT_AUTHOR_SELECT,
   SUPPORT_REPLY_LIST_SELECT,
@@ -39,6 +39,7 @@ import { commentsCall } from "./comments/SectionCommentsContext";
 import { CommentAvatar, commentWhen, firstName } from "./comments/SectionCommentsUI";
 import { useHalfHeight } from "./composer";
 import { usePractice } from "./PracticeProvider";
+import { SupportTypingLine, useSupportTyping } from "@/components/support/useSupportTyping";
 
 /**
  * A chat with BCA, drawn like a page chat: the same message rows and the same
@@ -73,6 +74,8 @@ export function BcaChat({
   const { ref: panelRef, half } = useHalfHeight<HTMLDivElement>();
   const feedRef = useRef<HTMLDivElement>(null);
   const messages = thread ? [openingMessage(thread), ...thread.replies] : [];
+  // Live "typing…" both ways; BCA's send reloads the coach's chats so it shows straight away.
+  const typing = useSupportTyping(thread?.id, notifyCoachSupportReadChanged);
   const [tickError, setTickError] = useState<string | null>(null);
 
   /** React to one of BCA's messages as the coach (null takes it off), so it leaves Needs you without a reply. */
@@ -195,6 +198,12 @@ export function BcaChat({
   }
 
   async function post(body: string, media: CommunityPostMediaItem[]): Promise<string | null> {
+    const error = await postMessage(body, media);
+    if (!error) typing.notifySent();
+    return error;
+  }
+
+  async function postMessage(body: string, media: CommunityPostMediaItem[]): Promise<string | null> {
     if (asBca) return postAsBca(body, media);
     // A chat started on a page is about that page (a tab, a prospect): its button goes back there.
     const aboutPath = about?.startsWith("/coach/") ? about : null;
@@ -280,7 +289,9 @@ export function BcaChat({
         )}
         {tickError ? <p className="mt-2 text-xs text-rose-600">{tickError}</p> : null}
         {sendNote ? <p className="mt-2 text-xs text-[var(--bp-muted)]">{sendNote}</p> : null}
+        <SupportTypingLine names={typing.typingNames} className="mt-3" />
       </div>
+      <div className="contents" onInput={typing.notifyTyping}>
       <ChatComposer
         chatKey={thread ? `bca:${thread.id}` : "bca:new"}
         other={asBca ? coach?.first_name?.trim() || "the coach" : "BCA"}
@@ -331,6 +342,7 @@ export function BcaChat({
           ) : null
         }
       />
+      </div>
     </FileDropZone>
   );
 }
@@ -378,7 +390,7 @@ function ChatMessage({ message, latest, onTick }: { message: SupportReply; lates
                 />
               </span>
             </div>
-            {media.length && /^Sent (a voice note|a video|an image|images|a document|documents)$/.test(message.body) ? null : (
+            {isMediaOnlyBody(message.body, media) ? null : (
               <FoldLongMessage className="mt-1">
                 <SupportMessageBody
                   body={message.body}
@@ -388,7 +400,7 @@ function ChatMessage({ message, latest, onTick }: { message: SupportReply; lates
             )}
             {media.length ? (
               <div className="mt-1.5 max-w-[20rem]">
-                <CommunityPostMediaGallery items={media} variant="compact" />
+                <CommunityPostMediaGallery items={media} variant="compact" transcripts />
               </div>
             ) : null}
           </div>

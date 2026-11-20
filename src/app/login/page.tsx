@@ -87,7 +87,7 @@ export default function LoginPage() {
         role === "client" &&
         json.linked_contact_type === "prospect"
       ) {
-        await supabaseClient.auth.signOut();
+        await supabaseClient.auth.signOut({ scope: "local" });
         setError(PROSPECT_PORTAL_MESSAGE);
         setLoading(false);
         return;

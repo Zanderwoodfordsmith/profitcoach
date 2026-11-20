@@ -165,18 +165,63 @@
   margin-top: 1.1rem;
 }
 
-.hc-article p a {
-  color: #0c5290;
-  font-weight: 500;
+.hc-article p a,
+.hc-steps a {
+  color: #0284c7;
+  font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 4px;
-  text-decoration-color: #9ccbee;
+  text-decoration-color: #7dd3fc;
   text-decoration-thickness: 1.5px;
 }
 
-.hc-article p a:hover {
-  color: #051e36;
-  text-decoration-color: #0c5290;
+.hc-article p a:hover,
+.hc-steps a:hover {
+  color: #0369a1;
+  text-decoration-color: #0284c7;
+}
+
+/* Numbered steps: a paragraph whose lines all start "1. ", "2. " ... */
+.hc-steps {
+  list-style: none;
+  counter-reset: hc-step;
+  margin-top: 1.1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hc-steps:first-child {
+  margin-top: 0;
+}
+
+.hc-steps li {
+  counter-increment: hc-step;
+  position: relative;
+  padding-left: 2.6rem;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: #1f2d3d;
+}
+
+.hc-steps li::before {
+  content: counter(hc-step);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: #0284c7;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hc-steps + p {
+  margin-top: 1.1rem;
 }
 
 .hc-rule {

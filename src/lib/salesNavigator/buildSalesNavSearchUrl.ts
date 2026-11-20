@@ -66,6 +66,8 @@ export type BuildSalesNavSearchUrlInput = {
    * Playbook: do not combine with CURRENT_COMPANY includes.
    */
   keywordsBoolean?: string | null;
+  /** LinkedIn industries (INDUSTRY filter), from SALES_NAV_INDUSTRIES. Empty = no filter. */
+  industries?: { id: string; title: string }[];
 };
 
 function encText(text: string): string {
@@ -142,6 +144,13 @@ export function buildSalesNavSearchUrl(input: BuildSalesNavSearchUrlInput): stri
   const headcounts = headcountValues(input.teamSizes);
   if (headcounts) {
     filters.push(`(type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList(${headcounts}))`);
+  }
+
+  const industries = (input.industries ?? [])
+    .map((i) => `(id%3A${i.id}%2Ctext%3A${encText(i.title)}%2CselectionType%3AINCLUDED)`)
+    .join("%2C");
+  if (industries) {
+    filters.push(`(type%3AINDUSTRY%2Cvalues%3AList(${industries}))`);
   }
 
   const location = input.location?.trim();

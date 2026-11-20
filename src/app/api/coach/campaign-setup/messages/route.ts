@@ -106,6 +106,7 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join("\n\n"),
     maxTokens: 2048,
+    writing: true,
   });
 
   if (error || !data?.messages?.length) {

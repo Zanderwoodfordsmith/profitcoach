@@ -10,6 +10,7 @@ import { AppPresenceHeartbeat } from "@/components/presence/AppPresenceHeartbeat
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
+import { CoachSetupBar } from "@/components/layout/CoachSetupBar";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { AvaDock } from "@/components/ava/AvaDock";
 import { SupportDockProvider } from "@/components/support/SupportDock";
@@ -144,7 +145,7 @@ export default function CoachLayout({
     try {
       clearImpersonation();
       clearContactImpersonation();
-      await supabaseClient.auth.signOut();
+      await supabaseClient.auth.signOut({ scope: "local" });
       router.replace("/login");
     } finally {
       setSigningOut(false);
@@ -228,6 +229,12 @@ export default function CoachLayout({
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
   const { access, hasFeature } = useCoachAccess(impersonatingCoachId);
   const chromeEnabled = !playbooksReader && !isMinimalWorkshopChrome;
+  /** How the title bar (and the setup strip above it) reaches the edges of main on pages without main's padding. */
+  const chromeBleed = membershipPage
+    ? "px-4 md:px-[60px]"
+    : edgeToEdgeInbox || blueprintPage
+      ? "px-4 md:px-6"
+      : undefined;
   const fetchedName =
     coachName?.id === impersonatingCoachId ? coachName.name : null;
   const accountName = impersonatingCoachId
@@ -333,15 +340,16 @@ export default function CoachLayout({
             }`}
           >
             {chromeEnabled ? (
-              <DashboardChromeFallback
-                bleedInset={
-                  membershipPage
-                    ? "px-4 md:px-[60px]"
-                    : edgeToEdgeInbox || blueprintPage
-                      ? "px-4 md:px-6"
-                      : undefined
-                }
+              <CoachSetupBar
+                key={impersonatingCoachId ?? "self"}
+                coachId={impersonatingCoachId}
+                bleedInset={chromeBleed ?? "-mx-4 px-4 md:-mx-[60px] md:px-[60px]"}
+                // The column's gap-4 would push the title bar away from the strip.
+                flushBelow={!fullHeightPage && !isSignaturePage && !playbooksReader}
               />
+            ) : null}
+            {chromeEnabled ? (
+              <DashboardChromeFallback bleedInset={chromeBleed} />
             ) : null}
             {/*
               Full-height routes need a flex-1 / min-h-0 chain so the body

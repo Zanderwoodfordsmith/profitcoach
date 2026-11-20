@@ -153,6 +153,17 @@ export function sanitizeBuiltSections(raw: unknown): Record<string, BuiltSection
   return out;
 }
 
+/**
+ * True when a person changed the text after it was last written. Ava's own
+ * saves stamp edited_at too, so those don't count (job 233): one is the save
+ * that made `previous`, or Ava's first draft of an empty section.
+ */
+export function editedByHand(section: BuiltSection | null | undefined): boolean {
+  if (!section?.edited_at) return false;
+  if (section.previous && section.edited_at === section.previous.replaced_at) return false;
+  return !(section.model === "ava" && section.edited_at === section.generated_at);
+}
+
 function escapeCell(text: string): string {
   return text.replace(/\|/g, "\\|").replace(/\n+/g, " ");
 }

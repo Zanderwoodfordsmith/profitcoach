@@ -6,7 +6,8 @@ import { ArrowRight } from "lucide-react";
 import { BOOK_HREF } from "@/components/beyondlean/data";
 import { CircleButton, CloseCard, HOME, Markdown, PageHero, ScoreCallout, V5Shell } from "@/components/beyondlean/v5/parts";
 import { getCaseStudies, getCaseStudy, glance, sections } from "@/lib/beyondlean/content";
-import { beyondleanMode } from "@/lib/beyondlean/mode";
+import { StoryCard } from "@/components/beyondlean/v5/StoryCard";
+import { beyondleanMode, beyondleanRobots } from "@/lib/beyondlean/mode";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: study ? `${study.title} | Case study | Beyondlean` : "Case study | Beyondlean",
     description: study?.summary,
-    robots: { index: false, follow: false },
+    robots: beyondleanRobots,
   };
 }
 
@@ -30,6 +31,7 @@ export default async function CaseStudyPage({ params }: Props) {
   if (!study) notFound();
   const s = sections(study.body);
   const stats = s["At a glance"] ? glance(s["At a glance"]) : [];
+  // The strongest stories first (the list is ordered by result), skipping the one being read
   const more = getCaseStudies()
     .filter((c) => c.slug !== study.slug)
     .slice(0, 2);
@@ -128,23 +130,9 @@ export default async function CaseStudyPage({ params }: Props) {
                 All Case Studies <ArrowRight aria-hidden />
               </Link>
             </div>
-            <div className="v5-cases">
+            <div className="v5-cs-grid">
               {more.map((c) => (
-                <Link key={c.slug} href={`${HOME}/case-studies/${c.slug}`} className="v5-case-card">
-                  <div className="v5-case-card-top">
-                    <div className="v5-case-card-figure">
-                      <strong>{c.figure}</strong>
-                      <span>{c.figureLabel}</span>
-                    </div>
-                  </div>
-                  <div className="v5-case-card-body">
-                    <h3>{c.title}</h3>
-                    <p>{c.summary}</p>
-                    <span className="v5-article-more">
-                      Read the case study <ArrowRight aria-hidden />
-                    </span>
-                  </div>
-                </Link>
+                <StoryCard key={c.slug} study={c} />
               ))}
             </div>
           </div>

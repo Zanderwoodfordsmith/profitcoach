@@ -9,3 +9,12 @@ export function beyondleanMode() {
     preview: !production,
   };
 }
+
+/**
+ * Search engines stay out until the site is on Paul's own domain (NEXT_PUBLIC_BEYONDLEAN_DOMAIN set in production).
+ * Until then every page is noindex, so the theprofitcoach.com/beyondlean preview never competes with it.
+ */
+export const beyondleanRobots =
+  process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_BEYONDLEAN_DOMAIN
+    ? { index: true, follow: true }
+    : { index: false, follow: false };

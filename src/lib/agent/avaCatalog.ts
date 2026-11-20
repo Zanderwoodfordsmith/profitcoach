@@ -184,6 +184,7 @@ const PRACTICE_LABELS: Record<string, string> = {
 
 const REFERENCE_LABELS: Record<string, string> = {
   "phased-pitch.md": "Phased pitch",
+  "coach-failure-map.md": "Coach failure map (draft)",
 };
 
 /** A readable name for a knowledge file that has no label of its own. */

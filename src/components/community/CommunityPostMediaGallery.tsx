@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, FileText, Mic, Play, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, FileText, Mic, Play, X } from "lucide-react";
+import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import type { CommunityPostMediaItem } from "@/lib/communityPostMedia";
 import { inferCommunityPostMediaKindFromUrl } from "@/lib/communityPostMedia";
 import { cardClass } from "@/components/ui/Card";
@@ -288,12 +289,65 @@ type GalleryProps = {
    * compact = small thumbs (feed-card style); click opens lightbox.
    */
   variant?: "default" | "compact";
+  /** Support: a Transcript link under each voice note (made on first open). */
+  transcripts?: boolean;
 };
+
+/** "Transcript" under a voice note: opens and closes the words, fetching them once. */
+function VoiceTranscript({ item }: { item: CommunityPostMediaItem }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(item.transcript ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (!next || text || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const token = await getValidSupabaseAccessToken();
+      const res = await fetch("/api/support/voice-transcript", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ url: item.url }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+      if (res.ok && data.text) setText(data.text);
+      else setError(data.error || "Couldn't make a transcript. Try again.");
+    } catch {
+      setError("Couldn't make a transcript. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-1.5">
+      <button
+        type="button"
+        onClick={() => void toggle()}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800"
+      >
+        Transcript
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
+      </button>
+      {open ? (
+        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+          {busy ? "Writing it out…" : error ? <span className="text-rose-600">{error}</span> : text}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 /** Horizontal media row for post detail (Skool-style: smaller, side-by-side). */
 export function CommunityPostMediaGallery({
   items,
   variant = "default",
+  transcripts = false,
 }: GalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -328,10 +382,13 @@ export function CommunityPostMediaGallery({
         {audioItems.map((item, index) => (
           <li
             key={`${item.url}-audio-${index}`}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
           >
-            <Mic className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={1.75} />
-            <audio controls src={item.url} className="h-8 min-w-0 flex-1" />
+            <div className="flex items-center gap-2">
+              <Mic className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={1.75} />
+              <audio controls src={item.url} className="h-8 min-w-0 flex-1" />
+            </div>
+            {transcripts ? <VoiceTranscript item={item} /> : null}
           </li>
         ))}
       </ul>

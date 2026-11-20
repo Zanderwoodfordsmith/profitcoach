@@ -148,7 +148,7 @@ export default function ClientLayout({
       ) {
         clearImpersonation();
         clearContactImpersonation();
-        await supabaseClient.auth.signOut();
+        await supabaseClient.auth.signOut({ scope: "local" });
         if (!cancelled) {
           router.replace("/login?reason=prospect_portal");
         }
@@ -195,7 +195,7 @@ export default function ClientLayout({
     try {
       clearImpersonation();
       clearContactImpersonation();
-      await supabaseClient.auth.signOut();
+      await supabaseClient.auth.signOut({ scope: "local" });
       router.replace("/login");
     } finally {
       setSigningOut(false);

@@ -9,16 +9,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /**
  * Recent Ava chats. ?coach=<id> (admins): every chat about that coach, theirs
- * and BCA's, each marked with who had it.
+ * and BCA's, each marked with who had it. Add &bca=1 (the coach page's Ava tab,
+ * 20 Nov) for BCA's chats only, leaving out the coach's own.
  */
 export async function GET(request: Request) {
   const auth = await resolveAgentActor(request);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { actor } = auth;
-  const coach = new URL(request.url).searchParams.get("coach")?.trim() ?? "";
+  const params = new URL(request.url).searchParams;
+  const coach = params.get("coach")?.trim() ?? "";
+  const bcaOnly = params.get("bca") === "1";
   try {
     if (actor.isAdmin && UUID_RE.test(coach)) {
-      const rows = await listCoachChats(coach);
+      const rows = (await listCoachChats(coach)).filter((row) => !bcaOnly || row.actor_user_id !== coach);
       return NextResponse.json({
         chats: rows.map((row) => ({
           id: row.id,

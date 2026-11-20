@@ -24,7 +24,7 @@ import {
   formatShortTime,
 } from "@/lib/formatShortDate";
 import type { SupportInternalNote } from "@/lib/support/internalNotes";
-import { parseSupportReplyMedia } from "@/lib/support/supportTicketMedia";
+import { isMediaOnlyBody, parseSupportReplyMedia } from "@/lib/support/supportTicketMedia";
 import {
   authorDisplayName,
   isSupportStaffAuthor,
@@ -628,7 +628,7 @@ export function SupportChatBubble({
           </form>
         ) : (
           <>
-            {reply.body.trim() ? (
+            {reply.body.trim() && !isMediaOnlyBody(reply.body, media) ? (
               <FoldLongMessage>
                 <SupportMessageBody
                   body={stripGreetingAndSignOff(reply.body, name)}
@@ -638,7 +638,7 @@ export function SupportChatBubble({
             ) : null}
             {media.length > 0 ? (
               <div className="mt-2">
-                <CommunityPostMediaGallery items={media} variant="compact" />
+                <CommunityPostMediaGallery items={media} variant="compact" transcripts />
               </div>
             ) : null}
           </>
@@ -664,6 +664,9 @@ export function SupportChatBubble({
                   : "Received on WhatsApp"
             }
           />
+        ) : null}
+        {reply.via_whatsapp && outbound && reply.whatsapp_read_at ? (
+          <span className="text-caption opacity-80">Seen</span>
         ) : null}
       </span>
     ) : null;
@@ -1190,7 +1193,7 @@ export function ScheduledSupportBubble({
           </form>
         ) : (
           <>
-            {body.trim() ? <SupportMessageBody body={body} /> : null}
+            {body.trim() && !isMediaOnlyBody(body, media) ? <SupportMessageBody body={body} /> : null}
             {media.length > 0 ? (
               <div className="mt-2">
                 <CommunityPostMediaGallery items={media} variant="compact" />

@@ -266,6 +266,33 @@ export function CallsHub({
     [calls, impersonatingCoachId, onCallsChange]
   );
 
+  /** Calendar (GHL) calls: GHL never says if they showed, so the coach marks it. */
+  const updateGhlOutcome = useCallback(
+    async (row: CallRow, outcome: "completed" | "noshow" | null) => {
+      if (row.source !== "ghl") return;
+      setStatusBusy(true);
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers) {
+        setStatusBusy(false);
+        return;
+      }
+      const res = await fetch(
+        `/api/coach/calls/ghl/${encodeURIComponent(row.id)}`,
+        { method: "PATCH", headers, body: JSON.stringify({ outcome }) }
+      );
+      setStatusBusy(false);
+      if (!res.ok) return;
+
+      const patch = {
+        coach_outcome: outcome,
+        status_normalized: outcome ?? row.ghl_status ?? "confirmed",
+      };
+      onCallsChange?.(calls.map((c) => (c.id === row.id ? { ...c, ...patch } : c)));
+      setDetail((d) => (d?.id === row.id ? { ...d, ...patch } : d));
+    },
+    [calls, impersonatingCoachId, onCallsChange]
+  );
+
   const openCallDetail = useCallback(
     async (row: CallRow) => {
       setDetail(row);
@@ -386,7 +413,25 @@ export function CallsHub({
             <option value="noshow">No-show</option>
             <option value="cancelled">Cancelled</option>
           </select>
-        ) : null
+        ) : (
+          <select
+            className={fieldClass("select", "small", "w-auto")}
+            disabled={statusBusy}
+            value={row.coach_outcome ?? ""}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const v = e.target.value;
+              void updateGhlOutcome(
+                row,
+                v === "completed" || v === "noshow" ? v : null
+              );
+            }}
+          >
+            <option value="">{getCallStatusLabel(row.ghl_status)}</option>
+            <option value="completed">Completed</option>
+            <option value="noshow">No-show</option>
+          </select>
+        )
       }
     />
   );
@@ -716,7 +761,27 @@ export function CallsHub({
                   </button>
                 ))}
               </div>
-            ) : null}
+            ) : (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {(
+                  [
+                    [null, getCallStatusLabel(detail.ghl_status)],
+                    ["completed", "Completed"],
+                    ["noshow", "No-show"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled={statusBusy}
+                    className={buttonClass("second", "small")}
+                    onClick={() => void updateGhlOutcome(detail, value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               type="button"
               className={buttonClass("main", "normal", "mt-5 w-full")}

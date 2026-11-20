@@ -514,6 +514,27 @@
   }
 }
 
+/* The coach page's Ava tab (20 Nov): what's handing over for this coach, on her right. */
+.ava-hand-over {
+  position: relative;
+  z-index: 3;
+  width: 20rem;
+  flex-shrink: 0;
+  min-height: 0;
+  overflow-y: auto;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 32, 60, 0.8);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  color: var(--ava-ink);
+}
+
+@media (max-width: 1023px) {
+  .ava-hand-over {
+    display: none;
+  }
+}
+
 .ava-chat-row {
   display: flex;
   align-items: baseline;

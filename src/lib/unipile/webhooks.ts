@@ -16,6 +16,8 @@ import { getAppBaseUrl } from "@/lib/appBaseUrl";
 
 const WEBHOOK_NAMES = {
   messaging: "pc-linkedin-messaging",
+  reactions: "pc-messaging-reactions",
+  reads: "pc-messaging-reads",
   users: "pc-linkedin-users",
   account_status: "pc-linkedin-account-status",
   email: "pc-unipile-email",
@@ -83,6 +85,18 @@ export async function ensureUnipileWebhooksRegistered(
       name: WEBHOOK_NAMES.messaging,
       source: "messaging",
       events: ["message_received"],
+    },
+    {
+      // Its own webhook so the existing messaging one (matched by name) is left as is.
+      name: WEBHOOK_NAMES.reactions,
+      source: "messaging",
+      events: ["message_reaction"],
+    },
+    {
+      // Read receipts: "Seen" under messages we sent.
+      name: WEBHOOK_NAMES.reads,
+      source: "messaging",
+      events: ["message_read"],
     },
     {
       name: WEBHOOK_NAMES.users,
@@ -185,6 +199,13 @@ export async function dispatchUnipileWebhookPayload(
     }
     const detail = await handleUnipileMailReceived(body);
     return { handled: "mail", detail };
+  }
+
+  // Read receipt: never a new message, so it goes before the message checks.
+  if (event === "message_read") {
+    const { handleUnipileMessageRead } = await import("@/lib/unipile/readReceipts");
+    const detail = await handleUnipileMessageRead(body);
+    return { handled: "message_read", detail };
   }
 
   // Zander's / Pam's own WhatsApp: only coach chats go to Support, never the CRM.

@@ -1,5 +1,5 @@
 {
-  "_note": "Old beyondlean.com paths -> new pages. Apply at domain switch-over as permanent (301) redirects, matching case-insensitively. Drop the /beyondlean prefix if the site is served at the domain root.",
+  "_note": "Old beyondlean.com paths -> new pages. next.config.ts turns these into permanent (301) redirects on beyondlean.com once NEXT_PUBLIC_BEYONDLEAN_DOMAIN is set, dropping the /beyondlean prefix. Any other old .html page goes to the home page.",
   "redirects": {
     "/5s.html": "/beyondlean/blog/5s",
     "/7-quality-tools.html": "/beyondlean/blog/seven-quality-tools",
@@ -37,6 +37,9 @@
     "/tactical-implementation-plan.html": "/beyondlean/blog/tactical-implementation-plan",
     "/takt-time.html": "/beyondlean/blog/takt-time",
     "/tpm.html": "/beyondlean/blog/total-productive-maintenance",
-    "/value-stream-mapping.html": "/beyondlean/blog/value-stream-mapping"
+    "/value-stream-mapping.html": "/beyondlean/blog/value-stream-mapping",
+    "/index.html": "/beyondlean",
+    "/contact.html": "/beyondlean/constraint-call",
+    "/lean-manufacturing-results.html": "/beyondlean/case-studies"
   }
 }

@@ -1101,6 +1101,19 @@ export async function downloadUnipileEmailAttachment(input: {
   });
 }
 
+/** Download one chat message attachment (WhatsApp photo, voice note, file). */
+export async function downloadUnipileMessageAttachment(input: {
+  messageId: string;
+  attachmentId: string;
+  maxBytes?: number;
+}): Promise<UnipileResult<{ bytes: Uint8Array; contentType: string | null }>> {
+  const path = `/api/v1/messages/${encodeURIComponent(input.messageId)}/attachments/${encodeURIComponent(input.attachmentId)}`;
+  return unipileFetchBinary(path, {
+    timeoutMs: 25_000,
+    maxBytes: input.maxBytes,
+  });
+}
+
 export async function sendUnipileEmail(input: {
   account_id: string;
   to: Array<{ identifier: string; display_name?: string }>;

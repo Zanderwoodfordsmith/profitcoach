@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { resolveAnthropicModel } from "@/lib/anthropicModel";
+import { resolveAnthropicModel, WRITING_MODEL } from "@/lib/anthropicModel";
 
 /**
  * Non-streaming JSON generation for First Campaign Setup steps.
@@ -9,6 +9,8 @@ export async function generateCampaignJson<T>(opts: {
   system: string;
   user: string;
   maxTokens?: number;
+  /** Copy that reaches owners: Opus 5.5 at high effort. */
+  writing?: boolean;
 }): Promise<{ data: T | null; raw: string; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
@@ -16,11 +18,16 @@ export async function generateCampaignJson<T>(opts: {
   }
 
   const anthropic = new Anthropic({ apiKey });
-  const model = resolveAnthropicModel();
-  const maxTokens = opts.maxTokens ?? 4096;
+  const model = opts.writing ? WRITING_MODEL : resolveAnthropicModel();
+  // Opus 5.5 always thinks, and thinking counts toward max_tokens, so give it room on top of the answer.
+  // Capped below ~21k, where the SDK refuses a non-streaming call (the evals capture create, not stream).
+  const maxTokens = opts.writing ? Math.min((opts.maxTokens ?? 4096) + 12_000, 21_000) : (opts.maxTokens ?? 4096);
+  const extra = opts.writing ? { output_config: { effort: "high" as const } } : {};
+  const create = (params: Anthropic.Messages.MessageCreateParamsNonStreaming) =>
+    anthropic.messages.create({ ...params, ...extra });
 
   try {
-    const first = await anthropic.messages.create({
+    const first = await create({
       model,
       max_tokens: maxTokens,
       system: opts.system,
@@ -32,7 +39,7 @@ export async function generateCampaignJson<T>(opts: {
 
     // Truncated JSON is the usual failure mode for large avatar payloads.
     if (parsed == null && first.stop_reason === "max_tokens") {
-      const cont = await anthropic.messages.create({
+      const cont = await create({
         model,
         max_tokens: maxTokens,
         system: opts.system,
@@ -52,7 +59,7 @@ export async function generateCampaignJson<T>(opts: {
 
     // One repair pass if still invalid.
     if (parsed == null && raw.trim()) {
-      const repair = await anthropic.messages.create({
+      const repair = await create({
         model,
         max_tokens: Math.min(maxTokens, 8192),
         system:

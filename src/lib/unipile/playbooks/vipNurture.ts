@@ -48,7 +48,7 @@ export const VIP_NURTURE_PLAYBOOK: OutreachPlaybook = {
   description:
     "People who did not convert in Connector. 5-day email (owner / profit variants), then LinkedIn value DMs every two weeks.",
   northStar: "interested_reply",
-  seedDefault: true,
+  seedDefault: false,
   steps: spaced([
     ...fiveDayOpeners(),
     waitStep(TWO_WEEKS),

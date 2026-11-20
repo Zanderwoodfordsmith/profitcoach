@@ -21,7 +21,7 @@ import {
 } from "@/components/beyondlean/data";
 import { ConstraintWheel } from "@/components/beyondlean/v5/ConstraintWheel";
 import { Heading, V5Shell } from "@/components/beyondlean/v5/parts";
-import { beyondleanMode } from "@/lib/beyondlean/mode";
+import { beyondleanMode, beyondleanRobots } from "@/lib/beyondlean/mode";
 import "@/components/beyondlean/v5/how.css";
 import "@/components/beyondlean/v5/book.css";
 
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   title: "The Constraint Call | Paul Swift, Beyondlean",
   description:
     "Every business has one thing holding the rest back. In 30 minutes, one to one, Paul Swift finds yours and the one to three things to fix first.",
-  robots: { index: false, follow: false },
+  robots: beyondleanRobots,
 };
 
 /** A simple line of work, with the slow step and the pile in front of it. */

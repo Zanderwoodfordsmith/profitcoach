@@ -143,7 +143,7 @@ export async function rewriteProfilePart(
     blueprint: inputs.blueprint,
   });
   const maxTokens = opts.section === "about" ? 3072 : 1536;
-  const { data, error } = await generateCampaignJson<{ recommendedIndex?: number; variants?: unknown }>({ system, user, maxTokens });
+  const { data, error } = await generateCampaignJson<{ recommendedIndex?: number; variants?: unknown }>({ system, user, maxTokens, writing: true });
   const variants = parseVariants(data, opts.section);
   if (error || !variants.length) return [];
   // The check pass: the writer edits its own options against the method's checks. A failed check keeps the first draft.
@@ -151,6 +151,7 @@ export async function rewriteProfilePart(
     system,
     user: copyCheckPrompt(user, JSON.stringify(data, null, 2)) + lengthNote(data, opts.section),
     maxTokens,
+    writing: true,
   });
   const fixed = parseVariants(checked.data, opts.section);
   return fixed.length ? fixed : variants;

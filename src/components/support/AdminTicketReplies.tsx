@@ -59,6 +59,7 @@ import {
   useScreenRecordingFor,
 } from "@/contexts/ScreenRecorderContext";
 import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
+import { SupportTypingLine, useSupportTyping } from "@/components/support/useSupportTyping";
 import { ScheduleMessageModal } from "@/components/messaging/ComposerMediaTools";
 import { assertFutureSchedule } from "@/lib/support/scheduleTime";
 import {
@@ -581,6 +582,10 @@ export function AdminTicketReplies({
     if (!threadRefreshKey) return;
     void loadReplies({ silent: true });
   }, [threadRefreshKey, loadReplies]);
+
+  // Live "typing…" both ways; the coach's send reloads this chat so it shows straight away.
+  const typing = useSupportTyping(reportId || null, () => void loadReplies({ silent: true }));
+  const onComposerInput = composerMode === "reply" ? typing.notifyTyping : undefined;
 
   useEffect(() => {
     const pending = scheduledReplies.filter((row) => row.status === "scheduled");
@@ -1208,6 +1213,7 @@ export function AdminTicketReplies({
 
       const reply = mapSupportReplyRow(data);
       setReplies((current) => [...current, reply]);
+      typing.notifySent();
       setDraft("");
       void clearAdminReplyDraft(targetId);
       if (suggestion) {
@@ -2610,7 +2616,7 @@ export function AdminTicketReplies({
                   <SupportOpeningBody key={reportId} text={openingShown}>
                     {openingMedia.length > 0 ? (
                       <div className={openingBody ? "mt-2" : undefined}>
-                        <CommunityPostMediaGallery items={openingMedia} variant="compact" />
+                        <CommunityPostMediaGallery items={openingMedia} variant="compact" transcripts />
                       </div>
                     ) : null}
                   </SupportOpeningBody>
@@ -2646,7 +2652,7 @@ export function AdminTicketReplies({
             <SupportOpeningBody key={reportId} text={openingShown}>
               {openingMedia.length > 0 ? (
                 <div className={openingBody ? "mt-3" : undefined}>
-                  <CommunityPostMediaGallery items={openingMedia} variant="compact" />
+                  <CommunityPostMediaGallery items={openingMedia} variant="compact" transcripts />
                 </div>
               ) : null}
             </SupportOpeningBody>
@@ -2703,6 +2709,7 @@ export function AdminTicketReplies({
                   <CommunityPostMediaGallery
                     items={openingMedia}
                     variant="compact"
+                    transcripts
                   />
                 </div>
               ) : null}
@@ -2748,11 +2755,12 @@ export function AdminTicketReplies({
               />
             )}
             {scheduledBubbles}
+            <SupportTypingLine names={typing.typingNames} className="mt-3" />
             </div>
             <div ref={bottomRef} aria-hidden className="h-px w-full shrink-0" />
           </div>
         </div>
-        {composer}
+        <div className="contents" onInput={onComposerInput}>{composer}</div>
         {scheduleModal}
       </FileDropZone>
     );
@@ -2782,7 +2790,8 @@ export function AdminTicketReplies({
         </div>
       )}
       {scheduledBubbles}
-      {composer}
+      <SupportTypingLine names={typing.typingNames} className="mt-2" />
+      <div className="contents" onInput={onComposerInput}>{composer}</div>
       {scheduleModal}
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
     </FileDropZone>

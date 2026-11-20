@@ -59,7 +59,7 @@ export async function GET(
     const { data: messageRows } = await supabaseAdmin
       .from("messaging_messages")
       .select(
-        "id, conversation_id, channel, direction, status, subject, body_text, from_address, to_address, provider_error, metadata, created_at"
+        "id, conversation_id, channel, direction, status, subject, body_text, from_address, to_address, provider_error, metadata, created_at, read_at"
       )
       .in("conversation_id", conversationIds)
       .eq("coach_id", access.coachId)

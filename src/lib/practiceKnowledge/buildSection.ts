@@ -1,4 +1,4 @@
-import { resolveAnthropicModel } from "@/lib/anthropicModel";
+import { WRITING_MODEL } from "@/lib/anthropicModel";
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
 import {
   buildLibraryContextText,
@@ -97,12 +97,13 @@ export async function writeSectionBlocks(
   key: string,
   prompt: { system: string; user: string; maxTokens: number }
 ): Promise<{ blocks: BlueprintBlock[]; error?: string }> {
-  const { data, error } = await generateCampaignJson<{ blocks?: unknown }>(prompt);
+  const { data, error } = await generateCampaignJson<{ blocks?: unknown }>({ ...prompt, writing: true });
   let blocks = sanitizeBlocks(data?.blocks);
   // Campaigns reach owners, so they get the check pass. A failed check keeps the first draft.
   if (blocks.length && key.startsWith("campaigns:")) {
     const checked = await generateCampaignJson<{ blocks?: unknown }>({
       ...prompt,
+      writing: true,
       user: copyCheckPrompt(prompt.user, blocksToMarkdown(blocks)),
     });
     const fixed = sanitizeBlocks(checked.data?.blocks);
@@ -159,7 +160,7 @@ export async function buildSection(coachId: string, key: string): Promise<Practi
     section: {
       blocks,
       generated_at: new Date().toISOString(),
-      model: resolveAnthropicModel(),
+      model: WRITING_MODEL,
       edited_at: null,
     },
   });

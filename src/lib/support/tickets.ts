@@ -76,6 +76,8 @@ export type SupportReply = {
   via_whatsapp?: boolean;
   /** Whose WhatsApp it was on (BCA first name, e.g. "Pam"). */
   whatsapp_with?: string | null;
+  /** The coach read BCA's WhatsApp message (Unipile read receipt). */
+  whatsapp_read_at?: string | null;
   /** Written somewhere else (a Blueprint section) and shown in this thread. Read-only here. */
   origin?: { label: string; href: string | null };
   /** Ava wrote it and BCA approved it (created_by is the admin who sent it). Shown as Ava. */
@@ -110,6 +112,7 @@ export const SUPPORT_REPLY_LIST_SELECT = `
   via_email,
   via_whatsapp,
   whatsapp_with,
+  whatsapp_read_at,
   as_ava,
   seen_at,
   seen_reaction,
@@ -133,6 +136,7 @@ export function mapSupportReplyRow(
     via_email?: boolean | null;
     via_whatsapp?: boolean | null;
     whatsapp_with?: string | null;
+    whatsapp_read_at?: string | null;
     as_ava?: boolean | null;
     seen_at?: string | null;
     seen_reaction?: string | null;
@@ -153,6 +157,7 @@ export function mapSupportReplyRow(
     via_email: Boolean(raw.via_email),
     via_whatsapp: Boolean(raw.via_whatsapp),
     whatsapp_with: raw.whatsapp_with ?? null,
+    whatsapp_read_at: raw.whatsapp_read_at ?? null,
     as_ava: Boolean(raw.as_ava),
     seen_at: raw.seen_at ?? null,
     seen_name: raw.seen_at ? seenName(raw.seen_author) : null,

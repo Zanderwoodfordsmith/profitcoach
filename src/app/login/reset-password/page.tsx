@@ -116,7 +116,7 @@ export default function ResetPasswordPage() {
         role = json.role;
       }
       if (role === "client" && json.linked_contact_type === "prospect") {
-        await supabaseClient.auth.signOut();
+        await supabaseClient.auth.signOut({ scope: "local" });
         router.push("/login?reason=prospect_portal");
         return;
       }

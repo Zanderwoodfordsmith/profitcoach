@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { filesFromFormData } from "@/lib/messaging/messageAttachments";
 import {
+  createCampaignStepMediaUploadSlot,
+  finishCampaignStepMediaUpload,
   signCampaignStepMedia,
   uploadCampaignStepMedia,
 } from "@/lib/unipile/campaignStepMedia";
@@ -31,6 +33,10 @@ export async function POST(
   const { id } = await ctx.params;
   const item = await getLibraryItem(id);
   if (!item) return NextResponse.json({ error: "Not found." }, { status: 404 });
+
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    return directUpload(request, libraryStepMediaFolder(id));
+  }
 
   let form: FormData;
   try {
@@ -72,6 +78,52 @@ export async function POST(
     const message = err instanceof Error ? err.message : "Upload failed.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
+}
+
+/** { intent: "start" } → upload slot; { intent: "complete", path } → media. */
+async function directUpload(request: Request, campaignId: string) {
+  const body = (await request.json().catch(() => null)) as {
+    intent?: string;
+    kind?: unknown;
+    filename?: string;
+    mime?: string;
+    size?: number;
+    path?: string;
+  } | null;
+  const kind = asKind(body?.kind);
+  if (!body || !kind) {
+    return NextResponse.json({ error: "Choose voice or video." }, { status: 400 });
+  }
+  const filename = body.filename || "file";
+  const mime = body.mime || "";
+  try {
+    if (body.intent === "start") {
+      const slot = await createCampaignStepMediaUploadSlot({
+        ownerId: LIBRARY_MEDIA_COACH_ID,
+        campaignId,
+        filename,
+        mime,
+        size: Number(body.size ?? 0),
+        kind,
+      });
+      return NextResponse.json(slot);
+    }
+    if (body.intent === "complete") {
+      const media = await finishCampaignStepMediaUpload({
+        ownerId: LIBRARY_MEDIA_COACH_ID,
+        campaignId,
+        path: body.path ?? "",
+        filename,
+        mime,
+        kind,
+      });
+      return NextResponse.json({ media });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Upload failed.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+  return NextResponse.json({ error: "Bad request." }, { status: 400 });
 }
 
 export async function GET(

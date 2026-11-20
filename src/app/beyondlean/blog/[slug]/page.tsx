@@ -6,7 +6,7 @@ import { BOOK_HREF } from "@/components/beyondlean/data";
 import { CircleButton, CloseCard, HOME, Markdown, PageHero, ScoreCallout, V5Shell } from "@/components/beyondlean/v5/parts";
 import { PostCard } from "@/components/beyondlean/v5/PostCard";
 import { getPost, getPublishedPosts } from "@/lib/beyondlean/content";
-import { beyondleanMode } from "@/lib/beyondlean/mode";
+import { beyondleanMode, beyondleanRobots } from "@/lib/beyondlean/mode";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: post ? `${post.title} | Paul Swift, Beyondlean` : "Blog | Beyondlean",
     description: post?.excerpt,
-    robots: { index: false, follow: false },
+    robots: beyondleanRobots,
   };
 }
 

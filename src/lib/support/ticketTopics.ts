@@ -1,3 +1,4 @@
+import { supportBodyForAi } from "@/lib/support/supportTicketMedia";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -90,7 +91,7 @@ export async function tagUntaggedSupportTickets(limit = 25): Promise<number> {
 
   const { data: replies } = await supabaseAdmin
     .from("community_feedback_replies")
-    .select("report_id, body, created_at")
+    .select("report_id, body, media, created_at")
     .in(
       "report_id",
       tickets.map((t) => t.id)
@@ -100,7 +101,8 @@ export async function tagUntaggedSupportTickets(limit = 25): Promise<number> {
   const firstMessages = new Map<string, string[]>();
   for (const r of replies ?? []) {
     const list = firstMessages.get(r.report_id) ?? [];
-    if (list.length < 3 && r.body) list.push(String(r.body).replace(/\s+/g, " ").slice(0, 600));
+    const text = supportBodyForAi(String(r.body ?? ""), r.media);
+    if (list.length < 3 && text) list.push(text.replace(/\s+/g, " ").slice(0, 600));
     firstMessages.set(r.report_id, list);
   }
 

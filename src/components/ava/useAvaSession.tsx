@@ -171,13 +171,14 @@ function useAvaSessionState(active: boolean) {
   }, [active, authHeaders]);
 
   const historyCoachId = agent?.mode === "admin" ? (page?.coach?.id ?? null) : null;
+  const bcaChatsOnly = Boolean(page?.bcaChatsOnly);
   const loadChats = useCallback(() => {
     let live = true;
     void (async () => {
       const headers = await authHeaders();
       if (!headers) return;
       // BCA on a coach's Blueprint: every chat about that coach, theirs marked Coach.
-      const forCoach = historyCoachId ? `?coach=${encodeURIComponent(historyCoachId)}` : "";
+      const forCoach = historyCoachId ? `?coach=${encodeURIComponent(historyCoachId)}${bcaChatsOnly ? "&bca=1" : ""}` : "";
       const res = await fetch(`/api/agent/chats${forCoach}`, { headers }).catch(() => null);
       const body = res?.ok
         ? ((await res.json().catch(() => null)) as {
@@ -189,7 +190,7 @@ function useAvaSessionState(active: boolean) {
     return () => {
       live = false;
     };
-  }, [authHeaders, historyCoachId]);
+  }, [authHeaders, historyCoachId, bcaChatsOnly]);
 
   /** Pin, unpin or rename one of your chats, then refresh the list. */
   const updateChat = useCallback(

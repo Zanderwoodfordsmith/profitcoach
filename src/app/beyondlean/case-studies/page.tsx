@@ -12,12 +12,13 @@ import {
   V5Shell,
 } from "@/components/beyondlean/v5/parts";
 import { getCaseStudies, glance, sections, type CaseStudy } from "@/lib/beyondlean/content";
-import { beyondleanMode } from "@/lib/beyondlean/mode";
+import { StoryCard } from "@/components/beyondlean/v5/StoryCard";
+import { beyondleanMode, beyondleanRobots } from "@/lib/beyondlean/mode";
 
 export const metadata: Metadata = {
   title: "Case studies | Paul Swift, Beyondlean",
   description: "Real projects, real numbers. How Paul Swift fixed the way work gets done in food production, finance, energy and more.",
-  robots: { index: false, follow: false },
+  robots: beyondleanRobots,
 };
 
 function Figure({ study, label = true }: { study: CaseStudy; label?: boolean }) {
@@ -59,30 +60,6 @@ function FeaturedStory({ study, first = false }: { study: CaseStudy; first?: boo
       <div className="v5-cs-feature-media">
         {study.photo && <Image src={study.photo} alt="" fill sizes="(max-width: 900px) 100vw, 560px" priority={first} />}
         <Figure study={study} label={false} />
-      </div>
-    </Link>
-  );
-}
-
-/** One story in the two-column grid: photo with the number, then client over result. */
-function StoryCard({ study }: { study: CaseStudy }) {
-  return (
-    <Link href={`${HOME}/case-studies/${study.slug}`} className="v5-cs-card" data-reveal>
-      <div className="v5-cs-card-media">
-        {study.photo && <Image src={study.photo} alt="" fill sizes="(max-width: 900px) 100vw, 260px" />}
-        <Figure study={study} label={false} />
-      </div>
-      <div className="v5-cs-card-body">
-        <h3 className="v5-cs-title">
-          <span>{study.client}</span>{" "}
-          <strong>
-            {study.figure} {study.figureLabel}
-          </strong>
-        </h3>
-        <p className="v5-cs-teaser">{study.summary}</p>
-        <span className="v5-article-more">
-          Read the case study <ArrowRight aria-hidden />
-        </span>
       </div>
     </Link>
   );

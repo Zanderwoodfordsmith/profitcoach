@@ -3,27 +3,22 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
-  Clock,
   Factory,
-  Gauge,
   Landmark,
   MoveRight,
   Plane,
   Shield,
-  TrendingDown,
-  UserRound,
   UtensilsCrossed,
   Zap,
 } from "lucide-react";
-import { BossWheel } from "@/components/BossCharts/BossWheel";
 import Link from "next/link";
 import { getCaseStudies, getPublishedPosts } from "@/lib/beyondlean/content";
-import { BOOK_HREF, EXAMPLE_AREA_SCORES, EXAMPLE_TOTAL, SCORE_HREF } from "./data";
+import { BOOK_HREF, EXAMPLE_TOTAL, SCORE_HREF } from "./data";
 import { CaseRow, SlideRow } from "./v5/CaseRow";
 import { CircleButton, CloseCard, CtaCard, FaqSection, HOME, Heading, V5Shell } from "./v5/parts";
-import { PostCard, topicIcon } from "./v5/PostCard";
-import { ChangeList } from "./v5/ChangeList";
+import { topicIcon } from "./v5/PostCard";
 import { QuoteList } from "./v5/QuoteList";
+import { shortText } from "./v5/shortText";
 
 const SECTORS = [
   { icon: Factory, label: "Manufacturing" },
@@ -56,56 +51,6 @@ const TABS = [
       { href: `${HOME}/how-it-works`, label: "How it works" },
       { href: `${HOME}/blog`, label: "Read the blog" },
     ],
-  },
-];
-
-const PAINS = [
-  {
-    icon: UserRound,
-    title: "Everything comes back to you",
-    text: "Decisions and problems wait for you, so the business only moves as fast as you do.",
-  },
-  {
-    icon: Clock,
-    title: "Your best people firefight",
-    text: "Rework and chasing eat the hours that should be making money.",
-  },
-  {
-    icon: Gauge,
-    title: "Jobs take too long",
-    text: "Work sits waiting between people and steps. Customers notice first.",
-  },
-  {
-    icon: TrendingDown,
-    title: "Sales up, profit flat",
-    text: "More work brings more cost, because the way you work hasn't kept up.",
-  },
-];
-
-const PHASES = [
-  {
-    step: "Step 1",
-    title: "Score it",
-    text: "Take the free BOSS Score: 13 quick questions, a score out of 100 across the 10 areas of your business.",
-    photo: "/beyondlean/paul-score.jpg",
-    href: SCORE_HREF,
-    cta: "Get your score",
-  },
-  {
-    step: "Step 2",
-    title: "Talk it through",
-    text: "On a Constraint Call we find the one thing holding your business back, and the one to three things to do next.",
-    photo: null,
-    href: BOOK_HREF,
-    cta: "Book a Constraint Call",
-  },
-  {
-    step: "Step 3",
-    title: "Fix it, and make it stick",
-    text: "A 90-day plan worked through side by side, measured before and after, until the change holds.",
-    photo: "/beyondlean/paul-fix.jpg",
-    href: `${HOME}/how-it-works`,
-    cta: "See how it works",
   },
 ];
 
@@ -210,8 +155,7 @@ const QUOTES = [
 ];
 
 /** The real problem: a headline that takes the blame off the owner, their own words, and what it costs. */
-function Pains({ old }: { old: boolean }) {
-  if (old) return <PainsOld />;
+function Pains() {
   return (
     <section className="v5-section v5-white v5-problem-section" aria-labelledby="v5-pains-title">
       <div className="v5-wrap">
@@ -236,52 +180,6 @@ function Pains({ old }: { old: boolean }) {
     </section>
   );
 }
-
-function PainsOld() {
-  return (
-    <section className="v5-section v5-white" aria-labelledby="v5-pains-title">
-      <div className="v5-wrap">
-        <div className="v5-head is-center" data-reveal>
-          <Heading id="v5-pains-title" light="Busy, but the profit" strong="doesn't show it?" center />
-          <p>If any of these sound familiar, the fix is usually in how the work gets done.</p>
-        </div>
-        <ul className="v5-pains">
-          {PAINS.map(({ icon: Icon, title, text }) => (
-            <li key={title} data-reveal>
-              <span className="v5-icon-tile" aria-hidden>
-                <Icon />
-              </span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </li>
-          ))}
-        </ul>
-        <div className="v5-section-cta">
-          <CircleButton href={SCORE_HREF}>See Where Yours Stands: Free BOSS Score</CircleButton>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/** What changes: the three costs of staying stuck, each flipped into what you get back. */
-const CHANGES = [
-  {
-    cost: "Hours you'll never get back",
-    gain: "Your time back",
-    text: "Your team handles the day-to-day, so evenings and weekends are yours again.",
-  },
-  {
-    cost: "Profit left on the table",
-    gain: "Profit you can see",
-    text: "Fewer delays, redos and waits, so more of what you earn stays in the business.",
-  },
-  {
-    cost: "A business that can't sell without you",
-    gain: "A business worth more",
-    text: "It runs without you, so it's worth more, whether you keep it, hand it on or sell.",
-  },
-];
 
 /** Fine line drawings that sit on top of each result card. */
 function ClockArt() {
@@ -359,8 +257,7 @@ const RESULTS = [
 ];
 
 /** BOSS on its own line, wires down to three results. Only the light round BOSS moves; cards come alive on hover. */
-function Changes({ old }: { old: boolean }) {
-  if (old) return <ChangesCards />;
+function Changes() {
   return (
     <section className="v5-hub-section" aria-labelledby="v5-changes-title">
       <div className="v5-wrap">
@@ -394,21 +291,6 @@ function Changes({ old }: { old: boolean }) {
             ))}
           </ul>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/** Earlier version: three grey cards, the one being read grows as you scroll. */
-function ChangesCards() {
-  return (
-    <section className="v5-section v5-white v5-changes-section" aria-labelledby="v5-changes-title">
-      <div className="v5-wrap v5-changes-grid">
-        <div className="v5-changes-head" data-reveal>
-          <p className="v5-eyebrow">What Changes</p>
-          <Heading id="v5-changes-title" light="Fix the system," strong="and you get three things back." />
-        </div>
-        <ChangeList items={CHANGES} />
       </div>
     </section>
   );
@@ -535,8 +417,7 @@ function ScoreChip() {
   );
 }
 
-function Phases({ old }: { old: boolean }) {
-  if (old) return <PhasesOld />;
+function Phases() {
   return (
     <section className="v5-phases" aria-labelledby="v5-phases-title">
       <svg className="v5-phases-arcs" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
@@ -582,37 +463,6 @@ function Phases({ old }: { old: boolean }) {
   );
 }
 
-function PhasesOld() {
-  return (
-    <section className="v5-phases" aria-labelledby="v5-phases-title">
-      <svg className="v5-phases-arcs" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
-        <circle cx="300" cy="980" r="640" />
-        <circle cx="1240" cy="-120" r="560" />
-      </svg>
-      <div className="v5-wrap">
-        <div className="v5-head is-center" data-reveal>
-          <Heading id="v5-phases-title" light="Three steps to" strong="more profit and less firefighting." center />
-        </div>
-        <ol className="v5-phase-cards">
-          {PHASES.map((p) => (
-            <li key={p.title} className={p.photo ? "v5-phase has-photo" : "v5-phase is-solid"} data-reveal>
-              {p.photo && <Image src={p.photo} alt="" fill sizes="(max-width: 900px) 100vw, 400px" />}
-              <div className="v5-phase-body">
-                <span className="v5-phase-step">{p.step}</span>
-                <h3>{p.title}</h3>
-                <p>{p.text}</p>
-                <a className="v5-outline-btn" href={p.href}>
-                  {p.cta} <ArrowRight aria-hidden />
-                </a>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
-  );
-}
-
 function Results() {
   const items = getCaseStudies().map(({ slug, title, sector, summary, photo }) => ({ slug, title, sector, summary, photo }));
   return (
@@ -633,58 +483,27 @@ function Results() {
   );
 }
 
-function Score({ old }: { old: boolean }) {
-  if (!old) {
-    return (
-      <section className="v5-section v5-soft" aria-labelledby="v5-score-title">
-        <div className="v5-wrap">
-          <CtaCard
-            id="v5-score-title"
-            eyebrow="Free BOSS Score"
-            light="Where is your business"
-            strong="losing money?"
-            text="13 quick questions give you a score out of 100 across the 10 areas of your business, and show you what to fix first. It takes a few minutes and it's free."
-            href={SCORE_HREF}
-            label="Get Your Free BOSS Score"
-            photo="/beyondlean/owner-laptop.jpg"
-          />
-        </div>
-      </section>
-    );
-  }
+function Score() {
   return (
     <section className="v5-section v5-soft" aria-labelledby="v5-score-title">
-      <div className="v5-wrap v5-score">
-        <div className="v5-score-panel" data-reveal>
-          <h2 id="v5-score-title" className="v5-h2 is-dark">
-            <span>Where is your business losing money?</span> <strong>Find out free, in minutes.</strong>
-          </h2>
-          <p>
-            13 quick questions give you a score out of 100 across the 10 areas of your business, from sales to systems
-            to you as the owner. Then we go through it together.
-          </p>
-          <CircleButton href={SCORE_HREF} tone="white">
-            Get Your Free BOSS Score
-          </CircleButton>
-        </div>
-        <figure className="v5-score-card" data-reveal>
-          <BossWheel
-            areaScores={EXAMPLE_AREA_SCORES}
-            totalScore={EXAMPLE_TOTAL}
-            showLegend={false}
-            size="compact"
-            aria-label="Example BOSS wheel across ten business areas"
-          />
-          <figcaption>Example score</figcaption>
-        </figure>
+      <div className="v5-wrap">
+        <CtaCard
+          id="v5-score-title"
+          eyebrow="Free BOSS Score"
+          light="Where is your business"
+          strong="losing money?"
+          text="13 quick questions give you a score out of 100 across the 10 areas of your business, and show you what to fix first. It takes a few minutes and it's free."
+          href={SCORE_HREF}
+          label="Get Your Free BOSS Score"
+          photo="/beyondlean/owner-laptop.jpg"
+        />
       </div>
     </section>
   );
 }
 
 /** Paul's articles as a sideways row of text cards, the featured ones first, ending on a card to see them all. */
-function Library({ old }: { old: boolean }) {
-  if (old) return <LibraryOld />;
+function Library() {
   const all = getPublishedPosts();
   if (all.length === 0) return null;
   return (
@@ -710,7 +529,7 @@ function Library({ old }: { old: boolean }) {
                 {p.category}
               </span>
               <span className="v5-guide-title">{p.title}</span>
-              <span className="v5-guide-text">{p.excerpt}</span>
+              <span className="v5-guide-text">{shortText(p.excerpt, 120)}</span>
               <span className="v5-guide-foot">
                 {p.readMinutes ? `${p.readMinutes} min read` : "Read"}
                 <ArrowRight aria-hidden />
@@ -732,47 +551,22 @@ function Library({ old }: { old: boolean }) {
   );
 }
 
-function LibraryOld() {
-  const posts = getPublishedPosts().slice(0, 3);
-  if (posts.length === 0) return null;
+
+
+export function BeyondleanV5() {
   return (
-    <section className="v5-section v5-soft" id="library" aria-labelledby="v5-library-title">
-      <div className="v5-wrap">
-        <div className="v5-head v5-head-split" data-reveal>
-          <Heading id="v5-library-title" light="From Paul's" strong="blog." />
-          <div className="v5-head-side">
-            <p>20 years of writing on getting the basics right, from the shop floor to the boardroom.</p>
-            <Link className="v5-text-link" href={`${HOME}/blog`}>
-              All articles <ArrowRight aria-hidden />
-            </Link>
-          </div>
-        </div>
-        <div className="v5-library">
-          {posts.map((a) => (
-            <PostCard key={a.slug} post={a} href={`${HOME}/blog/${a.slug}`} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-
-
-export function BeyondleanV5({ old = false, switcher }: { old?: boolean; switcher?: React.ReactNode }) {
-  return (
-    <V5Shell active="home" switcher={switcher}>
+    <V5Shell active="home">
       <HeroPhoto />
       <Sectors />
-      <Pains old={old} />
-      <Changes old={old} />
+      <Pains />
+      <Changes />
       <About />
-      <Phases old={old} />
+      <Phases />
       <Results />
-      <Score old={old} />
+      <Score />
       <FaqSection side />
-      <Library old={old} />
-      <CloseCard old={old} />
+      <Library />
+      <CloseCard />
     </V5Shell>
   );
 }

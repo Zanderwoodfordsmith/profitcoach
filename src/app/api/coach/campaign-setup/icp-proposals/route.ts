@@ -80,6 +80,7 @@ export async function POST(request: Request) {
     system: ICP_PROPOSALS_SYSTEM,
     user: buildIcpProposalsUser({ linkedInSummary, libraryIndustries }),
     maxTokens: 2048,
+    writing: true,
   });
 
   if (error || !data?.proposals?.length) {

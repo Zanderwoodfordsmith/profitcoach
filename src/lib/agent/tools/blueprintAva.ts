@@ -1,4 +1,4 @@
-import { blocksToMarkdown, sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
+import { blocksToMarkdown, editedByHand, sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
 import {
   BLUEPRINT_GROUPS,
   BLUEPRINT_SECTIONS,
@@ -95,6 +95,58 @@ function shapeValue(field: FieldSpec, raw: unknown): unknown {
   }
 }
 
+/** Answers stored as a list of entries with ids: Ava adds or changes one without resending the rest (job 233). */
+const ENTRY_KINDS = new Set(["results", "stories", "career"]);
+
+function entryId(item: unknown): string {
+  const id = item && typeof item === "object" ? (item as { id?: unknown }).id : null;
+  return typeof id === "string" ? id : "";
+}
+
+/** Updates entries with a matching id (blank values keep what was there), adds the rest, keeps every other entry. */
+export function mergeEntries(current: unknown, incoming: unknown[]): unknown[] {
+  const list = Array.isArray(current) ? current.slice() : [];
+  for (const item of incoming) {
+    if (!item || typeof item !== "object") continue;
+    const id = entryId(item);
+    const at = id ? list.findIndex((e) => entryId(e) === id) : -1;
+    if (at < 0) {
+      list.push(item);
+      continue;
+    }
+    const set = Object.fromEntries(Object.entries(item).filter(([, v]) => v !== "" && v !== null && v !== undefined));
+    list[at] = { ...(list[at] as object), ...set };
+  }
+  return list;
+}
+
+/** What the sanitizer would cut short or drop, so Ava says so instead of saving less than the coach said. */
+export function cutShort(sent: unknown, kept: unknown, path: string, out: string[]) {
+  if (typeof sent === "string") {
+    const length = sent.trim().length;
+    if (typeof kept === "string" && kept.length < length) out.push(`${path} (at most ${kept.length} characters, this was ${length})`);
+    return;
+  }
+  if (Array.isArray(sent)) {
+    const rows = Array.isArray(kept) ? kept : [];
+    if (rows.length < sent.length) out.push(`${path} (at most ${rows.length} entries, this was ${sent.length})`);
+    sent.forEach((item, i) => cutShort(item, rows[i], sent.length > 1 ? `${path} entry ${i + 1}` : path, out));
+    return;
+  }
+  if (sent && typeof sent === "object" && kept && typeof kept === "object") {
+    for (const [key, value] of Object.entries(sent)) cutShort(value, (kept as Record<string, unknown>)[key], `${path} ${key}`, out);
+  }
+}
+
+export function sanitizedAnswer(group: string, key: string, value: unknown) {
+  const patch = sanitizePayloadPatch(
+    { [group]: { [key]: { value, source: "interview", updated_at: new Date().toISOString() } } },
+    "interview"
+  );
+  const saved = (patch as Record<string, Record<string, { value?: unknown } | undefined> | undefined>)[group]?.[key];
+  return { patch, saved };
+}
+
 /** The section, the new blocks and what is there now, or an error the model can fix. */
 async function checkCopy(input: AgentToolInput, coachId: string) {
   const ref = sectionRef(input);
@@ -107,6 +159,12 @@ async function checkCopy(input: AgentToolInput, coachId: string) {
   }
   const blocks = sanitizeBlocks(input.blocks);
   if (!blocks.length) throw new AgentToolError("The new version is empty. Send blocks in the blueprint block format.");
+  // Stop before writing over a person's own edits (job 233): build on them, or get a clear yes first.
+  if (editedByHand(existing) && bool(input, "overwrite_hand_edits") !== true) {
+    throw new AgentToolError(
+      `${where(ref)} was edited by hand on ${existing?.edited_at?.slice(0, 10)}. Read it again with read_section and keep those edits in your new version. Only if they said to replace their edits, send overwrite_hand_edits: true.`
+    );
+  }
   return { ref, blocks, existing };
 }
 
@@ -228,7 +286,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
           holds: "copy BCA wrote",
           written: Boolean(built),
           written_on: built?.generated_at?.slice(0, 10) ?? null,
-          edited_by_hand: Boolean(built?.edited_at),
+          edited_by_hand: editedByHand(built),
           text: text.length > 9_000 ? `${text.slice(0, 9_000)}\n[Truncated.]` : text,
         };
       }
@@ -238,7 +296,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
         answers: (ref.section.fields ?? [])
           .filter((field) => shown(field, row))
           .map((field) => {
-            const structured = ["results", "stories", "rows"].includes(field.kind);
+            const structured = ["results", "stories", "rows", "career"].includes(field.kind);
             return {
               path: field.path,
               label: field.label,
@@ -259,7 +317,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
     label: "Saving to the blueprint",
     needsCoach: true,
     description:
-      "Save one of the coach's answers into their Blueprint. Only ever save what the coach said in this conversation (or wording they explicitly said yes to). Never a fact you inferred or improved on your own. Replacing an answer that is already there needs replace: true and a new answer from the coach.",
+      "Save one of the coach's answers into their Blueprint. Only ever save what the coach said in this conversation (or wording they explicitly said yes to). Never a fact you inferred or improved on your own. Replacing an answer that is already there needs replace: true and a new answer from the coach. For results, stories and career entries, send only the entries to add or change: one with an id already there updates that entry (leave a value blank to keep it), one without an id is added, and every other entry stays as it is. To remove an entry, send the whole list to keep with replace: true. Nothing is ever cut short: if a value is too long for its box, the tool says so and saves nothing.",
     input_schema: {
       type: "object",
       properties: {
@@ -269,7 +327,10 @@ export const blueprintAvaTools: AgentToolDef[] = [
             "Text for text fields, a list of strings for list fields, an option value for choices, or the raw list of entries for results, stories and rows",
         },
         coach_words: { type: "string", description: "What the coach said that this answer comes from, quoted" },
-        replace: { type: "boolean", description: "True only when the coach gave a new answer for one already saved" },
+        replace: {
+          type: "boolean",
+          description: "True only when the coach gave a new answer for one already saved, or to remove an entry from results, stories or career",
+        },
       },
       required: ["path", "value", "coach_words"],
     },
@@ -284,20 +345,30 @@ export const blueprintAvaTools: AgentToolDef[] = [
         throw new AgentToolError("Quote what the coach said. Answers only come from the coach.");
       }
       const row = await ensurePracticeKnowledge(coach.id);
-      if (fieldFilled(row.payload, owner.field) && bool(input, "replace") !== true) {
+      const replace = bool(input, "replace") === true;
+      const entries = ENTRY_KINDS.has(owner.field.kind);
+      if (fieldFilled(row.payload, owner.field) && !replace && !entries) {
         const current = formatFieldValue(row.payload, owner.field).join("; ");
         throw new AgentToolError(
           `${owner.field.label} already says: "${current.slice(0, 300)}". Only replace it if the coach gave a new answer, with replace: true.`
         );
       }
-      const value = shapeValue(owner.field, input.value);
+      const sent = shapeValue(owner.field, input.value);
       const [group, key] = path.split(".");
-      const patch = sanitizePayloadPatch(
-        { [group]: { [key]: { value, source: "interview", updated_at: new Date().toISOString() } } },
-        "interview"
-      );
-      const saved = (patch as Record<string, Record<string, unknown> | undefined>)[group]?.[key];
+      const cuts: string[] = [];
+      cutShort(sent, sanitizedAnswer(group, key, sent).saved?.value, owner.field.label, cuts);
+      if (cuts.length) {
+        throw new AgentToolError(
+          `Not saved, because it would be cut short: ${cuts.join("; ")}. Shorten it with the coach, or split it across entries, then save again.`
+        );
+      }
+      const value =
+        entries && !replace && Array.isArray(sent) ? mergeEntries(fieldValue(row.payload, owner.field.path)?.value, sent) : sent;
+      const { patch, saved } = sanitizedAnswer(group, key, value);
       if (!saved) throw new AgentToolError(`That answer did not fit ${owner.field.label}. Check its shape and try again.`);
+      if (Array.isArray(value) && Array.isArray(saved.value) && saved.value.length < value.length) {
+        throw new AgentToolError(`${owner.field.label} holds at most ${saved.value.length} entries. Ask the coach which to drop, then save with replace: true.`);
+      }
       await patchPracticeKnowledge({ coachId: coach.id, payloadPatch: patch });
       return { saved: true, section: owner.ref.key, field: owner.field.label, _note: `Saved to ${where(owner.ref)}` };
     },
@@ -314,6 +385,10 @@ export const blueprintAvaTools: AgentToolDef[] = [
         section: { type: "string", description: 'Written section key, e.g. "campaigns:messaging"' },
         blocks: { type: "array", items: { type: "object" }, description: "The whole new section as blueprint blocks" },
         summary: { type: "string", description: "One line on what changed and why" },
+        overwrite_hand_edits: {
+          type: "boolean",
+          description: "True only when the section was edited by hand and the person said to replace those edits",
+        },
       },
       required: ["section", "blocks", "summary"],
     },
@@ -327,7 +402,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
         draft: true,
         title: existing ? `New version of "${where(ref)}"` : `Draft of "${where(ref)}"`,
         details: [...(summary ? [{ label: "What changed", value: summary.slice(0, 300) }] : []), { label: "Section", value: where(ref) }],
-        warning: existing?.edited_at && existing.model !== "ava" ? "This section was edited by hand. Saving replaces those edits." : undefined,
+        warning: editedByHand(existing) ? "This section was edited by hand. Saving replaces those edits." : undefined,
         preview: blocksToMarkdown(blocks),
         before: existing ? blocksToMarkdown(existing.blocks) : undefined,
       };
@@ -359,7 +434,7 @@ export const blueprintAvaTools: AgentToolDef[] = [
         saved: true,
         section: ref.key,
         can_undo: Boolean(existing),
-        ...(existing?.edited_at ? { replaced_hand_edits: true } : {}),
+        ...(editedByHand(existing) ? { replaced_hand_edits: true } : {}),
         _note: `Updated ${where(ref)}`,
       };
     },

@@ -1,8 +1,10 @@
 "use client";
 
 import { useId, useRef, useState, type ReactNode } from "react";
-import { MessageSquare, Mic, Upload, Video, X } from "lucide-react";
+import { Circle, MessageSquare, Mic, Upload, Video, X } from "lucide-react";
+import { CampaignMediaRecorder } from "@/components/campaigns/CampaignMediaRecorder";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -283,6 +285,7 @@ export function MessageStepMedia({
   const hintId = useId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
   const selected: CampaignStepMediaKind | "message" = mediaKind ?? "message";
   const signedUrl =
     media &&
@@ -312,29 +315,49 @@ export function MessageStepMedia({
       }
       const headers = await getCoachAuthHeaders(impersonatingCoachId);
       if (!headers) throw new Error("Sign in required.");
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("kind", nextKind);
-      const res = await fetch(
+      const url =
         uploadUrl ??
-          `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}/step-media`,
-        {
-          method: "POST",
-          headers: { Authorization: headers.Authorization },
-          body: fd,
-        }
-      );
-      const body = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        media?: CampaignStepMedia & { signedUrl?: string | null };
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}/step-media`;
+      const meta = {
+        kind: nextKind,
+        filename: file.name,
+        mime: file.type,
+        size: file.size,
       };
-      if (!res.ok || !body.media) {
-        throw new Error(body.error || "Upload failed.");
+      async function post<T>(payload: object): Promise<T> {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: headers!.Authorization,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        const json = (await res.json().catch(() => ({}))) as T & { error?: string };
+        if (!res.ok) throw new Error(json.error || "Upload failed.");
+        return json;
       }
+      // The file goes straight to storage, not through our server, which
+      // turns away anything over 4.5 MB.
+      const slot = await post<{ path: string; token: string }>({
+        intent: "start",
+        ...meta,
+      });
+      const { error: uploadError } = await supabaseClient.storage
+        .from("messaging-attachments")
+        .uploadToSignedUrl(slot.path, slot.token, file, {
+          contentType: file.type.split(";")[0] || undefined,
+        });
+      if (uploadError) throw new Error(uploadError.message || "Upload failed.");
+      const body = await post<{
+        media?: CampaignStepMedia & { signedUrl?: string | null };
+      }>({ intent: "complete", path: slot.path, ...meta });
+      if (!body.media) throw new Error("Upload failed.");
       patch({
         media_kind: nextKind,
         media: body.media,
       });
+      setRecording(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -348,11 +371,12 @@ export function MessageStepMedia({
       : "video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm";
   const uploadHint =
     selected === "voice"
-      ? `M4A or MP3, under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB, up to about 5 minutes.`
-      : `MP4 or MOV, under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB, up to about 5 minutes.`;
+      ? `Record here, or upload an M4A or MP3 under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB. Up to 5 minutes.`
+      : `Record here, or upload an MP4 or MOV under ${MAX_CAMPAIGN_STEP_MEDIA_MB} MB. Up to 5 minutes.`;
 
   function selectKind(next: CampaignStepMediaKind | "message") {
     if (next === selected) return;
+    setRecording(false);
     if (next === "message") {
       patch({ media_kind: null, media: null });
       return;
@@ -400,14 +424,35 @@ export function MessageStepMedia({
         </div>
         {trailing ? <div className="ml-auto shrink-0">{trailing}</div> : null}
       </div>
-      {selected !== "message" && !media ? (
+      {selected !== "message" && !media && recording ? (
+        <CampaignMediaRecorder
+          key={selected}
+          kind={selected}
+          busy={busy}
+          onUse={(file) => void onFile(file, selected)}
+          onCancel={() => setRecording(false)}
+        />
+      ) : null}
+      {selected !== "message" && !media && !recording ? (
         <div className="mt-2.5 flex items-center gap-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setError(null);
+              setRecording(true);
+            }}
+            className={buttonClass("main", "normal", "shrink-0")}
+          >
+            <Circle className="h-3.5 w-3.5 fill-rose-500 text-rose-500" aria-hidden />
+            Record
+          </button>
           <button
             type="button"
             disabled={busy}
             aria-describedby={hintId}
             onClick={() => inputRef.current?.click()}
-            className={buttonClass("main", "normal", "shrink-0")}
+            className={buttonClass("second", "normal", "shrink-0")}
           >
             <Upload className="h-4 w-4" aria-hidden />
             {busy ? "Uploading…" : "Upload"}
@@ -446,16 +491,7 @@ export function MessageStepMedia({
           {signedUrl ? (
             media.kind === "voice" ? (
               <audio controls src={signedUrl} className="h-8 max-w-[10rem]" />
-            ) : (
-              <a
-                href={signedUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-caption font-medium text-[#0c5290] hover:underline"
-              >
-                Preview
-              </a>
-            )
+            ) : null
           ) : null}
           <button
             type="button"
@@ -471,6 +507,15 @@ export function MessageStepMedia({
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
+      ) : null}
+      {media?.kind === "video" && signedUrl ? (
+        <video
+          controls
+          playsInline
+          preload="metadata"
+          src={signedUrl}
+          className="mt-2 aspect-video w-full max-w-sm rounded-md bg-slate-900"
+        />
       ) : null}
       {error ? <p className="mt-1 text-caption text-rose-700">{error}</p> : null}
     </div>

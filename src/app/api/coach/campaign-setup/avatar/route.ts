@@ -119,6 +119,7 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join("\n\n"),
     maxTokens: 8192,
+    writing: true,
   });
 
   const normalized = normalizeAvatarPayload(avatarResult.data);

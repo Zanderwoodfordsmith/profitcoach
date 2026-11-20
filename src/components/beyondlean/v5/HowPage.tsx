@@ -113,6 +113,27 @@ const FIT_NO: FitItem[] = [
 /** Owner Performance has no line in the shared copy; the other nine come from AREA_TRANSFORMATIONS. */
 const OWNER_SHIFT = { from: "Stretched thin", to: "Clear head, more time" };
 
+/** What each area covers, in plain words, for the hover card under each letter. */
+const AREA_ABOUT: Record<number, string> = {
+  0: "How you run yourself: your focus, your energy and how you lead. If you burn out, none of the rest matters.",
+  1: "Where the business is going, and a team that knows it and pulls the same way.",
+  2: "How you'll win: who you serve, what you sell and what you say no to.",
+  3: "Turning the plan into 90-day goals, weekly priorities and meetings that keep it on track.",
+  4: "Prices, margins and cash, so the money you make stays in the business.",
+  5: "A steady flow of the right customers, not feast one month and famine the next.",
+  6: "How the work gets done, the same way every time, without you checking it.",
+  7: "The few numbers that tell you how the business is doing, every week.",
+  8: "Written processes and the right tools, so things run the same way every day.",
+  9: "The right people in the right jobs, led well, running the day to day.",
+};
+
+/** The five playbooks in one area, from the first level up. */
+function areaBooks(area: number) {
+  return PLAYBOOKS.filter((p) => p.area === area)
+    .sort((a, b) => a.level - b.level)
+    .map((p) => p.name);
+}
+
 /** Paul's Standard Business Roadmap (content/beyondlean/blog/standard-business-roadmap.md). */
 const ROADMAP = [
   { title: "Diagnostic", text: "Where you are now", note: "Steps 1 and 2", tone: "done" },
@@ -215,11 +236,20 @@ function ScoreStep() {
                         {a.code}
                       </span>
                       <AreaName name={a.name} className="h7-letter-name" />
-                      {shift && (
-                        <span className="h7-letter-shift">
-                          {shift.from} <ArrowRight aria-hidden /> <strong>{shift.to}</strong>
+                      <span className="h7-card h7-letter-card" role="tooltip">
+                        <span className="h7-card-eyebrow">{PILLAR_NAMES[a.pillar]}</span>
+                        <strong className="h7-card-title">{a.name}</strong>
+                        <span className="h7-card-text">{AREA_ABOUT[a.id]}</span>
+                        {shift && (
+                          <span className="h7-letter-shift">
+                            {shift.from} <ArrowRight aria-hidden /> <strong>{shift.to}</strong>
+                          </span>
+                        )}
+                        <span className="h7-card-books">
+                          <span>5 playbooks</span>
+                          {areaBooks(a.id).join(", ")}
                         </span>
-                      )}
+                      </span>
                     </li>
                   );
                 })}
@@ -401,9 +431,12 @@ function LevelsAndPlaybooks({ about }: { about: Map<string, string> }) {
                       <td key={a.id}>
                         {p?.name}
                         {p && text && (
-                          <span className="h7-tip" role="tooltip">
-                            <strong>{p.name}</strong>
-                            {text}
+                          <span className="h7-tip h7-card" role="tooltip">
+                            <span className="h7-card-eyebrow">
+                              {a.name}, level {lv.id}
+                            </span>
+                            <strong className="h7-card-title">{p.name}</strong>
+                            <span className="h7-card-text">{text}</span>
                           </span>
                         )}
                       </td>
@@ -487,22 +520,32 @@ function Proof() {
   );
 }
 
-/** The playbook blurbs come cut at 120 characters; show the first whole sentence instead of a cut one. */
-function firstSentence(text: string) {
-  const clean = text.replace(/(\.\.\.|…)$/, "").trim();
-  const first = clean.split(/(?<=[.!?])\s/)[0];
-  return /[.!?]$/.test(first) ? first : "";
+/**
+ * A short read for the hover card: whole sentences from the playbook's first paragraph, about two lines' worth
+ * (so "Focus is where everything starts." gets the sentences after it too). Never cut mid-sentence.
+ */
+function excerpt(text: string) {
+  const para = text.replace(/(\.\.\.|…)$/, "").split(/\n\s*\n/)[0].replace(/\s+—\s+/g, ", ").trim();
+  const sentences = para.match(/.+?[.!?]+(?=\s|$)/g) ?? [];
+  let out = "";
+  for (const raw of sentences) {
+    const next = (out + " " + raw.trim()).trim();
+    if (out && next.length > 230) break;
+    out = next;
+    if (out.length >= 120) break;
+  }
+  return out.length <= 260 ? out : "";
 }
 
-export async function HowPage({ switcher }: { switcher: React.ReactNode }) {
+export async function HowPage() {
   let about = new Map<string, string>();
   try {
-    about = new Map((await getAllPlaybookSummaries()).map((p) => [p.ref, firstSentence(p.description)]));
+    about = new Map((await getAllPlaybookSummaries({ descriptionLength: 600 })).map((p) => [p.ref, excerpt(p.description)]));
   } catch {
     // Descriptions are a hover extra; the grid still shows every playbook without them.
   }
   return (
-    <V5Shell active="how" switcher={switcher}>
+    <V5Shell active="how">
       <Hero />
       <ScoreStep />
       <CallStep />

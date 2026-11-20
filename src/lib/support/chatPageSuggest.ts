@@ -1,3 +1,4 @@
+import { supportBodyForAi } from "@/lib/support/supportTicketMedia";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { aiSuggestChatPages, chatForAi } from "./chatPageAi";
@@ -13,13 +14,13 @@ export async function suggestPagesForChat(reportId: string): Promise<string[]> {
   if (!report) return [];
   const { data: replies } = await supabaseAdmin
     .from("community_feedback_replies")
-    .select("body, created_at, author:profiles!created_by (role)")
+    .select("body, media, created_at, author:profiles!created_by (role)")
     .eq("report_id", reportId)
     .order("created_at", { ascending: true });
   const opening = [report.title, report.details].filter(Boolean).join("\n");
   const lines = (replies ?? []).map((r) => {
     const author = (Array.isArray(r.author) ? r.author[0] : r.author) as { role?: string | null } | null;
-    return { body: r.body ?? "", fromBca: author?.role === "admin" };
+    return { body: supportBodyForAi(r.body ?? "", r.media), fromBca: author?.role === "admin" };
   });
   return aiSuggestChatPages(chatForAi(opening, lines));
 }

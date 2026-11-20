@@ -16,6 +16,7 @@ import { listValue, textValue } from "@/lib/practiceKnowledge/sourced";
 import { ensurePracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import type { PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 import { PROSPECT_SEARCH_PLAYBOOK } from "@/lib/salesNavigator/prospectSearch/playbook";
+import { SALES_NAV_INDUSTRIES, salesNavIndustry } from "@/lib/salesNavigator/industries";
 import { resolveSalesNavRegion } from "@/lib/salesNavigator/regions";
 import { startSalesNavImport } from "@/lib/salesNavigator/startImport";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -51,8 +52,10 @@ import {
 /** Where the prospect list is worked on: its own launch job. */
 export const LIST_SCOPE = "lead-list";
 
-/** People on a coach's list: aim for 1,000 to 2,500, and 800 at least where the market is thin. */
-export const LIST_TARGET = { floor: 800, aim: 1_000, most: 2_500 };
+/** People on a coach's list: aim for 1,000 to 2,500, and 200 at least (20 Nov: messages still go out in a thin market). */
+export const LIST_TARGET = { floor: 200, aim: 1_000, most: 2_500 };
+/** Up to 20 lists, so each sector can split into the things those firms make, and by size band (19 Nov). */
+const MAX_LISTS = 20;
 
 /** The writing rules ban dashes as punctuation; the model still slips them in. */
 function plain(text: string): string {
@@ -165,7 +168,7 @@ Fill the boxes now. JSON only.`;
     thinking?: string;
     answers?: { path?: string; value?: string; from?: string }[];
     missing?: { path?: string; ask?: string }[];
-  }>({ system, user, maxTokens: 6_000 });
+  }>({ system, user, maxTokens: 6_000, writing: true });
 
   const byPath = new Map(boxes.map((b) => [b.field.path, b.field]));
   const answers: AnswerFill[] = (data?.answers ?? [])
@@ -245,11 +248,14 @@ export async function draftProspectSearches(coachId: string, userId: string | nu
 The base search is added for you on every list: 2nd and 3rd degree connections, ${region}, owner job titles (owner, founder, co-founder, CEO, managing director, managing partner), and coaches, consultants and recruiters left out.
 
 What a good plan looks like:
-- 2 to 5 separate lists. Split by sub-sector and by size band, so each list is clean and the coach can see what's in it. Example (Paul Hamnett, gyms): "Gyms, 11 to 200 staff", "Gyms, 1 to 10 staff", "Padel, tennis and squash clubs".
-- Aim for ${LIST_TARGET.aim.toLocaleString("en-GB")} to ${LIST_TARGET.most.toLocaleString("en-GB")} people in total. ${LIST_TARGET.floor} is the least for a thin market. LinkedIn shows at most 2,500 a search, so split a bigger one.
+- 2 to ${MAX_LISTS} separate lists, never more than ${MAX_LISTS}: cover every sector in the list box before splitting any further. Split by sub-sector and by size band, so each list is clean and the coach can see what's in it. Example (Paul Hamnett, gyms): "Gyms, 11 to 200 staff", "Gyms, 1 to 10 staff", "Padel, tennis and squash clubs".
+- Go deep. Break each sector into the things those firms actually make or do, and give each its own list with its own words. Example (drinks): "Spirits" (vodka, whisky, whiskey, gin, rum, distillery), "Wine" (wine, wines, vineyard, winery), "Beer and cider" (brewery, brewing, ales, cider), "Tea and coffee" (tea, coffee, roasters), "Soft drinks" (juice, kombucha, soda, cordial).
+- Industry: LinkedIn files every company under one industry. When one fits the list cleanly, add it (exact names from the industry list below). An industry on its own, with no words, is a good list when it only holds the coach's market (for example Distilleries, Breweries, Wineries). With words as well, both must match: Breweries plus the word cider finds only breweries with cider in their name, so cider makers need their own list. Only add an industry to a words list to stop the words pulling in the wrong firms, for example when a word also names shops, cafés or salons (coffee, tea, bakery, beauty, chips): then add the maker's industry, such as Food and Beverage Manufacturing. Never use broad ones (Manufacturing, Retail, Wholesale) on their own.
+- Use the team sizes in the list box. When it covers 1 to 10 as well as bigger firms, keep 1 to 10 as its own lists: it is noisier, and it is where owners who never linked their staff show up.
+- Aim for ${LIST_TARGET.aim.toLocaleString("en-GB")} to ${LIST_TARGET.most.toLocaleString("en-GB")} people in total. ${LIST_TARGET.floor} is the least, so messages can still go out in a thin market. Several small lists are fine. LinkedIn shows at most 2,500 a search, so split a bigger one.
 - Many owners never link their staff to the company page, so a 30-person firm often shows as 1 to 10. Add a 1 to 10 list when the market is thin, as its own list.
 - Team sizes allowed: "1-10", "11-50", "51-200", "201-500".
-- Company-name words first (how owners name their own business). Keywords only when owners don't name their business that way. Never both in one list. At most 8 words a list, quotes round phrases, no loose words many firms use (solutions, services, group, systems).
+- Company-name words first (how owners name their own business). Keywords only when owners don't name their business that way. Never both in one list. At most 8 words a list, quotes round phrases, no loose words many firms use (solutions, services, group, systems), and no words other trades share (care, clean, health, fresh, farm, kitchen, water, natural): they pull in care homes, cleaners, clinics and builders.
 - Leave out what the coach's list box says to leave out, as company words to exclude.
 - Extra job titles only when the list box names them.
 
@@ -260,7 +266,10 @@ ${rules()}
 
 Reply with JSON only:
 {"thinking": "3 to 5 short sentences for BCA in everyday words: who you're going after and why, how the lists add up to the target, and what you're leaving out",
- "lists": [{"label": "under 6 words", "why": "one sentence, under 20 words", "companyIncludes": [], "keywords": null, "companyExcludesExtra": [], "titleIncludesExtra": [], "teamSizes": ["11-50"]}]}`;
+ "lists": [{"label": "under 6 words", "why": "one sentence, under 20 words", "industries": [], "companyIncludes": [], "keywords": null, "companyExcludesExtra": [], "titleIncludesExtra": [], "teamSizes": ["11-50"]}]}
+
+LinkedIn's industry list (use these names exactly):
+${SALES_NAV_INDUSTRIES.map((i) => i.title).join("; ")}`;
 
   const user = `${sources}
 
@@ -273,20 +282,22 @@ Plan the lists now. JSON only.`;
     lists?: {
       label?: string;
       why?: string;
+      industries?: string[];
       companyIncludes?: string[];
       keywords?: string | null;
       companyExcludesExtra?: string[];
       titleIncludesExtra?: string[];
       teamSizes?: string[];
     }[];
-  }>({ system, user, maxTokens: 4_000 });
+  }>({ system, user, maxTokens: 4_000, writing: true });
 
   const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && Boolean(x.trim())) : []);
   const built: Omit<ProspectSearchDraft, "size">[] = [];
-  for (const [i, list] of (data?.lists ?? []).slice(0, 5).entries()) {
+  for (const [i, list] of (data?.lists ?? []).slice(0, MAX_LISTS).entries()) {
     const keywords = list.keywords?.trim() || "";
     const companyIncludes = keywords ? [] : strings(list.companyIncludes);
-    if (!keywords && !companyIncludes.length) continue;
+    const industries = strings(list.industries).map(salesNavIndustry).filter((x): x is { id: string; title: string } => Boolean(x));
+    if (!keywords && !companyIncludes.length && !industries.length) continue;
     const search = buildSalesNavSearch({
       location: region,
       companyIncludes,
@@ -295,6 +306,7 @@ Plan the lists now. JSON only.`;
       titleIncludesExtra: strings(list.titleIncludesExtra),
       teamSizes: strings(list.teamSizes).filter((s) => ["1-10", "11-50", "51-200", "201-500"].includes(s)),
       degrees: ["2", "3"],
+      industries,
     });
     if ("error" in search) continue;
     built.push({ id: `list-${i + 1}`, label: list.label?.trim() || `List ${i + 1}`, why: list.why?.trim() || "", url: search.url, on: true });
@@ -565,8 +577,11 @@ async function advanceOnce(coachId: string, userId: string | null): Promise<stri
     if (existing) {
       const keys = (existing.payload.sections ?? []).map((x) => x.key).filter((key) => s.sections!.includes(key));
       const base = await withOpenDrafts(coachId, raw, [s.scope]);
-      if (keys.length && outOfDate(existing, inputPrint(base, { sections: keys }))) {
-        runs.push({ label: `${s.label} (rewritten)`, run: () => runAva(coachId, s.scope, userId, keys) });
+      // Sections that were blocked when this draft was written (e.g. pain points before the Ideal Client
+      // boxes were drafted) and can be written now. Never added to a draft BCA has edited.
+      const more = existing.edited ? [] : writable(s.scope, base).filter((key) => s.sections!.includes(key) && !keys.includes(key));
+      if (keys.length && (more.length || outOfDate(existing, inputPrint(base, { sections: keys })))) {
+        runs.push({ label: `${s.label} (${more.length ? "rest added" : "rewritten"})`, run: () => runAva(coachId, s.scope, userId, [...keys, ...more]) });
       }
       continue;
     }

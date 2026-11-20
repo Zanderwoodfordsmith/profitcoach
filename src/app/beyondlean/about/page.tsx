@@ -1,18 +1,27 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { BadgeCheck, BookOpen, Handshake, Scale, ShieldCheck, Smile } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { BOOK_HREF, CAREER } from "@/components/beyondlean/data";
-import { CircleButton, CloseCard, Heading, HOME, PageHero, V5Shell, VersionSwitch } from "@/components/beyondlean/v5/parts";
-import { beyondleanMode } from "@/lib/beyondlean/mode";
+import { CircleButton, CloseCard, Heading, PageHero, V5Shell } from "@/components/beyondlean/v5/parts";
+import { CareerTimeline } from "@/components/beyondlean/v5/CareerTimeline";
+import { beyondleanMode, beyondleanRobots } from "@/lib/beyondlean/mode";
 
 export const metadata: Metadata = {
   title: "About Paul Swift | Beyondlean",
   description:
     "From fitter on the shop floor to running his own business, Airbus and 20 years of Beyondlean. Paul Swift now coaches owners of growing UK businesses.",
-  robots: { index: false, follow: false },
+  robots: beyondleanRobots,
 };
 
-const VALUES = ["Honesty", "Keep your word", "Fairness", "Always learning", "Have fun"];
+const VALUES: { name: string; icon: LucideIcon }[] = [
+  { name: "Honesty", icon: ShieldCheck },
+  { name: "Keep your word", icon: Handshake },
+  { name: "Fairness", icon: Scale },
+  { name: "Always learning", icon: BookOpen },
+  { name: "Have fun", icon: Smile },
+];
 
 const CREDENTIALS = [
   "Lean Six Sigma Master Black Belt",
@@ -21,14 +30,10 @@ const CREDENTIALS = [
   "Certified Profit Coach",
 ];
 
-type Props = { searchParams: Promise<{ v?: string }> };
-
-export default async function AboutPage({ searchParams }: Props) {
-  const { enabled, preview } = beyondleanMode();
-  if (!enabled) notFound();
-  const old = preview && (await searchParams).v === "old";
+export default function AboutPage() {
+  if (!beyondleanMode().enabled) notFound();
   return (
-    <V5Shell active="about" switcher={preview ? <VersionSwitch current={old ? "old" : "new"} /> : null}>
+    <V5Shell active="about">
       <PageHero
         light="I've run a small business myself."
         strong="So I know where it hurts."
@@ -39,7 +44,7 @@ export default async function AboutPage({ searchParams }: Props) {
         <div className="v5-wrap v5-about">
           <figure className="v5-about-photo" data-reveal>
             <Image
-              src={old ? "/beyondlean/paul.jpg" : "/beyondlean/paul-wales.jpg"}
+              src="/beyondlean/paul-wales.jpg"
               alt="Paul Swift"
               width={1050}
               height={1400}
@@ -84,15 +89,7 @@ export default async function AboutPage({ searchParams }: Props) {
           <div className="v5-head" data-reveal>
             <Heading id="v5-career-title" light="From the shop floor" strong="to the boardroom, and back." />
           </div>
-          <ol className="v5-timeline">
-            {CAREER.map((c) => (
-              <li key={c.year} data-reveal>
-                <span className="v5-timeline-year">{c.year}</span>
-                <strong>{c.role}</strong>
-                <span>{c.place}</span>
-              </li>
-            ))}
-          </ol>
+          <CareerTimeline stops={CAREER} />
         </div>
       </section>
 
@@ -105,9 +102,14 @@ export default async function AboutPage({ searchParams }: Props) {
                 Any improvement is 20% about the tools and 80% about the people. I&apos;ll tell you straight what I see,
                 I&apos;ll do what I say, and I&apos;ll measure whether it worked.
               </p>
+            </div>
+            <div className="v5-outside">
+              <p className="v5-outside-tag">Outside work</p>
               <p>
-                Outside work I live on a small farm in North Wales with dogs and ponies. I hold a 5th Dan black belt in
-                Karate Jitsu. I coached two clubs for over 25 years, and now I coach the odd person in my village.
+                I live on a small farm in North Wales with dogs and ponies. I hold a 5th Dan black belt in Karate Jitsu.
+                I coached two clubs for over 25 years, and now I coach the odd person in my village.
+              </p>
+              <p className="v5-outside-line">
                 Karate Jitsu and lean teach the same thing: get the basics right, then keep improving.
               </p>
             </div>
@@ -115,13 +117,21 @@ export default async function AboutPage({ searchParams }: Props) {
           <div data-reveal>
             <ul className="v5-values" aria-label="Values">
               {VALUES.map((v) => (
-                <li key={v}>{v}</li>
+                <li key={v.name}>
+                  <span className="v5-value-icon" aria-hidden>
+                    <v.icon strokeWidth={1.75} />
+                  </span>
+                  {v.name}
+                </li>
               ))}
             </ul>
             <h3 className="v5-small-head">Qualifications</h3>
-            <ul className="v5-chips">
+            <ul className="v5-chips v5-creds">
               {CREDENTIALS.map((c) => (
-                <li key={c}>{c}</li>
+                <li key={c}>
+                  <BadgeCheck aria-hidden />
+                  {c}
+                </li>
               ))}
             </ul>
           </div>

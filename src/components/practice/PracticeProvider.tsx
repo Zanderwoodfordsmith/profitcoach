@@ -255,7 +255,9 @@ export function PracticeProvider({
   const [callNonce, setCallNonce] = useState(0);
   const reportAttempted = useRef(false);
   const draftRef = useRef<PracticeKnowledgePayload | null>(null);
-  const persistGen = useRef(0);
+  // One save at a time (job 125): side-by-side saves could land out of order and keep older words.
+  const saving = useRef(false);
+  const queued = useRef<PracticeKnowledgePayload | null>(null);
 
   const payload = draft ?? knowledge?.payload ?? null;
   draftRef.current = payload;
@@ -402,16 +404,28 @@ export function PracticeProvider({
   const persist = useCallback(async (next: PracticeKnowledgePayload) => {
     // The empty preview keeps edits on screen only.
     if (sample) return;
-    const gen = ++persistGen.current;
-    const res = await savePractice({ payload: next }, coachId);
-    if (gen !== persistGen.current) return;
-    if (!res.ok || !res.data) {
-      setError(res.error || "Could not save.");
-      return;
+    // Each save holds the whole payload, so only the newest waiting one needs sending.
+    queued.current = next;
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      while (queued.current) {
+        const body = queued.current;
+        queued.current = null;
+        const res = await savePractice({ payload: body }, coachId);
+        if (!res.ok || !res.data) {
+          setError(res.error || "Could not save.");
+          continue;
+        }
+        // Newer edits are waiting: keep them on screen and send them next.
+        if (queued.current) continue;
+        setKnowledge(res.data.knowledge);
+        setDraft(res.data.knowledge.payload);
+        draftRef.current = res.data.knowledge.payload;
+      }
+    } finally {
+      saving.current = false;
     }
-    setKnowledge(res.data.knowledge);
-    setDraft(res.data.knowledge.payload);
-    draftRef.current = res.data.knowledge.payload;
   }, [coachId, sample]);
 
   useEffect(() => {

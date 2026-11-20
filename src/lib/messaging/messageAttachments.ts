@@ -92,7 +92,7 @@ export function namedFileFromBlob(
   return Object.assign(blob, { name: filename, type }) as File;
 }
 
-function extForMime(mime: string, filename?: string): string {
+export function extForMime(mime: string, filename?: string): string {
   const lower = normalizeMessagingMime(mime);
   if (EXT_BY_MIME[lower]) return EXT_BY_MIME[lower]!;
   const fromName = filename?.split(".").pop()?.toLowerCase();

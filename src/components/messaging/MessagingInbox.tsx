@@ -310,6 +310,8 @@ type MessageRow = {
   to_address: string | null;
   provider_error: string | null;
   created_at: string;
+  /** They read it (Unipile read receipt): shows "Seen". */
+  read_at?: string | null;
   metadata?: Record<string, unknown> | null;
   attachments?: MessageAttachment[];
 };
@@ -6039,6 +6041,7 @@ export function MessagingInbox({
                                 }`}
                               >
                                 {formatShortTime(m.created_at)}
+                                {outbound && m.read_at ? " · Seen" : ""}
                               </span>
                             )}
                           </div>

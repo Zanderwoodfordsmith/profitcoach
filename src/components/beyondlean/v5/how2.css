@@ -200,40 +200,109 @@
   white-space: nowrap;
 }
 
-.h7-letter-shift {
+/* Hover cards (letters and playbooks): white, a blue gradient along the top, then title, words and detail */
+.h7-card {
   position: absolute;
-  top: 100%;
-  left: 50%;
-  z-index: 2;
+  z-index: 6;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
-  width: max-content;
-  max-width: 240px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--v5-navy-deep);
-  box-shadow: var(--v5-shadow-3);
+  overflow: hidden;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--v5-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow:
+    0 24px 48px -12px rgba(11, 27, 43, 0.22),
+    0 4px 12px rgba(11, 27, 43, 0.06);
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  color: var(--v5-soft-ink);
   opacity: 0;
-  translate: -50% 8px;
   pointer-events: none;
   transition:
     opacity 200ms,
     translate 250ms var(--v5-ease);
 }
 
+.h7-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, #0c5290, #238bf7 55%, #1a91b0);
+}
+
+.h7-card-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #238bf7;
+}
+
+.h7-card-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--v5-ink);
+}
+
+.h7-card-books {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--v5-line);
+  font-size: 0.8125rem;
+}
+
+.h7-card-books > span {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 650;
+  color: var(--v5-ink);
+}
+
+.h7-letter-card {
+  top: calc(100% + 14px);
+  left: 50%;
+  width: 300px;
+  translate: -50% 8px;
+}
+
+/* First and last letters: keep the card inside the page */
+.h7-letter-group.is-foundation .h7-letter-card {
+  left: 0;
+  translate: 0 8px;
+}
+
+.h7-letter-group.is-value li:last-child .h7-letter-card {
+  right: 0;
+  left: auto;
+  translate: 0 8px;
+}
+
+.h7-letter-shift {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 0.8125rem;
+  color: var(--v5-mute);
+}
+
 .h7-letter-shift svg {
   flex: none;
   width: 14px;
   height: 14px;
-  color: #8cc4ff;
+  color: #238bf7;
 }
 
 .h7-letter-shift strong {
   font-weight: 650;
-  color: #fff;
+  color: var(--v5-ink);
 }
 
 .h7-letter:hover .h7-letter-mark,
@@ -241,10 +310,40 @@
   translate: 0 -6px;
 }
 
-.h7-letter:hover .h7-letter-shift,
-.h7-letter:focus-visible .h7-letter-shift {
+.h7-letter:hover .h7-letter-card,
+.h7-letter:focus-visible .h7-letter-card {
   opacity: 1;
   translate: -50% 0;
+}
+
+.h7-letter-group.is-foundation .h7-letter:hover .h7-letter-card,
+.h7-letter-group.is-foundation .h7-letter:focus-visible .h7-letter-card,
+.h7-letter-group.is-value li:last-child:hover .h7-letter-card,
+.h7-letter-group.is-value li:last-child:focus-visible .h7-letter-card {
+  translate: 0 0;
+}
+
+/* Touch screens: tap a letter and its card opens near the bottom of the screen (tap anywhere else to close) */
+@media (hover: none) {
+  /* A sheet just above the phone action bar, so it's on screen whichever letter was tapped.
+     !important: beats the desktop rules that pin the first and last cards to their letter */
+  .h7-letters .h7-letter-card {
+    position: fixed;
+    top: auto;
+    right: 16px !important;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    left: 16px !important;
+    z-index: 40;
+    width: auto;
+    max-width: 480px;
+    margin: 0 auto;
+    translate: 0 8px !important;
+  }
+
+  .h7-letters .h7-letter:focus .h7-letter-card {
+    opacity: 1;
+    translate: 0 0 !important;
+  }
 }
 
 .h7-letters:has(.h7-letter:hover) .h7-letter:not(:hover) .h7-letter-mark {
@@ -613,43 +712,10 @@
 
 /* Hover a playbook: a short note on what it covers, from the playbook itself */
 .h7-tip {
-  position: absolute;
   bottom: calc(100% + 10px);
   left: 50%;
-  z-index: 5;
-  width: 260px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: var(--v5-navy-deep);
-  box-shadow: var(--v5-shadow-3);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  text-align: left;
-  color: rgba(255, 255, 255, 0.78);
-  opacity: 0;
+  width: 280px;
   translate: -50% 6px;
-  pointer-events: none;
-  transition:
-    opacity 160ms,
-    translate 200ms var(--v5-ease);
-}
-
-.h7-tip strong {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 0.875rem;
-  font-weight: 650;
-  color: #fff;
-}
-
-.h7-tip::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  border: 7px solid transparent;
-  border-top-color: var(--v5-navy-deep);
-  translate: -50% 0;
 }
 
 .h7-grid td:hover .h7-tip {
@@ -669,11 +735,6 @@
   translate: 0 0;
 }
 
-.h7-grid td:nth-child(2) .h7-tip::after,
-.h7-grid td:nth-child(3) .h7-tip::after {
-  left: 40px;
-}
-
 .h7-grid td:nth-last-child(-n + 2) .h7-tip {
   right: 0;
   left: auto;
@@ -681,12 +742,6 @@
 }
 
 .h7-grid td:nth-last-child(-n + 2):hover .h7-tip {
-  translate: 0 0;
-}
-
-.h7-grid td:nth-last-child(-n + 2) .h7-tip::after {
-  right: 40px;
-  left: auto;
   translate: 0 0;
 }
 
@@ -1133,16 +1188,13 @@
     margin-left: 16px;
   }
 
+  /* Wide enough for "Infrastructure" so the names never run into each other */
   .h7-letter {
-    width: 54px;
+    width: 80px;
   }
 
   .h7-letter-name {
-    font-size: 0.6875rem;
-  }
-
-  .h7-letter-shift {
-    display: none;
+    font-size: 0.625rem;
   }
 }
 
@@ -1153,8 +1205,7 @@
   .h7-stair-extra,
   .h7-stair-extra > div,
   .h7-letter-mark,
-  .h7-letter-shift,
-  .h7-tip,
+  .h7-card,
   .h7-grid td {
     transition: none;
   }

@@ -81,6 +81,7 @@ export type SalesNavCriteria = {
   titleIncludesExtra: string[];
   teamSizes: string[];
   degrees: SalesNavDegree[];
+  industries?: { id: string; title: string }[];
 };
 
 export function salesNavCriteriaFromInput(input: AgentToolInput): SalesNavCriteria {
@@ -135,6 +136,7 @@ export function buildSalesNavSearch(
     // 1st-degree searches cover the whole network, so no region filter.
     degrees: criteria.degrees,
     keywordsBoolean: criteria.keywords || null,
+    industries: criteria.industries,
   });
   return { url, region: region.text };
 }

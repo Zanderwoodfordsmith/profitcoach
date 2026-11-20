@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-11-20T16:04:01.520Z",
+  "generatedAt": "2026-11-20T17:24:04.963Z",
   "model": "claude-sonnet-5-5",
   "pages": [
     {
       "path": "/coach",
       "adminPath": "/admin",
-      "hash": "33468a1009d2aa54",
+      "hash": "e16632bba66abd9a",
       "coachVisible": false,
       "title": "Coach home (redirect)",
-      "where": "Not a page coaches open; it passes them straight on",
-      "summary": "Nothing to do here: the page checks who is signed in and sends coaches on to Academy → Community.",
+      "where": "Not a page coaches open. Going to /coach sends them straight to Academy (Community).",
+      "summary": "A blank 'Redirecting…' screen that sends the coach to the Academy Community page.",
       "tabs": [],
       "controls": [],
-      "notes": "Coaches only see \"Redirecting…\" for a moment before landing on the Academy Community page. If the coach's record is missing they see an error saying to ask an admin to set it up. Admins not viewing as a coach are sent to the admin area, so Ava should not offer this page."
+      "notes": "Coaches only see 'Redirecting…' for a moment, then land on Academy → Community. If their profile or coach record is missing they see 'Unable to load your profile.' or 'Coach record not found. Ask an admin to create a row in the 'coaches' table with your id and slug.' Admins who are not viewing as a coach are sent to the admin community page."
     },
     {
       "path": "/coach/academy/classroom",
@@ -210,89 +210,100 @@
     {
       "path": "/coach/blueprint",
       "adminPath": "/admin/blueprint",
-      "hash": "45108c068e9dea27",
+      "hash": "ffdb8176d28b55a3",
       "coachVisible": true,
       "title": "My Blueprint",
-      "where": "My Blueprint (in the sidebar, under coach tools)",
-      "summary": "See your Blueprint pages and how far each one has got, and work through the setup checklist to get your campaign live.",
-      "tabs": [],
-      "controls": [
-        "**Your Blueprint** heading with a **?** button (How your Blueprint works) that opens a pop-up with Where you are, a video and how status works",
-        "**List** / **Board** switch at the top right: List shows pages in groups, Board shows a card per page in columns by status",
-        "**Get set up** checklist (folds open and shut) with a count like '3 of 10 done' and a progress bar",
-        "Checklist steps: **Connect LinkedIn**, **Fill in About You**, **Connect your email**, **Have your Blueprint Call**, **Update your LinkedIn profile**, **Review your prospects**, **Review your campaign**, **Put the app on your phone**, **Turn on reply alerts**, **Go live**",
-        "Step buttons: **Connect**, **Open**, **Book a time**, **I've done it**, **Looks good**, **Review**, **Show me**, **Set up**, plus quick links **See it** and **See them**",
-        "Blue bar **BCA is waiting on you** (or '[number] messages from BCA are waiting for you'), shown only when there are replies waiting; click it to open the chat",
-        "Page rows in List: each shows the title, a short line, a chat count or '[number] new', and a status label; click one to open that page",
-        "Statuses: **Needs you**, **BCA**, **In progress**, **Review**, **Done**",
-        "Board columns hold the same page cards, one column per status"
+      "where": "My Blueprint in the sidebar (Your practice plan, built from your answers)",
+      "summary": "See your Blueprint pages and where each stands, work through the Get set up list, and open any page to answer or review it.",
+      "tabs": [
+        {
+          "label": "List",
+          "path": null
+        },
+        {
+          "label": "Board",
+          "path": null
+        }
       ],
-      "notes": "The 'Get set up' steps need LinkedIn, email and reply alerts connected in Settings → Integrations; the app ticks what it can see, and you tick 'Update your LinkedIn profile' and 'Review your prospects' yourself. The Checklist/Timeline switch in the top bar is admin-only, so coaches only ever see the checklist. Each Blueprint page below the overview has its own chat and a 'Sign off this page' button when a page is in Review."
+      "controls": [
+        "**Your Blueprint** heading with a **?** button (How your Blueprint works) that opens a pop-up with Where you are, a video and How status works",
+        "**List** / **Board** switch at the top right to show pages as rows or as cards by status",
+        "**Get set up** box (becomes **You're all set up**), foldable, with a count like \"3 of 10 done\"",
+        "**Connect** button on Connect LinkedIn, Connect your email (opens integration settings)",
+        "**Open** button on Fill in About You",
+        "**Book a time** button on Have your Blueprint Call",
+        "**I've done it** and **See it** on Update your LinkedIn profile, once your new profile is written",
+        "**Looks good** and **See them** on Review your prospects, once a list is built",
+        "**Review** button on Review your campaign, when it is ready to read",
+        "**Show me** on Put the app on your phone (pop-up with a QR code or steps)",
+        "**Set up** on Turn on reply alerts",
+        "A blue bar \"BCA is waiting on you\" or \"messages from BCA are waiting for you\" above the checklist, when there are replies to read",
+        "Page rows with a status pill (Needs you, BCA, In progress, Review, Done) and a chat count like \"2 new\"; click a row to open that page"
+      ],
+      "notes": "Pages BCA builds look quieter until you have answered your own About You cards. A Checklist/Timeline switch exists in the top bar but only admins see it, so coaches always get the checklist. Setting a page's status by hand and Approve to send are BCA-only; coaches only get Sign off this page on a page's own screen when it is in Review."
     },
     {
       "path": "/coach/blueprint/[slug]",
       "adminPath": null,
-      "hash": "ed13ca5da27c6bd1",
+      "hash": "fbcb309ac165c5be",
       "coachVisible": true,
       "title": "One Blueprint page",
-      "where": "My Blueprint → pick a page from the Blueprint contents (or a link in the Blueprint menu)",
-      "summary": "Read and fill in one page of your practice plan, answering your boxes and checking what BCA has written for you.",
+      "where": "My Blueprint, then pick a page from the Blueprint contents",
+      "summary": "Open one page of your practice plan on its own, fill in your answers and read or edit what BCA wrote.",
       "tabs": [],
       "controls": [
-        "Page sections: each is a card with a title and an info icon showing what it is for, what it is built from and what it is used for",
-        "Grey answer boxes: type and they save when you click out, with a small **Saved** tick",
-        "**Add another result** / **Add another story** in results and client stories cards",
-        "**Add a role** in your career list, with a tick box to use or leave out each role and **Show more** for long careers",
-        "**Add** and **Add your own** for lists and pick-from options",
-        "**What BCA recommends** link that opens a tip in some sections",
-        "**More actions** (the three dots) on a written section: **Rewrite**, **Copy**, **Ask for a change**",
-        "**Send to BCA** box after Ask for a change",
-        "**Write it now** button in a section BCA has not written yet",
-        "**Create the…** button under written campaign messages, under the heading **Happy with it? Send it to Get Clients**",
+        "**Part links** at the top of a page made of parts (for example About You), each ticked when you have nothing left to answer",
+        "Grey answer boxes you type in, which save when you click away and show **Saved**",
+        "**Add another result** and **Add another story** buttons on result and client story cards, plus **Or talk it through with Ava**",
+        "**Add a role** and **Show more** in your career list, with a tick box on each role to say whether we use it",
+        "**Add your own** chips, **Add** and **Add a row** buttons on list and table answers",
+        "**What BCA recommends** link that opens a tip on some sections",
+        "**More actions** (…) menu on a written section with **Rewrite**, **Copy** and **Ask for a change**",
+        "**Send to BCA** and **Cancel** in the box that opens from Ask for a change",
+        "**Write it now** button on a section BCA has not written yet",
+        "**Create the** campaign button under **Happy with it? Send it to Get Clients** on campaign sections, then **Draft created. Open it**",
         "**How to do it, in the Classroom** links at the bottom of a page",
-        "**Talk it through with Ava** link under results and stories",
-        "Part buttons at the top of a long page like About You to jump to each part, ticked when done"
+        "An info icon beside each section title showing what it is for, what it is built from and where it is used"
       ],
-      "notes": "Opens on its own from a link; the page title is shown by the Blueprint layout around it, not here. Pages named blueprint or command do not exist here. The Decision Record page is read-only for coaches (Edit is admin-only), and the build-everything bar and Who does what group are not shown to coaches."
+      "notes": "Opens only for real Blueprint page names; the overview and command pages show a not-found page. Admins can also edit and lock a Decision Record page and see Write my blueprint and sign-off tools, but coaches never see these. The Decision Record page shows read-only text to coaches, with no Edit button."
     },
     {
       "path": "/coach/blueprint/blueprint",
       "adminPath": null,
-      "hash": "da46f5cb723e15d3",
+      "hash": "db16ff8318c0aa18",
       "coachVisible": true,
       "title": "Practice Blueprint (whole document)",
-      "where": "My Blueprint (under Coach tools), then the whole-document view at /coach/blueprint/blueprint",
-      "summary": "Read your whole Practice Blueprint as one long document, fill in your answers, and check what BCA has written.",
+      "where": "My Blueprint in the sidebar, then the full blueprint document page",
+      "summary": "Read your whole Practice Blueprint as one long document, fill in the answers BCA still needs from you, and open any page from the contents.",
       "tabs": [],
       "controls": [
-        "**Still needed from you** box at the top, listing what is missing, each item links to its section",
+        "**Still needed from you** box at the top, listing what is missing, each item links to its section (only shows while something is missing)",
         "**Talk it through** button in that box, opens Ava",
         "**Contents** list with numbered chapters and a link to each page",
-        "Chapter headings with page titles, each page made of sections",
-        "Part buttons at the top of a long page (such as About you), ticked when done",
-        "Grey answer boxes you type in, saved when you click away, with a **Saved** tick",
-        "**Add another result** / **Add another story** / **Add a role** / **Add** / **Add a row** buttons",
-        "**Where was this result?** choices: In a job, My own business, Current client, Past client",
-        "**What BCA recommends** link to show BCA's tip in a section",
-        "**…** (More actions) menu on written sections: Rewrite, Copy, Ask for a change",
-        "**Send to BCA** after typing a change request",
-        "**Happy with it? Send it to Get Clients** box with a Create button, on campaign sections",
-        "**How to do it, in the Classroom** links at the end of a page",
-        "**Why we build it for you** welcome video from Zander"
+        "Chapter headings, each with its pages underneath",
+        "Grey answer boxes you type in, which save when you click away (a **Saved** tick appears)",
+        "**Add another result** / **Add another story** links in the results and client stories sections",
+        "**Or talk it through with Ava** link under results and stories",
+        "**Add a role** button in the career list, with tick boxes to choose which roles BCA uses and **Show more** for long careers",
+        "**What BCA recommends** link that opens a tip in some sections",
+        "**...** (More actions) button on written sections: **Rewrite**, **Copy**, **Ask for a change**",
+        "**Send to BCA** and **Cancel** in the change request box",
+        "**Happy with it? Send it to Get Clients** box with a **Create the...** button on campaign sections",
+        "**How to do it, in the Classroom** links at the bottom of some pages"
       ],
-      "notes": "The Write my blueprint bar, the Write it now buttons and the Decision Record Edit button are not shown to coaches, because BCA writes the sections and admins fill in the Decision Record. Written sections appear once BCA has drafted them. Coaches can read the Decision Record on its page but not edit it."
+      "notes": "Sections BCA writes show a panel saying BCA writes it for you; coaches cannot start the writing themselves, so the Write my blueprint bar is hidden from coaches. Edit and lock buttons for the Decision Record are admin-only, and the Who does what group is hidden from coaches. Boxes after About You may show 'Our team fills this in from your Blueprint Call.'"
     },
     {
       "path": "/coach/blueprint/jobs",
       "adminPath": null,
-      "hash": "573fe7e46076c48e",
+      "hash": "736b72ac00adbd60",
       "coachVisible": false,
       "title": "Your plan (jobs list)",
-      "where": "My Blueprint (no menu link; coaches are sent back to /coach/blueprint)",
-      "summary": "A new list of launch jobs that is switched on for admins only, so a coach who opens it is sent straight back to My Blueprint.",
+      "where": "My Blueprint (coaches are sent back to the main My Blueprint page)",
+      "summary": "A list or board of launch jobs with progress and chat, but coaches never see it because it is still admin-only.",
       "tabs": [],
       "controls": [],
-      "notes": "Coaches never see this page: it redirects them to My Blueprint. Do not send a coach here or describe its list, board or job pages. Everything on it (Your plan, List/Board toggle, jobs, Anything else) is admin only for now."
+      "notes": "This page is admin-only for now: a signed-in coach is automatically redirected to My Blueprint (/coach/blueprint). Ava should never send coaches here; point them to My Blueprint instead."
     },
     {
       "path": "/coach/boss-pro",
@@ -323,18 +334,18 @@
     {
       "path": "/coach/calls",
       "adminPath": "/admin/calls",
-      "hash": "fddf98145ce7de25",
+      "hash": "d45dbdad535c8efe",
       "coachVisible": true,
       "title": "Calls",
       "where": "Get Clients → Calls",
-      "summary": "See your booked sales calls in a calendar or list, add a call for a prospect, and set up your booking calendars.",
+      "summary": "See your booked sales calls in a calendar or a list, add a call for a prospect, mark how each call went, and set up your booking calendars.",
       "tabs": [
         {
-          "label": "Calendar",
-          "path": "/coach/calls"
+          "label": "Calendar view (icon button)",
+          "path": null
         },
         {
-          "label": "List",
+          "label": "List view (icon button)",
           "path": "/coach/calls?tab=list"
         },
         {
@@ -344,20 +355,19 @@
       ],
       "controls": [
         "**Search calls…** box at the top",
-        "**Filter** button (in Calendar view: Calendars and Type; in List view: Timing and Call status)",
-        "**Sort** button (List view only): Sort by Call time, Date added, Prospect or Call status, plus Order",
-        "**Settings** button opens your booking calendar setup",
-        "**Calendar view** and **List view** icon buttons switch the layout",
-        "**Add a call** button: pick a prospect under **Choose who you are meeting**, then choose a calendar, a day and time, and press **Confirm**",
+        "**Filter** button: in Calendar view it has Calendars and Type; in List view it has Timing and Call status",
+        "**Sort** button (List view only): Sort by and Order",
+        "**Settings** button opens booking calendar setup",
+        "**Add a call** button: pick a prospect in the **Search prospects…** pop-up, then choose a calendar, a time and press **Confirm**",
         "**Today**, previous and next arrows, and **Day** / **Week** / **Month** buttons in Calendar view",
-        "Click a call in the calendar to open a pop-up with the status buttons **Confirmed**, **Completed**, **No-show**, **Cancelled**, plus **Join meeting**, **Watch recording** and **Open contact** when available",
-        "List columns: **Prospect**, **Contact info**, **Date added**, **Call time**, **Calendar**, **Call status** (a drop-down you can change for calls booked in Profit Coach)",
-        "In Settings: **Booking calendars** list with **New calendar**, an on/off switch, a copy-link button and an **Edit** / **Delete** menu for each calendar",
-        "In Settings: **Weekly hours** box with **Timezone**, day checkboxes and **Save hours**",
-        "In Settings: **Calendar provider** choice between **Profit Coach calendars** and **CRM calendar**, with **Save CRM details**",
-        "In Settings: **Calls** link at the top goes back to your calls"
+        "Colour key in Calendar view: Confirmed, Completed, No-show, Cancelled, Imported",
+        "Click a call to see its details, with **Join meeting**, **Watch recording**, status buttons and **Open contact** or **Close**",
+        "List columns: Prospect, Contact info, Date added, Call time, Calendar, Call status (change it from the dropdown on each row)",
+        "**Connect your calendar** box with **Connect calendar** button in Calendar view, shown when no Google or Outlook calendar is connected",
+        "In Settings: **Booking calendars** list with **New calendar**, an on/off switch, a copy booking link button and an Edit/Delete menu for each calendar",
+        "In Settings: **Weekly hours** with **Timezone** and **Save hours**, and a **Calendar provider** box (Profit Coach calendars or CRM calendar)"
       ],
-      "notes": "Clicking a call row in the list opens that person's BOSS Score page only if your account has access to client tools. The calendar shows your Google or Outlook events only after you press **Connect calendar** (in Settings); bookings work without it. The Coach column and coach filter are admin-only, so don't offer them.}"
+      "notes": "Booking works without a connected Google or Outlook calendar, but connecting it shows your events next to your calls and adds meeting links. The Calendars filter in the list view is only used for admins. Clicking a list row opens the client's page only if you have Keep Clients access.}"
     },
     {
       "path": "/coach/campaigns",
@@ -459,11 +469,11 @@
     {
       "path": "/coach/campaigns/magnets/[magnetId]",
       "adminPath": "/admin/campaigns/magnets/[magnetId]",
-      "hash": "038adac299fdd45b",
+      "hash": "db017292a3c3346e",
       "coachVisible": true,
       "title": "One lead magnet",
-      "where": "Get Clients → Campaigns → Lead Magnets → open a lead magnet (for example Boss Score)",
-      "summary": "See who opted in, started and finished one lead magnet, share its link, and edit the follow-up messages sent to those people.",
+      "where": "Get Clients → Campaigns → Lead Magnets tab → open a lead magnet (Boss Score or Boss Pro)",
+      "summary": "See who opted in, started and finished a lead magnet, share its link, and edit the follow-up messages sent afterwards.",
       "tabs": [
         {
           "label": "Overview",
@@ -479,20 +489,18 @@
         }
       ],
       "controls": [
-        "**Pool**, **Campaigns**, **Lead Magnets** tabs at the top (links to other pages)",
-        "**Settings** button: pick who emails people after they take it (**This app** or **My old CRM**)",
-        "**Share** button: pop-up with **Your public URL** field and the share links",
-        "**Copy** next to the public link, or **Add a public link** if you have no URL yet",
+        "**Settings** button at top right: pop-up **Lead magnet settings** to choose who emails people, **This app** or **My old CRM**",
+        "**Share** button: pop-up with **Your public URL** field and your links (Copy, Personalise, Preview, QR code for Boss Score, embed code, CRM mass-send link)",
+        "**Copy** link next to the public link under the title",
+        "**Add a public link** (shows when no public URL is set yet)",
         "**Edit your page** button (Boss Score only)",
-        "Date range dropdown (Last 7 days, Last 14 days, Last 30 days, Last 90 days, All time, Custom range) on Overview and People",
-        "**By stage** card with **View all**; click a stage to open People",
-        "**Opted in** and **Completed** percentage dials on Overview",
-        "**All** / stage filter chips and **Search name or email** box on People; click a person to open them",
-        "Sequence tabs inside Sequences, each with a step builder to add, edit, copy, move and delete steps",
-        "**Notify me when** box with **Add alert** and Bell, Email, WhatsApp switches in Sequences",
-        "**Connect your email** link inside Settings if no email is connected"
+        "Date range dropdown (Last 7 days, Last 14 days, Last 30 days, Last 90 days, All time, Custom range), with **From** and **To** dates for Custom range",
+        "**By stage** box on Overview with **View all**, plus dials: **Opted in** (Boss Score only) and **Completed**",
+        "**People** tab: stage chips (All, Opted in, Started, Completed), **Search name or email** field, and a list with Person, Stage, Score, When",
+        "**Sequences** tab: one tab per follow-up sequence, with a step builder to add, edit, copy, delete and reorder messages",
+        "**Notify me when** box on Sequences tab: **Add alert** button, with Bell, Email and WhatsApp switches per alert"
       ],
-      "notes": "Boss Score shows views and an opt-in rate; other magnets do not. Sequences only appear once they have been set up, and the email Settings apply to every lead magnet. If the magnet is not found, the page shows a link back to the lead magnets list."
+      "notes": "Set a public URL first so the share links work. For the app to email people from the coach's own address, they must connect their email (the Settings pop-up links to this). Opted in count and Views show for Boss Score only.}"
     },
     {
       "path": "/coach/clients",
@@ -1015,38 +1023,40 @@
     {
       "path": "/coach/search",
       "adminPath": "/admin/search",
-      "hash": "a68d45abccdac636",
+      "hash": "1265518588aaf25d",
       "coachVisible": true,
       "title": "Search",
-      "where": "Open Search from the top bar or search icon in the app (it is not in the sidebar list). The page address is /coach/search.",
+      "where": "Search (opens from the search box or shortcut in the app; page at /coach/search)",
       "summary": "Search lessons, videos, community posts and members, or reopen things you looked at recently.",
       "tabs": [
         {
           "label": "Classroom",
-          "path": "/coach/search"
+          "path": "/coach/search?q=...&tab=classroom"
         },
         {
           "label": "Community",
-          "path": "/coach/search?tab=community"
+          "path": "/coach/search?q=...&tab=community"
         },
         {
           "label": "Members",
-          "path": "/coach/search?tab=members"
+          "path": "/coach/search?q=...&tab=members"
         }
       ],
       "controls": [
-        "**Search lessons, videos, posts and people** box at the top (type at least 2 letters, press Enter)",
-        "**Clear search** (X) button inside the box once you type",
-        "**Ask Ava** button in the box (opens Ava with your search text)",
-        "**Recently opened** list under the box when it is empty (lessons, resources, prospects, clients)",
-        "**Classroom**, **Community**, **Members** tabs, each with a result count (shown once you search)",
-        "Result cards: lessons and resources in Classroom, posts in Community, people in Members",
-        "**Like** and comment buttons on community post results",
-        "**Nothing in** message with buttons like **3 in Community** to jump to a tab that has hits",
-        "**Ask Ava instead** button when there are no results",
-        "**Previous**, page numbers and **Next** under long result lists"
+        "**Search lessons, videos, posts and people** box at the top (type at least 2 letters)",
+        "**Clear search** (X) button inside the box",
+        "**Ask Ava** button inside the box, sends what you typed to Ava",
+        "**Recently opened** list shown when the box is empty (lessons, resources, prospects, clients)",
+        "**Classroom**, **Community** and **Members** tabs, each with a result count, shown once you search",
+        "Classroom results: lessons (with the spot said in the video) and **Resources**",
+        "Community results: post cards you can like, comment on or open, with matching comments under them",
+        "Members results: name, @handle, short bio, role and join date",
+        "**Previous**, page numbers and **Next** at the bottom when there are many results",
+        "**1 in Community** style buttons (e.g. \"3 in Members\") when the current tab has nothing but another tab does",
+        "**Ask Ava instead** button when nothing is found",
+        "Esc key goes back to the page you came from"
       ],
-      "notes": "Search only starts at 2 or more characters. Ask Ava buttons only show if Ava is turned on for the coach. Pressing Esc goes back to the page you came from.  Recently opened resources, prospects and clients only appear for things opened on this device."
+      "notes": "The Ask Ava buttons only show when Ava is available for the coach. Searching needs you to be signed in. Typing fewer than 2 letters shows the Recently opened list instead of results."
     },
     {
       "path": "/coach/settings",
@@ -1189,27 +1199,28 @@
     {
       "path": "/coach/support",
       "adminPath": "/admin/support",
-      "hash": "651c84df0c8ecb3d",
+      "hash": "002559c5635f2e5c",
       "coachVisible": true,
       "title": "Support",
-      "where": "Support (in the main menu) at /coach/support",
-      "summary": "Chat with Zander and Pam, see all your chats in one list, and start a new chat when you need help.",
+      "where": "Support (in the app menu) → /coach/support",
+      "summary": "Chat with Zander and Pam, see all your chats in one list, and start a new one.",
       "tabs": [],
       "controls": [
-        "**Your chats** heading with the list of all your chats with BCA",
-        "**New chat** button at the top of the list, opens a chat box on the right",
+        "**Your chats** heading with the list of all your chats",
+        "**New chat** button at the top of the list (opens a chat on the right)",
         "**Needs you** group: chats waiting for your reply or reading",
-        "**Open** group: chats that are going and not waiting on you",
+        "**Open** group: chats still going",
         "**Done** group: finished chats, folded away until you click it",
         "**Mark done** / **Reopen** button at the top of an open chat",
-        "**Rename this chat** by clicking the chat name at the top of an open chat",
+        "**Rename this chat** by clicking the chat name at the top of the chat",
+        "**Open page** link at the top of a chat that is about a page",
+        "**Hi** welcome panel on the right with Zander and Pam's roles",
         "**Post in community** button in the welcome panel",
-        "**Next support call** green pill in the welcome panel, opens the calendar",
-        "Welcome panel on the right (above the list on phones) saying who answers: Zander for the app, Pam for coaching",
-        "Message box at the bottom of an open chat, where you type and send, with reactions on BCA's messages",
-        "Open page button at the top of a chat, which takes you to the page it is about"
+        "**Next support call** pill in the welcome panel, linking to the calendar",
+        "Message box at the bottom of a chat to type, attach files and send",
+        "React to a message with the reaction button to clear it from Needs you"
       ],
-      "notes": "Chats open in a panel on the right (a pop-up on phones). The Help tab (Help centre with search and topics) is admin-only, so coaches never see it and Ava should not offer it. The page links to Support with ?new=1 start a new chat straight away.}"
+      "notes": "Click a chat to read it on the right; on phones it opens as a sheet and the welcome sits above the list. The Help tab (help centre) is admin-only, so coaches never see tabs or Help pages here. Replies are aimed within 2 business days.}"
     },
     {
       "path": "/coach/toolkit",

@@ -1,4 +1,4 @@
-import { resolveAnthropicModel } from "@/lib/anthropicModel";
+import { WRITING_MODEL } from "@/lib/anthropicModel";
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { emptyDraft, normalizeOptimizerDraft, textForSection } from "@/lib/linkedinProfileOptimizer/draft";
 import {
@@ -8,7 +8,7 @@ import {
   WRITE_EVERY_PART,
 } from "@/lib/linkedinProfileOptimizer/rewritePart";
 import { PROFILE_SECTIONS, type ProfileSectionId } from "@/lib/linkedinProfileOptimizer/types";
-import { blocksToMarkdown, sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
+import { blocksToMarkdown, editedByHand, sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
 import { buildOrder, sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 import { draftSection, isBuildableSection } from "@/lib/practiceKnowledge/buildSection";
 import { linkedInNote } from "@/lib/practiceKnowledge/coachLinkedIn";
@@ -186,7 +186,7 @@ async function sectionDraft(key: string, input: AgentToolInput, ctx: AgentToolCo
       { label: "Section", value: sectionTitle(key) },
       ...(linkedin ? [{ label: "LinkedIn", value: linkedin.used ? `Used ${linkedin.used}` : "None found" }] : []),
     ],
-    warning: existing?.edited_at && existing.model !== "ava" ? "This section was edited by hand. Saving replaces those edits." : undefined,
+    warning: editedByHand(existing) ? "This section was edited by hand. Saving replaces those edits." : undefined,
     preview,
     before: existing ? blocksToMarkdown(existing.blocks) : undefined,
     input: { ...input, _draft: blocks },
@@ -237,7 +237,7 @@ async function saveSection(coachId: string, key: string, blocks: BlueprintBlock[
     section: {
       blocks,
       generated_at: now,
-      model: resolveAnthropicModel(),
+      model: WRITING_MODEL,
       edited_at: null,
       // Kept so undo_copy can put the old one back.
       previous: existing

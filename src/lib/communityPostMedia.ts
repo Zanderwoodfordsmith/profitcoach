@@ -11,6 +11,8 @@ export type CommunityPostMediaItem = {
   name?: string;
   /** Still frame with a play button, for videos. Shown in support emails. */
   poster?: string;
+  /** What's said in a voice note (Whisper), shown folded under the player. */
+  transcript?: string;
 };
 
 export const COMMUNITY_POST_MEDIA_MAX = 6;
@@ -223,11 +225,15 @@ export function parseStoredCommunityPostMedia(raw: unknown): CommunityPostMediaI
     const posterRaw = (el as { poster?: unknown }).poster;
     const poster =
       typeof posterRaw === "string" && posterRaw.trim() ? posterRaw.trim() : undefined;
+    const transcriptRaw = (el as { transcript?: unknown }).transcript;
+    const transcript =
+      typeof transcriptRaw === "string" && transcriptRaw.trim() ? transcriptRaw.trim() : undefined;
     out.push({
       url: url.trim(),
       kind,
       ...(name ? { name } : {}),
       ...(poster ? { poster } : {}),
+      ...(transcript ? { transcript } : {}),
     });
     if (out.length >= COMMUNITY_POST_MEDIA_MAX) break;
   }

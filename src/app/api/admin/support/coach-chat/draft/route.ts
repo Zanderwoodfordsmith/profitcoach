@@ -1,3 +1,4 @@
+import { supportBodyForAi } from "@/lib/support/supportTicketMedia";
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 
@@ -86,12 +87,12 @@ export async function POST(request: Request) {
   if (UUID.test(reportId)) {
     const [{ data: report }, { data: replies }] = await Promise.all([
       supabaseAdmin.from("community_feedback_reports").select("created_by, created_by_admin, details").eq("id", reportId).eq("created_by", coachId).maybeSingle(),
-      supabaseAdmin.from("community_feedback_replies").select("created_by, body, created_at").eq("report_id", reportId).order("created_at", { ascending: true }).limit(30),
+      supabaseAdmin.from("community_feedback_replies").select("created_by, body, media, created_at").eq("report_id", reportId).order("created_at", { ascending: true }).limit(30),
     ]);
     if (report) {
       const opener = report.created_by_admin ? "BCA" : coachName;
       const lines = [`${opener}: ${clip(String(report.details ?? ""), 1_500)}`];
-      for (const r of replies ?? []) lines.push(`${r.created_by === coachId ? coachName : "BCA"}: ${clip(String(r.body ?? ""), 1_200)}`);
+      for (const r of replies ?? []) lines.push(`${r.created_by === coachId ? coachName : "BCA"}: ${clip(supportBodyForAi(String(r.body ?? ""), r.media), 1_200)}`);
       chatText = lines.join("\n");
     }
   }

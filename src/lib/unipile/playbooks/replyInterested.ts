@@ -13,7 +13,7 @@ export const REPLY_INTERESTED_PLAYBOOK: OutreachPlaybook = {
   description:
     "Use when they reply interested. Send the scorecard, nudge if they don't finish, then offer the review if they don't book.",
   northStar: "assessment_start",
-  seedDefault: true,
+  seedDefault: false,
   steps: spaced([
     messageStep(`Hi {{first_name}},
 

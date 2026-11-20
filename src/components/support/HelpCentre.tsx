@@ -14,7 +14,10 @@ import {
   Receipt,
   Rocket,
   Search,
+  GraduationCap,
   Signpost,
+  Sparkles,
+  Target,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +27,7 @@ import {
   HELP_ANSWERS,
   HELP_TOPICS,
   helpTopic,
+  helpVideoUrl,
   searchHelpAnswers,
   type HelpAnswer,
   type HelpTopicId,
@@ -36,6 +40,9 @@ const TOPIC_ICONS: Record<HelpTopicId, LucideIcon> = {
   "boss-score": Gauge,
   "calls-calendar": CalendarDays,
   connections: Plug,
+  "using-get-clients": Target,
+  "app-and-ava": Sparkles,
+  training: GraduationCap,
   money: Receipt,
   "where-things-moved": Signpost,
 };
@@ -330,6 +337,18 @@ function ArticleView({ answer, admin }: { answer: HelpAnswer; admin: boolean }) 
             </p>
           ) : null}
           <div className="hc-rule mt-5 w-24" />
+          {answer.video ? (
+            <figure className="mt-6">
+              <video
+                src={helpVideoUrl(answer.video.src)}
+                controls
+                playsInline
+                preload="metadata"
+                className="aspect-video w-full rounded-lg bg-[#0b1b2e]"
+              />
+              <figcaption className="mt-2 text-sm text-[#55657a]">{answer.video.title}</figcaption>
+            </figure>
+          ) : null}
           <div className="mt-6">{renderAnswer(answer.answer)}</div>
 
           {siblings.length ? (
@@ -372,8 +391,23 @@ function NeedsBadge({ needs }: { needs: "zander" | "pam" }) {
 
 const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
 
+const STEP = /^\d+\.\s+/;
+
+/** Paragraphs split on a blank line. A paragraph whose lines all start "1. ", "2. " shows as numbered steps. */
 function renderAnswer(text: string): ReactNode {
-  return text.split(/\n\s*\n/).map((para, i) => <p key={i}>{renderInline(para)}</p>);
+  return text.split(/\n\s*\n/).map((para, i) => {
+    const lines = para.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length && lines.every((l) => STEP.test(l))) {
+      return (
+        <ol key={i} className="hc-steps">
+          {lines.map((l, j) => (
+            <li key={j}>{renderInline(l.replace(STEP, ""))}</li>
+          ))}
+        </ol>
+      );
+    }
+    return <p key={i}>{renderInline(para)}</p>;
+  });
 }
 
 function renderInline(text: string): ReactNode[] {

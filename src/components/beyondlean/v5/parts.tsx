@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowRight, ArrowUp, Linkedin, Mail, MoveRight, Phone } from "lucide-react";
 import { figtree, instrumentSerif } from "@/fonts";
-import { BOOK_HREF, EMAIL, PHONE, SCORE_HREF } from "../data";
+import { BOOK_HREF, EMAIL, PHONE, SCORE_HREF, SITE_BASE } from "../data";
 import { PremiumMotion } from "../PremiumMotion";
 import { FaqList } from "./FaqList";
 import { NavContact } from "./NavContact";
@@ -15,7 +15,7 @@ import "../beyondleanV5.css";
 import "./pages.css";
 
 export const PHONE_HREF = "tel:+447843577771";
-export const HOME = "/beyondlean";
+export const HOME = SITE_BASE;
 
 export const NAV = [
   { href: `${HOME}/about`, label: "About", key: "about" },
@@ -76,7 +76,7 @@ function Nav({ active }: { active: NavKey }) {
   return (
     <header className="v5-nav" data-motion-nav>
       <div className="v5-wrap v5-nav-inner">
-        <Link className="v5-wordmark" href={HOME} aria-label="Beyondlean home">
+        <Link className="v5-wordmark" href={HOME || "/"} aria-label="Beyondlean home">
           <Wordmark />
         </Link>
         <nav className="v5-nav-pill" aria-label="Main">
@@ -124,21 +124,6 @@ function Nav({ active }: { active: NavKey }) {
         </div>
       </div>
     </header>
-  );
-}
-
-/** Preview only: flips a redesigned page back to its earlier version until Zander picks one. */
-export function VersionSwitch({ current }: { current: "new" | "old" }) {
-  return (
-    <nav className="bl-switch" aria-label="Page versions (preview only)">
-      <span>Version</span>
-      <a href="?" aria-current={current === "new" ? "page" : undefined}>
-        New
-      </a>
-      <a href="?v=old" aria-current={current === "old" ? "page" : undefined}>
-        Old
-      </a>
-    </nav>
   );
 }
 
@@ -230,6 +215,7 @@ export function V5Shell({
 }: {
   children: React.ReactNode;
   active: NavKey;
+  /** Preview-only design switch (the Constraint Call booking section). */
   switcher?: React.ReactNode;
 }) {
   return (
@@ -404,52 +390,20 @@ export function CtaCard({
   );
 }
 
-export function CloseCard({ old = false }: { old?: boolean }) {
-  if (!old) {
-    return (
-      <section className="v5-close-wrap" aria-labelledby="v5-close-title">
-        <div className="v5-wrap">
-          <CtaCard
-            id="v5-close-title"
-            eyebrow="Free, 30 minutes, one to one"
-            light="One thing is holding"
-            strong="your business back."
-            text="We find it together, plus the one to three things to fix first. If I can't help, I'll tell you."
-            href={BOOK_HREF}
-            label="Book a Constraint Call"
-            photo="/beyondlean/paul-whiteboard.jpg"
-          />
-        </div>
-      </section>
-    );
-  }
+export function CloseCard() {
   return (
     <section className="v5-close-wrap" aria-labelledby="v5-close-title">
       <div className="v5-wrap">
-        <div className="v5-close">
-          <div className="v5-close-copy">
-            <h2 id="v5-close-title" className="v5-h2 is-dark">
-              <span>Ready when you are.</span> <strong>Book a Constraint Call.</strong>
-            </h2>
-            <p>
-              Pick a time that suits you. We look at where your business is now, where you want it to be, and what&apos;s
-              in the way. If I can&apos;t help, I&apos;ll tell you.
-            </p>
-            <CircleButton href={BOOK_HREF} tone="white">
-              Book a Constraint Call
-            </CircleButton>
-            <ul className="v5-close-contact">
-              <li>
-                <Phone aria-hidden />
-                <a href={PHONE_HREF}>{PHONE}</a>
-              </li>
-            </ul>
-          </div>
-          <div className="v5-close-photo" aria-hidden>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/beyondlean/paul-cutout.png" alt="" loading="lazy" />
-          </div>
-        </div>
+        <CtaCard
+          id="v5-close-title"
+          eyebrow="Free, 30 minutes, one to one"
+          light="One thing is holding"
+          strong="your business back."
+          text="We find it together, plus the one to three things to fix first. If I can't help, I'll tell you."
+          href={BOOK_HREF}
+          label="Book a Constraint Call"
+          photo="/beyondlean/paul-whiteboard.jpg"
+        />
       </div>
     </section>
   );

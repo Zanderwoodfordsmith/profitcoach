@@ -19,9 +19,19 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { DEFAULT_SUPPORT_ASSIGNEE_ID } from "@/lib/support/assignees";
 import { supportChatOpenedByBca } from "@/lib/support/tickets";
 import { supportComposerFallbackBody } from "@/lib/support/supportTicketMedia";
+import { transcribeAudio } from "@/lib/support/voiceTranscript";
+import {
+  EXT_BY_MIME,
+  SUPPORT_MAX_VIDEO_BYTES,
+  maxBytesForCommunityPostMime,
+  mediaKindForMime,
+  type CommunityPostMediaItem,
+} from "@/lib/communityPostMedia";
+import { randomUUID } from "crypto";
 import {
   createHostedAuthLink,
   deleteUnipileAccount,
+  downloadUnipileMessageAttachment,
   getUnipileAccount,
   getUnipileDsn,
   isUnipileConfigured,
@@ -305,12 +315,20 @@ export function coachIdForChat(
 // Bringing messages in
 // ---------------------------------------------------------------------------
 
+type IncomingFile = {
+  id: string;
+  mime: string;
+  name: string | null;
+  size: number | null;
+};
+
 type IncomingMessage = {
   id: string;
   text: string;
   isSender: boolean;
   createdAt: string;
   hasFiles: boolean;
+  files: IncomingFile[];
 };
 
 function messageFromUnipile(raw: Record<string, unknown>): IncomingMessage | null {
@@ -328,13 +346,81 @@ function messageFromUnipile(raw: Record<string, unknown>): IncomingMessage | nul
     isSender: Boolean(raw.is_sender),
     createdAt: Number.isFinite(parsed) ? new Date(parsed).toISOString() : new Date().toISOString(),
     hasFiles: attachments.length > 0,
+    files: attachments
+      .map((a) => (a && typeof a === "object" ? (a as Record<string, unknown>) : null))
+      .filter((a): a is Record<string, unknown> => Boolean(a))
+      .filter((a) => !a.unavailable && !a.sticker)
+      .map((a) => ({
+        id: String(a.id || "").trim(),
+        mime: String(a.mimetype || a.mime_type || "").trim(),
+        name: typeof a.file_name === "string" && a.file_name.trim() ? a.file_name.trim() : null,
+        size: typeof a.file_size === "number" ? a.file_size : null,
+      }))
+      .filter((f) => f.id),
   };
 }
 
-function bodyOf(msg: IncomingMessage): string {
-  const note = "(Sent a photo or file on WhatsApp. Open WhatsApp to see it.)";
-  if (!msg.text) return note;
-  return msg.hasFiles ? `${msg.text}\n\n${note}` : msg.text;
+/**
+ * Copy a WhatsApp message's photos, voice notes, videos and documents into
+ * Support storage so they show in the chat. Files we can't copy are skipped.
+ */
+async function importWhatsAppFiles(
+  msg: IncomingMessage,
+  ownerId: string
+): Promise<CommunityPostMediaItem[]> {
+  const media: CommunityPostMediaItem[] = [];
+  for (const file of msg.files.slice(0, 5)) {
+    const listedMime = file.mime.split(";")[0]!.trim().toLowerCase();
+    const listedKind = mediaKindForMime(listedMime);
+    const maxBytes =
+      listedKind === "video" ? SUPPORT_MAX_VIDEO_BYTES : maxBytesForCommunityPostMime(listedMime || "image/jpeg");
+    if (file.size && file.size > maxBytes) continue;
+    // A voice note can still be uploading when the webhook fires: wait and try again.
+    let got = await downloadUnipileMessageAttachment({ messageId: msg.id, attachmentId: file.id, maxBytes });
+    for (const waitMs of [3_000, 8_000]) {
+      if (got.ok && got.data) break;
+      await new Promise((r) => setTimeout(r, waitMs));
+      got = await downloadUnipileMessageAttachment({ messageId: msg.id, attachmentId: file.id, maxBytes });
+    }
+    if (!got.ok || !got.data) continue;
+    const mime = (listedMime || String(got.data.contentType || "")).split(";")[0]!.trim().toLowerCase();
+    const kind = mediaKindForMime(mime);
+    if (!kind) continue;
+    const ext = EXT_BY_MIME[mime] ?? (kind === "image" ? "jpg" : kind === "audio" ? "ogg" : "bin");
+    const path = `${ownerId}/${randomUUID()}.${ext}`;
+    const { error } = await supabaseAdmin.storage
+      .from("community-posts")
+      .upload(path, got.data.bytes, { contentType: mime, upsert: false });
+    if (error) continue;
+    const url = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/+$/, "")}/storage/v1/object/public/community-posts/${path}`;
+    if (kind === "file") {
+      media.push({ url, kind, name: file.name || `document.${ext}` });
+    } else if (kind === "audio") {
+      // Transcribed now so it's ready to read and the AI drafts can use it.
+      const transcript = await transcribeAudio(got.data.bytes);
+      media.push(transcript ? { url, kind, transcript } : { url, kind });
+    } else {
+      media.push({ url, kind });
+    }
+  }
+  return media;
+}
+
+const FILES_NOTE = "(Sent a photo or file on WhatsApp. Open WhatsApp to see it.)";
+
+function bodyOf(msg: IncomingMessage, media: CommunityPostMediaItem[] = []): string {
+  const allCopied = msg.hasFiles && media.length > 0 && media.length >= msg.files.length;
+  if (allCopied) {
+    return supportComposerFallbackBody({
+      text: msg.text,
+      voice: media.some((m) => m.kind === "audio"),
+      video: media.some((m) => m.kind === "video"),
+      imageCount: media.filter((m) => m.kind === "image").length,
+      fileCount: media.filter((m) => m.kind === "file").length,
+    });
+  }
+  if (!msg.text) return FILES_NOTE;
+  return msg.hasFiles ? `${msg.text}\n\n${FILES_NOTE}` : msg.text;
 }
 
 const firstNames = new Map<string, string>();
@@ -487,6 +573,7 @@ async function ingestCoachMessage(input: {
   const authorId = msg.isSender ? line.admin_id : coachId;
   const withName = await firstNameOf(line.admin_id);
   let reportId = await reportForMessage({ coachId });
+  const media = msg.files.length ? await importWhatsAppFiles(msg, authorId) : [];
 
   if (!reportId) {
     const { data: created, error } = await supabaseAdmin
@@ -498,7 +585,8 @@ async function ingestCoachMessage(input: {
         assigned_to: DEFAULT_SUPPORT_ASSIGNEE_ID,
         type: "question",
         title: "WhatsApp",
-        details: bodyOf(msg),
+        details: bodyOf(msg, media),
+        ...(media.length ? { media } : {}),
         status: msg.isSender ? "waiting_reply" : "open",
         whatsapp_message_id: msg.id,
         coach_last_read_at: msg.createdAt,
@@ -518,7 +606,8 @@ async function ingestCoachMessage(input: {
   const { error } = await supabaseAdmin.from("community_feedback_replies").insert({
     report_id: reportId,
     created_by: authorId,
-    body: bodyOf(msg),
+    body: bodyOf(msg, media),
+    ...(media.length ? { media } : {}),
     via_whatsapp: true,
     whatsapp_message_id: msg.id,
     whatsapp_with: withName,
@@ -543,6 +632,44 @@ async function ingestCoachMessage(input: {
   }
   await rememberChat({ line, coachId, chatId });
   return "reply_added";
+}
+
+/**
+ * Catch-up: WhatsApp messages stored before files were copied in still say
+ * "Open WhatsApp to see it". Fetch their files now and attach them.
+ */
+export async function backfillSupportWhatsAppFiles(): Promise<{ checked: number; fixed: number }> {
+  let checked = 0;
+  let fixed = 0;
+  for (const table of ["community_feedback_replies", "community_feedback_reports"] as const) {
+    const textCol = table === "community_feedback_replies" ? "body" : "details";
+    const ownerCol = "created_by";
+    const { data: rows } = await supabaseAdmin
+      .from(table)
+      .select(`id, ${textCol}, ${ownerCol}, whatsapp_message_id`)
+      .like(textCol, `%${FILES_NOTE}%`)
+      .not("whatsapp_message_id", "is", null)
+      .is("media", null)
+      .limit(200);
+    for (const row of (rows ?? []) as unknown as Array<Record<string, unknown>>) {
+      checked += 1;
+      const got = await unipileFetch<Record<string, unknown>>(
+        "GET",
+        `/api/v1/messages/${encodeURIComponent(String(row.whatsapp_message_id))}`
+      );
+      if (!got.ok || !got.data) continue;
+      const msg = messageFromUnipile(got.data);
+      if (!msg?.files.length) continue;
+      const media = await importWhatsAppFiles(msg, String(row[ownerCol]));
+      if (!media.length) continue;
+      await supabaseAdmin
+        .from(table)
+        .update({ [textCol]: bodyOf(msg, media), media })
+        .eq("id", String(row.id));
+      fixed += 1;
+    }
+  }
+  return { checked, fixed };
 }
 
 async function getUnipileChat(chatId: string) {

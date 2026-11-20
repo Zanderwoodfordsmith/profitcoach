@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { WAITS_LABEL, WAITS_TONE, daysAgo, gettingLiveAdminHeaders as adminHeaders } from "@/components/admin/CoachGettingLive";
+import { CoachFunnelStrip } from "@/components/admin/CoachFunnelStrip";
 import type { GettingLiveData, GettingLiveRow, GettingLiveUpdate } from "@/lib/gettingLive";
 import { LAUNCH_STEPS, RESULT_STEPS, stepGroupLabel, type GettingLiveStepKey } from "@/lib/gettingLiveSteps";
 import { badgeClass } from "@/components/ui/Badge";
@@ -231,6 +232,10 @@ export function GettingLiveList({
           Read-only for now. Ticking steps by hand and adding coaches start working once the database table is set up.
         </p>
       ) : null}
+      <CoachFunnelStrip
+        title="Funnel, all coaches on this list"
+        coaches={data.rows.map((r) => ({ id: r.coach_id, joined_at: r.joined_at, live: Boolean(r.steps.find((s) => s.key === "campaign_live")?.done) }))}
+      />
       {view === "board" ? <Board rows={data.rows} onOpen={openCoach} /> : null}
       <div className={framed ? cardClass("plain", `overflow-x-auto ${view === "board" ? "hidden" : ""}`) : `overflow-x-auto ${view === "board" ? "hidden" : ""}`}>
         <table className="w-full text-sm">

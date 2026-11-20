@@ -174,7 +174,7 @@ export default function AdminLayout({
     try {
       clearImpersonation();
       clearContactImpersonation();
-      await supabaseClient.auth.signOut();
+      await supabaseClient.auth.signOut({ scope: "local" });
       router.replace("/login");
     } finally {
       setSigningOut(false);

@@ -9,9 +9,11 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const auth = await requireAdmin(request);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.error === "Server error." ? 500 : 401 });
+  // ?coach=<id> (the coach page's Ava tab): that coach only, with their chain even when nothing waits.
+  const only = new URL(request.url).searchParams.get("coach");
   try {
-    const items = await toCheckItems();
-    const coachIds = [...new Set(items.map((i) => i.coach_id))];
+    const items = (await toCheckItems()).filter((i) => !only || i.coach_id === only);
+    const coachIds = only ? [only] : [...new Set(items.map((i) => i.coach_id))];
     const chains: Record<string, ChainState[]> = {};
     await Promise.all(
       coachIds.map(async (id) => {

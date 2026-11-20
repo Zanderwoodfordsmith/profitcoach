@@ -1,3 +1,4 @@
+import { supportBodyForAi } from "@/lib/support/supportTicketMedia";
 import Anthropic from "@anthropic-ai/sdk";
 import { DEFAULT_ANTHROPIC_MODEL } from "@/lib/anthropicModel";
 import { addUsage, emptyTally, logAiUsage } from "@/lib/ai/usageLog";
@@ -78,7 +79,7 @@ export async function buildSupportReplyPrompt(input: {
     await Promise.all([
       supabaseAdmin
         .from("community_feedback_replies")
-        .select(`created_at, created_by, body, author:profiles!created_by (${PERSON_SELECT})`)
+        .select(`created_at, created_by, body, media, author:profiles!created_by (${PERSON_SELECT})`)
         .eq("report_id", ticketId)
         .order("created_at", { ascending: true })
         .limit(300),
@@ -125,7 +126,7 @@ export async function buildSupportReplyPrompt(input: {
       created_at: String(row.created_at ?? ""),
       role: isStaff ? "staff" : "member",
       author_name: personName(author),
-      body: typeof row.body === "string" ? row.body : "",
+      body: supportBodyForAi(typeof row.body === "string" ? row.body : "", row.media),
     };
   });
 

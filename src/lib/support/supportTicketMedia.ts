@@ -33,6 +33,20 @@ export function supportComposerFallbackBody(input: {
   return "";
 }
 
+/** True when the text is only the stand-in above and the files show themselves. */
+export function isMediaOnlyBody(body: string, media: CommunityPostMediaItem[]): boolean {
+  return media.length > 0 && /^Sent (a voice note|a video|an image|images|a document|documents)$/.test(body.trim());
+}
+
+/** Message text for the AI drafts: what was typed plus what voice notes say. */
+export function supportBodyForAi(body: string, mediaRaw: unknown): string {
+  const media = parseSupportReplyMedia(mediaRaw);
+  const said = media.map((m) => m.transcript).filter((t): t is string => Boolean(t));
+  if (!said.length) return body;
+  const voice = said.map((t) => `(Voice note) ${t}`).join("\n");
+  return isMediaOnlyBody(body, media) || !body.trim() ? voice : `${body}\n${voice}`;
+}
+
 /** Extra lines so an emailed reply still makes sense when files are attached. */
 export function supportReplyBodyForEmail(
   body: string,

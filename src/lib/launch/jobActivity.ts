@@ -1,4 +1,4 @@
-import { resolveAnthropicModel } from "@/lib/anthropicModel";
+import { WRITING_MODEL } from "@/lib/anthropicModel";
 import { resolveReference } from "@/lib/agent/context";
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
 import { sectionByKey } from "@/lib/practiceKnowledge/blueprint";
@@ -236,7 +236,7 @@ async function draftSections(
       }
       const drafted_at = new Date().toISOString();
       sections.push({ key: result.key, title, blocks: result.blocks, drafted_at });
-      built[result.key] = { blocks: result.blocks, generated_at: drafted_at, model: resolveAnthropicModel(), edited_at: null };
+      built[result.key] = { blocks: result.blocks, generated_at: drafted_at, model: WRITING_MODEL, edited_at: null };
     }
     row = { ...row, built_sections: built };
   }
@@ -299,7 +299,7 @@ export async function saveDraft(id: string, userId: string | null): Promise<Acti
     await saveBuiltSection({
       coachId: draft.coach_id,
       key: section.key,
-      section: { blocks: section.blocks, generated_at: new Date().toISOString(), model: resolveAnthropicModel(), edited_at: null },
+      section: { blocks: section.blocks, generated_at: new Date().toISOString(), model: WRITING_MODEL, edited_at: null },
     });
   }
   await resolve(id, "saved", userId);

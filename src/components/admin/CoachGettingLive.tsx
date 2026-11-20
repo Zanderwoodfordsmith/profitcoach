@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Clock, Hourglass, Layers, LifeBuoy, Linkedin, Loader2 } from "lucide-react";
 import { WorkshopActivityPanel } from "@/components/BossGrid/WorkshopActivityPanel";
+import { CoachFunnelStrip } from "@/components/admin/CoachFunnelStrip";
 import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
@@ -196,7 +197,9 @@ export function CoachGettingLive({ coachId }: { coachId: string }) {
           </PropRow>
         </dl>
 
-        <div className="mt-6 border-t border-slate-200" role="presentation" />
+        <div className="mt-6">
+          <CoachFunnelStrip bare title="Funnel" coaches={[{ id: row.coach_id, joined_at: row.joined_at, live: Boolean(row.steps.find((s) => s.key === "campaign_live")?.done) }]} />
+        </div>
 
         {error ? <p className="mt-4 text-sm text-rose-700">{error}</p> : null}
         {!data.storage ? (

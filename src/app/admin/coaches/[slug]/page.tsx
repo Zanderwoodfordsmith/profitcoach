@@ -18,6 +18,7 @@ import {
 } from "@/components/admin/AdminCoachLinkedInPanel";
 import { AdminCoachContentHistory } from "@/components/admin/AdminCoachContentHistory";
 import { AdminCoachSources } from "@/components/admin/AdminCoachSources";
+import { AdminCoachAva } from "@/components/admin/AdminCoachAva";
 import { CoachProfileBlueprint } from "@/components/admin/CoachProfileBlueprint";
 import { CoachGettingLive } from "@/components/admin/CoachGettingLive";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
@@ -121,7 +122,7 @@ type CoachPayment = {
   billing_kind_override: PaymentBillingKind | null;
 };
 
-type TabId = "overview" | "getting-live" | "linkedin" | "blueprint" | "sources" | "payments";
+type TabId = "overview" | "getting-live" | "linkedin" | "blueprint" | "sources" | "ava" | "payments";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
 
@@ -220,7 +221,7 @@ export default function AdminCoachDetailPage({
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "payments" || tab === "linkedin" || tab === "blueprint" || tab === "sources" || tab === "getting-live" || tab === "practice") {
+    if (tab === "payments" || tab === "linkedin" || tab === "blueprint" || tab === "sources" || tab === "ava" || tab === "getting-live" || tab === "practice") {
       setActiveTab(tab === "practice" ? "blueprint" : tab);
     } else if (!tab) {
       setActiveTab("overview");
@@ -553,6 +554,7 @@ export default function AdminCoachDetailPage({
               {tabButton("linkedin", "LinkedIn")}
               {tabButton("blueprint", "Blueprint")}
               {tabButton("sources", "Sources")}
+              {tabButton("ava", "Ava")}
               {tabButton("payments", `Payments (${paymentSummary.succeededCount})`)}
             </nav>
           </div>
@@ -909,6 +911,10 @@ export default function AdminCoachDetailPage({
           ) : null}
 
           {activeTab === "sources" ? <AdminCoachSources coachSlug={coach.slug} /> : null}
+
+          {activeTab === "ava" ? (
+            <AdminCoachAva coachId={coach.id} coachSlug={coach.slug} coachName={coach.full_name?.trim() || coach.coach_business_name || "this coach"} />
+          ) : null}
 
           {activeTab === "payments" ? (
             <div className="space-y-6">

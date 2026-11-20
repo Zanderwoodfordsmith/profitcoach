@@ -22,4 +22,8 @@ export type CallRow = {
   meeting_join_url: string | null;
   zoom_recording_url: string | null;
   zoom_transcript_text: string | null;
+  /** GHL calls only: the calendar's own status, before any coach mark. */
+  ghl_status?: string;
+  /** GHL calls only: completed or noshow when the coach marked it. */
+  coach_outcome?: "completed" | "noshow" | null;
 };

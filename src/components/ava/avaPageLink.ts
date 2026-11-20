@@ -30,6 +30,8 @@ export type AvaPageContext = {
   coach: { id: string; name: string } | null;
   /** BCA looking at a coach's page: Ava's panel holds the slot for waiting work. */
   bcaWork: boolean;
+  /** BCA's own workspace for this coach (the coach page's Ava tab): leave the coach's own chats out of the list. */
+  bcaChatsOnly?: boolean;
   starters: AvaPageStarter[];
   greeting: string;
   intro: string;

@@ -1,9 +1,60 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
+import beyondleanRedirects from "./content/beyondlean/redirects.json";
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
+
+/**
+ * Paul Swift's site on his own domain. Off until NEXT_PUBLIC_BEYONDLEAN_DOMAIN is set (e.g. "www.beyondlean.com");
+ * then beyondlean.com serves /beyondlean/* at its root, his old page addresses 301 to the new pages, and
+ * theprofitcoach.com/beyondlean/* 301s across to his domain. Files (anything with an extension) are left alone, so
+ * images under /beyondlean/ keep working on both hosts.
+ */
+const BEYONDLEAN_DOMAIN = process.env.NEXT_PUBLIC_BEYONDLEAN_DOMAIN;
+const BEYONDLEAN_HOST = [{ type: "host" as const, value: "(www\\.)?beyondlean\\.com" }];
+const NOT_A_FILE = "(?!.*\\.[a-zA-Z0-9]{2,5}$)";
+
+function beyondleanDomainRedirects() {
+  if (!BEYONDLEAN_DOMAIN) return [];
+  const old = Object.entries(beyondleanRedirects.redirects).map(([source, to]) => ({
+    source,
+    destination: to.replace(/^\/beyondlean/, "") || "/",
+    permanent: true,
+    has: BEYONDLEAN_HOST,
+  }));
+  return [
+    ...old,
+    // Any other old page goes to the home page
+    { source: "/:page(.+\\.html)", destination: "/", permanent: true, has: BEYONDLEAN_HOST },
+    // Links that still carry the preview prefix
+    { source: "/beyondlean", destination: "/", permanent: true, has: BEYONDLEAN_HOST },
+    { source: `/beyondlean/:path(${NOT_A_FILE}.*)`, destination: "/:path", permanent: true, has: BEYONDLEAN_HOST },
+    // The preview on theprofitcoach.com moves to Paul's domain
+    { source: "/beyondlean", destination: `https://${BEYONDLEAN_DOMAIN}/`, permanent: true, missing: BEYONDLEAN_HOST },
+    {
+      source: `/beyondlean/:path(${NOT_A_FILE}.*)`,
+      destination: `https://${BEYONDLEAN_DOMAIN}/:path`,
+      permanent: true,
+      missing: BEYONDLEAN_HOST,
+    },
+  ];
+}
+
+function beyondleanDomainRewrites() {
+  if (!BEYONDLEAN_DOMAIN) return [];
+  return [
+    { source: "/", destination: "/beyondlean", has: BEYONDLEAN_HOST },
+    { source: "/sitemap.xml", destination: "/beyondlean/sitemap.xml", has: BEYONDLEAN_HOST },
+    { source: "/robots.txt", destination: "/beyondlean/robots.txt", has: BEYONDLEAN_HOST },
+    {
+      source: `/:path((?!_next/|api/|beyondlean(?:/|$))${NOT_A_FILE}.+)`,
+      destination: "/beyondlean/:path",
+      has: BEYONDLEAN_HOST,
+    },
+  ];
+}
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -43,6 +94,8 @@ const nextConfig: NextConfig = {
       // The homepage is the Scrollcraft build (copied into public/site-v4 at build time).
       // beforeFiles so it wins over src/app/page.tsx.
       beforeFiles: [
+        // Paul's domain first, so beyondlean.com/ doesn't get the BCA homepage
+        ...beyondleanDomainRewrites(),
         { source: "/", destination: "/site-v4/index.html" },
         { source: "/our-story", destination: "/site-v4/our-story.html" },
         { source: "/profit-system", destination: "/site-v4/profit-system.html" },
@@ -51,6 +104,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      ...beyondleanDomainRedirects(),
       {
         source: "/academy",
         destination: "/new-academy",

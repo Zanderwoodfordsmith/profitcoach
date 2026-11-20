@@ -95,6 +95,7 @@ export async function POST(request: Request) {
         vocabulary: buildVocabularyText(libraryMatch),
       }),
       maxTokens: 3072,
+      writing: true,
     });
 
     if (data) {

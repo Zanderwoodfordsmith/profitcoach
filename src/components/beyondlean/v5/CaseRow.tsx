@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { shortText } from "./shortText";
 
 export type CaseRowItem = {
   slug: string;
@@ -78,7 +79,7 @@ export function CaseRow({ items, base }: { items: CaseRowItem[]; base: string })
           {c.sector && <span className="v5-row-tag">{c.sector}</span>}
           <span className="v5-row-copy">
             <span className="v5-row-title">{c.title}</span>
-            <span className="v5-row-summary">{c.summary}</span>
+            <span className="v5-row-summary">{shortText(c.summary, 90)}</span>
           </span>
         </Link>
       ))}

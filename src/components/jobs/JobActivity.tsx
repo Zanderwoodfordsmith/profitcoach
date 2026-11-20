@@ -11,6 +11,7 @@ import { changedSince, missingLabel, type AvaWork } from "@/lib/launch/avaWork";
 import { sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 import type { ActivityItem, AnswerFill, JobSkill, ProspectSearchDraft } from "@/lib/launch/jobActivity";
 import { formatSupportRelativeCompact } from "@/lib/support/tickets";
+import { summarizeSalesNavSearch } from "@/lib/salesNavigator/salesNavSearchSummary";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 import { BcaMark } from "./jobParts";
@@ -682,6 +683,18 @@ function AnswersCard({
  * LinkedIn says it finds. Untick what you don't want, ask her to change it,
  * or Import it: the lists go into the coach's Pool one at a time.
  */
+/** What a list searches for beyond the base search, in one line. */
+function searchTerms(url: string): string {
+  const s = summarizeSalesNavSearch(url);
+  const words = new URL(url).searchParams.get("keywords");
+  return [
+    s.industries.length ? `Industry: ${s.industries.join(", ")}` : "",
+    s.company_includes.length ? `Name has: ${s.company_includes.join(", ")}` : "",
+    words ? `Keywords: ${words}` : "",
+    s.team_sizes.length ? `${s.team_sizes.join(", ")} staff` : "",
+  ].filter(Boolean).join(" · ");
+}
+
 function SearchesCard({
   item,
   busy,
@@ -728,6 +741,7 @@ function SearchesCard({
                 </span>
               </p>
               {search.why ? <p className="text-sm text-slate-600">{search.why}</p> : null}
+              <p className="text-xs text-slate-500">{searchTerms(search.url)}</p>
             </div>
             <a
               href={search.url}
@@ -742,7 +756,7 @@ function SearchesCard({
         ))}
       </ul>
       <p className="mt-2 text-sm text-slate-600">
-        {known ? `About ${total.toLocaleString("en-GB")} people ticked.` : "Some sizes are unknown."} Aim for 1,000 to 2,500; 800 at least where the market is thin.
+        {known ? `About ${total.toLocaleString("en-GB")} people ticked.` : "Some sizes are unknown."} Aim for 1,000 to 2,500; 200 at least where the market is thin.
       </p>
       {item.payload.imported?.length ? (
         <p className="mt-1 text-sm text-slate-500">Imported so far: {item.payload.imported.map((l) => l.label).join(", ")}.</p>

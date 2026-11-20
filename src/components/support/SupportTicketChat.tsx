@@ -273,6 +273,23 @@ export function SupportTicketChat({
     setError(null);
 
     try {
+      // Already sent this on WhatsApp in the last few minutes: don't post it twice.
+      const text = draft.trim();
+      if (text && !pendingImages.length && !pendingFiles.length && !pendingVoice && !pendingVideo) {
+        const { data: sameOnWhatsApp } = await supabaseClient
+          .from("community_feedback_replies")
+          .select("body")
+          .eq("report_id", ticket.id)
+          .eq("created_by", viewerId)
+          .eq("via_whatsapp", true)
+          .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
+          .limit(10);
+        if ((sameOnWhatsApp ?? []).some((r) => String(r.body || "").trim() === text)) {
+          setDraft("");
+          return;
+        }
+      }
+
       const uploaded: CommunityPostMediaItem[] = [];
       for (const item of pendingImages) {
         const up = await uploadSupportMediaFile(item.file);

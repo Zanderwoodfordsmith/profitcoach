@@ -811,7 +811,7 @@ export async function POST(
         },
       })
       .select(
-        "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at"
+        "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at, read_at"
       )
       .maybeSingle();
 
@@ -885,7 +885,7 @@ export async function POST(
       metadata: { kind: "reply", raw: smsRes.raw },
     })
     .select(
-      "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at"
+      "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at, read_at"
     )
     .maybeSingle();
 

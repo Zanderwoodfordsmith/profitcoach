@@ -1628,7 +1628,7 @@
   overflow: hidden;
   font-size: 1.0625rem;
   line-height: 1.5;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
 }
 
@@ -1756,9 +1756,41 @@
 
 .v5-all-head {
   display: flex;
-  flex-direction: column;
-  gap: 28px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
   margin-bottom: 36px;
+}
+
+/* "All articles." reads as one line, with the topic tabs beside it */
+.v5-all-head .v5-h2 {
+  margin: 0;
+}
+
+.v5-all-head .v5-h2 span,
+.v5-all-head .v5-h2 strong {
+  display: inline;
+}
+
+/* Smaller tabs so they fit beside the heading on a laptop screen */
+.v5-all-head .v5-tabs {
+  gap: 6px;
+}
+
+.v5-all-head .v5-tabs button {
+  gap: 6px;
+  padding: 7px 9px 7px 11px;
+  font-size: 0.875rem;
+}
+
+/* Blog: less air between the featured article and the list */
+.v5-blog-feature {
+  padding-bottom: clamp(32px, 4vw, 48px);
+}
+
+.v5-blog-all {
+  padding-top: clamp(40px, 4.5vw, 64px);
 }
 
 .v5-tabs {
@@ -2062,7 +2094,7 @@
   font-size: 1rem;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.78);
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
@@ -2197,7 +2229,7 @@
   font-size: 1.0625rem;
   line-height: 1.55;
   color: var(--v5-soft-ink);
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
 }
 
@@ -4317,4 +4349,277 @@
   .v5-hub-card::after {
     transition: none;
   }
+}
+
+/* ---------- About: career as a horizontal timeline, drawn as you scroll ---------- */
+
+.v5-tl-scroll {
+  margin: 0 calc(-1 * clamp(16px, 4vw, 40px));
+  padding: 8px clamp(16px, 4vw, 40px) 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.v5-tl-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.v5-tl {
+  --tl-dot-y: 64px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--tl-n), minmax(0, 1fr));
+  min-width: 960px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The track runs from the first dot to the last; the blue line grows along it */
+.v5-tl::before,
+.v5-tl::after {
+  content: "";
+  position: absolute;
+  top: var(--tl-dot-y);
+  left: calc(50% / var(--tl-n));
+  right: calc(50% / var(--tl-n));
+  height: 2px;
+  border-radius: 2px;
+  background: var(--v5-line);
+}
+
+.v5-tl::after {
+  background: linear-gradient(90deg, #0c5290, #238bf7);
+  transform: scaleX(var(--tl-p));
+  transform-origin: left center;
+}
+
+.v5-tl li {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 12px;
+  text-align: center;
+}
+
+.v5-tl-year {
+  height: 48px;
+  font-size: 2.25rem;
+  font-weight: 300;
+  line-height: 48px;
+  letter-spacing: -0.04em;
+  color: var(--v5-mute);
+  transition: color 400ms;
+}
+
+.v5-tl-dot {
+  width: 18px;
+  height: 18px;
+  margin: 7px 0 22px;
+  border: 2px solid var(--v5-line);
+  border-radius: 999px;
+  background: #fff;
+  transition:
+    border-color 400ms,
+    background-color 400ms,
+    box-shadow 400ms,
+    transform 400ms var(--v5-ease);
+}
+
+.v5-tl strong {
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--v5-ink);
+}
+
+.v5-tl-place {
+  margin-top: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #238bf7;
+}
+
+.v5-tl p {
+  margin: 10px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--v5-soft-ink);
+}
+
+.v5-tl li > strong,
+.v5-tl li > .v5-tl-place,
+.v5-tl li > p {
+  opacity: 0.35;
+  transform: translateY(8px);
+  transition:
+    opacity 500ms,
+    transform 500ms var(--v5-ease);
+}
+
+.v5-tl li.is-on > strong,
+.v5-tl li.is-on > .v5-tl-place,
+.v5-tl li.is-on > p {
+  opacity: 1;
+  transform: none;
+}
+
+.v5-tl li.is-on .v5-tl-year {
+  color: var(--v5-navy);
+}
+
+.v5-tl li.is-on .v5-tl-dot {
+  border-color: #238bf7;
+  background: #238bf7;
+  box-shadow: 0 0 0 6px rgba(35, 139, 247, 0.16);
+  transform: scale(1.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v5-tl::after {
+    transform: none;
+  }
+
+  .v5-tl li > *,
+  .v5-tl-dot {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none;
+  }
+
+  .v5-tl-year {
+    color: var(--v5-navy) !important;
+  }
+
+  .v5-tl-dot {
+    border-color: #238bf7 !important;
+    background: #238bf7 !important;
+  }
+}
+
+/* ---------- About: values with icons, qualifications with ticks, outside work in its own box ---------- */
+
+.v5-two-col .v5-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.v5-two-col .v5-values li {
+  position: relative;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  padding: 14px 16px 14px 14px;
+  border: 1px solid var(--v5-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--v5-shadow-2);
+  text-align: left;
+}
+
+.v5-two-col .v5-values li::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #0c5290, #238bf7);
+}
+
+.v5-value-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(35, 139, 247, 0.1);
+  color: #238bf7;
+}
+
+.v5-value-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.v5-creds li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.v5-creds svg {
+  width: 16px;
+  height: 16px;
+  color: #238bf7;
+}
+
+.v5-outside {
+  margin-top: 28px;
+  padding: 20px 22px;
+  border-left: 3px solid #238bf7;
+  border-radius: 0 8px 8px 0;
+  background: var(--v5-canvas);
+}
+
+.v5-outside p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--v5-soft-ink);
+}
+
+.v5-outside .v5-outside-tag {
+  margin-bottom: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #238bf7;
+}
+
+.v5-outside .v5-outside-line {
+  margin-top: 10px;
+  font-weight: 650;
+  color: var(--v5-ink);
+}
+
+/* ---------- Blog: "Show more" under the grid ---------- */
+
+.v5-more-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.v5-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px 12px 22px;
+  border: 1px solid var(--v5-line);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--v5-ink);
+  cursor: pointer;
+  transition:
+    border-color 180ms,
+    box-shadow 180ms;
+}
+
+.v5-more-btn:hover {
+  border-color: #238bf7;
+  box-shadow: var(--v5-shadow-2);
+}
+
+.v5-more-btn svg {
+  width: 18px;
+  height: 18px;
+  color: #238bf7;
 }

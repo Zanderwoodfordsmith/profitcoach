@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, PanelRight, SquarePen } from "lucide-react";
 
@@ -27,7 +27,17 @@ const clampWidth = (w: number) => Math.round(Math.min(PANEL_MAX, Math.max(PANEL_
  * rest. No top bar here; her chats sit in a panel on the left, like every
  * other AI app. Open to coaches too since 5 Nov (the same Ava as the top-right panel).
  */
-export function AvaPage() {
+export function AvaPage({
+  embedded = false,
+  chatsLabel = "Chats",
+  aside,
+}: {
+  /** Inside another page (the coach page's Ava tab, 20 Nov): the app's top bar stays and there's no Side panel button. */
+  embedded?: boolean;
+  chatsLabel?: string;
+  /** A column on the right, e.g. what's handing over for this coach. */
+  aside?: ReactNode;
+} = {}) {
   const { profileLoading } = useDashboardProfile();
   const chrome = useDashboardChrome();
   const claimChromeHost = chrome?.claimChromeHost;
@@ -60,7 +70,7 @@ export function AvaPage() {
   const { convo, chats, setDraft } = session;
 
   // Her page has no top bar: claiming the chrome keeps the app's fallback bar away.
-  useEffect(() => claimChromeHost?.(), [claimChromeHost]);
+  useEffect(() => (embedded ? undefined : claimChromeHost?.()), [claimChromeHost, embedded]);
 
   const setPanel = (open: boolean) => {
     setPanelOpen(open);
@@ -159,7 +169,7 @@ export function AvaPage() {
                   <button type="button" onClick={() => setPanel(false)} className="ava-glass-btn" aria-label="Hide your chats" title="Hide your chats">
                     <AvaMenuIcon />
                   </button>
-                  <span className="text-[0.9375rem] font-semibold text-[var(--ava-ink)]">Chats</span>
+                  <span className="truncate text-[0.9375rem] font-semibold text-[var(--ava-ink)]">{chatsLabel}</span>
                 </div>
                 <div className="px-3 pb-3">
                   <button type="button" onClick={newChat} className="ava-glass-btn is-labelled w-full justify-start">
@@ -201,11 +211,13 @@ export function AvaPage() {
             <header className="relative z-[2] flex shrink-0 items-center gap-2 px-4 pb-1 pt-4 sm:px-8">
               {panelOpen ? null : (
                 <button type="button" onClick={() => setPanel(true)} className="ava-glass-btn is-labelled" aria-label="Show your chats">
-                  <AvaMenuIcon /> Chats
+                  <AvaMenuIcon /> {chatsLabel}
                 </button>
               )}
               <div ref={setSlot} className="flex min-w-0 flex-1 items-center justify-end gap-2" />
-              <AvaAction showLabel icon={<PanelRight className="h-4 w-4" aria-hidden />} label="Side panel" onClick={moveToSide} />
+              {embedded ? null : (
+                <AvaAction showLabel icon={<PanelRight className="h-4 w-4" aria-hidden />} label="Side panel" onClick={moveToSide} />
+              )}
             </header>
             <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
               {session.agent ? (
@@ -236,6 +248,7 @@ export function AvaPage() {
               )}
             </div>
           </div>
+          {aside ? <aside className="ava-hand-over ava-scroll">{aside}</aside> : null}
         </div>
       </div>
     </AvaRoomProvider>

@@ -13,6 +13,7 @@ type AppointmentRecord = {
   title: string | null;
   status_normalized: string;
   status_raw: string | null;
+  coach_outcome?: "completed" | "noshow" | null;
   start_time: string | null;
   end_time: string | null;
   created_at: string | null;
@@ -93,8 +94,10 @@ function mapAppointmentRow(
 ): CallRow {
   const contact = row.contacts ?? null;
   const coach = row.coach_id ? coachById[row.coach_id] : undefined;
-  const status =
+  const ghlStatus =
     row.status_normalized === "invalid" ? "other" : row.status_normalized;
+  const coachOutcome = row.coach_outcome ?? null;
+  const status = coachOutcome ?? ghlStatus;
 
   return {
     id: row.id,
@@ -123,6 +126,8 @@ function mapAppointmentRow(
     meeting_join_url: null,
     zoom_recording_url: null,
     zoom_transcript_text: null,
+    ghl_status: ghlStatus,
+    coach_outcome: coachOutcome,
   };
 }
 
@@ -195,6 +200,7 @@ async function loadGhlRows(
         title,
         status_normalized,
         status_raw,
+        coach_outcome,
         start_time,
         end_time,
         created_at,

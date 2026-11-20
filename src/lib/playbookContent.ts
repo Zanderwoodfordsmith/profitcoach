@@ -233,7 +233,10 @@ type SummaryRow = {
 };
 
 /** Load summaries for all playbooks (description, play count). Uses DB first, then file, then fallback. */
-export async function getAllPlaybookSummaries(): Promise<PlaybookSummary[]> {
+/** `descriptionLength`: how much of "What this is" to keep (120 for the playbook cards; Paul's site takes more). */
+export async function getAllPlaybookSummaries({ descriptionLength = 120 }: { descriptionLength?: number } = {}): Promise<
+  PlaybookSummary[]
+> {
   const { data: rows } = await supabaseAdmin
     .from("playbook_content")
     .select("ref, what_this_is, plays, plays_sections");
@@ -251,7 +254,7 @@ export async function getAllPlaybookSummaries(): Promise<PlaybookSummary[]> {
 
     let coverImageUrl: string | undefined;
     if (row) {
-      description = truncateDescription(row.what_this_is ?? "", 120);
+      description = truncateDescription(row.what_this_is ?? "", descriptionLength);
       playCount = countActionItems({ plays: row.plays, playsSections: row.plays_sections });
     } else {
       description = "";
@@ -262,7 +265,7 @@ export async function getAllPlaybookSummaries(): Promise<PlaybookSummary[]> {
       const raw = fs.readFileSync(filePath, "utf-8");
       const data = JSON.parse(raw) as FilePartial;
       if (!row) {
-        description = truncateDescription(data.whatThisIs ?? "", 120);
+        description = truncateDescription(data.whatThisIs ?? "", descriptionLength);
         playCount = countActionItems({
           actions: data.actions,
           plays: data.plays,
