@@ -47,11 +47,16 @@ const IDENTITY_KEYS = new Set([
   "title",
   "location",
   "coach_name",
+  "review_name",
 ]);
 
 const RESULT_KEYS = new Set([
   "boss_score",
   "focus_area_1",
+  "focus_area_2",
+  "focus_area_3",
+  "business_level_number",
+  "business_level_name",
   "desired_outcome",
   "boss_score_report_link",
 ]);
@@ -121,6 +126,14 @@ export const MERGE_FIELD_CATALOG: MergeField[] = [
     example: "Zander",
   },
   {
+    // The BOSS Score emails use it (20 Nov): without it here, the send check refused every one.
+    key: "review_name",
+    label: "Call name",
+    group: "You",
+    hint: "What you call your first call with an owner",
+    example: "Constraint Call",
+  },
+  {
     key: "booking_link",
     label: "Booking link",
     group: "You",
@@ -142,6 +155,15 @@ export const MERGE_FIELD_CATALOG: MergeField[] = [
     hint: "The thing you hear a lot from this market",
     example:
       "Most owners tell me revenue is fine, but they still can't take a week off.",
+    insertable: false,
+  },
+  {
+    key: "your_result",
+    label: "Your result",
+    group: "You",
+    hint: "One real result of yours, with a number and a timeframe",
+    example:
+      "at Hull KR Foundation I took the operation from -£53K to +£37K profit in 12 months",
     insertable: false,
   },
   {
@@ -172,6 +194,34 @@ export const MERGE_FIELD_CATALOG: MergeField[] = [
     group: "Scorecard",
     hint: "The weakest area on their scorecard",
     example: "Profit & Cash",
+  },
+  {
+    key: "focus_area_2",
+    label: "Second focus area",
+    group: "Scorecard",
+    hint: "The second weakest area on their scorecard",
+    example: "Revenue & Marketing",
+  },
+  {
+    key: "focus_area_3",
+    label: "Third focus area",
+    group: "Scorecard",
+    hint: "The third weakest area on their scorecard",
+    example: "Financials & KPIs",
+  },
+  {
+    key: "business_level_number",
+    label: "Business level number",
+    group: "Scorecard",
+    hint: "Their business level, 1 to 5",
+    example: "4",
+  },
+  {
+    key: "business_level_name",
+    label: "Business level name",
+    group: "Scorecard",
+    hint: "The name of their business level",
+    example: "Overseer",
   },
   {
     key: "desired_outcome",

@@ -360,22 +360,28 @@ export async function advanceLeadAfterInviteAccepted(input: {
   });
 }
 
-export async function processOutreachJobsTick(): Promise<{
+export async function processOutreachJobsTick(options?: {
+  /** Run only these send jobs (a one-job test); the cron passes nothing. */
+  onlyJobIds?: string[];
+}): Promise<{
   processed: number;
   succeeded: number;
   failed: number;
   errors: string[];
 }> {
+  const only = options?.onlyJobIds?.length ? options.onlyJobIds : null;
   const { processRemindFallbacks } = await import("@/lib/unipile/remindQueue");
-  const fallback = await processRemindFallbacks();
-  await processExpiredInviteTimeouts();
+  const fallback = only ? { processed: 0, succeeded: 0, failed: 0, errors: [] as string[] } : await processRemindFallbacks();
+  if (!only) await processExpiredInviteTimeouts();
 
   const now = new Date().toISOString();
-  const { data: candidates, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("linkedin_send_jobs")
     .select("*")
     .eq("status", "pending")
-    .lte("scheduled_for", now)
+    .lte("scheduled_for", now);
+  if (only) query = query.in("id", only);
+  const { data: candidates, error } = await query
     .order("scheduled_for", { ascending: true })
     .limit(CANDIDATE_JOBS_PER_TICK);
 
@@ -455,15 +461,22 @@ export async function processOutreachJobsTick(): Promise<{
         continue;
       }
 
+      // Email campaigns (BOSS Score report and follow-ups) send from the coach's
+      // own mailbox through the email step below. Until 20 Nov they were
+      // cancelled here, so no BOSS Score email ever went from the app.
       if ((campaign.channel as string | undefined) === "email") {
-        await supabaseAdmin
-          .from("linkedin_send_jobs")
-          .update({
-            status: "cancelled",
-            last_error: "Email campaigns are not sent automatically yet.",
-          })
-          .eq("id", job.id);
-        continue;
+        const { resolveAccountIdForChannel } = await import("@/lib/messaging/startConversation");
+        if (!(await resolveAccountIdForChannel(job.coach_id, "email"))) {
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "pending",
+              scheduled_for: new Date(Date.now() + 6 * 3600_000).toISOString(),
+              last_error: "Connect Gmail or Outlook in Settings before this step can send.",
+            })
+            .eq("id", job.id);
+          continue;
+        }
       }
 
       const accountRel = campaign.linkedin_outreach_accounts as
