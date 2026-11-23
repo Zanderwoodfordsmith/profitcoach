@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { supportWhatsAppLineForUnipileAccount } from "@/lib/support/whatsapp";
+import { markCoachReadFromWhatsApp, supportWhatsAppLineForUnipileAccount } from "@/lib/support/whatsapp";
 
 /**
  * Unipile `message_read`: the other person read a message we sent. Reading one
@@ -36,6 +36,8 @@ export async function handleUnipileMessageRead(
       .is("whatsapp_read_at", null)
       .lte("created_at", reply.created_at)
       .or(`created_by.neq.${coachId},as_ava.eq.true`);
+    // Read on WhatsApp counts as read in the app too: no unread badge.
+    await markCoachReadFromWhatsApp({ reportId: reply.report_id, coachId, seenAt: reply.created_at });
     return "support_read";
   }
 

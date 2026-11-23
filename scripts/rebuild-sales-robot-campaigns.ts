@@ -400,16 +400,33 @@ function printCampaign(campaign: InferredCampaign) {
   });
 }
 
+function stepInputs(campaign: InferredCampaign) {
+  return campaign.steps.map((step, position) =>
+    step.kind === "wait"
+      ? { position, step_type: "wait" as const, wait_hours: step.hours }
+      : {
+          position,
+          step_type: step.kind,
+          body: step.body,
+        }
+  );
+}
+
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const statusesOnly = process.argv.includes("--statuses-only");
   // Reads the platform and prints what a run would change. Writes nothing.
   const checkOnly = process.argv.includes("--check");
+  // --steps-for "<name>" (repeatable): give that existing, archived campaign
+  // Sales Robot's current steps before it is switched on in the app.
+  const stepsFor = process.argv.flatMap((arg, i) =>
+    arg === "--steps-for" && process.argv[i + 1] ? [process.argv[i + 1]] : []
+  );
   const csvPath = argValue("--csv");
   const coachSlug = argValue("--coach-slug");
   if (!csvPath || !coachSlug) {
     console.error(
-      "Usage: npx tsx scripts/rebuild-sales-robot-campaigns.ts [--dry-run] [--check] [--statuses-only] --csv <file> --coach-slug <slug>"
+      "Usage: npx tsx scripts/rebuild-sales-robot-campaigns.ts [--dry-run] [--check] [--statuses-only] [--steps-for <campaign name>] --csv <file> --coach-slug <slug>"
     );
     process.exit(1);
   }
@@ -583,6 +600,15 @@ async function main() {
 
   for (const campaign of campaigns) {
     const already = (existing ?? []).find((row) => row.name === campaign.name);
+    if (already && stepsFor.includes(campaign.name)) {
+      if (already.status !== "archived") {
+        throw new Error(`${campaign.name} is ${already.status}: steps change only while archived.`);
+      }
+      if (!checkOnly) await replaceCampaignSteps(already.id, stepInputs(campaign));
+      console.log(
+        `\nSteps ${checkOnly ? "would be replaced" : "replaced"} on ${campaign.name}: ${campaign.steps.length} steps from this export`
+      );
+    }
     if (already) {
       if (!statusesOnly) {
         // Only people not already in the campaign under any of their links.
@@ -636,16 +662,7 @@ async function main() {
       name: campaign.name,
       outreach_account_id: account?.id ?? null,
     });
-    const steps = campaign.steps.map((step, position) =>
-      step.kind === "wait"
-        ? { position, step_type: "wait" as const, wait_hours: step.hours }
-        : {
-            position,
-            step_type: step.kind,
-            body: step.body,
-          }
-    );
-    await replaceCampaignSteps(created.id, steps);
+    await replaceCampaignSteps(created.id, stepInputs(campaign));
 
     const importRows = campaign.leads.map((lead) => ({
       first_name: lead.first_name,

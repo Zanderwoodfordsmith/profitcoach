@@ -511,6 +511,30 @@ export function unreadStaffReplyCount(
   ).length;
 }
 
+/**
+ * The coach read or reacted on WhatsApp to BCA's reply sent at `seenAt`: the
+ * new `coach_last_read_at`, so the app counts it and the replies before it as
+ * read. Stops just short of a staff reply that never went on WhatsApp (they've
+ * only got that one in the app). Null when nothing moves.
+ */
+export function coachLastReadAfterWhatsAppSeen(input: {
+  lastRead: string | null;
+  seenAt: string;
+  replies: { created_by: string; created_at: string; whatsapp_message_id: string | null }[];
+  coachId: string;
+}): string | null {
+  const lastRead = input.lastRead ? Date.parse(input.lastRead) : -Infinity;
+  const seen = Date.parse(input.seenAt);
+  if (!(seen > lastRead)) return null;
+  const appOnly = input.replies
+    .filter((reply) => reply.created_by !== input.coachId && !reply.whatsapp_message_id)
+    .map((reply) => Date.parse(reply.created_at))
+    .filter((at) => at > lastRead && at <= seen);
+  if (appOnly.length === 0) return input.seenAt;
+  const stop = Math.min(...appOnly) - 1;
+  return stop > lastRead ? new Date(stop).toISOString() : null;
+}
+
 /** Latest message the list row should preview: last reply, else the opening note. */
 export function supportTicketListPreview(
   ticket: Pick<SupportTicket, "details">,

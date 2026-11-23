@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  coachLastReadAfterWhatsAppSeen,
   coachSupportListSection,
   mapSupportReplyRow,
   memberSupportStatusPresentation,
@@ -148,6 +149,91 @@ describe("unread staff replies", () => {
         "member"
       ),
       "replied"
+    );
+  });
+});
+
+describe("coachLastReadAfterWhatsAppSeen", () => {
+  const coachId = "coach";
+  const staff = (at: string, onWhatsApp = true) => ({
+    created_by: "admin",
+    created_at: at,
+    whatsapp_message_id: onWhatsApp ? `wa-${at}` : null,
+  });
+
+  it("counts the seen WhatsApp reply and the ones before it as read", () => {
+    const replies = [staff("2026-11-23T09:00:00.000Z"), staff("2026-11-23T10:00:00.000Z")];
+    const readTo = coachLastReadAfterWhatsAppSeen({
+      lastRead: "2026-11-23T08:00:00.000Z",
+      seenAt: "2026-11-23T10:00:00.000Z",
+      replies,
+      coachId,
+    });
+    assert.equal(readTo, "2026-11-23T10:00:00.000Z");
+    assert.equal(unreadStaffReplyCount({ coach_last_read_at: readTo }, replies, coachId), 0);
+  });
+
+  it("works when the coach never opened the ticket in the app", () => {
+    assert.equal(
+      coachLastReadAfterWhatsAppSeen({
+        lastRead: null,
+        seenAt: "2026-11-23T10:00:00.000Z",
+        replies: [staff("2026-11-23T10:00:00.000Z")],
+        coachId,
+      }),
+      "2026-11-23T10:00:00.000Z"
+    );
+  });
+
+  it("leaves an app-only reply unread", () => {
+    const replies = [
+      staff("2026-11-23T09:00:00.000Z"),
+      staff("2026-11-23T09:30:00.000Z", false),
+      staff("2026-11-23T10:00:00.000Z"),
+    ];
+    const readTo = coachLastReadAfterWhatsAppSeen({
+      lastRead: "2026-11-23T08:00:00.000Z",
+      seenAt: "2026-11-23T10:00:00.000Z",
+      replies,
+      coachId,
+    });
+    assert.equal(readTo, "2026-11-23T09:29:59.999Z");
+    assert.equal(unreadStaffReplyCount({ coach_last_read_at: readTo }, replies, coachId), 2);
+  });
+
+  it("ignores the coach's own messages that never went on WhatsApp", () => {
+    assert.equal(
+      coachLastReadAfterWhatsAppSeen({
+        lastRead: "2026-11-23T08:00:00.000Z",
+        seenAt: "2026-11-23T10:00:00.000Z",
+        replies: [{ created_by: coachId, created_at: "2026-11-23T09:00:00.000Z", whatsapp_message_id: null }],
+        coachId,
+      }),
+      "2026-11-23T10:00:00.000Z"
+    );
+  });
+
+  it("never moves the coach's last read backwards", () => {
+    assert.equal(
+      coachLastReadAfterWhatsAppSeen({
+        lastRead: "2026-11-23T11:00:00.000Z",
+        seenAt: "2026-11-23T10:00:00.000Z",
+        replies: [staff("2026-11-23T10:00:00.000Z")],
+        coachId,
+      }),
+      null
+    );
+  });
+
+  it("does nothing when the first unread reply is app-only", () => {
+    assert.equal(
+      coachLastReadAfterWhatsAppSeen({
+        lastRead: "2026-11-23T08:00:00.000Z",
+        seenAt: "2026-11-23T10:00:00.000Z",
+        replies: [staff("2026-11-23T08:00:00.001Z", false), staff("2026-11-23T10:00:00.000Z")],
+        coachId,
+      }),
+      null
     );
   });
 });

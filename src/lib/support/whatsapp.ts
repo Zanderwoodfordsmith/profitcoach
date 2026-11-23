@@ -17,7 +17,7 @@ import {
 } from "@/lib/messaging/messageReactions";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { DEFAULT_SUPPORT_ASSIGNEE_ID } from "@/lib/support/assignees";
-import { supportChatOpenedByBca } from "@/lib/support/tickets";
+import { coachLastReadAfterWhatsAppSeen, supportChatOpenedByBca } from "@/lib/support/tickets";
 import { supportComposerFallbackBody } from "@/lib/support/supportTicketMedia";
 import { transcribeAudio } from "@/lib/support/voiceTranscript";
 import {
@@ -833,7 +833,7 @@ export async function applySupportWhatsAppReaction(input: {
 
   const { data: reply } = await supabaseAdmin
     .from("community_feedback_replies")
-    .select("id, created_by, as_ava, seen_at, seen_reaction, report:community_feedback_reports!inner(created_by)")
+    .select("id, report_id, created_at, created_by, as_ava, seen_at, seen_reaction, report:community_feedback_reports!inner(created_by)")
     .eq("whatsapp_message_id", input.messageId)
     .maybeSingle();
   if (reply) {
@@ -852,6 +852,10 @@ export async function applySupportWhatsAppReaction(input: {
           : { seen_at: null, seen_by: null, seen_reaction: null }
       )
       .eq("id", reply.id);
+    // The coach reacted to BCA's message, so they've read it: not unread in the app.
+    if (emoji && !coachWrote) {
+      await markCoachReadFromWhatsApp({ reportId: reply.report_id, coachId, seenAt: reply.created_at });
+    }
     return emoji ? "reaction_added" : "reaction_removed";
   }
 
@@ -878,6 +882,41 @@ export async function applySupportWhatsAppReaction(input: {
     )
     .eq("id", report.id);
   return emoji ? "reaction_added" : "reaction_removed";
+}
+
+/**
+ * The coach read or reacted on WhatsApp to BCA's reply sent at `seenAt`: count
+ * it, and BCA's replies before it, as read in the app too (no unread badge),
+ * even on a Done ticket. A reply that never went on WhatsApp stays unread.
+ */
+export async function markCoachReadFromWhatsApp(input: {
+  reportId: string;
+  coachId: string;
+  seenAt: string;
+}): Promise<void> {
+  const [{ data: report }, { data: replies }] = await Promise.all([
+    supabaseAdmin
+      .from("community_feedback_reports")
+      .select("coach_last_read_at")
+      .eq("id", input.reportId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("community_feedback_replies")
+      .select("created_by, created_at, whatsapp_message_id")
+      .eq("report_id", input.reportId)
+      .lte("created_at", input.seenAt),
+  ]);
+  const readTo = coachLastReadAfterWhatsAppSeen({
+    lastRead: (report?.coach_last_read_at as string | null) ?? null,
+    seenAt: input.seenAt,
+    replies: replies ?? [],
+    coachId: input.coachId,
+  });
+  if (!readTo) return;
+  await supabaseAdmin
+    .from("community_feedback_reports")
+    .update({ coach_last_read_at: readTo })
+    .eq("id", input.reportId);
 }
 
 /** Webhook: someone reacted on a linked BCA WhatsApp. Only coach chats' messages are ours. */
