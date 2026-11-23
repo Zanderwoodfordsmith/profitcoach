@@ -366,6 +366,9 @@ export function sanitizePayloadPatch(
       less_of: asSourced(practice.less_of, asStringList, fallback),
       help_with: asSourced(practice.help_with, asStringList, fallback),
       offer_timeframe: asSourced(practice.offer_timeframe, (v) => clip(v, SHORT) || null, fallback),
+      method_name: asSourced(practice.method_name, (v) => clip(v, SHORT) || null, fallback),
+      method_steps: asSourced(practice.method_steps, asStringList, fallback),
+      method_story: asSourced(practice.method_story, (v) => clip(v, TEXT) || null, fallback),
       worth_building: asSourced(
         practice.worth_building,
         (v) => clip(v, TEXT) || null,

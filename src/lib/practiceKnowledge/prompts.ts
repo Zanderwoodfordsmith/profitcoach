@@ -168,6 +168,9 @@ export function summarizeKnowledgeForPrompt(
   push("practice.less_of", "They get less of", listValue(payload.practice.less_of).join("; "));
   push("practice.help_with", "What they help with", listValue(payload.practice.help_with).join("; "));
   push("practice.offer_timeframe", "First result they can point to", textValue(payload.practice.offer_timeframe));
+  push("practice.method_name", "Their method", textValue(payload.practice.method_name));
+  push("practice.method_steps", "Method steps, in order", listValue(payload.practice.method_steps).join("; "));
+  push("practice.method_story", "Story behind the method", textValue(payload.practice.method_story));
   push("identity.linkedin_headline", "LinkedIn headline today", textValue(payload.identity.linkedin_headline));
   push("market.career", "Career", (payload.market.career?.value ?? []).filter((r) => r.show).map(careerLine).join("; "));
   push("market.roles_held", "Roles", listValue(payload.market.roles_held).join(", "));

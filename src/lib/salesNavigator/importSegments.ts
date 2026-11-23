@@ -226,7 +226,9 @@ export function planSalesNavImportSegments(
         ? "Saved search"
         : classified.kind === "recent_people"
           ? "Recent search"
-          : "Import";
+          : classified.kind === "lead_list_search"
+            ? "Lead list"
+            : "Import";
     return [
       emptySegmentPlanRow({
         id: "single",

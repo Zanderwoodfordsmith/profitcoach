@@ -203,6 +203,10 @@ export type PracticeKnowledgePayload = {
     help_with: Sourced<string[]> | null;
     /** How long until the first result they can point to. */
     offer_timeframe: Sourced<string> | null;
+    /** Your method (23 Nov): the coach's own named way of doing the work, its steps in order, and the story behind it. */
+    method_name: Sourced<string> | null;
+    method_steps: Sourced<string[]> | null;
+    method_story: Sourced<string> | null;
     worth_building: Sourced<string> | null;
     /** Your Voice: five sliders, 1 to 5. BCA sets them from the conversation, the coach moves them. */
     tone: Sourced<VoiceTone> | null;

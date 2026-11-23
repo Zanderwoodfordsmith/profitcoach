@@ -2,6 +2,8 @@
  * What a pasted Sales Navigator link actually is.
  * Saved and recent people searches omit `query` — the filters live on LinkedIn
  * under an id. Query searches are the ones we can split by company size.
+ * A search that includes a lead list imports whole: splitting it by company
+ * size would drop people at bigger or unsized companies.
  */
 
 import { hasRewriteableSalesNavQuery } from "@/lib/salesNavigator/salesNavUrlRewrite";
@@ -16,6 +18,7 @@ export type SalesNavUrlRejection =
 
 export type ClassifiedSalesNavUrl =
   | { kind: "query"; url: string }
+  | { kind: "lead_list_search"; url: string }
   | { kind: "saved_people"; url: string; id: string }
   | { kind: "recent_people"; url: string; id: string }
   | { kind: "passthrough"; url: string }
@@ -55,6 +58,25 @@ function idParam(raw: string, name: string): string | null {
 
 function normalizePaste(raw: string): string {
   return raw.trim().replace(/^['"]|['"]$/g, "");
+}
+
+/** True when the search's Lead lists filter includes at least one list. */
+export function includesSalesNavLeadList(url: string): boolean {
+  let text = url;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const decoded = decodeURIComponent(text);
+      if (decoded === text) break;
+      text = decoded;
+    } catch {
+      break;
+    }
+  }
+  const at = text.indexOf("type:LEAD_LIST");
+  if (at < 0) return false;
+  const next = text.indexOf("(type:", at);
+  const filter = next < 0 ? text.slice(at) : text.slice(at, next);
+  return filter.includes("selectionType:INCLUDED");
 }
 
 export function classifySalesNavUrl(raw: string): ClassifiedSalesNavUrl {
@@ -123,6 +145,10 @@ export function classifySalesNavUrl(raw: string): ClassifiedSalesNavUrl {
     );
   }
 
+  if (/[?&#]query=/i.test(haystack) && includesSalesNavLeadList(url)) {
+    return { kind: "lead_list_search", url };
+  }
+
   if (hasRewriteableSalesNavQuery(url)) {
     return { kind: "query", url };
   }
@@ -154,6 +180,9 @@ export function salesNavUrlImports(url: string): boolean {
 export function salesNavSingleSearchNote(
   classified: ClassifiedSalesNavUrl
 ): string | null {
+  if (classified.kind === "lead_list_search") {
+    return "Lead list search. We import everyone on the list, whatever their company size. Sales Navigator only returns the first 2,500 people from one search.";
+  }
   if (classified.kind === "saved_people") {
     return "Saved people search. We import it with the filters you already saved. Sales Navigator only returns the first 2,500 people from one search — if it’s larger, narrow it there and paste again.";
   }
@@ -202,14 +231,16 @@ export function prepareSalesNavImportUrl(raw: string): PreparedSalesNavUrl {
     );
   }
   let classified = classifySalesNavUrl(url);
-  if (classified.kind === "query" && /[?&#]savedSearchId=\d+/i.test(url)) {
+  const filtersInLink = () =>
+    classified.kind === "query" || classified.kind === "lead_list_search";
+  if (filtersInLink() && /[?&#]savedSearchId=\d+/i.test(url)) {
     url = withoutParams(url, ["savedSearchId"]);
     classified = classifySalesNavUrl(url);
     adjustments.push(
       "Removed the saved-search id and used the filters in the link. A saved search only opens on the account that saved it."
     );
   }
-  if (classified.kind === "query" && /[?&#]recentSearchId=\d+/i.test(url)) {
+  if (filtersInLink() && /[?&#]recentSearchId=\d+/i.test(url)) {
     url = withoutParams(url, ["recentSearchId"]);
     classified = classifySalesNavUrl(url);
     adjustments.push(

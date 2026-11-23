@@ -100,3 +100,42 @@ describe("planSalesNavImportSegments saved searches", () => {
     );
   });
 });
+
+// As copied from Sales Navigator: blank search, Lead lists filter includes one list.
+const LEAD_LIST_SEARCH =
+  "https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(doLogHistory%3Atrue)%2Cfilters%3AList((type%3ALEAD_LIST%2Cvalues%3AList((id%3A7000000000000000001%2Ctext%3AMy%2520Leads%2CselectionType%3AINCLUDED%2Cicon%3Alist)))))&sessionId=abc&viewAllFilters=true";
+const EXCLUDED_LIST_SEARCH =
+  "https://www.linkedin.com/sales/search/people?query=(filters%3AList((type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AC%2Ctext%3A11-50%2CselectionType%3AINCLUDED)))%2C(type%3ALEAD_LIST%2Cvalues%3AList((id%3A7000000000000000002%2Ctext%3ADone%2CselectionType%3AEXCLUDED)))))";
+
+describe("lead list searches", () => {
+  it("treats a search that includes a lead list as its own kind", () => {
+    assert.equal(classifySalesNavUrl(LEAD_LIST_SEARCH).kind, "lead_list_search");
+  });
+
+  it("imports everyone on the list as one search, with no company-size split", () => {
+    const prepared = prepareSalesNavImportUrl(LEAD_LIST_SEARCH);
+    assert.equal(prepared.classified.kind, "lead_list_search");
+    assert.doesNotMatch(prepared.url, /sessionId=/);
+    const plan = planSalesNavImportSegments({
+      salesNavUrl: prepared.url,
+      targetLeadCount: 2500,
+    });
+    assert.equal(plan.length, 1);
+    assert.equal(plan[0]?.label, "Lead list");
+    assert.equal(plan[0]?.teamSize, null);
+    assert.equal(plan[0]?.salesNavUrl, prepared.url);
+    assert.doesNotMatch(plan[0]?.salesNavUrl ?? "", /COMPANY_HEADCOUNT/);
+  });
+
+  it("still splits a search that only excludes lead lists", () => {
+    assert.equal(classifySalesNavUrl(EXCLUDED_LIST_SEARCH).kind, "query");
+    const plan = planSalesNavImportSegments({
+      salesNavUrl: EXCLUDED_LIST_SEARCH,
+      targetLeadCount: 2500,
+    });
+    assert.deepEqual(
+      plan.map((s) => s.teamSize),
+      ["11-50"]
+    );
+  });
+});

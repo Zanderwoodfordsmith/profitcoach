@@ -110,6 +110,7 @@ Sidebar → **My Blueprint**. Groups, then pages (with their path), then section
 - **Your Offer** (`/coach/blueprint/offer`)
   - The destination: **They get more of**, **They get less of**
   - What you help with: **What you help with**, **First result they can point to**
+  - Your method: **Name**, **The steps, in order**, **Where it came from**
   - How you deliver: **How you deliver**
   - Guarantee: **Guarantee**
   - Price and terms: **Price and terms**

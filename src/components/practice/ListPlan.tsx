@@ -411,7 +411,7 @@ export function ListPlan({
                             }
                           />
                         ) : (
-                        <div className={`max-w-[68ch] space-y-1.5 text-slate-700 ${canTick ? "pl-10" : ""}`}>
+                        <div className={`max-w-[64rem] space-y-1.5 text-slate-700 ${canTick ? "pl-10" : ""}`}>
                           {group.searches[0]!.why ? <p>{group.searches[0]!.why}</p> : null}
                           {p.includes.length ? <Line label="Company name has" value={p.includes.join(", ")} /> : null}
                           {p.industries.length ? <Line label="Industry" value={p.industries.join(", ")} /> : null}
@@ -674,38 +674,51 @@ function Checked({ quality }: { quality: ListQuality }) {
         </span>{" "}
         {quality.note}
       </p>
-      <ul className="mt-1.5 space-y-1">
-        {quality.people.map((person, i) => {
-          const label = labelOf(person);
-          const option = fitOption(label);
-          return (
-            <li key={`${person.url}-${i}`} className="flex items-start gap-2">
-              <span className={badgeClass(option.tone, "w-11 shrink-0 justify-center")}>{option.short}</span>
-              {person.at ? (
-                <span className="w-12 shrink-0 text-right tabular-nums text-slate-400" title="Their place in LinkedIn's list (1 is the top)">
-                  #{person.at.toLocaleString("en-GB")}
-                </span>
-              ) : null}
-              <span className="min-w-0">
-                {person.url ? (
-                  <a href={person.url} target="_blank" rel="noreferrer" className="text-slate-900 hover:underline">
-                    {person.name}
-                  </a>
-                ) : (
-                  <span className="text-slate-900">{person.name}</span>
-                )}
-                <span className="text-slate-500">
-                  {" "}
-                  · {[person.role, person.company].filter(Boolean).join(" at ") || person.headline}
-                </span>
-                {label !== "good" && person.why ? (
-                  <span className={label === "bad" ? "text-rose-700" : "text-amber-800"}> · {person.why}</span>
-                ) : null}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="mt-2 overflow-x-auto rounded-md border border-slate-200 bg-white">
+        <table className="w-full text-left">
+          <thead className="border-b border-slate-200 text-slate-500">
+            <tr>
+              <th className="px-3 py-1.5 font-medium">Fit</th>
+              <th className="px-3 py-1.5 font-medium">Name</th>
+              <th className="px-3 py-1.5 font-medium">Role</th>
+              <th className="px-3 py-1.5 font-medium">Company</th>
+              <th className="px-3 py-1.5 font-medium">Why</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {quality.people.map((person, i) => {
+              const label = labelOf(person);
+              const option = fitOption(label);
+              return (
+                <tr key={`${person.url}-${i}`} className="align-top">
+                  <td className="px-3 py-1.5">
+                    <span className={badgeClass(option.tone, "w-11 justify-center")}>{option.short}</span>
+                  </td>
+                  <td className="px-3 py-1.5">
+                    {person.url ? (
+                      <a href={person.url} target="_blank" rel="noreferrer" className="text-slate-900 hover:underline">
+                        {person.name}
+                      </a>
+                    ) : (
+                      <span className="text-slate-900">{person.name}</span>
+                    )}
+                    {person.at ? (
+                      <span className="block tabular-nums text-slate-400" title="Their place in LinkedIn's list (1 is the top)">
+                        #{person.at.toLocaleString("en-GB")}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-1.5 text-slate-600">{person.role || (person.company ? "" : person.headline)}</td>
+                  <td className="px-3 py-1.5 text-slate-600">{person.company}</td>
+                  <td className={`px-3 py-1.5 ${label === "bad" ? "text-rose-700" : label === "ok" ? "text-amber-800" : "text-slate-600"}`}>
+                    {person.why}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
