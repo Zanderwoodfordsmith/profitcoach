@@ -7,6 +7,7 @@ import { formatFieldValue } from "@/lib/practiceKnowledge/exportMarkdown";
 import { findPracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import type { PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 
+import { coachLinkLines } from "./coachLinks";
 import { cachedFunnelNumbers, constraintCardLines } from "./tools/constraint";
 import type { AgentCoach } from "./types";
 
@@ -67,10 +68,11 @@ function aboutYou(row: PracticeKnowledgeRow): { lines: string[]; open: number } 
 }
 
 export async function coachCard(coach: AgentCoach): Promise<string> {
-  const [row, live, funnel] = await Promise.all([
+  const [row, live, funnel, links] = await Promise.all([
     findPracticeKnowledge(coach.id),
     loadGettingLive({ coachId: coach.id }).catch(() => null),
     cachedFunnelNumbers(coach.id).catch(() => null),
+    coachLinkLines(coach.id).catch(() => []),
   ]);
   const progress = launchProgressFrom(row, live?.rows.find((r) => r.coach_id === coach.id) ?? null);
   const first = coach.name.split(/\s+/)[0] || coach.name;
@@ -113,6 +115,7 @@ export async function coachCard(coach: AgentCoach): Promise<string> {
     `## About You answers`,
     ...(answers.lines.length ? answers.lines : ["(None yet.)"]),
     ...(answers.open ? [`Still open in About You: ${answers.open} answers.`] : []),
+    ...links,
     ...(funnel ? constraintCardLines(funnel) : []),
   ].join("\n");
 }

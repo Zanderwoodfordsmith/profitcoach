@@ -18,6 +18,8 @@ export type AudienceListSummary = {
   created_at: string | null;
   /** True when this list was created by a pool bulk import. */
   from_pool_import: boolean;
+  /** The Sales Navigator search this list was imported from, when it came from one. */
+  sales_nav_url?: string | null;
 };
 
 export function audienceItemSourceLabel(source: string): string {

@@ -6,6 +6,8 @@ import { ChevronDown, Download, ExternalLink, Factory, Info, Loader2, Pencil, Re
 import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { fieldClass } from "@/components/ui/Field";
+import { LeadHoverCard, leadCardLoader } from "@/components/leads/LeadHoverCard";
+import { usePractice } from "./PracticeProvider";
 import type { ActivityItem, ListFix, ListQuality, ProspectSearchDraft } from "@/lib/launch/jobActivity";
 import { fitOption, listFitLabel, type FitLabel } from "@/lib/pool/fit";
 import { keywordsOnlyExclude, parseSalesNavSearchUrl } from "@/lib/salesNavigator/parseSalesNavFilters";
@@ -663,6 +665,8 @@ function labelOf(person: ListQuality["people"][number]): FitLabel {
 
 /** Who Ava checked from the list and what she made of them. */
 function Checked({ quality }: { quality: ListQuality }) {
+  const { authHeaders } = usePractice();
+  const loadCard = useMemo(() => leadCardLoader(authHeaders), [authHeaders]);
   const count = (label: FitLabel) => quality.people.filter((p) => labelOf(p) === label).length;
   const parts = (["good", "ok", "bad"] as const).map((l) => (count(l) ? `${count(l)} ${fitOption(l).short}` : "")).filter(Boolean);
   return (
@@ -695,13 +699,28 @@ function Checked({ quality }: { quality: ListQuality }) {
                     <span className={badgeClass(option.tone, "w-11 justify-center")}>{option.short}</span>
                   </td>
                   <td className="px-3 py-1.5">
-                    {person.url ? (
-                      <a href={person.url} target="_blank" rel="noreferrer" className="text-slate-900 hover:underline">
-                        {person.name}
-                      </a>
-                    ) : (
-                      <span className="text-slate-900">{person.name}</span>
-                    )}
+                    <LeadHoverCard
+                      load={loadCard}
+                      person={{
+                        name: person.name,
+                        linkedinUrl: person.url || null,
+                        companyId: person.companyId ?? null,
+                        role: person.role,
+                        company: person.company,
+                        headline: person.headline,
+                        location: person.location,
+                        industry: person.industry ?? null,
+                        fit: { label: option.short, tone: option.tone, why: person.why },
+                      }}
+                    >
+                      {person.url ? (
+                        <a href={person.url} target="_blank" rel="noreferrer" className="text-slate-900 hover:underline">
+                          {person.name}
+                        </a>
+                      ) : (
+                        <span className="text-slate-900">{person.name}</span>
+                      )}
+                    </LeadHoverCard>
                     {person.at ? (
                       <span className="block tabular-nums text-slate-400" title="Their place in LinkedIn's list (1 is the top)">
                         #{person.at.toLocaleString("en-GB")}

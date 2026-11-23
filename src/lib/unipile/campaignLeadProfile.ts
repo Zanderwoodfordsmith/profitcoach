@@ -7,6 +7,7 @@
  */
 
 import { resolveOrCreateContact } from "@/lib/contacts/resolveOrCreateContact";
+import { loadCompany, type LeadCompany } from "@/lib/leads/leadCard";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 
@@ -20,6 +21,8 @@ export type CampaignLeadProfile = {
   tenure: string | null;
   /** Their LinkedIn About section, from Sales Nav or the contact. */
   about: string | null;
+  /** What their company does, its size and where it is (lead hover card, 23 Nov). */
+  company: LeadCompany | null;
 };
 
 type LeadRow = {
@@ -144,6 +147,7 @@ function salesNavFacts(cache: CacheRow | null) {
     about: asString(sn?.summary),
     tenure: tenureLabel(sn),
     providerId: asString(sn?.id),
+    companyId: asString(asRecord(Array.isArray(sn?.current_positions) ? sn.current_positions[0] : null)?.company_id),
   };
 }
 
@@ -170,6 +174,7 @@ export async function loadCampaignLeadProfile(
   ]);
 
   const sales = salesNavFacts(cache);
+  const company = await loadCompany(coachId, sales.companyId).catch(() => null);
   return {
     headline: contact?.headline ?? sales.headline,
     photoUrl: contact?.photo_url ?? sales.photoUrl,
@@ -178,6 +183,7 @@ export async function loadCampaignLeadProfile(
     teamSize: pool?.team_size ?? cache?.team_size ?? null,
     tenure: sales.tenure,
     about: contact?.about ?? sales.about,
+    company,
   };
 }
 

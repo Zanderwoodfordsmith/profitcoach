@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
+import { getStoredImpersonatingCoachId } from "@/lib/coachAuthHeaders";
 import {
   CalendarDays,
   FolderOpen,
@@ -158,11 +159,13 @@ export function LinkedInSchedulerPanel() {
 
   const getHistoryHeaders = useCallback(async () => {
     try {
-      return { Authorization: `Bearer ${await getToken()}` };
+      // An admin using "Use as" on the coach page sees that coach's issues and drafts.
+      const coachId = pathname?.startsWith("/admin") ? null : getStoredImpersonatingCoachId();
+      return { Authorization: `Bearer ${await getToken()}`, ...(coachId ? { "x-impersonate-coach-id": coachId } : {}) };
     } catch {
       return null;
     }
-  }, [getToken]);
+  }, [getToken, pathname]);
   const history = useLinkedInHistory(getHistoryHeaders);
   const [openIssueId, setOpenIssueId] = useState<string | null>(null);
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { fetchAllSupabasePages } from "@/lib/contactsSchemaSafeSelect";
 import {
+  campaignPersonKey,
   copyMatchingPoolItemsOntoList,
   createCoachAudienceList,
   displayListPersonName,
@@ -37,22 +38,29 @@ const POOL_ITEM_SELECT =
 
 const POOL_PREVIEW_MAX = 50;
 
+type CampaignMembership = {
+  byUrl: Map<string, string[]>;
+  byEmail: Map<string, string[]>;
+  /** Name + company fallback for when the LinkedIn links differ. */
+  byPerson: Map<string, string[]>;
+};
+
 function campaignIdsFor(
   url: string | null,
   email: string | null,
-  byUrl: Map<string, string[]>,
-  byEmail: Map<string, string[]>
+  personKey: string | null,
+  membership: CampaignMembership
 ): string[] {
   const ids = new Set<string>();
-  if (url) for (const id of byUrl.get(url) ?? []) ids.add(id);
-  if (email) for (const id of byEmail.get(email) ?? []) ids.add(id);
+  if (url) for (const id of membership.byUrl.get(url) ?? []) ids.add(id);
+  if (email) for (const id of membership.byEmail.get(email) ?? []) ids.add(id);
+  if (personKey) for (const id of membership.byPerson.get(personKey) ?? []) ids.add(id);
   return [...ids];
 }
 
 function mapPoolItem(
   item: Record<string, unknown>,
-  campaignsByUrl: Map<string, string[]>,
-  campaignsByEmail: Map<string, string[]>,
+  membership: CampaignMembership,
   blacklisted: Set<string>,
   blacklistedEmails: Set<string>
 ): PoolPerson {
@@ -79,7 +87,7 @@ function mapPoolItem(
     typeof item.team_size === "string" && item.team_size.trim()
       ? item.team_size.trim()
       : null;
-  const campaignIds = campaignIdsFor(url, email, campaignsByUrl, campaignsByEmail);
+  const campaignIds = campaignIdsFor(url, email, campaignPersonKey(item), membership);
   return {
     id: item.id as string,
     full_name: displayListPersonName(item),
@@ -134,19 +142,21 @@ function mapPoolItem(
   };
 }
 
-async function loadPoolCampaignMembership(coachId: string): Promise<{
-  byUrl: Map<string, string[]>;
-  byEmail: Map<string, string[]>;
-}> {
+async function loadPoolCampaignMembership(
+  coachId: string
+): Promise<CampaignMembership> {
   const page = await fetchAllSupabasePages<{
     campaign_id: string | null;
     linkedin_url: string | null;
     contact_id: string | null;
     metadata: unknown;
+    first_name: string | null;
+    last_name: string | null;
+    company: string | null;
   }>(async (from, to) =>
     supabaseAdmin
       .from("linkedin_campaign_leads")
-      .select("campaign_id, linkedin_url, contact_id, metadata")
+      .select("campaign_id, linkedin_url, contact_id, metadata, first_name, last_name, company")
       .eq("coach_id", coachId)
       .order("created_at", { ascending: true })
       .range(from, to)
@@ -157,6 +167,7 @@ async function loadPoolCampaignMembership(coachId: string): Promise<{
 
   const byUrl = new Map<string, Set<string>>();
   const byEmail = new Map<string, Set<string>>();
+  const byPerson = new Map<string, Set<string>>();
   const contactCampaigns = new Map<string, Set<string>>();
   const add = (map: Map<string, Set<string>>, key: string, campaignId: string) => {
     const set = map.get(key) ?? new Set<string>();
@@ -170,6 +181,8 @@ async function loadPoolCampaignMembership(coachId: string): Promise<{
     if (!campaignId) continue;
     const url = normalizeLinkedInProfileUrl(String(row.linkedin_url ?? ""));
     if (url) add(byUrl, url, campaignId);
+    const personKey = campaignPersonKey(row);
+    if (personKey) add(byPerson, personKey, campaignId);
     const meta =
       row.metadata && typeof row.metadata === "object"
         ? (row.metadata as Record<string, unknown>)
@@ -210,7 +223,11 @@ async function loadPoolCampaignMembership(coachId: string): Promise<{
     for (const [key, ids] of map) out.set(key, [...ids]);
     return out;
   };
-  return { byUrl: freeze(byUrl), byEmail: freeze(byEmail) };
+  return {
+    byUrl: freeze(byUrl),
+    byEmail: freeze(byEmail),
+    byPerson: freeze(byPerson),
+  };
 }
 
 export async function GET(request: Request) {
@@ -265,11 +282,14 @@ export async function GET(request: Request) {
         throw new Error(previewError.message || "Unable to load pool.");
       }
       const empty = new Set<string>();
-      const noCampaigns = new Map<string, string[]>();
+      const noCampaigns: CampaignMembership = {
+        byUrl: new Map(),
+        byEmail: new Map(),
+        byPerson: new Map(),
+      };
       const people = (previewItems ?? []).map((item) =>
         mapPoolItem(
           item as Record<string, unknown>,
-          noCampaigns,
           noCampaigns,
           empty,
           empty
@@ -315,8 +335,7 @@ export async function GET(request: Request) {
     const people: PoolPerson[] = items.map((item) =>
       mapPoolItem(
         item as Record<string, unknown>,
-        membership.byUrl,
-        membership.byEmail,
+        membership,
         blacklisted,
         blacklistedEmails
       )

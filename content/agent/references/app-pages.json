@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-23T15:18:20.901Z",
+  "generatedAt": "2026-11-23T16:02:06.117Z",
   "model": "claude-sonnet-5-5",
   "pages": [
     {
@@ -719,11 +719,11 @@
     {
       "path": "/coach/linkedin",
       "adminPath": "/admin/linkedin",
-      "hash": "41cf6dbb02617b88",
+      "hash": "836dd5124f011448",
       "coachVisible": true,
       "title": "Content",
       "where": "Get Clients → Content",
-      "summary": "Write, schedule and publish your LinkedIn posts, and see how they perform.",
+      "summary": "Write, schedule and publish LinkedIn posts, and see how your posts and newsletter issues are doing.",
       "tabs": [
         {
           "label": "Compose",
@@ -757,20 +757,18 @@
       "controls": [
         "**Connect LinkedIn** button on the card shown before LinkedIn is connected",
         "**Refresh** button next to the tabs",
-        "Post box (\"What do you want to talk about?\") in Compose",
-        "**Image**, **Video**, **Document** and **Link** buttons under the post box",
-        "**Upload** and **Templates** switch inside Image, with **Choose from computer** and **Generate & attach** (quote card)",
-        "**Fetch** button and **Card title** field in Link",
+        "**What do you want to talk about?** box in Compose for the post text",
+        "**Image**, **Video**, **Document** and **Link** buttons under the post box (Image has **Upload** and **Templates** options; Templates makes a quote card with **Generate & attach**)",
         "**Category…** field in Compose",
-        "**Save draft** button in Compose",
-        "**Schedule** button in Compose, then **Publish at** date and time and **Confirm**",
-        "**Post** button in Compose (publishes straight away)",
-        "**Import from LinkedIn** button in Insights, to bring in past posts",
-        "**Headline**, **Website button label**, **Website URL** and **Quote card subtitle** fields in Settings, with **Save composer settings**",
+        "**Save draft**, **Schedule** (then **Confirm**, with a **Publish at** date and time) and **Post** buttons in Compose",
+        "**Import from LinkedIn** button in Insights and Newsletter, to bring in your past posts and newsletter issues",
+        "**Best posts, last 90 days** list in Insights",
+        "**Headline**, **Website button label**, **Website URL** and **Quote card subtitle** fields in Settings",
+        "**Save composer settings** button in Settings",
         "**Reconnect** and **Run due posts** buttons in Settings",
         "Number badges on Library (drafts) and Queue (scheduled posts)"
       ],
-      "notes": "LinkedIn must be connected first. Until then everything is blurred behind the Connect LinkedIn card and only Compose shows. Connecting uses the same LinkedIn account as Campaigns. Scheduled posts are published automatically while this page is open."
+      "notes": "LinkedIn must be connected first. Until then only a blurred Compose tab shows under the Connect LinkedIn card, and every button is locked. It is the same LinkedIn connection used for Campaigns. The page header says Get Clients and has the shared Get Clients tabs."
     },
     {
       "path": "/coach/membership",

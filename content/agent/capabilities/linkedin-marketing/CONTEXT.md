@@ -21,7 +21,7 @@ The coach's public LinkedIn engine: one newsletter issue, then the messages that
 ## Before you write
 1. `blueprint_overview` on `content` (or the page they are on) and `read_section` for `content:newsletter` and anything they name.
 2. You need a topic, the avatar and one real story or result. Pull the avatar and proof from the Blueprint. If the topic is missing, ask. If a personal story would make the issue better, ask for one. Do not invent one.
-3. Phone and booking details come from the Blueprint. If a calendar link is missing, write `[calendar link]` and say so. Never invent a number or a URL.
+3. Phone comes from the Blueprint. The booking, BOSS Score and newsletter links are under "Their links" in About this coach: use them as written. Only if the booking link says none, write `[calendar link]` and tell them to tick Public book link in Get Clients → Calls → Settings. Never invent a number or a URL.
 
 ## The process
 1. Say the plan in a line ("I'll write this week's issue on cash in scaffolding, then the cover, the inbox note and the post").

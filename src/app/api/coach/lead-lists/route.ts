@@ -6,7 +6,8 @@ import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 import {
   ensureCoachBlacklist,
   ensureCoachPool,
-  loadEnrolledLinkedInUrls,
+  campaignPersonKey,
+  loadEnrolledPeople,
   mapLeadListToSummary,
   sortAudienceLists,
 } from "@/lib/leadLists/audienceLists";
@@ -294,12 +295,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Lead list not found." }, { status: 404 });
     }
 
-    const enrolled = await loadEnrolledLinkedInUrls(auth.userId);
+    const enrolled = await loadEnrolledPeople(auth.userId);
     const mapped = (items ?? []).map((item) => {
       const url = normalizeLinkedInProfileUrl(String(item.linkedin_url ?? ""));
+      const personKey = campaignPersonKey(item);
       return {
         ...item,
-        in_campaign: url ? enrolled.has(url) : false,
+        in_campaign:
+          (url ? enrolled.urls.has(url) : false) ||
+          (personKey ? enrolled.people.has(personKey) : false),
       };
     });
 
@@ -333,8 +337,31 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  /** Each Sales Navigator import keeps its search; show it on the list it filled. */
+  const searchByList = new Map<string, string>();
+  const salesNavListIds = (lists ?? [])
+    .filter((row) => row.source === "sales_nav")
+    .map((row) => row.id as string);
+  if (salesNavListIds.length) {
+    const { data: runs } = await supabaseAdmin
+      .from("sales_nav_import_runs")
+      .select("save_list_id, sales_nav_url")
+      .eq("coach_id", auth.userId)
+      .in("save_list_id", salesNavListIds)
+      .order("created_at", { ascending: true });
+    for (const run of runs ?? []) {
+      const url = typeof run.sales_nav_url === "string" ? run.sales_nav_url.trim() : "";
+      if (run.save_list_id && url && !searchByList.has(run.save_list_id)) {
+        searchByList.set(run.save_list_id, url);
+      }
+    }
+  }
+
   const summaries = sortAudienceLists(
-    (lists ?? []).map((row) => mapLeadListToSummary(row))
+    (lists ?? []).map((row) => ({
+      ...mapLeadListToSummary(row),
+      sales_nav_url: searchByList.get(row.id) ?? null,
+    }))
   );
 
   return NextResponse.json({

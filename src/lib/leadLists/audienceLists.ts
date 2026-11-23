@@ -394,20 +394,62 @@ export async function loadBlacklistedEmails(
   return emails;
 }
 
-export async function loadEnrolledLinkedInUrls(
+/**
+ * Name + company key for spotting the same person when the LinkedIn links
+ * differ (a coded /in/ACwAA… link on the campaign, a readable one on the
+ * import, or a changed link). Null when first name, last name or company is
+ * missing, so thin rows never match.
+ */
+export function campaignPersonKey(input: {
+  first_name?: unknown;
+  last_name?: unknown;
+  full_name?: unknown;
+  company?: unknown;
+}): string | null {
+  const text = (v: unknown) => (typeof v === "string" ? v.trim().toLowerCase() : "");
+  let first = text(input.first_name);
+  let last = text(input.last_name);
+  if (!first && !last) {
+    const parts = text(input.full_name).split(/\s+/).filter(Boolean);
+    first = parts[0] ?? "";
+    last = parts.slice(1).join(" ");
+  }
+  const company = text(input.company)
+    .replace(/\b(ltd|limited|the|inc|llp|plc|group|uk)\b/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 6);
+  if (first.length < 2 || last.length < 2 || company.length < 3) return null;
+  return `${first}|${last}|${company}`;
+}
+
+/** LinkedIn links and name + company keys of everyone in any campaign for this coach. */
+export async function loadEnrolledPeople(
   coachId: string
-): Promise<Set<string>> {
-  const { data } = await supabaseAdmin
-    .from("linkedin_campaign_leads")
-    .select("linkedin_url")
-    .eq("coach_id", coachId);
+): Promise<{ urls: Set<string>; people: Set<string> }> {
+  const page = await fetchAllSupabasePages<{
+    linkedin_url: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    company: string | null;
+  }>(async (from, to) =>
+    supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("linkedin_url, first_name, last_name, company")
+      .eq("coach_id", coachId)
+      .order("id", { ascending: true })
+      .range(from, to)
+  );
+  if (page.error) throw new Error(page.error.message || "Unable to load campaigns.");
 
   const urls = new Set<string>();
-  for (const row of data ?? []) {
+  const people = new Set<string>();
+  for (const row of page.data) {
     const url = normalizeLinkedInProfileUrl(String(row.linkedin_url ?? ""));
     if (url) urls.add(url);
+    const key = campaignPersonKey(row);
+    if (key) people.add(key);
   }
-  return urls;
+  return { urls, people };
 }
 
 /** Emails already on any campaign lead for this coach (contact email or metadata). */

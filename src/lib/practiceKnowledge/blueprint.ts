@@ -180,6 +180,8 @@ export type BlueprintLink = {
   sections: BlueprintSection[];
   /** The how-to for this page, in the Classroom. Linked, not copied. */
   learn?: ClassroomLink[];
+  /** Where this page's work runs in the app, linked beside the title. */
+  open?: { href: string; label: string };
 };
 
 const CLASSROOM = "/coach/academy/classroom";
@@ -735,6 +737,7 @@ const GROUPS: BlueprintGroup[] = [
         slug: "lists",
         title: "Lead lists",
         href: "/coach/blueprint/lists",
+        open: { href: "/coach/campaigns?tab=pool", label: "Open the Pool" },
         heading: "Who we reach out to",
         summary: "The lists of owners your campaigns go to: who is on each one, how we found them on LinkedIn, and how many came in.",
         short: "Who your campaigns go to, and how we found them.",
@@ -744,6 +747,7 @@ const GROUPS: BlueprintGroup[] = [
         slug: "campaigns",
         title: "Campaigns",
         href: "/coach/blueprint/campaigns",
+        open: { href: "/coach/campaigns", label: "Open Campaigns" },
         heading: "Create a repeatable flow of conversations",
         summary: "What to say to your avatar, from the first message to the booked call. Approve it here, then it runs in Get Clients.",
         short: "The messages that take owners to a booked call.",

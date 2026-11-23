@@ -38,6 +38,7 @@ function personOf(item: Record<string, unknown>): ListPerson | null {
   const positions = Array.isArray(item.current_positions) ? (item.current_positions as Record<string, unknown>[]) : [];
   const job = positions[0] ?? {};
   const industry = Array.isArray(job.industry) ? text(job.industry[0], 80) : text(job.industry, 80);
+  const companyId = text(job.company_id, 20);
   return {
     name,
     role: text(job.role, 80),
@@ -46,6 +47,7 @@ function personOf(item: Record<string, unknown>): ListPerson | null {
     headline: text(item.headline),
     url: text(item.public_profile_url, 300),
     ...(industry ? { industry } : {}),
+    ...(companyId ? { companyId } : {}),
   };
 }
 

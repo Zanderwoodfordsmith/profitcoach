@@ -5,7 +5,7 @@ import { createPortal, flushSync } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, MessageSquare, PanelLeftOpen, X, Zap } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, MessageSquare, PanelLeftOpen, X, Zap } from "lucide-react";
 
 import type { AgentShow } from "@/lib/agent/types";
 import { BLUEPRINT_GROUPS, BLUEPRINT_PAGES, sectionByKey, type BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
@@ -659,6 +659,7 @@ export function PracticeShell({
                   </h1>
                   {ready ? (
                     <div className="bp-no-print flex shrink-0 items-center gap-2">
+                      {page.open ? <OpenInApp link={page.open} to={href} /> : null}
                       <PageStatusControl page={page} />
                     </div>
                   ) : null}
@@ -685,6 +686,7 @@ export function PracticeShell({
           </h1>
           {ready && page ? (
             <div className="bp-no-print flex shrink-0 items-center gap-2">
+              {page.open ? <OpenInApp link={page.open} to={href} /> : null}
               <PageStatusControl page={page} />
               {side !== "comments" ? <CommentsButton pageSlug={page.slug} /> : null}
             </div>
@@ -880,5 +882,18 @@ function AvaNavMark({ mark }: { mark: "open" | "ready" | null }) {
       className={`mt-0.5 -ml-1.5 h-3.5 w-3.5 shrink-0 ${mark === "open" ? "fill-[#0c5290] text-[#0c5290]" : "text-[#0c5290]"}`}
       aria-label={mark === "open" ? "Ava has something for you to check" : "Ava could write this now"}
     />
+  );
+}
+
+/** A page whose work runs elsewhere in the app (Lead lists → Pool, Campaigns) links there beside its title. */
+function OpenInApp({ link, to }: { link: { href: string; label: string }; to: (path: string) => string }) {
+  return (
+    <Link
+      href={to(link.href)}
+      className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-sky-700 hover:border-slate-300 hover:text-sky-800"
+    >
+      {link.label}
+      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+    </Link>
   );
 }

@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  ExternalLink,
   ListMinus,
   ListPlus,
   Loader2,
@@ -59,6 +60,8 @@ import {
   partitionOrderedColumns,
 } from "@/hooks/usePersistedColumnSettings";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { LeadHoverCard, leadCardLoader } from "@/components/leads/LeadHoverCard";
+import { fitOption } from "@/lib/pool/fit";
 import { formatShortDate } from "@/lib/formatShortDate";
 import {
   buildGroupedTableItems,
@@ -513,8 +516,11 @@ export function CampaignPoolHub({
 
   const listId =
     activeViewId === "pool" ? poolListId : activeViewId;
+  const activeImportSearch =
+    importLists.find((list) => list.id === activeViewId)?.sales_nav_url ?? null;
 
   const getAuthHeaders = useCallback(async () => getCoachAuthHeaders(), []);
+  const loadLeadCard = useMemo(() => leadCardLoader(getAuthHeaders), [getAuthHeaders]);
 
   const applyViewSettings = useCallback((settings: PoolTableViewSettings) => {
     const next = normalizePoolTableViewSettings(settings);
@@ -2160,38 +2166,55 @@ export function CampaignPoolHub({
             <ProspectTableAvatar name={displayName} />
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              {row.contact_id ? (
-                <Link
-                  href={poolPersonHref(row.contact_id, isAdmin)}
-                  prefetch
-                  className="min-w-0 truncate text-left text-sm font-medium text-[#0c5290] hover:underline"
-                  title={`Open ${displayName}`}
-                  onPointerDown={() => {
-                    const contactId = row.contact_id;
-                    if (contactId) prefetchProspectOpen(contactId, impersonatingCoachId);
-                  }}
-                >
-                  {displayName}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  className={`min-w-0 truncate text-left text-sm font-medium ${
-                    canOpen
-                      ? "text-[#0c5290] hover:underline"
-                      : "cursor-default text-slate-900"
-                  }`}
-                  title={
-                    canOpen
-                      ? `Open ${displayName}`
-                      : "Add LinkedIn, email, or phone to open"
-                  }
-                  disabled={actionBusy || !canOpen}
-                  onClick={() => openPoolPerson(row)}
-                >
-                  {displayName}
-                </button>
-              )}
+              <LeadHoverCard
+                className="flex min-w-0"
+                load={loadLeadCard}
+                person={{
+                  name: displayName,
+                  linkedinUrl: row.linkedin_url,
+                  role: row.job_title,
+                  company: row.company,
+                  location: row.location,
+                  industry: row.industry,
+                  teamSize: row.team_size,
+                  fit: row.fit
+                    ? { label: fitOption(row.fit).short, tone: fitOption(row.fit).tone, why: row.fit_why }
+                    : null,
+                }}
+              >
+                {row.contact_id ? (
+                  <Link
+                    href={poolPersonHref(row.contact_id, isAdmin)}
+                    prefetch
+                    className="min-w-0 truncate text-left text-sm font-medium text-[#0c5290] hover:underline"
+                    title={`Open ${displayName}`}
+                    onPointerDown={() => {
+                      const contactId = row.contact_id;
+                      if (contactId) prefetchProspectOpen(contactId, impersonatingCoachId);
+                    }}
+                  >
+                    {displayName}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className={`min-w-0 truncate text-left text-sm font-medium ${
+                      canOpen
+                        ? "text-[#0c5290] hover:underline"
+                        : "cursor-default text-slate-900"
+                    }`}
+                    title={
+                      canOpen
+                        ? `Open ${displayName}`
+                        : "Add LinkedIn, email, or phone to open"
+                    }
+                    disabled={actionBusy || !canOpen}
+                    onClick={() => openPoolPerson(row)}
+                  >
+                    {displayName}
+                  </button>
+                )}
+              </LeadHoverCard>
               {row.linkedin_premium ? (
                 <span className="text-kicker font-medium uppercase text-amber-700">
                   Premium
@@ -2992,6 +3015,18 @@ export function CampaignPoolHub({
                     </div>
                   ) : null}
                 </div>
+              ) : null}
+              {activeImportSearch ? (
+                <a
+                  href={activeImportSearch}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open the Sales Navigator search this list came from"
+                  className={buttonClass("second", "normal", "shrink-0")}
+                >
+                  Sales Navigator
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                </a>
               ) : null}
               <button
                 type="button"

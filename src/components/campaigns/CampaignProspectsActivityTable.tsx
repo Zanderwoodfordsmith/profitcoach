@@ -21,13 +21,13 @@ import {
   Play,
   Search,
   Trash2,
-  Users,
 } from "lucide-react";
 import {
   ProspectTableAvatar,
   prospectInitials,
 } from "@/components/prospects/ProspectTableAvatar";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { LeadCompanySection } from "@/components/leads/LeadHoverCard";
 import { ReplyDispositionBar } from "@/components/messaging/ReplyDispositionBar";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
@@ -969,7 +969,6 @@ function ContactCell({
   const photoUrl = photoFailed ? null : profile?.photoUrl ?? null;
   const facts = [
     profile?.location ? { icon: MapPin, text: profile.location } : null,
-    profile?.teamSize ? { icon: Users, text: `${profile.teamSize} staff` } : null,
     profile?.tenure ? { icon: Clock, text: profile.tenure } : null,
     profile?.email ? { icon: Mail, text: profile.email } : null,
   ].filter((fact): fact is { icon: typeof MapPin; text: string } => Boolean(fact));
@@ -1069,6 +1068,11 @@ function ContactCell({
             {profile.about}
           </p>
         ) : null}
+        <LeadCompanySection
+          company={profile?.company}
+          fallbackName={lead.company}
+          fallbackTeamSize={profile?.teamSize}
+        />
         {canOpen || lead.linkedin_url ? (
           <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
             {href ? (

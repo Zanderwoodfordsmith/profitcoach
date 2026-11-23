@@ -62,8 +62,8 @@ export type ProspectSearchDraft = {
   fix?: ListFix;
 };
 
-/** One person from a search sample. Industry is the company's LinkedIn industry; at is their place in the list (1 = top). */
-export type ListPerson = { name: string; role: string; company: string; location: string; headline: string; url: string; industry?: string; at?: number };
+/** One person from a search sample. Industry is the company's LinkedIn industry; at is their place in the list (1 = top); companyId opens the company on the hover card. */
+export type ListPerson = { name: string; role: string; company: string; location: string; headline: string; url: string; industry?: string; at?: number; companyId?: string };
 
 export type ListQuality = {
   checked: number;
