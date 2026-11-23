@@ -16,7 +16,8 @@ import {
   talkToAva,
   type AnswerFill,
 } from "@/lib/launch/jobActivity";
-import { advanceCoach, draftPageAnswers, draftProspectSearches, importSearches, releaseDraft } from "@/lib/launch/avaAuto";
+import { advanceCoach, draftPageAnswers, draftProspectSearches, editOpenAnswer, editOpenDraft, editProspectSearch, importSearches, releaseDraft, sizeProspectSearches } from "@/lib/launch/avaAuto";
+import { sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
 import { isScope, scopePage } from "@/lib/launch/avaWork";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -88,13 +89,29 @@ type Body = {
     | "draft_answers"
     | "draft_searches"
     | "import"
-    | "advance";
+    | "advance"
+    | "edit"
+    | "edit_answer"
+    | "edit_search"
+    | "size_searches";
   coachId?: string;
   job?: string;
   id?: string;
   text?: string;
   answers?: AnswerFill[];
   picks?: { id: string; on: boolean }[];
+  /** edit: one section's blocks, or one LinkedIn part's words. edit_answer: one box (path + text). */
+  path?: string;
+  key?: string;
+  blocks?: unknown;
+  part?: string;
+  /** edit_search: the searches shown as one row, and the list's new parts. */
+  searchIds?: string[];
+  label?: string;
+  companyIncludes?: string[];
+  industries?: string[];
+  keywords?: string;
+  teamSizes?: string[];
 };
 
 /** A release or a change unblocks what comes next (the launch chain): Ava starts on it straight away, in the background. */
@@ -165,11 +182,43 @@ export async function POST(request: Request) {
         if (!body.id) return fail("Missing searches.");
         await importSearches(body.id, userId, body.picks);
         break;
+      case "edit_search": {
+        if (!body.id || !body.searchIds?.length) return fail("Missing list.");
+        const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+        await editProspectSearch(body.id, userId, {
+          searchIds: strings(body.searchIds),
+          label: body.label ?? "",
+          companyIncludes: strings(body.companyIncludes),
+          industries: strings(body.industries),
+          keywords: body.keywords ?? "",
+          teamSizes: strings(body.teamSizes),
+        });
+        break;
+      }
+      case "size_searches": {
+        if (!body.id) return fail("Missing searches.");
+        const sized = await sizeProspectSearches(body.id, userId);
+        return NextResponse.json({ ok: true, ...sized });
+      }
       case "advance": {
         if (!coachId) return fail("Unknown coach.");
         const started = await advanceCoach(coachId, userId);
         return NextResponse.json({ ok: true, started });
       }
+      case "edit":
+        // BCA's own small changes on the Launch page (job 248); Release still decides when it goes.
+        if (!body.id) return fail("Missing draft.");
+        await editOpenDraft(body.id, {
+          key: body.key,
+          blocks: body.blocks === undefined ? undefined : sanitizeBlocks(body.blocks),
+          part: body.part,
+          text: body.text,
+        });
+        break;
+      case "edit_answer":
+        if (!body.id || !body.path) return fail("Missing answer.");
+        await editOpenAnswer(body.id, body.path, body.text ?? "");
+        break;
       case "dismiss":
         if (!body.id) return fail("Missing item.");
         await dismiss(body.id, userId);

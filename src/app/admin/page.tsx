@@ -4,10 +4,10 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
+import { BlueprintsBoard, LAUNCH_SORTS, type LaunchSort } from "@/components/admin/BlueprintsBoard";
+import { LinkedInMark } from "@/components/icons/LinkedInMark";
 import { CoachesSaveViewButton } from "@/components/admin/CoachesSaveViewButton";
 import { CoachesTableViewBar } from "@/components/admin/CoachesTableViewBar";
-import { GettingLiveList } from "@/components/admin/GettingLiveList";
-import { ProspectsViewSwitcher } from "@/components/prospects/ProspectsViewSwitcher";
 import { ProspectsPipelineToolbar, type ProspectsToolbarMenu } from "@/components/prospects/ProspectsPipelineToolbar";
 import { GenerateCertificateModal } from "@/components/admin/GenerateCertificateModal";
 import {
@@ -63,17 +63,23 @@ import {
   parseCoachTableViewsImport,
 } from "@/lib/exportCoachTableViews";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
-  ArrowRight,
   Award,
   ChevronDown,
   ExternalLink,
   GripVertical,
   Loader2,
+  Lock,
+  LockOpen,
   Plus,
+  Wand2,
   X,
 } from "lucide-react";
+import {
+  COACH_PLANNED_LEVEL_LABELS,
+  type CoachBillingSummary,
+  type CoachPlannedLevel,
+} from "@/lib/admin/coachBillingSummary";
 import { fetchProfileRole } from "@/lib/getClients/cachedProfileRole";
 import { getSessionUser } from "@/lib/supabaseAccessToken";
 
@@ -149,10 +155,19 @@ function isOptionalIsoDate(value: unknown): value is string {
   );
 }
 
-function formatIsoDateDisplay(iso: string | null | undefined): string | null {
+function formatIsoDateDisplay(
+  iso: string | null | undefined,
+  shortYear = false
+): string | null {
   const ms = parseJoinDateMs(iso);
   if (Number.isNaN(ms)) return null;
-  return formatDateDisplay(new Date(ms));
+  const date = new Date(ms);
+  // Table: "15 Apr '24" for other years, so Joined stays narrow (21 Nov).
+  if (shortYear && date.getFullYear() !== new Date().getFullYear()) {
+    const dayMonth = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(date);
+    return `${dayMonth} '${String(date.getFullYear()).slice(-2)}`;
+  }
+  return formatDateDisplay(date);
 }
 
 function openDatePicker(input: HTMLInputElement | null) {
@@ -183,7 +198,7 @@ function CoachDatePickerField({
   variant?: "table" | "filter";
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const display = value ? formatIsoDateDisplay(value) : null;
+  const display = value ? formatIsoDateDisplay(value, variant === "table") : null;
 
   return (
     <div
@@ -335,6 +350,8 @@ type CoachRow = {
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
   recurring_billing_active: boolean;
+  billing: CoachBillingSummary;
+  planned_level: { level: CoachPlannedLevel; reason: string };
   payment_summary: CoachPaymentSummary;
   programme_shortfall: ProgrammeShortfall | null;
   access_tier: CoachAccessTier;
@@ -369,6 +386,7 @@ type CoachTableColumnVisibility = {
   salesRobot: boolean;
   profitCoachEmail: boolean;
   accessTier: boolean;
+  level: boolean;
   recurringPayment: boolean;
   recurringActive: boolean;
   payments: boolean;
@@ -442,9 +460,9 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "leadWebhook", label: "Lead webhook", category: "integrations" },
   { key: "salesRobot", label: "Sales Robot", category: "billing" },
   { key: "profitCoachEmail", label: "PC email", category: "billing" },
-  { key: "accessTier", label: "Access tier", category: "billing" },
+  // Access tier comes off the table (21 Nov): Access shows the planned level; tiers are set on the coach's page.
+  { key: "level", label: "Access", category: "billing" },
   { key: "recurringPayment", label: "Billing", category: "billing" },
-  { key: "recurringActive", label: "Recurring active", category: "billing" },
   { key: "payments", label: "Payments", category: "billing" },
   { key: "landing", label: "Landing / preview", category: "actions" },
 ];
@@ -613,6 +631,70 @@ function parsePersistedCoachTableSettings(
   }
 }
 
+const COACH_LIST_CACHE_KEY = "pc-admin-coach-list-v2";
+let coachListMemory: CoachRow[] | null = null;
+
+/** Last All coaches list, so the table shows at once on the next visit. */
+function readCachedCoachList(): CoachRow[] | null {
+  if (coachListMemory) return coachListMemory;
+  try {
+    const parsed = JSON.parse(
+      window.sessionStorage.getItem(COACH_LIST_CACHE_KEY) ?? "null"
+    ) as unknown;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      coachListMemory = parsed as CoachRow[];
+      return coachListMemory;
+    }
+  } catch {
+    /* no storage */
+  }
+  return null;
+}
+
+function writeCachedCoachList(rows: CoachRow[]) {
+  coachListMemory = rows;
+  try {
+    window.sessionStorage.setItem(COACH_LIST_CACHE_KEY, JSON.stringify(rows));
+  } catch {
+    /* quota or no storage */
+  }
+}
+
+function CoachFace({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+  if (avatarUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={avatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />;
+  }
+  return (
+    <span
+      aria-hidden
+      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-600"
+    >
+      {name
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((w) => w[0]?.toUpperCase())
+        .join("")}
+    </span>
+  );
+}
+
+function plannedLevelClasses(level: CoachPlannedLevel): string {
+  if (level === "advisor_os") return "bg-sky-800 text-white";
+  if (level === "academy") return "bg-slate-100 text-slate-700";
+  return "bg-rose-100 text-rose-800";
+}
+
+function billingKindClasses(kind: CoachBillingSummary["kind"]): string {
+  // Zander, 21 Nov: paid in full green, plan yellow, monthly blue.
+  if (kind === "paid_in_full") return "bg-emerald-100 text-emerald-800";
+  if (kind === "plan") return "bg-amber-100 text-amber-900";
+  if (kind === "monthly" || kind === "annual") return "bg-sky-100 text-sky-900";
+  if (kind === "lapsed") return "bg-orange-100 text-orange-900";
+  if (kind === "overdue") return "bg-rose-100 text-rose-800";
+  return "bg-slate-100 text-slate-500";
+}
+
 function accessTierClasses(tier: CoachAccessTier): string {
   if (tier === "do_not_contact") return "bg-rose-100 text-rose-800";
   if (tier === "early_exit") return "bg-orange-100 text-orange-900";
@@ -632,11 +714,7 @@ function isEarlyExitCoach(coach: Pick<CoachRow, "access_tier">): boolean {
 
 function coachTableRowClasses(coach: CoachRow, selected: boolean): string {
   const base = "border-t border-slate-100";
-  if (coach.programme_shortfall) {
-    return selected
-      ? `${base} bg-yellow-200`
-      : `${base} bg-yellow-100 hover:bg-yellow-200/70`;
-  }
+  // Programme shortfall shows in the Payments cell now, not as a yellow row (21 Nov).
   if (isDoNotContactCoach(coach)) {
     return selected
       ? `${base} bg-rose-200/70 hover:bg-rose-200/80`
@@ -735,23 +813,41 @@ function formatMemberFor(joinedIso: string): { label: string; totalDays: number 
 
 export default function AdminPage() {
   const router = useRouter();
-  // The built-in Getting live view (?view=getting-live), beside the saved table views.
-  const [gettingLiveView, setGettingLiveView] = useState(false);
-  const [gettingLiveLayout, setGettingLiveLayout] = useState<"list" | "board">("list");
+  // The Launch view (?view=launch, 21 Nov): Launches' By page grid, beside the saved table views.
+  const [launchView, setLaunchView] = useState(false);
   useEffect(() => {
-    setGettingLiveView(new URLSearchParams(window.location.search).get("view") === "getting-live");
+    setLaunchView(new URLSearchParams(window.location.search).get("view") === "launch");
   }, []);
-  const showGettingLive = useCallback(
+  const showLaunch = useCallback(
     (on: boolean) => {
-      setGettingLiveView(on);
+      setLaunchView(on);
       const url = new URL(window.location.href);
-      if (on) url.searchParams.set("view", "getting-live");
+      if (on) url.searchParams.set("view", "launch");
       else url.searchParams.delete("view");
       router.replace(`${url.pathname}${url.search}`, { scroll: false });
     },
     [router]
   );
-  const { setImpersonatingCoachId } = useImpersonation();
+  // The Launch view's filter and sort, set from the same toolbar row as the table (21 Nov).
+  const [launchEveryone, setLaunchEveryone] = useState(false);
+  const [launchSort, setLaunchSortState] = useState<LaunchSort>("check");
+  const [launchAddSlot, setLaunchAddSlot] = useState<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("admin-coaches-launch-sort");
+      if (LAUNCH_SORTS.some((o) => o.id === saved)) setLaunchSortState(saved as LaunchSort);
+    } catch {
+      /* storage blocked: most to check first */
+    }
+  }, []);
+  const setLaunchSort = (next: LaunchSort) => {
+    setLaunchSortState(next);
+    try {
+      window.localStorage.setItem("admin-coaches-launch-sort", next);
+    } catch {
+      /* not remembered */
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [checkingRole, setCheckingRole] = useState(true);
   const [coaches, setCoaches] = useState<CoachRow[]>([]);
@@ -901,7 +997,15 @@ export default function AdminPage() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      setCheckingRole(true);
+      // Show the last list at once and refresh it underneath (21 Nov).
+      const cached = readCachedCoachList();
+      if (cached) {
+        setCoaches(cached);
+        setCheckingRole(false);
+        setLoading(false);
+      } else {
+        setCheckingRole(true);
+      }
       setError(null);
 
       const user = await getSessionUser();
@@ -910,6 +1014,24 @@ export default function AdminPage() {
         router.replace("/login");
         return;
       }
+
+      // The list request is admin-only on the server, so start it alongside the role check.
+      const listPromise = (async () => {
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+        if (!session?.access_token) return null;
+        const res = await fetch("/api/admin/coaches", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        const body = (await res.json().catch(() => ({}))) as {
+          coaches?: CoachRow[];
+          error?: string;
+        };
+        return { res, body };
+      })();
 
       const roleBody = (await fetchProfileRole(user.id)) as {
         role?: string;
@@ -926,36 +1048,25 @@ export default function AdminPage() {
       }
 
       setCheckingRole(false);
-      setLoading(true);
+      if (!cached) setLoading(true);
 
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
-        setError("Unable to load coaches.");
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch("/api/admin/coaches", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        coaches?: CoachRow[];
-        error?: string;
-      };
-
+      const result = await listPromise;
       if (cancelled) return;
 
-      if (!res.ok) {
-        setError(body?.error ?? "Unable to load coaches.");
+      if (!result) {
+        if (!cached) setError("Unable to load coaches.");
+        setLoading(false);
+        return;
+      }
+      if (!result.res.ok) {
+        if (!cached) setError(result.body?.error ?? "Unable to load coaches.");
         setLoading(false);
         return;
       }
 
-      setCoaches(body.coaches ?? []);
+      const fresh = result.body.coaches ?? [];
+      setCoaches(fresh);
+      writeCachedCoachList(fresh);
       setLoading(false);
     }
 
@@ -1152,7 +1263,7 @@ export default function AdminPage() {
     (recurringBillingFilter !== "all" ? 1 : 0);
   const hasActiveSort = !coachSortsEqual(sorts, DEFAULT_COACH_SORTS);
   const visibleColumnCount =
-    3 +
+    2 +
     COACH_TABLE_COLUMN_OPTIONS.reduce(
       (n, { key }) => n + (columnVisibility[key] ? 1 : 0),
       0
@@ -1482,8 +1593,8 @@ export default function AdminPage() {
     }
     if (key === "joinDate") {
       return (
-        <th className="sticky top-0 z-10 w-44 bg-slate-50 px-2 py-2">
-          Join date
+        <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">
+          Joined
         </th>
       );
     }
@@ -1499,7 +1610,10 @@ export default function AdminPage() {
     }
     if (key === "linkedinProfile") {
       return (
-        <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">LinkedIn</th>
+        <th className="sticky top-0 z-10 w-10 bg-slate-50 px-1 py-2 text-center" title="LinkedIn">
+          <LinkedInMark className="mx-auto h-3.5 w-3.5 text-slate-400" />
+          <span className="sr-only">LinkedIn</span>
+        </th>
       );
     }
     if (key === "directory") {
@@ -1535,10 +1649,10 @@ export default function AdminPage() {
     if (key === "lastActive") {
       return (
         <th
-          className="sticky top-0 z-10 w-44 bg-slate-50 px-2 py-2"
+          className="sticky top-0 z-10 w-20 bg-slate-50 px-2 py-2"
           title="App activity from page views and heartbeats while the tab is visible. Updates when they use the app or return to an open tab."
         >
-          Last active
+          Active
         </th>
       );
     }
@@ -1567,7 +1681,10 @@ export default function AdminPage() {
     }
     if (key === "recurringPayment") {
       return (
-        <th className="sticky top-0 z-10 min-w-[9rem] bg-slate-50 px-2 py-2">
+        <th
+          className="sticky top-0 z-10 w-32 bg-slate-50 px-2 py-2"
+          title="From their payments: monthly is under £1,000 a month; £1,000 or more is a payment plan"
+        >
           Billing
         </th>
       );
@@ -1585,8 +1702,8 @@ export default function AdminPage() {
     if (key === "payments") {
       return (
         <th
-          className="sticky top-0 z-10 min-w-[12rem] bg-slate-50 px-2 py-2"
-          title="Successful payments total, count, and last payment date"
+          className="sticky top-0 z-10 bg-slate-50 px-2 py-2"
+          title="Successful payments and the last payment date. Hover a row for the full total"
         >
           Payments
         </th>
@@ -1594,8 +1711,18 @@ export default function AdminPage() {
     }
     if (key === "accessTier") {
       return (
-        <th className="sticky top-0 z-10 min-w-[11rem] bg-slate-50 px-2 py-2">
+        <th className="sticky top-0 z-10 w-40 bg-slate-50 px-2 py-2">
           Access tier
+        </th>
+      );
+    }
+    if (key === "level") {
+      return (
+        <th
+          className="sticky top-0 z-10 bg-slate-50 px-2 py-2"
+          title="The level each coach would be on, from their billing and join date. A label only: nobody's access changes yet (job 257). Change a coach's tier on their own page."
+        >
+          Access
         </th>
       );
     }
@@ -1682,32 +1809,24 @@ export default function AdminPage() {
     }
     if (key === "joinDate") {
       return (
-        <td className="px-2 py-2 align-middle text-xs text-slate-700">
-          <div className="flex flex-wrap items-center gap-x-1">
-            <CoachDatePickerField
-              value={toDateInputValue(coach.joined_at)}
-              disabled={directorySavingId === coach.id}
-              placeholder="Not set"
-              onChange={(v) => {
-                void patchCoachRow(coach.id, {
-                  disco_community_joined_on: v || null,
-                });
-              }}
-            />
-            {coach.joined_at ? (
-              (() => {
-                const memberFor = formatMemberFor(coach.joined_at);
-                return (
-                  <span
-                    className="text-slate-500"
-                    title={`Member for ${memberFor.totalDays} days`}
-                  >
-                    ({memberFor.label})
-                  </span>
-                );
-              })()
-            ) : null}
-          </div>
+        <td
+          className="whitespace-nowrap px-2 py-2 align-middle text-xs text-slate-700"
+          title={
+            coach.joined_at
+              ? `Member for ${formatMemberFor(coach.joined_at).label}`
+              : undefined
+          }
+        >
+          <CoachDatePickerField
+            value={toDateInputValue(coach.joined_at)}
+            disabled={directorySavingId === coach.id}
+            placeholder="Not set"
+            onChange={(v) => {
+              void patchCoachRow(coach.id, {
+                disco_community_joined_on: v || null,
+              });
+            }}
+          />
         </td>
       );
     }
@@ -1736,51 +1855,31 @@ export default function AdminPage() {
       );
     }
     if (key === "linkedinProfile") {
-      const scrapedLabel = coach.linkedin_scraped_at
-        ? (() => {
-            const t = Date.parse(coach.linkedin_scraped_at);
-            if (Number.isNaN(t)) return "Scraped";
-            return `Scraped ${formatDateDisplay(new Date(t))}`;
-          })()
-        : null;
       return (
-        <td className="max-w-[14rem] px-2 py-2 align-middle text-xs">
-          <div className="flex items-center justify-between gap-2">
+        <td className="px-1 py-2 text-center align-middle">
+          {coach.linkedin_url ? (
+            <a
+              href={coach.linkedin_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded p-1 hover:bg-sky-50"
+              style={{ color: "#0A66C2" }}
+              title={coach.linkedin_url}
+              aria-label={`Open LinkedIn profile for ${coach.full_name ?? coach.slug}`}
+            >
+              <LinkedInMark className="h-4 w-4" />
+            </a>
+          ) : (
             <button
               type="button"
               onClick={() => openCoachEditModal(coach)}
-              className="block w-full truncate rounded px-1 py-0.5 text-left text-sky-700 hover:bg-slate-100 hover:underline"
-              title={coach.linkedin_url ? "Edit LinkedIn URL" : "Set LinkedIn URL"}
+              className="inline-flex rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-500"
+              title="No LinkedIn yet. Add it"
+              aria-label={`Add LinkedIn for ${coach.full_name ?? coach.slug}`}
             >
-              {coach.linkedin_url ? coach.linkedin_url : "Not set"}
+              <LinkedInMark className="h-4 w-4" />
             </button>
-            {coach.linkedin_url ? (
-              <a
-                href={coach.linkedin_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex shrink-0 rounded p-1 text-sky-700 hover:bg-sky-50"
-                title="Open LinkedIn profile"
-                aria-label={`Open LinkedIn profile for ${coach.full_name ?? coach.slug}`}
-              >
-                <ExternalLink className="h-3 w-3" aria-hidden />
-              </a>
-            ) : null}
-          </div>
-          {coach.linkedin_url ? (
-            <p
-              className={`mt-0.5 px-1 text-caption leading-tight ${
-                scrapedLabel ? "text-emerald-700" : "text-amber-700"
-              }`}
-              title={
-                coach.linkedin_scraped_at
-                  ? new Date(coach.linkedin_scraped_at).toLocaleString()
-                  : "LinkedIn URL set but not scraped yet"
-              }
-            >
-              {scrapedLabel ?? "Not scraped"}
-            </p>
-          ) : null}
+          )}
         </td>
       );
     }
@@ -1890,11 +1989,10 @@ export default function AdminPage() {
               const since = formatMemberFor(coach.last_active_at);
               return (
                 <span
-                  className={badgeClass}
+                  className={`${badgeClass} whitespace-nowrap`}
                   title={`Last app activity ${dateLabel} (${since.totalDays} days ago). From page views and heartbeats while the tab is open.`}
                 >
-                  <span>{dateLabel}</span>
-                  <span className="opacity-80">({since.label})</span>
+                  {since.totalDays < 1 ? "Today" : `${since.label} ago`}
                 </span>
               );
             })()
@@ -1903,7 +2001,7 @@ export default function AdminPage() {
               className={badgeClass}
               title="No tracked app activity yet (usage tracking started later for some coaches)."
             >
-              No activity
+              Never
             </span>
           )}
         </td>
@@ -1991,45 +2089,12 @@ export default function AdminPage() {
     if (key === "recurringPayment") {
       return (
         <td className="px-2 py-2 align-middle">
-          <select
-            title="Recurring payment status"
-            value={coach.recurring_payment_status ?? ""}
-            disabled={directorySavingId === coach.id}
-            onChange={(e) => {
-              const v = e.target.value;
-              void patchCoachRow(coach.id, {
-                recurring_payment_status:
-                  v === "" ? null : (v as CoachRecurringPaymentStatus),
-              });
-            }}
-            className={`max-w-full cursor-pointer rounded px-1 py-0.5 text-xs font-medium shadow-none ring-0 hover:opacity-90 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${recurringPaymentStatusClasses(
-              coach.recurring_payment_status
-            )}`}
+          <span
+            className={`inline-flex whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium ${billingKindClasses(coach.billing.kind)}`}
+            title={coach.billing.detail}
           >
-            <option value="">Not set</option>
-            {COACH_RECURRING_PAYMENT_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {COACH_RECURRING_PAYMENT_LABELS[status]}
-              </option>
-            ))}
-          </select>
-        </td>
-      );
-    }
-    if (key === "recurringActive") {
-      return (
-        <td className="px-2 py-2 text-center align-middle">
-          <SetupCompleteCell
-            complete={coach.recurring_billing_active}
-            label="Recurring billing"
-            detail={
-              coach.recurring_billing_active
-                ? coach.recurring_payment_status
-                  ? `Status: ${COACH_RECURRING_PAYMENT_LABELS[coach.recurring_payment_status]}`
-                  : "Active from payments"
-                : undefined
-            }
-          />
+            {coach.billing.label}
+          </span>
         </td>
       );
     }
@@ -2039,21 +2104,32 @@ export default function AdminPage() {
         coach.coach_business_name?.trim() ||
         coach.slug;
       return (
-        <td className="max-w-[14rem] px-2 py-2 align-middle">
-          <CoachPaymentsPopover
-            coachSlug={coach.slug}
-            coachName={displayName}
-            summary={coach.payment_summary}
-          >
-            <CoachPaymentsCellContent summary={coach.payment_summary} />
-          </CoachPaymentsPopover>
+        <td className="px-2 py-2 align-middle">
+          {/* Short on the programme fee: red amount + the reason on hover (21 Nov). */}
+          <span className="flex items-center gap-1.5">
+            <CoachPaymentsPopover
+              coachSlug={coach.slug}
+              coachName={displayName}
+              summary={coach.payment_summary}
+            >
+              <CoachPaymentsCellContent
+                summary={coach.payment_summary}
+                short={Boolean(coach.programme_shortfall)}
+              />
+            </CoachPaymentsPopover>
+            {coach.programme_shortfall ? (
+              <ProgrammeShortfallInfo
+                explanation={coach.programme_shortfall.explanation}
+              />
+            ) : null}
+          </span>
         </td>
       );
     }
     if (key === "accessTier") {
       return (
         <td className="px-2 py-2 align-middle">
-          <div className="flex min-w-[10rem] flex-col gap-1">
+          <div className="flex items-center gap-0.5">
             <select
               title="Coach access tier"
               value={normalizeCoachAccessTier(coach.access_tier) ?? "programme"}
@@ -2078,20 +2154,27 @@ export default function AdminPage() {
                 </option>
               ))}
             </select>
-            <label className="inline-flex items-center gap-1 text-caption text-slate-600">
-              <input
-                type="checkbox"
-                checked={coach.access_tier_locked}
-                disabled={directorySavingId === coach.id}
-                onChange={(e) =>
-                  void patchCoachRow(coach.id, {
-                    access_tier_locked: e.target.checked,
-                  })
-                }
-                className="h-3 w-3 rounded border-slate-300 text-sky-600"
-              />
-              Lock tier
-            </label>
+            <button
+              type="button"
+              disabled={directorySavingId === coach.id}
+              onClick={() =>
+                void patchCoachRow(coach.id, {
+                  access_tier_locked: !coach.access_tier_locked,
+                })
+              }
+              className={`inline-flex rounded p-1 hover:bg-slate-100 disabled:opacity-50 ${
+                coach.access_tier_locked ? "text-slate-700" : "text-slate-300 hover:text-slate-500"
+              }`}
+              title={coach.access_tier_locked ? "Tier locked. Click to unlock" : "Lock tier"}
+              aria-pressed={coach.access_tier_locked}
+              aria-label="Lock tier"
+            >
+              {coach.access_tier_locked ? (
+                <Lock className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <LockOpen className="h-3.5 w-3.5" aria-hidden />
+              )}
+            </button>
             {!coach.access_tier_locked &&
             normalizeCoachAccessTier(coach.access_tier) !== "do_not_contact" &&
             normalizeCoachAccessTier(coach.access_tier) !== "early_exit" ? (
@@ -2099,12 +2182,27 @@ export default function AdminPage() {
                 type="button"
                 disabled={directorySavingId === coach.id}
                 onClick={() => void applyBillingTierSuggestion(coach.id)}
-                className="text-left text-caption font-medium text-sky-700 hover:text-sky-900 disabled:opacity-50"
+                className="inline-flex rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-sky-700 disabled:opacity-50"
+                title="Apply billing suggestion"
+                aria-label="Apply billing suggestion"
               >
-                Apply billing suggestion
+                <Wand2 className="h-3.5 w-3.5" aria-hidden />
               </button>
             ) : null}
           </div>
+        </td>
+      );
+    }
+    if (key === "level") {
+      const planned = coach.planned_level;
+      return (
+        <td className="px-2 py-2 align-middle">
+          <span
+            className={`inline-flex whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium ${plannedLevelClasses(planned.level)}`}
+            title={`${planned.reason}. Label only: access hasn't changed.`}
+          >
+            {COACH_PLANNED_LEVEL_LABELS[planned.level]}
+          </span>
         </td>
       );
     }
@@ -2203,6 +2301,7 @@ export default function AdminPage() {
       <StickyPageHeader
         title="Coaches"
         tabs={<CoachesHubTabs />}
+        bleedInset="-mx-4 px-4 md:-mx-6 md:px-6"
       />
 
       {checkingRole ? (
@@ -2368,57 +2467,36 @@ export default function AdminPage() {
         </section>
       )}
 
-      <section className={cardClass("plain")}>
-        <div className="border-b border-slate-100 px-4 pt-3">
-          <CoachesTableViewBar
-            views={coachTableViews.views}
-            activeViewId={gettingLiveView ? null : coachTableViews.activeViewId}
-            currentUserId={coachTableViews.currentUserId}
-            onSwitchView={(viewId) => {
-              if (gettingLiveView) showGettingLive(false);
-              void coachTableViews.switchView(viewId);
-            }}
-            builtInViews={[{ key: "getting-live", label: "Getting live", active: gettingLiveView, onSelect: () => showGettingLive(true) }]}
-            onAddView={(name, isPrivate) => {
-              void coachTableViews.addViewFromCurrent(name, isPrivate);
-            }}
-            onRenameView={(viewId, name) => {
-              void coachTableViews.renameView(viewId, name);
-            }}
-            onDeleteView={(viewId) => {
-              void coachTableViews.deleteView(viewId);
-            }}
-            onReorderViews={(orderedViewIds) => {
-              void coachTableViews.reorderViews(orderedViewIds);
-            }}
-          />
-        </div>
-        {gettingLiveView ? (
-          <div className="p-4">
-            <GettingLiveList
-              view={gettingLiveLayout}
-              from="getting-live"
-              viewSwitcher={
-                <>
-                  <Link href="/admin/plan" className={buttonClass("second", "small")}>
-                    Plan
-                  </Link>
-                  <ProspectsViewSwitcher view={gettingLiveLayout} onChange={setGettingLiveLayout} ariaLabel="Getting live view" boardLabel="Board view" />
-                </>
-              }
-            />
-          </div>
-        ) : (
-        <>
-        <div ref={toolbarRef} className="border-b border-slate-100 px-4 py-3">
+      {/* Search, tools and Add coach sit on the page, above the card (21 Nov); the Launch view uses the same row. */}
+        <div ref={toolbarRef}>
           <ProspectsPipelineToolbar
             search={coachSearchTerm}
             onSearchChange={setCoachSearchTerm}
             searchPlaceholder="Search coaches…"
             menu={toolbarMenu}
             onMenuChange={setToolbarMenu}
-            filterCount={activeFilterCount}
-            filterMenu={
+            filterCount={launchView ? (launchEveryone ? 1 : 0) : activeFilterCount}
+            hideFields={launchView}
+            hideExport={launchView}
+            filterMenu={launchView ? (
+                <div
+                  role="menu"
+                  className="absolute left-0 z-[90] mt-1 w-[min(92vw,16rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+                >
+                  <label htmlFor="launch-who-filter" className={`${fieldLabelClass} mb-1`}>
+                    Show
+                  </label>
+                  <select
+                    id="launch-who-filter"
+                    value={launchEveryone ? "everyone" : "launching"}
+                    onChange={(e) => setLaunchEveryone(e.target.value === "everyone")}
+                    className={fieldClass("select", "small")}
+                  >
+                    <option value="launching">Coaches we&rsquo;re launching</option>
+                    <option value="everyone">Everyone</option>
+                  </select>
+                </div>
+            ) : (
                 <div
                   id="coach-filters-menu"
                   role="menu"
@@ -2542,9 +2620,30 @@ export default function AdminPage() {
                     </div>
                   </div>
                 </div>
-            }
-            sortActive={hasActiveSort}
-            sortMenu={
+            )}
+            sortActive={launchView ? launchSort !== "check" : hasActiveSort}
+            sortMenu={launchView ? (
+                <div
+                  role="menu"
+                  className="absolute left-0 z-[90] mt-1 w-60 rounded-md border border-slate-200 bg-white p-1.5 shadow-lg"
+                >
+                  <p className="px-2 pb-1 pt-1 text-xs font-semibold text-slate-700">Sort coaches by</p>
+                  {LAUNCH_SORTS.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => {
+                        setLaunchSort(o.id);
+                        setToolbarMenu(null);
+                      }}
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <span className="flex-1">{o.label}</span>
+                      {launchSort === o.id ? <span aria-hidden className="text-slate-500">✓</span> : null}
+                    </button>
+                  ))}
+                </div>
+            ) : (
                 <div
                   id="coach-sort-menu"
                   role="menu"
@@ -2662,7 +2761,7 @@ export default function AdminPage() {
                     ) : null}
                   </div>
                 </div>
-            }
+            )}
             fieldsLabel="Columns"
             fieldsMenu={
                 <div
@@ -2707,7 +2806,9 @@ export default function AdminPage() {
             exportMatchingCount={filteredCoaches.length}
             onExportShown={(scope) => handleExportCoachesCsv("shown", scope)}
             onExportAll={(scope) => handleExportCoachesCsv("all", scope)}
-            actions={
+            actions={launchView ? (
+              <span ref={setLaunchAddSlot} className="flex" />
+            ) : (
               <TableToolbarButton
                 label="Certificate"
                 title="Generate certificate"
@@ -2717,9 +2818,10 @@ export default function AdminPage() {
                 }}
                 icon={<Award className="h-5 w-5 text-slate-500" aria-hidden />}
               />
-            }
+            )}
             end={
               <>
+              {launchView ? null : (
               <CoachesSaveViewButton
                 isDirty={coachTableViews.isDirty}
                 autosave={coachTableViews.autosave}
@@ -2759,6 +2861,7 @@ export default function AdminPage() {
                 onExportViews={handleExportViews}
                 onImportViews={handleImportViews}
               />
+              )}
               <p
                 className="text-xs text-slate-500 tabular-nums"
                 aria-live="polite"
@@ -2788,11 +2891,47 @@ export default function AdminPage() {
             }
           />
         </div>
+
+      <section className={cardClass("plain")}>
+        <div className="border-b border-slate-100 px-4 pt-3">
+          <CoachesTableViewBar
+            views={coachTableViews.views}
+            activeViewId={launchView ? null : coachTableViews.activeViewId}
+            currentUserId={coachTableViews.currentUserId}
+            onSwitchView={(viewId) => {
+              if (launchView) showLaunch(false);
+              void coachTableViews.switchView(viewId);
+            }}
+            builtInViews={[{ key: "launch", label: "Launch", active: launchView, onSelect: () => showLaunch(true) }]}
+            onAddView={(name, isPrivate) => {
+              void coachTableViews.addViewFromCurrent(name, isPrivate);
+            }}
+            onRenameView={(viewId, name) => {
+              void coachTableViews.renameView(viewId, name);
+            }}
+            onDeleteView={(viewId) => {
+              void coachTableViews.deleteView(viewId);
+            }}
+            onReorderViews={(orderedViewIds) => {
+              void coachTableViews.reorderViews(orderedViewIds);
+            }}
+          />
+        </div>
+        {launchView ? (
+          <BlueprintsBoard
+            embedded
+            search={coachSearchTerm}
+            everyone={launchEveryone}
+            sort={launchSort}
+            addSlot={launchAddSlot}
+          />
+        ) : (
+        <>
         <div className="overflow-x-auto">
         <table className="w-max min-w-max text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="sticky top-0 z-10 w-10 bg-slate-50 px-2 py-2 text-center">
+              <th className="sticky top-0 z-10 w-8 bg-slate-50 py-2 pl-3 pr-1 text-center">
                 <input
                   ref={selectAllHeaderRef}
                   type="checkbox"
@@ -2803,8 +2942,7 @@ export default function AdminPage() {
                   aria-label="Select all coaches in current view"
                 />
               </th>
-              <th className="sticky top-0 z-10 w-14 bg-slate-50 px-2 py-2 text-center" aria-label="Avatar" />
-              <th className="sticky top-0 z-10 bg-slate-50 px-4 py-2">Coach</th>
+              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Coach</th>
               {orderedColumnOptions
                 .filter(({ key }) => columnVisibility[key])
                 .map(({ key }) => (
@@ -2835,7 +2973,7 @@ export default function AdminPage() {
                     selectedCoachIdSet.has(coach.id)
                   )}
                 >
-                  <td className="px-2 py-2 text-center align-middle">
+                  <td className="py-2 pl-3 pr-1 text-center align-middle">
                     <input
                       type="checkbox"
                       checked={selectedCoachIdSet.has(coach.id)}
@@ -2852,57 +2990,24 @@ export default function AdminPage() {
                       aria-label={`Select ${coach.full_name ?? coach.slug}`}
                     />
                   </td>
-                  <td className="px-2 py-2 align-middle">
-                    {coach.avatar_url ? (
-                      <img
-                        src={coach.avatar_url}
-                        alt=""
-                        className="mx-auto h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
+                  <td className="w-max whitespace-nowrap px-2 py-1.5 align-middle">
+                    {/* Same face + name as Launches (21 Nov). */}
+                    <span className="flex items-center gap-2">
+                      <CoachFace
+                        name={coach.full_name ?? coach.slug}
+                        avatarUrl={coach.avatar_url}
                       />
-                    ) : (
-                      <div
-                        className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-caption font-medium text-slate-400 ring-1 ring-slate-200"
-                        aria-hidden
-                      >
-                        —
-                      </div>
-                    )}
-                  </td>
-                  <td
-                    className={`w-max whitespace-nowrap px-4 py-2 font-medium ${
-                      isDoNotContactCoach(coach)
-                        ? "text-rose-800"
-                        : "text-slate-900"
-                    }`}
-                  >
-                    <span className="inline-flex items-center gap-1.5">
                       <Link
                         href={`/admin/coaches/${encodeURIComponent(coach.slug)}`}
-                        className={
+                        title={coach.full_name ?? undefined}
+                        className={`max-w-[10rem] truncate text-sm font-semibold hover:underline ${
                           isDoNotContactCoach(coach)
-                            ? "text-rose-800 hover:text-rose-900 hover:underline"
-                            : "text-[#0c5290] hover:underline"
-                        }
+                            ? "text-rose-800"
+                            : "text-slate-900"
+                        }`}
                       >
                         {coach.full_name ?? "—"}
                       </Link>
-                      {coach.programme_shortfall ? (
-                        <ProgrammeShortfallInfo
-                          explanation={coach.programme_shortfall.explanation}
-                        />
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setImpersonatingCoachId(coach.id);
-                          router.push("/coach");
-                        }}
-                        className="inline-flex rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-sky-700"
-                        title="View as coach"
-                        aria-label={`View as coach ${coach.full_name ?? coach.slug}`}
-                      >
-                        <ArrowRight className="h-4 w-4" aria-hidden />
-                      </button>
                     </span>
                   </td>
                   {orderedColumnOptions

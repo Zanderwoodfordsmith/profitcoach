@@ -100,9 +100,15 @@ export function boardCard(page: BlueprintLink, row: PracticeKnowledgeRow, open: 
   // Ava can't write until the coach answers, and nothing else here is BCA's.
   const waitsOnCoach = !ava.ready && ava.missing.length > 0 && ava.missing.every((m) => m.coach);
   const bcaTodo = items.filter(
-    (item) => item.work.status === "todo" && item.work.owner === "bca" && !(waitsOnCoach && ava.toWrite.includes(item.ref.key))
+    (item) =>
+      item.work.status === "todo" &&
+      item.work.owner === "bca" &&
+      (item.work.started || !(waitsOnCoach && ava.toWrite.includes(item.ref.key)))
   );
   if (bcaTodo.length) {
+    if (bcaTodo.some((item) => item.work.started)) {
+      return { column: "in_progress", tag: ava.ready ? "ava_ready" : null, note: "BCA is on it" };
+    }
     if (ava.ready) {
       return { column: "in_progress", tag: "ava_ready", note: `Ava can write ${list(ava.toWrite.map((k) => sectionByKey(k)?.section.title ?? k))}` };
     }

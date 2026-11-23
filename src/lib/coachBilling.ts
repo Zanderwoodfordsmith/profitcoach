@@ -15,7 +15,8 @@ export const COACH_RECURRING_PAYMENT_LABELS: Record<
 > = {
   monthly: "Monthly",
   annual_prepaid: "Annual prepaid",
-  first_6_months: "1st 6 months",
+  // The programme months after joining (was "1st 6 months"; it is 4 months now, 21 Nov 2026).
+  first_6_months: "Programme",
   complimentary: "Complimentary",
   overdue: "Overdue",
 };

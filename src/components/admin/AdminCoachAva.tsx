@@ -20,7 +20,8 @@ const DOT: Record<ChainState["state"], string> = {
 
 /** The Blueprint page a launch item is checked on (same rule as Launches → To check). */
 function checkPage(jobKey: string): string {
-  if (jobKey === "lead-list") return "market";
+  // Lead lists have their own Blueprint page since 21 Nov (job 248).
+  if (jobKey === "lead-list") return "lists";
   return jobKey.startsWith("page:") ? jobKey.slice(5) : "market";
 }
 

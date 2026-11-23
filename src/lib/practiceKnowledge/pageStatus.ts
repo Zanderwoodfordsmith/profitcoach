@@ -60,6 +60,7 @@ export function pageStatus(page: BlueprintLink, row: PracticeKnowledgeRow): Page
 
   if (tracked.some((item) => item.work.status === "todo" && item.work.owner === "coach")) return "needs_you";
   if (tracked.some((item) => item.work.status === "todo" && item.work.owner === "bca")) {
+    if (tracked.some((item) => item.work.started)) return "in_progress";
     return avaWorkFor(pageScope(page.slug), row).ready ? "in_progress" : "bca";
   }
   if (tracked.some((item) => item.work.status === "review" && item.work.owner === "coach")) return "review";

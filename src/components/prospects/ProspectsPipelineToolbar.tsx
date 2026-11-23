@@ -34,6 +34,9 @@ type Props = {
   /** Extra icon buttons after Export, e.g. Certificate on Coaches. */
   actions?: ReactNode;
   end?: ReactNode;
+  /** Hide Columns/Cards and Export, e.g. on a view that isn't the table. */
+  hideFields?: boolean;
+  hideExport?: boolean;
 };
 
 export function ProspectsPipelineToolbar({
@@ -59,6 +62,8 @@ export function ProspectsPipelineToolbar({
   exportEntityLabel,
   actions,
   end,
+  hideFields = false,
+  hideExport = false,
 }: Props) {
   function toggle(next: Exclude<ProspectsToolbarMenu, null>) {
     onMenuChange(menu === next ? null : next);
@@ -124,6 +129,7 @@ export function ProspectsPipelineToolbar({
             </div>
           ) : null}
 
+          {hideFields ? null : (
           <div className="relative">
             <TableToolbarButton
               label={fieldsLabel}
@@ -141,6 +147,7 @@ export function ProspectsPipelineToolbar({
             />
             {menu === "fields" ? fieldsMenu : null}
           </div>
+          )}
 
           {onImport ? (
             <TableToolbarButton
@@ -153,14 +160,16 @@ export function ProspectsPipelineToolbar({
             />
           ) : null}
 
-          <TableCsvExportButton
-            disabled={exportDisabled}
-            entityLabel={exportEntityLabel}
-            selectedCount={exportSelectedCount}
-            totalMatchingCount={exportMatchingCount}
-            onExportShown={onExportShown}
-            onExportAll={onExportAll}
-          />
+          {hideExport ? null : (
+            <TableCsvExportButton
+              disabled={exportDisabled}
+              entityLabel={exportEntityLabel}
+              selectedCount={exportSelectedCount}
+              totalMatchingCount={exportMatchingCount}
+              onExportShown={onExportShown}
+              onExportAll={onExportAll}
+            />
+          )}
           {actions}
         </div>
       </div>

@@ -17,6 +17,7 @@ import {
 import { blueprintFileName, blueprintMarkdown } from "@/lib/practiceKnowledge/exportMarkdown";
 import { sectionWorkflow, workflowQueue } from "@/lib/practiceKnowledge/sectionWorkflow";
 
+import { LeadListsPage } from "../LeadListsPage";
 import { DecisionRecordView } from "../DecisionRecord";
 import { usePractice } from "../PracticeProvider";
 import { SectionView } from "./SectionView";
@@ -173,6 +174,8 @@ export function PageView({ page, showTitle = true }: { page: BlueprintLink; show
       ) : null}
       {page.slug === "decisions" ? (
         <DecisionRecordView />
+      ) : page.slug === "lists" ? (
+        <LeadListsPage />
       ) : (
         <div className="space-y-5">
           <PartLinks page={page} />

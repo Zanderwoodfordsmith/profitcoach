@@ -23,7 +23,9 @@ import type { CareerResult, CareerRole } from "@/lib/practiceKnowledge/types";
 import { getOptimizer } from "@/components/linkedinProfileOptimizer/api";
 
 import { useSectionComments } from "../comments/SectionCommentsContext";
+import { useDraftLayer } from "../DraftLayer";
 import { usePractice } from "../PracticeProvider";
+import { badgeClass } from "@/components/ui/Badge";
 import { BlockBoxes } from "./BlockEditor";
 import { Blocks } from "./Blocks";
 import { LinkedInProfileSection } from "./LinkedInProfileSection";
@@ -1762,6 +1764,11 @@ export function SectionView({
   const [asking, setAsking] = useState(false);
   const [ask, setAsk] = useState("");
   const { section, key, page } = sectionRef;
+  // BCA on a coach's page: this section shows Ava's draft, not what the coach sees (job 248).
+  const draftLayer = useDraftLayer();
+  const showsDraft = Boolean(
+    draftLayer && (draftLayer.draftKeys.has(key) || (section.fields ?? []).some((field) => draftLayer.draftPaths.has(field.path)))
+  );
   const folded = asLine || section.face === "closed";
   const [open, setOpen] = useState(startOpen ?? !folded);
   // A link to this section (#s-page-id) opens it when it is shut.
@@ -1875,6 +1882,11 @@ export function SectionView({
           )}
         </div>
         <div className={`bp-no-print ml-auto flex shrink-0 items-center gap-2 ${quiet ? "hidden" : ""}`}>
+          {showsDraft ? (
+            <span className={badgeClass("amber")} title="Only BCA sees this until you release the page">
+              Ava&apos;s draft
+            </span>
+          ) : null}
           {writing ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bp-muted)]" aria-label="Writing" /> : null}
           {menu.length ? (
             <MoreMenu

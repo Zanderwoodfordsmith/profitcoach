@@ -22,6 +22,29 @@ export function previewCoachNext(coachId: string) {
     // The ?coach= in the link still works on a full load.
   }
 }
+/** Coaches picked from the menu lately, newest first, like Use as. */
+const RECENT_KEY = "blueprint-preview-recent-coach-ids";
+const MAX_RECENT = 5;
+
+function readRecentIds(): string[] {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string").slice(0, MAX_RECENT) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberRecentId(id: string): string[] {
+  const next = [id, ...readRecentIds().filter((existing) => existing !== id)].slice(0, MAX_RECENT);
+  try {
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    // Recents just will not survive a reload.
+  }
+  return next;
+}
+
 /** Picker value for a blank blueprint: what a brand new coach sees. Nothing is saved. */
 const EMPTY_PREVIEW = "empty";
 /** Shown first when no coach has been chosen yet. */
@@ -106,6 +129,7 @@ function CoachSwitcher({
   const menuRef = useRef<HTMLDivElement>(null);
   // The menu is drawn on the page body, under the button: the contents column clips anything inside it.
   const [at, setAt] = useState<CSSProperties | null>(null);
+  const [recentIds, setRecentIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -132,13 +156,42 @@ function CoachSwitcher({
   function toggle() {
     setQuery("");
     if (open) return setOpen(false);
+    setRecentIds(readRecentIds());
     const rect = boxRef.current?.getBoundingClientRect();
     if (rect) setAt({ top: rect.bottom + 6, left: Math.max(8, Math.min(rect.left, window.innerWidth - 296)) });
     setOpen(true);
   }
 
   const q = query.trim().toLowerCase();
-  const shown = q ? options.filter((o) => o.name.toLowerCase().includes(q)) : options;
+  const matches = q ? options.filter((o) => o.name.toLowerCase().includes(q)) : options;
+  const recent = recentIds
+    .map((id) => matches.find((o) => o.id === id))
+    .filter((o): o is Option => Boolean(o));
+  const shown = matches.filter((o) => !recent.includes(o));
+
+  function pick(o: Option) {
+    if (o.id !== EMPTY_PREVIEW) setRecentIds(rememberRecentId(o.id));
+    onChoose(o.id);
+    setOpen(false);
+  }
+
+  function row(o: Option) {
+    return (
+      <button
+        type="button"
+        onClick={() => pick(o)}
+        aria-current={o.id === current?.id ? "true" : undefined}
+        className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm ${
+          o.id === current?.id ? "bg-slate-100 font-medium" : "hover:bg-slate-50"
+        }`}
+      >
+        <span className="min-w-0 flex-1 truncate text-slate-800" title={o.detail ?? undefined}>
+          {o.name}
+        </span>
+        {o.progress !== null ? <ProgressRing value={o.progress} title={o.detail} /> : null}
+      </button>
+    );
+  }
   const name = current?.name ?? "Choose a coach";
 
   return (
@@ -170,6 +223,21 @@ function CoachSwitcher({
             />
           </label>
           <ul className="mt-1 max-h-80 overflow-y-auto">
+            {recent.length ? (
+              <li>
+                <p className="px-2.5 pb-1 pt-2 text-kicker font-semibold uppercase text-slate-400">Recent</p>
+              </li>
+            ) : null}
+            {recent.map((o) => (
+              <li key={`recent-${o.id}`}>{row(o)}</li>
+            ))}
+            {recent.length && shown.length && (q || shown[0]?.started) ? (
+              <li>
+                <p className="px-2.5 pb-1 pt-2 text-kicker font-semibold uppercase text-slate-400">
+                  {q ? "Matches" : "All coaches"}
+                </p>
+              </li>
+            ) : null}
             {shown.map((o, i) => {
               const firstUnstarted = !o.started && (i === 0 || shown[i - 1]?.started);
               return (
@@ -179,26 +247,11 @@ function CoachSwitcher({
                       Not started
                     </p>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onChoose(o.id);
-                      setOpen(false);
-                    }}
-                    aria-current={o.id === current?.id ? "true" : undefined}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm ${
-                      o.id === current?.id ? "bg-slate-100 font-medium" : "hover:bg-slate-50"
-                    }`}
-                  >
-                    <span className="min-w-0 flex-1 truncate text-slate-800" title={o.detail ?? undefined}>
-                      {o.name}
-                    </span>
-                    {o.progress !== null ? <ProgressRing value={o.progress} title={o.detail} /> : null}
-                  </button>
+                  {row(o)}
                 </li>
               );
             })}
-            {!shown.length ? <li className="px-2.5 py-2 text-sm text-slate-500">No coach by that name.</li> : null}
+            {!shown.length && !recent.length ? <li className="px-2.5 py-2 text-sm text-slate-500">No coach by that name.</li> : null}
           </ul>
           {/* Previous and next live here so the name gets the row's full width. The [ and ] keys work too. */}
           <div className="mt-1 flex items-center justify-between border-t border-slate-100 px-1 pt-1.5">

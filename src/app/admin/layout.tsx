@@ -77,6 +77,8 @@ export default function AdminLayout({
   /** Ava's own page (her chat), not the Ava settings tabs. */
   const avaChatPage = pathname === "/admin/ava/chat";
   const fullBleedPage = blueprintPage || avaPage || coachesBlueprintPage;
+  /** Admin → Coaches → All coaches: a wide table, so the same 24px gutter as Launches (21 Nov). */
+  const coachesListPage = pathname === "/admin";
   const conversationsPage = pathname === "/admin/conversations";
   const supportInboxPage = pathname === "/admin/support";
   const prospectsListPage = pathname === "/admin/prospects";
@@ -235,6 +237,8 @@ export default function AdminLayout({
                 ? "min-h-screen px-0 pb-10"
                 : fullBleedPage
                 ? "h-dvh overflow-hidden px-0 pb-0 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                : coachesListPage
+                ? "min-h-screen px-4 md:px-6 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
                 : "min-h-screen px-4 md:px-[60px] pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
             }`}
           >
@@ -250,7 +254,11 @@ export default function AdminLayout({
               {chromeEnabled ? (
                 <DashboardChromeFallback
                   bleedInset={
-                    fullBleedPage || edgeToEdgeInbox ? "px-4 md:px-6" : undefined
+                    fullBleedPage || edgeToEdgeInbox
+                      ? "px-4 md:px-6"
+                      : coachesListPage
+                        ? "-mx-4 px-4 md:-mx-6 md:px-6"
+                        : undefined
                   }
                 />
               ) : null}

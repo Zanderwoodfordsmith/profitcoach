@@ -14,10 +14,11 @@ import { listOnboardingTranscripts, onboardingTranscriptText } from "@/lib/pract
 import { summarizeKnowledgeForPrompt } from "@/lib/practiceKnowledge/prompts";
 import { listValue, textValue } from "@/lib/practiceKnowledge/sourced";
 import { ensurePracticeKnowledge } from "@/lib/practiceKnowledge/store";
-import type { PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
+import type { BlueprintBlock, PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 import { PROSPECT_SEARCH_PLAYBOOK } from "@/lib/salesNavigator/prospectSearch/playbook";
 import { SALES_NAV_INDUSTRIES, salesNavIndustry } from "@/lib/salesNavigator/industries";
 import { resolveSalesNavRegion } from "@/lib/salesNavigator/regions";
+import { summarizeSalesNavSearch } from "@/lib/salesNavigator/salesNavSearchSummary";
 import { startSalesNavImport } from "@/lib/salesNavigator/startImport";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { linkedInSearch } from "@/lib/unipile/client";
@@ -54,7 +55,7 @@ export const LIST_SCOPE = "lead-list";
 
 /** People on a coach's list: aim for 1,000 to 2,500, and 200 at least (20 Nov: messages still go out in a thin market). */
 export const LIST_TARGET = { floor: 200, aim: 1_000, most: 2_500 };
-/** Up to 20 lists, so each sector can split into the things those firms make, and by size band (19 Nov). */
+/** Up to 20 lists, so each sector can split into the things those firms make (19 Nov). Sizes stay together, 1 to 50 (Zander, 21 Nov). */
 const MAX_LISTS = 20;
 
 /** The writing rules ban dashes as punctuation; the model still slips them in. */
@@ -227,7 +228,7 @@ export function listBoxReady(row: PracticeKnowledgeRow): boolean {
 
 /**
  * Ava plans the prospect lists (16 Nov): her thinking, then separate Sales
- * Navigator searches by sub-sector and size band (Paul Hamnett's way), with
+ * Navigator searches by sub-sector at 1 to 50 staff (Paul Hamnett's way), with
  * what LinkedIn says each one finds. BCA ticks, changes, then "Import it".
  */
 export async function draftProspectSearches(coachId: string, userId: string | null, changes?: string): Promise<ActivityItem> {
@@ -248,12 +249,11 @@ export async function draftProspectSearches(coachId: string, userId: string | nu
 The base search is added for you on every list: 2nd and 3rd degree connections, ${region}, owner job titles (owner, founder, co-founder, CEO, managing director, managing partner), and coaches, consultants and recruiters left out.
 
 What a good plan looks like:
-- 2 to ${MAX_LISTS} separate lists, never more than ${MAX_LISTS}: cover every sector in the list box before splitting any further. Split by sub-sector and by size band, so each list is clean and the coach can see what's in it. Example (Paul Hamnett, gyms): "Gyms, 11 to 200 staff", "Gyms, 1 to 10 staff", "Padel, tennis and squash clubs".
+- 2 to ${MAX_LISTS} separate lists, never more than ${MAX_LISTS}: cover every sector in the list box before splitting any further. Split by sub-sector, so each list is clean and the coach can see what's in it. Example (Paul Hamnett, gyms): "Gyms", "Padel, tennis and squash clubs", "Boutique fitness studios".
 - Go deep. Break each sector into the things those firms actually make or do, and give each its own list with its own words. Example (drinks): "Spirits" (vodka, whisky, whiskey, gin, rum, distillery), "Wine" (wine, wines, vineyard, winery), "Beer and cider" (brewery, brewing, ales, cider), "Tea and coffee" (tea, coffee, roasters), "Soft drinks" (juice, kombucha, soda, cordial).
-- Industry: LinkedIn files every company under one industry. When one fits the list cleanly, add it (exact names from the industry list below). An industry on its own, with no words, is a good list when it only holds the coach's market (for example Distilleries, Breweries, Wineries). With words as well, both must match: Breweries plus the word cider finds only breweries with cider in their name, so cider makers need their own list. Only add an industry to a words list to stop the words pulling in the wrong firms, for example when a word also names shops, cafés or salons (coffee, tea, bakery, beauty, chips): then add the maker's industry, such as Food and Beverage Manufacturing. Never use broad ones (Manufacturing, Retail, Wholesale) on their own.
-- Use the team sizes in the list box. When it covers 1 to 10 as well as bigger firms, keep 1 to 10 as its own lists: it is noisier, and it is where owners who never linked their staff show up.
-- Aim for ${LIST_TARGET.aim.toLocaleString("en-GB")} to ${LIST_TARGET.most.toLocaleString("en-GB")} people in total. ${LIST_TARGET.floor} is the least, so messages can still go out in a thin market. Several small lists are fine. LinkedIn shows at most 2,500 a search, so split a bigger one.
-- Many owners never link their staff to the company page, so a 30-person firm often shows as 1 to 10. Add a 1 to 10 list when the market is thin, as its own list.
+- One way in per list: company-name words OR an industry, not both (Zander's rule, 21 Nov). Both together shrinks the list far too much, and LinkedIn's industry labels are often wrong, so a company-name list almost never gets an industry. An industry on its own is a good list when it only holds the coach's market (for example Distilleries, Breweries, Wineries; exact names from the industry list below). Rarely, an industry list can take a few company-name words to narrow it. When a word also names shops, cafés or salons (coffee, tea, bakery, beauty), leave those out with exclude words (shop, café, cafe, salon) instead of adding an industry. Never use broad industries (Manufacturing, Retail, Wholesale) on their own.
+- Staff size: use 1 to 50 (both "1-10" and "11-50" in the same list) for almost every list, about 95% of the time. 11 to 50 is the ideal client, but many industries have few firms at 11 to 50 on LinkedIn, and many owners never link their staff, so a 30-person firm often shows as 1 to 10. We find each firm's real size when the list comes in, and the coach can filter to 11 to 50 later. Never split a list by size or because it is big, and never make separate 1 to 10 lists. Add "51-200" only when the list box asks for bigger firms.
+- Aim for ${LIST_TARGET.aim.toLocaleString("en-GB")} to ${LIST_TARGET.most.toLocaleString("en-GB")} people in total. ${LIST_TARGET.floor} is the least, so messages can still go out in a thin market. A big list (5,000 people or more) is fine: the import gets past LinkedIn's 2,500 a search on its own, so never split a list for size.
 - Team sizes allowed: "1-10", "11-50", "51-200", "201-500".
 - Company-name words first (how owners name their own business). Keywords only when owners don't name their business that way. Never both in one list. At most 8 words a list, quotes round phrases, no loose words many firms use (solutions, services, group, systems), and no words other trades share (care, clean, health, fresh, farm, kitchen, water, natural): they pull in care homes, cleaners, clinics and builders.
 - Leave out what the coach's list box says to leave out, as company words to exclude.
@@ -266,7 +266,7 @@ ${rules()}
 
 Reply with JSON only:
 {"thinking": "3 to 5 short sentences for BCA in everyday words: who you're going after and why, how the lists add up to the target, and what you're leaving out",
- "lists": [{"label": "under 6 words", "why": "one sentence, under 20 words", "industries": [], "companyIncludes": [], "keywords": null, "companyExcludesExtra": [], "titleIncludesExtra": [], "teamSizes": ["11-50"]}]}
+ "lists": [{"label": "under 6 words", "why": "one sentence, under 20 words", "industries": [], "companyIncludes": [], "keywords": null, "companyExcludesExtra": [], "titleIncludesExtra": [], "teamSizes": ["1-10", "11-50"]}]}
 
 LinkedIn's industry list (use these names exactly):
 ${SALES_NAV_INDUSTRIES.map((i) => i.title).join("; ")}`;
@@ -277,23 +277,104 @@ People already in their Pool: ${inPool.toLocaleString("en-GB")}.
 ${previous?.payload.searches?.length ? `\nYour last plan:\n${previous.payload.searches.map((s) => `- ${s.label}: ${s.size ?? "?"} people`).join("\n")}\n` : ""}${changes?.trim() ? `\nBCA asked for this change: ${changes.trim()}\n` : ""}
 Plan the lists now. JSON only.`;
 
-  const { data } = await generateCampaignJson<{
-    thinking?: string;
-    lists?: {
-      label?: string;
-      why?: string;
-      industries?: string[];
-      companyIncludes?: string[];
-      keywords?: string | null;
-      companyExcludesExtra?: string[];
-      titleIncludesExtra?: string[];
-      teamSizes?: string[];
-    }[];
-  }>({ system, user, maxTokens: 4_000, writing: true });
+  const ask = (text: string) => generateCampaignJson<PlannedLists>({ system, user: text, maxTokens: 4_000, writing: true });
+  const first = (await ask(user)).data;
+  let thinking = first?.thinking?.trim() || "";
+  let planned = buildPlannedLists(first?.lists, region);
+  if (!planned.length) throw new Error("Ava couldn't plan a search from this. Try again.");
+  let counted = await countSearches(coachId, userId, planned.map((p) => p.draft.url));
 
+  // Ava looks again once LinkedIn has counted (job 271): small lists get widened, combined or dropped.
+  const smallOnes = planned.filter((_, i) => (counted.sizes[i] ?? Infinity) < SMALL_LIST);
+  if (smallOnes.length) {
+    const lines = planned.map((p, i) => `- ${JSON.stringify(p.raw)} → ${counted.sizes[i] ?? "?"} people`).join("\n");
+    const review = (
+      await ask(`${user}
+
+You planned these lists, and LinkedIn counted each one:
+${lines}
+
+${LIST_SIZE_RULES}
+
+Return the whole new plan, every list you keep, in the same JSON. In "thinking", say in everyday words what you changed and why. JSON only.`)
+    ).data;
+    const again = buildPlannedLists(review?.lists, region);
+    if (again.length) {
+      planned = again;
+      counted = await countSearches(coachId, userId, again.map((p) => p.draft.url));
+      thinking = review?.thinking?.trim() || thinking;
+    }
+  }
+
+  // Biggest lists first, so a small one is never the first to go out; then tick from the top up to 2,500 people.
+  const ordered = planned
+    .map((p, i) => ({ ...p.draft, size: counted.sizes[i] ?? null, roughSize: counted.sizes[i] != null && counted.rough, at: i }))
+    .sort((a, b) => (b.size ?? -1) - (a.size ?? -1) || a.at - b.at);
+  let total = 0;
+  let full = false;
+  const searches: ProspectSearchDraft[] = ordered.map((s, i) => {
+    const { at, ...rest } = s;
+    void at;
+    const search = { ...rest, id: `list-${i + 1}` };
+    if (search.size === null) return search;
+    const people = search.size;
+    // Ticks run down from the top and stop at the first list that won't fit, so they never skip a bigger list.
+    const on = !full && (total === 0 || total + people <= LIST_TARGET.most);
+    if (on) total += people;
+    else full = true;
+    return { ...search, on };
+  });
+
+  await replaceOpen(coachId, LIST_SCOPE, "searches");
+  return add({
+    coachId,
+    jobKey: LIST_SCOPE,
+    kind: "searches",
+    body: accountId ? "" : "Their LinkedIn isn't connected, so nothing can import yet.",
+    payload: {
+      searches,
+      thinking: thinking || undefined,
+      changes: changes?.trim() || undefined,
+      version: (previous?.payload.version ?? 0) + 1,
+      inputs: listPrint(row),
+    },
+    status: "open",
+    edited: Boolean(changes?.trim()),
+    createdBy: userId,
+  });
+}
+
+type PlannedList = {
+  label?: string;
+  why?: string;
+  industries?: string[];
+  companyIncludes?: string[];
+  keywords?: string | null;
+  companyExcludesExtra?: string[];
+  titleIncludesExtra?: string[];
+  teamSizes?: string[];
+};
+type PlannedLists = { thinking?: string; lists?: PlannedList[] };
+
+/** Under this many people a list is too small to run on its own (job 271). */
+const SMALL_LIST = 300;
+
+/** How Ava judges a plan once LinkedIn has counted it (Zander, 21 Nov, job 271). */
+const LIST_SIZE_RULES = `How to fix the plan now you know the sizes:
+- A list under ${SMALL_LIST} people is too small for an automated campaign on its own, and must never be the first list. For each one:
+  1. Widen it: if it has company-name words AND an industry, take the industry off (one way in per list). Or add more of the words those firms really put in their names (singular, plural, -ing, the products they make).
+  2. Or combine it with a similar list that takes the same message (cookies + crisps + snacks → one snacks list). Never combine lists that need a different message.
+  3. If neither works, keep it as it is, low in the order: a small, specific list is still useful for a one-off campaign. Drop a list only when it's off the coach's market.
+- Never split a list because it's big. Lists over 2,500 are fine: the import gets past LinkedIn's limit itself.
+- Aim for 500 or more people a list where the market allows, and ${LIST_TARGET.aim.toLocaleString("en-GB")} to ${LIST_TARGET.most.toLocaleString("en-GB")} in total.
+- Put the biggest, cleanest lists first. The first list is the one the coach starts with, so make it the strongest.
+- Keep good lists exactly as they are.`;
+
+/** Ava's lists as Sales Navigator searches, with what she wrote for each (so she can see it again). */
+function buildPlannedLists(lists: PlannedList[] | undefined, region: string): { draft: Omit<ProspectSearchDraft, "size">; raw: PlannedList }[] {
   const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && Boolean(x.trim())) : []);
-  const built: Omit<ProspectSearchDraft, "size">[] = [];
-  for (const [i, list] of (data?.lists ?? []).slice(0, MAX_LISTS).entries()) {
+  const built: { draft: Omit<ProspectSearchDraft, "size">; raw: PlannedList }[] = [];
+  for (const [i, list] of (lists ?? []).slice(0, MAX_LISTS).entries()) {
     const keywords = list.keywords?.trim() || "";
     const companyIncludes = keywords ? [] : strings(list.companyIncludes);
     const industries = strings(list.industries).map(salesNavIndustry).filter((x): x is { id: string; title: string } => Boolean(x));
@@ -304,42 +385,129 @@ Plan the lists now. JSON only.`;
       companyExcludesExtra: strings(list.companyExcludesExtra),
       keywords,
       titleIncludesExtra: strings(list.titleIncludesExtra),
-      teamSizes: strings(list.teamSizes).filter((s) => ["1-10", "11-50", "51-200", "201-500"].includes(s)),
+      teamSizes: strings(list.teamSizes).filter((s) => SIZE_BANDS.includes(s)),
       degrees: ["2", "3"],
       industries,
     });
     if ("error" in search) continue;
-    built.push({ id: `list-${i + 1}`, label: list.label?.trim() || `List ${i + 1}`, why: list.why?.trim() || "", url: search.url, on: true });
+    built.push({
+      draft: { id: `list-${i + 1}`, label: list.label?.trim() || `List ${i + 1}`, why: list.why?.trim() || "", url: search.url, on: true },
+      raw: list,
+    });
   }
-  if (!built.length) throw new Error("Ava couldn't plan a search from this. Try again.");
-  const sized = await Promise.all(built.map(async (s) => ({ ...s, size: await searchSize(accountId, s.url) })));
-  // Ava plans before she knows the sizes: tick lists in her order until the next would take the total past 2,500.
-  let total = 0;
-  const searches: ProspectSearchDraft[] = sized.map((s) => {
-    if (s.size === null) return s;
-    const people = Math.min(s.size, 2_500);
-    const on = total === 0 || total + people <= LIST_TARGET.most;
-    if (on) total += people;
-    return { ...s, on };
-  });
+  return built;
+}
 
-  await replaceOpen(coachId, LIST_SCOPE, "searches");
-  return add({
-    coachId,
-    jobKey: LIST_SCOPE,
-    kind: "searches",
-    body: accountId ? "" : "Their LinkedIn isn't connected, so sizes are unknown and nothing can import yet.",
-    payload: {
-      searches,
-      thinking: data?.thinking?.trim() || undefined,
-      changes: changes?.trim() || undefined,
-      version: (previous?.payload.version ?? 0) + 1,
-      inputs: listPrint(row),
-    },
-    status: "open",
-    edited: Boolean(changes?.trim()),
-    createdBy: userId,
+const SIZE_BANDS = ["1-10", "11-50", "51-200", "201-500"];
+
+/** Zander Demo: holds Zander's own LinkedIn with Sales Navigator, used only to count searches (21 Nov). */
+const BCA_COUNT_PROFILE_ID = "5cb89c87-88a9-4cfc-9f95-9591f74f8529";
+
+/**
+ * Counts for these searches: on the coach's LinkedIn first. When that gives
+ * nothing (not connected, or no Sales Navigator), on the admin clicking, then
+ * Zander's, as a rough count (their 2nd and 3rd connections, not the coach's).
+ */
+
+async function countSearches(coachId: string, userId: string | null, urls: string[]): Promise<{ sizes: (number | null)[]; rough: boolean }> {
+  const own = await requireLiveLinkedInUnipileAccount(coachId).catch(() => null);
+  if (own) {
+    const sizes = await Promise.all(urls.map((url) => searchSize(own, url)));
+    if (sizes.some((n) => n !== null)) return { sizes, rough: false };
+  }
+  // Then the admin clicking, then Zander's LinkedIn (with Sales Navigator), which is connected on the Zander Demo profile.
+  const fallbacks = [...new Set([userId, BCA_COUNT_PROFILE_ID].filter((id): id is string => Boolean(id) && id !== coachId))];
+  for (const profileId of fallbacks) {
+    const bca = await requireLiveLinkedInUnipileAccount(profileId).catch(() => null);
+    if (!bca || bca === own) continue;
+    const sizes = await Promise.all(urls.map((url) => searchSize(bca, url)));
+    if (sizes.some((n) => n !== null)) return { sizes, rough: true };
+  }
+  return { sizes: urls.map(() => null), rough: false };
+}
+
+async function openSearches(id: string): Promise<ActivityItem> {
+  const item = await getItem(id);
+  if (item.kind !== "searches" || item.status !== "open") throw new Error("These searches aren't waiting any more.");
+  return item;
+}
+
+/**
+ * BCA changes one list on the Lead lists page (21 Nov): its name, company-name
+ * words, industry, keywords and staff. The base search (titles, left-out
+ * companies, place, connections) stays as it was. Lists shown as one row
+ * (the same search split by staff) become one search. LinkedIn counts it again.
+ */
+export async function editProspectSearch(
+  id: string,
+  userId: string | null,
+  edit: { searchIds: string[]; label: string; companyIncludes: string[]; industries: string[]; keywords: string; teamSizes: string[] }
+): Promise<void> {
+  const item = await openSearches(id);
+  const searches = item.payload.searches ?? [];
+  const first = searches.find((s) => s.id === edit.searchIds[0]);
+  if (!first) throw new Error("That list has gone. Reload the page.");
+  const old = summarizeSalesNavSearch(first.url);
+  const unknown = edit.industries.filter((name) => !salesNavIndustry(name));
+  if (unknown.length) throw new Error(`Not a LinkedIn industry: ${unknown.join(", ")}. Use the exact name from Sales Navigator.`);
+  const teamSizes = edit.teamSizes.filter((size) => SIZE_BANDS.includes(size));
+  if (!teamSizes.length) throw new Error("Pick at least one staff size.");
+  const keywords = edit.keywords.trim();
+  const companyIncludes = edit.companyIncludes.map((w) => w.trim()).filter(Boolean);
+  const industries = edit.industries.map(salesNavIndustry).filter((x): x is { id: string; title: string } => Boolean(x));
+  if (!keywords && !companyIncludes.length && !industries.length) throw new Error("Give the list company-name words, an industry or keywords.");
+  const degreeIds: Record<string, "1" | "2" | "3"> = { F: "1", S: "2", O: "3", "1": "1", "2": "2", "3": "3" };
+  const search = buildSalesNavSearch({
+    location: old.location || "United Kingdom",
+    companyIncludes,
+    // The base adds its own; anything extra this list already had stays.
+    companyExcludesExtra: old.company_excludes,
+    keywords,
+    titleIncludesExtra: old.title_includes,
+    teamSizes,
+    degrees: old.degrees.map((d) => degreeIds[d]).filter((d): d is "1" | "2" | "3" => Boolean(d)),
+    industries,
   });
+  if ("error" in search) throw new Error(search.error);
+  const {
+    sizes: [size = null],
+    rough,
+  } = await countSearches(item.coach_id, userId, [search.url]);
+  const label = edit.label.trim() || first.label;
+  const next = searches
+    .filter((s) => s.id === first.id || !edit.searchIds.includes(s.id))
+    .map((s) => (s.id === first.id ? { ...s, label, url: search.url, size, roughSize: size !== null && rough } : s));
+  const { error } = await supabaseAdmin
+    .from("launch_job_activity")
+    .update({ payload: { ...item.payload, searches: next }, edited: true })
+    .eq("id", id)
+    .eq("status", "open");
+  if (error) throw new Error(error.message);
+}
+
+/** "Check sizes": what LinkedIn says each list finds, before anything is imported. */
+export async function sizeProspectSearches(id: string, userId: string | null): Promise<{ rough: boolean }> {
+  const item = await openSearches(id);
+  const list = item.payload.searches ?? [];
+  const { sizes, rough } = await countSearches(item.coach_id, userId, list.map((s) => s.url));
+  if (sizes.every((n) => n === null)) {
+    throw new Error(
+      "LinkedIn wouldn't count these. Counting needs Sales Navigator on the coach's LinkedIn or on Zander's (connected on Zander Demo). Check that one is still connected."
+    );
+  }
+  // Biggest lists first, so a list of 31 is never the first to go out; lists LinkedIn couldn't count go last.
+  const searches = list
+    .map((s, i) => (sizes[i] === null ? s : { ...s, size: sizes[i], roughSize: rough }))
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => (b.s.size ?? -1) - (a.s.size ?? -1) || a.i - b.i)
+    .map(({ s }) => s);
+  const { error } = await supabaseAdmin
+    .from("launch_job_activity")
+    .update({ payload: { ...item.payload, searches } })
+    .eq("id", id)
+    .eq("status", "open");
+  if (error) throw new Error(error.message);
+  return { rough };
 }
 
 /**
@@ -472,6 +640,53 @@ export async function releaseDraft(id: string, userId: string | null): Promise<A
 }
 
 /** Release of a LinkedIn draft: into the coach's LinkedIn editor, then the what-next message. */
+/**
+ * BCA changed a waiting draft's words by hand on the Launch page (job 248).
+ * Same row, marked edited, so a later run never throws it away. A LinkedIn
+ * draft changes one part; any other draft changes one section's blocks.
+ */
+export async function editOpenDraft(
+  id: string,
+  edit: { key?: string; blocks?: BlueprintBlock[]; part?: string; text?: string }
+): Promise<void> {
+  const draft = await getItem(id);
+  if (draft.kind !== "draft" || draft.status !== "open") throw new Error("This draft isn't waiting any more.");
+  const payload = { ...draft.payload };
+  if (payload.linkedinParts && edit.part) {
+    const text = (edit.text ?? "").trim();
+    if (!text) throw new Error("That part is empty.");
+    const parts = { ...(payload.linkedinParts as Record<string, string>), [edit.part]: text };
+    payload.linkedinParts = parts;
+    const blocks = Object.entries(parts).flatMap(([part, words]) => [
+      { type: "heading" as const, text: PART_TITLES[part as ProfileSectionId] ?? part },
+      { type: "paragraph" as const, text: words },
+    ]);
+    payload.sections = (payload.sections ?? []).map((section) => (section.key === "linkedin:rewrite" ? { ...section, blocks } : section));
+  } else if (edit.key && edit.blocks) {
+    const sections = payload.sections ?? [];
+    if (!sections.some((section) => section.key === edit.key)) throw new Error("That section isn't in this draft.");
+    payload.sections = sections.map((section) => (section.key === edit.key ? { ...section, blocks: edit.blocks! } : section));
+  } else {
+    throw new Error("Nothing to change.");
+  }
+  const { error } = await supabaseAdmin.from("launch_job_activity").update({ payload, edited: true }).eq("id", id).eq("status", "open");
+  if (error) throw new Error(error.message);
+}
+
+/** BCA changed one of Ava's draft answers on the coach's Blueprint (21 Nov). Same row, marked edited; Release still decides. */
+export async function editOpenAnswer(id: string, path: string, value: string): Promise<void> {
+  const item = await getItem(id);
+  if (item.kind !== "answers" || item.status !== "open") throw new Error("These answers aren't waiting any more.");
+  const answers = (item.payload.answers ?? []).map((a) => (a.path === path ? { ...a, value } : a));
+  if (!answers.some((a) => a.path === path)) throw new Error("That box isn't in Ava's answers.");
+  const { error } = await supabaseAdmin
+    .from("launch_job_activity")
+    .update({ payload: { ...item.payload, answers }, edited: true })
+    .eq("id", id)
+    .eq("status", "open");
+  if (error) throw new Error(error.message);
+}
+
 export async function releaseLinkedInDraft(id: string, userId: string | null): Promise<ActivityItem> {
   const draft = await getItem(id);
   if (draft.kind !== "draft" || draft.status !== "open" || !draft.payload.linkedinParts) throw new Error("This draft isn't waiting any more.");

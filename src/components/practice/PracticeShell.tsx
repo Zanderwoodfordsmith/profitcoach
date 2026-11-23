@@ -28,6 +28,8 @@ import { PageStatusControl } from "./PageStatusControl";
 import { useBlueprintAva } from "./ava/useBlueprintAva";
 import { OPEN_SECTION_EVENT } from "./document/SectionView";
 import { PageIcon } from "./pageIcons";
+import { DraftStrip } from "./DraftBar";
+import { DraftLayer } from "./DraftLayer";
 import { usePractice } from "./PracticeProvider";
 import { useMatchesBreakpoint } from "@/hooks/useBreakpoint";
 import { BLUEPRINT_LOOK } from "./blueprintLook";
@@ -457,7 +459,7 @@ export function PracticeShell({
     `${
       compact
         ? "relative flex h-9 w-9 items-center justify-center rounded-[7px]"
-        : "flex items-start gap-3 rounded-[7px] px-4 py-2.5 text-[0.9375rem] leading-snug"
+        : "flex items-start gap-3 rounded-[7px] py-2.5 pr-2 pl-4 text-[0.9375rem] leading-snug"
     } ${
       current
         ? "bg-white text-[#0f172a] shadow-[0_1px_2px_rgba(15,23,42,0.08)] [&_svg]:text-[#0c5290]"
@@ -628,15 +630,18 @@ export function PracticeShell({
             {ready ? children : <p className="px-6 py-8 text-sm text-slate-600 md:px-10 lg:px-14">{error || "Opening your blueprint…"}</p>}
           </>
         ) : clean && page ? (
-          <>
+          // BCA on a coach's page: Ava's open drafts show in place, with a strip under the top bar to release them (job 248).
+          <DraftLayer page={page.slug}>
             <CleanTopBar
               page={page}
               side={side}
               onSide={switchSide}
               onPage={(next) => router.push(href(next.href), { scroll: false })}
             />
+            {ready ? <DraftStrip /> : null}
             {/* Left-aligned, as in the Scripts: the text stays put when the chat opens or closes. */}
-            <div className="@container w-full max-w-[51rem] px-6 pt-8 pb-24 md:px-10 lg:px-14 print:p-0">
+            {/* Lead lists is a wide table, so that page gets more room. */}
+            <div className={`@container w-full ${page.slug === "lists" ? "max-w-[76rem] lg:px-10" : "max-w-[51rem] lg:px-14"} px-6 pt-8 pb-24 md:px-10 print:p-0`}>
               <header>
                 {/* The page's status on the title's row, right-aligned. */}
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
@@ -655,7 +660,7 @@ export function PracticeShell({
                 {ready ? children : <p className="text-sm text-slate-600">{error || "Opening your blueprint…"}</p>}
               </div>
             </div>
-          </>
+          </DraftLayer>
         ) : (
         <div className="@container mx-auto w-full max-w-[54rem] px-5 pt-8 pb-10 md:px-10 md:pt-10 print:p-0">
         {isDocumentPage ? (
@@ -846,7 +851,7 @@ function AvaNavMark({ mark }: { mark: "open" | "ready" | null }) {
   if (!mark) return null;
   return (
     <Zap
-      className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${mark === "open" ? "fill-[#0c5290] text-[#0c5290]" : "text-[#0c5290]"}`}
+      className={`mt-0.5 -ml-1.5 h-3.5 w-3.5 shrink-0 ${mark === "open" ? "fill-[#0c5290] text-[#0c5290]" : "text-[#0c5290]"}`}
       aria-label={mark === "open" ? "Ava has something for you to check" : "Ava could write this now"}
     />
   );

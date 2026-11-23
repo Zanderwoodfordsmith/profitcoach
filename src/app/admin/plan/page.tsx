@@ -96,8 +96,8 @@ export default function AdminPlanPage() {
         title="Done-for-you plan"
         description={`What we recommend for getting coaches live, as of ${PLAN_DATE}.`}
         actions={
-          <Link href="/admin?view=getting-live" className={buttonClass("second", "small")}>
-            Getting live
+          <Link href="/admin?view=launch" className={buttonClass("second", "small")}>
+            Launches
           </Link>
         }
       />

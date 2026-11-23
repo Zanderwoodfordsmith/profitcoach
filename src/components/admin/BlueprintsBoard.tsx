@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowUpDown, Check, ChevronDown, ChevronRight, FileCheck2, ListChecks, MessageSquare, Plus, Search, Send, Zap } from "lucide-react";
 
 import type { BoardCoach } from "@/app/api/admin/blueprints/route";
 import type { LaunchStepKey } from "@/lib/practiceKnowledge/boardData";
 import { PageIcon } from "@/components/practice/pageIcons";
 import { STAGE_LOOK, StageCircle } from "@/components/practice/StageCircle";
-import { BLUEPRINT_GROUPS } from "@/lib/practiceKnowledge/blueprint";
+import { BLUEPRINT_GROUPS, blueprintPage } from "@/lib/practiceKnowledge/blueprint";
 import { BOARD_COLUMNS, BOARD_TAGS, progressOf, type BoardColumnId, type BoardTag } from "@/lib/practiceKnowledge/blueprintBoard";
 import type { ChainState, ToCheckItem } from "@/lib/launch/avaAuto";
 import { formatSupportRelativeCompact } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 type Page = { slug: string; title: string };
 type View = "check" | "board" | "coaches";
@@ -21,9 +23,20 @@ type View = "check" | "board" | "coaches";
 const VIEW_KEY = "admin-blueprints-view";
 const GROUP_KEY = "admin-blueprints-grouped";
 const SORT_KEY = "admin-blueprints-sort";
+const EMBEDDED_SORT_KEY = "admin-coaches-launch-sort";
 
-type Sort = "newest" | "oldest" | "needs" | "least" | "name";
+export type LaunchSort = "check" | "newest" | "oldest" | "needs" | "least" | "name";
+type Sort = LaunchSort;
+export const LAUNCH_SORTS: { id: Sort; label: string }[] = [
+  { id: "check", label: "Most to check first" },
+  { id: "newest", label: "Newest to join first" },
+  { id: "oldest", label: "Longest ago first" },
+  { id: "needs", label: "Most for BCA first" },
+  { id: "least", label: "Least progress first" },
+  { id: "name", label: "Name, A to Z" },
+];
 const SORTS: { id: Sort; label: string }[] = [
+  { id: "check", label: "Most to check first" },
   { id: "newest", label: "Newest to join first" },
   { id: "oldest", label: "Longest ago first" },
   { id: "needs", label: "Most for BCA first" },
@@ -58,9 +71,14 @@ function bcaLoad(coach: BoardCoach): [number, number, number] {
   ];
 }
 
-function sortCoaches(list: BoardCoach[], sort: Sort): BoardCoach[] {
+function sortCoaches(list: BoardCoach[], sort: Sort, checkCounts?: Map<string, number>): BoardCoach[] {
   const joined = (c: BoardCoach) => c.joined_at ?? "";
   return [...list].sort((a, b) => {
+    if (sort === "check") {
+      const n = (c: BoardCoach) => checkCounts?.get(c.coach_id) ?? 0;
+      // Ties: longest since joining first, as they're furthest into their 4 months (21 Nov).
+      return n(b) - n(a) || (joined(a) || "9999").localeCompare(joined(b) || "9999") || a.name.localeCompare(b.name);
+    }
     if (sort === "newest") return joined(b).localeCompare(joined(a)) || a.name.localeCompare(b.name);
     if (sort === "oldest") return (joined(a) || "9999").localeCompare(joined(b) || "9999") || a.name.localeCompare(b.name);
     if (sort === "least") return percentOf(a) - percentOf(b) || a.name.localeCompare(b.name);
@@ -73,11 +91,13 @@ function sortCoaches(list: BoardCoach[], sort: Sort): BoardCoach[] {
 }
 
 
-/** Open the coach's page in their Blueprint, with Activity (BCA's work) or the chat (theirs) open. */
-function cardHref(coach: BoardCoach, page: string, column: BoardColumnId): string | null {
-  if (!coach.slug) return null;
-  const panel = column === "needs_coach" || column === "coach_review" || column === "done" ? "chat" : "activity";
-  return `/admin/coaches/${encodeURIComponent(coach.slug)}?tab=blueprint&doc=${encodeURIComponent(page)}&panel=${panel}&from=launches`;
+/**
+ * Open the coach's page in My Blueprint as they see it (Zander, 21 Nov), with
+ * "Use as" switched to that coach. Ava's drafts and Release show there for BCA.
+ */
+function cardHref(coach: BoardCoach, page: string): string {
+  const path = blueprintPage(page)?.href ?? `/coach/blueprint/${encodeURIComponent(page)}`;
+  return `${path}?impersonate=${encodeURIComponent(coach.coach_id)}`;
 }
 
 function Face({ coach, size = 24 }: { coach: Pick<BoardCoach, "name" | "avatar_url">; size?: number }) {
@@ -115,16 +135,35 @@ async function adminHeaders(): Promise<Record<string, string> | null> {
 /** The last board loaded, so coming back to Launches shows it straight away while it refreshes. */
 let lastBoard: { coaches: BoardCoach[]; pages: Page[] } | null = null;
 
-export function BlueprintsBoard() {
+/**
+ * `embedded`: the Launch view inside Admin → Coaches → All coaches (21 Nov).
+ * Only the By page grid, with a To check column. The page's own toolbar row
+ * drives it: search, the Launching / Everyone filter and the sort; Add a coach
+ * is portalled into `addSlot` in that row.
+ */
+export function BlueprintsBoard({
+  embedded = false,
+  search = "",
+  everyone: everyoneProp,
+  sort: sortProp,
+  addSlot = null,
+}: {
+  embedded?: boolean;
+  search?: string;
+  everyone?: boolean;
+  sort?: LaunchSort;
+  addSlot?: HTMLElement | null;
+} = {}) {
+  const { setImpersonatingCoachId } = useImpersonation();
   const [data, setData] = useState<{ coaches: BoardCoach[]; pages: Page[] } | null>(lastBoard);
   const [toCheck, setToCheck] = useState<ToCheckItem[] | null>(null);
   const [chains, setChains] = useState<Record<string, ChainState[]>>({});
   const [error, setError] = useState<string | null>(null);
-  const [view, setViewState] = useState<View>("board");
+  const [view, setViewState] = useState<View>(embedded ? "coaches" : "board");
   const [everyone, setEveryone] = useState(false);
   const [showDone, setShowDone] = useState(false);
   const [grouped, setGroupedState] = useState(true);
-  const [sort, setSortState] = useState<Sort>("newest");
+  const [sort, setSortState] = useState<Sort>(embedded ? "check" : "newest");
   const [menu, setMenu] = useState<"sort" | "add" | null>(null);
   const [addQuery, setAddQuery] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
@@ -143,8 +182,15 @@ export function BlueprintsBoard() {
     };
   }, [menu]);
 
+  const sortKey = embedded ? EMBEDDED_SORT_KEY : SORT_KEY;
   useEffect(() => {
     try {
+      if (embedded) {
+        const savedSort = window.localStorage.getItem(EMBEDDED_SORT_KEY);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- read browser storage after hydration
+        if (SORTS.some((o) => o.id === savedSort)) setSortState(savedSort as Sort);
+        return;
+      }
       const saved = window.localStorage.getItem(VIEW_KEY);
       // eslint-disable-next-line react-hooks/set-state-in-effect -- read browser storage after hydration
       if (saved === "coaches" || saved === "check") setViewState(saved);
@@ -154,7 +200,7 @@ export function BlueprintsBoard() {
     } catch {
       // Storage blocked: the board.
     }
-  }, []);
+  }, [embedded]);
   const setView = (next: View) => {
     setViewState(next);
     try {
@@ -177,7 +223,7 @@ export function BlueprintsBoard() {
     setSortState(next);
     setMenu(null);
     try {
-      window.localStorage.setItem(SORT_KEY, next);
+      window.localStorage.setItem(sortKey, next);
     } catch {
       // Not remembered; the sort still works.
     }
@@ -242,13 +288,44 @@ export function BlueprintsBoard() {
   );
 
   const launchingCount = data?.coaches.filter((c) => c.launching).length ?? 0;
+  /** What's waiting for BCA per coach, and the page to open first (the To check column). */
+  const checkByCoach = useMemo(() => {
+    const map = new Map<string, { count: number; page: string }>();
+    for (const item of toCheck ?? []) {
+      const entry = map.get(item.coach_id);
+      if (entry) entry.count += 1;
+      else {
+        const first = chains[item.coach_id]?.find((c) => c.state === "check")?.scope ?? item.job_key;
+        map.set(item.coach_id, { count: 1, page: checkPage(first) });
+      }
+    }
+    return map;
+  }, [toCheck, chains]);
+  /** Every page with something of Ava's waiting, per coach: lead-list plans count on Lead lists (21 Nov). */
+  const checkPagesByCoach = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const item of toCheck ?? []) {
+      const set = map.get(item.coach_id) ?? new Set<string>();
+      set.add(checkPage(item.job_key));
+      map.set(item.coach_id, set);
+    }
+    return map;
+  }, [toCheck]);
+  const checkCounts = useMemo(
+    () => new Map([...checkByCoach].map(([id, v]) => [id, v.count])),
+    [checkByCoach]
+  );
+  const showEveryone = embedded ? Boolean(everyoneProp) : everyone;
+  const activeSort = embedded ? (sortProp ?? "check") : sort;
+  const query = search.trim().toLowerCase();
   const coaches = useMemo(() => {
     if (!data) return [];
     return sortCoaches(
-      data.coaches.filter((c) => everyone || c.launching),
-      sort
+      data.coaches.filter((c) => (showEveryone || c.launching) && (!query || c.name.toLowerCase().includes(query))),
+      activeSort,
+      checkCounts
     );
-  }, [data, everyone, sort]);
+  }, [data, showEveryone, activeSort, checkCounts, query]);
   const pages = data?.pages ?? [];
   const notLaunching = useMemo(() => {
     const q = addQuery.trim().toLowerCase();
@@ -275,13 +352,58 @@ export function BlueprintsBoard() {
     `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${on ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"}`;
   const popover = "absolute left-0 top-full z-[90] mt-1 rounded-xl border border-slate-200 bg-white shadow-[0_12px_32px_-12px_rgba(15,23,42,0.35)]";
 
+  const addControl = (
+            <div className="relative">
+              <TableToolbarButton
+                label={embedded ? "Add to launch" : "Add a coach"}
+                aria-haspopup="true"
+                aria-expanded={menu === "add"}
+                active={menu === "add"}
+                onClick={() => setMenu((m) => (m === "add" ? null : "add"))}
+                icon={<Plus className="h-5 w-5 text-slate-500" aria-hidden />}
+              />
+              {menu === "add" ? (
+                <div className={`${popover} w-72 p-1.5`}>
+                  <p className="px-2 pb-1 pt-1 text-xs font-semibold text-slate-700">Add to Launching</p>
+                  <input
+                    autoFocus
+                    value={addQuery}
+                    onChange={(e) => setAddQuery(e.target.value)}
+                    placeholder="Search coaches"
+                    className="mb-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-slate-400"
+                  />
+                  <div className="max-h-72 overflow-y-auto">
+                    {notLaunching.length === 0 ? <p className="px-2 py-1.5 text-sm text-slate-500">Nobody else to add.</p> : null}
+                    {notLaunching.map((c) => (
+                      <button
+                        key={c.coach_id}
+                        type="button"
+                        onClick={() => {
+                          setMenu(null);
+                          setAddQuery("");
+                          void saveLaunch({ coach_id: c.coach_id, add: true });
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <Face coach={c} size={20} />
+                        <span className="truncate">{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+  );
+
   const toolbar = (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 pb-5 pt-6 md:px-6">
-      <div className="inline-flex rounded-lg bg-white p-0.5 ring-1 ring-inset ring-slate-200" role="group" aria-label="Columns">
-        {switchButton("check", toCheck?.length ? `To check ${toCheck.length}` : "To check")}
-        {switchButton("board", "By status")}
-        {switchButton("coaches", "By page")}
-      </div>
+    <div className={`flex flex-wrap items-center gap-x-6 gap-y-3 ${embedded ? "px-4 py-3" : "px-4 pb-5 pt-6 md:px-6"}`}>
+      {embedded ? null : (
+        <div className="inline-flex rounded-lg bg-white p-0.5 ring-1 ring-inset ring-slate-200" role="group" aria-label="Columns">
+          {switchButton("check", toCheck?.length ? `To check ${toCheck.length}` : "To check")}
+          {switchButton("board", "By status")}
+          {switchButton("coaches", "By page")}
+        </div>
+      )}
       {data ? (
         <>
           <div className="inline-flex rounded-lg bg-white p-0.5 ring-1 ring-inset ring-slate-200" role="group" aria-label="Which coaches">
@@ -325,55 +447,24 @@ export function BlueprintsBoard() {
                 </div>
               ) : null}
             </div>
-            <div className="relative">
-              <TableToolbarButton
-                label="Add a coach"
-                aria-haspopup="true"
-                aria-expanded={menu === "add"}
-                active={menu === "add"}
-                onClick={() => setMenu((m) => (m === "add" ? null : "add"))}
-                icon={<Plus className="h-5 w-5 text-slate-500" aria-hidden />}
-              />
-              {menu === "add" ? (
-                <div className={`${popover} w-72 p-1.5`}>
-                  <p className="px-2 pb-1 pt-1 text-xs font-semibold text-slate-700">Add to Launching</p>
-                  <input
-                    autoFocus
-                    value={addQuery}
-                    onChange={(e) => setAddQuery(e.target.value)}
-                    placeholder="Search coaches"
-                    className="mb-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-slate-400"
-                  />
-                  <div className="max-h-72 overflow-y-auto">
-                    {notLaunching.length === 0 ? <p className="px-2 py-1.5 text-sm text-slate-500">Nobody else to add.</p> : null}
-                    {notLaunching.map((c) => (
-                      <button
-                        key={c.coach_id}
-                        type="button"
-                        onClick={() => {
-                          setMenu(null);
-                          setAddQuery("");
-                          void saveLaunch({ coach_id: c.coach_id, add: true });
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
-                      >
-                        <Face coach={c} size={20} />
-                        <span className="truncate">{c.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            {addControl}
           </div>
         </>
       ) : null}
     </div>
   );
 
+  // Page links open My Blueprint as that coach. "?impersonate=" only counts on a full load
+  // (or a new tab), so switch "Use as" here too when one is clicked in place.
+  const openAsCoach = (event: React.MouseEvent) => {
+    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[href*='impersonate=']");
+    const id = link ? new URL(link.href).searchParams.get("impersonate") : null;
+    if (id) setImpersonatingCoachId(id);
+  };
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-slate-50">
-      {toolbar}
+    <div className={embedded ? "flex flex-col" : "flex min-h-0 flex-1 flex-col bg-slate-50"} onClickCapture={openAsCoach}>
+      {embedded ? (addSlot && data ? createPortal(<div ref={menuRef}>{addControl}</div>, addSlot) : null) : toolbar}
       {error ? <p className="px-6 py-4 text-sm text-rose-700">{error}</p> : null}
       {!data && !error ? <p className="px-6 py-4 text-sm text-slate-500">Loading the Blueprints…</p> : null}
       {data && view === "board" && !grouped ? (
@@ -384,7 +475,14 @@ export function BlueprintsBoard() {
       ) : null}
       {data && view === "check" ? <ToCheck items={toCheck} chains={chains} coaches={data.coaches} pages={pages} /> : null}
       {data && view === "coaches" ? (
-        <PageLanes coaches={coaches} pages={pages} onTick={(coach_id, step, on) => void saveLaunch({ coach_id, tick: { step, on } })} />
+        <PageLanes
+          coaches={coaches}
+          pages={pages}
+          onTick={(coach_id, step, on) => void saveLaunch({ coach_id, tick: { step, on } })}
+          checkByCoach={embedded ? checkByCoach : undefined}
+          checkPagesByCoach={embedded ? checkPagesByCoach : undefined}
+          bare={embedded}
+        />
       ) : null}
     </div>
   );
@@ -392,7 +490,8 @@ export function BlueprintsBoard() {
 
 /** Where each waiting thing is checked: its Blueprint page. Prospect lists wait on Your Ideal Client. */
 function checkPage(jobKey: string): string {
-  if (jobKey === "lead-list") return "market";
+  // Lead lists have their own Blueprint page since 21 Nov (job 248).
+  if (jobKey === "lead-list") return "lists";
   return jobKey.startsWith("page:") ? jobKey.slice(5) : "market";
 }
 
@@ -414,7 +513,7 @@ function ChainList({ chain, coach }: { chain: ChainState[]; coach: BoardCoach | 
     <ol className="divide-y divide-slate-100">
       {chain.map((step, i) => {
         const look = CHAIN_LOOK[step.state];
-        const href = step.state === "check" && coach ? cardHref(coach, checkPage(step.scope), "in_progress") : null;
+        const href = step.state === "check" && coach ? cardHref(coach, checkPage(step.scope)) : null;
         const body = (
           <>
             <span className="w-4 shrink-0 text-right text-xs tabular-nums text-slate-400">{i + 1}</span>
@@ -480,6 +579,15 @@ function ToCheck({
               {group.coach ? <Face coach={group.coach} size={24} /> : null}
               <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">{group.coach?.name ?? "Coach"}</span>
               <span className="text-sm tabular-nums text-slate-500">{group.items.length} to check</span>
+              {group.coach && (group.items[0] || chains[group.coachId]?.length) ? (
+                <Link
+                  // Their Blueprint, on the first page waiting on BCA: Ava's drafts show in place there (job 248, 21 Nov).
+                  href={cardHref(group.coach, checkPage(chains[group.coachId]?.find((c) => c.state === "check")?.scope ?? group.items[0]?.job_key ?? "page:market"))}
+                  className="text-sm font-medium text-sky-700 hover:underline"
+                >
+                  Open Blueprint
+                </Link>
+              ) : null}
             </div>
             {chains[group.coachId]?.length ? <ChainList chain={chains[group.coachId]} coach={group.coach} /> : null}
             {chains[group.coachId]?.length && group.items.some((item) => !chains[group.coachId].some((c) => c.itemId === item.id)) ? (
@@ -489,7 +597,7 @@ function ToCheck({
               {group.items.filter((item) => !chains[group.coachId]?.some((c) => c.itemId === item.id)).map((item) => {
                 const slug = checkPage(item.job_key);
                 const page = pages.find((p) => p.slug === slug);
-                const href = group.coach ? cardHref(group.coach, slug, "in_progress") : null;
+                const href = group.coach ? cardHref(group.coach, slug) : null;
                 const body = (
                   <>
                     <CheckIcon kind={item.kind} />
@@ -719,7 +827,7 @@ function Lanes({
 }
 
 function CardLink({ card, compact = false }: { card: Card; compact?: boolean }) {
-  const href = cardHref(card.coach, card.page.slug, card.column);
+  const href = cardHref(card.coach, card.page.slug);
   const unread = card.unread ? (
     <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums text-rose-700" title={`${card.unread} new in the chat`}>
       <MessageSquare className="h-3 w-3" aria-hidden />
@@ -770,8 +878,8 @@ function CardLink({ card, compact = false }: { card: Card; compact?: boolean }) 
  * status circle in each cell. The coach's own pages (About You) are grey.
  */
 /** A filled circle: green with a tick when LinkedIn is connected, red with a cross when not. */
-function ConnectedMark({ connected }: { connected: boolean }) {
-  const label = connected ? "LinkedIn connected" : "LinkedIn not connected";
+function ConnectedMark({ connected, what = "LinkedIn connected" }: { connected: boolean; what?: string }) {
+  const label = connected ? what : `No: ${what}`;
   return (
     <svg viewBox="0 0 14 14" className={`h-3.5 w-3.5 shrink-0 ${connected ? "text-emerald-500" : "text-rose-500"}`} role="img" aria-label={label}>
       <title>{label}</title>
@@ -781,6 +889,26 @@ function ConnectedMark({ connected }: { connected: boolean }) {
       ) : (
         <path d="M4.8 4.8 9.2 9.2 M9.2 4.8 4.8 9.2" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" />
       )}
+    </svg>
+  );
+}
+
+/** Light grey circle with a white bar: can't tell yet, waiting on something else (21 Nov). Same size as the tick and cross. */
+function WaitingMark({ label }: { label: string }) {
+  return (
+    <svg viewBox="0 0 14 14" className="h-3.5 w-3.5 shrink-0 text-slate-300" role="img" aria-label={label}>
+      <title>{label}</title>
+      <circle cx="7" cy="7" r="7" fill="currentColor" />
+      <path d="M4.3 7h5.4" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Ava's work waiting for BCA (21 Nov): a slim, solid lightning bolt in blue. */
+function AvaBolt() {
+  return (
+    <svg viewBox="0 0 24 24" width={18} height={18} className="shrink-0 text-sky-600" aria-hidden>
+      <path fill="currentColor" d="M16.8 1 4.8 14.2h6.6L7.4 23 19.2 9.6h-6.6L16.8 1Z" />
     </svg>
   );
 }
@@ -849,25 +977,46 @@ function PageLanes({
   coaches,
   pages,
   onTick,
+  checkByCoach,
+  checkPagesByCoach,
+  bare = false,
 }: {
   coaches: BoardCoach[];
   pages: Page[];
   onTick: (coachId: string, step: LaunchStepKey, on: boolean) => void;
+  /** The Launch view on All coaches: a To check column after Progress (21 Nov). */
+  checkByCoach?: Map<string, { count: number; page: string }>;
+  /** Pages with something waiting in To check, so they show the lightning even if the page's stage doesn't know. */
+  checkPagesByCoach?: Map<string, Set<string>>;
+  /** Inside a card already: no frame of its own. */
+  bare?: boolean;
 }) {
   const lanes = laneRows(coaches, pages);
+  const withCheck = Boolean(checkByCoach);
   // LinkedIn connected leads the coach's grey band, then a column per page, then the launch steps.
-  const style = { gridTemplateColumns: `4.5rem 13rem 6rem repeat(${pages.length + 1 + LAUNCH_COLUMNS.length}, minmax(0, 1fr))` };
+  const style = {
+    gridTemplateColumns: `13rem 4.5rem 6rem ${withCheck ? "6.5rem " : ""}repeat(${pages.length + 2 + LAUNCH_COLUMNS.length}, minmax(0, 1fr))`,
+  };
   // The coach's pages read as one grey band, top to bottom.
   const band = (slug: string) => (COACH_PAGES.has(slug) ? "bg-slate-100" : "");
   return (
-    <div className="min-h-0 flex-1 overflow-auto px-4 pb-10 md:px-6">
-      <div className="min-w-[68rem] rounded-xl bg-white ring-1 ring-inset ring-slate-200">
-        <div className="sticky top-0 z-10 grid rounded-t-xl border-b border-slate-200 bg-white px-2" style={style}>
+    <div className={bare ? "overflow-x-auto" : "min-h-0 flex-1 overflow-auto px-4 pb-10 md:px-6"}>
+      <div className={bare ? "min-w-[68rem]" : "min-w-[68rem] rounded-xl bg-white ring-1 ring-inset ring-slate-200"}>
+        <div className={`sticky top-0 z-10 grid border-b border-slate-200 bg-white px-2 ${bare ? "" : "rounded-t-xl"}`} style={style}>
+          {/* Coach then Joined, the same as the All coaches table (21 Nov). */}
+          <h2 className="flex h-10 items-center px-1.5 text-sm font-semibold text-slate-900">Coach</h2>
           <h2 className="flex h-10 items-center px-1.5 text-sm font-semibold text-slate-900">Joined</h2>
-          <span />
           <h2 className="flex h-10 items-center px-1.5 text-sm font-semibold text-slate-900">Progress</h2>
+          {withCheck ? (
+            <h2 className="flex h-10 items-center px-1.5 text-sm font-semibold text-slate-900" title="What Ava has waiting for BCA to check or release. Opens their Blueprint on the first one.">
+              To check
+            </h2>
+          ) : null}
           <h2 className="flex h-10 items-center justify-center px-2 text-xs font-semibold text-slate-900 bg-slate-100" title="Have they connected their LinkedIn?">
             <span className="truncate">LI connected</span>
+          </h2>
+          <h2 className="flex h-10 items-center justify-center px-2 text-xs font-semibold text-slate-900 bg-slate-100" title="Do they have Sales Navigator on their LinkedIn? We need it to build their lists.">
+            <span className="truncate">Sales Nav</span>
           </h2>
           {pages.map((p) => (
             <h2
@@ -888,32 +1037,74 @@ function PageLanes({
         <div className="divide-y divide-slate-200">
           {lanes.map((lane) => (
             <section key={lane.coach.coach_id} aria-label={lane.coach.name} className="grid items-stretch px-2 hover:bg-slate-50" style={style}>
-              <span className="flex items-center">
-                <JoinedCell iso={lane.coach.joined_at} />
-              </span>
               <span className="flex min-w-0 items-center gap-2 px-1 py-2">
                 <Face coach={lane.coach} />
-                <span className="truncate text-sm font-semibold text-slate-900" title={lane.coach.name}>
-                  {lane.coach.name}
-                </span>
+                {lane.coach.slug ? (
+                  <Link
+                    href={`/admin/coaches/${encodeURIComponent(lane.coach.slug)}`}
+                    className="truncate text-sm font-semibold text-slate-900 hover:underline"
+                    title={lane.coach.name}
+                  >
+                    {lane.coach.name}
+                  </Link>
+                ) : (
+                  <span className="truncate text-sm font-semibold text-slate-900" title={lane.coach.name}>
+                    {lane.coach.name}
+                  </span>
+                )}
+              </span>
+              <span className="flex items-center">
+                <JoinedCell iso={lane.coach.joined_at} />
               </span>
               <span className="flex items-center">
                 <ProgressCell coach={lane.coach} />
               </span>
+              {withCheck ? (
+                <span className="flex items-center px-1.5">
+                  {(() => {
+                    const waiting = checkByCoach?.get(lane.coach.coach_id);
+                    if (!waiting) return <span className="text-sm text-slate-300">·</span>;
+                    return (
+                      <Link
+                        href={cardHref(lane.coach, waiting.page)}
+                        className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200"
+                        title="Open their Blueprint on the first thing waiting"
+                      >
+                        {waiting.count} to check
+                      </Link>
+                    );
+                  })()}
+                </span>
+              ) : null}
               <span className="flex min-h-11 items-center justify-center bg-slate-100 px-2">
                 <ConnectedMark connected={lane.coach.linkedin_connected} />
+              </span>
+              <span className="flex min-h-11 items-center justify-center bg-slate-100 px-2">
+                {lane.coach.sales_navigator == null ? (
+                  <WaitingMark label="Can't tell until their LinkedIn is connected" />
+                ) : (
+                  <ConnectedMark connected={lane.coach.sales_navigator} what="Sales Navigator" />
+                )}
               </span>
               {pages.map((p) => {
                 const card = lane.cards.find((c) => c.page.slug === p.slug);
                 const cell = `flex min-h-11 items-center justify-center gap-1.5 px-2 ${band(p.slug)}`;
                 if (!card) return <span key={p.slug} className={cell} />;
+                const waitingHere = Boolean(checkPagesByCoach?.get(lane.coach.coach_id)?.has(p.slug));
                 const column = BOARD_COLUMNS.find((c) => c.id === card.column)!;
-                const label = `${p.title}: ${column.label}${card.tag ? `, ${BOARD_TAGS[card.tag].label}` : ""}`;
-                const href = cardHref(lane.coach, p.slug, card.column);
+                const label = forCheck(card) || waitingHere
+                  ? `${p.title}: ${card.tag ? BOARD_TAGS[card.tag].label : "To check"}. Click to check it`
+                  : `${p.title}: ${column.label}`;
+                const href = cardHref(lane.coach, p.slug);
+                // One mark a cell (21 Nov): an orange lightning when Ava's work is waiting for BCA's check, else the stage circle.
+                const needsCheck = forCheck(card) || waitingHere;
                 const body = (
                   <>
-                    <StageCircle look={STAGE_LOOK[card.column]} />
-                    {card.tag ? <TagIcon tag={card.tag} /> : null}
+                    {needsCheck ? (
+                      <AvaBolt />
+                    ) : (
+                      <StageCircle look={STAGE_LOOK[card.column]} />
+                    )}
                     {card.unread ? (
                       <span className="inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-rose-700">
                         <MessageSquare className="h-3 w-3" aria-hidden />

@@ -39,6 +39,7 @@ export type CoachTableColumnVisibility = {
   salesRobot: boolean;
   profitCoachEmail: boolean;
   accessTier: boolean;
+  level: boolean;
   recurringPayment: boolean;
   recurringActive: boolean;
   payments: boolean;
@@ -159,6 +160,7 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   "linkedinProfile",
   "blueprint",
   "accessTier",
+  "level",
   "recurringPayment",
   "recurringActive",
   "payments",
@@ -200,6 +202,7 @@ export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   salesRobot: false,
   profitCoachEmail: false,
   accessTier: true,
+  level: true,
   recurringPayment: true,
   recurringActive: true,
   payments: true,

@@ -39,7 +39,7 @@ export function BlueprintMiniBar({ counts }: { counts: GridCounts | undefined })
     counts.bca ? `, ${counts.bca} waiting on BCA` : ""
   }${counts.unread ? `, ${counts.unread} new comment${counts.unread === 1 ? "" : "s"}` : ""}`;
   return (
-    <Link href="/admin/client-success/blueprint" title={label} aria-label={label} className="flex items-center gap-1.5">
+    <Link href="/admin?view=launch" title={label} aria-label={label} className="flex items-center gap-1.5">
       <span className="flex h-2 w-16 overflow-hidden rounded-full bg-slate-100">
         <span className="h-full bg-emerald-400" style={{ width: pct(counts.done) }} />
         <span className="h-full bg-amber-300" style={{ width: pct(counts.review) }} />

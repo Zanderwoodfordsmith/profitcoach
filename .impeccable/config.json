@@ -298,6 +298,24 @@
         ],
         "createdAt": "2026-11-19T09:59:40.247Z",
         "reason": "Claude: the sky-50 background only shows on hover, together with hover:text-sky-700; resting state is grey icon on white"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/BlueprintsBoard.tsx"
+        ],
+        "createdAt": "2026-11-21T05:56:42.495Z",
+        "reason": "Claude, 21 Nov: CHAIN_LOOK pairs a coloured dot class with a separate label colour; the grey labels sit on white rows, not on the dot"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/CoachOverviewVersionSwitch.tsx"
+        ],
+        "createdAt": "2026-11-21T07:54:28.745Z",
+        "reason": "Claude, 21 Nov: one ternary holds both states; the grey text is the unselected option with no background, the selected one is white on sky-600"
       }
     ]
   }

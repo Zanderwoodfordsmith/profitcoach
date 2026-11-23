@@ -23,8 +23,9 @@ const COLUMN_TONE: Record<BoardColumnId, (typeof PAGE_STATUS_TONE)[keyof typeof 
   done: PAGE_STATUS_TONE.done,
 };
 
-const BCA_OPTIONS: { id: WorkflowStatus; label: string; column: BoardColumnId }[] = [
-  { id: "todo", label: "To do", column: "bca_todo" },
+const BCA_OPTIONS: { id: WorkflowStatus | "progress"; label: string; column: BoardColumnId }[] = [
+  { id: "todo", label: "BCA to do", column: "bca_todo" },
+  { id: "progress", label: "In progress", column: "in_progress" },
   { id: "review", label: "Coach review", column: "coach_review" },
   { id: "done", label: "Done", column: "done" },
 ];
@@ -92,7 +93,6 @@ export function PageStatusControl({ page }: { page: BlueprintLink }) {
         </button>
         {open ? (
           <div role="menu" className="absolute right-0 top-full z-20 mt-1.5 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
-            <p className="px-2.5 pb-1 pt-1.5 text-xs text-slate-500">Set the whole page</p>
             {BCA_OPTIONS.map((option) => (
               <button
                 key={option.id}

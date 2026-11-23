@@ -57,7 +57,7 @@ export async function GET(
 
   try {
     const profileSelect =
-      "profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024, access_removed_at)";
+      "profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, phone, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024, access_removed_at)";
     const coachSelect = `
       id, slug, directory_listed, directory_level, conference_status, lead_webhook_url,
       crm_profile_name, crm_location_id, calendar_embed_code, booking_calendar_provider, access_tier, access_tier_locked,
@@ -166,6 +166,7 @@ export async function GET(
       avatar_url: (prof?.avatar_url as string | null) ?? null,
       coach_business_name: (prof?.coach_business_name as string | null) ?? null,
       linkedin_url: (prof?.linkedin_url as string | null) ?? null,
+      phone: (prof?.phone as string | null)?.trim() || null,
       linkedin_profile: linkedinRes.error?.code === "42P01" || linkedinRes.error
         ? null
         : linkedinRes.data

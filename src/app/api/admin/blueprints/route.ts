@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { loadBoardCoaches } from "@/lib/practiceKnowledge/boardData";
+import { linkedInSetupState } from "@/lib/unipile/linkedinSetupState";
 import { requireAdmin } from "@/lib/requireAdmin";
 
 export const runtime = "nodejs";
@@ -18,7 +19,15 @@ export async function GET(request: Request) {
 
   try {
     const { coaches, pages } = await loadBoardCoaches();
-    return NextResponse.json({ coaches, pages: pages.map((p) => ({ slug: p.slug, title: p.title })) });
+    // Sales Navigator is only known by asking Unipile, so ask for the coaches we're launching who are connected (21 Nov).
+    const withSalesNav = await Promise.all(
+      coaches.map(async (coach) => {
+        if (!coach.launching || !coach.linkedin_connected) return { ...coach, sales_navigator: null };
+        const state = await linkedInSetupState(coach.coach_id).catch(() => null);
+        return { ...coach, sales_navigator: state === "ok" ? true : state === "sales_navigator" ? false : null };
+      })
+    );
+    return NextResponse.json({ coaches: withSalesNav, pages: pages.map((p) => ({ slug: p.slug, title: p.title })) });
   } catch (err) {
     console.error("admin blueprints:", err instanceof Error ? err.message : "failed");
     return NextResponse.json({ error: "Could not load the Blueprints." }, { status: 500 });

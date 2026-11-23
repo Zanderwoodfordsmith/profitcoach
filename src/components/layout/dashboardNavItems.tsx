@@ -534,7 +534,7 @@ export function coachClientsTabActive(
 }
 
 export const adminSectionNavItems: AdminSectionNavItem[] = [
-  { href: "/admin/client-success/blueprint", label: "Coaches", icon: IconUsers, coachesHub: true },
+  { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   {
     href: "/admin/payments",
     label: "Financials",

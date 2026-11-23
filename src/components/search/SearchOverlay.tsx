@@ -263,7 +263,7 @@ function SearchDialog({
 }: {
   prefix: SearchPrefix;
   greeting: string | null;
-  /** Help centre answers show for admins only until Zander releases them. */
+  /** Admins only see extras (e.g. Help answers still waiting on Zander or Pam are already left out by the search API). */
   isAdmin: boolean;
   /** Set when a missing page opened search. */
   lost: { title: string | null; guess: NotFoundDestination | null } | null;
@@ -438,8 +438,8 @@ function SearchDialog({
         })),
       });
     }
-    // Help centre answers (job 211): admin-only until Zander has read them.
-    if (isAdmin && preview.help && preview.help.length > 0) {
+    // Help centre answers (job 211), released to coaches 20 Nov. Only confirmed answers come back.
+    if (preview.help && preview.help.length > 0) {
       out.push({
         id: "help",
         label: "Help",
@@ -551,7 +551,7 @@ function SearchDialog({
             leading: <SearchIconTile icon={Search} />,
             title: `See all results for “${preview.q}”`,
             meta: joinMeta([
-              isAdmin && counts.help ? `${counts.help} in Help` : null,
+              counts.help ? `${counts.help} in Help` : null,
               `${counts.classroom} in Classroom`,
               `${counts.community} in Community`,
               `${counts.members} in Members`,

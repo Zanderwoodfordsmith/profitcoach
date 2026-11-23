@@ -13,12 +13,12 @@ import {
   resolveDirectoryBio,
   resolveDirectorySummary,
 } from "@/lib/profileBioFields";
-import { coachHasActiveRecurringBilling } from "@/lib/coachRecurringBilling";
 import {
   isCoachRecurringPaymentStatus,
   type CoachRecurringPaymentStatus,
 } from "@/lib/coachBilling";
 import { buildCoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
+import { plannedCoachLevel, summariseCoachBilling } from "@/lib/admin/coachBillingSummary";
 import { assessProgrammeShortfall } from "@/lib/admin/programmeShortfall";
 import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
 import { normalizeCoachAccessTier } from "@/lib/coachAccess/tiers";
@@ -332,6 +332,9 @@ export async function GET(request: Request) {
       const id = row.id as string;
       const ach = achievementsByUser.get(id) ?? [];
       const currentLevel = deriveCurrentLevelId(ach);
+      const rawStatus = (row.recurring_payment_status as string | null) ?? "";
+      const storedStatus: CoachRecurringPaymentStatus | null =
+        isCoachRecurringPaymentStatus(rawStatus) ? rawStatus : null;
       const bioFields = {
         bio: (prof?.bio as string | null) ?? null,
         community_bio: (prof?.community_bio as string | null) ?? null,
@@ -444,16 +447,29 @@ export async function GET(request: Request) {
         recurring_payment_status: accountBillingMissing
           ? null
           : (row.recurring_payment_status as string | null) ?? null,
-        recurring_billing_active: accountBillingMissing
-          ? false
-          : coachHasActiveRecurringBilling({
-              recurringPaymentStatus: isCoachRecurringPaymentStatus(
-                (row.recurring_payment_status as string | null) ?? ""
-              )
-                ? ((row.recurring_payment_status as string) as CoachRecurringPaymentStatus)
-                : null,
-              payments: paymentsByCoachId.get(id) ?? [],
+        // Billing from real payments: monthly only under £1,000 (21 Nov).
+        ...(() => {
+          const billing = summariseCoachBilling({
+            status: accountBillingMissing ? null : storedStatus,
+            payments: paymentsByCoachId.get(id) ?? [],
+          });
+          return {
+            billing,
+            planned_level: plannedCoachLevel({
+              billing,
+              accessTier: accessTierMissing
+                ? null
+                : normalizeCoachAccessTier(row.access_tier),
+              joinedAt: resolveCoachJoinedAt(row.slug as string, {
+                discoCommunityJoinedOn:
+                  (prof?.disco_community_joined_on as string | null) ?? null,
+                profileCreatedAt: (prof?.created_at as string | null) ?? null,
+              }),
             }),
+            recurring_billing_active:
+              billing.kind === "monthly" || billing.kind === "annual",
+          };
+        })(),
         payment_summary: accountBillingMissing
           ? {
               succeeded_count: 0,

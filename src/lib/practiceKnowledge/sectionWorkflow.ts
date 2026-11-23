@@ -24,6 +24,8 @@ export type SectionWorkflow = {
   changed: boolean;
   /** Fields inside the section that moved after the sign-off. */
   changedFields: string[];
+  /** BCA set it to In progress by hand: still To do, but BCA is on it. */
+  started?: boolean;
 };
 
 /** Written sections a coach can sign off, which then wait for BCA before they can be sent. */
@@ -104,15 +106,20 @@ function changedFields(ref: SectionRef, row: PracticeKnowledgeRow, coachAt: stri
     .map((field) => field.path);
 }
 
-function chosenStatus(payload: PracticeKnowledgePayload, key: string): { status: WorkflowStatus; at: string } | null {
+function chosenStatus(
+  payload: PracticeKnowledgePayload,
+  key: string
+): { status: WorkflowStatus; at: string; started: boolean } | null {
   const raw = payload.review.section_status?.value?.[key];
   if (!raw) return null;
   const split = raw.indexOf("|");
   if (split < 1) return null;
-  const status = raw.slice(0, split);
+  const stored = raw.slice(0, split);
   const at = raw.slice(split + 1);
+  // "progress" is BCA's In progress: To do, with BCA on it.
+  const status = stored === "progress" ? "todo" : stored;
   if ((status !== "todo" && status !== "review" && status !== "done") || !at) return null;
-  return { status, at };
+  return { status, at, started: stored === "progress" };
 }
 
 export function sectionWorkflow(ref: SectionRef, row: PracticeKnowledgeRow): SectionWorkflow {
@@ -136,7 +143,7 @@ export function sectionWorkflow(ref: SectionRef, row: PracticeKnowledgeRow): Sec
 
   if (choice && (!revision || choice.at >= revision)) {
     const owner: WorkflowOwner | null =
-      choice.status === "done" ? null : choice.status === "todo" ? todoOwner(ref) : "coach";
+      choice.status === "done" ? null : choice.started ? "bca" : choice.status === "todo" ? todoOwner(ref) : "coach";
     return {
       status: choice.status,
       owner: choice.status === "done" ? null : owner,
@@ -144,6 +151,7 @@ export function sectionWorkflow(ref: SectionRef, row: PracticeKnowledgeRow): Sec
       revision,
       changed: false,
       changedFields: [],
+      ...(choice.started ? { started: true } : {}),
     };
   }
 

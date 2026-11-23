@@ -2073,7 +2073,10 @@ export function AdminSupportPage() {
           ? // Inbox shell is overflow-hidden; settings must scroll inside it.
             "!mx-0 mr-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-[60px]"
           : topTab === "help"
-            ? "min-h-0 flex-1 overflow-y-auto px-4 pt-6 md:px-10 lg:px-14"
+            ? // Topic and answer pages bring their own topic sidebar, flush against the app sidebar.
+              searchParams.get("topic") || searchParams.get("a")
+              ? "min-h-0 flex-1 overflow-hidden"
+              : "min-h-0 flex-1 overflow-y-auto px-4 pt-6 md:px-10 lg:px-14"
             : topTab === "dashboard"
               ? "min-h-0 flex-1 overflow-y-auto overscroll-contain"
               : "min-h-0 flex-1 overflow-hidden"
@@ -2105,17 +2108,17 @@ export function AdminSupportPage() {
                 },
                 {
                   kind: "button",
-                  id: "dashboard",
-                  label: "Dashboard",
-                  active: topTab === "dashboard",
-                  onClick: () => selectTopTab("dashboard"),
-                },
-                {
-                  kind: "button",
                   id: "help",
                   label: "Help",
                   active: topTab === "help",
                   onClick: () => selectTopTab("help"),
+                },
+                {
+                  kind: "button",
+                  id: "dashboard",
+                  label: "Dashboard",
+                  active: topTab === "dashboard",
+                  onClick: () => selectTopTab("dashboard"),
                 },
                 {
                   kind: "button",

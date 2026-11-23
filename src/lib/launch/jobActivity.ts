@@ -53,6 +53,8 @@ export type ProspectSearchDraft = {
   size: number | null;
   /** Picked to import. */
   on: boolean;
+  /** Counted on BCA's LinkedIn, not the coach's, so 2nd and 3rd connections are BCA's: a rough number. */
+  roughSize?: boolean;
 };
 
 export type ActivityItem = {

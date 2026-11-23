@@ -9,6 +9,7 @@ import {
 } from "@/lib/linkedinProfileOptimizer/rewritePart";
 import { PROFILE_SECTIONS, type ProfileSectionId } from "@/lib/linkedinProfileOptimizer/types";
 import { blocksToMarkdown, editedByHand, sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
+import { PART_TITLES } from "@/lib/linkedinProfileOptimizer/partTitles";
 import { buildOrder, sectionByKey } from "@/lib/practiceKnowledge/blueprint";
 import { draftSection, isBuildableSection } from "@/lib/practiceKnowledge/buildSection";
 import { linkedInNote } from "@/lib/practiceKnowledge/coachLinkedIn";
@@ -46,13 +47,7 @@ async function countForBca(ctx: AgentToolContext, input: AgentToolInput, key: st
 }
 /** The LinkedIn profile: written part by part by the same writer as "Write every part from my Blueprint". */
 const LINKEDIN_KEY = "linkedin:rewrite";
-export const PART_TITLES: Record<ProfileSectionId, string> = {
-  headline: "Headline",
-  about: "About",
-  featured: "Featured",
-  experience: "Current role",
-  banner: "Banner",
-};
+export { PART_TITLES };
 
 function sectionTitle(key: string): string {
   const ref = sectionByKey(key);

@@ -50,7 +50,7 @@ import { SectionCommentsProvider } from "./comments/SectionCommentsContext";
 import { playSpeech, primeCallAudio } from "./ava/callAudio";
 import { randomUuid } from "@/lib/randomUuid";
 
-type PracticeContextValue = {
+export type PracticeContextValue = {
   loading: boolean;
   busy: boolean;
   error: string | null;
@@ -78,7 +78,8 @@ type PracticeContextValue = {
   /** Set the section's To do / Review / Done switch. */
   setSectionStatus: (key: string, status: WorkflowStatus) => void;
   /** BCA sets a whole page to To do, Review or Done (4 Nov: one status per page). */
-  setPageStatus: (slug: string, status: WorkflowStatus) => void;
+  /** "progress" is BCA's In progress: To do, with BCA on it. */
+  setPageStatus: (slug: string, status: WorkflowStatus | "progress") => void;
   /** The coach signs off every part of the page waiting on their review. */
   signOffPage: (slug: string) => void;
   /** BCA's check before a signed-off LinkedIn profile or campaign is sent. */
@@ -171,7 +172,8 @@ function buildStateFromJob(job: BuildJob): BuildState {
 
 export const PRACTICE_BASE = "/coach/blueprint";
 
-const PracticeContext = createContext<PracticeContextValue | null>(null);
+/** Exported so the admin draft layer (job 248) can hand pages a copy with Ava's drafts laid over. */
+export const PracticeContext = createContext<PracticeContextValue | null>(null);
 
 function bufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -627,15 +629,17 @@ export function PracticeProvider({
       const current = { ...(base.review.section_status?.value ?? {}) };
       const log = [...(base.review.status_log?.value ?? [])];
       const stamps = { ...(base.review.approved_sections?.value ?? {}) };
+      const target: WorkflowStatus = status === "progress" ? "todo" : status;
       for (const ref of pageSections(slug)) {
         const work = sectionWorkflow(ref, row);
-        if (!work.tracked || work.status === status) continue;
+        if (!work.tracked || (work.status === target && Boolean(work.started) === (status === "progress"))) continue;
         current[ref.key] = `${status}|${at}`;
-        log.push({
+        // The log keeps To do / Review / Done; In progress logs as To do.
+        if (work.status !== target) log.push({
           id: randomUuid(),
           section: ref.key,
           from: work.status,
-          to: status,
+          to: target,
           at,
           actor_id: viewerId,
           actor_name: viewerName || (coachId ? "BCA" : coachName || "Coach"),

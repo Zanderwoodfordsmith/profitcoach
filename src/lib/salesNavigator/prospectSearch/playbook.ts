@@ -18,11 +18,11 @@ Take the ~600k+ "base search" business owners in a geography and narrow to a hig
 Keep these on every Sales Nav strategy (unless expanding after exhaustion):
 - Connections: 2nd + 3rd (for connector campaigns). Optionally check 1st later for warm outreach — 1st-degree searches have no geography (whole network).
 - Geography: usually country (UK) or US state / nearby states.
-- Company headcount: start with 11–50. Add 51–200 when the ideal client is a bigger firm. 1–10 is the last resort, added only when the list is too small (many real 20–30 person firms are mislisted there, but it also pulls in one-person firms). Skip "Self-employed". 201–500 only if targeting larger.
+- Company headcount: use 1–50 (1–10 and 11–50 together) about 95% of the time (Zander, 21 Nov). 11–50 is the ideal client, but many industries have few firms there on LinkedIn, and many real 20–30 person firms are listed as 1–10 because owners never link their staff. We find the real size when the list comes in, and the coach can filter to 11–50 afterwards. Never split by size just because a search is big: the import gets past LinkedIn's 2,500 a search itself, so lists of 5,000+ are fine. Add 51–200 when the ideal client is a bigger firm. Skip "Self-employed". 201–500 only if targeting larger.
 - Current titles (include): Owner, co-owner, Founder, co-founder, CEO, Managing director, co-managing director, Managing partner, co-managing partner (+ industry-specific titles e.g. Head Architect).
 - Exclude on BOTH Current Company AND Current Title (unless that IS the niche): coach, coaching, consultant, consulting, consultants, psychologist, recruiter, recruiting, recruitment, recruit.
 - Also exclude Current Company: consultancy.
-- Zander rarely uses the LinkedIn Industry filter — prefer Current Company name / Keywords.
+- Zander rarely uses the LinkedIn Industry filter — prefer Current Company name / Keywords. Never put Industry and Current Company includes on the same search (Zander, 21 Nov): together they shrink the list far too much, and LinkedIn's industry labels are often wrong. An industry-only list is fine when the industry holds only the market (Distilleries, Wineries). Rarely, an industry list may take a few company words; a company-name list almost never gets an industry.
 
 Save reusable searches: "Base Search – [Location]", then "[Industry] prospects – [count]".
 
@@ -94,6 +94,13 @@ Only if LinkedIn can't yield enough, or after months of exhausting SN lists:
 - Associations, directories, events, niche sites (e.g. TripAdvisor for hospitality).
 - JV / association intros.
 Most coaches should NOT start here.
+
+## Size check once LinkedIn has counted (Zander, 21 Nov)
+Plan, count, then look again. Size decides the order and what stays:
+- Under 300 people is too small for an automated campaign on its own and must never be the first list. Widen it (take the industry off a company-name list; add the words firms really use in their names) or combine it with a similar list that takes the same message. If neither works, keep it low in the order: a small, specific list is still fine for a one-off campaign. Drop only lists off the market.
+- Big is fine: never split a list for size (the import handles 2,500+).
+- Aim for 500+ a list where the market allows; biggest, cleanest lists first, because the first list is the one the coach starts with.
+- After import, quality (how many of 10 people checked are a real fit) moves good lists up and weak ones down.
 
 ## Naming-pattern classifier (use this before inventing filters)
 - **name_rich**: industry word commonly in company names → lead with company_name variations (engineering, plumbing, dentistry, electricians, architects, many trades).

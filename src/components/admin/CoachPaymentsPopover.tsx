@@ -16,7 +16,7 @@ import {
   formatPaymentMoney,
 } from "@/lib/adminPaymentDisplay";
 import type { CoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
-import { formatCoachPaymentsCellLine } from "@/lib/admin/coachPaymentSummary";
+import { formatCoachPaymentsCellLine, formatCoachPaymentsCellShort } from "@/lib/admin/coachPaymentSummary";
 import {
   paymentBillingKindBadgeClass,
   paymentBillingKindLabel,
@@ -223,9 +223,21 @@ export function CoachPaymentsPopover({
 
 export function CoachPaymentsCellContent({
   summary,
+  short: owes = false,
 }: {
   summary: CoachPaymentSummary;
+  /** Short on the programme fee: the amount shows red. */
+  short?: boolean;
 }) {
-  const line = formatCoachPaymentsCellLine(summary);
-  return line ? <span className="truncate">{line}</span> : null;
+  const short = formatCoachPaymentsCellShort(summary);
+  if (!short) return null;
+  return (
+    <span
+      className={`whitespace-nowrap tabular-nums ${owes ? "font-medium text-rose-700" : ""}`}
+      title={formatCoachPaymentsCellLine(summary) ?? undefined}
+    >
+      {short.amount}
+      {short.date ? <span className="ml-1.5 text-slate-400">{short.date}</span> : null}
+    </span>
+  );
 }

@@ -40,6 +40,7 @@ import {
 } from "@/lib/linkedinBanner/designs";
 import { BannerStage, BannerStrip } from "@/components/linkedinBanner/BannerPicker";
 
+import { useDraftLayer } from "../DraftLayer";
 import { usePractice } from "../PracticeProvider";
 import { AvaHalo } from "@/components/ava/AvaHalo";
 import { useShowAdminPreviewTabs } from "@/components/layout/CoachToolsHubTabs";
@@ -77,6 +78,19 @@ function hasDraft(section: ProfileSectionId, draft: ProfileOptimizerDraft): bool
   return Boolean(row?.title?.trim() || row?.description?.trim());
 }
 
+/** Ava's unreleased parts laid over the coach's draft, so her version reads in the profile itself. */
+function withAvaParts(draft: ProfileOptimizerDraft, parts: Record<string, string>): ProfileOptimizerDraft {
+  let next = draft;
+  for (const [part, text] of Object.entries(parts)) {
+    if (part === "headline") next = { ...next, headline: text };
+    else if (part === "about") next = { ...next, about: text };
+    else if (part === "featured") next = { ...next, featuredNotes: text };
+    else if (part === "banner") next = { ...next, bannerCopy: text };
+    else if (part === "experience") next = upsertExperienceDraft(next, { index: 0, ...parseExperienceVariant(text) });
+  }
+  return next;
+}
+
 /** The first message under a heading in the old written profile, e.g. "Headline option 1". */
 function messageUnder(blocks: BlueprintBlock[], heading: string): string {
   const at = blocks.findIndex((b) => b.type === "heading" && b.text.trim().toLowerCase() === heading);
@@ -100,7 +114,12 @@ export function LinkedInProfileSection() {
   const [urlInput, setUrlInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
-  const [mode, setMode] = useState<"new" | "today">("new");
+  const [mode, setMode] = useState<"new" | "today" | "ava">("new");
+  // BCA only: Ava's profile draft, not yet released. It shows as its own tab here; Release puts it into New.
+  const layer = useDraftLayer();
+  const avaItem = layer?.items.find((item) => item.kind === "draft" && item.payload.linkedinParts) ?? null;
+  const [avaParts, setAvaParts] = useState<Record<string, string>>({});
+  const avaTimers = useRef<Record<string, number>>({});
   const [active, setActive] = useState<ProfileSectionId | null>(null);
   const [activeRole, setActiveRole] = useState(0);
   /** The part (and role) being written on its own, outside "Write every part". */
@@ -179,6 +198,29 @@ export function LinkedInProfileSection() {
     // oldWritten is read once, when the profile first loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coachId, sample]);
+
+  // A new draft of Ava's opens on her tab; once it's released (or gone) the page goes back to New.
+  const avaId = avaItem?.id ?? null;
+  useEffect(() => {
+    if (avaId && avaItem) {
+      setAvaParts({ ...(avaItem.payload.linkedinParts as Record<string, string>) });
+      setMode("ava");
+    } else {
+      setMode((m) => (m === "ava" ? "new" : m));
+    }
+    // Only when the draft itself changes, not on every refresh of the same one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avaId]);
+
+  /** Typing on Ava's tab changes her draft, never the coach's New. */
+  function editAva(part: string, text: string) {
+    setAvaParts((prev) => ({ ...prev, [part]: text }));
+    if (!layer || !avaId) return;
+    window.clearTimeout(avaTimers.current[part]);
+    avaTimers.current[part] = window.setTimeout(() => {
+      void layer.post({ action: "edit", id: avaId, part, text }).then((err) => err && setError(err));
+    }, SAVE_DEBOUNCE_MS);
+  }
 
   // Ava can save a new profile from her chat. When the Blueprint reloads after that, show it,
   // unless an edit here is still waiting to save.
@@ -386,13 +428,16 @@ export function LinkedInProfileSection() {
   }
 
   const today = mode === "today";
+  const ava = mode === "ava" && Boolean(avaItem);
+  const shown = today ? {} : ava ? withAvaParts(draft, avaParts) : draft;
+  const modes = avaItem ? (["today", "new", "ava"] as const) : (["today", "new"] as const);
 
   return (
     <div className="space-y-3">
       <link rel="stylesheet" href={GOOGLE_FONTS_HREF} precedence="default" />
       <div className="bp-no-print flex flex-wrap items-center justify-between gap-3">
         <div role="group" aria-label="Which version" className="inline-flex rounded-full bg-[#eef2f6] p-0.5">
-          {(["today", "new"] as const).map((m) => (
+          {modes.map((m) => (
             <button
               key={m}
               type="button"
@@ -404,11 +449,20 @@ export function LinkedInProfileSection() {
                   : "font-medium text-[var(--bp-muted)] hover:text-[var(--bp-ink)]"
               }`}
             >
-              {m === "today" ? "Today" : "New"}
+              {m === "ava" ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-amber-400" aria-hidden />
+                  Ava&apos;s draft
+                </span>
+              ) : m === "today" ? (
+                "Today"
+              ) : (
+                "New"
+              )}
             </button>
           ))}
         </div>
-        {canWrite ? (
+        {canWrite && !ava ? (
           <button
             type="button"
             disabled={Boolean(writingAll)}
@@ -428,18 +482,24 @@ export function LinkedInProfileSection() {
       <div className="-mx-5 overflow-hidden bg-[#f4f2ee] px-2 py-2 @xl:py-3 @2xl:-mx-6">
         <ProfileOptimizerCanvas
           snapshot={profile.snapshot}
-          draft={today ? {} : draft}
+          draft={shown}
           activeSection={today ? null : active}
           onSelect={today ? () => {} : setActive}
-          onHeadline={(headline) => updateDraft({ ...draftRef.current, headline })}
-          onAbout={(about) => updateDraft({ ...draftRef.current, about })}
-          onBannerCopy={(bannerCopy) => updateDraft({ ...draftRef.current, bannerCopy })}
-          onFeaturedNotes={(featuredNotes) => updateDraft({ ...draftRef.current, featuredNotes })}
-          onExperience={(patch, index) => updateDraft(upsertExperienceDraft(draftRef.current, { index, ...patch }))}
+          onHeadline={(headline) => (ava ? editAva("headline", headline) : updateDraft({ ...draftRef.current, headline }))}
+          onAbout={(about) => (ava ? editAva("about", about) : updateDraft({ ...draftRef.current, about }))}
+          onBannerCopy={(bannerCopy) => (ava ? editAva("banner", bannerCopy) : updateDraft({ ...draftRef.current, bannerCopy }))}
+          onFeaturedNotes={(featuredNotes) => (ava ? editAva("featured", featuredNotes) : updateDraft({ ...draftRef.current, featuredNotes }))}
+          onExperience={(patch, index) => {
+            if (!ava) return updateDraft(upsertExperienceDraft(draftRef.current, { index, ...patch }));
+            // Ava writes the current role only; it's kept as "title, blank line, description".
+            if (index !== 0) return;
+            const row = { ...experienceDraftAt(shown, 0), ...patch };
+            editAva("experience", [row.title?.trim(), row.description?.trim()].filter(Boolean).join("\n\n"));
+          }}
           activeExperience={activeRole}
           onSelectExperience={today ? undefined : setActiveRole}
           roleTools={
-            canWrite
+            canWrite && !ava
               ? (index) => (
                   <WriteButton
                     busy={writingOne === `experience:${index}`}
@@ -450,23 +510,23 @@ export function LinkedInProfileSection() {
                 )
               : undefined
           }
-          statusFor={today ? () => null : partControls}
+          statusFor={today || ava ? () => null : partControls}
           bannerNode={
             today ? null : (
               <BannerStage
                 key={bannerAt}
                 option={bannerOptions[bannerAt]}
                 discreet={discreet}
-                active={active === "banner"}
-                count={bannerOptions.length}
-                onStep={stepBanner}
-                onWords={setBannerWords}
+                active={!ava && active === "banner"}
+                count={ava ? 1 : bannerOptions.length}
+                onStep={ava ? () => {} : stepBanner}
+                onWords={ava ? () => {} : setBannerWords}
               />
             )
           }
           bannerCopyEditable={false}
           afterTop={
-            !today && active === "banner" ? (
+            today || ava ? null : active === "banner" ? (
               <BannerStrip
                 options={bannerOptions}
                 chosen={bannerAt}
@@ -475,7 +535,7 @@ export function LinkedInProfileSection() {
                 onAdd={addBanner}
                 onRemove={removeBanner}
               />
-            ) : !today && active === "headline" && (canWrite || draft.headlineOptions?.length) ? (
+            ) : active === "headline" && (canWrite || draft.headlineOptions?.length) ? (
               <HeadlineChooser
                 options={draft.headlineOptions ?? []}
                 chosen={draft.headline ?? ""}
@@ -487,14 +547,16 @@ export function LinkedInProfileSection() {
             ) : null
           }
           featuredPlan={today ? undefined : draft.featuredPlan}
-          onFeaturedPlan={today ? undefined : (featuredPlan) => updateDraft({ ...draftRef.current, featuredPlan })}
+          onFeaturedPlan={today || ava ? undefined : (featuredPlan) => updateDraft({ ...draftRef.current, featuredPlan })}
         />
       </div>
 
       <p className="bp-no-print px-0.5 text-xs text-[var(--bp-muted)]">
         {today
           ? "This is your LinkedIn as owners see it today."
-          : "Click any part to edit it. Copy each part into LinkedIn yourself: we never post to your profile."}
+          : ava
+            ? "Ava's draft, not released. Click any part to change it. Release (above) puts it into New for the coach."
+            : "Click any part to edit it. Copy each part into LinkedIn yourself: we never post to your profile."}
         {profile.linkedinUrl ? (
           <>
             {" "}

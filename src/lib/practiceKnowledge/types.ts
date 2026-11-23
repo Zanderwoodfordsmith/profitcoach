@@ -300,7 +300,7 @@ export type PracticeKnowledgePayload = {
     approved_sections: Sourced<Record<string, string>> | null;
     /** BCA sign-off time for sections that go out to prospects. Coaches cannot change this. */
     bca_approved_sections: Sourced<Record<string, string>> | null;
-    /** Manual To do / Review / Done choice per section, stored as "status|time". */
+    /** Manual To do / In progress ("progress") / Review / Done choice per section, stored as "status|time". */
     section_status: Sourced<Record<string, string>> | null;
     /** Manual status moves, oldest first. Wording edits are not logged. */
     status_log: Sourced<SectionStatusEvent[]> | null;

@@ -21,6 +21,8 @@ export type BoardCoach = {
   joined_at: string | null;
   /** Their LinkedIn is connected (an outreach account that's OK), as on Getting live. */
   linkedin_connected: boolean;
+  /** Has Sales Navigator on their LinkedIn: asked live for launching, connected coaches; null when not asked (21 Nov). */
+  sales_navigator?: boolean | null;
   /** On the Getting live list: launching now. */
   launching: boolean;
   /** The launch steps that aren't Blueprint pages, from Getting live; null when not launching. */

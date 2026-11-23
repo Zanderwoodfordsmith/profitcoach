@@ -4,49 +4,43 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
  * Latest app usage timestamp per user from `app_usage_sessions`
  * (page views + heartbeats while the tab is visible).
  * Distinct from auth `last_sign_in_at`, which only updates on sign-in.
+ *
+ * One small indexed lookup per user, run in parallel. Scanning the table
+ * newest-first instead had to read every row whenever a user had never
+ * used the app (most coaches), which took ~7s on Admin → Coaches.
  */
 export async function loadLastActiveAtByUserId(
   userIds: string[]
 ): Promise<Map<string, string>> {
   const map = new Map<string, string>();
-  if (userIds.length === 0) return map;
+  const ids = [...new Set(userIds)];
+  if (ids.length === 0) return map;
 
-  const idChunkSize = 100;
-  const pageSize = 1000;
+  const concurrency = 50;
+  let next = 0;
 
-  for (let i = 0; i < userIds.length; i += idChunkSize) {
-    const chunk = userIds.slice(i, i + idChunkSize);
-    const pending = new Set(chunk);
-    let from = 0;
-
-    while (pending.size > 0) {
+  const worker = async () => {
+    while (next < ids.length) {
+      const uid = ids[next++];
       const { data, error } = await supabaseAdmin
         .from("app_usage_sessions")
-        .select("user_id, last_activity_at")
-        .in("user_id", chunk)
+        .select("last_activity_at")
+        .eq("user_id", uid)
         .order("last_activity_at", { ascending: false })
-        .range(from, from + pageSize - 1);
-
+        .limit(1)
+        .maybeSingle();
       if (error) {
         console.error("loadLastActiveAtByUserId error:", error);
-        break;
+        continue;
       }
-      if (!data?.length) break;
-
-      for (const row of data) {
-        const uid = row.user_id as string;
-        const at = row.last_activity_at as string | null;
-        if (!uid || !at || !pending.has(uid)) continue;
-        // Rows are newest-first, so first hit is the max for that user.
-        map.set(uid, at);
-        pending.delete(uid);
-      }
-
-      if (data.length < pageSize) break;
-      from += pageSize;
-      if (from > 50_000) break;
+      const at = (data?.last_activity_at as string | null) ?? null;
+      if (at) map.set(uid, at);
     }
-  }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, ids.length) }, worker)
+  );
 
   return map;
 }

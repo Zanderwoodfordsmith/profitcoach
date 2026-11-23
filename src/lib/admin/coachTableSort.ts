@@ -225,6 +225,14 @@ function migrateCoachTableColumns(
   }
 
   const orderSeen = new Set(columnOrder);
+  // Level (planned access, job 257) sits right after Access tier in saved views.
+  if (!orderSeen.has("level")) {
+    const tierIdx = columnOrder.indexOf("accessTier");
+    if (tierIdx >= 0) {
+      columnOrder.splice(tierIdx + 1, 0, "level");
+      orderSeen.add("level");
+    }
+  }
   // Prefer Last active immediately after Last login for existing saved views.
   if (!orderSeen.has("lastActive")) {
     const lastLoginIdx = columnOrder.indexOf("lastLogin");
