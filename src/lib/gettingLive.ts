@@ -3,6 +3,7 @@ import { GETTING_LIVE_STEPS, LAUNCH_STEPS, type GettingLiveStepKey } from "@/lib
 import { gridCells, gridPages } from "@/lib/practiceKnowledge/blueprintGrid";
 import { isBuildableSection } from "@/lib/practiceKnowledge/buildSection";
 import { mapKnowledgeRow } from "@/lib/practiceKnowledge/store";
+import type { PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
@@ -166,6 +167,36 @@ function blueprintCallStep(bookedAt: string | null | undefined, intakeDoneAt: st
   return { done: false, detail: bookedAt ? `Booked for ${day(bookedAt)}` : null };
 }
 
+/** The prospect list is done at LEADS_TARGET unique people. */
+function leadsStep(count: number): { done: boolean; detail: string | null } {
+  return { done: count >= LEADS_TARGET, detail: `${count.toLocaleString("en-GB")} of ${LEADS_TARGET.toLocaleString("en-GB")}` };
+}
+
+/** Live once any campaign is running. */
+function campaignLiveStep(running: string[]): { done: boolean; detail: string | null } {
+  return { done: running.length > 0, detail: running.length ? running.join(", ") : null };
+}
+
+/**
+ * Unique people across each coach's lead lists: the same person on two lists
+ * counts once. Counted in the database (lead_list_unique_people, 23 Nov)
+ * rather than downloading every list item.
+ */
+async function uniquePeopleFor(ids: string[]): Promise<Map<string, number>> {
+  const { data, error } = await supabaseAdmin.rpc("lead_list_unique_people", { p_coach_ids: ids });
+  if (error) throw new Error(error.message);
+  return new Map(((data ?? []) as { coach_id: string; people: number }[]).map((r) => [r.coach_id, r.people]));
+}
+
+/** A step as shown: done when the app can see it or BCA ticked it by hand. */
+function withHandTick(auto: { done: boolean; detail: string | null }, tick: { at: string } | undefined): Pick<GettingLiveStep, "done" | "source" | "detail"> {
+  return {
+    done: auto.done || Boolean(tick),
+    source: auto.done ? "app" : tick ? "hand" : null,
+    detail: tick && !auto.done ? `Ticked ${day(tick.at)}` : auto.detail,
+  };
+}
+
 /** The written sections BCA produces, on pages coaches see. */
 function writtenSectionKeys(): string[] {
   const keys: string[] = [];
@@ -301,16 +332,7 @@ function loadDetails(ids: string[]) {
           })
       )
     ).then((r) => r.flat()),
-    // Unique people across a coach's lead lists: the same person on two lists counts once.
-    allPages<{ coach_id: string; linkedin_url: string | null; full_name: string | null; first_name: string | null; last_name: string | null; company: string | null }>((f, t) =>
-      supabaseAdmin
-        .from("coach_lead_list_items")
-        .select("coach_id, linkedin_url, full_name, first_name, last_name, company")
-        .in("coach_id", ids)
-        .order("id")
-        .range(f, t),
-      8
-    ),
+    uniquePeopleFor(ids),
   ]);
 }
 
@@ -370,7 +392,7 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
         .sort((a, b) => a.name.localeCompare(b.name));
   if (!ids.length) return { rows: [], others, storage, comments_storage: commentsStorage };
 
-  const [payments, coaches, knowledge, linkedinProfiles, accounts, campaigns, leads, bookings, ghl, clients, tickets, sessions, listItems] = await (early ?? loadDetails(ids));
+  const [payments, coaches, knowledge, linkedinProfiles, accounts, campaigns, leads, bookings, ghl, clients, tickets, sessions, leadCounts] = await (early ?? loadDetails(ids));
 
   const firstPaid = new Map<string, string>();
   for (const p of payments) if (!firstPaid.has(p.coach_id) || p.paid_at < firstPaid.get(p.coach_id)!) firstPaid.set(p.coach_id, p.paid_at);
@@ -399,16 +421,6 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
     if (s.last_activity_at && s.last_activity_at > (lastActive.get(s.user_id) ?? "")) lastActive.set(s.user_id, s.last_activity_at);
   }
   const writtenKeys = writtenSectionKeys();
-  const uniquePeople = new Map<string, Set<string>>();
-  for (const item of listItems) {
-    const url = item.linkedin_url?.trim().toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/\/+$/, "");
-    const name = (item.full_name || [item.first_name, item.last_name].filter(Boolean).join(" ")).trim().toLowerCase();
-    const key = url || (name ? `${name}|${(item.company ?? "").trim().toLowerCase()}` : "");
-    if (!key) continue;
-    const set = uniquePeople.get(item.coach_id) ?? new Set<string>();
-    set.add(key);
-    uniquePeople.set(item.coach_id, set);
-  }
 
   const out: GettingLiveRow[] = onList.map((person) => {
     const coach = coachById.get(person.id);
@@ -431,7 +443,7 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
       .filter((c) => c.status !== "running")
       .map((c) => ({ name: c.name, queued: leadsByCampaign.get(c.id)?.queued ?? 0 }))
       .sort((a, b) => b.queued - a.queued)[0] ?? null;
-    const leadCount = uniquePeople.get(person.id)?.size ?? 0;
+    const leadCount = leadCounts.get(person.id) ?? 0;
 
     const auto: Record<GettingLiveStepKey, { done: boolean; detail: string | null }> = {
       about_you: { done: aboutYou >= 100, detail: knowledgeRow ? `${aboutYou}% done` : "Not started" },
@@ -449,31 +461,18 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
         done: false,
         detail: draftAt.get(person.id) ? `Draft written ${day(draftAt.get(person.id))}` : "No draft yet",
       },
-      leads_found: {
-        done: leadCount >= LEADS_TARGET,
-        detail: `${leadCount.toLocaleString("en-GB")} of ${LEADS_TARGET.toLocaleString("en-GB")}`,
-      },
+      leads_found: leadsStep(leadCount),
       campaign_set_up: {
         done: setUp.length > 0,
         detail: setUp.length ? setUp.map((c) => `${c.name} (${leadsByCampaign.get(c.id)?.total ?? 0} people)`).join(", ") : null,
       },
-      campaign_live: { done: running.length > 0, detail: running.length ? running.map((c) => c.name).join(", ") : null },
+      campaign_live: campaignLiveStep(running.map((c) => c.name)),
       first_reply: { done: replied.has(person.id), detail: null },
       first_call: { done: called.has(person.id), detail: null },
       first_client: { done: withClient.has(person.id), detail: null },
     };
 
-    const steps: GettingLiveStep[] = GETTING_LIVE_STEPS.map(({ key, label }) => {
-      const hand = Boolean(ticks[key]);
-      const app = auto[key].done;
-      return {
-        key,
-        label,
-        done: app || hand,
-        source: app ? "app" : hand ? "hand" : null,
-        detail: hand && !app ? `Ticked ${day(ticks[key]?.at)}` : auto[key].detail,
-      };
-    });
+    const steps: GettingLiveStep[] = GETTING_LIVE_STEPS.map(({ key, label }) => ({ key, label, ...withHandTick(auto[key], ticks[key]) }));
     // Live once the launch list is done; after that the next result drives what to do.
     const current = steps.find((s) => !s.done && LAUNCH_STEPS.some((l) => l.key === s.key))?.key ?? null;
     const nextStep = current ?? steps.find((s) => !s.done)?.key ?? null;
@@ -525,6 +524,90 @@ export async function loadGettingLive(opts: { coachId?: string } = {}): Promise<
   }
 
   return { rows: out, others, storage, comments_storage: commentsStorage };
+}
+
+/** What the Launch view needs about one coach on the list. */
+export type LaunchListCoach = {
+  /** Steps BCA ticked by hand on Getting live. */
+  ticks: Ticks;
+  /** Unique people across their lead lists. */
+  leads: number;
+  /** Their running campaigns' names. */
+  running: string[];
+};
+
+/**
+ * Who is on the Getting live list, with just what the Launch view's three
+ * steps need (23 Nov): the same rules as loadGettingLive, without the data
+ * for the other eight steps. The Blueprint call comes from the Blueprint rows
+ * the caller already has (launchViewStep).
+ */
+export async function loadLaunchList(): Promise<Map<string, LaunchListCoach>> {
+  const since = new Date(Date.now() - GETTING_LIVE_DAYS * 86_400_000).toISOString();
+  const [stored, recentPayers] = await Promise.all([
+    supabaseAdmin
+      .from("coach_getting_live")
+      .select("coach_id, added_by_hand, hidden, ticks")
+      .then(({ data, error }) => {
+        if (isMissingTable(error)) return [] as StoredRow[];
+        if (error) throw new Error(error.message);
+        return (data ?? []) as StoredRow[];
+      }),
+    all<{ coach_id: string }>((f, t) =>
+      supabaseAdmin.from("coach_payments").select("coach_id").eq("status", "succeeded").gte("paid_at", since).not("coach_id", "is", null).order("id").range(f, t)
+    ),
+  ]);
+  const byCoach = new Map(stored.map((s) => [s.coach_id, s]));
+  const recent = [...new Set(recentPayers.map((p) => p.coach_id))];
+  // Could be on the list: paid in the window, always on, or added by hand. Taken off stays off.
+  const candidates = [...new Set([...recent, ...ALWAYS_ON, ...stored.filter((s) => s.added_by_hand).map((s) => s.coach_id)])].filter(
+    (id) => !byCoach.get(id)?.hidden
+  );
+  if (!candidates.length) return new Map();
+
+  const [coaches, earlierPayers] = await Promise.all([
+    all<{ id: string }>((f, t) =>
+      supabaseAdmin.from("profiles").select("id").in("id", candidates).eq("role", "coach").is("access_removed_at", null).range(f, t)
+    ),
+    recent.length
+      ? all<{ coach_id: string }>((f, t) =>
+          supabaseAdmin.from("coach_payments").select("coach_id").eq("status", "succeeded").lt("paid_at", since).in("coach_id", recent).order("id").range(f, t)
+        )
+      : Promise.resolve([] as { coach_id: string }[]),
+  ]);
+  const isCoach = new Set(coaches.map((c) => c.id));
+  const paidBefore = new Set(earlierPayers.map((p) => p.coach_id));
+  // Paid in the window counts only for a first payment; always on and added by hand count anyway.
+  const ids = candidates.filter((id) => isCoach.has(id) && (ALWAYS_ON.includes(id) || Boolean(byCoach.get(id)?.added_by_hand) || !paidBefore.has(id)));
+  if (!ids.length) return new Map();
+
+  const [running, leadCounts] = await Promise.all([
+    all<{ coach_id: string; name: string }>((f, t) =>
+      supabaseAdmin.from("linkedin_campaigns").select("coach_id, name").in("coach_id", ids).eq("status", "running").range(f, t)
+    ),
+    uniquePeopleFor(ids),
+  ]);
+  return new Map(
+    ids.map((id) => [
+      id,
+      { ticks: byCoach.get(id)?.ticks ?? {}, leads: leadCounts.get(id) ?? 0, running: running.filter((c) => c.coach_id === id).map((c) => c.name) },
+    ])
+  );
+}
+
+/** One of the Launch view's steps, worked out as on Getting live. */
+export function launchViewStep(
+  key: "blueprint_call" | "leads_found" | "campaign_live",
+  coach: LaunchListCoach,
+  knowledgeRow: PracticeKnowledgeRow | undefined
+): Pick<GettingLiveStep, "done" | "source" | "detail"> {
+  const auto =
+    key === "blueprint_call"
+      ? blueprintCallStep(knowledgeRow?.payload.review.decision_call_booked_at?.value, knowledgeRow?.interview_completed_at)
+      : key === "leads_found"
+        ? leadsStep(coach.leads)
+        : campaignLiveStep(coach.running);
+  return withHandTick(auto, coach.ticks[key]);
 }
 
 export type GettingLiveUpdate = {

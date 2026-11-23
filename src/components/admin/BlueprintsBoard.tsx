@@ -132,8 +132,48 @@ async function adminHeaders(): Promise<Record<string, string> | null> {
   return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : null;
 }
 
-/** The last board loaded, so coming back to Launches shows it straight away while it refreshes. */
-let lastBoard: { coaches: BoardCoach[]; pages: Page[] } | null = null;
+type BoardData = { coaches: BoardCoach[]; pages: Page[] };
+type CheckData = { items: ToCheckItem[]; chains: Record<string, ChainState[]> };
+
+/**
+ * The last board and To check this browser saw (23 Nov), so the Launch view
+ * shows every coach and their last state at once, then refreshes underneath.
+ * The board only mounts after the page loads, so reading storage here can't
+ * clash with server rendering.
+ */
+const BOARD_STORE = "admin-launch-board-v1";
+const CHECK_STORE = "admin-launch-to-check-v1";
+
+function readStored<T>(key: string, valid: (v: T) => boolean): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = JSON.parse(window.localStorage.getItem(key) ?? "null") as T | null;
+    return value && valid(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(key: string, value: unknown) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Full or blocked: the next visit just waits for the fresh load.
+  }
+}
+
+let lastBoard: BoardData | null = null;
+let lastCheck: CheckData | null = null;
+
+function storedBoard(): BoardData | null {
+  lastBoard ??= readStored<BoardData>(BOARD_STORE, (v) => Array.isArray(v.coaches) && Array.isArray(v.pages));
+  return lastBoard;
+}
+
+function storedCheck(): CheckData | null {
+  lastCheck ??= readStored<CheckData>(CHECK_STORE, (v) => Array.isArray(v.items) && typeof v.chains === "object" && v.chains !== null);
+  return lastCheck;
+}
 
 /**
  * `embedded`: the Launch view inside Admin → Coaches → All coaches (21 Nov).
@@ -155,9 +195,9 @@ export function BlueprintsBoard({
   addSlot?: HTMLElement | null;
 } = {}) {
   const { setImpersonatingCoachId } = useImpersonation();
-  const [data, setData] = useState<{ coaches: BoardCoach[]; pages: Page[] } | null>(lastBoard);
-  const [toCheck, setToCheck] = useState<ToCheckItem[] | null>(null);
-  const [chains, setChains] = useState<Record<string, ChainState[]>>({});
+  const [data, setData] = useState<BoardData | null>(storedBoard);
+  const [toCheck, setToCheck] = useState<ToCheckItem[] | null>(() => storedCheck()?.items ?? null);
+  const [chains, setChains] = useState<Record<string, ChainState[]>>(() => storedCheck()?.chains ?? {});
   const [error, setError] = useState<string | null>(null);
   const [view, setViewState] = useState<View>(embedded ? "coaches" : "board");
   const [everyone, setEveryone] = useState(false);
@@ -241,6 +281,7 @@ export function BlueprintsBoard({
     }
     setError(null);
     lastBoard = { coaches: body.coaches, pages: body.pages };
+    writeStored(BOARD_STORE, lastBoard);
     setData(lastBoard);
   }, []);
 
@@ -250,8 +291,11 @@ export function BlueprintsBoard({
     if (!headers) return;
     const res = await fetch("/api/admin/launch/to-check", { headers }).catch(() => null);
     const body = (await res?.json().catch(() => null)) as { items?: ToCheckItem[]; chains?: Record<string, ChainState[]> } | null;
-    if (body?.items) setToCheck(body.items);
-    if (body?.chains) setChains(body.chains);
+    if (!body?.items) return;
+    lastCheck = { items: body.items, chains: body.chains ?? {} };
+    writeStored(CHECK_STORE, lastCheck);
+    setToCheck(lastCheck.items);
+    setChains(lastCheck.chains);
   }, []);
 
   useEffect(() => {
@@ -995,7 +1039,7 @@ function PageLanes({
   const withCheck = Boolean(checkByCoach);
   // LinkedIn connected leads the coach's grey band, then a column per page, then the launch steps.
   const style = {
-    gridTemplateColumns: `13rem 4.5rem 6rem ${withCheck ? "6.5rem " : ""}repeat(${pages.length + 2 + LAUNCH_COLUMNS.length}, minmax(0, 1fr))`,
+    gridTemplateColumns: `13rem 4.5rem 6rem ${withCheck ? "6.5rem " : ""}repeat(${pages.length + 3 + LAUNCH_COLUMNS.length}, minmax(0, 1fr))`,
   };
   // The coach's pages read as one grey band, top to bottom.
   const band = (slug: string) => (COACH_PAGES.has(slug) ? "bg-slate-100" : "");
@@ -1017,6 +1061,12 @@ function PageLanes({
           </h2>
           <h2 className="flex h-10 items-center justify-center px-2 text-xs font-semibold text-slate-900 bg-slate-100" title="Do they have Sales Navigator on their LinkedIn? We need it to build their lists.">
             <span className="truncate">Sales Nav</span>
+          </h2>
+          <h2
+            className="flex h-10 items-center justify-center px-2 text-xs font-semibold text-slate-900 bg-slate-100"
+            title="Their LinkedIn Social Selling Index, out of 100. It loads when they connect LinkedIn and updates when they open it in the app. Needs Sales Navigator."
+          >
+            <span className="truncate">SSI</span>
           </h2>
           {pages.map((p) => (
             <h2
@@ -1084,6 +1134,18 @@ function PageLanes({
                   <WaitingMark label="Can't tell until their LinkedIn is connected" />
                 ) : (
                   <ConnectedMark connected={lane.coach.sales_navigator} what="Sales Navigator" />
+                )}
+              </span>
+              <span className="flex min-h-11 items-center justify-center bg-slate-100 px-2">
+                {lane.coach.ssi == null ? (
+                  <WaitingMark label="No SSI: their LinkedIn isn't connected, or they don't have Sales Navigator" />
+                ) : (
+                  <span
+                    className="text-xs font-semibold tabular-nums text-slate-700"
+                    title={`SSI ${lane.coach.ssi} out of 100${lane.coach.ssi_checked_at ? `, as of ${new Date(lane.coach.ssi_checked_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""}`}
+                  >
+                    {Math.round(lane.coach.ssi)}
+                  </span>
                 )}
               </span>
               {pages.map((p) => {

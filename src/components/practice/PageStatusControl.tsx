@@ -8,7 +8,7 @@ import { buttonClass } from "@/components/ui/Button";
 import { BOARD_COLUMNS, BOARD_TAGS, boardCard, type BoardColumnId } from "@/lib/practiceKnowledge/blueprintBoard";
 import type { BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
 import { pageStatus } from "@/lib/practiceKnowledge/pageStatus";
-import type { WorkflowStatus } from "@/lib/practiceKnowledge/sectionWorkflow";
+import type { ManualStatus } from "@/lib/practiceKnowledge/sectionWorkflow";
 
 import { usePractice } from "./PracticeProvider";
 import { STAGE_LOOK, StageCircle } from "./StageCircle";
@@ -23,7 +23,8 @@ const COLUMN_TONE: Record<BoardColumnId, (typeof PAGE_STATUS_TONE)[keyof typeof 
   done: PAGE_STATUS_TONE.done,
 };
 
-const BCA_OPTIONS: { id: WorkflowStatus | "progress"; label: string; column: BoardColumnId }[] = [
+const BCA_OPTIONS: { id: ManualStatus; label: string; column: BoardColumnId }[] = [
+  { id: "coach", label: "Needs coach", column: "needs_coach" },
   { id: "todo", label: "BCA to do", column: "bca_todo" },
   { id: "progress", label: "In progress", column: "in_progress" },
   { id: "review", label: "Coach review", column: "coach_review" },

@@ -1,7 +1,7 @@
 import { avaWorkFor, pageScope } from "@/lib/launch/avaWork";
 
 import { BLUEPRINT_GROUPS, BLUEPRINT_SECTIONS, sectionByKey, type BlueprintLink } from "./blueprint";
-import { sectionWorkflow } from "./sectionWorkflow";
+import { pageChoice, sectionWorkflow, type ManualStatus } from "./sectionWorkflow";
 import type { PracticeKnowledgeRow } from "./types";
 
 /**
@@ -69,6 +69,15 @@ export type BoardCard = {
   note: string;
 };
 
+/** A page with nothing to track, set by hand (Lead lists). */
+const PAGE_CHOICE_CARD: Record<ManualStatus, BoardCard> = {
+  coach: { column: "needs_coach", tag: null, note: "Waiting on the coach" },
+  todo: { column: "bca_todo", tag: null, note: "BCA fills in" },
+  progress: { column: "in_progress", tag: null, note: "BCA is on it" },
+  review: { column: "coach_review", tag: null, note: "Their review" },
+  done: { column: "done", tag: null, note: "Done" },
+};
+
 function list(labels: string[]): string {
   return labels.length > 2 ? `${labels.slice(0, 2).join(", ")} and ${labels.length - 2} more` : labels.join(" and ");
 }
@@ -90,6 +99,8 @@ export function boardCard(page: BlueprintLink, row: PracticeKnowledgeRow, open: 
   }
   const yours = BLUEPRINT_GROUPS.some((group) => group.yours && group.pages.includes(page));
   if (!items.length) {
+    const choice = pageChoice(row.payload, page.slug);
+    if (choice) return PAGE_CHOICE_CARD[choice];
     return yours
       ? { column: "needs_coach", tag: null, note: "Their answers" }
       : { column: "bca_todo", tag: null, note: "BCA fills in" };
@@ -116,7 +127,12 @@ export function boardCard(page: BlueprintLink, row: PracticeKnowledgeRow, open: 
     return { column: "bca_todo", tag: null, note: avaOnly && missingNames ? `Ava needs ${missingNames}` : "BCA fills in" };
   }
   if (items.some((item) => item.work.status === "todo")) {
-    return { column: "needs_coach", tag: null, note: waitsOnCoach ? `Ava needs their ${missingNames}` : "Their answers" };
+    const note = items.some((item) => item.work.askedCoach)
+      ? "Waiting on the coach"
+      : waitsOnCoach
+        ? `Ava needs their ${missingNames}`
+        : "Their answers";
+    return { column: "needs_coach", tag: null, note };
   }
   if (items.some((item) => item.work.status === "review")) return { column: "coach_review", tag: null, note: "Their review" };
   return { column: "done", tag: null, note: "Done" };

@@ -100,7 +100,17 @@ Plan, count, then look again. Size decides the order and what stays:
 - Under 300 people is too small for an automated campaign on its own and must never be the first list. Widen it (take the industry off a company-name list; add the words firms really use in their names) or combine it with a similar list that takes the same message. If neither works, keep it low in the order: a small, specific list is still fine for a one-off campaign. Drop only lists off the market.
 - Big is fine: never split a list for size (the import handles 2,500+).
 - Aim for 500+ a list where the market allows; biggest, cleanest lists first, because the first list is the one the coach starts with.
-- After import, quality (how many of 10 people checked are a real fit) moves good lists up and weak ones down.
+- Quality before import: check 10 people spread across page 1 of each search and label each Good, OK or Bad (Good: owner or boss of a real firm in the market; OK: probably, but unclear; Bad: a shop, wholesaler, agency, consultant, side project or outside the market). Rank lists by good people = size × share that are Good or OK, so a big, clean list goes first and a noisy one drops down.
+
+## Fixing a weak list (Zander, 23 Nov, from the keyword and blacklisting lessons)
+- Check 10 people from the top, middle and end of the list, not only page 1: LinkedIn puts its best matches first, and quality drops further down.
+- When 2 or more are Bad, compare the wording. Look at the company names, titles, headlines and LinkedIn industries of the Good people against the Bad ones, and find words only one side uses. Act only on a pattern, never one odd person.
+- Test up to 3 different changes and keep the best: (1) company-name words to leave out (agency, marketing, wholesale, merchants, café), (2) a keyword NOT, which also catches a café whose name doesn't say café: NOT (shop OR café OR cafe OR "coffee shop"), (3) a keyword the good ones use: (manufacturer OR producer OR brand). You can join them: (manufacturer OR producer) NOT (shop OR café). Operators in capitals, quotes round phrases, brackets to group. Watch words good firms use too: a brand may say "supplier to Waitrose".
+- A keyword include beside company-name words shrinks a list a lot, so it's only ever a test (Zander, 23 Nov): LinkedIn counts it and it goes in only if it stays big enough.
+- Count each change again and check 10 new people. The one with the most good people goes in, only if more fit and the list stays over 300.
+- Some misfits can't be told apart by words (wine merchants and wineries both say "wines"). Then the list keeps its score and drops down the order.
+- A list where 3 or fewer in 10 fit once the fixes have had their try is dropped (Zander, 23 Nov), whatever its size. Lists BCA edits by hand stay.
+- After import, every person is labelled Good, OK or Bad in the Pool (the lesson's page-by-page blacklisting, done for everyone). Bad people are never added to a campaign; Good go in before OK. The coach can change any label, and Blacklist anyone who must never be messaged (competitors, clients, friends).
 
 ## Naming-pattern classifier (use this before inventing filters)
 - **name_rich**: industry word commonly in company names → lead with company_name variations (engineering, plumbing, dentistry, electricians, architects, many trades).

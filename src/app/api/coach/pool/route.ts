@@ -30,9 +30,10 @@ import {
   type PoolStats,
 } from "@/lib/pool/poolPeople";
 import { normalizeProspectTags } from "@/lib/prospects/tags";
+import { asFitLabel } from "@/lib/pool/fit";
 
 const POOL_ITEM_SELECT =
-  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id, team_size, industry, location, source_rank, source_ranked_at, open_profile, linkedin_premium";
+  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id, team_size, industry, location, source_rank, source_ranked_at, open_profile, linkedin_premium, fit, fit_why, fit_by";
 
 const POOL_PREVIEW_MAX = 50;
 
@@ -113,6 +114,9 @@ function mapPoolItem(
       typeof item.source_rank === "number" ? item.source_rank : null,
     source_ranked_at: (item.source_ranked_at as string | null) ?? null,
     tags: normalizeProspectTags(item.tags),
+    fit: asFitLabel(item.fit),
+    fit_why: typeof item.fit_why === "string" && item.fit_why ? item.fit_why : null,
+    fit_by: item.fit_by === "person" ? "person" : item.fit_by === "ava" ? "ava" : null,
     campaign_ids: campaignIds,
     in_campaign: campaignIds.length > 0,
     blacklisted:

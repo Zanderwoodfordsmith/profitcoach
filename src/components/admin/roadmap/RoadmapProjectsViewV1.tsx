@@ -42,7 +42,7 @@ const STAGE_STYLE: Record<ProjectStage, { bar: string; dot: string; chip: string
   done: { bar: "bg-emerald-400", dot: "bg-emerald-400", chip: "bg-emerald-50 text-emerald-900" },
 };
 
-const SHIPPED = new Set(["done", "staged", "live"]);
+const SHIPPED = new Set(["done", "live"]);
 
 function mondayOf(d: Date): Date {
   const out = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));

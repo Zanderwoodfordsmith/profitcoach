@@ -69,7 +69,30 @@ export const EXT_BY_MIME: Record<string, string> = {
   "application/csv": "csv",
   "application/rtf": "rtf",
   "text/rtf": "rtf",
+  "application/octet-stream": "bin",
 };
+
+/** Any other file (zip, Keynote, ...). Stored this way so browsers download it, never open it. */
+export const GENERIC_FILE_MIME = "application/octet-stream";
+
+/** Programs and scripts. Every other file type can be attached. */
+const BLOCKED_FILE_EXTS = new Set([
+  "exe", "msi", "bat", "cmd", "com", "scr", "pif", "cpl", "vbs", "vbe",
+  "js", "jse", "wsf", "wsh", "ps1", "sh", "jar", "app", "apk", "dmg", "pkg",
+]);
+
+function fileExt(filename: string): string {
+  const base = filename.split(/[/\\]/).pop() ?? "";
+  const dot = base.lastIndexOf(".");
+  return dot > 0 ? base.slice(dot + 1).trim().toLowerCase() : "";
+}
+
+/** Extension for the stored copy: the known one for this type, else the file's own. */
+export function storageExtForMime(mime: string, filename = ""): string | undefined {
+  if (mime !== GENERIC_FILE_MIME) return EXT_BY_MIME[mime];
+  const ext = fileExt(filename);
+  return /^[a-z0-9]{1,10}$/.test(ext) ? ext : "bin";
+}
 
 export const MIME_BY_EXT: Record<string, string> = {
   jpg: "image/jpeg",
@@ -117,17 +140,21 @@ export function maxBytesForCommunityPostMime(mime: string): number {
   return COMMUNITY_POST_MAX_IMAGE_BYTES;
 }
 
-/** Resolve MIME from File.type or filename when the browser omits type (common for .mov). */
+/**
+ * Resolve MIME from File.type or filename when the browser omits type (common for .mov).
+ * Unknown types come back as GENERIC_FILE_MIME (a document); only programs and scripts get null.
+ */
 export function resolveMediaMimeFromName(
   filename: string,
   declaredMime?: string | null
 ): string | null {
+  const ext = fileExt(filename);
+  if (BLOCKED_FILE_EXTS.has(ext)) return null;
   const declared = (declaredMime || "").split(";")[0]!.trim().toLowerCase();
   if (declared && mediaKindForMime(declared)) return declared;
-  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   const fromExt = MIME_BY_EXT[ext];
   if (fromExt && mediaKindForMime(fromExt)) return fromExt;
-  return null;
+  return GENERIC_FILE_MIME;
 }
 
 export function resolveCommunityPostMediaMime(file: File): string | null {
@@ -173,8 +200,7 @@ export function validateSupportMediaFile(
   const mime = resolveCommunityPostMediaMime(file);
   if (!mime) {
     return {
-      error:
-        "File must be an image, video (MP4, WebM, MOV), audio, or a document (PDF, Word, Excel, PowerPoint, text).",
+      error: "Programs and scripts (like .exe) can't be attached.",
     };
   }
   const kind = mediaKindForMime(mime)!;
@@ -290,7 +316,7 @@ async function uploadValidatedMediaFile(
   }
 
   const ext =
-    EXT_BY_MIME[validated.mime] ??
+    storageExtForMime(validated.mime, file.name) ??
     (validated.kind === "video"
       ? "mp4"
       : validated.kind === "audio"

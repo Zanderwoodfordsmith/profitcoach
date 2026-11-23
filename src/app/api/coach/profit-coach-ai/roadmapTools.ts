@@ -32,7 +32,7 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
         status: {
           type: "string",
           description:
-            "Filter by status: todo, up_next, in_progress, review, done, staged, live, evaluate, parked, vetoed",
+            "Filter by status: todo, up_next, in_progress, review, done, live, evaluate, parked, vetoed",
         },
       },
     },
@@ -70,7 +70,7 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
         },
         status: {
           type: "string",
-          description: "todo (default), up_next, in_progress, review, done, staged, live, evaluate, parked, vetoed",
+          description: "todo (default), up_next, in_progress, review, done, live, evaluate, parked, vetoed",
         },
         blocked_by: {
           type: "string",
@@ -113,7 +113,7 @@ export const ROADMAP_TOOLS: Anthropic.Messages.Tool[] = [
         },
         status: {
           type: "string",
-          description: "todo, up_next, in_progress, review, done, staged, live, evaluate, parked, vetoed",
+          description: "todo, up_next, in_progress, review, done, live, evaluate, parked, vetoed",
         },
         title: { type: "string" },
         notes: { type: "string" },
@@ -166,8 +166,8 @@ You can read and write the internal build roadmap (jobs to be done) using tools.
 - Every job has a number shown as #12. The admin may say "12", "#12", "BLD-12" or "build 12": that is job number 12. Use #12 when referring to a job.
 - Areas, in coach-journey order: set-up (practice install: Blueprint, brand, website, profile, onboarding), get-clients (leads, replies, bookings, closes), keep-clients (deliver for clients and keep them), platform (the app itself: Classroom, Ava plumbing, admin, fixes).
 - Scores: impact and ease, each 1-5. Impact = how much better it makes BCA: coach results (calls, clients), cash (sales, upgrades, retention), member happiness, or Zander's time (less manual work, more automated); 5 = a big move on any one. Ease = time until live including review and anyone else needed: 5 under an hour (one prompt), 4 half a day, 3 a day or two, 2 about a week, 1 longer or waiting on others. Suggest scores if asked, but only write them when the admin gives or agrees them.
-- Statuses (workflow order): todo, up_next, in_progress, review, done, staged, live. Ideas sit outside the flow: evaluate = a new idea saved with a description, not scored or decided yet (put new ideas here unless the admin says otherwise); parked = a good idea for one day, not now; vetoed = decided against for now, kept as a log of what was ruled out (check it before suggesting something similar). Visibility: internal (default) or members.
-- "review" = built, waiting for the admin to check it; when you finish building a job, move it to review, never straight to done. "done" (shown as Ready) = the admin checked it, waiting for the next stage. "staged" = on staging.theprofitcoach.com, waiting to go live. "live" = coaches/members have it.
+- Statuses (workflow order): todo, up_next, in_progress, review, done, live. Ideas sit outside the flow: evaluate = a new idea saved with a description, not scored or decided yet (put new ideas here unless the admin says otherwise); parked = a good idea for one day, not now; vetoed = decided against for now, kept as a log of what was ruled out (check it before suggesting something similar). Visibility: internal (default) or members.
+- "review" = built, waiting for the admin to check it; when you finish building a job, move it to review, never straight to done. When the admin says he has checked a job, move it to done yourself. "done" (shown as Ready) = the admin checked it, waiting for the next ship. "live" = shipped, coaches/members have it.
 - urgent = waiting costs money or risk; urgent jobs sort to the top whatever their scores. Only set it when the admin says so.
 - Blocked is NOT a status: to mark a job blocked, set blocked_by to the reason (keep its status). To unblock, set blocked_by to an empty string.
 - When the admin says "add a job here" or refers to "this page", set app_path from the current app path in context.

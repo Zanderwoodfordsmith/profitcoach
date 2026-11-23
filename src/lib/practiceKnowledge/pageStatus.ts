@@ -1,7 +1,7 @@
 import { avaWorkFor, pageScope } from "@/lib/launch/avaWork";
 
 import { BLUEPRINT_PAGES, BLUEPRINT_SECTIONS, type BlueprintLink } from "./blueprint";
-import { sectionWorkflow } from "./sectionWorkflow";
+import { pageChoice, sectionWorkflow, type ManualStatus } from "./sectionWorkflow";
 import type { PracticeKnowledgeRow } from "./types";
 
 /**
@@ -45,6 +45,15 @@ export const PAGE_STATUS_COPY: Record<PageStatusId, { label: string; title: stri
   },
 };
 
+/** A page with nothing to track, set by hand by BCA (Lead lists). */
+const PAGE_CHOICE_STATUS: Record<ManualStatus, PageStatusId> = {
+  coach: "needs_you",
+  todo: "bca",
+  progress: "in_progress",
+  review: "review",
+  done: "done",
+};
+
 /**
  * Where one blueprint page stands, for the overview. A page with nothing to
  * track (the LinkedIn profile has its own editor) is BCA to do (Zander, 4 Nov).
@@ -56,7 +65,7 @@ export function pageStatus(page: BlueprintLink, row: PracticeKnowledgeRow): Page
   const tracked = visible
     .map((ref) => ({ ref, work: sectionWorkflow(ref, row) }))
     .filter((item) => item.work.tracked && !(item.ref.group.yours && item.work.owner === "bca"));
-  if (!tracked.length) return "bca";
+  if (!tracked.length) return PAGE_CHOICE_STATUS[pageChoice(row.payload, page.slug) ?? "todo"];
 
   if (tracked.some((item) => item.work.status === "todo" && item.work.owner === "coach")) return "needs_you";
   if (tracked.some((item) => item.work.status === "todo" && item.work.owner === "bca")) {

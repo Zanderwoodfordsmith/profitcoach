@@ -6,7 +6,7 @@ import {
   COMMUNITY_POST_MAX_IMAGE_BYTES,
   SUPPORT_MAX_DOCUMENT_BYTES,
   supportDocumentName,
-  EXT_BY_MIME,
+  storageExtForMime,
   mediaKindForMime,
   resolveMediaMimeFromName,
   type CommunityPostMediaItem,
@@ -109,7 +109,7 @@ async function uploadSupportEmailMedia(input: {
   name?: string;
 }): Promise<CommunityPostMediaItem | null> {
   const ext =
-    EXT_BY_MIME[input.mime] ??
+    storageExtForMime(input.mime, input.name) ??
     (input.kind === "video" ? "mp4" : input.kind === "file" ? "bin" : "jpg");
   const path = `support-mail/${storageFolderFromEmailId(input.emailId)}/${randomUUID()}.${ext}`;
   const { error } = await supabaseAdmin.storage
@@ -174,31 +174,33 @@ export async function ingestSupportEmailAttachments(input: {
       continue;
     }
 
-    const downloaded = await downloadUnipileEmailAttachment({
-      emailId: input.emailId,
-      attachmentId: attachment.id,
-      accountId: input.accountId,
-      maxBytes: maxBytesForEmailAttachment(classified.kind),
-    });
-    if (!downloaded.ok || !downloaded.data?.bytes.length) {
-      skippedNames.push(attachment.name);
-      continue;
+    // Two tries: a one-off failed fetch dropped a zip off SUP-654 (23 Nov).
+    let item: CommunityPostMediaItem | null = null;
+    for (let attempt = 0; attempt < 2 && !item; attempt += 1) {
+      const downloaded = await downloadUnipileEmailAttachment({
+        emailId: input.emailId,
+        attachmentId: attachment.id,
+        accountId: input.accountId,
+        maxBytes: maxBytesForEmailAttachment(classified.kind),
+      });
+      if (!downloaded.ok || !downloaded.data?.bytes.length) continue;
+      if (
+        downloaded.data.bytes.byteLength >
+        maxBytesForEmailAttachment(classified.kind)
+      ) {
+        break;
+      }
+      item = await uploadSupportEmailMedia({
+        emailId: input.emailId,
+        bytes: downloaded.data.bytes,
+        mime: classified.mime,
+        kind: classified.kind,
+        name:
+          classified.kind === "file"
+            ? supportDocumentName(attachment.name)
+            : undefined,
+      });
     }
-    if (downloaded.data.bytes.byteLength > maxBytesForEmailAttachment(classified.kind)) {
-      skippedNames.push(attachment.name);
-      continue;
-    }
-
-    const item = await uploadSupportEmailMedia({
-      emailId: input.emailId,
-      bytes: downloaded.data.bytes,
-      mime: classified.mime,
-      kind: classified.kind,
-      name:
-        classified.kind === "file"
-          ? supportDocumentName(attachment.name)
-          : undefined,
-    });
     if (!item) {
       skippedNames.push(attachment.name);
       continue;

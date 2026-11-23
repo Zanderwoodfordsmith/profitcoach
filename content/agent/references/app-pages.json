@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-23T05:30:14.842Z",
+  "generatedAt": "2026-11-23T11:07:08.448Z",
   "model": "claude-sonnet-5-5",
   "pages": [
     {
@@ -203,78 +203,77 @@
     {
       "path": "/coach/blueprint",
       "adminPath": "/admin/blueprint",
-      "hash": "86a2bc41ec539ad9",
+      "hash": "cc2afe0c9e8fcea4",
       "coachVisible": true,
       "title": "My Blueprint",
-      "where": "My Blueprint in the sidebar (Your tools)",
-      "summary": "See where each page of your practice plan stands, finish the setup steps, and open any page to work on it.",
+      "where": "My Blueprint (sidebar)",
+      "summary": "See where each page of your practice plan stands, finish your setup steps, and open any Blueprint page.",
       "tabs": [],
       "controls": [
-        "**Your Blueprint** heading with a **?** button (How your Blueprint works) that opens a pop-up",
-        "**Where you are** in the pop-up: three steps, where the first opens a voice call with Ava",
-        "**Why we build it for you** video in the pop-up",
-        "**How status works** in the pop-up: the five statuses with page counts",
-        "**List** and **Board** switch at the top right: List shows pages in groups, Board shows a card per page in a column by status",
-        "Setup checklist under the intro line, showing what you do to get going",
-        "Each page row or card: title, short description, chat count or **new** badge, and a status pill",
-        "Status pills: Needs you, BCA, In progress, Review, Done",
-        "Click a page row or card to open that page of the Blueprint",
-        "Header **My Blueprint**"
+        "**Your Blueprint** heading with a **?** button (\"How your Blueprint works\") that opens a pop-up with **Where you are**, **Why we build it for you** (video) and **How status works**",
+        "**List** / **Board** switch at the top right: List shows pages in groups, Board shows a card per page in columns by status",
+        "Setup checklist under the intro text (the Checklist version)",
+        "**Contents** list: each page row shows its title, a short line, a chat count (e.g. \"2 new\") and a status pill",
+        "Status pills: **Needs you**, BCA, **In progress**, review and **Done** (hover for what each means)",
+        "Board columns by status, each with a page count; click a card to open that page",
+        "**Chat** panel on the right for the page, and **Ava** opened from the top bar",
+        "Three steps in **Where you are**: talk to Ava, the Blueprint Call, then BCA builds your practice"
       ],
-      "notes": "Pages BCA builds look quieter until you have answered your own cards. The Timeline view, Ava's drafts, Release, and the Launch back button are admin-only, so never offer them to coaches. The Sign off this page button appears on a page's own screen when its status is Review."
+      "notes": "The Checklist | Timeline switch and the Timeline version are admin-only; coaches always get the Checklist. Admin-only extras, such as Ava's drafts, Release and BCA's status menu, are never shown to coaches. Each page's chat and its **Sign off this page** button (shown when a page is in review) are on the individual Blueprint pages, not here."
     },
     {
       "path": "/coach/blueprint/[slug]",
       "adminPath": null,
-      "hash": "3acc0a81b1ab5758",
+      "hash": "bb77230995a3f719",
       "coachVisible": true,
       "title": "One Blueprint page",
       "where": "My Blueprint → pick a page from the Blueprint contents",
-      "summary": "Read and fill in one page of your practice Blueprint on its own, such as your decisions, your lead lists or a page of your answers.",
+      "summary": "The coach reads and fills in one page of their practice Blueprint on its own, such as Decisions or Lead lists.",
       "tabs": [],
       "controls": [
-        "**Parts of this page** row of buttons at the top, one per part, ticked when you have nothing left to answer",
         "**You tell us** and **BCA writes it, you can edit it** key showing which boxes are yours to fill and which BCA wrote",
-        "**How to do it, in the Classroom** box at the bottom with links to the matching lessons",
-        "**Decision Record** page: grey tags **Proposed by BCA**, **Agreed** or **With BCA** on each group of decisions",
-        "**Lead lists** page: the lists built for you and how many people came in from LinkedIn",
-        "**Still needed from you** box with a **Talk it through** button (opens Ava), where shown in the Blueprint",
-        "**Download** menu with **Whole blueprint for your AI**, **Just this page** and **Save as PDF**, where shown in the Blueprint"
+        "**Still needed from you** box listing what is missing, with a link to each item",
+        "**Talk it through** button in that box, which opens Ava",
+        "Part buttons at the top of a page made of parts (for example About You), ticked when nothing is left to answer",
+        "**How to do it, in the Classroom** box with links to lessons",
+        "**Download** menu with **Whole blueprint for your AI**, **Just this page** and **Save as PDF**",
+        "On the Decisions page: the **Agreed**, **Proposed by BCA** or **With BCA** label on each group, showing what was agreed on the Decision Call",
+        "On the Lead lists page: the lists we built for the coach and how each one searches LinkedIn"
       ],
-      "notes": "The page name is not repeated on screen; it shows the same content as the full Blueprint document. The Decision Record is read-only for coaches: BCA edits and locks it on the Decision Call. On Lead lists, Ava's plan, Edit, import and the Write buttons are BCA-only, so a coach only sees the finished lists, or a message that they are being built.'"
+      "notes": "Which pages exist depends on the coach's Blueprint. The Blueprint and Command Center slugs show a not-found page. The Edit button on Decisions, Ava's plan and importing on Lead lists, and the write/rewrite buttons are for BCA admins only, so never offer them to coaches.}"
     },
     {
       "path": "/coach/blueprint/blueprint",
       "adminPath": null,
-      "hash": "42a9f129c07555a5",
+      "hash": "e6071bfb3f8c05c4",
       "coachVisible": true,
-      "title": "Blueprint (whole document)",
-      "where": "My Blueprint, then open the full Blueprint document",
-      "summary": "Read your whole Practice Blueprint as one long document, see what is still needed from you, and jump to any chapter.",
+      "title": "Practice Blueprint (whole document)",
+      "where": "My Blueprint → Blueprint",
+      "summary": "Read your whole Practice Blueprint as one long document, see what BCA still needs from you, and jump to any chapter or page.",
       "tabs": [],
       "controls": [
-        "**Still needed from you** box at the top, listing what you still need to answer, each item linking to its section",
-        "**Talk it through** button in the Still needed box, opens Ava",
-        "**Contents** list with numbered chapters and a link to each page",
-        "**Why we build it for you** welcome video from Zander on the cover",
-        "**Your Decision Record** page with Agreed / Proposed by BCA labels",
-        "**How to do it, in the Classroom** links under a page's sections",
-        "**Download** menu (when shown on the page) with Whole blueprint for your AI, Just this page and Save as PDF",
-        "Part buttons at the top of pages made of parts, ticked when done"
+        "**Your Portfolio Blueprint** cover at the top, with your name and location",
+        "**Still needed from you** box listing each missing item, with the page it belongs to (only shows when something is missing)",
+        "**Talk it through** button in that box, opens Ava",
+        "**Contents** list of numbered chapters, each with links to its pages",
+        "**How to do it, in the Classroom** box at the end of a page, with links to lessons",
+        "**Download** button on pages that have it, with Whole blueprint for your AI, Just this page and Save as PDF",
+        "**Edit** button on the Decision Record is not for coaches; coaches only read it",
+        "**Lead lists** page shows the lists we built for you and how many people came in"
       ],
-      "notes": "The Still needed box only shows when something is missing. The Write my blueprint bar and the Edit button on the Decision Record are for BCA only, so coaches never see them. The Lead lists page shows your lists once BCA has built and imported them; Ava's plan for them is BCA-only."
+      "notes": "Coaches only read and fill in their own answers here. The Write my blueprint / Write the rest / Rewrite everything bar, the Edit button on the Decision Record, and Ava's plan for lead lists (with plan again and import) are for BCA admins only, so never offer them. The Decision Record hides the Who does what group from coaches."
     },
     {
       "path": "/coach/blueprint/jobs",
       "adminPath": null,
-      "hash": "4dd15d2ade44b103",
+      "hash": "7d487356bd81597d",
       "coachVisible": false,
       "title": "Your plan (jobs list)",
-      "where": "Not reachable for coaches. My Blueprint is the coach-facing page at /coach/blueprint.",
-      "summary": "A new list of launch jobs (Your plan) that is for admins only for now; coaches are sent back to My Blueprint.",
+      "where": "My Blueprint (coaches are sent back to the main Blueprint page)",
+      "summary": "A list or board of launch jobs with progress and chat, but it is admin-only for now, so coaches never see it.",
       "tabs": [],
       "controls": [],
-      "notes": "Admin-only: the page checks the viewer and redirects any coach to My Blueprint, so Ava must never send a coach here. The Blueprint stays the page coaches use for their plan."
+      "notes": "This page is admin-only for now: if a coach opens it, they are sent straight back to My Blueprint. Ava should not send coaches here or describe it. For a coach's plan, point them to My Blueprint."
     },
     {
       "path": "/coach/boss-pro",
@@ -1189,10 +1188,10 @@
     {
       "path": "/coach/support",
       "adminPath": "/admin/support",
-      "hash": "8f21bfaab405834a",
+      "hash": "7981e0b92e7d6ea9",
       "coachVisible": true,
       "title": "Support",
-      "where": "Support in the app (the Support page at /coach/support); the Help tab is Support → Help",
+      "where": "Support (the Support page, opened from the app menu)",
       "summary": "Chat with Zander and Pam about the app or your coaching, or look up short answers in the Help centre.",
       "tabs": [
         {
@@ -1205,21 +1204,21 @@
         }
       ],
       "controls": [
-        "**New chat** button beside the **Your chats** heading (also in the welcome box on the right)",
-        "**Post in community** button in the welcome box",
-        "**Needs you** group: chats and page chats waiting for your reply",
-        "**Open** group: chats where you are waiting on BCA",
-        "**Done** group: finished chats, folded away until you click it",
-        "Click a chat to read it on the right and write your reply in the message box",
+        "**New chat** button at the top right of the chat list, and on the welcome panel",
+        "**Your chats** list, split into **Needs you**, **Open** and **Done** (Done folds away; click it to open)",
+        "**Hi, [your name]** welcome panel on the right, with **Post in community**, who answers (Zander for the app, Pam for coaching), and a **Next support call** link when one is coming up",
+        "Chat box on the right when you open a chat: type, attach files, and send; click the chat name to rename it",
         "**Mark done** / **Reopen** button at the top of an open chat",
-        "Click the chat name at the top to rename it",
-        "**Next support call** link in the welcome box, goes to the calendar",
-        "Help tab: **Search for an answer** box and **Browse by topic** cards",
-        "Help tab: **Something not working?** link for fixes",
-        "Help tab: **Start a chat** button under **Can't find what you're looking for?**",
-        "Inside a Help topic: **Help home** link and a **Topics** list on the left"
+        "Link button at the top of a chat that takes you to the page it is about",
+        "**Search for an answer** box in Help",
+        "**Browse by topic** cards in Help (Getting started, Academy, Blueprint, Get clients, Keep clients, Account and money)",
+        "**Something not working?** card in Help, listing fixes",
+        "**Can't find what you're looking for?** box with **Start a chat** button",
+        "**Did this answer your question?** **Yes** / **No** under a Help answer",
+        "**Send to Support** button after choosing No, to say what you still need",
+        "**Help home** link and **Topics** list on the left of Help topic and answer pages"
       ],
-      "notes": "Chats are shared with BCA, who aim to reply within 2 business days. Help answers still waiting on Zander or Pam to confirm, and the admin notes about them, are shown only to admins, so never offer them to coaches.  On phones the welcome sits above the chat list and a chat opens as a pop-up from the bottom."
+      "notes": "Replies from Pam or Zander are aimed at within a working day (the welcome panel says 2 business days). On phones the welcome sits above the chat list and chats open from the bottom. Admins also see counts and answers still waiting on Zander or Pam; coaches never see these, so don't mention them.}"
     },
     {
       "path": "/coach/toolkit",

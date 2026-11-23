@@ -50,6 +50,20 @@ export type CoachTableColumnVisibility = {
   directoryBio: boolean;
   landing: boolean;
   blueprint: boolean;
+  clientStatus: boolean;
+  fixFirst: boolean;
+  invites: boolean;
+  acceptRate: boolean;
+  replies: boolean;
+  interested: boolean;
+  calls: boolean;
+  firstCall: boolean;
+  firstClient: boolean;
+  replyTime: boolean;
+  posts: boolean;
+  lastPost: boolean;
+  newsletters: boolean;
+  ssi: boolean;
 };
 
 export type CoachTableViewSettings = {
@@ -152,6 +166,24 @@ export function sortCoachTableViewsWithAllFirst(
   return orderCoachTableViews(views, []);
 }
 
+/** The Getting clients group (moved from its own tab, 23 Nov), in table order. */
+export const GETTING_CLIENTS_COLUMN_KEYS: Array<keyof CoachTableColumnVisibility> = [
+  "clientStatus",
+  "fixFirst",
+  "invites",
+  "acceptRate",
+  "replies",
+  "interested",
+  "calls",
+  "firstCall",
+  "firstClient",
+  "replyTime",
+  "posts",
+  "lastPost",
+  "newsletters",
+  "ssi",
+];
+
 export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   keyof CoachTableColumnVisibility
 > = [
@@ -159,6 +191,7 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   "lastActive",
   "linkedinProfile",
   "blueprint",
+  ...GETTING_CLIENTS_COLUMN_KEYS,
   "accessTier",
   "level",
   "recurringPayment",
@@ -213,6 +246,20 @@ export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   directoryBio: false,
   landing: false,
   blueprint: true,
+  clientStatus: true,
+  fixFirst: true,
+  invites: true,
+  acceptRate: true,
+  replies: true,
+  interested: true,
+  calls: true,
+  firstCall: true,
+  firstClient: true,
+  replyTime: true,
+  posts: true,
+  lastPost: true,
+  newsletters: true,
+  ssi: true,
 };
 
 export function createDefaultCoachTableViewSettings(): CoachTableViewSettings {

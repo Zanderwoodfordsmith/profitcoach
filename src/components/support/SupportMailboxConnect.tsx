@@ -14,7 +14,12 @@ type MailboxAccount = {
   last_synced_at: string | null;
 };
 
-export function SupportMailboxConnect() {
+/** onStatus: true when the support email is not connected or needs reconnecting. */
+export function SupportMailboxConnect({
+  onStatus,
+}: {
+  onStatus?: (needsAttention: boolean) => void;
+} = {}) {
   const [configured, setConfigured] = useState(true);
   const [account, setAccount] = useState<MailboxAccount | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,6 +151,14 @@ export function SupportMailboxConnect() {
       setBusy(false);
     }
   }
+
+  const needsAttention =
+    !loading &&
+    configured &&
+    (!account || (account.status !== "OK" && account.status !== "CONNECTING"));
+  useEffect(() => {
+    if (!loading) onStatus?.(needsAttention);
+  }, [loading, needsAttention, onStatus]);
 
   if (loading) {
     return (

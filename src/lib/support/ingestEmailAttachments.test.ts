@@ -69,6 +69,32 @@ describe("classifySupportEmailAttachment", () => {
     assert.equal(result.ingest, true);
     if (result.ingest) assert.equal(result.kind, "file");
   });
+
+  it("ingests a zip as a download-only file", () => {
+    const result = classifySupportEmailAttachment({
+      id: "1",
+      name: "Campaign-Prospects.zip",
+      mime: "application/zip",
+      size: 40_000,
+      inline: false,
+    });
+    assert.equal(result.ingest, true);
+    if (result.ingest) {
+      assert.equal(result.kind, "file");
+      assert.equal(result.mime, "application/octet-stream");
+    }
+  });
+
+  it("skips programs", () => {
+    const result = classifySupportEmailAttachment({
+      id: "1",
+      name: "setup.exe",
+      mime: "application/pdf",
+      size: 40_000,
+      inline: false,
+    });
+    assert.deepEqual(result, { ingest: false, reason: "unsupported" });
+  });
 });
 
 describe("formatSkippedEmailAttachmentNote", () => {

@@ -44,7 +44,7 @@ const PAGE_SIZE = 1_000;
 
 /**
  * Campaigns contact people in the order they are added, so load them
- * newest import first, then active LinkedIn users first (Open Profile, then
+ * newest import first, then Good fit before OK, then active LinkedIn users first (Open Profile, then
  * Premium: in our 110k-invite data they accepted and replied about twice as
  * often), then Sales Nav's own best-match order, then date added.
  */
@@ -55,6 +55,8 @@ function listItemsInSalesNavOrder(coachId: string, listId: string) {
     .eq("coach_id", coachId)
     .eq("list_id", listId)
     .order("source_ranked_at", { ascending: false, nullsFirst: false })
+    // Good fit before OK, then people not checked yet (job 278). Bad never go in.
+    .order("fit_rank", { ascending: true })
     .order("open_profile", { ascending: false, nullsFirst: false })
     .order("linkedin_premium", { ascending: false, nullsFirst: false })
     .order("source_rank", { ascending: true, nullsFirst: false })
@@ -141,6 +143,8 @@ export async function addLeadListToCampaign(opts: {
   added: number;
   skipped: number;
   blacklisted: number;
+  /** Marked Bad fit, so left out (job 278). */
+  badFit: number;
   /** People on the list who had no LinkedIn profile (or email, for email campaigns). */
   unreachable: number;
   considered: number;
@@ -205,7 +209,7 @@ export async function addLeadListToCampaign(opts: {
     );
   }
 
-  const total = { added: 0, skipped: 0, blacklisted: 0 };
+  const total = { added: 0, skipped: 0, blacklisted: 0, badFit: 0 };
   for (let i = 0; i < leads.length; i += ENROL_CHUNK) {
     const result = await addCampaignLeads(
       opts.coachId,
@@ -215,6 +219,7 @@ export async function addLeadListToCampaign(opts: {
     total.added += result.added;
     total.skipped += result.skipped;
     total.blacklisted += result.blacklisted;
+    total.badFit += result.badFit;
   }
 
   return {

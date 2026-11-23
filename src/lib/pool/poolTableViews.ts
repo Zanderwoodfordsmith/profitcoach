@@ -13,6 +13,7 @@ import {
   type PoolDateAddedFilter,
   type PoolHeadcountFilter,
   type PoolLinkedInFilter,
+  type PoolFitFilter,
   type PoolGroupField,
   type PoolGroupOrder,
   type PoolSortField,
@@ -44,6 +45,7 @@ export type PoolTableViewSettings = {
   campaignIdFilter: string;
   contactFilter: PoolContactFilter;
   linkedinFilter: PoolLinkedInFilter;
+  fitFilter: PoolFitFilter;
   dateAddedFilter: PoolDateAddedFilter;
   headcountFilter: PoolHeadcountFilter;
   cityFilter: string;
@@ -152,9 +154,11 @@ function normalizeColumns(source: Partial<PoolTableViewSettings>): {
     }
     columnVisibility.contact_info = true;
   }
-  const fromSource = Array.isArray(source.columnOrder)
+  const saved = Array.isArray(source.columnOrder)
     ? source.columnOrder.filter(isPoolColumnKey)
     : [];
+  // Views saved before the Fit column (job 278) get it first, not at the end.
+  const fromSource = saved.length && !saved.includes("fit") ? ["fit" as const, ...saved] : saved;
   return {
     columnVisibility,
     columnOrder: completeColumnOrder(fromSource, DEFAULT_POOL_COLUMN_ORDER),
@@ -195,6 +199,7 @@ export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
     campaignIdFilter: "",
     contactFilter: "all",
     linkedinFilter: "all",
+    fitFilter: "all",
     dateAddedFilter: "all",
     headcountFilter: [],
     cityFilter: "",
@@ -224,6 +229,10 @@ function isPoolContactFilter(value: unknown): value is PoolContactFilter {
 
 function isPoolLinkedInFilter(value: unknown): value is PoolLinkedInFilter {
   return value === "all" || value === "has" || value === "none";
+}
+
+function isPoolFitFilter(value: unknown): value is PoolFitFilter {
+  return value === "all" || value === "good" || value === "ok" || value === "bad" || value === "none";
 }
 
 function normalizeHeadcountFilter(value: unknown): PoolHeadcountFilter {
@@ -307,6 +316,7 @@ export function normalizePoolTableViewSettings(
     linkedinFilter: isPoolLinkedInFilter(source.linkedinFilter)
       ? source.linkedinFilter
       : defaults.linkedinFilter,
+    fitFilter: isPoolFitFilter(source.fitFilter) ? source.fitFilter : defaults.fitFilter,
     dateAddedFilter: isPoolDateAddedFilter(source.dateAddedFilter)
       ? source.dateAddedFilter
       : defaults.dateAddedFilter,

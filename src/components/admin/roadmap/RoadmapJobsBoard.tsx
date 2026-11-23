@@ -42,7 +42,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
-import { ProductCanvasToggle } from "@/components/admin/roadmap/ProductCanvasToggle";
 import { ClaudePanel, HandToClaudeButton, claudeIsBusy, claudeWaitingFor3002 } from "@/components/admin/roadmap/ClaudePanel";
 import { NewJobComposer } from "@/components/admin/roadmap/NewJobComposer";
 import { JobIcon, ProjectIcon } from "@/components/admin/roadmap/roadmapIcons";
@@ -131,10 +130,6 @@ const COLUMN_SECTIONS: Partial<
     { status: "up_next", label: null, tone: "", dropHint: "Drop here for Up next" },
     { status: "todo", label: "Later", tone: "text-slate-500" },
   ],
-  done: [
-    { status: "done", label: null, tone: "", dropHint: "Drop here once you've checked it" },
-    { status: "staged", label: "On staging", tone: "text-cyan-700" },
-  ],
 };
 
 /** Where a card added from a column's "+ Add" lands. */
@@ -154,7 +149,6 @@ const CARD_LIMIT = 15;
 /** Closest to shipping first, then planned work, ideas, and Live last. */
 const LIST_ORDER: RoadmapStatus[] = [
   "done",
-  "staged",
   "review",
   "in_progress",
   "up_next",
@@ -167,7 +161,7 @@ const LIST_ORDER: RoadmapStatus[] = [
 
 /** The Filter's status list, grouped like the status dropdown, in LIST_ORDER. */
 const FILTER_STATUS_GROUPS: { label: string | null; items: RoadmapStatus[] }[] = [
-  { label: "Ready", items: ["done", "staged"] },
+  { label: null, items: ["done"] },
   { label: null, items: ["review"] },
   { label: null, items: ["in_progress"] },
   { label: "To do", items: ["up_next", "todo"] },
@@ -1030,8 +1024,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
     const pageJob = jobs.find((j) => j.job_number === jobNumber) ?? null;
     return (
       <div className="w-full">
-        <StickyPageHeader rootRef={headerRef} title="Product" tabs={<LessonImportTabs />}
-        actions={<ProductCanvasToggle />} />
+        <StickyPageHeader rootRef={headerRef} title="Product" tabs={<LessonImportTabs />} />
         <nav aria-label="Where you are" className="mt-5 flex flex-wrap items-center gap-1 text-sm text-slate-500">
           <Link href="/admin/roadmap" className="inline-flex items-center gap-1.5 hover:text-slate-900">
             <JobIcon className="h-3.5 w-3.5" aria-hidden />
@@ -1084,9 +1077,8 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
       <StickyPageHeader
         rootRef={headerRef}
         title="Product"
-        description="Review = built, check it on 3002. Ready = checked, goes out with the next ;stage. On staging = on staging.theprofitcoach.com, waiting for ;live. Live = coaches have it. Projects group related jobs. Ask the AI panel to add or update jobs from any screen."
+        description="In progress = being built. Review = built, check it on 3002. Ready = checked, goes out with the next ship. Live = coaches have it. Projects group related jobs. Ask the AI panel to add or update jobs from any screen."
         tabs={<LessonImportTabs />}
-        actions={<ProductCanvasToggle />}
       />
       {subheader}
 
@@ -1791,7 +1783,7 @@ const STATUS_MENU: { label: string | null; items: RoadmapStatus[] }[] = [
   { label: "To do", items: ["up_next", "todo"] },
   { label: null, items: ["in_progress"] },
   { label: null, items: ["review"] },
-  { label: "Ready", items: ["done", "staged"] },
+  { label: null, items: ["done"] },
   { label: null, items: ["live"] },
 ];
 

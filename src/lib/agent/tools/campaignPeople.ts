@@ -83,7 +83,7 @@ async function addListGate(input: AgentToolInput, ctx: AgentToolContext): Promis
       { label: "For", value: coach.name },
       { label: "List", value: `${list.name} (${plural(list.item_count ?? 0, "person", "people")})` },
       { label: "Campaign", value: `${campaign.name} (running)` },
-      { label: "Skips", value: "Anyone already in a campaign, blacklisted, or without a LinkedIn profile" },
+      { label: "Skips", value: "Anyone already in a campaign, blacklisted, marked Bad fit, or without a LinkedIn profile" },
     ],
     warning: "The campaign is on, so they start receiving its first step in the next sending window.",
   };
@@ -95,7 +95,7 @@ export const campaignPeopleTools: AgentToolDef[] = [
     label: "Adding people to the campaign",
     needsCoach: true,
     description:
-      "Add everyone on a list (or just item_ids from get_list_people) to a campaign. Skips people already in a campaign, blacklisted, or without a LinkedIn profile (email for email campaigns). Asks for confirmation when the campaign is running.",
+      "Add everyone on a list (or just item_ids from get_list_people) to a campaign. Skips people already in a campaign, blacklisted, marked Bad fit, or without a LinkedIn profile (email for email campaigns). Good fit go in before OK. Asks for confirmation when the campaign is running.",
     input_schema: {
       type: "object",
       properties: {
@@ -118,8 +118,9 @@ export const campaignPeopleTools: AgentToolDef[] = [
       });
       return {
         added: result.added,
-        already_in_a_campaign_or_duplicate: result.skipped,
+        already_in_a_campaign_or_duplicate: Math.max(0, result.skipped - result.badFit),
         blacklisted: result.blacklisted,
+        bad_fit: result.badFit,
         no_linkedin_or_email: result.unreachable,
         looked_at: result.considered,
       };

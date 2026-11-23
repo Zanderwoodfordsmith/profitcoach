@@ -40,6 +40,8 @@ type InferredCampaign = {
     company: string | null;
     title: string | null;
     linkedin_url: string | null;
+    /** Every link Sales Robot gives for this person (public link and ID link). */
+    match_urls: string[];
     status:
       | "queued"
       | "invited"
@@ -291,10 +293,13 @@ function leadStatus(row: CsvRow, messageCount: number): {
         current_step_position: lastMessagePosition,
       };
     }
+    // The app's position is the next step to run, so park them on the wait
+    // after their last send (the wait after the invite if none yet). The wait
+    // counts from switch-on: never early, never the same message twice.
     return {
       status: sentMessages > 0 ? "in_sequence" : "connected",
       interest_outcome: null,
-      current_step_position: lastMessagePosition || 0,
+      current_step_position: lastMessagePosition + 1,
     };
   }
   if (inviteSent) {
@@ -348,6 +353,12 @@ function buildCampaigns(rows: CsvRow[]): InferredCampaign[] {
           row.linkedinUrl?.trim() ||
           row.uniqueLinkedinId?.trim() ||
           null,
+        // An October export gave only the ID link (/in/ACwAA…) for people
+        // Sales Robot had not visited yet; later exports give the public
+        // link and keep the ID in uniqueLinkedinId. Match on all of them.
+        match_urls: [row.profileUrl, row.linkedinUrl, row.uniqueLinkedinId]
+          .map((value) => value?.trim() || "")
+          .filter(Boolean),
         ...mapped,
       };
     });
@@ -392,11 +403,13 @@ function printCampaign(campaign: InferredCampaign) {
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const statusesOnly = process.argv.includes("--statuses-only");
+  // Reads the platform and prints what a run would change. Writes nothing.
+  const checkOnly = process.argv.includes("--check");
   const csvPath = argValue("--csv");
   const coachSlug = argValue("--coach-slug");
   if (!csvPath || !coachSlug) {
     console.error(
-      "Usage: npx tsx scripts/rebuild-sales-robot-campaigns.ts [--dry-run] [--statuses-only] --csv <file> --coach-slug <slug>"
+      "Usage: npx tsx scripts/rebuild-sales-robot-campaigns.ts [--dry-run] [--check] [--statuses-only] --csv <file> --coach-slug <slug>"
     );
     process.exit(1);
   }
@@ -485,7 +498,8 @@ async function main() {
     return (slug || normalized).toLowerCase();
   };
 
-  const applyStatuses = async (campaignId: string, campaign: InferredCampaign) => {
+  /** People already in a campaign, keyed by link. */
+  const loadSaved = async (campaignId: string) => {
     const savedPage = await fetchAllSupabasePages<{
       id: string;
       linkedin_url: string | null;
@@ -494,6 +508,8 @@ async function main() {
         .from("linkedin_campaign_leads")
         .select("id, linkedin_url")
         .eq("campaign_id", campaignId)
+        // Fixed order, or pages of 1,000 overlap and people go missing.
+        .order("id", { ascending: true })
         .range(from, to)
     );
     const byUrl = new Map<string, string>();
@@ -501,6 +517,22 @@ async function main() {
       const key = urlKey(lead.linkedin_url);
       if (key) byUrl.set(key, lead.id);
     }
+    return { byUrl, stored: savedPage.data.length };
+  };
+  const savedIdFor = (
+    byUrl: Map<string, string>,
+    lead: InferredCampaign["leads"][number]
+  ): string | null => {
+    for (const raw of lead.match_urls) {
+      const key = urlKey(raw);
+      const id = key ? byUrl.get(key) : undefined;
+      if (id) return id;
+    }
+    return null;
+  };
+
+  const applyStatuses = async (campaignId: string, campaign: InferredCampaign) => {
+    const { byUrl, stored } = await loadSaved(campaignId);
 
     const patches = new Map<
       string,
@@ -512,9 +544,7 @@ async function main() {
     >();
     let matched = 0;
     for (const lead of campaign.leads) {
-      const id = urlKey(lead.linkedin_url)
-        ? byUrl.get(urlKey(lead.linkedin_url) as string)
-        : null;
+      const id = savedIdFor(byUrl, lead);
       if (!id) continue;
       matched += 1;
       const key = `${lead.status}:${lead.current_step_position}:${lead.interest_outcome ?? ""}`;
@@ -543,7 +573,7 @@ async function main() {
         if (error) throw new Error(error.message);
       }
     }
-    return { matched, stored: savedPage.data.length };
+    return { matched, stored };
   };
 
   const { data: existing } = await sb
@@ -555,7 +585,18 @@ async function main() {
     const already = (existing ?? []).find((row) => row.name === campaign.name);
     if (already) {
       if (!statusesOnly) {
-        const missing = campaign.leads.filter((lead) => lead.linkedin_url);
+        // Only people not already in the campaign under any of their links.
+        const { byUrl } = await loadSaved(already.id);
+        const missing = campaign.leads.filter(
+          (lead) => lead.linkedin_url && !savedIdFor(byUrl, lead)
+        );
+        if (checkOnly) {
+          const matched = campaign.leads.filter((lead) => savedIdFor(byUrl, lead)).length;
+          console.log(
+            `\nCheck ${campaign.name} (${already.status}) — would add ${missing.length}, update statuses ${matched}`
+          );
+          continue;
+        }
         const added = await addAllLeads(
           coach.id,
           already.id,
@@ -582,6 +623,12 @@ async function main() {
     }
     if (statusesOnly) {
       console.log(`\nSkip ${campaign.name} — campaign not imported yet`);
+      continue;
+    }
+    if (checkOnly) {
+      console.log(
+        `\nCheck ${campaign.name} — would create (archived) with ${campaign.people} people`
+      );
       continue;
     }
 

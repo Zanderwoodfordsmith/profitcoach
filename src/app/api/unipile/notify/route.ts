@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { isAlertsNotifyName, upsertAlertsWhatsAppFromNotify } from "@/lib/ava/alertsWhatsApp";
+import { loadCoachOwnLinkedInSsi } from "@/lib/unipile/linkedinSsi";
 import { upsertOutreachAccountFromNotify } from "@/lib/unipile/outreachAccounts";
 import {
   connectedByFromNotifyName,
@@ -111,6 +112,12 @@ export async function POST(request: Request) {
     void ensureUnipileWebhooksRegistered(request).catch((err) => {
       console.warn("unipile webhook register:", err);
     });
+    // Load their SSI as soon as LinkedIn connects, not only when they open it (23 Nov).
+    after(() =>
+      loadCoachOwnLinkedInSsi(name, { refresh: true }).catch((err) => {
+        console.warn("ssi on connect:", err instanceof Error ? err.message : "failed");
+      })
+    );
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("unipile notify:", err);

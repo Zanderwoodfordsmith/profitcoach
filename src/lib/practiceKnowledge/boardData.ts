@@ -1,6 +1,6 @@
 import "server-only";
 
-import { loadGettingLive, type GettingLiveRow, type GettingLiveStep } from "@/lib/gettingLive";
+import { launchViewStep, loadLaunchList, type GettingLiveStep, type LaunchListCoach } from "@/lib/gettingLive";
 import { openForCoaches } from "@/lib/launch/jobActivity";
 import { pageScope } from "@/lib/launch/avaWork";
 import type { BlueprintLink } from "@/lib/practiceKnowledge/blueprint";
@@ -9,6 +9,7 @@ import { commentPage } from "@/lib/practiceKnowledge/pageChat";
 import { summariseThreads } from "@/lib/practiceKnowledge/sectionCommentTypes";
 import { commentHeadsForCoaches } from "@/lib/practiceKnowledge/sectionComments";
 import { mapKnowledgeRow } from "@/lib/practiceKnowledge/store";
+import type { PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -23,6 +24,9 @@ export type BoardCoach = {
   linkedin_connected: boolean;
   /** Has Sales Navigator on their LinkedIn: asked live for launching, connected coaches; null when not asked (21 Nov). */
   sales_navigator?: boolean | null;
+  /** Their LinkedIn SSI (0-100), as last loaded when they opened it in the app, and when that was; null if never loaded (23 Nov). */
+  ssi: number | null;
+  ssi_checked_at: string | null;
   /** On the Getting live list: launching now. */
   launching: boolean;
   /** The launch steps that aren't Blueprint pages, from Getting live; null when not launching. */
@@ -41,9 +45,15 @@ export const LAUNCH_EXTRA_STEPS = ["blueprint_call", "leads_found", "campaign_li
 export type LaunchStepKey = (typeof LAUNCH_EXTRA_STEPS)[number];
 export type LaunchStep = Pick<GettingLiveStep, "done" | "source" | "detail">;
 
-export async function loadBoardCoaches(): Promise<{ coaches: BoardCoach[]; pages: BlueprintLink[] }> {
-  // Getting live is the slowest part and doesn't need the Blueprint rows: start it first.
-  const liveLoad = loadGettingLive().catch(() => null);
+/** Who's launching, already started by the caller (the Launch view asks about Sales Navigator from it), or started here. */
+type LaunchListLoad = Promise<Map<string, LaunchListCoach> | null>;
+
+export async function loadBoardCoaches(
+  opts: { launchList?: LaunchListLoad } = {}
+): Promise<{ coaches: BoardCoach[]; pages: BlueprintLink[] }> {
+  // Who's launching doesn't need the Blueprint rows: start it first. Only the
+  // three launch steps, not all of Getting live (23 Nov).
+  const launchLoad = opts.launchList ?? loadLaunchList().catch(() => null);
   const { data: rows, error } = await supabaseAdmin
     .from("coach_practice_knowledge")
     .select("*")
@@ -52,26 +62,27 @@ export async function loadBoardCoaches(): Promise<{ coaches: BoardCoach[]; pages
   if (error) throw new Error(error.message);
   const ids = (rows ?? []).map((r) => String((r as { coach_id: string }).coach_id));
 
-  const [profiles, slugs, heads, open, live, accounts] = await Promise.all([
+  const [profiles, slugs, heads, open, launchList, accounts] = await Promise.all([
     ids.length
       ? supabaseAdmin.from("profiles").select("id, full_name, first_name, last_name, avatar_url, access_removed_at, created_at, disco_community_joined_on").in("id", ids)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
     ids.length ? supabaseAdmin.from("coaches").select("id, slug").in("id", ids) : Promise.resolve({ data: [] as Record<string, unknown>[] }),
     commentHeadsForCoaches(ids),
     openForCoaches(ids),
-    liveLoad,
+    launchLoad,
     ids.length
-      ? supabaseAdmin.from("linkedin_outreach_accounts").select("coach_id, provider, status").in("coach_id", ids)
+      ? supabaseAdmin.from("linkedin_outreach_accounts").select("coach_id, provider, status, ssi_score, ssi_fetched_at").in("coach_id", ids)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
-  const connected = new Set(
-    ((accounts.data ?? []) as Record<string, unknown>[])
-      .filter((a) => a.provider === "LINKEDIN" && a.status === "OK")
-      .map((a) => String(a.coach_id))
-  );
+  const okAccounts = ((accounts.data ?? []) as Record<string, unknown>[]).filter((a) => a.provider === "LINKEDIN" && a.status === "OK");
+  const connected = new Set(okAccounts.map((a) => String(a.coach_id)));
+  const ssiOf = new Map<string, { score: number; at: string | null }>();
+  for (const a of okAccounts) {
+    const score = a.ssi_score == null ? NaN : Number(a.ssi_score);
+    if (Number.isFinite(score)) ssiOf.set(String(a.coach_id), { score, at: (a.ssi_fetched_at as string | null) ?? null });
+  }
   const people = new Map(((profiles.data ?? []) as Record<string, unknown>[]).map((p) => [String(p.id), p]));
   const slugOf = new Map(((slugs.data ?? []) as Record<string, unknown>[]).map((c) => [String(c.id), (c.slug as string | null) ?? null]));
-  const liveRows = new Map((live?.rows ?? []).map((r) => [r.coach_id, r]));
   const pages = boardPages();
 
   const coaches: BoardCoach[] = [];
@@ -117,8 +128,10 @@ export async function loadBoardCoaches(): Promise<{ coaches: BoardCoach[]; pages
         profileCreatedAt: person.created_at ?? null,
       }),
       linkedin_connected: connected.has(row.coach_id),
-      launching: liveRows.has(row.coach_id),
-      launch: launchSteps(liveRows.get(row.coach_id)),
+      ssi: ssiOf.get(row.coach_id)?.score ?? null,
+      ssi_checked_at: ssiOf.get(row.coach_id)?.at ?? null,
+      launching: Boolean(launchList?.has(row.coach_id)),
+      launch: launchSteps(launchList?.get(row.coach_id), row),
       cards,
     });
   }
@@ -126,12 +139,9 @@ export async function loadBoardCoaches(): Promise<{ coaches: BoardCoach[]; pages
   return { coaches, pages };
 }
 
-function launchSteps(row: GettingLiveRow | undefined): BoardCoach["launch"] {
-  if (!row) return null;
+function launchSteps(coach: LaunchListCoach | undefined, row: PracticeKnowledgeRow): BoardCoach["launch"] {
+  if (!coach) return null;
   const out = {} as Record<LaunchStepKey, LaunchStep>;
-  for (const key of LAUNCH_EXTRA_STEPS) {
-    const step = row.steps.find((s) => s.key === key);
-    out[key] = { done: step?.done ?? false, source: step?.source ?? null, detail: step?.detail ?? null };
-  }
+  for (const key of LAUNCH_EXTRA_STEPS) out[key] = launchViewStep(key, coach, row);
   return out;
 }

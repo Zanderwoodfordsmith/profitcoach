@@ -11,6 +11,7 @@ import {
 } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
 import { SALES_NAV_HEADCOUNT_BANDS } from "@/lib/salesNavigator/headcountBands";
 import { prepareSalesNavImportUrl } from "@/lib/salesNavigator/classifySalesNavUrl";
+import { keywordsOnlyExclude } from "@/lib/salesNavigator/parseSalesNavFilters";
 import { summarizeSalesNavSearch } from "@/lib/salesNavigator/salesNavSearchSummary";
 import { BASE_SEARCH_TEAM_SIZES } from "@/lib/salesNavigator/prospectSearch/applyStrategy";
 import {
@@ -82,6 +83,8 @@ export type SalesNavCriteria = {
   teamSizes: string[];
   degrees: SalesNavDegree[];
   industries?: { id: string; title: string }[];
+  /** Ava's fix tests and BCA's edits may put keywords beside company-name words; LinkedIn's count shows whether it's still big enough (Zander, 23 Nov). */
+  allowKeywordsWithCompany?: boolean;
 };
 
 export function salesNavCriteriaFromInput(input: AgentToolInput): SalesNavCriteria {
@@ -113,10 +116,10 @@ export function buildSalesNavSearch(
       error: `"${criteria.location}" is not in the Sales Navigator region list. Use one of: ${regionNames().join("; ")}. Or ask them to build the search in Sales Navigator and paste the URL.`,
     };
   }
-  if (criteria.companyIncludes.length && criteria.keywords) {
+  if (criteria.companyIncludes.length && criteria.keywords && !keywordsOnlyExclude(criteria.keywords) && !criteria.allowKeywordsWithCompany) {
     return {
       error:
-        "Use company-name terms or keywords, not both (the playbook's rule). Make two searches if you want to try both.",
+        "Use company-name terms or keywords, not both (the playbook's rule). Only a keyword NOT, like NOT (agency OR marketing), can go with company-name terms. Make two searches if you want to try both.",
     };
   }
   const companyKeywords = dedupeKeywords([
@@ -267,7 +270,7 @@ export const prospectTools: AgentToolDef[] = [
     name: "build_sales_nav_search",
     label: "Building the search",
     description:
-      "Build a Sales Navigator people-search URL. The classroom base search is always applied: owner, founder, CEO and managing director titles; coach, consultant and recruiter excluded on title and company. You add the narrowing. Use company_includes OR keywords, never both.",
+      "Build a Sales Navigator people-search URL. The classroom base search is always applied: owner, founder, CEO and managing director titles; coach, consultant and recruiter excluded on title and company. You add the narrowing. Use company_includes OR keywords, never both, except a keyword NOT on its own (NOT (agency OR marketing)), which only leaves people out.",
     input_schema: {
       type: "object",
       properties: {

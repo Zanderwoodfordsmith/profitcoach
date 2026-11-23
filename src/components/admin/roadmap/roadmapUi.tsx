@@ -13,7 +13,6 @@ export const ROADMAP_STATUS_META: Record<RoadmapStatus, { label: string; chip: s
   in_progress: { label: "In progress", chip: "bg-blue-100 text-blue-800" },
   review: { label: "Review", chip: "bg-yellow-200/80 text-yellow-900" },
   done: { label: "Ready", chip: "bg-emerald-100 text-emerald-800" },
-  staged: { label: "On staging", chip: "bg-cyan-100 text-cyan-800" },
   live: { label: "Live", chip: "bg-slate-300/80 text-slate-700" },
   evaluate: { label: "Evaluate", chip: "bg-violet-100 text-violet-800" },
   parked: { label: "Parked", chip: "bg-slate-200/70 text-slate-500" },
@@ -278,7 +277,7 @@ export function ViewToggle<T extends string>({
 /**
  * A job's status as a small circle that fills as it moves along (our own
  * drawing of the idea Linear uses): dotted to do, a quarter in progress, half
- * in review, three quarters ready, full on staging, a ring with a tick when live.
+ * in review, three quarters ready, a ring with a tick when live.
  */
 const STATUS_ICON: Record<RoadmapStatus, { color: string; shape: "dotted" | "dashed" | "pie" | "full" | "tick" | "cross"; fill?: number }> = {
   evaluate: { color: "text-violet-500", shape: "dashed" },
@@ -289,7 +288,6 @@ const STATUS_ICON: Record<RoadmapStatus, { color: string; shape: "dotted" | "das
   in_progress: { color: "text-blue-500", shape: "pie", fill: 0.25 },
   review: { color: "text-amber-500", shape: "pie", fill: 0.5 },
   done: { color: "text-emerald-500", shape: "pie", fill: 0.75 },
-  staged: { color: "text-cyan-600", shape: "full" },
   live: { color: "text-green-700", shape: "tick" },
 };
 

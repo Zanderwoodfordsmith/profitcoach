@@ -3,10 +3,11 @@
  */
 
 /**
- * Workflow order: todo -> up_next -> in_progress -> review -> done -> staged -> live.
- * Review = built, waiting for Zander to check it; only he moves it on.
- * done (shown as "Ready") = checked, waiting for the next stage. staged =
- * on staging.theprofitcoach.com, waiting to go live. Live = coaches have it. Ideas sit outside the flow: evaluate (new,
+ * Workflow order: todo -> up_next -> in_progress -> review -> done -> live.
+ * Review = built, waiting for Zander to check it on 3002. done (shown as
+ * "Ready") = he has checked it, waiting for the next ship. Live = shipped,
+ * coaches have it. (No staging step since 23 Nov 2026; the database still
+ * accepts the old "staged" value.) Ideas sit outside the flow: evaluate (new,
  * not scored or decided), parked (good one day, not now), vetoed (decided
  * against for now, kept as a log). "Blocked" is not a status — a job is blocked
  * when blocked_by is set, shown as a red flag on the card.
@@ -17,7 +18,6 @@ export const ROADMAP_STATUSES = [
   "in_progress",
   "review",
   "done",
-  "staged",
   "live",
   "evaluate",
   "parked",

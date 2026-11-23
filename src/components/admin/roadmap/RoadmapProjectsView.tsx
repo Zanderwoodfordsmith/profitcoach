@@ -88,9 +88,9 @@ export function counts(jobs: RoadmapJob[]) {
     todo: n(["up_next", "todo"]),
     building: n(["in_progress"]),
     review: n(["review"]),
-    ready: n(["done", "staged"]),
+    ready: n(["done"]),
     live: n(["live"]),
-    shipped: n(["done", "staged", "live"]),
+    shipped: n(["done", "live"]),
   };
 }
 
@@ -326,7 +326,7 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
 }
 
 /** Open jobs first by how far along they are, then ideas and parked. */
-export const JOB_ORDER = ["in_progress", "review", "done", "staged", "up_next", "todo", "evaluate", "parked"];
+export const JOB_ORDER = ["in_progress", "review", "done", "up_next", "todo", "evaluate", "parked"];
 
 function ProjectRows({
   row,

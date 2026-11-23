@@ -42,6 +42,8 @@ const SidePanel = dynamic(() => import("./SidePanel").then((m) => m.SidePanel), 
 const NAV_KEY = "practice-nav-open";
 // A new key (4 Nov): everyone starts at the new, narrower default.
 const NAV_WIDTH_KEY = "practice-nav-width-v2";
+/** "1" once someone shuts the page chat: it stays shut on refresh and other pages until they open it. */
+const CHAT_SHUT_KEY = "practice-chat-shut";
 /** The same width as the app's main menu (w-56). */
 const NAV_WIDTH_DEFAULT = 224;
 const NAV_WIDTH_MIN = 200;
@@ -250,9 +252,15 @@ export function PracticeShell({
         closing.current = false;
       });
   }
+  /** The panel's own close: shutting the chat is remembered. */
+  function shutSide() {
+    if (side === "comments") rememberChatShut(true);
+    closeSide();
+  }
   function switchSide(mode: SideMode) {
     setCalling(false);
     if (mode === "call") return setCalling(true);
+    rememberChatShut(false);
     if (page && hasChat(page.slug)) comments?.openChat(page.slug);
     else comments?.openList();
   }
@@ -345,12 +353,13 @@ export function PracticeShell({
     if (!openKey || commentPage(openKey) !== page.slug) openChat(page.slug);
   }, [panelOpen, page?.slug, openKey, openList, openChat]);
 
-  // The clean look opens the page's chat beside it on arrival, as on a Linear issue. Once: closing it sticks.
+  // The clean look opens the page's chat beside it on arrival, as on a Linear issue, unless
+  // they shut it: that sticks across refreshes and pages, and the Chat button shows new replies.
   const cleanChatOpened = useRef(false);
   useEffect(() => {
     if (!clean || cleanChatOpened.current || !ready || !page || sidePanelDesktop !== true || !openChat) return;
     cleanChatOpened.current = true;
-    if (supportDocked) return;
+    if (supportDocked || chatShut()) return;
     // A link that names a panel wins.
     if (new URLSearchParams(window.location.search).get("panel")) return;
     openChat(page.slug);
@@ -710,7 +719,7 @@ export function PracticeShell({
                 : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)] lg:self-start"
             }`}
           >
-            <SidePanel mode={side} sectionKey={discussing} page={page} onClose={closeSide} />
+            <SidePanel mode={side} sectionKey={discussing} page={page} onClose={shutSide} />
           </aside>
       ) : null}
       {side && sidePanelDesktop === false ? (
@@ -718,7 +727,7 @@ export function PracticeShell({
             <div
               className={`h-[85dvh] overflow-hidden rounded-t-3xl shadow-[0_-20px_50px_-20px_rgba(5,30,54,0.6)] ${clean ? "bp-clean-side" : ""} ${side === "comments" ? "bp-chat-side" : ""}`}
             >
-              <SidePanel mode={side} sectionKey={discussing} page={page} onClose={closeSide} />
+              <SidePanel mode={side} sectionKey={discussing} page={page} onClose={shutSide} />
             </div>
           </div>
       ) : null}
@@ -799,6 +808,23 @@ function CleanTopBar({
       </div>
     </div>
   );
+}
+
+function chatShut(): boolean {
+  try {
+    return window.localStorage.getItem(CHAT_SHUT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberChatShut(shut: boolean) {
+  try {
+    if (shut) window.localStorage.setItem(CHAT_SHUT_KEY, "1");
+    else window.localStorage.removeItem(CHAT_SHUT_KEY);
+  } catch {
+    // Private windows can refuse storage; the chat just opens as before.
+  }
 }
 
 /** Chat, with the page's unread count, when the chat is shut. */

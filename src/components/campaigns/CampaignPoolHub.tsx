@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
+  BadgeCheck,
   Ban,
   Check,
   ChevronLeft,
@@ -33,6 +34,7 @@ import { ContactInfoCell } from "@/components/table/ContactInfoCell";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { FitSelectionMenu, PoolFitCell, type FitPick } from "./PoolFitMenu";
 import {
   ProspectsPipelineToolbar,
   type ProspectsToolbarMenu,
@@ -98,6 +100,7 @@ import {
   poolRowMatchesDateAddedFilter,
   poolRowMatchesHeadcountFilter,
   poolRowMatchesIndustryFilter,
+  poolRowMatchesFitFilter,
   poolRowMatchesLinkedInFilter,
   poolRowMatchesPostcodeFilter,
   poolRowMatchesTagFilter,
@@ -109,6 +112,7 @@ import {
   type PoolContactFilter,
   type PoolDateAddedFilter,
   type PoolLinkedInFilter,
+  type PoolFitFilter,
   type PoolGroupField,
   type PoolGroupOrder,
   type PoolPerson,
@@ -302,6 +306,8 @@ const TABLE_NAME_COL_WIDTH = 280;
 
 function getPoolColumnWidth(key: PoolColumnKey): number {
   switch (key) {
+    case "fit":
+      return 76;
     case "contact_info":
       return 184;
     case "title":
@@ -410,6 +416,7 @@ export function CampaignPoolHub({
   const [contactFilter, setContactFilter] = useState<PoolContactFilter>("all");
   const [linkedinFilter, setLinkedinFilter] =
     useState<PoolLinkedInFilter>("all");
+  const [fitFilter, setFitFilter] = useState<PoolFitFilter>("all");
   const [dateAddedFilter, setDateAddedFilter] =
     useState<PoolDateAddedFilter>("all");
   const [headcountFilter, setHeadcountFilter] = useState<string[]>([]);
@@ -471,6 +478,7 @@ export function CampaignPoolHub({
   const [tagsMenuOpen, setTagsMenuOpen] = useState(false);
   const [tagsRowId, setTagsRowId] = useState<string | null>(null);
   const [tagsBusy, setTagsBusy] = useState(false);
+  const [fitMenuOpen, setFitMenuOpen] = useState(false);
   const [listMenuOpen, setListMenuOpen] = useState<"add" | "remove" | null>(
     null
   );
@@ -515,6 +523,7 @@ export function CampaignPoolHub({
     setCampaignIdFilter(next.campaignIdFilter);
     setContactFilter(next.contactFilter);
     setLinkedinFilter(next.linkedinFilter);
+    setFitFilter(next.fitFilter);
     setDateAddedFilter(next.dateAddedFilter);
     setHeadcountFilter(next.headcountFilter);
     setCityFilter(next.cityFilter);
@@ -537,6 +546,7 @@ export function CampaignPoolHub({
         campaignIdFilter,
         contactFilter,
         linkedinFilter,
+        fitFilter,
         dateAddedFilter,
         headcountFilter,
         cityFilter,
@@ -566,6 +576,7 @@ export function CampaignPoolHub({
       industryFilter,
       grouping,
       linkedinFilter,
+      fitFilter,
       sortField,
       sortOrder,
       sourceFilter,
@@ -897,7 +908,7 @@ export function CampaignPoolHub({
   }, [watchedImports, getAuthHeaders, reloadPeople, loadImportLists]);
 
   useEffect(() => {
-    if (!menu && !campaignMenu && !listMenuOpen && !matchMenuOpen) return;
+    if (!menu && !campaignMenu && !listMenuOpen && !matchMenuOpen && !fitMenuOpen) return;
     function handlePointerDown(e: MouseEvent) {
       const target = e.target as Node;
       if (toolbarRef.current?.contains(target)) return;
@@ -907,14 +918,18 @@ export function CampaignPoolHub({
       if ((e.target as Element | null)?.closest?.("[data-pool-list-menu]")) {
         return;
       }
+      if ((e.target as Element | null)?.closest?.("[data-pool-fit-menu]")) {
+        return;
+      }
       setMenu(null);
       setCampaignMenu(null);
       setListMenuOpen(null);
       setMatchMenuOpen(false);
+      setFitMenuOpen(false);
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [campaignMenu, listMenuOpen, matchMenuOpen, menu]);
+  }, [campaignMenu, fitMenuOpen, listMenuOpen, matchMenuOpen, menu]);
 
   useEffect(() => {
     if (menu) setMatchMenuOpen(false);
@@ -938,6 +953,7 @@ export function CampaignPoolHub({
       }
       if (!poolRowMatchesContactFilter(row, contactFilter)) return false;
       if (!poolRowMatchesLinkedInFilter(row, linkedinFilter)) return false;
+      if (!poolRowMatchesFitFilter(row, fitFilter)) return false;
       if (!poolRowMatchesDateAddedFilter(row, dateAddedFilter)) return false;
       if (!poolRowMatchesHeadcountFilter(row, headcountFilter)) return false;
       if (!poolRowMatchesCityFilter(row, cityFilter)) return false;
@@ -979,6 +995,7 @@ export function CampaignPoolHub({
     cityFilter,
     industryFilter,
     linkedinFilter,
+    fitFilter,
     postcodeFilter,
     people,
     query,
@@ -1093,6 +1110,7 @@ export function CampaignPoolHub({
     (campaignIdFilter || campaignFilter !== "all" ? 1 : 0) +
     (contactFilter !== "all" ? 1 : 0) +
     (linkedinFilter !== "all" ? 1 : 0) +
+    (fitFilter !== "all" ? 1 : 0) +
     (dateAddedFilter !== "all" ? 1 : 0) +
     (headcountFilter.length > 0 ? 1 : 0) +
     (cityFilter.trim() ? 1 : 0) +
@@ -1260,7 +1278,7 @@ export function CampaignPoolHub({
 
   useEffect(() => {
     setPage(1);
-  }, [query, sourceFilter, campaignFilter, campaignIdFilter, contactFilter, linkedinFilter, dateAddedFilter, headcountFilter, cityFilter, postcodeFilter, industryFilter, tagFilter, excludeTags, sortField, sortOrder, grouping.field]);
+  }, [query, sourceFilter, campaignFilter, campaignIdFilter, contactFilter, linkedinFilter, fitFilter, dateAddedFilter, headcountFilter, cityFilter, postcodeFilter, industryFilter, tagFilter, excludeTags, sortField, sortOrder, grouping.field]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -1343,6 +1361,7 @@ export function CampaignPoolHub({
     const total = itemIds.length;
     let added = 0;
     let skipped = 0;
+    let badFit = 0;
     setBusy(true);
     setError(null);
     setHeldNotice(null);
@@ -1368,10 +1387,12 @@ export function CampaignPoolHub({
           error?: string;
           added?: number;
           skipped?: number;
+          badFit?: number;
         };
         if (!res.ok) throw new Error(body.error || "Could not add to campaign.");
         added += Number(body.added ?? 0);
         skipped += Number(body.skipped ?? 0);
+        badFit += Number(body.badFit ?? 0);
         const done = Math.min(i + chunk.length, total);
         setAddProgress({ done, total });
         if (done < total) {
@@ -1381,9 +1402,14 @@ export function CampaignPoolHub({
         }
       }
       const addedLabel = `${added.toLocaleString()} ${added === 1 ? "person" : "people"}`;
-      const result = skipped
-        ? `Added ${addedLabel} to ${campaignName}. ${skipped.toLocaleString()} ${skipped === 1 ? "was" : "were"} already in it.`
-        : `Added ${addedLabel} to ${campaignName}.`;
+      const already = Math.max(0, skipped - badFit);
+      const result = [
+        `Added ${addedLabel} to ${campaignName}.`,
+        already ? `${already.toLocaleString()} ${already === 1 ? "was" : "were"} already in it.` : "",
+        badFit ? `${badFit.toLocaleString()} left out as Bad fit.` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
       setHeldNotice(result);
       setNotice(result);
       if (!personIds?.length) setSelectedIds([]);
@@ -1483,8 +1509,8 @@ export function CampaignPoolHub({
     }
   }
 
-  async function blacklistSelected() {
-    if (!listId || !selectedIds.length) return;
+  async function blacklistSelected(ids: string[] = selectedIds) {
+    if (!listId || !ids.length) return;
     setBusy(true);
     setError(null);
     try {
@@ -1497,16 +1523,69 @@ export function CampaignPoolHub({
           headers,
           body: JSON.stringify({
             action: "move_to_blacklist",
-            item_ids: selectedIds,
+            item_ids: ids,
           }),
         }
       );
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(body.error || "Could not blacklist.");
-      setSelectedIds([]);
+      setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
       await reloadPeople();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not blacklist.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Fit (job 278): set Good, OK or Bad, clear it, Blacklist, or ask Ava to check. */
+  async function applyFit(ids: string[], pick: FitPick) {
+    if (!listId || !ids.length) return;
+    if (pick === "blacklist") {
+      await blacklistSelected(ids);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await getAuthHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch(
+        `/api/coach/lead-lists/${encodeURIComponent(listId)}/items`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(
+            pick === "check"
+              ? { action: "check_fit", item_ids: ids.slice(0, 200) }
+              : { action: "set_fit", item_ids: ids, fit: pick === "clear" ? null : pick }
+          ),
+        }
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        labelled?: number;
+      };
+      if (!res.ok) throw new Error(body.error || "Could not change their fit.");
+      if (pick === "check") {
+        const labelled = Number(body.labelled ?? 0);
+        setNotice(
+          labelled
+            ? `Ava checked ${labelled.toLocaleString()} ${labelled === 1 ? "person" : "people"}.${ids.length > 200 ? " Pick the rest for the next 200." : ""}`
+            : "Ava had nobody new to check. People you've set yourself keep your call."
+        );
+        await reloadPeople();
+        return;
+      }
+      const fit = pick === "clear" ? null : pick;
+      const by = fit ? ("person" as const) : null;
+      const patch = (row: PoolPerson) =>
+        ids.includes(row.id) ? { ...row, fit, fit_by: by, fit_why: null } : row;
+      setPeople((prev) => prev.map(patch));
+      const cached = peopleCacheRef.current.get(activeViewId);
+      if (cached) peopleCacheRef.current.set(activeViewId, cached.map(patch));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not change their fit.");
     } finally {
       setBusy(false);
     }
@@ -2134,7 +2213,16 @@ export function CampaignPoolHub({
         </td>
         {shownColumnOptions.map((option) => (
           <td key={option.key} className="overflow-hidden px-3 py-2.5 text-sm text-slate-700">
-            {option.key === "contact_info" ? (
+            {option.key === "fit" ? (
+              <PoolFitCell
+                fit={row.fit}
+                why={row.fit_why}
+                by={row.fit_by}
+                blacklisted={row.blacklisted}
+                disabled={actionBusy}
+                onPick={(pick) => void applyFit([row.id], pick)}
+              />
+            ) : option.key === "contact_info" ? (
               <ContactInfoCell phone={row.phone} email={row.email} />
             ) : option.key === "title" ? (
               row.job_title || "—"
@@ -2370,6 +2458,8 @@ export function CampaignPoolHub({
               onContactFilter={setContactFilter}
               linkedinFilter={linkedinFilter}
               onLinkedinFilter={setLinkedinFilter}
+              fitFilter={fitFilter}
+              onFitFilter={setFitFilter}
               dateAddedFilter={dateAddedFilter}
               onDateAddedFilter={setDateAddedFilter}
               tagFilter={tagFilter}
@@ -2714,6 +2804,32 @@ export function CampaignPoolHub({
                         </div>
                       ) : null}
                     </div>
+                    <FitSelectionMenu
+                      count={selectedIds.length}
+                      disabled={actionBusy}
+                      open={fitMenuOpen}
+                      onOpenChange={setFitMenuOpen}
+                      onPick={(pick) => void applyFit(selectedIds, pick)}
+                      button={
+                        <TableToolbarButton
+                          label="Fit"
+                          title="Good, OK or Bad fit, or ask Ava to check"
+                          disabled={actionBusy}
+                          active={fitMenuOpen}
+                          aria-expanded={fitMenuOpen}
+                          aria-haspopup="menu"
+                          onClick={() => {
+                            setCampaignMenu(null);
+                            setTagsMenuOpen(false);
+                            setListMenuOpen(null);
+                            setFitMenuOpen((open) => !open);
+                          }}
+                          icon={
+                            <BadgeCheck className="h-5 w-5 text-slate-500" aria-hidden />
+                          }
+                        />
+                      }
+                    />
                     <TableToolbarButton
                       label="Blacklist"
                       disabled={actionBusy}

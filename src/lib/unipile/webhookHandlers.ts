@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import { unipileEmailBodyText } from "@/lib/messaging/emailBody";
 import { getUnipileEmail } from "@/lib/unipile/client";
+import { linkedInPublicIdentifier } from "@/lib/unipile/linkedinUrl";
 import {
   extractReactionEmoji,
   formatReactionPreview,
@@ -178,48 +179,66 @@ export async function handleUnipileNewRelation(
   const coachId = await coachIdForUnipileAccount(accountId);
   if (!coachId) return "no_account";
 
-  const { data: candidates } = await supabaseAdmin
-    .from("linkedin_campaign_leads")
-    .select(
-      "id, campaign_id, coach_id, status, current_step_position, linkedin_provider_id, linkedin_url, invitation_id"
-    )
-    .eq("coach_id", coachId)
-    .in("status", ["invited", "queued"])
-    .limit(200);
-  const leads = candidates ?? [];
-
-  const matched =
-    leads.find(
-      (l) =>
-        providerId &&
-        l.linkedin_provider_id &&
-        l.linkedin_provider_id === providerId
-    ) ||
-    leads.find((l) => {
-      if (!publicId || !l.linkedin_url) return false;
-      return l.linkedin_url.toLowerCase().includes(publicId.toLowerCase());
-    }) ||
-    leads.find((l) => {
-      if (!profileUrl || !l.linkedin_url) return false;
-      return (
-        l.linkedin_url.replace(/\/$/, "").toLowerCase() ===
-        profileUrl.replace(/\/$/, "").toLowerCase()
-      );
-    });
-
+  const matched = await findLeadForNewRelation(coachId, { providerId, publicId, profileUrl });
   if (!matched) return "no_lead";
 
-  if (matched.status === "invited" || matched.status === "queued") {
-    await advanceLeadAfterInviteAccepted({
-      lead: matched,
-      campaignId: matched.campaign_id as string,
-      coachId,
-      providerId: providerId || (matched.linkedin_provider_id as string) || null,
-    });
-    return `advanced:${matched.id}`;
-  }
+  await advanceLeadAfterInviteAccepted({
+    lead: matched,
+    campaignId: matched.campaign_id as string,
+    coachId,
+    providerId: providerId || (matched.linkedin_provider_id as string) || null,
+  });
+  return `advanced:${matched.id}`;
+}
 
-  return "already_handled";
+/**
+ * The coach's person waiting on this invite. Looked up directly: a coach can
+ * have thousands waiting (Sales Robot imports), so scanning a page misses most.
+ * The same person can sit in several campaigns: the running one wins.
+ */
+export async function findLeadForNewRelation(
+  coachId: string,
+  who: { providerId: string; publicId: string; profileUrl: string }
+) {
+  const open = () =>
+    supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select(
+        "id, campaign_id, coach_id, status, current_step_position, linkedin_provider_id, linkedin_url, invitation_id"
+      )
+      .eq("coach_id", coachId)
+      .in("status", ["invited", "queued"]);
+
+  let found: Array<Record<string, unknown> & { campaign_id: string }> = [];
+  if (who.providerId) {
+    const { data } = await open().eq("linkedin_provider_id", who.providerId).limit(50);
+    found = data ?? [];
+  }
+  const slugs = [
+    ...new Set(
+      [who.publicId, linkedInPublicIdentifier(who.profileUrl)]
+        .map((s) => (s || "").trim().toLowerCase())
+        .filter(Boolean)
+    ),
+  ];
+  for (const slug of slugs) {
+    if (found.length) break;
+    const { data } = await open()
+      .ilike("linkedin_url", `%/in/${encodeURIComponent(slug)}%`)
+      .limit(50);
+    found = (data ?? []).filter(
+      (l) => linkedInPublicIdentifier(String(l.linkedin_url ?? ""))?.toLowerCase() === slug
+    );
+  }
+  if (found.length < 2) return found[0] ?? null;
+
+  const { data: running } = await supabaseAdmin
+    .from("linkedin_campaigns")
+    .select("id")
+    .in("id", [...new Set(found.map((l) => l.campaign_id))])
+    .eq("status", "running");
+  const runningIds = new Set((running ?? []).map((r) => r.id as string));
+  return found.find((l) => runningIds.has(l.campaign_id)) ?? found[0];
 }
 
 /** Inbound DM → messaging tables + stop campaign on reply. */

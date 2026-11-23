@@ -21,10 +21,11 @@ import { supportChatOpenedByBca } from "@/lib/support/tickets";
 import { supportComposerFallbackBody } from "@/lib/support/supportTicketMedia";
 import { transcribeAudio } from "@/lib/support/voiceTranscript";
 import {
-  EXT_BY_MIME,
   SUPPORT_MAX_VIDEO_BYTES,
   maxBytesForCommunityPostMime,
   mediaKindForMime,
+  resolveMediaMimeFromName,
+  storageExtForMime,
   type CommunityPostMediaItem,
 } from "@/lib/communityPostMedia";
 import { randomUUID } from "crypto";
@@ -142,8 +143,8 @@ export async function createSupportWhatsAppConnectLink(
     expiresOn: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     providers: ["WHATSAPP"],
     name: `${SUPPORT_WHATSAPP_NOTIFY_PREFIX}:${adminId}`,
-    success_redirect_url: `${appBase}/admin/support?whatsapp=connected`,
-    failure_redirect_url: `${appBase}/admin/support?whatsapp=failed`,
+    success_redirect_url: `${appBase}/admin/support?tab=settings&whatsapp=connected`,
+    failure_redirect_url: `${appBase}/admin/support?tab=settings&whatsapp=failed`,
     notify_url: `${appBase}/api/unipile/notify`,
     bypass_success_screen: true,
     ...(existing ? { reconnect_account: existing.unipile_account_id } : {}),
@@ -371,9 +372,9 @@ async function importWhatsAppFiles(
   const media: CommunityPostMediaItem[] = [];
   for (const file of msg.files.slice(0, 5)) {
     const listedMime = file.mime.split(";")[0]!.trim().toLowerCase();
-    const listedKind = mediaKindForMime(listedMime);
+    const listedType = resolveMediaMimeFromName(file.name || "", listedMime) || "image/jpeg";
     const maxBytes =
-      listedKind === "video" ? SUPPORT_MAX_VIDEO_BYTES : maxBytesForCommunityPostMime(listedMime || "image/jpeg");
+      mediaKindForMime(listedType) === "video" ? SUPPORT_MAX_VIDEO_BYTES : maxBytesForCommunityPostMime(listedType);
     if (file.size && file.size > maxBytes) continue;
     // A voice note can still be uploading when the webhook fires: wait and try again.
     let got = await downloadUnipileMessageAttachment({ messageId: msg.id, attachmentId: file.id, maxBytes });
@@ -383,10 +384,11 @@ async function importWhatsAppFiles(
       got = await downloadUnipileMessageAttachment({ messageId: msg.id, attachmentId: file.id, maxBytes });
     }
     if (!got.ok || !got.data) continue;
-    const mime = (listedMime || String(got.data.contentType || "")).split(";")[0]!.trim().toLowerCase();
+    const mime = resolveMediaMimeFromName(file.name || "", listedMime || String(got.data.contentType || ""));
+    if (!mime) continue;
     const kind = mediaKindForMime(mime);
     if (!kind) continue;
-    const ext = EXT_BY_MIME[mime] ?? (kind === "image" ? "jpg" : kind === "audio" ? "ogg" : "bin");
+    const ext = storageExtForMime(mime, file.name || "") ?? (kind === "image" ? "jpg" : kind === "audio" ? "ogg" : "bin");
     const path = `${ownerId}/${randomUUID()}.${ext}`;
     const { error } = await supabaseAdmin.storage
       .from("community-posts")

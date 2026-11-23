@@ -2,6 +2,7 @@ import {
   DEFAULT_COACH_SORTS,
   DEFAULT_COACH_TABLE_COLUMNS,
   DEFAULT_COACH_TABLE_COLUMN_ORDER,
+  GETTING_CLIENTS_COLUMN_KEYS,
   type CoachSortCriterion,
   type CoachSortField,
   type CoachSortOrder,
@@ -239,6 +240,17 @@ function migrateCoachTableColumns(
     if (lastLoginIdx >= 0) {
       columnOrder.splice(lastLoginIdx + 1, 0, "lastActive");
       orderSeen.add("lastActive");
+    }
+  }
+  // The Getting clients group (from the old tab, 23 Nov) sits right after Blueprint.
+  const missingClientKeys = GETTING_CLIENTS_COLUMN_KEYS.filter((key) => !orderSeen.has(key));
+  if (missingClientKeys.length) {
+    const anchors: Array<keyof CoachTableColumnVisibility> = ["blueprint", ...GETTING_CLIENTS_COLUMN_KEYS];
+    const anchor = anchors.filter((key) => orderSeen.has(key)).pop();
+    const anchorIdx = anchor ? columnOrder.indexOf(anchor) : -1;
+    if (anchorIdx >= 0) {
+      columnOrder.splice(anchorIdx + 1, 0, ...missingClientKeys);
+      for (const key of missingClientKeys) orderSeen.add(key);
     }
   }
   for (const key of DEFAULT_COACH_TABLE_COLUMN_ORDER) {

@@ -12,7 +12,14 @@ import {
 
 import { BLUEPRINT_SECTIONS, buildOrder, sectionByKey, type FieldSpec } from "@/lib/practiceKnowledge/blueprint";
 import { isNewsletterLibraryKey } from "@/lib/practiceKnowledge/newsletters";
-import { sectionWorkflow, type WorkflowStatus } from "@/lib/practiceKnowledge/sectionWorkflow";
+import {
+  pageChoice,
+  pageChoiceKey,
+  sectionWorkflow,
+  todoOwner,
+  type ManualStatus,
+  type WorkflowStatus,
+} from "@/lib/practiceKnowledge/sectionWorkflow";
 import type { BuildJob } from "@/lib/practiceKnowledge/buildJobs";
 import { readyForRecommendation } from "@/lib/practiceKnowledge/brief";
 import { emptyPracticePayload, mergePracticePayload, sourced } from "@/lib/practiceKnowledge/sourced";
@@ -78,8 +85,8 @@ export type PracticeContextValue = {
   /** Set the section's To do / Review / Done switch. */
   setSectionStatus: (key: string, status: WorkflowStatus) => void;
   /** BCA sets a whole page to To do, Review or Done (4 Nov: one status per page). */
-  /** "progress" is BCA's In progress: To do, with BCA on it. */
-  setPageStatus: (slug: string, status: WorkflowStatus | "progress") => void;
+  /** In progress ("progress") and Needs coach ("coach") are both To do, with BCA on it or waiting on the coach. */
+  setPageStatus: (slug: string, status: ManualStatus) => void;
   /** The coach signs off every part of the page waiting on their review. */
   signOffPage: (slug: string) => void;
   /** BCA's check before a signed-off LinkedIn profile or campaign is sent. */
@@ -629,12 +636,20 @@ export function PracticeProvider({
       const current = { ...(base.review.section_status?.value ?? {}) };
       const log = [...(base.review.status_log?.value ?? [])];
       const stamps = { ...(base.review.approved_sections?.value ?? {}) };
-      const target: WorkflowStatus = status === "progress" ? "todo" : status;
+      const target: WorkflowStatus = status === "progress" || status === "coach" ? "todo" : status;
+      let anyTracked = false;
       for (const ref of pageSections(slug)) {
         const work = sectionWorkflow(ref, row);
-        if (!work.tracked || (work.status === target && Boolean(work.started) === (status === "progress"))) continue;
+        if (work.tracked) anyTracked = true;
+        // Already there: same status, and for To do the same person on it.
+        const already =
+          work.status === target &&
+          Boolean(work.started) === (status === "progress") &&
+          (status !== "coach" || work.owner === "coach") &&
+          (status !== "todo" || work.owner === todoOwner(ref));
+        if (!work.tracked || already) continue;
         current[ref.key] = `${status}|${at}`;
-        // The log keeps To do / Review / Done; In progress logs as To do.
+        // The log keeps To do / Review / Done; In progress and Needs coach log as To do.
         if (work.status !== target) log.push({
           id: randomUuid(),
           section: ref.key,
@@ -647,6 +662,8 @@ export function PracticeProvider({
         });
         if (status === "done") stamps[ref.key] = at;
       }
+      // Nothing on the page to carry it (Lead lists): the page keeps the status itself.
+      if (!anyTracked) current[pageChoiceKey(slug)] = `${status}|${at}`;
       const side = coachId ? "admin" : "coach_edit";
       const next = mergePracticePayload(base, {
         review: {
@@ -667,15 +684,30 @@ export function PracticeProvider({
       const now = new Date().toISOString();
       const stamps = { ...(base.review.approved_sections?.value ?? {}) };
       let changed = false;
+      let anyTracked = false;
       for (const ref of pageSections(slug)) {
         const work = sectionWorkflow(ref, row);
+        if (work.tracked) anyTracked = true;
         if (work.status !== "review" || work.owner !== "coach") continue;
         stamps[ref.key] = work.revision && work.revision > now ? work.revision : now;
         changed = true;
       }
-      if (!changed) return;
+      // A page BCA set to Coach review by hand (Lead lists): signing off makes it Done.
+      const pageDone = !anyTracked && pageChoice(base, slug) === "review";
+      if (!changed && !pageDone) return;
       const next = mergePracticePayload(base, {
-        review: { ...base.review, approved_sections: sourced(stamps, "coach_edit") },
+        review: {
+          ...base.review,
+          approved_sections: sourced(stamps, "coach_edit"),
+          ...(pageDone
+            ? {
+                section_status: sourced(
+                  { ...(base.review.section_status?.value ?? {}), [pageChoiceKey(slug)]: `done|${now}` },
+                  "coach_edit"
+                ),
+              }
+            : {}),
+        },
       });
       draftRef.current = next;
       setDraft(next);

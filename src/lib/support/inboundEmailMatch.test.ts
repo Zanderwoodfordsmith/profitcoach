@@ -2,10 +2,44 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   inboundMightBeSupportFollowUp,
+  isBinnedSupportEmail,
   isInactiveSupportMailboxEmail,
   normalizeSupportEmailSubject,
   shouldSkipInactiveSupportEmail,
+  supportPlusTag,
 } from "./inboundEmailMatch";
+
+describe("support+name@ mail", () => {
+  const to = (identifier: string) => ({ to_attendees: [{ identifier }] });
+
+  it("reads the tag from a support+ alias", () => {
+    assert.equal(
+      supportPlusTag(to("support+willwalsh@businesscoachacademy.com")),
+      "willwalsh"
+    );
+    assert.equal(
+      supportPlusTag(to("Support+PaulWainwright@BusinessCoachAcademy.com")),
+      "paulwainwright"
+    );
+  });
+
+  it("ignores plain support@, other people's aliases and other domains", () => {
+    assert.equal(supportPlusTag(to("support@businesscoachacademy.com")), null);
+    assert.equal(supportPlusTag(to("zander+x@businesscoachacademy.com")), null);
+    assert.equal(supportPlusTag(to("support+x@example.com")), null);
+    assert.equal(supportPlusTag({}), null);
+  });
+
+  it("keeps a Sales Robot export Gmail filed under Sent", () => {
+    const salesRobot = {
+      role: "sent",
+      folders: ["CATEGORY_PERSONAL", "UNREAD", "IMPORTANT", "SENT"],
+    };
+    assert.equal(isBinnedSupportEmail(salesRobot), false);
+    assert.equal(isBinnedSupportEmail({ role: "trash", folders: [] }), true);
+    assert.equal(isBinnedSupportEmail({ role: "unknown", folders: ["SPAM"] }), true);
+  });
+});
 
 describe("support inbound email matching", () => {
   it("treats Gmail Important mail with no inbox as filed away", () => {

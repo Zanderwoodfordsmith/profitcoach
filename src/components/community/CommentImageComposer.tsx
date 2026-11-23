@@ -10,7 +10,6 @@ import {
   validateCommunityCommentImageFile,
 } from "@/lib/communityCommentMedia";
 import {
-  SUPPORT_DOCUMENT_ACCEPT,
   mediaKindForMime,
   resolveCommunityPostMediaMime,
 } from "@/lib/communityPostMedia";
@@ -30,8 +29,6 @@ type SharedProps = {
   /** Take videos, voice notes and documents too, not just images. */
   anyFile?: boolean;
 };
-
-const ANY_FILE_ACCEPT = `image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,.mov,audio/*,${SUPPORT_DOCUMENT_ACCEPT}`;
 
 function addPendingFiles(
   pending: PendingCommentImage[],
@@ -100,7 +97,7 @@ export function CommentAttachButton({
       <Paperclip className={`${iconClass} shrink-0`} strokeWidth={1.75} />
       <input
         type="file"
-        accept={anyFile ? ANY_FILE_ACCEPT : "image/jpeg,image/png,image/webp"}
+        accept={anyFile ? undefined : "image/jpeg,image/png,image/webp"}
         multiple
         className="sr-only"
         disabled={disabled || pending.length >= COMMUNITY_COMMENT_MEDIA_MAX}

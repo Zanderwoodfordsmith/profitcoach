@@ -12,6 +12,8 @@ modes: [admin, coach]
 ## What this is
 Every coach has a **Pool** (everyone they have ever imported), a **Blacklist** (never contact), and named lists. Each import makes a new named list. Campaigns are filled from lists.
 
+Each person has a **Fit**: Good (owns or runs a firm right in the market), OK (probably, but unclear) or Bad (not a fit), or nothing yet. Ava labels people as they're imported, from the coach's "Who goes on your list" box; the coach or BCA can change any label in the Pool's Fit column, or pick people and use Fit. Bad people are never added to a campaign, and Good go in before OK. Blacklist is the fourth choice: never messaged, on any list.
+
 ## Inputs
 - Reads: their lists and the people on them (`list_lists`, `get_list_people`).
 - From the coach: the list name, or the LinkedIn profile URLs they paste.

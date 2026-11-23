@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
-import { ProductCanvasToggle } from "@/components/admin/roadmap/ProductCanvasToggle";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import {
   INITIATIVE_STATUSES,
@@ -96,7 +95,6 @@ export function RoadmapInitiativesTab() {
         title="Product"
         description="Initiatives are the big goals; each holds projects, and projects hold jobs. Health is each running project's latest update: green on track, yellow at risk, red off track, grey when it's had no update this week."
         tabs={<LessonImportTabs />}
-        actions={<ProductCanvasToggle />}
       />
       {error ? <p className="mt-4 text-sm font-medium text-rose-600">{error}</p> : null}
       {!jobs || !projects || !initiatives ? (
@@ -225,8 +223,7 @@ function InitiativeShell({
 }) {
   return (
     <div className="w-full">
-      <StickyPageHeader title="Product" tabs={<LessonImportTabs />}
-        actions={<ProductCanvasToggle />} />
+      <StickyPageHeader title="Product" tabs={<LessonImportTabs />} />
       <InitiativeNav initiative={state.initiative} id={id} active={tab} />
       {state.error ? <p className="mt-4 text-sm font-medium text-rose-600">{state.error}</p> : null}
       {state.loading ? <p className="py-10 text-sm text-slate-500">Loading the initiative…</p> : null}

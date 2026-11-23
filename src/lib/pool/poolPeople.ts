@@ -5,6 +5,7 @@ import {
   formatProspectPersonName,
 } from "@/lib/prospectDisplayFormat";
 import { SALES_NAV_HEADCOUNT_BANDS } from "@/lib/salesNavigator/headcountBands";
+import { fitRank, type FitLabel } from "@/lib/pool/fit";
 
 export type PoolPerson = {
   id: string;
@@ -40,6 +41,12 @@ export type PoolPerson = {
   /** When that import landed. Newer imports sort first. */
   source_ranked_at?: string | null;
   tags: string[];
+  /** Good, OK or Bad (job 278): Ava's call or a person's. Null until checked. */
+  fit?: FitLabel | null;
+  /** Ava's reason, in a few words. */
+  fit_why?: string | null;
+  /** Who set it: Ava, or the coach or BCA ("person"). */
+  fit_by?: "ava" | "person" | null;
   in_campaign: boolean;
   /** Campaigns this person is already enrolled in. */
   campaign_ids: string[];
@@ -62,6 +69,7 @@ export type PoolStats = {
 };
 
 export type PoolColumnKey =
+  | "fit"
   | "contact_info"
   | "title"
   | "company"
@@ -83,6 +91,7 @@ export const POOL_TABLE_COLUMN_OPTIONS: Array<{
   key: PoolColumnKey;
   label: string;
 }> = [
+  { key: "fit", label: "Fit" },
   { key: "contact_info", label: "Contact Info" },
   { key: "title", label: "Title" },
   { key: "company", label: "Company" },
@@ -100,6 +109,7 @@ export const POOL_TABLE_COLUMN_OPTIONS: Array<{
 ];
 
 export const DEFAULT_POOL_COLUMN_VISIBILITY: PoolColumnVisibility = {
+  fit: true,
   contact_info: true,
   title: false,
   company: false,
@@ -139,6 +149,8 @@ export type PoolContactFilter =
   | "both"
   | "none";
 export type PoolLinkedInFilter = "all" | "has" | "none";
+/** Fit (job 278): a label, or "none" for people nobody has checked yet. */
+export type PoolFitFilter = "all" | FitLabel | "none";
 export type PoolDateAddedFilter =
   | "all"
   | "today"
@@ -234,6 +246,15 @@ export const POOL_DATE_ADDED_FILTER_OPTIONS: Array<{
 
 function startOfLocalDay(d = new Date()): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+export function poolRowMatchesFitFilter(
+  row: Pick<PoolPerson, "fit">,
+  filter: PoolFitFilter
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "none") return !row.fit;
+  return row.fit === filter;
 }
 
 export function poolRowMatchesContactFilter(
@@ -613,7 +634,9 @@ export function comparePoolPeople(
       result =
         time(b.source_ranked_at ?? b.created_at) -
         time(a.source_ranked_at ?? a.created_at);
-      // Within an import, active LinkedIn users first (Open Profile, then Premium).
+      // Within an import, Good fit before OK, then people not checked yet, Bad last (job 278).
+      if (result === 0) result = fitRank(a.fit) - fitRank(b.fit);
+      // Then active LinkedIn users first (Open Profile, then Premium).
       if (result === 0) result = activityPriority(b) - activityPriority(a);
       if (result === 0) {
         const aRank = a.source_rank ?? Number.MAX_SAFE_INTEGER;

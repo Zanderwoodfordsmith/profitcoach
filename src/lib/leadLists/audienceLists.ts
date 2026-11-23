@@ -279,6 +279,10 @@ const LEAD_LIST_ITEM_COPY_FIELDS = [
   "identity_key",
   "tags",
   "contact_id",
+  "fit",
+  "fit_why",
+  "fit_by",
+  "fit_at",
 ] as const;
 
 /** Unique copy name for duplicated audience / import list tabs. */

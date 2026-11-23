@@ -9,8 +9,10 @@ import {
   poolSourceLabel,
   type PoolContactFilter,
   type PoolDateAddedFilter,
+  type PoolFitFilter,
   type PoolLinkedInFilter,
 } from "@/lib/pool/poolPeople";
+import { FIT_OPTIONS } from "@/lib/pool/fit";
 import { prospectTagTone } from "@/lib/prospects/tagAppearance";
 import { fieldClass } from "@/components/ui/Field";
 
@@ -40,6 +42,8 @@ type Props = {
   onContactFilter: (value: PoolContactFilter) => void;
   linkedinFilter: PoolLinkedInFilter;
   onLinkedinFilter: (value: PoolLinkedInFilter) => void;
+  fitFilter: PoolFitFilter;
+  onFitFilter: (value: PoolFitFilter) => void;
   dateAddedFilter: PoolDateAddedFilter;
   onDateAddedFilter: (value: PoolDateAddedFilter) => void;
   tagFilter: string;
@@ -215,6 +219,7 @@ export function PoolFilterMenu(props: Props) {
     (props.campaignIdFilter || props.campaignFilter !== "all" ? 1 : 0) +
     (props.contactFilter !== "all" ? 1 : 0) +
     (props.linkedinFilter !== "all" ? 1 : 0) +
+    (props.fitFilter !== "all" ? 1 : 0) +
     (props.dateAddedFilter !== "all" ? 1 : 0) +
     (props.headcountFilter.length > 0 ? 1 : 0) +
     (props.cityFilter.trim() ? 1 : 0) +
@@ -228,6 +233,7 @@ export function PoolFilterMenu(props: Props) {
     props.onCampaignFilter("all");
     props.onContactFilter("all");
     props.onLinkedinFilter("all");
+    props.onFitFilter("all");
     props.onDateAddedFilter("all");
     props.onHeadcountFilter([]);
     props.onCityFilter("");
@@ -272,6 +278,31 @@ export function PoolFilterMenu(props: Props) {
         </button>
       </div>
       <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-3.5">
+        <Group label="Fit" columns={5}>
+          <Choice fill selected={props.fitFilter === "all"} onClick={() => props.onFitFilter("all")}>
+            All
+          </Choice>
+          {FIT_OPTIONS.map((option) => (
+            <Choice
+              key={option.key}
+              fill
+              selected={props.fitFilter === option.key}
+              title={option.hint}
+              onClick={() => props.onFitFilter(option.key)}
+            >
+              {option.short}
+            </Choice>
+          ))}
+          <Choice
+            fill
+            selected={props.fitFilter === "none"}
+            title="Nobody has checked them yet"
+            onClick={() => props.onFitFilter("none")}
+          >
+            Not checked
+          </Choice>
+        </Group>
+
         <Group label="Company size" columns="sizes">
           <Choice
             fill="always"

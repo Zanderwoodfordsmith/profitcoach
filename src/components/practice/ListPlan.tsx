@@ -1,12 +1,14 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
-import { ChevronDown, Download, ExternalLink, Info, Loader2, Pencil, RefreshCw } from "lucide-react";
+import { ChevronDown, Download, ExternalLink, Factory, Info, Loader2, Pencil, RefreshCw, TextSearch } from "lucide-react";
 
+import { badgeClass } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { fieldClass } from "@/components/ui/Field";
-import type { ActivityItem, ProspectSearchDraft } from "@/lib/launch/jobActivity";
-import { parseSalesNavSearchUrl } from "@/lib/salesNavigator/parseSalesNavFilters";
+import type { ActivityItem, ListFix, ListQuality, ProspectSearchDraft } from "@/lib/launch/jobActivity";
+import { fitOption, listFitLabel, type FitLabel } from "@/lib/pool/fit";
+import { keywordsOnlyExclude, parseSalesNavSearchUrl } from "@/lib/salesNavigator/parseSalesNavFilters";
 import { summarizeSalesNavSearch } from "@/lib/salesNavigator/salesNavSearchSummary";
 
 /** Under this many people a list is too small for an automated campaign on its own (job 271). */
@@ -149,6 +151,7 @@ export function ListPlan({
   readOnly?: boolean;
 }) {
   const searches = useMemo(() => (item.payload.searches ?? []) as ProspectSearchDraft[], [item.payload.searches]);
+  const dropped = (item.payload.dropped ?? []) as ProspectSearchDraft[];
   const [on, setOn] = useState<Record<string, boolean>>(() => Object.fromEntries(searches.map((s) => [s.id, s.on])));
   const [note, setNote] = useState("");
   const [showThinking, setShowThinking] = useState(false);
@@ -171,14 +174,13 @@ export function ListPlan({
 
   const imported = item.status !== "open";
   const canTick = !imported && !readOnly;
-  // Before import every row says "Not imported", so on a narrow page that column waits until something comes in.
-  const statusCol = imported ? "" : "hidden @5xl:table-cell";
-  const hasName = groups.some((g) => g.parts.includes.length);
-  const hasIndustry = groups.some((g) => g.parts.industries.length);
-  const hasKeywords = groups.some((g) => g.parts.keywords);
+  // Before import every row would say "Not imported" (the tag above says it once), so the column waits until something comes in.
+  const statusCol = imported ? "" : "hidden";
+  // One column for how each list finds people (Zander, 23 Nov): company-name words, or an industry (icon), plus keywords (icon).
+  const hasWords = groups.some((g) => g.parts.includes.length || g.parts.industries.length || g.parts.keywords);
   const staffs = groups.map((g) => staffWords(g.sizes));
   const sameStaff = staffs.length > 0 && staffs.every((x) => x === staffs[0]) ? staffs[0]! : null;
-  const columns = 5 + (sameStaff ? 0 : 1) + (canTick ? 1 : 0) + (hasName ? 1 : 0) + (hasIndustry ? 1 : 0) + (hasKeywords ? 1 : 0);
+  const columns = 6 + (sameStaff ? 0 : 1) + (canTick ? 1 : 0) + (hasWords ? 1 : 0);
   const anyRough = searches.some((s) => s.roughSize && typeof s.size === "number");
 
   const isOn = (g: Group) => g.searches.some((s) => ticks[s.id]);
@@ -237,7 +239,13 @@ export function ListPlan({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-ui text-slate-600">
             {tickedGroups.length} of {groups.length} ticked
-            {total != null ? ` · about ${anyRough ? "≈ " : ""}${total.toLocaleString("en-GB")} people` : ""}
+            {total != null ? ` · about ${total.toLocaleString("en-GB")} people` : ""}
+            {anyRough ? (
+              <span className="text-slate-500" title="The coach's LinkedIn can't count, so BCA's did. 2nd and 3rd connections are BCA's, so numbers are close, not exact.">
+                {" "}
+                · rough counts
+              </span>
+            ) : null}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -245,10 +253,10 @@ export function ListPlan({
               disabled={busy || !onSize}
               onClick={() => void onSize?.()}
               className={buttonClass("second", "normal")}
-              title="Asks LinkedIn how many people each list finds. Nothing is imported."
+              title="Counts each list on LinkedIn and has Ava check 10 people from it, then puts the lists with the most good people first. Nothing is imported."
             >
               {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <RefreshCw className="size-4" aria-hidden />}
-              Check sizes
+              Check lists
             </button>
             <button
               type="button"
@@ -270,11 +278,22 @@ export function ListPlan({
             <tr>
               {canTick ? <th className="w-8 px-2.5 py-2.5" aria-label="Use this list" /> : null}
               <th className="px-2.5 py-2.5 font-medium">List</th>
-              {hasName ? <th className="px-2.5 py-2.5 font-medium">Company name has</th> : null}
-              {hasIndustry ? <th className="px-2.5 py-2.5 font-medium">Industry</th> : null}
-              {hasKeywords ? <th className="px-2.5 py-2.5 font-medium">Keywords</th> : null}
+              {hasWords ? (
+                <th
+                  className="px-2.5 py-2.5 font-medium"
+                  title="The words in the company's name. A factory icon means a LinkedIn industry; a magnifier means keywords, which search the whole profile."
+                >
+                  Company name / industry
+                </th>
+              ) : null}
               {sameStaff ? null : <th className="px-2.5 py-2.5 font-medium">Staff</th>}
               <th className="px-2.5 py-2.5 text-right font-medium">People</th>
+              <th
+                className="px-2.5 py-2.5 text-right font-medium"
+                title="Of 10 people Ava checked from the list, how many she'd message. Good: 7 or more. OK: 4 to 6. Bad: under 4."
+              >
+                Fit
+              </th>
               <th className="hidden px-2.5 py-2.5 font-medium @5xl:table-cell">Source</th>
               <th className={`${statusCol} px-2.5 py-2.5 font-medium`}>Status</th>
               <th className="w-8 px-2 py-2.5" aria-label="More" />
@@ -288,6 +307,8 @@ export function ListPlan({
               const count = people(group.searches);
               const extraExcludes = p.excludes.filter((x) => !base.excludes.includes(x));
               const extraTitles = p.titles.filter((x) => !base.titles.includes(x));
+              const quality = group.searches.find((s) => s.quality)?.quality ?? null;
+              const fix = group.searches.find((s) => s.fix)?.fix ?? null;
               return (
                 <Fragment key={group.key}>
                   <tr className={`${used ? "text-slate-800" : "text-slate-400"} ${expanded ? "bg-slate-50/70" : "hover:bg-slate-50/50"}`}>
@@ -308,35 +329,36 @@ export function ListPlan({
                       <button
                         type="button"
                         onClick={() => setOpen(expanded ? null : group.key)}
-                        className={`block max-w-[10rem] truncate text-left font-medium @5xl:max-w-[13rem] ${used ? "text-slate-900" : ""} hover:underline`}
+                        className={`block max-w-[8rem] truncate text-left font-medium @5xl:max-w-[13rem] ${used ? "text-slate-900" : ""} hover:underline`}
                         title={group.label}
                       >
                         {group.label}
                       </button>
                     </td>
-                    {hasName ? <Cell text={p.includes.join(", ")} /> : null}
-                    {hasIndustry ? <Cell text={p.industries.join(", ")} /> : null}
-                    {hasKeywords ? <Cell text={p.keywords ?? ""} /> : null}
+                    {hasWords ? <WordsCell parts={p} /> : null}
                     {sameStaff ? null : <td className="whitespace-nowrap px-2.5 py-2.5">{staffWords(group.sizes)}</td>}
                     <td
                       className="whitespace-nowrap px-2.5 py-2.5 text-right tabular-nums"
                       title={
                         count == null
-                          ? "No count yet. Press Check sizes."
+                          ? "No count yet. Press Check lists."
                           : group.searches.some((s) => s.roughSize)
                             ? "Rough: counted on BCA's LinkedIn, not the coach's"
                             : undefined
                       }
                     >
-                      {count == null ? "–" : `${group.searches.some((s) => s.roughSize) ? "≈ " : ""}${count.toLocaleString("en-GB")}`}
-                      {count != null && count < SMALL_LIST ? (
-                        <span
-                          className="ml-1.5 rounded bg-amber-50 px-1.5 py-0.5 text-caption text-amber-800 ring-1 ring-amber-200"
-                          title={`Under ${SMALL_LIST} people: too small for a campaign on its own. Widen it or combine it with a similar list; fine for a one-off.`}
-                        >
-                          Small
+                      {count == null ? (
+                        "–"
+                      ) : count < SMALL_LIST ? (
+                        <span className="text-amber-700" title={`Small: under ${SMALL_LIST} people, too few for a campaign on its own. Widen it or combine it with a similar list; fine for a one-off.`}>
+                          {count.toLocaleString("en-GB")}
                         </span>
-                      ) : null}
+                      ) : (
+                        count.toLocaleString("en-GB")
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-2.5 py-2.5 text-right">
+                      <Fit quality={quality} />
                     </td>
                     <td className="hidden whitespace-nowrap px-2.5 py-2.5 @5xl:table-cell">
                       <a
@@ -396,6 +418,8 @@ export function ListPlan({
                           {p.keywords ? <Line label="Keywords" value={p.keywords} /> : null}
                           {extraTitles.length ? <Line label="Also job titles" value={words(extraTitles, 20)} /> : null}
                           {extraExcludes.length ? <Line label="Also leaves out" value={words(extraExcludes, 20)} /> : null}
+                          {fix ? <Fixed fix={fix} /> : null}
+                          {quality ? <Checked quality={quality} /> : null}
                           {group.searches.length ? (
                             <ul className="pt-1">
                               {group.searches.map((s) => (
@@ -427,6 +451,8 @@ export function ListPlan({
           </tbody>
         </table>
       </div>
+
+      {dropped.length && !readOnly ? <Dropped lists={dropped} /> : null}
 
       {canTick ? (
         <>
@@ -463,12 +489,30 @@ export function ListPlan({
   );
 }
 
-/** One line, cut short with the rest on hover; the row opens to show it all. */
-function Cell({ text }: { text: string }) {
+/**
+ * How a list finds people, in one cell: its company-name words, or its
+ * industry with a factory icon, and a magnifier when it has keywords. Cut
+ * short, with the rest on hover; the row opens to show it all.
+ */
+function WordsCell({ parts }: { parts: Parts }) {
+  const industry = parts.industries.join(", ");
+  const names = parts.includes.join(", ");
+  const main = names || industry || parts.keywords || "";
+  const hover = [
+    names ? `Company name has: ${names}` : "",
+    industry ? `LinkedIn industry: ${industry}` : "",
+    parts.keywords ? `Keywords (whole profile): ${parts.keywords}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const icon = "size-3.5 shrink-0 text-slate-400";
   return (
     <td className="px-2.5 py-2.5">
-      <span className="block max-w-[7rem] truncate @5xl:max-w-[11rem]" title={text || undefined}>
-        {text || <span className="text-slate-300">–</span>}
+      <span className="flex max-w-[10rem] items-center gap-1 @5xl:max-w-[17rem]" title={hover || undefined}>
+        {industry ? <Factory className={icon} aria-label="LinkedIn industry" /> : null}
+        {!names && !industry && parts.keywords ? <TextSearch className={icon} aria-label="Keywords" /> : null}
+        <span className="min-w-0 truncate">{main || <span className="text-slate-300">–</span>}</span>
+        {(names || industry) && parts.keywords ? <TextSearch className={icon} aria-label="Also keywords" /> : null}
       </span>
     </td>
   );
@@ -527,7 +571,8 @@ function EditList({
   const [keywords, setKeywords] = useState(p.keywords ?? "");
   const [sizes, setSizes] = useState<string[]>(() => [...new Set(group.sizes)]);
   const both = splitList(names).length > 0 && splitList(industries).length > 0;
-  const nameAndKeywords = splitList(names).length > 0 && keywords.trim().length > 0;
+  // A keyword NOT on its own can sit beside company-name words (Zander, 23 Nov).
+  const nameAndKeywords = splitList(names).length > 0 && keywords.trim().length > 0 && !keywordsOnlyExclude(keywords.trim());
   const id = group.key.replace(/[^a-z0-9]/gi, "").slice(0, 24);
 
   return (
@@ -547,7 +592,7 @@ function EditList({
       <EditField id={`${id}-industries`} label="Industry" hint="LinkedIn's exact industry names, with commas between">
         <input id={`${id}-industries`} value={industries} onChange={(e) => setIndustries(e.target.value)} className={fieldClass("input", "normal", "w-full")} />
       </EditField>
-      <EditField id={`${id}-keywords`} label="Keywords" hint="Searches the whole profile. Only when company names don't work">
+      <EditField id={`${id}-keywords`} label="Keywords" hint="Searches the whole profile. Only when company names don't work, or a NOT to leave people out">
         <input id={`${id}-keywords`} value={keywords} onChange={(e) => setKeywords(e.target.value)} className={fieldClass("input", "normal", "w-full")} />
       </EditField>
       {both ? (
@@ -555,7 +600,11 @@ function EditList({
           Company name and industry together make the list very small, and LinkedIn&apos;s industries are often wrong. Use one unless you mean both.
         </p>
       ) : null}
-      {nameAndKeywords ? <p className="text-ui text-rose-700">Use company-name words or keywords, not both.</p> : null}
+      {nameAndKeywords ? (
+        <p className="text-ui text-amber-800">
+          Company-name words and keywords together make a list much smaller. Save and count shows whether it&apos;s still big enough.
+        </p>
+      ) : null}
       <fieldset>
         <legend className="text-ui font-medium text-slate-900">Staff</legend>
         <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
@@ -572,7 +621,7 @@ function EditList({
         </div>
       </fieldset>
       <div className="flex items-center gap-2">
-        <button type="submit" disabled={busy || nameAndKeywords || !sizes.length} className={buttonClass("main", "small")}>
+        <button type="submit" disabled={busy || !sizes.length} className={buttonClass("main", "small")}>
           {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
           Save and count
         </button>
@@ -592,6 +641,145 @@ function EditField({ id, label, hint, children }: { id: string; label: string; h
       </label>
       {hint ? <span className="ml-2 text-ui text-slate-500">{hint}</span> : null}
       <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
+/** "Good 8/10": of the people Ava checked, how many she'd message. Good 7+, OK 4 to 6, Bad under 4 (job 278). */
+function Fit({ quality }: { quality: ListQuality | null }) {
+  if (!quality?.checked) return <span className="text-slate-300">–</span>;
+  const option = fitOption(listFitLabel(quality.fit, quality.checked));
+  return (
+    <span className={badgeClass(option.tone, "tabular-nums")} title={quality.note || undefined}>
+      {option.short} {quality.fit}/{quality.checked}
+    </span>
+  );
+}
+
+/** Each person's label; checks from before job 278 only said fit or not. */
+function labelOf(person: ListQuality["people"][number]): FitLabel {
+  return person.label ?? (person.fit ? "good" : "bad");
+}
+
+/** Who Ava checked from the list and what she made of them. */
+function Checked({ quality }: { quality: ListQuality }) {
+  const count = (label: FitLabel) => quality.people.filter((p) => labelOf(p) === label).length;
+  const parts = (["good", "ok", "bad"] as const).map((l) => (count(l) ? `${count(l)} ${fitOption(l).short}` : "")).filter(Boolean);
+  return (
+    <div className="pt-2">
+      <p>
+        <span className="font-medium text-slate-900">
+          Ava checked {quality.checked} people{quality.people.some((p) => (p.at ?? 0) > 25) ? " from the top, middle and end of the list" : ""}:{" "}
+          {parts.join(", ")}.
+        </span>{" "}
+        {quality.note}
+      </p>
+      <ul className="mt-1.5 space-y-1">
+        {quality.people.map((person, i) => {
+          const label = labelOf(person);
+          const option = fitOption(label);
+          return (
+            <li key={`${person.url}-${i}`} className="flex items-start gap-2">
+              <span className={badgeClass(option.tone, "w-11 shrink-0 justify-center")}>{option.short}</span>
+              {person.at ? (
+                <span className="w-12 shrink-0 text-right tabular-nums text-slate-400" title="Their place in LinkedIn's list (1 is the top)">
+                  #{person.at.toLocaleString("en-GB")}
+                </span>
+              ) : null}
+              <span className="min-w-0">
+                {person.url ? (
+                  <a href={person.url} target="_blank" rel="noreferrer" className="text-slate-900 hover:underline">
+                    {person.name}
+                  </a>
+                ) : (
+                  <span className="text-slate-900">{person.name}</span>
+                )}
+                <span className="text-slate-500">
+                  {" "}
+                  · {[person.role, person.company].filter(Boolean).join(" at ") || person.headline}
+                </span>
+                {label !== "good" && person.why ? (
+                  <span className={label === "bad" ? "text-rose-700" : "text-amber-800"}> · {person.why}</span>
+                ) : null}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** Lists Ava took out because 3 or fewer in 10 of the people she checked fit (Zander, 23 Nov). */
+function Dropped({ lists }: { lists: ProspectSearchDraft[] }) {
+  return (
+    <div className="max-w-[68ch] text-ui text-slate-700">
+      <p className="font-medium text-slate-900">
+        Ava dropped {lists.length} {lists.length === 1 ? "list" : "lists"}: too few of the people she checked fit.
+      </p>
+      <ul className="mt-1.5 space-y-1">
+        {lists.map((s) => (
+          <li key={s.id} className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-medium text-slate-900">{s.label}</span>
+            <Fit quality={s.quality ?? null} />
+            {typeof s.size === "number" ? <span className="tabular-nums text-slate-500">{s.size.toLocaleString("en-GB")} people</span> : null}
+            <a href={s.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sky-700 hover:underline">
+              Sales Nav <ExternalLink className="size-3.5" aria-hidden />
+            </a>
+            {s.fix?.pattern || s.quality?.note ? <span className="basis-full text-slate-500">{s.fix?.pattern || s.quality?.note}</span> : null}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1.5 text-slate-500">To bring one back, ask Ava below.</p>
+    </div>
+  );
+}
+
+/** What Ava changed on a weak list, or what she tried, with the check before and after (job 278). */
+function Fixed({ fix }: { fix: ListFix }) {
+  const score = (x: { fit: number; checked: number }) => `${x.fit}/${x.checked}`;
+  const size = (n: number | null) => (n == null ? "?" : n.toLocaleString("en-GB"));
+  const before = `Before: ${score(fix.before)}, ${size(fix.before.size)} people.`;
+  // Older checks tried one change; since 23 Nov Ava tests up to 3 and keeps the best.
+  const tries = fix.tries ?? (fix.after || fix.kept ? [{ change: fix.change, after: fix.after, kept: fix.kept }] : []);
+  return (
+    <div className="space-y-1 rounded-md border border-slate-200 bg-white px-3 py-2">
+      <p>
+        <span className="font-medium text-slate-900">
+          {fix.kept ? "Ava fixed this list." : tries.length ? "Ava tried changes, but none beat the old search, so it stays." : "Ava looked for words to filter out the misfits and found none to use."}
+        </span>{" "}
+        {tries.length ? before : null}
+      </p>
+      {tries.length ? (
+        <ul className="space-y-0.5">
+          {tries.map((t, i) => {
+            const verdict = t.kept
+              ? "Kept"
+              : !t.after
+                ? "LinkedIn couldn't count it"
+                : (t.after.size ?? 0) < SMALL_LIST
+                  ? "Too small"
+                  : t.after.fit / t.after.checked <= fix.before.fit / fix.before.checked
+                    ? "No more fit"
+                    : "Fewer good people";
+            return (
+              <li key={i} className="flex items-baseline gap-2">
+                <span className={t.kept ? badgeClass("green", "shrink-0") : badgeClass("grey", "shrink-0")}>{verdict}</span>
+                <span className="min-w-0">
+                  <span className="text-slate-900">{t.change}</span>
+                  {t.after ? (
+                    <span className="tabular-nums text-slate-500">
+                      {" "}
+                      · {score(t.after)}, {size(t.after.size)} people
+                    </span>
+                  ) : null}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      {fix.pattern ? <p className="text-slate-500">What the misfits shared: {fix.pattern}</p> : null}
     </div>
   );
 }

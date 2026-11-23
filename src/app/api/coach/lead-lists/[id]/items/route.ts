@@ -16,12 +16,17 @@ import {
   type AudienceItemSource,
 } from "@/lib/leadLists/audienceLists";
 import { syncPersonAcrossLists } from "@/lib/leadLists/syncPersonAcrossLists";
+import { asFitLabel } from "@/lib/pool/fit";
+import { CHECK_FIT_MAX, checkPeopleFit, setPeopleFit } from "@/lib/pool/fitCheck";
 import {
   MAX_PROSPECT_TAGS,
   normalizeProspectTags,
 } from "@/lib/prospects/tags";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+/** Ava's check can label up to 200 people in one go. */
+export const maxDuration = 120;
 
 function parseItemIds(
   raw: unknown,
@@ -79,7 +84,45 @@ export async function POST(request: Request, ctx: Ctx) {
     remove?: unknown;
     target_list_id?: unknown;
     name?: unknown;
+    fit?: unknown;
   };
+
+  // Fit (job 278): the coach or BCA sets Good, OK or Bad (or clears it), or asks Ava to check.
+  if (body.action === "set_fit") {
+    const itemIds = parseItemIds(body.item_ids, MAX_LIST_ITEMS_TOTAL);
+    if (!itemIds.length) {
+      return NextResponse.json({ error: "Select people first." }, { status: 400 });
+    }
+    const fit = body.fit === null ? null : asFitLabel(body.fit);
+    if (fit === null && body.fit !== null) {
+      return NextResponse.json({ error: "Choose Good, OK or Bad." }, { status: 400 });
+    }
+    try {
+      const updated = await setPeopleFit(auth.userId, itemIds, fit);
+      return NextResponse.json({ ok: true, updated });
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Could not change their fit." },
+        { status: 500 }
+      );
+    }
+  }
+
+  if (body.action === "check_fit") {
+    const itemIds = parseItemIds(body.item_ids, CHECK_FIT_MAX);
+    if (!itemIds.length) {
+      return NextResponse.json({ error: "Select people for Ava to check." }, { status: 400 });
+    }
+    try {
+      const result = await checkPeopleFit(auth.userId, itemIds);
+      return NextResponse.json({ ok: true, ...result });
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Ava couldn't check them." },
+        { status: 500 }
+      );
+    }
+  }
 
   if (body.action === "update_tags") {
     const itemIds = parseItemIds(body.item_ids);

@@ -23,9 +23,11 @@ import {
 } from "@/lib/support/ingestEmailAttachments";
 import {
   inboundMightBeSupportFollowUp,
+  isBinnedSupportEmail,
   isInactiveSupportMailboxEmail,
   normalizeSupportEmailSubject,
   shouldSkipInactiveSupportEmail,
+  supportPlusTag,
 } from "@/lib/support/inboundEmailMatch";
 import { findCoachProfileIdByEmail } from "@/lib/support/matchCoachByEmail";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -158,8 +160,8 @@ export async function createSupportMailboxConnectLink(
     expiresOn: expires,
     providers: [provider],
     name: `${SUPPORT_MAILBOX_NOTIFY_PREFIX}:${adminUserId}`,
-    success_redirect_url: `${base}/admin/support?mailbox=connected`,
-    failure_redirect_url: `${base}/admin/support?mailbox=failed`,
+    success_redirect_url: `${base}/admin/support?tab=settings&mailbox=connected`,
+    failure_redirect_url: `${base}/admin/support?tab=settings&mailbox=failed`,
     notify_url: `${base}/api/unipile/notify`,
     bypass_success_screen: true,
     ...(reconnectAccountId
@@ -445,12 +447,18 @@ export async function handleSupportMailReceived(
   if (!account || account.purpose !== "support") return "not_support_account";
 
   const role = String(body.role || "").toLowerCase();
-  const isSent = role === "sent" || String(body.origin || "") === "unipile";
+  // Mail to support+name@ (e.g. Sales Robot exports sent from support@) sits
+  // in Sent, but it is incoming mail for Support. App sends stay outbound.
+  const plusTag = supportPlusTag(body);
+  const isSent =
+    String(body.origin || "") === "unipile" || (role === "sent" && !plusTag);
   // Outbound from our mailbox: do not open tickets.
   if (isSent) return "outbound_ignored";
   // Filed-away mail that is not a reply stays out. A reply Gmail left as
   // Important/category-only (no INBOX) still has to be matched below.
-  const filedAway = isInactiveSupportMailboxEmail(body);
+  const filedAway = plusTag
+    ? isBinnedSupportEmail(body)
+    : isInactiveSupportMailboxEmail(body);
   if (filedAway && !inboundMightBeSupportFollowUp(body)) {
     return "inactive_folder_ignored";
   }
@@ -674,11 +682,18 @@ export async function handleSupportMailReceived(
   if (filedAway) return "inactive_folder_ignored";
 
   const createdBy = await findCoachProfileIdByEmail(contactEmail);
+  // support+willwalsh@ → "Will Walsh: …" so the ticket says whose it is.
+  // Title only: created_by stays the sender, so it never lands in the
+  // coach's own Support chat.
+  const plusLabel = plusTag
+    ? (await coachNameForSupportPlusTag(plusTag)) || plusTag
+    : null;
+  const title = (plusLabel ? `${plusLabel}: ${subject}` : subject).slice(0, 200);
 
   const { error } = await supabaseAdmin.from("community_feedback_reports").insert({
     created_by: createdBy,
     type: "question",
-    title: subject,
+    title,
     details: detailsWithFiles,
     contact_email: contactEmail,
     submitter_name: submitterName,
@@ -718,6 +733,22 @@ export async function handleSupportMailReceived(
   });
 
   return "ticket_created";
+}
+
+/** "willwalsh" → "Will Walsh" when exactly one coach's name matches the tag. */
+async function coachNameForSupportPlusTag(tag: string): Promise<string | null> {
+  const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const want = squash(tag);
+  if (!want) return null;
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("full_name")
+    .in("role", ["coach", "admin"])
+    .not("full_name", "is", null);
+  const names = (data ?? [])
+    .map((row) => String(row.full_name || "").trim())
+    .filter((name) => name && squash(name) === want);
+  return names.length === 1 ? names[0] : null;
 }
 
 function parentUnipileEmailId(body: Record<string, unknown>): string | null {
@@ -965,7 +996,10 @@ export async function syncSupportMailboxInbound(limit = 25): Promise<{
       break;
     }
 
-    if (shouldSkipInactiveSupportEmail(item)) {
+    // Mail to support+name@ sits in Sent and comes from support@ itself;
+    // the handler decides whether it opens a ticket.
+    const plusTag = supportPlusTag(item);
+    if (!plusTag && shouldSkipInactiveSupportEmail(item)) {
       skipped += 1;
       continue;
     }
@@ -978,7 +1012,7 @@ export async function syncSupportMailboxInbound(limit = 25): Promise<{
       .from_attendee?.identifier?.trim()
       .toLowerCase();
     const fromEmail = fromAttendee || from;
-    if (fromEmail === supportEmail) {
+    if (fromEmail === supportEmail && !plusTag) {
       skipped += 1;
       continue;
     }

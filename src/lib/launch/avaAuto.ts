@@ -7,6 +7,7 @@ import type { ProfileSectionId } from "@/lib/linkedinProfileOptimizer/types";
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
 import { loadCoachLinkedInSummary } from "@/lib/firstCampaign/loadCoachContext";
 import { ensureCoachPool } from "@/lib/leadLists/audienceLists";
+import { listFitLabel } from "@/lib/pool/fit";
 import { BLUEPRINT_SECTIONS, fieldFilled, sectionByKey, type FieldSpec, type SectionRef } from "@/lib/practiceKnowledge/blueprint";
 import { blueprintContextFromRow } from "@/lib/practiceKnowledge/blueprintContext";
 import { blocksToMarkdown } from "@/lib/practiceKnowledge/blocks";
@@ -18,15 +19,15 @@ import type { BlueprintBlock, PracticeKnowledgeRow } from "@/lib/practiceKnowled
 import { PROSPECT_SEARCH_PLAYBOOK } from "@/lib/salesNavigator/prospectSearch/playbook";
 import { SALES_NAV_INDUSTRIES, salesNavIndustry } from "@/lib/salesNavigator/industries";
 import { resolveSalesNavRegion } from "@/lib/salesNavigator/regions";
+import { keywordsOnlyExclude, parseSalesNavSearchUrl } from "@/lib/salesNavigator/parseSalesNavFilters";
 import { summarizeSalesNavSearch } from "@/lib/salesNavigator/salesNavSearchSummary";
 import { startSalesNavImport } from "@/lib/salesNavigator/startImport";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { linkedInSearch } from "@/lib/unipile/client";
 import { requireLiveLinkedInUnipileAccount } from "@/lib/unipile/linkedinSearchAccount";
-import { salesNavUrlForUnipile } from "@/lib/unipile/linkedinSearchCursor";
 
 import { avaWorkFor, fillableAnswer, missingFor, pageScope } from "./avaWork";
 import { inputPrint, withOpenDrafts } from "./drafts";
+import { goodPeople, inBatches, judgeList, listBrief, proposeListFixes, rankSearches, searchSample } from "./listQuality";
 import { whatNextMessage } from "./whatNext";
 import {
   add,
@@ -40,6 +41,8 @@ import {
   saveDraft,
   type ActivityItem,
   type AnswerFill,
+  type ListPerson,
+  type ListQuality,
   type ProspectSearchDraft,
 } from "./jobActivity";
 
@@ -207,13 +210,6 @@ async function poolSize(coachId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** How many people LinkedIn says a search finds, through the coach's own account. Null when we can't ask. */
-async function searchSize(accountId: string | null, url: string): Promise<number | null> {
-  if (!accountId) return null;
-  const res = await linkedInSearch({ account_id: accountId, url: salesNavUrlForUnipile(url), limit: 1, timeoutMs: 20_000 }).catch(() => null);
-  const n = res?.ok ? (res.data?.paging?.total_count ?? null) : null;
-  return typeof n === "number" ? n : null;
-}
 
 /** What the lists read: the list box and the job titles. */
 function listPrint(row: PracticeKnowledgeRow): string {
@@ -306,16 +302,28 @@ Return the whole new plan, every list you keep, in the same JSON. In "thinking",
     }
   }
 
-  // Biggest lists first, so a small one is never the first to go out; then tick from the top up to 2,500 people.
-  const ordered = planned
-    .map((p, i) => ({ ...p.draft, size: counted.sizes[i] ?? null, roughSize: counted.sizes[i] != null && counted.rough, at: i }))
-    .sort((a, b) => (b.size ?? -1) - (a.size ?? -1) || a.at - b.at);
+  // Ava checks 10 people from each list, then the lists go in order of good people (size × share that fit),
+  // so a small or noisy list is never the first to go out; then tick from the top up to 2,500 people.
+  const brief = listBrief(row);
+  const qualities = await Promise.all(planned.map((p, i) => judgeList(brief, p.draft, counted.samples[i] ?? [])));
+  const { kept, dropped } = dropBadLists(
+    await fixWeakLists(
+      coachId,
+      userId,
+      brief,
+      planned.map((p, i) => ({
+        ...p.draft,
+        size: counted.sizes[i] ?? null,
+        roughSize: counted.sizes[i] != null && counted.rough,
+        quality: qualities[i] ?? undefined,
+      }))
+    )
+  );
+  const ordered = rankSearches(kept);
   let total = 0;
   let full = false;
   const searches: ProspectSearchDraft[] = ordered.map((s, i) => {
-    const { at, ...rest } = s;
-    void at;
-    const search = { ...rest, id: `list-${i + 1}` };
+    const search = { ...s, id: `list-${i + 1}` };
     if (search.size === null) return search;
     const people = search.size;
     // Ticks run down from the top and stop at the first list that won't fit, so they never skip a bigger list.
@@ -333,6 +341,7 @@ Return the whole new plan, every list you keep, in the same JSON. In "thinking",
     body: accountId ? "" : "Their LinkedIn isn't connected, so nothing can import yet.",
     payload: {
       searches,
+      dropped: dropped.length ? dropped : undefined,
       thinking: thinking || undefined,
       changes: changes?.trim() || undefined,
       version: (previous?.payload.version ?? 0) + 1,
@@ -364,7 +373,7 @@ const LIST_SIZE_RULES = `How to fix the plan now you know the sizes:
 - A list under ${SMALL_LIST} people is too small for an automated campaign on its own, and must never be the first list. For each one:
   1. Widen it: if it has company-name words AND an industry, take the industry off (one way in per list). Or add more of the words those firms really put in their names (singular, plural, -ing, the products they make).
   2. Or combine it with a similar list that takes the same message (cookies + crisps + snacks → one snacks list). Never combine lists that need a different message.
-  3. If neither works, keep it as it is, low in the order: a small, specific list is still useful for a one-off campaign. Drop a list only when it's off the coach's market.
+  3. If neither works, keep it as it is, low in the order: a small, specific list is still useful for a one-off campaign. Drop a list only when it's off the coach's market. (Lists where 3 or fewer in 10 people fit are dropped after the quality check.)
 - Never split a list because it's big. Lists over 2,500 are fine: the import gets past LinkedIn's limit itself.
 - Aim for 500 or more people a list where the market allows, and ${LIST_TARGET.aim.toLocaleString("en-GB")} to ${LIST_TARGET.most.toLocaleString("en-GB")} in total.
 - Put the biggest, cleanest lists first. The first list is the one the coach starts with, so make it the strongest.
@@ -376,7 +385,8 @@ function buildPlannedLists(lists: PlannedList[] | undefined, region: string): { 
   const built: { draft: Omit<ProspectSearchDraft, "size">; raw: PlannedList }[] = [];
   for (const [i, list] of (lists ?? []).slice(0, MAX_LISTS).entries()) {
     const keywords = list.keywords?.trim() || "";
-    const companyIncludes = keywords ? [] : strings(list.companyIncludes);
+    // Company-name words and keywords never go together, except a keyword NOT (Zander, 23 Nov).
+    const companyIncludes = keywords && !keywordsOnlyExclude(keywords) ? [] : strings(list.companyIncludes);
     const industries = strings(list.industries).map(salesNavIndustry).filter((x): x is { id: string; title: string } => Boolean(x));
     if (!keywords && !companyIncludes.length && !industries.length) continue;
     const search = buildSalesNavSearch({
@@ -409,21 +419,153 @@ const BCA_COUNT_PROFILE_ID = "5cb89c87-88a9-4cfc-9f95-9591f74f8529";
  * Zander's, as a rough count (their 2nd and 3rd connections, not the coach's).
  */
 
-async function countSearches(coachId: string, userId: string | null, urls: string[]): Promise<{ sizes: (number | null)[]; rough: boolean }> {
+async function countSearches(
+  coachId: string,
+  userId: string | null,
+  urls: string[]
+): Promise<{ sizes: (number | null)[]; samples: ListPerson[][]; rough: boolean; throttled: boolean }> {
+  const run = async (accountId: string) => {
+    // Four lists at a time: each list is three LinkedIn pages (top, middle, end).
+    const results = await inBatches(urls, 4, (url) => searchSample(accountId, url));
+    return { sizes: results.map((r) => r.size), samples: results.map((r) => r.people), throttled: results.some((r) => r.throttled) };
+  };
+  let throttled = false;
   const own = await requireLiveLinkedInUnipileAccount(coachId).catch(() => null);
   if (own) {
-    const sizes = await Promise.all(urls.map((url) => searchSize(own, url)));
-    if (sizes.some((n) => n !== null)) return { sizes, rough: false };
+    const counted = await run(own);
+    if (counted.sizes.some((n) => n !== null)) return { ...counted, rough: false };
+    throttled ||= counted.throttled;
   }
   // Then the admin clicking, then Zander's LinkedIn (with Sales Navigator), which is connected on the Zander Demo profile.
   const fallbacks = [...new Set([userId, BCA_COUNT_PROFILE_ID].filter((id): id is string => Boolean(id) && id !== coachId))];
   for (const profileId of fallbacks) {
     const bca = await requireLiveLinkedInUnipileAccount(profileId).catch(() => null);
     if (!bca || bca === own) continue;
-    const sizes = await Promise.all(urls.map((url) => searchSize(bca, url)));
-    if (sizes.some((n) => n !== null)) return { sizes, rough: true };
+    const counted = await run(bca);
+    if (counted.sizes.some((n) => n !== null)) return { ...counted, rough: true };
+    throttled ||= counted.throttled;
   }
-  return { sizes: urls.map(() => null), rough: false };
+  return { sizes: urls.map(() => null), samples: urls.map(() => []), rough: false, throttled };
+}
+
+/**
+ * A list that bad goes (Zander, 23 Nov): 3 or fewer in 10 of the people Ava
+ * checked fit, after her fix has had its try. It needs 6 or more checked, so a
+ * thin sample can't drop it, and a plan never loses every list. Lists BCA
+ * edits by hand are never dropped. Dropped lists are kept aside to show why.
+ */
+function dropBadLists(searches: ProspectSearchDraft[]): { kept: ProspectSearchDraft[]; dropped: ProspectSearchDraft[] } {
+  const bad = (s: ProspectSearchDraft) =>
+    Boolean(s.quality && s.quality.checked >= 6 && listFitLabel(s.quality.fit, s.quality.checked) === "bad");
+  const kept = searches.filter((s) => !bad(s));
+  if (!kept.length) return { kept: searches, dropped: [] };
+  const stamp = Date.now().toString(36);
+  return { kept, dropped: searches.filter(bad).map((s, i) => ({ ...s, id: `dropped-${stamp}-${i + 1}`, on: false })) };
+}
+
+/**
+ * Ava's fix step (job 278): whenever 2 or more of the people she checked are
+ * Bad (a pattern, not one odd person), she compares how the good and bad
+ * people word their profiles and tests up to 3 different changes the way
+ * Zander's keyword lesson does: company words to leave out, a keyword NOT
+ * (shop OR café), a keyword the good ones use (manufacturer OR producer).
+ * LinkedIn counts each try and she checks 10 new people from across it. The
+ * try with the most good people goes in, only when more of them fit and the
+ * list stays over 300; otherwise the old search stays, with what she tried.
+ * A list she has already tried keeps its result until the list is edited.
+ */
+async function fixWeakLists(
+  coachId: string,
+  userId: string | null,
+  brief: string,
+  searches: ProspectSearchDraft[]
+): Promise<ProspectSearchDraft[]> {
+  // Three lists at a time, and every try waits once LinkedIn asks us to slow down.
+  let throttled = false;
+  return inBatches(searches, 3, async (s) => {
+      const q = s.quality;
+      const bad = q ? q.people.filter((p) => (p.label ?? (p.fit ? "good" : "bad")) === "bad").length : 0;
+      if (s.fix || !q || q.checked < 6 || bad < 2 || s.size === null || s.size < SMALL_LIST) return s;
+      const old = summarizeSalesNavSearch(s.url);
+      const keywords = parseSalesNavSearchUrl(s.url).keywordsBoolean ?? "";
+      const before = { fit: q.fit, checked: q.checked, size: s.size };
+      const at = new Date().toISOString();
+      const proposed = await proposeListFixes(
+        brief,
+        s,
+        { companyIncludes: old.company_includes, companyExcludes: old.company_excludes, industries: old.industries, keywords },
+        q
+      );
+      if (!proposed) return s;
+      if ("none" in proposed) return { ...s, fix: { pattern: proposed.none, change: "Nothing to filter out", kept: false, before, at } };
+      const degreeIds: Record<string, "1" | "2" | "3"> = { F: "1", S: "2", O: "3", "1": "1", "2": "2", "3": "3" };
+      // One try at a time, so LinkedIn isn't asked for too much at once.
+      const results: {
+        change: string;
+        url: string | null;
+        size: number | null;
+        rough: boolean;
+        quality: ListQuality | null;
+      }[] = [];
+      for (const t of proposed.tries) {
+        if (throttled) break;
+        const search = buildSalesNavSearch({
+          location: old.location || "United Kingdom",
+          companyIncludes: [...old.company_includes, ...t.companyIncludesAdd],
+          companyExcludesExtra: [...old.company_excludes, ...t.companyExcludesAdd],
+          keywords: t.keywords ?? keywords,
+          titleIncludesExtra: old.title_includes,
+          teamSizes: old.team_sizes.filter((size) => SIZE_BANDS.includes(size)),
+          degrees: old.degrees.map((d) => degreeIds[d]).filter((d): d is "1" | "2" | "3" => Boolean(d)),
+          industries: old.industries.map(salesNavIndustry).filter((x): x is { id: string; title: string } => Boolean(x)),
+          allowKeywordsWithCompany: true,
+        });
+        if ("error" in search) {
+          results.push({ change: t.change, url: null, size: null, rough: false, quality: null });
+          continue;
+        }
+        const counted = await countSearches(coachId, userId, [search.url]);
+        throttled ||= counted.throttled;
+        const size = counted.sizes[0] ?? null;
+        const quality = size === null ? null : await judgeList(brief, s, counted.samples[0] ?? []);
+        results.push({ change: t.change, url: search.url, size, rough: counted.rough, quality });
+      }
+      // LinkedIn stopped answering before any try was counted: try again next time.
+      if (!results.some((r) => r.quality)) return s;
+      const share = q.fit / q.checked;
+      // A try needs 6 or more people checked to count (a short sample is noise).
+      const better = results.filter(
+        (r) => r.url && r.size !== null && r.size >= SMALL_LIST && r.quality && r.quality.checked >= 6 && r.quality.fit / r.quality.checked > share
+      );
+      const best = better.sort((x, y) => goodPeople({ size: y.size, quality: y.quality ?? undefined }) - goodPeople({ size: x.size, quality: x.quality ?? undefined }))[0];
+      const tries = results.map((r) => ({
+        change: r.change,
+        ...(r.quality && r.size !== null ? { after: { fit: r.quality.fit, checked: r.quality.checked, size: r.size } } : {}),
+        kept: r === best,
+      }));
+      if (!best) {
+        // Show the closest try as the headline, and every try under it.
+        const closest = results.find((r) => r.quality) ?? results[0]!;
+        const after = closest.quality && closest.size !== null ? { fit: closest.quality.fit, checked: closest.quality.checked, size: closest.size } : undefined;
+        return { ...s, fix: { pattern: proposed.pattern, change: closest.change, kept: false, before, ...(after ? { after } : {}), tries, at } };
+      }
+      return {
+        ...s,
+        url: best.url!,
+        size: best.size,
+        roughSize: best.rough,
+        quality: best.quality!,
+        fix: {
+          pattern: proposed.pattern,
+          change: best.change,
+          kept: true,
+          before,
+          after: { fit: best.quality!.fit, checked: best.quality!.checked, size: best.size },
+          tries,
+          at,
+        },
+      };
+  });
 }
 
 async function openSearches(id: string): Promise<ActivityItem> {
@@ -467,16 +609,21 @@ export async function editProspectSearch(
     teamSizes,
     degrees: old.degrees.map((d) => degreeIds[d]).filter((d): d is "1" | "2" | "3" => Boolean(d)),
     industries,
+    allowKeywordsWithCompany: true,
   });
   if ("error" in search) throw new Error(search.error);
-  const {
-    sizes: [size = null],
-    rough,
-  } = await countSearches(item.coach_id, userId, [search.url]);
+  const counted = await countSearches(item.coach_id, userId, [search.url]);
+  const size = counted.sizes[0] ?? null;
   const label = edit.label.trim() || first.label;
+  const row = await withOpenDrafts(item.coach_id, await ensurePracticeKnowledge(item.coach_id));
+  const quality = await judgeList(listBrief(row), { label, why: first.why }, counted.samples[0] ?? []);
   const next = searches
     .filter((s) => s.id === first.id || !edit.searchIds.includes(s.id))
-    .map((s) => (s.id === first.id ? { ...s, label, url: search.url, size, roughSize: size !== null && rough } : s));
+    .map((s) =>
+      s.id === first.id
+        ? { ...s, label, url: search.url, size, roughSize: size !== null && counted.rough, quality: quality ?? undefined, fix: undefined }
+        : s
+    );
   const { error } = await supabaseAdmin
     .from("launch_job_activity")
     .update({ payload: { ...item.payload, searches: next }, edited: true })
@@ -486,28 +633,47 @@ export async function editProspectSearch(
 }
 
 /** "Check sizes": what LinkedIn says each list finds, before anything is imported. */
-export async function sizeProspectSearches(id: string, userId: string | null): Promise<{ rough: boolean }> {
+export async function sizeProspectSearches(id: string, userId: string | null): Promise<{ rough: boolean; throttled: boolean }> {
   const item = await openSearches(id);
   const list = item.payload.searches ?? [];
-  const { sizes, rough } = await countSearches(item.coach_id, userId, list.map((s) => s.url));
-  if (sizes.every((n) => n === null)) {
+  const [counted, row] = await Promise.all([
+    countSearches(item.coach_id, userId, list.map((s) => s.url)),
+    withOpenDrafts(item.coach_id, await ensurePracticeKnowledge(item.coach_id)),
+  ]);
+  if (counted.sizes.every((n) => n === null) && counted.throttled) {
+    throw new Error("LinkedIn asked us to slow down, so nothing was counted. Try Check lists again in an hour.");
+  }
+  if (counted.sizes.every((n) => n === null)) {
     throw new Error(
       "LinkedIn wouldn't count these. Counting needs Sales Navigator on the coach's LinkedIn or on Zander's (connected on Zander Demo). Check that one is still connected."
     );
   }
-  // Biggest lists first, so a list of 31 is never the first to go out; lists LinkedIn couldn't count go last.
-  const searches = list
-    .map((s, i) => (sizes[i] === null ? s : { ...s, size: sizes[i], roughSize: rough }))
-    .map((s, i) => ({ s, i }))
-    .sort((a, b) => (b.s.size ?? -1) - (a.s.size ?? -1) || a.i - b.i)
-    .map(({ s }) => s);
+  // Ava checks 10 people from each list, then the lists go in order of good people (size × share that fit).
+  const brief = listBrief(row);
+  const qualities = await Promise.all(list.map((s, i) => judgeList(brief, s, counted.samples[i] ?? [])));
+  const { kept, dropped } = dropBadLists(
+    await fixWeakLists(
+      item.coach_id,
+      userId,
+      brief,
+      list.map((s, i) => {
+        if (counted.sizes[i] === null) return s;
+        // A short sample (LinkedIn stopped answering part way) never replaces a full check.
+        const fresh = qualities[i];
+        const quality = fresh && (fresh.checked >= 6 || !s.quality) ? fresh : s.quality;
+        return { ...s, size: counted.sizes[i], roughSize: counted.rough, quality };
+      })
+    )
+  );
+  const searches = rankSearches(kept);
+  const allDropped = [...(item.payload.dropped ?? []), ...dropped];
   const { error } = await supabaseAdmin
     .from("launch_job_activity")
-    .update({ payload: { ...item.payload, searches } })
+    .update({ payload: { ...item.payload, searches, dropped: allDropped.length ? allDropped : undefined } })
     .eq("id", id)
     .eq("status", "open");
   if (error) throw new Error(error.message);
-  return { rough };
+  return { rough: counted.rough, throttled: counted.throttled };
 }
 
 /**

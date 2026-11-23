@@ -34,6 +34,7 @@ export async function POST(request: Request, ctx: Ctx) {
       added: result.added,
       skipped: result.skipped,
       blacklisted: result.blacklisted,
+      badFit: result.badFit,
     });
   } catch (err) {
     if (err instanceof AddListToCampaignError) {

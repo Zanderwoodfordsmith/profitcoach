@@ -33,6 +33,15 @@ import type { ProgrammeShortfall } from "@/lib/admin/programmeShortfall";
 import { ProgrammeShortfallInfo } from "@/components/admin/ProgrammeShortfallInfo";
 import { BlueprintMiniBar, useBlueprintCounts } from "@/components/admin/BlueprintMiniBar";
 import {
+  COACH_HEALTH_NUMBER_COLUMNS,
+  CoachHealthFixFirst,
+  CoachHealthNumberCell,
+  CoachHealthNumberHeader,
+  CoachHealthStatus,
+  isCoachHealthNumberKey,
+  useCoachHealth,
+} from "@/components/admin/CoachHealthCells";
+import {
   COACH_SORT_FIELD_OPTIONS,
   coachSortOrderOptions,
   coachSortsEqual,
@@ -397,6 +406,20 @@ type CoachTableColumnVisibility = {
   directoryBio: boolean;
   landing: boolean;
   blueprint: boolean;
+  clientStatus: boolean;
+  fixFirst: boolean;
+  invites: boolean;
+  acceptRate: boolean;
+  replies: boolean;
+  interested: boolean;
+  calls: boolean;
+  firstCall: boolean;
+  firstClient: boolean;
+  replyTime: boolean;
+  posts: boolean;
+  lastPost: boolean;
+  newsletters: boolean;
+  ssi: boolean;
 };
 
 type PersistedCoachTableSettings = {
@@ -414,6 +437,7 @@ type PersistedCoachTableSettings = {
 
 type CoachColumnCategory =
   | "member"
+  | "clients"
   | "ladder"
   | "directory"
   | "integrations"
@@ -431,6 +455,7 @@ const COACH_TABLE_COLUMN_GROUPS: Array<{
   label: string;
 }> = [
   { id: "member", label: "Member" },
+  { id: "clients", label: "Getting clients" },
   { id: "ladder", label: "Ladder & goals" },
   { id: "directory", label: "Directory & profile" },
   { id: "integrations", label: "Integrations & setup" },
@@ -447,6 +472,9 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "lastLogin", label: "Last login", category: "member" },
   { key: "lastActive", label: "Last active", category: "member" },
   { key: "blueprint", label: "Blueprint", category: "member" },
+  { key: "clientStatus", label: "Status", category: "clients" },
+  { key: "fixFirst", label: "Fix first", category: "clients" },
+  ...COACH_HEALTH_NUMBER_COLUMNS.map((col) => ({ key: col.key, label: col.label, category: "clients" as const })),
   { key: "goalLevel", label: "Goal", category: "ladder" },
   { key: "currentLevel", label: "Current level", category: "ladder" },
   { key: "goalBy", label: "Goal by", category: "ladder" },
@@ -881,6 +909,11 @@ export default function AdminPage() {
     Array<keyof CoachTableColumnVisibility>
   >([...DEFAULT_COACH_TABLE_COLUMN_ORDER]);
   const blueprintCounts = useBlueprintCounts(columnVisibility.blueprint);
+  const coachHealth = useCoachHealth(
+    columnVisibility.clientStatus ||
+      columnVisibility.fixFirst ||
+      COACH_HEALTH_NUMBER_COLUMNS.some((col) => columnVisibility[col.key])
+  );
   const createDefaultViewSettings = useCallback(
     () => createDefaultCoachTableViewSettings(),
     []
@@ -1787,6 +1820,29 @@ export default function AdminPage() {
     if (key === "blueprint") {
       return <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Blueprint</th>;
     }
+    if (key === "clientStatus") {
+      return (
+        <th
+          className="sticky top-0 z-10 bg-slate-50 px-2 py-2"
+          title="Getting clients, last 30 days of Get Clients campaigns: Stuck, Needs help or On track. Active coaches only."
+        >
+          Status
+        </th>
+      );
+    }
+    if (key === "fixFirst") {
+      return (
+        <th
+          className="sticky top-0 z-10 bg-slate-50 px-2 py-2"
+          title="The first thing holding them back from getting clients. Hover a row for the next step."
+        >
+          Fix first
+        </th>
+      );
+    }
+    if (isCoachHealthNumberKey(key)) {
+      return <CoachHealthNumberHeader columnKey={key} />;
+    }
     return null;
   }
 
@@ -2264,6 +2320,23 @@ export default function AdminPage() {
           <BlueprintMiniBar counts={blueprintCounts.get(coach.id)} />
         </td>
       );
+    }
+    if (key === "clientStatus") {
+      return (
+        <td className="whitespace-nowrap px-2 py-2 align-middle text-xs">
+          <CoachHealthStatus row={coachHealth.get(coach.id)} />
+        </td>
+      );
+    }
+    if (key === "fixFirst") {
+      return (
+        <td className="px-2 py-2 align-middle text-xs">
+          <CoachHealthFixFirst row={coachHealth.get(coach.id)} />
+        </td>
+      );
+    }
+    if (isCoachHealthNumberKey(key)) {
+      return <CoachHealthNumberCell columnKey={key} row={coachHealth.get(coach.id)} />;
     }
     if (key === "landing") {
       return (

@@ -1,10 +1,7 @@
 "use client";
 
 import { Paperclip, X } from "lucide-react";
-import {
-  SUPPORT_DOCUMENT_ACCEPT,
-  validateSupportMediaFile,
-} from "@/lib/communityPostMedia";
+import { validateSupportMediaFile } from "@/lib/communityPostMedia";
 
 export type PendingSupportDocument = {
   key: string;
@@ -24,10 +21,6 @@ export function takeSupportDocuments(
     const validated = validateSupportMediaFile(file);
     if ("error" in validated) {
       error = validated.error;
-      continue;
-    }
-    if (validated.kind !== "file") {
-      error = "Use the image or video button for that file type.";
       continue;
     }
     accepted.push({ key: crypto.randomUUID(), file });
@@ -53,7 +46,6 @@ export function SupportDocumentAttachButton({
       <span className="sr-only">Attach a document</span>
       <input
         type="file"
-        accept={SUPPORT_DOCUMENT_ACCEPT}
         multiple
         className="sr-only"
         disabled={disabled}

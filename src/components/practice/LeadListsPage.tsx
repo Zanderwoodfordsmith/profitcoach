@@ -64,9 +64,16 @@ export function LeadListsPage() {
       headers: { "Content-Type": "application/json", ...(headers ?? {}) },
       body: JSON.stringify(body),
     }).catch(() => null);
-    const err = res?.ok ? null : (((await res?.json().catch(() => null)) as { error?: string } | null)?.error ?? "Something went wrong. Try again.");
+    const json = ((await res?.json().catch(() => null)) ?? null) as { error?: string; throttled?: boolean } | null;
+    const err = res?.ok ? null : (json?.error ?? "Something went wrong. Try again.");
     setBusy(false);
-    setNote(err ?? done);
+    // LinkedIn asked us to slow down part way (23 Nov): say so, rather than look finished.
+    setNote(
+      err ??
+        (json?.throttled
+          ? "LinkedIn asked us to slow down part way. Lists it didn't reach keep their last check. Press Check lists again in an hour."
+          : done)
+    );
     await load();
     return !err;
   }
@@ -107,8 +114,8 @@ export function LeadListsPage() {
             busy={busy}
             onReplan={(text) => act({ action: "draft_searches", coachId, text }, "Ava is planning the lists again. They show here when she's done.")}
             onImport={(picks) => act({ action: "import", coachId, id: waiting.id, picks }, "Importing. Each list comes in one at a time.")}
-            onEdit={(searchIds, edit) => act({ action: "edit_search", coachId, id: waiting.id, searchIds, ...edit }, "Saved, and LinkedIn counted it again.")}
-            onSize={() => act({ action: "size_searches", coachId, id: waiting.id }, "Counted. A ≈ means BCA's LinkedIn counted it, so it's rough.")}
+            onEdit={(searchIds, edit) => act({ action: "edit_search", coachId, id: waiting.id, searchIds, ...edit }, "Saved. LinkedIn counted it again and Ava checked 10 people from it.")}
+            onSize={() => act({ action: "size_searches", coachId, id: waiting.id }, "Counted and checked. Lists with the most good people are now at the top. A ≈ means BCA's LinkedIn counted it, so it's rough.")}
           />
         </section>
       ) : null}

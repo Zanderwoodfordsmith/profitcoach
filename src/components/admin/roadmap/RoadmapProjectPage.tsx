@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowLeft, Gauge, Zap } from "lucide-react";
 import { cardClass } from "@/components/ui/Card";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
-import { ProductCanvasToggle } from "@/components/admin/roadmap/ProductCanvasToggle";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import {
   PROJECT_EASE_LEVELS,
@@ -41,7 +40,7 @@ function useProject(name: string) {
 function ProjectShell({ state, children }: { state: ReturnType<typeof useProject>; children: React.ReactNode }) {
   return (
     <div className="w-full">
-      <StickyPageHeader title="Product" tabs={<LessonImportTabs />} actions={<ProductCanvasToggle />} />
+      <StickyPageHeader title="Product" tabs={<LessonImportTabs />} />
       {state.error ? <p className="mt-4 text-sm font-medium text-rose-600">{state.error}</p> : null}
       {state.loading ? <p className="py-10 text-sm text-slate-500">Loading the project…</p> : null}
       {state.unknown ? (

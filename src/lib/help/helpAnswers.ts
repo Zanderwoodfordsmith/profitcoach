@@ -493,9 +493,19 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "Do I need Sales Navigator, and when should I get it?",
     answer:
-      "If LinkedIn is your main way of finding clients, yes, and for most of our coaches it is. Get it before your first campaign goes live.\n\nIt helps in three ways:\n\n1. You can send about twice as many connection requests each week, so your campaign reaches twice as many owners. See [how many messages go out](/coach/support?tab=help&a=campaign-sending-limits).\n2. You can search and filter owners properly: by job title, industry, company size and area. Plain LinkedIn search can't do that.\n3. Those searches fill your Pool. You bring them in, sort them into lead lists, and add the lists to your campaigns. See [how to import a Sales Navigator search](/coach/support?tab=help&a=sales-nav-import) and [the Pool and Prospects](/coach/support?tab=help&a=pool-vs-prospects).\n\nThe app also uses it to bring in your own LinkedIn connections. If you mostly find clients another way, such as calls, email or events, you can fill your Pool without it, using Google Maps, Google Search or a spreadsheet.\n\nOnce you have it, connect it in [Settings](/coach/settings?tab=integrations).",
+      "If LinkedIn is your main way of finding clients, yes, and for most of our coaches it is. Get it before your first campaign goes live.\n\nIt helps in three ways:\n\n1. You can send about twice as many connection requests each week, so your campaign reaches twice as many owners. See [how many messages go out](/coach/support?tab=help&a=campaign-sending-limits).\n2. You can search and filter owners properly: by job title, industry, company size and area. Plain LinkedIn search can't do that.\n3. Those searches fill your Pool. You bring them in, sort them into lead lists, and add the lists to your campaigns. See [how to import a Sales Navigator search](/coach/support?tab=help&a=sales-nav-import) and [the Pool and Prospects](/coach/support?tab=help&a=pool-vs-prospects).\n\nThe app also uses it to bring in your own LinkedIn connections. If you mostly find clients another way, such as calls, email or events, you can fill your Pool without it, using Google Maps, Google Search or a spreadsheet.\n\nYou can [get your first two months free](/coach/support?tab=help&a=sales-nav-free) with our link. Once you have it, connect it in [Settings](/coach/settings?tab=integrations).",
     aliases: ["should I get sales nav", "sales navigator subscription", "do I have to pay for sales navigator", "is sales navigator worth it"],
     sources: ["ticket 17 Nov", "app"],
+  },
+  {
+    id: "sales-nav-free",
+    topic: "get-clients",
+    group: "prospects",
+    question: "How do I get Sales Navigator free for two months?",
+    answer:
+      "Use [our Sales Navigator link](https://www.linkedin.com/premium/redeem/?upsellOrderOrigin=sn_referral_promotion&coupon=rbt8JKG-x&customKey=ref_s&redeemTypeV2=REFERRAL_COUPON). It gives you the first two months free.\n\n1. Open the link while you are signed in to LinkedIn.\n2. Follow the steps. LinkedIn asks for a card, but takes nothing for two months.\n3. Connect it in [Settings](/coach/settings?tab=integrations) so we can build your lead lists.\n\nAfter two months it carries on at LinkedIn's normal price. If you want to stop, cancel in LinkedIn before then.\n\nIf LinkedIn says you can't use the offer, message Support and we help you.",
+    aliases: ["sales navigator free trial", "sales nav referral link", "sales navigator discount", "2 months free", "free sales navigator", "sales navigator coupon"],
+    sources: ["Zander, 20 Nov", "coach setup bar"],
   },
   {
     id: "sales-nav-import",

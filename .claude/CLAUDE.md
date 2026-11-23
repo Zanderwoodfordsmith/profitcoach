@@ -49,32 +49,22 @@ The Academy roadmap (/admin/roadmap, table `roadmap_jobs`) is the one queue.
   Review with three lines at the top of its notes: "Where to look:" (a
   localhost:3002 link), "I checked:" (each test you ran and what happened)
   and "You check:" (only what you couldn't test: taste, copy, real data,
-  real admin logins; "Nothing" if so). Don't move a job to Done yourself;
-  Live follows the rule below.
+  real admin logins; "Nothing" if so).
+- Columns: In progress = being built. Review = built, he checks on 3002.
+  Ready (status `done`) = he has checked it, not live yet. Live = coaches
+  have it. No staging step (dropped 23 Nov).
+- **You move the cards, never ask him to.** When he says a job is checked,
+  decided or sorted, move it to Ready in the same turn.
 - If his check finds something to change, the job goes back to In progress
-  with the change added to its checklist, then returns to Review. No
-  second review column.
-- Shipping commands (scripts in ~/.npm-global/bin). Run them only when
-  Zander asks (his text replacements `;stage`, `;live`, `;ship` expand to
-  plain instructions):
-  - `stage "message"`: typecheck, commit everything on main, push to the
-    `staging` branch → https://staging.theprofitcoach.com (Vercel-login
-    protected; same database as live; no crons; no Stripe secret keys).
-  - `live`: shows what would go live and changes nothing. Show Zander the
-    list; only after he says yes run `live --yes`, which puts staging (not
-    local main) on the live site.
-- Work stays on local main; never commit to `staging` directly or it stops
-  fast-forwarding from main.
-- Columns: Review = check on 3002. Ready (status `done`) = checked, waiting
-  for stage. On staging (`staged`) = on staging. Live = coaches have it.
-  Zander drags Review → Ready. After `stage`, move every Ready job to On
-  staging; after `live --yes`, move every On staging job to Live.
-- After `live --yes` and a Ready production build, you own the board: move
-  any job whose work just went live and meets its Done when to Live, from
-  any column (Review included), noting what you checked. One that doesn't
-  meet it stays put, with the gap in its notes (Zander, 18 Nov).
+  with the change added to its checklist, then returns to Review.
+- Shipping: `ship "message"` (~/.npm-global/bin) = typecheck, commit
+  everything on main, push main, which deploys live. Run it only when he
+  says ship or publish. Then confirm the Vercel production build is Ready
+  and you own the board: move every job whose work just went live and
+  meets its Done when to Live, from any column, noting what you checked.
+  One that doesn't meet it stays put, with the gap in its notes.
 - Only a brand-new page or tab is built admin-only until it's ready. Changes
-  to pages coaches already see are not gated; they go live with `live --yes`.
+  to pages coaches already see are not gated; they go live with `ship`.
 - Zander releases by name, never by job number: "release Scripts" = remove
   that page's admin gate and move its jobs to Live.
 - A new idea mid-session goes to Ideas → Evaluate as a new job; don't start

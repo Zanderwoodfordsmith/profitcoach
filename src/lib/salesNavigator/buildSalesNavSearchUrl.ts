@@ -74,6 +74,12 @@ function encText(text: string): string {
   return encodeURIComponent(encodeURIComponent(text));
 }
 
+/** Keywords text, double-encoded with brackets too: raw ( ) would break the query's own List(…) shape. */
+function encKeywords(text: string): string {
+  const once = encodeURIComponent(text).replace(/[()!'*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+  return encodeURIComponent(once);
+}
+
 function keywordValues(keywords: SalesNavKeyword[]): string {
   return keywords
     .filter((k) => k.term.trim())
@@ -194,11 +200,11 @@ export function buildSalesNavSearchUrl(input: BuildSalesNavSearchUrlInput): stri
 
   // `query` is already percent-encoded for LinkedIn’s List(…) shape — do not
   // run it through URLSearchParams (that would double-encode %).
-  const query = `(recentSearchParam%3A(doLogHistory%3Atrue)%2Cfilters%3AList(${filters.join("%2C")}))`;
-  let url = `https://www.linkedin.com/sales/search/people?query=${query}&viewAllFilters=true`;
+  // Keywords live inside the query, double-encoded, the way Sales Navigator
+  // writes them (23 Nov: a separate &keywords= on the end was ignored, so
+  // keyword searches never narrowed anything).
   const keywords = input.keywordsBoolean?.trim();
-  if (keywords) {
-    url += `&keywords=${encodeURIComponent(keywords)}`;
-  }
-  return url;
+  const keywordPart = keywords ? `%2Ckeywords%3A${encKeywords(keywords)}` : "";
+  const query = `(recentSearchParam%3A(doLogHistory%3Atrue)%2Cfilters%3AList(${filters.join("%2C")})${keywordPart})`;
+  return `https://www.linkedin.com/sales/search/people?query=${query}&viewAllFilters=true`;
 }

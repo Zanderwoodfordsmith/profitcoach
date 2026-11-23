@@ -1,4 +1,5 @@
 import { WRITING_MODEL } from "@/lib/anthropicModel";
+import type { FitLabel } from "@/lib/pool/fit";
 import { resolveReference } from "@/lib/agent/context";
 import { generateCampaignJson } from "@/lib/firstCampaign/generateJson";
 import { sectionByKey } from "@/lib/practiceKnowledge/blueprint";
@@ -55,6 +56,39 @@ export type ProspectSearchDraft = {
   on: boolean;
   /** Counted on BCA's LinkedIn, not the coach's, so 2nd and 3rd connections are BCA's: a rough number. */
   roughSize?: boolean;
+  /** Ava's check of 10 people from the search, before import (job 271). */
+  quality?: ListQuality;
+  /** Ava's one try at fixing a weak list (job 278), kept only when more people fit. */
+  fix?: ListFix;
+};
+
+/** One person from a search sample. Industry is the company's LinkedIn industry; at is their place in the list (1 = top). */
+export type ListPerson = { name: string; role: string; company: string; location: string; headline: string; url: string; industry?: string; at?: number };
+
+export type ListQuality = {
+  checked: number;
+  /** Good and OK: the people who'd be messaged. */
+  fit: number;
+  /** What the misfits share, in a sentence. */
+  note: string;
+  /** label is Good, OK or Bad (job 278); older checks only have fit. */
+  people: (ListPerson & { fit: boolean; label?: FitLabel; why: string })[];
+  at: string;
+};
+
+/** What Ava changed on a weak list, and the check before and after. */
+export type ListFix = {
+  /** What the misfits shared. */
+  pattern: string;
+  /** What she changed, in a few words, or why she changed nothing. */
+  change: string;
+  /** The new search went in: more people fit and it stayed big enough. */
+  kept: boolean;
+  before: { fit: number; checked: number; size: number | null };
+  after?: { fit: number; checked: number; size: number | null };
+  /** Every change Ava tested (Zander, 23 Nov): company words, a keyword NOT, a keyword include. */
+  tries?: { change: string; after?: { fit: number; checked: number; size: number | null }; kept: boolean }[];
+  at: string;
 };
 
 export type ActivityItem = {
@@ -80,6 +114,8 @@ export type ActivityItem = {
     /** Boxes no source answers, and how to ask. */
     missing?: { path: string; label: string; ask: string }[];
     searches?: ProspectSearchDraft[];
+    /** Lists Ava dropped because too few of the people she checked fit (job 278). */
+    dropped?: ProspectSearchDraft[];
     /** A LinkedIn profile draft: its parts by id. Release puts them in the LinkedIn editor. */
     linkedinParts?: Record<string, string>;
     /** The lists started from these searches. */

@@ -1,3 +1,5 @@
+import { BCA_SUPPORT_EMAIL } from "@/config/businessContact";
+
 /**
  * Pure matching rules for support-mailbox mail.
  * Gmail often files a real reply as role=important with only
@@ -79,6 +81,44 @@ export function inboundMightBeSupportFollowUp(item: {
   if (/\bSUP-\d{1,8}\b/i.test(subject)) return true;
   if (/^\s*(?:re|fw|fwd)\s*:/i.test(subject)) return true;
   return Boolean(item.in_reply_to && typeof item.in_reply_to === "object");
+}
+
+/**
+ * support+willwalsh@… → "willwalsh". Mail that support@ sends to its own
+ * +alias (Sales Robot exports) is filed by Gmail under Sent, not the inbox,
+ * so it needs this check to come in at all.
+ */
+export function supportPlusTag(item: { to_attendees?: unknown }): string | null {
+  const support = BCA_SUPPORT_EMAIL.toLowerCase();
+  const at = support.lastIndexOf("@");
+  const local = support.slice(0, at);
+  const domain = support.slice(at + 1);
+  const to = Array.isArray(item.to_attendees) ? item.to_attendees : [];
+  for (const attendee of to) {
+    const address = String(
+      (attendee as { identifier?: unknown } | null)?.identifier || ""
+    )
+      .trim()
+      .toLowerCase();
+    const match = address.match(/^([^@+]+)\+([^@]+)@(.+)$/);
+    if (match && match[1] === local && match[3] === domain) return match[2];
+  }
+  return null;
+}
+
+/** Trash, Spam or Drafts: the only places +alias mail stays out of Support. */
+export function isBinnedSupportEmail(item: {
+  role?: unknown;
+  folders?: unknown;
+}): boolean {
+  const role = String(item.role || "").toLowerCase();
+  if (role === "trash" || role === "spam" || role === "drafts") return true;
+  const folders = Array.isArray(item.folders)
+    ? item.folders.map((f) => String(f).toLowerCase())
+    : [];
+  return folders.some(
+    (f) => f.includes("trash") || f.includes("spam") || f.includes("draft")
+  );
 }
 
 /** Skip mailbox sync/webhook work for filed-away mail that is not a reply. */

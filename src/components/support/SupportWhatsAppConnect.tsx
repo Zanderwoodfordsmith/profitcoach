@@ -12,7 +12,12 @@ type Line = { status: string; phone: string | null; last_synced_at: string | nul
  * Link your own WhatsApp to Support. Only chats with a coach's profile
  * number come in; everything else stays on your phone.
  */
-export function SupportWhatsAppConnect() {
+export function SupportWhatsAppConnect({
+  onStatus,
+}: {
+  /** True when your linked WhatsApp needs relinking. Not linked at all is fine. */
+  onStatus?: (needsAttention: boolean) => void;
+} = {}) {
   const [configured, setConfigured] = useState(true);
   const [line, setLine] = useState<Line | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,6 +137,11 @@ export function SupportWhatsAppConnect() {
     }
   }
 
+  const needsRelink = !!line && line.status !== "OK" && line.status !== "CONNECTING";
+  useEffect(() => {
+    if (!loading) onStatus?.(needsRelink);
+  }, [loading, needsRelink, onStatus]);
+
   if (loading) {
     return (
       <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-500">
@@ -140,8 +150,6 @@ export function SupportWhatsAppConnect() {
       </div>
     );
   }
-
-  const needsRelink = line && line.status !== "OK" && line.status !== "CONNECTING";
 
   return (
     <div className="flex flex-wrap items-center gap-2">

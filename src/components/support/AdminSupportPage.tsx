@@ -3,7 +3,9 @@
 import {
   ArrowDownAZ,
   ArrowLeft,
+  ArrowUpDown,
   BadgeCheck,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -12,14 +14,17 @@ import {
   Clock,
   ExternalLink,
   Link2,
+  ListFilter,
   Mail,
   Phone,
   Plus,
   Search,
   Trash2,
+  TriangleAlert,
   UserPlus,
   UserRound,
   Users,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -43,8 +48,9 @@ import {
   notifySupportCountsChanged,
 } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
-import { JobStatusChip } from "@/components/jobs/jobParts";
+import { JobStatusChip, JobStatusCircle } from "@/components/jobs/jobParts";
 import { AdminChatLinkPill, AdminChatPanel, adminChatLinkFor, useAdminSupportDock } from "@/components/support/AdminSupportDock";
+import { EditableTicketTitle } from "@/components/support/EditableTicketTitle";
 import type { SupportThreadLayout } from "@/components/support/SupportChatBubbles";
 import { useMatchesBreakpoint } from "@/hooks/useBreakpoint";
 import { useScreenRecorder } from "@/contexts/ScreenRecorderContext";
@@ -230,25 +236,25 @@ type PersonGroup = {
 };
 
 const ASSIGNEE_FILTERS: { id: SupportAssigneeFilter; label: string }[] = [
-  { id: "anyone", label: "All" },
+  { id: "anyone", label: "Anyone" },
   { id: "zander", label: "Zander" },
   { id: "pam", label: "Pam" },
 ];
 
+/** The status filter; each single status shows its job circle and colour. */
 const STATUS_FILTER_OPTIONS: {
   id: SupportStatusFilter;
   label: string;
+  status?: SupportTicketStatus;
 }[] = [
   { id: "open", label: "All open" },
-  { id: "waiting_reply", label: SUPPORT_STATUS_ADMIN_LABELS.waiting_reply },
-  { id: "bca_todo", label: SUPPORT_STATUS_ADMIN_LABELS.open },
-  { id: "in_progress", label: SUPPORT_STATUS_ADMIN_LABELS.in_progress },
-  { id: "review", label: SUPPORT_STATUS_ADMIN_LABELS.review },
-  { id: "resolved", label: SUPPORT_STATUS_ADMIN_LABELS.resolved },
+  { id: "waiting_reply", label: SUPPORT_STATUS_ADMIN_LABELS.waiting_reply, status: "waiting_reply" },
+  { id: "bca_todo", label: SUPPORT_STATUS_ADMIN_LABELS.open, status: "open" },
+  { id: "in_progress", label: SUPPORT_STATUS_ADMIN_LABELS.in_progress, status: "in_progress" },
+  { id: "review", label: SUPPORT_STATUS_ADMIN_LABELS.review, status: "review" },
+  { id: "resolved", label: SUPPORT_STATUS_ADMIN_LABELS.resolved, status: "resolved" },
   { id: "all", label: "All statuses" },
 ];
-
-const filterSelectClass = fieldClass("select", "small");
 
 function queueSegmentClass(active: boolean) {
   return `flex-1 whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs font-semibold transition-colors ${
@@ -664,6 +670,10 @@ export function AdminSupportPage() {
         : tabParam === "dashboard"
           ? "dashboard"
           : "inbox";
+  // Support email and WhatsApp live in Settings; the Settings tab warns when one is down.
+  const [emailDown, setEmailDown] = useState(false);
+  const [whatsAppDown, setWhatsAppDown] = useState(false);
+  const connectionDown = emailDown || whatsAppDown;
   const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
   const [rows, setRows] = useState<AdminTicketRow[]>([]);
   const [assignees, setAssignees] = useState<SupportAssignee[]>([]);
@@ -811,10 +821,13 @@ export function AdminSupportPage() {
     setMentionsByTicket(byTicket);
   }, []);
 
-  const loadTickets = useCallback(async () => {
+  /** silent: refresh in the background (new tickets, replies) without the loading state. */
+  const loadTickets = useCallback(async ({ silent = false } = {}) => {
     const generation = ++loadGenerationRef.current;
-    setLoading(true);
-    setError(null);
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     const [{ data, error: queryError }] = await Promise.all([
       supabaseClient
         .from("community_feedback_reports")
@@ -856,6 +869,11 @@ export function AdminSupportPage() {
 
     if (queryError) {
       if (isSupabaseAbortError(queryError)) return;
+      if (silent) {
+        // Keep the list on screen; the next change or reload tries again.
+        setLoading(false);
+        return;
+      }
       setRows([]);
       setError(queryError.message);
       setLoading(false);
@@ -923,6 +941,38 @@ export function AdminSupportPage() {
       loadGenerationRef.current += 1;
     };
   }, [loadMeta, loadTickets]);
+
+  // New tickets and replies drop into the list live, without touching the open thread.
+  useEffect(() => {
+    let timer: number | undefined;
+    let subscribedOnce = false;
+    const refresh = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void loadTickets({ silent: true }), 800);
+    };
+    const channel = supabaseClient
+      .channel("admin-support-inbox")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "community_feedback_reports" },
+        refresh
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "community_feedback_replies" },
+        refresh
+      )
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        // On a reconnect (e.g. after the laptop sleeps), catch up on what we missed.
+        if (subscribedOnce) refresh();
+        subscribedOnce = true;
+      });
+    return () => {
+      window.clearTimeout(timer);
+      void supabaseClient.removeChannel(channel);
+    };
+  }, [loadTickets]);
 
   useEffect(() => {
     const onRefresh = () => void loadAttention();
@@ -1321,7 +1371,7 @@ export function AdminSupportPage() {
     patch: Partial<
       Pick<
         AdminTicketRow,
-        "status" | "importance" | "ease" | "assigned_to" | "type" | "created_by" | "reopened_at"
+        "status" | "importance" | "ease" | "assigned_to" | "type" | "created_by" | "reopened_at" | "title"
       >
     >
   ) {
@@ -2088,7 +2138,7 @@ export function AdminSupportPage() {
           title="Support"
           description={
             topTab === "settings"
-              ? "Who can take support calls, and when."
+              ? "Support email, WhatsApp, and who can take support calls."
               : topTab === "help"
                 ? "The help pages coaches see."
                 : topTab === "dashboard"
@@ -2123,32 +2173,38 @@ export function AdminSupportPage() {
                 {
                   kind: "button",
                   id: "settings",
-                  label: "Settings",
+                  label: connectionDown ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      Settings
+                      <TriangleAlert
+                        className="h-3.5 w-3.5 text-amber-500"
+                        aria-label={emailDown ? "Support email needs reconnecting" : "WhatsApp needs relinking"}
+                      />
+                    </span>
+                  ) : (
+                    "Settings"
+                  ),
                   active: topTab === "settings",
                   onClick: () => selectTopTab("settings"),
                 },
               ]}
             />
           }
-          actions={
-            topTab === "inbox" ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <SupportMailboxConnect />
-                <SupportWhatsAppConnect />
-                <button
-                  type="button"
-                  onClick={() => setCreateOpen(true)}
-                  className={buttonClass("main")}
-                >
-                  <Plus className="h-4 w-4" aria-hidden />
-                  New ticket
-                </button>
-              </div>
-            ) : null
-          }
         />
       }
     >
+      {/* Kept mounted on every tab so the Settings tab can warn when one drops,
+          and the WhatsApp catch-up still runs when the inbox opens. */}
+      <section
+        aria-label="Connections"
+        className={topTab === "settings" ? "mx-auto w-full max-w-xl space-y-2" : "hidden"}
+      >
+        <h2 className="text-sm font-semibold text-slate-900">Connections</h2>
+        <div className="flex flex-col items-start gap-2">
+          <SupportMailboxConnect onStatus={setEmailDown} />
+          <SupportWhatsAppConnect onStatus={setWhatsAppDown} />
+        </div>
+      </section>
       {topTab === "settings" ? (
         <SupportCallAdminSettings appOrigin={appOrigin} />
       ) : topTab === "dashboard" ? (
@@ -2163,7 +2219,8 @@ export function AdminSupportPage() {
           <div
             className={`grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden ${
               groupMode === "channels"
-                ? "lg:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)] xl:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)_18rem]"
+                ? // 20rem, like the ticket list at lg, so the top row fits and the view switch stays put.
+                  "lg:grid-cols-[minmax(13rem,20rem)_minmax(0,1fr)] xl:grid-cols-[minmax(13rem,20rem)_minmax(0,1fr)_18rem]"
                 : v2
                   ? // V2: the list and the details the same width either side, the chat about chat-box width between.
                     "lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)] xl:grid-cols-[minmax(16rem,28%)_minmax(0,1fr)_minmax(16rem,28%)]"
@@ -2180,117 +2237,22 @@ export function AdminSupportPage() {
                     : "bg-slate-300/70 max-lg:border-b-0"
               }`}
             >
-              <div className="shrink-0 space-y-2 border-b border-slate-100 px-3 py-2.5">
-                <div className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5">
-                  <button
-                    type="button"
-                    aria-pressed={groupMode === "tickets"}
-                    onClick={() => setGroupMode("tickets")}
-                    className={queueSegmentClass(groupMode === "tickets")}
-                  >
-                    Tickets
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={groupMode === "people"}
-                    onClick={() => setGroupMode("people")}
-                    className={queueSegmentClass(groupMode === "people")}
-                  >
-                    By coach
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={groupMode === "channels"}
-                    onClick={() => setGroupMode("channels")}
-                    className={queueSegmentClass(groupMode === "channels")}
-                  >
-                    Channels
-                  </button>
-                </div>
-
-                {groupMode !== "channels" ? (
-                <>
-                <div
-                  className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5"
-                  role="group"
-                  aria-label="Filter by assignee"
-                >
-                  {ASSIGNEE_FILTERS.map((filter) => (
-                    <button
-                      key={filter.id}
-                      type="button"
-                      aria-pressed={assigneeFilter === filter.id}
-                      onClick={() => setAssigneeFilter(filter.id)}
-                      className={queueSegmentClass(assigneeFilter === filter.id)}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) =>
-                    setStatusFilter(e.target.value as SupportStatusFilter)
-                  }
-                  aria-label="Filter by status"
-                  className={filterSelectClass}
-                >
-                  {STATUS_FILTER_OPTIONS.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                </>
-                ) : null}
-
-                <div className="relative">
-                  <Search
-                    className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
-                    aria-hidden
-                  />
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={groupMode === "channels" ? "Search coaches…" : "Search tickets…"}
-                    className={fieldClass("input", "small", "pl-8")}
-                  />
-                </div>
-                {groupMode === "channels" ? (
-                  <div
-                    className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5"
-                    role="group"
-                    aria-label="Sort channels"
-                  >
-                    {CHANNEL_SORT_OPTIONS.map((option) => {
-                      const Icon = option.icon;
-                      const active = channelSort === option.id;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          title={option.hint}
-                          aria-pressed={active}
-                          onClick={() => {
-                            setChannelSort(option.id);
-                            window.localStorage.setItem(CHANNEL_SORT_STORAGE_KEY, option.id);
-                          }}
-                          className={`inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs font-semibold transition-colors ${
-                            active
-                              ? "bg-white text-slate-900 shadow-sm"
-                              : "text-slate-500 hover:text-slate-800"
-                          }`}
-                        >
-                          <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
+              <QueueToolbar
+                groupMode={groupMode}
+                onGroupMode={setGroupMode}
+                statusFilter={statusFilter}
+                onStatusFilter={setStatusFilter}
+                assigneeFilter={assigneeFilter}
+                onAssigneeFilter={setAssigneeFilter}
+                channelSort={channelSort}
+                onChannelSort={(sort) => {
+                  setChannelSort(sort);
+                  window.localStorage.setItem(CHANNEL_SORT_STORAGE_KEY, sort);
+                }}
+                searchQuery={searchQuery}
+                onSearchQuery={setSearchQuery}
+                onNewTicket={() => setCreateOpen(true)}
+              />
 
               {error ? (
                 <p className="shrink-0 border-b border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-700">
@@ -2617,6 +2579,7 @@ export function AdminSupportPage() {
                       status={status}
                       onStatus={(next) => void updateRow(selected.id, { status: next })}
                       link={link ? <AdminChatLinkPill link={link} onOpen={() => openChatPage(selected, link.to)} /> : null}
+                      rename={{ value: selected.title ?? "", onSave: (next) => void updateRow(selected.id, { title: next }) }}
                     >
                       {ticketThread(selected, "cards")}
                     </AdminChatPanel>
@@ -2640,6 +2603,11 @@ export function AdminSupportPage() {
                   channelLabel={selectedChannel.label}
                   thread={selected ? launchThread(selected.topic) : launchThread(pendingThreadKey)}
                   title={selected?.title?.trim() || "(No subject)"}
+                  rename={
+                    selected
+                      ? { value: selected.title ?? "", onSave: (next) => void updateRow(selected.id, { title: next }) }
+                      : undefined
+                  }
                   onBack={() => {
                     setSelectedId(null);
                     setPendingThreadKey(null);
@@ -2994,6 +2962,327 @@ export function AdminSupportPage() {
   );
 }
 
+const queueIconButtonClass = (on: boolean) =>
+  `inline-flex h-8 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
+    on ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+  }`;
+
+/**
+ * The inbox's one top row (23 Nov): the view switch, then search, filter and
+ * New ticket as small icons. Search opens in place; the filter menu holds
+ * status (with each status's circle) and who, or the sort in Channels. A
+ * filter that's on shows as a chip underneath so nothing looks missing.
+ */
+function QueueToolbar({
+  groupMode,
+  onGroupMode,
+  statusFilter,
+  onStatusFilter,
+  assigneeFilter,
+  onAssigneeFilter,
+  channelSort,
+  onChannelSort,
+  searchQuery,
+  onSearchQuery,
+  onNewTicket,
+}: {
+  groupMode: GroupMode;
+  onGroupMode: (mode: GroupMode) => void;
+  statusFilter: SupportStatusFilter;
+  onStatusFilter: (filter: SupportStatusFilter) => void;
+  assigneeFilter: SupportAssigneeFilter;
+  onAssigneeFilter: (filter: SupportAssigneeFilter) => void;
+  channelSort: ChannelSort;
+  onChannelSort: (sort: ChannelSort) => void;
+  searchQuery: string;
+  onSearchQuery: (query: string) => void;
+  onNewTicket: () => void;
+}) {
+  const [searching, setSearching] = useState(searchQuery !== "");
+  // Fixed to the screen under the button: the list column clips anything that hangs out of it.
+  const [menuAt, setMenuAt] = useState<{ top: number; right: number; maxHeight: number } | null>(null);
+  const menuOpen = menuAt !== null;
+  const menuRef = useRef<HTMLDivElement>(null);
+  const channels = groupMode === "channels";
+
+  const toggleMenu = (button: HTMLElement) => {
+    if (menuOpen) {
+      setMenuAt(null);
+      return;
+    }
+    const rect = button.getBoundingClientRect();
+    setMenuAt({
+      top: rect.bottom + 4,
+      right: window.innerWidth - rect.right,
+      maxHeight: window.innerHeight - rect.bottom - 12,
+    });
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const away = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuAt(null);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuAt(null);
+    };
+    const moved = (e: Event) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuAt(null);
+    };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    window.addEventListener("scroll", moved, true);
+    window.addEventListener("resize", moved);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+      window.removeEventListener("scroll", moved, true);
+      window.removeEventListener("resize", moved);
+    };
+  }, [menuOpen]);
+
+  const closeSearch = () => {
+    onSearchQuery("");
+    setSearching(false);
+  };
+
+  const status = STATUS_FILTER_OPTIONS.find((o) => o.id === statusFilter);
+  const assignee = ASSIGNEE_FILTERS.find((f) => f.id === assigneeFilter);
+  const showChips = !channels && (statusFilter !== "open" || assigneeFilter !== "anyone");
+  const menuItemClass =
+    "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-slate-800 hover:bg-slate-100";
+  const menuHeadingClass = "px-2.5 pb-1 pt-1.5 text-caption font-semibold text-slate-500";
+  const chipClass =
+    "inline-flex items-center gap-1.5 rounded-md bg-slate-100 py-1 pl-2 pr-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200";
+
+  return (
+    <div className="shrink-0 border-b border-slate-100">
+      <div className="flex items-center gap-0.5 px-2.5 py-2">
+        {searching ? (
+          <>
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+                aria-hidden
+              />
+              <input
+                type="text"
+                autoFocus
+                enterKeyHint="search"
+                aria-label={channels ? "Search coaches" : "Search tickets"}
+                value={searchQuery}
+                onChange={(e) => onSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") closeSearch();
+                }}
+                onBlur={() => {
+                  if (!searchQuery.trim()) setSearching(false);
+                }}
+                placeholder={channels ? "Search coaches…" : "Search tickets…"}
+                className={fieldClass("input", "small", "pl-8")}
+              />
+            </div>
+            <button
+              type="button"
+              aria-label="Close search"
+              title="Close search"
+              onClick={closeSearch}
+              className={queueIconButtonClass(false)}
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </>
+        ) : (
+          <>
+            <div
+              className="mr-1.5 inline-flex min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-100 p-0.5"
+              role="group"
+              aria-label="Show"
+            >
+              {(
+                [
+                  ["tickets", "Tickets"],
+                  ["people", "By coach"],
+                  ["channels", "Channels"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={groupMode === mode}
+                  onClick={() => onGroupMode(mode)}
+                  // Sized by the label (not equal thirds) so all three fit a 20rem column.
+                  className={`min-w-0 flex-auto truncate rounded-md px-1.5 py-1.5 text-xs font-semibold transition-colors ${
+                    groupMode === mode
+                      ? "bg-sky-700 text-white shadow-sm"
+                      : "text-slate-500 hover:bg-white hover:text-slate-800"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              aria-label={channels ? "Search coaches" : "Search tickets"}
+              title="Search"
+              onClick={() => setSearching(true)}
+              className={queueIconButtonClass(false)}
+            >
+              <Search className="h-4 w-4" aria-hidden />
+            </button>
+            <div className="relative shrink-0" ref={menuRef}>
+              <button
+                type="button"
+                aria-label={channels ? "Sort coaches" : "Filter tickets"}
+                title={channels ? "Sort" : "Filter"}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={(e) => toggleMenu(e.currentTarget)}
+                className={queueIconButtonClass(menuOpen)}
+              >
+                {channels ? (
+                  <ArrowUpDown className="h-4 w-4" aria-hidden />
+                ) : (
+                  <ListFilter className="h-4 w-4" aria-hidden />
+                )}
+              </button>
+              {menuAt ? (
+                <div
+                  role="menu"
+                  style={menuAt}
+                  className="fixed z-[100] w-52 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg shadow-slate-900/10"
+                >
+                  {channels ? (
+                    <>
+                      <p className={menuHeadingClass}>Sort coaches</p>
+                      {CHANNEL_SORT_OPTIONS.map((option) => {
+                        const Icon = option.icon;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={channelSort === option.id}
+                            title={option.hint}
+                            onClick={() => {
+                              onChannelSort(option.id);
+                              setMenuAt(null);
+                            }}
+                            className={menuItemClass}
+                          >
+                            <Icon className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
+                            <span className="flex-1 whitespace-nowrap">{option.label}</span>
+                            {channelSort === option.id ? (
+                              <Check className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.5} aria-hidden />
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <>
+                      <p className={menuHeadingClass}>Status</p>
+                      {STATUS_FILTER_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={statusFilter === option.id}
+                          onClick={() => {
+                            onStatusFilter(option.id);
+                            setMenuAt(null);
+                          }}
+                          className={menuItemClass}
+                        >
+                          {option.status ? (
+                            <JobStatusCircle status={SUPPORT_STATUS_JOB[option.status]} audience="admin" />
+                          ) : (
+                            <span className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          )}
+                          <span className="flex-1 whitespace-nowrap">{option.label}</span>
+                          {statusFilter === option.id ? (
+                            <Check className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.5} aria-hidden />
+                          ) : null}
+                        </button>
+                      ))}
+                      <div className="my-1 h-px bg-slate-100" aria-hidden />
+                      <p className={menuHeadingClass}>Assigned to</p>
+                      <div className="px-1.5 pb-1">
+                        <div
+                          className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5"
+                          role="group"
+                          aria-label="Assigned to"
+                        >
+                          {ASSIGNEE_FILTERS.map((filter) => (
+                            <button
+                              key={filter.id}
+                              type="button"
+                              aria-pressed={assigneeFilter === filter.id}
+                              onClick={() => {
+                                onAssigneeFilter(filter.id);
+                                setMenuAt(null);
+                              }}
+                              className={queueSegmentClass(assigneeFilter === filter.id)}
+                            >
+                              {filter.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              aria-label="New ticket"
+              title="New ticket"
+              onClick={onNewTicket}
+              className={queueIconButtonClass(false)}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+            </button>
+          </>
+        )}
+      </div>
+      {showChips ? (
+        <div className="flex flex-wrap items-center gap-1.5 px-2.5 pb-2">
+          {statusFilter !== "open" && status ? (
+            <button
+              type="button"
+              onClick={() => onStatusFilter("open")}
+              aria-label={`Clear filter: ${status.label}`}
+              title="Clear"
+              className={chipClass}
+            >
+              {status.status ? (
+                <JobStatusCircle status={SUPPORT_STATUS_JOB[status.status]} audience="admin" className="h-3 w-3" />
+              ) : null}
+              {status.label}
+              <X className="h-3 w-3 text-slate-400" aria-hidden />
+            </button>
+          ) : null}
+          {assigneeFilter !== "anyone" && assignee ? (
+            <button
+              type="button"
+              onClick={() => onAssigneeFilter("anyone")}
+              aria-label={`Clear filter: ${assignee.label}`}
+              title="Clear"
+              className={chipClass}
+            >
+              <UserRound className="h-3 w-3 text-slate-500" aria-hidden />
+              {assignee.label}
+              <X className="h-3 w-3 text-slate-400" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** Channels: one name per coach, always visible, like Slack's channel list. */
 function ChannelList({
   groups,
@@ -3310,12 +3599,15 @@ function ChannelThreadHeader({
   channelLabel,
   thread,
   title,
+  rename,
   onBack,
   children,
 }: {
   channelLabel: string;
   thread: LaunchThread | null;
   title: string;
+  /** Click the name to rename the ticket; launch threads keep their fixed names. */
+  rename?: { value: string; onSave: (next: string | null) => void };
   onBack: () => void;
   children?: ReactNode;
 }) {
@@ -3333,9 +3625,18 @@ function ChannelThreadHeader({
       <span className="select-none text-slate-300" aria-hidden>
         /
       </span>
-      <span className="min-w-0 truncate text-sm font-semibold text-slate-900">
-        {thread?.label ?? title}
-      </span>
+      {rename && !thread ? (
+        <EditableTicketTitle
+          value={rename.value}
+          display={title}
+          onSave={rename.onSave}
+          className="-ml-1.5 text-sm font-semibold text-slate-900"
+        />
+      ) : (
+        <span className="min-w-0 truncate text-sm font-semibold text-slate-900">
+          {thread?.label ?? title}
+        </span>
+      )}
       {phase ? (
         <span className="hidden shrink-0 text-xs text-slate-400 sm:inline">{phase}</span>
       ) : null}

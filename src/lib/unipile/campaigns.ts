@@ -829,6 +829,7 @@ export async function addCampaignLeadsFromContacts(
     added: result.added,
     skipped: result.skipped + skipped,
     blacklisted: result.blacklisted,
+    badFit: result.badFit,
   };
 }
 
@@ -913,10 +914,13 @@ export async function addCampaignLeads(
   const uniqueProviders = [...new Set(incomingProviders)];
   const uniqueContactIds = [...new Set(incomingContactIds)];
 
-  const [blacklistedUrls, blacklistedEmails, existingByUrl, existingByProvider, existingByContact] =
+  const { loadBadFitLinkedInUrls } = await import("@/lib/pool/fitCheck");
+  const [blacklistedUrls, blacklistedEmails, badFitUrls, existingByUrl, existingByProvider, existingByContact] =
     await Promise.all([
       loadBlacklistedLinkedInUrls(coachId),
       loadBlacklistedEmails(coachId),
+      // Bad fit (job 278): the coach or Ava said they're not a fit, so they're never messaged.
+      loadBadFitLinkedInUrls(coachId),
       selectRowsWhereIn<{ linkedin_url: string | null }>(uniqueUrls, (chunk) =>
         supabaseAdmin
           .from("linkedin_campaign_leads")
@@ -964,6 +968,7 @@ export async function addCampaignLeads(
   const prepared: PreparedLead[] = [];
   let skipped = 0;
   let blacklisted = 0;
+  let badFit = 0;
 
   for (const row of limited) {
     const owned = row.contact_id ? ownedContacts.get(row.contact_id) : null;
@@ -1007,6 +1012,11 @@ export async function addCampaignLeads(
       if (url && blacklistedUrls.has(url)) {
         skipped += 1;
         blacklisted += 1;
+        continue;
+      }
+      if (url && badFitUrls.has(url)) {
+        skipped += 1;
+        badFit += 1;
         continue;
       }
       if (url && existingUrls.has(url)) {
@@ -1064,6 +1074,11 @@ export async function addCampaignLeads(
       const url = normalizeLinkedInProfileUrl(
         row.linkedin_url || owned?.linkedin_url || ""
       );
+      if (url && badFitUrls.has(url)) {
+        skipped += 1;
+        badFit += 1;
+        continue;
+      }
       prepared.push({
         email,
         phone,
@@ -1114,6 +1129,11 @@ export async function addCampaignLeads(
       if (blacklistedUrls.has(blockedUrl)) {
         skipped += 1;
         blacklisted += 1;
+        continue;
+      }
+      if (badFitUrls.has(blockedUrl)) {
+        skipped += 1;
+        badFit += 1;
         continue;
       }
       if (existingUrls.has(resolvedUrl)) {
@@ -1413,7 +1433,7 @@ export async function addCampaignLeads(
     await enqueuePendingJobsForCampaign(coachId, campaignId, addedIds);
   }
 
-  return { added, skipped, blacklisted };
+  return { added, skipped, blacklisted, badFit };
 }
 
 /**
@@ -1543,7 +1563,9 @@ export async function enrollContactInCampaign(
     throw new Error(
       result.blacklisted
         ? "They're on the block list."
-        : "Couldn't add them. This campaign needs a LinkedIn profile or email on the contact."
+        : result.badFit
+          ? "They're marked Bad fit. Change their fit in the Pool to add them."
+          : "Couldn't add them. This campaign needs a LinkedIn profile or email on the contact."
     );
   }
   return { added: result.added, already: false as const };
@@ -2015,6 +2037,8 @@ export async function enqueuePendingJobsForCampaign(
         : new Date();
     let step = steps.find((s) => s.position === position);
     if (!step) continue;
+    // Invite already sent (by us or Sales Robot): wait for the accept, never invite twice.
+    if (lead.status === "invited" && step.step_type === "invite") continue;
 
     if (!campaignStepCreatesJob(String(step.step_type), step.config)) {
       const consumed = await consumeNonOutboundSteps({

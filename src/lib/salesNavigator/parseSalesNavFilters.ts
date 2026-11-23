@@ -128,6 +128,19 @@ export function teamSizesFromSalesNavUrl(
   return [...sizes];
 }
 
+/**
+ * Keywords that only leave people out, e.g. NOT (agency OR marketing). They
+ * can sit beside company-name words (Zander, 23 Nov): a NOT removes people,
+ * it doesn't shrink the list to an overlap the way a keyword include does.
+ */
+export function keywordsOnlyExclude(keywords: string): boolean {
+  const rest = keywords
+    .replace(/\bNOT\s*\([^()]*\)/g, "")
+    .replace(/\bNOT\s+("[^"]*"|[^\s()]+)/g, "")
+    .trim();
+  return rest === "" && /\bNOT\b/.test(keywords);
+}
+
 /** Best-effort parse of a people-search URL into Lead Finder sidebar filters. */
 export function parseSalesNavSearchUrl(
   salesNavUrl: string
@@ -169,7 +182,11 @@ export function parseSalesNavSearchUrl(
   let keywordsBoolean: string | null = null;
   try {
     const u = new URL(salesNavUrl);
-    const kw = u.searchParams.get("keywords")?.trim();
+    // Inside the query, where Sales Navigator puts them: keywords:<encoded text>.
+    const raw = u.searchParams.get("query") ?? "";
+    const m = raw.match(/[,(]keywords:((?:%[0-9A-Fa-f]{2}|[^,()])+)/);
+    // Older links from this app put them in a separate &keywords= (LinkedIn ignored those).
+    const kw = m?.[1] ? fullyDecode(m[1]).trim() : u.searchParams.get("keywords")?.trim();
     keywordsBoolean = kw || null;
   } catch {
     keywordsBoolean = null;

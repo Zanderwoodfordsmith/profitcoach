@@ -31,12 +31,14 @@ import {
   poolRowMatchesDateAddedFilter,
   poolRowMatchesHeadcountFilter,
   poolRowMatchesIndustryFilter,
+  poolRowMatchesFitFilter,
   poolRowMatchesLinkedInFilter,
   poolRowMatchesPostcodeFilter,
   poolRowMatchesTagFilter,
   poolRowPassesExcludedTags,
   type PoolContactFilter,
   type PoolDateAddedFilter,
+  type PoolFitFilter,
   type PoolLinkedInFilter,
   type PoolPerson,
 } from "@/lib/pool/poolPeople";
@@ -277,6 +279,7 @@ export function CampaignAddProspectsModal({
     useState<PoolContactFilter>("all");
   const [poolLinkedinFilter, setPoolLinkedinFilter] =
     useState<PoolLinkedInFilter>("all");
+  const [poolFitFilter, setPoolFitFilter] = useState<PoolFitFilter>("all");
   const [poolDateAddedFilter, setPoolDateAddedFilter] =
     useState<PoolDateAddedFilter>("all");
   const [poolTagFilter, setPoolTagFilter] = useState("all");
@@ -297,6 +300,7 @@ export function CampaignAddProspectsModal({
       }
       if (!poolRowMatchesContactFilter(row, poolContactFilter)) return false;
       if (!poolRowMatchesLinkedInFilter(row, poolLinkedinFilter)) return false;
+      if (!poolRowMatchesFitFilter(row, poolFitFilter)) return false;
       if (!poolRowMatchesDateAddedFilter(row, poolDateAddedFilter)) return false;
       if (!poolRowMatchesHeadcountFilter(row, poolHeadcountFilter)) return false;
       if (!poolRowMatchesCityFilter(row, poolCityFilter)) return false;
@@ -335,6 +339,7 @@ export function CampaignAddProspectsModal({
     poolHeadcountFilter,
     poolIndustryFilter,
     poolLinkedinFilter,
+    poolFitFilter,
     poolPostcodeFilter,
     poolSourceFilter,
     poolTagFilter,
@@ -393,6 +398,7 @@ export function CampaignAddProspectsModal({
     setPoolIndustryFilter("");
     setPoolContactFilter("all");
     setPoolLinkedinFilter("all");
+    setPoolFitFilter("all");
     setPoolDateAddedFilter("all");
     setPoolTagFilter("all");
     setPoolExcludeTags([]);
@@ -797,6 +803,7 @@ export function CampaignAddProspectsModal({
     (poolCampaignIdFilter || poolCampaignFilter !== "all" ? 1 : 0) +
     (poolContactFilter !== "all" ? 1 : 0) +
     (poolLinkedinFilter !== "all" ? 1 : 0) +
+    (poolFitFilter !== "all" ? 1 : 0) +
     (poolDateAddedFilter !== "all" ? 1 : 0) +
     (poolHeadcountFilter.length > 0 ? 1 : 0) +
     (poolCityFilter.trim() ? 1 : 0) +
@@ -972,6 +979,7 @@ export function CampaignAddProspectsModal({
       let added = 0;
       let skipped = 0;
       let blocked = 0;
+      let badFit = 0;
       for (let i = 0; i < ids.length; i += 250) {
         const chunk = ids.slice(i, i + 250);
         const res = await fetch(
@@ -990,6 +998,7 @@ export function CampaignAddProspectsModal({
         added += Number(body.added ?? 0);
         skipped += Number(body.skipped ?? 0);
         blocked += Number(body.blacklisted ?? 0);
+        badFit += Number(body.badFit ?? 0);
         const done = Math.min(i + chunk.length, ids.length);
         setAddProgress({ done, total: ids.length });
         if (done < ids.length) {
@@ -1002,7 +1011,9 @@ export function CampaignAddProspectsModal({
         setNotice(
           blocked
             ? "Those people are on your blacklist."
-            : skipped
+            : badFit
+              ? "Those people are marked Bad fit. Change their fit in the Pool to add them."
+              : skipped
               ? "They are already in this campaign."
               : "No people were added."
         );
@@ -1318,6 +1329,8 @@ export function CampaignAddProspectsModal({
                           onContactFilter={setPoolContactFilter}
                           linkedinFilter={poolLinkedinFilter}
                           onLinkedinFilter={setPoolLinkedinFilter}
+                          fitFilter={poolFitFilter}
+                          onFitFilter={setPoolFitFilter}
                           dateAddedFilter={poolDateAddedFilter}
                           onDateAddedFilter={setPoolDateAddedFilter}
                           tagFilter={poolTagFilter}

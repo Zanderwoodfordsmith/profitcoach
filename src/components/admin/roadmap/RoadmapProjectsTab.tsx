@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { CalendarRange, Columns3, Plus, Rows3, ScatterChart } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
-import { ProductCanvasToggle } from "@/components/admin/roadmap/ProductCanvasToggle";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import { NewProjectSheet } from "./NewProjectSheet";
 import { RoadmapProjectsView, type ProjectsShow } from "./RoadmapProjectsView";
@@ -54,7 +53,6 @@ export function RoadmapProjectsTab() {
         title="Product"
         description="Initiatives hold projects; projects hold jobs. Open a project for its write-up and its jobs."
         tabs={<LessonImportTabs />}
-        actions={<ProductCanvasToggle />}
       />
       <div className="mt-5 flex flex-wrap items-center gap-3 border-b border-slate-200/80 pb-4">
         <ViewToggle

@@ -10,6 +10,23 @@ import type { PracticeKnowledgePayload, PracticeKnowledgeRow } from "./types";
  * Done: signed off against the current version. A later edit returns it to Review.
  */
 export type WorkflowStatus = "todo" | "review" | "done";
+/**
+ * What BCA can set by hand. "progress" (In progress) and "coach" (Needs
+ * coach) are both To do: BCA is on it, or BCA is waiting on the coach.
+ */
+export type ManualStatus = WorkflowStatus | "progress" | "coach";
+
+const MANUAL_STATUSES = new Set<string>(["coach", "todo", "progress", "review", "done"]);
+
+/** A page with nothing to track (Lead lists is one view, no sections) keeps BCA's hand-set status here. */
+export function pageChoiceKey(slug: string): string {
+  return `page:${slug}`;
+}
+
+export function pageChoice(payload: PracticeKnowledgePayload, slug: string): ManualStatus | null {
+  const stored = payload.review.section_status?.value?.[pageChoiceKey(slug)]?.split("|")[0];
+  return stored && MANUAL_STATUSES.has(stored) ? (stored as ManualStatus) : null;
+}
 export type WorkflowOwner = "coach" | "bca";
 
 export type SectionWorkflow = {
@@ -26,6 +43,8 @@ export type SectionWorkflow = {
   changedFields: string[];
   /** BCA set it to In progress by hand: still To do, but BCA is on it. */
   started?: boolean;
+  /** BCA set it to Needs coach by hand: still To do, waiting on the coach. */
+  askedCoach?: boolean;
 };
 
 /** Written sections a coach can sign off, which then wait for BCA before they can be sent. */
@@ -109,17 +128,17 @@ function changedFields(ref: SectionRef, row: PracticeKnowledgeRow, coachAt: stri
 function chosenStatus(
   payload: PracticeKnowledgePayload,
   key: string
-): { status: WorkflowStatus; at: string; started: boolean } | null {
+): { status: WorkflowStatus; at: string; started: boolean; askedCoach: boolean } | null {
   const raw = payload.review.section_status?.value?.[key];
   if (!raw) return null;
   const split = raw.indexOf("|");
   if (split < 1) return null;
   const stored = raw.slice(0, split);
   const at = raw.slice(split + 1);
-  // "progress" is BCA's In progress: To do, with BCA on it.
-  const status = stored === "progress" ? "todo" : stored;
+  // In progress and Needs coach are both To do, with BCA on it or waiting on the coach.
+  const status = stored === "progress" || stored === "coach" ? "todo" : stored;
   if ((status !== "todo" && status !== "review" && status !== "done") || !at) return null;
-  return { status, at, started: stored === "progress" };
+  return { status, at, started: stored === "progress", askedCoach: stored === "coach" };
 }
 
 export function sectionWorkflow(ref: SectionRef, row: PracticeKnowledgeRow): SectionWorkflow {
@@ -143,7 +162,15 @@ export function sectionWorkflow(ref: SectionRef, row: PracticeKnowledgeRow): Sec
 
   if (choice && (!revision || choice.at >= revision)) {
     const owner: WorkflowOwner | null =
-      choice.status === "done" ? null : choice.started ? "bca" : choice.status === "todo" ? todoOwner(ref) : "coach";
+      choice.status === "done"
+        ? null
+        : choice.started
+          ? "bca"
+          : choice.askedCoach
+            ? "coach"
+            : choice.status === "todo"
+              ? todoOwner(ref)
+              : "coach";
     return {
       status: choice.status,
       owner: choice.status === "done" ? null : owner,
@@ -152,6 +179,7 @@ export function sectionWorkflow(ref: SectionRef, row: PracticeKnowledgeRow): Sec
       changed: false,
       changedFields: [],
       ...(choice.started ? { started: true } : {}),
+      ...(choice.askedCoach ? { askedCoach: true } : {}),
     };
   }
 

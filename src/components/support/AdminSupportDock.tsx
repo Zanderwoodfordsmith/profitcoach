@@ -17,6 +17,7 @@ import { BLUEPRINT_PAGES } from "@/lib/practiceKnowledge/blueprint";
 import { chatPageFor } from "@/lib/support/chatPages";
 import { SUPPORT_STATUS_ADMIN_LABELS, SUPPORT_STATUS_JOB, type SupportTicketStatus } from "@/lib/support/tickets";
 
+import { EditableTicketTitle } from "./EditableTicketTitle";
 import { BRAND_BUTTON, ContextLink, SupportDockContext, contextPath, useDockGo, useDockedClass, type DockValue } from "./SupportDock";
 
 const SUPPORT_PATH = "/admin/support";
@@ -201,6 +202,7 @@ export function AdminChatPanel({
   onStatus,
   link,
   onClose,
+  rename,
   children,
 }: {
   title: string;
@@ -208,15 +210,26 @@ export function AdminChatPanel({
   onStatus: (status: SupportTicketStatus) => void;
   link: ReactNode;
   onClose?: () => void;
+  /** Click the title to rename the ticket (the Support inbox, 23 Nov). */
+  rename?: { value: string; onSave: (next: string | null) => void };
   children: ReactNode;
 }) {
   return (
     <div className="bp-side-panel ava-ui relative flex h-full min-h-0 flex-col overflow-hidden">
       <div className="bp-side-head relative z-[2] flex h-12 shrink-0 items-center gap-2 border-b px-4">
         <MessageSquare className="h-4 w-4 shrink-0 text-[var(--ava-muted)]" aria-hidden />
-        <p className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold text-[var(--ava-ink)]" title={title}>
-          {title}
-        </p>
+        {rename ? (
+          <EditableTicketTitle
+            value={rename.value}
+            display={title}
+            onSave={rename.onSave}
+            className="-ml-1.5 text-[0.8125rem] font-semibold text-[var(--ava-ink)]"
+          />
+        ) : (
+          <p className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold text-[var(--ava-ink)]" title={title}>
+            {title}
+          </p>
+        )}
         {link}
         <TicketStatusMenu status={status} onStatus={onStatus} />
         {onClose ? (

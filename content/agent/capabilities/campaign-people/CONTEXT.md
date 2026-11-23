@@ -17,7 +17,7 @@ Moving people into, out of and within campaigns. Look up lists and campaigns wit
 - From the coach: which list or people, and which campaign.
 
 ## The process
-- **Add a whole list**: `add_list_to_campaign` with the list and the campaign. It adds everyone on the list who has a LinkedIn profile (or an email, for email campaigns), skips anyone already in a campaign or blacklisted, and reports the counts.
+- **Add a whole list**: `add_list_to_campaign` with the list and the campaign. It adds everyone on the list who has a LinkedIn profile (or an email, for email campaigns), skips anyone already in a campaign, blacklisted or marked Bad fit, and reports the counts. Good fit people go in before OK.
 - **Add some of a list**: `get_list_people` to find them, then `add_list_to_campaign` with their item ids.
 - **Find people in a campaign**: `list_campaign_people`, with a search for names or companies, or a status filter (queued, invited, connected, replied).
 - **Remove**: `list_campaign_people` to get their lead ids, show who you found, then `remove_people_from_campaign`. Removing deletes them from this campaign only. They stay on their lists.

@@ -416,10 +416,12 @@ export function CampaignAudiencePanel({ campaigns }: Props) {
       const added = Number(body.added ?? 0);
       const skipped = Number(body.skipped ?? 0);
       const blocked = Number(body.blacklisted ?? 0);
+      const badFit = Number(body.badFit ?? 0);
       const parts = [
         added ? `${added} added to campaign` : null,
-        skipped && !blocked ? `${skipped} skipped` : null,
+        skipped && !blocked && !badFit ? `${skipped} skipped` : null,
         blocked ? `${blocked} blocked by blacklist` : null,
+        badFit ? `${badFit} left out as Bad fit` : null,
       ].filter(Boolean);
       setNotice(parts.join(" · ") || "No new people were added.");
       await loadItems(selectedId);

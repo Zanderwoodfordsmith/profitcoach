@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { HelpAnswerFeedback } from "@/components/support/HelpAnswerFeedback";
 import { plainHelpAnswer as plain } from "@/lib/help/plainHelpAnswer";
 import {
   HELP_ANSWERS,
@@ -458,6 +459,8 @@ function ArticleView({ answer, admin }: { answer: HelpAnswer; admin: boolean }) 
             </figure>
           ) : null}
           <div className="mt-6">{renderAnswer(answer.answer)}</div>
+
+          <HelpAnswerFeedback key={answer.id} answer={answer} admin={admin} />
 
           {siblings.length ? (
             <section className="mt-12 border-t border-[#e8edf3] pt-6">
